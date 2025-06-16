@@ -1,0 +1,176 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useRef } from "react";
+import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
+import { useTema } from "@/hooks/useTema";
+
+const patrocinadores = [
+  { nome: "Patrocínio 1", logo: "/images/patrocinadores/patrocinador_01.png" },
+  { nome: "Patrocínio 2", logo: "/images/patrocinadores/patrocinador_02.png" },
+  { nome: "Patrocínio 3", logo: "/images/patrocinadores/patrocinador_03.png" },
+  { nome: "Patrocínio 4", logo: "/images/patrocinadores/patrocinador_04.png" },
+  { nome: "Patrocínio 5", logo: "/images/patrocinadores/patrocinador_05.png" },
+  { nome: "Patrocínio 6", logo: "/images/patrocinadores/patrocinador_06.png" },
+  { nome: "Patrocínio 7", logo: "/images/patrocinadores/patrocinador_07.png" },
+  { nome: "Patrocínio 8", logo: "/images/patrocinadores/patrocinador_08.png" },
+  { nome: "Patrocínio 9", logo: "/images/patrocinadores/patrocinador_09.png" },
+  { nome: "Patrocínio 10", logo: "/images/patrocinadores/patrocinador_10.png" },
+];
+
+export default function Footer() {
+  const tema = useTema();
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const scroll = () => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth) {
+          carouselRef.current.scrollLeft = 0;
+        } else {
+          carouselRef.current.scrollLeft += 1;
+        }
+      }
+    };
+    const interval = setInterval(scroll, 20);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleManualScroll = (direction: "left" | "right") => {
+    if (carouselRef.current) {
+      const scrollAmount = 200;
+      carouselRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <footer className="bg-[#0e0e0e] text-white mt-16 border-t border-yellow-400">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <h2 className="text-center text-xl font-bold text-yellow-400 mb-6 animate-pulse">
+          <span className="bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-300 bg-clip-text text-transparent">
+            NOSSOS PATROCINADORES
+          </span>
+        </h2>
+
+        {/* Carrossel de Patrocinadores */}
+        <div className="relative overflow-hidden group mb-12">
+          <button
+            onClick={() => handleManualScroll("left")}
+            aria-label="Scroll left"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-yellow-400 hover:bg-yellow-500 hover:text-black"
+          >
+            &#9664;
+          </button>
+          <button
+            onClick={() => handleManualScroll("right")}
+            aria-label="Scroll right"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-yellow-400 hover:bg-yellow-500 hover:text-black"
+          >
+            &#9654;
+          </button>
+
+          <div
+            ref={carouselRef}
+            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
+          >
+            {[...patrocinadores, ...patrocinadores].map((patro, index) => (
+              <div key={index} className="min-w-[180px] flex justify-center items-center">
+                <Image
+                  src={patro.logo}
+                  alt={patro.nome}
+                  width={160}
+                  height={96}
+                  className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Grid inferior */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] lg:grid-cols-3 gap-10 items-start">
+          {/* Coluna 1 – Campo + Mapa */}
+          <div>
+            <p className="text-yellow-400 font-bold mb-2">NOSSO CAMPO OFICIAL</p>
+            <p className="text-gray-300 mb-3">{tema.endereco || "Endereço não informado"}</p>
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3656.532659134175!2d-46.63633848502184!3d-23.58802138466644!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59bfd39ab0f1%3A0x17727fd74a3f5b1e!2sCampo%20de%20Futebol%20Exemplo!5e0!3m2!1spt-BR!2sbr!4v1618950669409!5m2!1spt-BR!2sbr"
+              width="100%"
+              height="150"
+              className="rounded-md border-none"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+
+          {/* Coluna 2 – Siga-nos centralizado */}
+          <div className="flex flex-col items-center justify-start gap-2">
+            <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
+            <div className="flex gap-3">
+              <Link href="https://facebook.com/suaPagina" target="_blank">
+                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
+                  <FaFacebookF className="text-yellow-400 hover:text-black text-lg" />
+                </div>
+              </Link>
+              <Link href="https://wa.me/seuNumero" target="_blank">
+                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
+                  <FaWhatsapp className="text-yellow-400 hover:text-black text-lg" />
+                </div>
+              </Link>
+              <Link href="https://instagram.com/seuPerfil" target="_blank">
+                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
+                  <FaInstagram className="text-yellow-400 hover:text-black text-lg" />
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          {/* Coluna 3 – Links rápidos atualizados */}
+          <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
+            <Link href="/termos-de-uso" className="hover:underline">
+              Termos de Uso
+            </Link>
+            <Link href="/ranking" className="hover:underline">
+              Sistema de Ranking
+            </Link>
+            <Link href="/premiacoes" className="hover:underline">
+              Sistema de Premiações
+            </Link>
+            <Link href="/balanceamento" className="hover:underline">
+              Sistema de Balanceamento
+            </Link>
+            <Link href="/creditos" className="hover:underline">
+              Créditos
+            </Link>
+          </div>
+        </div>
+
+        {/* Logo e frase final */}
+        <div className="mt-10 text-center">
+          <Link href="https://www.fut7pro.com.br" target="_blank">
+            <Image
+              src="/images/logos/logo_fut7pro.png"
+              alt="Logo Fut7Pro"
+              width={64}
+              height={64}
+              className="mx-auto mb-2"
+              priority
+            />
+          </Link>
+          <p className="text-sm text-gray-400">
+            Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.
+          </p>
+        </div>
+
+        <div className="mt-6 text-center text-xs text-gray-500">
+          © {new Date().getFullYear()} Fut7Pro. Todos os direitos reservados. v1.0
+        </div>
+      </div>
+    </footer>
+  );
+}

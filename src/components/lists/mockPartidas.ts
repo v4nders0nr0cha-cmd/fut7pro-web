@@ -1,0 +1,43 @@
+import type { Partida } from "@/types/partida";
+
+export const partidas: Partida[] = [
+  {
+    id: 1,
+    data: "2025-06-13",
+    hora: "19:00",
+    local: "Arena Fut7",
+    timeCasa: "Time Alpha",
+    logoCasa: "/images/times/time_padrao_01.png",
+    golsCasa: 2,
+    timeFora: "Time Beta",
+    logoFora: "/images/times/time_padrao_02.png",
+    golsFora: 1,
+    destaques: ["Jogador 01", "Jogador 02"],
+  },
+  {
+    id: 2,
+    data: "2025-06-13",
+    hora: "20:00",
+    local: "Arena Fut7",
+    timeCasa: "Time Gama",
+    logoCasa: "/images/times/time_padrao_03.png",
+    golsCasa: 3,
+    timeFora: "Time Ômega",
+    logoFora: "/images/times/time_padrao_04.png",
+    golsFora: 3,
+    destaques: ["Jogador 03", "Jogador 04"],
+  },
+  {
+    id: 3,
+    data: "2025-06-13",
+    hora: "21:00",
+    local: "Arena Fut7",
+    timeCasa: "Time Zeta",
+    logoCasa: "/images/times/time_padrao_01.png",
+    golsCasa: 1,
+    timeFora: "Time Sigma",
+    logoFora: "/images/times/time_padrao_02.png",
+    golsFora: 0,
+    destaques: ["Jogador 05"],
+  },
+];

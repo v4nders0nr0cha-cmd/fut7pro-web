@@ -1,0 +1,58 @@
+export const classificacaoTimes = [
+  {
+    posicao: 1,
+    nome: "Time Alpha",
+    escudo: "/images/times/time_padrao_01.png",
+    pontos: 24,
+    jogos: 11,
+    vitorias: 7,
+    empates: 3,
+    derrotas: 1,
+    golsPro: 24,
+    golsContra: 4,
+    saldoGols: 20,
+    variacao: "up", // Subiu
+  },
+  {
+    posicao: 2,
+    nome: "Time Beta",
+    escudo: "/images/times/time_padrao_02.png",
+    pontos: 24,
+    jogos: 12,
+    vitorias: 7,
+    empates: 3,
+    derrotas: 2,
+    golsPro: 17,
+    golsContra: 8,
+    saldoGols: 9,
+    variacao: "down", // Caiu
+  },
+  {
+    posicao: 3,
+    nome: "Time Gama",
+    escudo: "/images/times/time_padrao_03.png",
+    pontos: 23,
+    jogos: 12,
+    vitorias: 7,
+    empates: 2,
+    derrotas: 3,
+    golsPro: 14,
+    golsContra: 11,
+    saldoGols: 3,
+    variacao: "same", // Manteve
+  },
+  {
+    posicao: 4,
+    nome: "Time Ômega",
+    escudo: "/images/times/time_padrao_04.png",
+    pontos: 22,
+    jogos: 12,
+    vitorias: 6,
+    empates: 4,
+    derrotas: 2,
+    golsPro: 16,
+    golsContra: 10,
+    saldoGols: 6,
+    variacao: "up", // Subiu
+  },
+];

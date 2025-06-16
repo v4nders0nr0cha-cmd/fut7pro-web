@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // ou "mysql" ou "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         String   @id @default(cuid())
+  nome       String   @db.VarChar(10)
+  apelido    String   @db.VarChar(10)
+  email      String   @unique @db.VarChar(255)
+  senhaHash  String
+  createdAt  DateTime @default(now())
+}

@@ -1,0 +1,38 @@
+export const atletasMock = [
+  {
+    id: 1,
+    nome: "Matheus Silva",
+    apelido: "Matheusão",
+    slug: "matheus-silva",
+    foto: "/images/jogadores/jogador_padrao_01.jpg",
+    posicao: "Meia",
+    status: "Ativo",
+    mensalista: true,
+    estatisticas: {
+      jogos: 120,
+      gols: 45,
+      assistencias: 30,
+      campeaoDia: 22,
+      mediaVitorias: 0.67,
+      pontuacao: 1320,
+    },
+  },
+  {
+    id: 2,
+    nome: "Lucas Rocha",
+    apelido: null,
+    slug: "lucas-rocha",
+    foto: "/images/jogadores/jogador_padrao_02.jpg",
+    posicao: "Zagueiro",
+    status: "Inativo",
+    mensalista: false,
+    estatisticas: {
+      jogos: 88,
+      gols: 5,
+      assistencias: 8,
+      campeaoDia: 10,
+      mediaVitorias: 0.54,
+      pontuacao: 720,
+    },
+  },
+];
