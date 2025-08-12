@@ -70,7 +70,7 @@ jobs:
   preview:
     name: Deploy Preview (Vercel) — optiona
     needs: ci
-    if: ${{ github.event_name == 'pull_request' && success() &&
+
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -102,4 +102,5 @@ jobs:
           SLACK_COLOR: ${{ needs.ci.result == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Frontend CI — ${{ github.repository }}"
           SLACK_MESSAGE: "Workflow *${{ github.workflow }}* for *${{ github.ref_name }}* finished with *${{ needs.ci.result }}*."
+
 
