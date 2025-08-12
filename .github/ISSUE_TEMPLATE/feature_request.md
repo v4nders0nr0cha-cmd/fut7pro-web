@@ -1,22 +1,28 @@
 ---
 name: Feature request
-about: Sugerir melhoria/feature no frontend
-labels: enhancement, frontend
+about: Sugerir uma nova funcionalidade
+labels: feature, enhancement, frontend
 ---
 
-**Contexto**
-Qual problema isso resolve?
+# Feature request
 
-**Proposta**
-Descreva a solução desejada.
+## Contexto / Problema
 
-**Critérios de aceite**
+…
 
-- [ ]
-- [ ]
+## Proposta de solução
 
-**Impactos**
-Componentes/rotas afetados:
+…
 
-**Observações**
-Dependências, riscos, rollout:
+## Critérios de aceite
+
+- [ ] …
+- [ ] …
+
+## Impactos/Dependências
+
+…
+
+## Observações
+
+…

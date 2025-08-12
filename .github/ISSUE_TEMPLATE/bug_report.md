@@ -1,30 +1,35 @@
 ---
 name: Bug report
-about: Reportar um problema no frontend
+about: Reportar um problema
 labels: bug, frontend
 ---
 
-**Descrição**
-Explique o bug de forma objetiva.
+# Bug report
 
-**Passos para reproduzir**
+## Descrição
 
-1.
-2.
-3.
+Explique o problema.
 
-**Comportamento esperado**
-O que deveria acontecer?
+## Passos para reproduzir
 
-**Evidências**
-Logs / prints:
+1. …
+2. …
+3. …
 
-**Ambiente**
+## Comportamento esperado
+
+…
+
+## Evidências
+
+Logs/prints: …
+
+## Ambiente
 
 - Browser/OS:
 - Branch/Commit:
 
-**Checklist**
+## Checklist
 
-- [ ] Consigo reproduzir localmente
-- [ ] Consigo reproduzir no preview (PR)
+- [ ] Reproduzível localmente
+- [ ] Reproduzível no preview (PR)

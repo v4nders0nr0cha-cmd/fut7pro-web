@@ -1,0 +1,28 @@
+name: PR Guard (UI)
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited, labeled, unlabeled, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  danger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Não precisa instalar nada do repo para rodar o Danger
+      # Executa Danger direto com npx e nosso dangerfile.js
+      - name: Run Danger (UI Guard)
+        run: npx danger ci --dangerfile dangerfile.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

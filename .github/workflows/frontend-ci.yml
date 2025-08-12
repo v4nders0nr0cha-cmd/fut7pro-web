@@ -5,19 +5,20 @@ on:
     branches: [ main, fix/**, feat/**, chore/** ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     name: Lint • Typecheck • Test • Build
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        shell: bash
 
     steps:
       - name: Checkout
@@ -29,7 +30,7 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - name: Show versions
+      - name: Versions
         run: |
           node -v
           npm -v
@@ -38,13 +39,13 @@ jobs:
         run: |
           if [ -f .env.example ]; then cp .env.example .env; fi
 
-      - name: Install deps (npm ci)
+      - name: Install deps
         run: npm ci
 
-      - name: Type check (TS)
+      - name: Type check
         run: npm run type-check --if-present
 
-      - name: Lint (ESLint)
+      - name: Lint
         run: npm run lint --if-present
 
       - name: Unit tests
@@ -52,7 +53,7 @@ jobs:
         env:
           JEST_JUNIT_OUTPUT: reports/junit/junit.xml
 
-      - name: Build (Next.js)
+      - name: Build
         run: npm run build
 
       - name: Upload build artifact
@@ -64,41 +65,5 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: npm audit (advisories)
+      - name: npm audit
         run: npm audit --audit-level=high || true
-
-  preview:
-    name: Deploy Preview (Vercel) — optional
-    needs: ci
-    if: ${{ github.event_name == 'pull_request' && success() && secrets.VERCEL_TOKEN != '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-      - run: npm ci
-      - name: Vercel Pull Request Preview
-        run: |
-          npx vercel pull --yes --token=$VERCEL_TOKEN
-          npx vercel build --token=$VERCEL_TOKEN
-          npx vercel deploy --prebuilt --token=$VERCEL_TOKEN
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-
-  notify:
-    name: Slack Notify
-    needs: [ci]
-    if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Send status to Slack
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: ${{ needs.ci.result == 'success' && 'good' || 'danger' }}
-          SLACK_TITLE: "Frontend CI — ${{ github.repository }}"
-          SLACK_MESSAGE: "Workflow *${{ github.workflow }}* for *${{ github.ref_name }}* finished with *${{ needs.ci.result }}*."

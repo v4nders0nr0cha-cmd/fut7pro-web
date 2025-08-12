@@ -1,0 +1,111 @@
+name: CI Maintainer (Frontend)
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 12 * * 1" # segundas 09:00 BRT (~12:00 UTC)
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: ci-maintainer-frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maintain:
+    name: Weekly Lint • Typecheck • Test • Build (+ auto-fix PR)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: 'npm' }
+
+      - name: Prepare env
+        run: |
+          if [ -f .env.example ] && [ ! -f .env ]; then cp .env.example .env; fi
+
+      - run: npm ci
+      - run: npm run type-check --if-present
+
+      - name: Lint (report only)
+        id: lint
+        run: |
+          set +e
+          npm run lint --if-present
+          echo "status=$?" >> $GITHUB_OUTPUT
+          set -e
+
+      - name: Auto-fix (eslint --fix)
+        if: steps.lint.outputs.status != '0'
+        run: npx eslint . --fix || true
+
+      - name: Has changes?
+        id: diff
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then echo "changed=true" >> $GITHUB_OUTPUT; else echo "changed=false" >> $GITHUB_OUTPUT; fi
+
+      - name: PR com fixes de lint
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(lint): auto-fix via CI maintainer"
+          title: "chore(frontend): auto-fix lint via CI maintainer"
+          body: "PR automático aplicando `eslint --fix`."
+          branch: bot/ci-maintainer/frontend-lint-fix
+          labels: "frontend,ci,automation"
+
+      - run: npm test --if-present -- --ci --reporters=default --reporters=jest-junit
+        env:
+          JEST_JUNIT_OUTPUT: reports/junit/junit.xml
+
+      - run: npm run build
+
+  report:
+    name: Slack + Issue summary
+    needs: maintain
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    steps:
+      - name: Prepare summary
+        run: |
+          RESULT="${{ needs.maintain.result }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ "$RESULT" = "success" ]; then
+            echo "Frontend CI Maintainer OK ✅" > ci-summary.md
+          else
+            echo "Frontend CI Maintainer falhou ❌" > ci-summary.md
+          fi
+          {
+            echo ""
+            echo "- Repositório: **${{ github.repository }}**"
+            echo "- Workflow: **${{ github.workflow }}**"
+            echo "- Resultado: **$RESULT**"
+            echo "- Run: $RUN_URL"
+          } >> ci-summary.md
+
+      - name: Slack notify
+        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ env.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ needs.maintain.result == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: "CI Maintainer (Frontend) — ${{ github.repository }}"
+          SLACK_MESSAGE: |
+            Resultado: *${{ needs.maintain.result }}*
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+      - name: Open issue on failure
+        if: ${{ needs.maintain.result != 'success' }}
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "CI (Frontend) falhou — run ${{ github.run_id }}"
+          content-filepath: ci-summary.md
+          labels: "ci,automation,failure,frontend"
