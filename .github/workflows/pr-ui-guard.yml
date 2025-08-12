@@ -1,7 +1,7 @@
 name: PR Guard (UI)
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, edited, labeled, unlabeled, reopened]
 
 permissions:
@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # checkout do repositório base (main), não do HEAD do PR
+          ref: ${{ github.event.pull_request.base.ref }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
