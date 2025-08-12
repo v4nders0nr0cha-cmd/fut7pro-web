@@ -50,3 +50,4 @@ Veja `.env.example`.
 
 - Commits seguindo **conventional commits**
 - PRs com checklist: build limpo, lint/TS OK, testes verdes
+  test Tue, Aug 12, 2025 10:43:56 PM
