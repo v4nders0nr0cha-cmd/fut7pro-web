@@ -9,6 +9,13 @@
 
 Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Uma plataforma SaaS completa para gerenciar rachas, estatísticas, partidas e muito mais.
 
+## 📋 Notas de Arquitetura de Dados
+
+- O frontend não deve acessar banco de dados diretamente em produção.
+- O módulo `src/lib/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
+- Todas as operações de dados devem passar pela API do backend `NEXT_PUBLIC_API_URL`.
+- As rotas sob `src/pages/api/*` existem apenas para ambientes locais de desenvolvimento; em produção, essas rotas devem ser desativadas ou delegar ao backend.
+
 ## 🚀 Tecnologias
 
 - **Frontend**: Next.js 15, React 18, TypeScript
@@ -89,7 +96,7 @@ Acesse [http://localhost:3000](http://localhost:3000) para ver o projeto.
 
 ## 📁 Estrutura do Projeto
 
-```
+```text
 src/
 ├── app/                    # App Router (Next.js 13+)
 │   ├── (admin)/           # Rotas do painel admin
