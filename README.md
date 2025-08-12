@@ -1,3 +1,5 @@
+![Frontend CI](https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/workflows/frontend-ci.yml/badge.svg)
+
 # Fut7Pro — Frontend (Next.js + Tailwind + TS)
 
 Plataforma SaaS de Rachas e Estatísticas — **Frontend**.
