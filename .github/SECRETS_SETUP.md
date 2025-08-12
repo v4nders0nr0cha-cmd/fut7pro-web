@@ -40,7 +40,7 @@ Para que o workflow de CI/CD funcione completamente, você precisa configurar os
 
 ### 1. **Acesse as configurações do repositório**
 
-```
+```bash
 GitHub → Seu Repositório → Settings → Secrets and variables → Actions
 ```
 

@@ -1,11 +1,11 @@
-# Fut7Pro Web — Notas de Arquitetura de Dados
+# 🏆 Fut7Pro - Sistema para Racha, Fut7 e Futebol Amador
+
+## 📋 Notas de Arquitetura de Dados
 
 - O frontend não deve acessar banco de dados diretamente em produção.
 - O módulo `src/lib/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
 - Todas as operações de dados devem passar pela API do backend `NEXT_PUBLIC_API_URL`.
 - As rotas sob `src/pages/api/*` existem apenas para ambientes locais de desenvolvimento; em produção, essas rotas devem ser desativadas ou delegar ao backend.
-
-# 🏆 Fut7Pro - Sistema para Racha, Fut7 e Futebol Amador
 
 Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Uma plataforma SaaS completa para gerenciar rachas, estatísticas, partidas e muito mais.
 
@@ -38,7 +38,7 @@ Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Um
 1. **Clone o repositório**
 
 ```bash
-git clone https://github.com/seu-usuario/fut7pro-web.git
+git clone https://github.com/v4nders0nr0cha-cmd/fut7pro-web.git
 cd fut7pro-web
 ```
 
@@ -258,7 +258,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 - **Email**: suporte@fut7pro.com
 - **Documentação**: [docs.fut7pro.com](https://docs.fut7pro.com)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/fut7pro-web/issues)
+- **Issues**: [GitHub Issues](https://github.com/v4nders0nr0cha-cmd/fut7pro-web/issues)
 
 ## 🎯 Roadmap
 
