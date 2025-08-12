@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useTema } from "@/hooks/useTema";
+import { rachaConfig } from "@/config/racha.config";
 
 const patrocinadores = [
   { nome: "Patrocínio 1", logo: "/images/patrocinadores/patrocinador_01.png" },
@@ -49,7 +50,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-[#0e0e0e] text-white mt-16 border-t border-yellow-400">
+    <footer className="bg-[#0e0e0e] text-white mt-t border-t border-yellow-400">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <h2 className="text-center text-xl font-bold text-yellow-400 mb-6 animate-pulse">
           <span className="bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-300 bg-clip-text text-transparent">
@@ -73,7 +74,6 @@ export default function Footer() {
           >
             &#9654;
           </button>
-
           <div
             ref={carouselRef}
             className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
@@ -82,7 +82,7 @@ export default function Footer() {
               <div key={index} className="min-w-[180px] flex justify-center items-center">
                 <Image
                   src={patro.logo}
-                  alt={patro.nome}
+                  alt={`Logo do patrocinador ${patro.nome} - sistema de racha ${rachaConfig.nome}`}
                   width={160}
                   height={96}
                   className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
@@ -105,6 +105,7 @@ export default function Footer() {
               className="rounded-md border-none"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
+              title={`Mapa do campo oficial do racha ${rachaConfig.nome}`}
             ></iframe>
           </div>
 
@@ -112,17 +113,17 @@ export default function Footer() {
           <div className="flex flex-col items-center justify-start gap-2">
             <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
             <div className="flex gap-3">
-              <Link href="https://facebook.com/suaPagina" target="_blank">
+              <Link href="https://facebook.com/suaPagina" target="_blank" aria-label="Facebook">
                 <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
                   <FaFacebookF className="text-yellow-400 hover:text-black text-lg" />
                 </div>
               </Link>
-              <Link href="https://wa.me/seuNumero" target="_blank">
+              <Link href="https://wa.me/seuNumero" target="_blank" aria-label="WhatsApp">
                 <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
                   <FaWhatsapp className="text-yellow-400 hover:text-black text-lg" />
                 </div>
               </Link>
-              <Link href="https://instagram.com/seuPerfil" target="_blank">
+              <Link href="https://instagram.com/seuPerfil" target="_blank" aria-label="Instagram">
                 <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
                   <FaInstagram className="text-yellow-400 hover:text-black text-lg" />
                 </div>
@@ -130,45 +131,53 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Coluna 3 – Links rápidos atualizados */}
+          {/* Coluna 3 – Links rápidos atualizados com todos os 7 tópicos */}
           <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
+            <Link href="/sistema-de-ranking" className="hover:underline">
+              Sistema de Ranking
+            </Link>
+            <Link href="/sistema-de-premiacoes" className="hover:underline">
+              Sistema de Premiações
+            </Link>
+            <Link href="/sistema-de-balanceamento" className="hover:underline">
+              Sistema de Balanceamento
+            </Link>
+            <Link href="/como-funciona" className="hover:underline">
+              Como Funciona
+            </Link>
+            <Link href="/sobre" className="hover:underline">
+              Sobre o {rachaConfig.nome}
+            </Link>
             <Link href="/termos-de-uso" className="hover:underline">
               Termos de Uso
             </Link>
-            <Link href="/ranking" className="hover:underline">
-              Sistema de Ranking
-            </Link>
-            <Link href="/premiacoes" className="hover:underline">
-              Sistema de Premiações
-            </Link>
-            <Link href="/balanceamento" className="hover:underline">
-              Sistema de Balanceamento
-            </Link>
-            <Link href="/creditos" className="hover:underline">
-              Créditos
+            <Link href="/politica-de-privacidade" className="hover:underline">
+              Política de Privacidade
             </Link>
           </div>
         </div>
 
         {/* Logo e frase final */}
         <div className="mt-10 text-center">
-          <Link href="https://www.fut7pro.com.br" target="_blank">
+          <Link
+            href={rachaConfig.urls.site}
+            target="_blank"
+            aria-label={`Site ${rachaConfig.nome}`}
+          >
             <Image
-              src="/images/logos/logo_fut7pro.png"
-              alt="Logo Fut7Pro"
+              src={rachaConfig.logo}
+              alt={`Logo ${rachaConfig.nome} sistema de futebol 7 entre amigos`}
               width={64}
               height={64}
               className="mx-auto mb-2"
               priority
             />
           </Link>
-          <p className="text-sm text-gray-400">
-            Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.
-          </p>
+          <p className="text-sm text-gray-400">{rachaConfig.frases.principal}</p>
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">
-          © {new Date().getFullYear()} Fut7Pro. Todos os direitos reservados. v1.0
+          © {new Date().getFullYear()} {rachaConfig.nome}. Todos os direitos reservados. v1.0
         </div>
       </div>
     </footer>

@@ -1,206 +1,154 @@
 "use client";
 
+import type { FC } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useSession, signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
+import { useComunicacao } from "@/hooks/useComunicacao";
+import { useNotificationBadge } from "@/hooks/useNotificationBadge";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
 
-export default function Header() {
+type HeaderProps = {
+  onOpenSidebar?: () => void;
+};
+
+const quickMenu = [
+  { label: "Sugestões", icon: FaLightbulb, href: "/comunicacao/sugestoes" },
+  { label: "Comunicação", icon: FaBell, href: "/comunicacao/notificacoes" },
+  { label: "Mensagens", icon: FaCommentDots, href: "/comunicacao/mensagens" },
+];
+
+const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { logo, nome } = useTema();
-  const [menuOpen, setMenuOpen] = useState(false);
   const { data: session } = useSession();
+  const router = useRouter();
   const isLoggedIn = !!session?.user;
   const profileImage = session?.user?.image || "/images/jogadores/default.png";
+  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
 
   return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#2a2a2a] shadow-sm"
-      role="banner"
-    >
-      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-        {/* Logo + Nome com link para Home */}
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-h-[62px] relative">
+        {/* Logo e nome */}
         <Link
           href="/"
           className="flex items-center gap-3 hover:opacity-90 transition-all"
-          aria-label="Página inicial Fut7Pro"
+          aria-label={`Página inicial ${rachaConfig.nome}`}
         >
           <Image
             src={logo}
-            alt="Logo do Racha"
-            width={56}
-            height={56}
+            alt={`Logo ${rachaConfig.nome} - sistema de futebol`}
+            width={44}
+            height={44}
             className="object-contain rounded"
+            priority
           />
-          <span className="text-xl font-bold text-yellow-400">{nome}</span>
+          <span className="text-2xl font-bold text-yellow-400 truncate max-w-[140px] md:max-w-none">
+            {nome}
+          </span>
         </Link>
 
-        {/* Menu desktop */}
-        <nav
-          className="hidden md:flex gap-6 text-sm font-bold text-white uppercase items-center"
-          aria-label="Menu principal"
-        >
-          <Link
-            href="/partidas"
-            title="Partidas do Racha"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            PARTIDAS
-          </Link>
-          <Link
-            href="/estatisticas"
-            title="Estatísticas gerais"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            ESTATÍSTICAS
-          </Link>
-          <Link
-            href="/os-campeoes"
-            title="Campeões do ano e por posição"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            OS CAMPEÕES
-          </Link>
-          <Link
-            href="/grandes-torneios"
-            title="Grandes torneios e competições"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            GRANDES TORNEIOS
-          </Link>
-          <Link
-            href="/atletas"
-            title="Perfis dos atletas"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            PERFIS DOS ATLETAS
-          </Link>
-          <Link
-            href="/sobre"
-            title="Informações sobre o projeto"
-            className="hover:text-yellow-400 transition-colors"
-          >
-            SOBRE NÓS
-          </Link>
+        {/* QuickMenu - desktop only */}
+        <div className="hidden md:flex items-center gap-4">
+          {quickMenu.map((item) => {
+            let badgeValue = 0;
+            if (item.label === "Comunicação" && badge > 0) badgeValue = badge;
+            if (item.label === "Mensagens" && badgeMensagem > 0) badgeValue = badgeMensagem;
+            if (item.label === "Sugestões" && badgeSugestoes > 0) badgeValue = badgeSugestoes;
 
+            // Novo: se não logado, bloqueia navegação e manda para login
+            const handleClick = (e: React.MouseEvent) => {
+              if (!isLoggedIn) {
+                e.preventDefault();
+                router.push("/login");
+              }
+            };
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="relative flex items-center gap-2 group px-2 py-1 rounded-lg transition"
+                aria-label={item.label}
+                onClick={handleClick}
+              >
+                <item.icon size={22} className="text-yellow-400 drop-shadow" />
+                <span className="text-[15px] font-semibold text-white">{item.label}</span>
+                {badgeValue > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-1.5 min-w-[18px] h-5 flex items-center justify-center shadow-lg border-2 border-[#121212] font-bold">
+                    {badgeValue}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+
+          {/* Perfil/Login - à direita dos ícones */}
           {!isLoggedIn ? (
             <Link
               href="/login"
-              title="Acessar ou criar conta"
-              className="ml-4 border border-yellow-400 text-yellow-400 px-3 py-0.5 text-xs rounded hover:bg-yellow-400 hover:text-black font-semibold transition-colors"
+              className="ml-2 flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-3 py-1 rounded-full font-bold text-[14px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+              style={{ letterSpacing: 1 }}
             >
-              ENTRAR / REGISTRAR
+              <FaUser size={18} className="text-yellow-400" />
+              ENTRAR OU CADASTRE-SE
             </Link>
           ) : (
-            <div className="flex items-center gap-3 ml-4">
+            <div className="flex items-center gap-3 ml-3">
               <Link href="/perfil" className="flex items-center gap-2 hover:opacity-80 transition">
                 <Image
                   src={profileImage}
                   alt={session.user?.name || "Usuário"}
                   width={32}
                   height={32}
-                  className="rounded-full"
+                  className="rounded-full border-2 border-yellow-400"
                 />
-                <span className="text-yellow-400 font-medium text-sm uppercase">
+                <span className="text-yellow-400 font-bold text-[15px] uppercase truncate max-w-[90px]">
                   {session.user?.name}
                 </span>
               </Link>
               <button
                 onClick={() => signOut()}
-                className="text-sm text-gray-300 hover:text-red-500 transition"
+                className="text-xs text-gray-400 hover:text-red-500 transition font-semibold uppercase"
               >
                 SAIR
               </button>
             </div>
           )}
-        </nav>
-
-        {/* Botão mobile */}
+        </div>
+        {/* Botão Mobile */}
         <button
           className="md:hidden text-white focus:outline-none"
-          onClick={() => setMenuOpen(!menuOpen)}
+          onClick={onOpenSidebar}
           aria-label="Abrir menu"
         >
           <svg
-            className="w-6 h-6"
+            className="w-7 h-7"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
             viewBox="0 0 24 24"
           >
-            {menuOpen ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-            )}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-      </div>
-
-      {/* Menu Mobile */}
-      {menuOpen && (
+        {/* Sombra dourada na base do header */}
         <div
-          className="md:hidden bg-[#1a1a1a] px-4 py-3 space-y-3 text-white uppercase text-sm font-bold"
-          aria-label="Menu mobile"
-        >
-          <Link href="/partidas" onClick={() => setMenuOpen(false)}>
-            PARTIDAS
-          </Link>
-          <Link href="/estatisticas" onClick={() => setMenuOpen(false)}>
-            ESTATÍSTICAS
-          </Link>
-          <Link href="/os-campeoes" onClick={() => setMenuOpen(false)}>
-            OS CAMPEÕES
-          </Link>
-          <Link href="/grandes-torneios" onClick={() => setMenuOpen(false)}>
-            GRANDES TORNEIOS
-          </Link>
-          <Link href="/atletas" onClick={() => setMenuOpen(false)}>
-            PERFIS DOS ATLETAS
-          </Link>
-          <Link href="/sobre" onClick={() => setMenuOpen(false)}>
-            SOBRE NÓS
-          </Link>
-
-          {!isLoggedIn ? (
-            <Link
-              href="/login"
-              onClick={() => setMenuOpen(false)}
-              className="block w-full text-left text-yellow-400 border border-yellow-400 px-3 py-0.5 text-xs rounded hover:bg-yellow-400 hover:text-black font-semibold transition-colors"
-            >
-              ENTRAR / REGISTRAR
-            </Link>
-          ) : (
-            <>
-              <Link
-                href="/perfil"
-                className="flex items-center gap-3 mt-4 hover:opacity-80 transition"
-                onClick={() => setMenuOpen(false)}
-              >
-                <Image
-                  src={profileImage}
-                  alt={session.user?.name || "Usuário"}
-                  width={32}
-                  height={32}
-                  className="rounded-full"
-                />
-                <span className="text-yellow-400 font-medium text-sm uppercase">
-                  {session.user?.name}
-                </span>
-              </Link>
-              <button
-                onClick={() => {
-                  setMenuOpen(false);
-                  signOut();
-                }}
-                className="text-sm text-gray-300 hover:text-red-500 mt-2 transition"
-              >
-                SAIR
-              </button>
-            </>
-          )}
-        </div>
-      )}
+          className="absolute left-0 right-0 -bottom-2 h-[6px] pointer-events-none z-50"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, #FFD700 0%, rgba(255,215,0,0.08) 70%, rgba(18,18,18,0.7) 100%)",
+            opacity: 0.55,
+            boxShadow: "0 3px 16px 0 #FFD70088, 0 1px 0 0 #FFD70044",
+          }}
+        />
+      </div>
     </header>
   );
-}
+};
+
+export default Header;

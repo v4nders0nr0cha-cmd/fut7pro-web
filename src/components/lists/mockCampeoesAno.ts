@@ -1,11 +1,11 @@
 export const campeoesAno = [
-  // 🔶 2025
+  // ================= 2025 ===================
   {
     titulo: "Melhor do Ano",
-    nome: "Craque Master",
-    slug: "craque-master",
+    nome: "Matheus Silva",
+    slug: "matheus-silva",
     image: "/images/jogadores/jogador_padrao_01.jpg",
-    valor: "85 pontos",
+    valor: "1320 pontos",
     icone: "🏆",
     href: "/estatisticas/ranking-geral",
     temporario: true,
@@ -13,12 +13,23 @@ export const campeoesAno = [
   },
   {
     titulo: "Artilheiro do Ano",
-    nome: "Goleador King",
-    slug: "goleador-king",
-    image: "/images/jogadores/jogador_padrao_02.jpg",
-    valor: "31 gols",
+    nome: "Matheus Silva",
+    slug: "matheus-silva",
+    image: "/images/jogadores/jogador_padrao_01.jpg",
+    valor: "45 gols",
     icone: "🏆",
     href: "/estatisticas/artilheiros",
+    temporario: true,
+    ano: 2025,
+  },
+  {
+    titulo: "Maestro do Ano", // <--- ALTERADO AQUI
+    nome: "Lucas Rocha",
+    slug: "lucas-rocha",
+    image: "/images/jogadores/jogador_padrao_02.jpg",
+    valor: "30 assistências",
+    icone: "/images/icons/chuteira-de-ouro.png", // <--- ALTERADO AQUI
+    href: "/estatisticas/assistencias",
     temporario: true,
     ano: 2025,
   },
@@ -34,7 +45,7 @@ export const campeoesAno = [
     ano: 2025,
   },
 
-  // 🔷 2024
+  // ================= 2024 ===================
   {
     titulo: "Melhor do Ano",
     nome: "Estrela Solitária",
@@ -58,6 +69,17 @@ export const campeoesAno = [
     ano: 2024,
   },
   {
+    titulo: "Maestro do Ano", // <--- ALTERADO AQUI
+    nome: "Arthur Maia",
+    slug: "arthur-maia",
+    image: "/images/jogadores/jogador_padrao_05.jpg",
+    valor: "18 assistências",
+    icone: "/images/icons/chuteira-de-ouro.png", // <--- ALTERADO AQUI
+    href: "/estatisticas/assistencias",
+    temporario: false,
+    ano: 2024,
+  },
+  {
     titulo: "Campeão do Ano",
     nome: "Time Relâmpago",
     slug: "time-relampago",
@@ -69,7 +91,7 @@ export const campeoesAno = [
     ano: 2024,
   },
 
-  // 🟢 2023
+  // ================= 2023 ===================
   {
     titulo: "Melhor do Ano",
     nome: "Lenda Viva",
@@ -89,6 +111,17 @@ export const campeoesAno = [
     valor: "34 gols",
     icone: "🏆",
     href: "/estatisticas/artilheiros",
+    temporario: false,
+    ano: 2023,
+  },
+  {
+    titulo: "Maestro do Ano", // <--- ALTERADO AQUI
+    nome: "Jean Passador",
+    slug: "jean-passador",
+    image: "/images/jogadores/jogador_padrao_07.jpg",
+    valor: "25 assistências",
+    icone: "/images/icons/chuteira-de-ouro.png", // <--- ALTERADO AQUI
+    href: "/estatisticas/assistencias",
     temporario: false,
     ano: 2023,
   },

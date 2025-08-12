@@ -1,7 +1,8 @@
+// src/components/lists/List.tsx
 "use client";
 
 import ListItem from "./ListItem";
-import { User } from "@/types/interfaces";
+import type { User } from "@/types/interfaces";
 
 type Props = {
   items: User[];

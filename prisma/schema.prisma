@@ -3,15 +3,285 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // ou "mysql" ou "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+model Racha {
+  id                String         @id @default(cuid())
+  nome              String
+  slug              String         @unique
+  descricao         String?
+  logoUrl           String?
+  tema              String?
+  regras            String?
+  ownerId           String
+  owner             Usuario        @relation("RachasOwner", fields: [ownerId], references: [id])
+  admins            RachaAdmin[]
+  jogadores         RachaJogador[]
+  ativo             Boolean        @default(true)
+  criadoEm          DateTime       @default(now())
+  atualizadoEm      DateTime       @updatedAt
+  partidas          Partida[]
+  patrocinadores    Patrocinador[]
+  times             Time[]
+  logs              AdminLog[]
+  financeiros       Financeiro[]
+  financeiroVisivel Boolean        @default(false)
+  planoId           String?
+  plano             Plano?         @relation(fields: [planoId], references: [id])
+  status            RachaStatus    @default(ATIVO)
+  tickets           Ticket[]
+  campanhas         Campanha[]
+  influencerCupomUsos InfluencerCupomUso[]
+}
+
+model Time {
+  id            String   @id @default(cuid())
+  nome          String
+  slug          String   @unique
+  escudoUrl     String?
+  corPrincipal  String?
+  corSecundaria String?
+  rachaId       String
+  racha         Racha    @relation(fields: [rachaId], references: [id])
+  jogadores     String?
+  criadoEm      DateTime @default(now())
+  atualizadoEm  DateTime @updatedAt
+}
+
+model RachaAdmin {
+  id        String   @id @default(cuid())
+  racha     Racha    @relation(fields: [rachaId], references: [id])
+  rachaId   String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id])
+  usuarioId String
+  role      String
+  status    String   @default("ativo")
+  criadoEm  DateTime @default(now())
+}
+
+model Patrocinador {
+  id           String   @id @default(cuid())
+  nome         String
+  logo         String
+  link         String
+  prioridade   Int      @default(1)
+  status       String   @default("ativo")
+  descricao    String?
+  rachaId      String
+  racha        Racha    @relation(fields: [rachaId], references: [id])
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model Partida {
+  id           String   @id @default(cuid())
+  rachaId      String
+  racha        Racha    @relation(fields: [rachaId], references: [id])
+  data         DateTime
+  horario      String
+  local        String?
+  timeA        String
+  timeB        String
+  golsTimeA    Int      @default(0)
+  golsTimeB    Int      @default(0)
+  jogadoresA   String
+  jogadoresB   String
+  destaquesA   String?
+  destaquesB   String?
+  finalizada   Boolean  @default(false)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+model RachaJogador {
+  id        String  @id @default(cuid())
+  racha     Racha   @relation(fields: [rachaId], references: [id])
+  rachaId   String
+  jogador   Jogador @relation(fields: [jogadorId], references: [id])
+  jogadorId String
+}
+
 model Usuario {
-  id         String   @id @default(cuid())
-  nome       String   @db.VarChar(10)
-  apelido    String   @db.VarChar(10)
-  email      String   @unique @db.VarChar(255)
-  senhaHash  String
-  createdAt  DateTime @default(now())
+  id               String            @id @default(cuid())
+  nome             String
+  apelido          String
+  email            String            @unique
+  senhaHash        String?
+  role             Role              @default(ATLETA)
+  status           String            @default("ativo")
+  createdAt        DateTime          @default(now())
+  rachasDono       Racha[]           @relation("RachasOwner")
+  rachasAdmin      RachaAdmin[]
+  logs             AdminLog[]        @relation("AdminLogs")
+  financeiros      Financeiro[]
+  tickets          Ticket[]
+  ticketRespostas  TicketResposta[]
+  influencerVendas InfluencerVenda[]
+  influencerPagamentos InfluencerPagamento[] @relation("PagamentosFeitos")
+  influencerCupomUsos InfluencerCupomUso[]
+}
+
+model Jogador {
+  id         String         @id @default(cuid())
+  nome       String
+  apelido    String
+  email      String         @unique
+  posicao    String
+  foto       String?
+  status     String         @default("ativo")
+  mensalista Boolean        @default(false)
+  rachas     RachaJogador[]
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+}
+
+model AdminLog {
+  id       String   @id @default(cuid())
+  rachaId  String
+  adminId  String
+  acao     String
+  detalhes String?
+  criadoEm DateTime @default(now())
+  racha    Racha    @relation(fields: [rachaId], references: [id])
+  admin    Usuario  @relation("AdminLogs", fields: [adminId], references: [id])
+}
+
+model Financeiro {
+  id        String   @id @default(cuid())
+  rachaId   String
+  adminId   String
+  tipo      String
+  categoria String
+  valor     Float
+  descricao String?
+  data      DateTime
+  criadoEm  DateTime @default(now())
+  racha     Racha    @relation(fields: [rachaId], references: [id])
+  admin     Usuario  @relation(fields: [adminId], references: [id])
+}
+
+model Plano {
+  id         String  @id @default(cuid())
+  nome       String
+  valor      Float
+  features   String?
+  maxAtletas Int
+  maxAdmins  Int
+  rachas     Racha[]
+}
+
+model Ticket {
+  id        String           @id @default(cuid())
+  assunto   String
+  descricao String?
+  status    String           @default("aberto")
+  criadoEm  DateTime         @default(now())
+  usuarioId String?
+  usuario   Usuario?         @relation(fields: [usuarioId], references: [id])
+  rachaId   String?
+  racha     Racha?           @relation(fields: [rachaId], references: [id])
+  respostas TicketResposta[]
+}
+
+model TicketResposta {
+  id        String   @id @default(cuid())
+  ticketId  String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id])
+  usuarioId String?
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+  mensagem  String
+  criadoEm  DateTime @default(now())
+}
+
+model Campanha {
+  id       String   @id @default(cuid())
+  nome     String
+  codigo   String
+  tipo     String
+  uso      Int      @default(0)
+  validade DateTime
+  status   String   @default("ativo")
+  rachaId  String?
+  racha    Racha?   @relation(fields: [rachaId], references: [id])
+}
+
+// ========================
+// INFLUENCER & MARKETING
+// ========================
+
+model Influencer {
+  id             String                @id @default(cuid())
+  nome           String
+  cpf            String                @unique
+  instagram      String?
+  youtube        String?
+  tiktok         String?
+  outros         String?
+  cupom          String                @unique
+  status         String                @default("ativo")
+  saldoAcumulado Float                 @default(0)
+  saldoPago      Float                 @default(0)
+  vendas         InfluencerVenda[]
+  pagamentos     InfluencerPagamento[] @relation("PagamentosRecebidos")
+  cupomUsos      InfluencerCupomUso[]
+  criadoEm       DateTime              @default(now())
+}
+
+model InfluencerVenda {
+  id           String     @id @default(cuid())
+  influencerId String
+  influencer   Influencer @relation(fields: [influencerId], references: [id])
+  usuarioId    String
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id])
+  valor        Float      // sempre 50.00
+  desconto     Float      // valor do desconto aplicado ao presidente (10% do plano)
+  dataCadastro DateTime   @default(now())
+  status       String     @default("pendente") // "pendente" | "pago"
+  pagoEm       DateTime?
+}
+
+// Novo modelo para auditoria de pagamentos ao influencer
+model InfluencerPagamento {
+  id            String      @id @default(cuid())
+  influencerId  String
+  influencer    Influencer  @relation("PagamentosRecebidos", fields: [influencerId], references: [id])
+  valor         Float
+  dataPagamento DateTime    @default(now())
+  observacao    String?
+  adminId       String
+  admin         Usuario     @relation("PagamentosFeitos", fields: [adminId], references: [id])
+}
+
+// NOVO modelo: registro de trials/usos do cupom de influencer
+model InfluencerCupomUso {
+  id           String     @id @default(cuid())
+  influencerId String
+  influencer   Influencer @relation(fields: [influencerId], references: [id])
+  usuarioId    String
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id])
+  rachaId      String
+  racha        Racha      @relation(fields: [rachaId], references: [id])
+  dataCadastro DateTime   @default(now())
+  status       String     @default("trial") // "trial", "pago", "nao_converteu"
+}
+
+enum Role {
+  SUPERADMIN
+  PRESIDENTE
+  ADMIN
+  VICEPRESIDENTE
+  DIRETORFUTEBOL
+  DIRETORFINANCEIRO
+  LEITOR
+  ATLETA
+}
+
+enum RachaStatus {
+  ATIVO
+  INATIVO
+  TRIAL
+  BLOQUEADO
+  INADIMPLENTE
 }

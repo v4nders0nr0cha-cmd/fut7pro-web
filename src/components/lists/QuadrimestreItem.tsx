@@ -1,7 +1,7 @@
+// src/components/cards/QuadrimestreItem.tsx
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 interface Props {
   nome: string;
@@ -11,10 +11,12 @@ interface Props {
 }
 
 export default function QuadrimestreItem({ nome, slug, premio, icone }: Props) {
+  const iconeFinal = icone === "🥈" ? "🥇" : icone;
+
   return (
     <div className="flex items-center justify-between bg-[#1A1A1A] p-2 rounded-lg text-sm text-white">
       {/* Ícone */}
-      <div className="text-xl w-[24px]">{icone}</div>
+      <div className="text-xl w-[24px]">{iconeFinal}</div>
 
       {/* Nome do jogador com link */}
       <Link

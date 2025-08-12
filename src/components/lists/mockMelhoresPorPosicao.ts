@@ -1,5 +1,5 @@
 export const melhoresPorPosicao = [
-  // 🔶 2025
+  // 🔶 2025 — ORDEM CORRETA: Atacante, Meia, Zagueiro, Goleiro
   {
     posicao: "Atacante do Ano",
     nome: "Matador Alfa",
@@ -16,7 +16,7 @@ export const melhoresPorPosicao = [
     nome: "Camisa 10",
     slug: "camisa-10",
     image: "/images/jogadores/jogador_padrao_04.jpg",
-    valor: "21 assistências",
+    valor: "67 pontos",
     icone: "🏆",
     href: "/estatisticas/melhores-por-posicao/meia",
     temporario: true,
@@ -39,7 +39,7 @@ export const melhoresPorPosicao = [
     slug: "paredao",
     image: "/images/jogadores/jogador_padrao_06.jpg",
     valor: "60 pontos",
-    icone: "🏆",
+    icone: "/images/icons/luva-de-ouro.png", // <--- Atualizado!
     href: "/estatisticas/melhores-por-posicao/goleiro",
     temporario: true,
     ano: 2025,
@@ -62,7 +62,7 @@ export const melhoresPorPosicao = [
     nome: "Criador Z",
     slug: "criador-z",
     image: "/images/jogadores/jogador_padrao_08.jpg",
-    valor: "18 assistências",
+    valor: "61 pontos",
     icone: "🏆",
     href: "/estatisticas/melhores-por-posicao/meia",
     temporario: false,
@@ -85,7 +85,7 @@ export const melhoresPorPosicao = [
     slug: "mao-santa",
     image: "/images/jogadores/jogador_padrao_10.jpg",
     valor: "55 pontos",
-    icone: "🏆",
+    icone: "/images/icons/luva-de-ouro.png", // <--- Atualizado!
     href: "/estatisticas/melhores-por-posicao/goleiro",
     temporario: false,
     ano: 2024,
@@ -108,7 +108,7 @@ export const melhoresPorPosicao = [
     nome: "Maestro",
     slug: "maestro",
     image: "/images/jogadores/jogador_padrao_12.jpg",
-    valor: "19 assistências",
+    valor: "57 pontos",
     icone: "🏆",
     href: "/estatisticas/melhores-por-posicao/meia",
     temporario: false,
@@ -131,7 +131,7 @@ export const melhoresPorPosicao = [
     slug: "defensor-supremo",
     image: "/images/jogadores/jogador_padrao_14.jpg",
     valor: "47 pontos",
-    icone: "🏆",
+    icone: "/images/icons/luva-de-ouro.png", // <--- Atualizado!
     href: "/estatisticas/melhores-por-posicao/goleiro",
     temporario: false,
     ano: 2023,

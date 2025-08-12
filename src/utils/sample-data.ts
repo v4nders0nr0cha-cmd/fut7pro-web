@@ -1,5 +1,5 @@
 // src/utils/sample-data.ts
-import { User } from "@/types/interfaces";
+import type { User } from "@/types/interfaces";
 
 /** Dummy user data. */
 export const sampleUserData: User[] = [

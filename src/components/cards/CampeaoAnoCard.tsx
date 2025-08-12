@@ -24,20 +24,22 @@ export default function CampeaoAnoCard({
   slug,
   temporario = false,
 }: CampeaoAnoCardProps) {
-  const destino = slug ? `/atletas/${slug}` : href;
+  // Garante que rankings de campeões do ano sempre vão para as rotas ANUAIS
+  const destino = href.startsWith("/estatisticas") ? href : slug ? `/atletas/${slug}` : "#";
 
+  // Renderiza o ícone do card de forma flexível
   const renderTitulo = () => (
     <span className="text-yellow-400 text-lg font-semibold mt-4 mb-2 flex items-center justify-center gap-1">
-      {titulo === "Artilheiro do Ano" ? (
+      {icone && typeof icone === "string" && icone.startsWith("/") ? (
         <Image
-          src="/images/icons/bola-de-ouro.png"
-          alt="Ícone Bola de Ouro - Artilheiro do Ano"
-          width={20}
-          height={20}
-          className="inline-block"
+          src={icone}
+          alt={`Ícone do prêmio ${titulo}`}
+          width={22}
+          height={22}
+          className="inline-block align-middle"
         />
       ) : (
-        <>{icone}</>
+        <span>{icone}</span>
       )}
       {titulo}
     </span>
@@ -46,7 +48,11 @@ export default function CampeaoAnoCard({
   return (
     <Link
       href={destino}
-      title={`Ver perfil de ${nome} - ${titulo}`}
+      title={
+        href.startsWith("/estatisticas")
+          ? `Ver ranking anual relacionado a ${titulo}`
+          : `Ver perfil de ${nome} - ${titulo}`
+      }
       className="bg-[#1A1A1A] rounded-2xl p-4 shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative"
     >
       {temporario && (
@@ -59,7 +65,7 @@ export default function CampeaoAnoCard({
 
       <Image
         src={image}
-        alt={`Imagem do campeão ${nome}`}
+        alt={`Imagem do campeão ${nome} - ${titulo}`}
         width={100}
         height={100}
         className="rounded-full object-cover mb-2"

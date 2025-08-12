@@ -1,6 +1,7 @@
+// src/components/lists/ListDetail.tsx
 "use client";
 
-import { User } from "@/types/interfaces";
+import type { User } from "@/types/interfaces";
 
 type ListDetailProps = {
   item: User;

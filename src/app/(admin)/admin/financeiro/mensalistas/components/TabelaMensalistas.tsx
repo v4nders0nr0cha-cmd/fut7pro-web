@@ -1,0 +1,47 @@
+import type { Mensalista } from "../mocks/mockMensalistas";
+
+type Props = { mensalistas: Mensalista[] };
+
+export default function TabelaMensalistas({ mensalistas }: Props) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full text-sm border-separate border-spacing-y-2">
+        <thead>
+          <tr className="text-xs text-gray-400">
+            <th className="text-left px-2 py-2">Nome</th>
+            <th className="text-left px-2 py-2">Status</th>
+            <th className="text-left px-2 py-2">Valor</th>
+            <th className="text-left px-2 py-2">Últ. Pagamento</th>
+            <th className="text-left px-2 py-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {mensalistas.map((m) => (
+            <tr key={m.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
+              <td className="px-2 py-1 font-semibold">{m.nome}</td>
+              <td
+                className={
+                  "px-2 py-1 font-bold " +
+                  (m.status === "Em dia"
+                    ? "text-green-400"
+                    : m.status === "A receber"
+                      ? "text-yellow-400"
+                      : "text-red-400")
+                }
+              >
+                {m.status}
+              </td>
+              <td className="px-2 py-1">R$ {m.valor.toFixed(2)}</td>
+              <td className="px-2 py-1">
+                {m.ultimoPagamento ? m.ultimoPagamento.split("-").reverse().join("/") : "-"}
+              </td>
+              <td className="px-2 py-1">
+                <button className="text-xs text-yellow-400 hover:underline">Editar</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

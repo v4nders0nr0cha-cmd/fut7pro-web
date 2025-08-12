@@ -2,20 +2,21 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { rachaConfig } from "@/config/racha.config";
 
 export default function Sidebar() {
   return (
-    <aside className="w-full h-full bg-[#111] text-white px-4 py-6">
+    <aside className="w-full h-full bg-[#111] text-white px-1 py-3">
       {/* Logo e nome do racha */}
       <div className="flex flex-col items-center gap-2 mb-6">
         <Image
-          src="/images/logos/logo_fut7pro.png"
-          alt="Logo do Fut7Pro - sistema de futebol 7"
+          src={rachaConfig.logo}
+          alt={`Logo do ${rachaConfig.nome} - sistema de futebol 7`}
           width={80}
           height={80}
           className="object-contain"
         />
-        <span className="text-xl font-bold text-yellow-400">Fut7Pro</span>
+        <span className="text-xl font-bold text-yellow-400">{rachaConfig.nome}</span>
       </div>
 
       {/* Artilheiro do Dia */}
@@ -36,7 +37,25 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Cards com selo temporário e ícones personalizados */}
+      {/* Maestro do Dia */}
+      <div className="mb-6 bg-[#1A1A1A] rounded-xl p-3 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
+        <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">Maestro do Dia</p>
+        <div className="flex items-center gap-3">
+          <Image
+            src="/images/jogadores/jogador_padrao_03.jpg"
+            alt="Foto do Maestro do Dia"
+            width={48}
+            height={48}
+            className="rounded-md object-cover"
+          />
+          <div>
+            <p className="font-semibold text-sm">Camisa 10</p>
+            <p className="text-yellow-400 text-xs">4 assistências</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Artilheiro do Ano */}
       <SidebarPlayerCard
         title="Artilheiro do Ano"
         name="Craque Alpha"
@@ -46,18 +65,17 @@ export default function Sidebar() {
         icon="/images/icons/bola-de-ouro.png"
       />
 
-      <SidebarRankingCard
-        title="Artilheiros do Ano"
-        label="GOLS"
-        items={[
-          { name: "Craque Alpha", value: 22 },
-          { name: "Camisa 10", value: 17 },
-          { name: "XPTO", value: 13 },
-          { name: "R10", value: 10 },
-          { name: "Caveirão", value: 8 },
-        ]}
+      {/* Maestro do Ano */}
+      <SidebarPlayerCard
+        title="Maestro do Ano"
+        name="Camisa 10"
+        value="31 assistências"
+        href="/estatisticas/meias"
+        image="/images/jogadores/jogador_padrao_07.jpg"
+        icon="/images/icons/chuteira-de-ouro.png"
       />
 
+      {/* Melhor do Ano (agora acima dos Pontuadores) */}
       <SidebarPlayerCard
         title="Melhor do Ano"
         name="Mario"
@@ -67,6 +85,7 @@ export default function Sidebar() {
         icon="🏆"
       />
 
+      {/* Maiores Pontuadores */}
       <SidebarRankingCard
         title="Maiores Pontuadores"
         label="PONTOS"
@@ -79,6 +98,7 @@ export default function Sidebar() {
         ]}
       />
 
+      {/* Atacante do Ano */}
       <SidebarPlayerCard
         title="Atacante do Ano"
         name="Craque Alpha"
@@ -87,6 +107,7 @@ export default function Sidebar() {
         image="/images/jogadores/jogador_padrao_06.jpg"
         icon="🏆"
       />
+      {/* Meia do Ano */}
       <SidebarPlayerCard
         title="Meia do Ano"
         name="Camisa 10"
@@ -95,26 +116,29 @@ export default function Sidebar() {
         image="/images/jogadores/jogador_padrao_07.jpg"
         icon="🏆"
       />
+      {/* Zagueiro do Ano (agora exibe pontos) */}
       <SidebarPlayerCard
         title="Zagueiro do Ano"
         name="Murão"
-        value="33 desarmes"
+        value="37 pontos"
         href="/estatisticas/zagueiros"
         image="/images/jogadores/jogador_padrao_08.jpg"
         icon="🏆"
       />
+      {/* Goleiro do Ano (agora exibe pontos) */}
       <SidebarPlayerCard
         title="Goleiro do Ano"
         name="Muralha"
-        value="50 defesas"
+        value="42 pontos"
         href="/estatisticas/goleiros"
         image="/images/jogadores/jogador_padrao_09.jpg"
-        icon="🏆"
+        icon="/images/icons/luva-de-ouro.png"
       />
     </aside>
   );
 }
 
+// Componente de card de jogador no sidebar
 function SidebarPlayerCard({
   title,
   name,
@@ -173,6 +197,7 @@ function SidebarPlayerCard({
   );
 }
 
+// Componente de ranking no sidebar
 function SidebarRankingCard({
   title,
   label,

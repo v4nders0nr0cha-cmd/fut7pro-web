@@ -6,19 +6,25 @@ import Head from "next/head";
 import { torneiosMock } from "@/components/lists/mockTorneios";
 import type { Torneio } from "@/types/torneio";
 
+const getNovoTorneio = (): Torneio => ({
+  nome: "",
+  ano: new Date().getFullYear(),
+  slug: "",
+  campeao: "",
+  imagem: "",
+});
+
 export default function AdminTorneiosPage() {
   const [torneios, setTorneios] = useState<Torneio[]>(torneiosMock);
-  const [novoTorneio, setNovoTorneio] = useState<Torneio>({
-    nome: "",
-    ano: new Date().getFullYear(),
-    slug: "",
-    campeao: "",
-    imagem: "",
-  });
+  const [novoTorneio, setNovoTorneio] = useState<Torneio>(getNovoTorneio());
   const [modoEdicao, setModoEdicao] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNovoTorneio({ ...novoTorneio, [e.target.name]: e.target.value });
+    const { name, value, type } = e.target;
+    setNovoTorneio((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }));
   };
 
   const handleSubmit = () => {
@@ -27,24 +33,26 @@ export default function AdminTorneiosPage() {
 
     if (modoEdicao !== null) {
       const atualizados = [...torneios];
-      atualizados[modoEdicao] = novoTorneio;
+      atualizados[modoEdicao] = { ...novoTorneio, ano: Number(novoTorneio.ano) };
       setTorneios(atualizados);
       setModoEdicao(null);
     } else {
-      setTorneios([...torneios, novoTorneio]);
+      setTorneios([...torneios, { ...novoTorneio, ano: Number(novoTorneio.ano) }]);
     }
 
-    setNovoTorneio({
-      nome: "",
-      ano: new Date().getFullYear(),
-      slug: "",
-      campeao: "",
-      imagem: "",
-    });
+    setNovoTorneio(getNovoTorneio());
   };
 
   const handleEditar = (index: number) => {
-    setNovoTorneio(torneios[index]);
+    const t = torneios[index];
+    if (!t) return; // Protege contra índices inválidos
+    setNovoTorneio({
+      nome: t.nome,
+      ano: Number(t.ano),
+      slug: t.slug,
+      campeao: t.campeao,
+      imagem: t.imagem,
+    });
     setModoEdicao(index);
   };
 
@@ -54,6 +62,10 @@ export default function AdminTorneiosPage() {
       const copia = [...torneios];
       copia.splice(index, 1);
       setTorneios(copia);
+      if (modoEdicao === index) {
+        setModoEdicao(null);
+        setNovoTorneio(getNovoTorneio());
+      }
     }
   };
 
@@ -82,6 +94,7 @@ export default function AdminTorneiosPage() {
               onChange={handleChange}
               placeholder="Nome do Torneio"
               className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
             />
             <input
               name="ano"
@@ -90,6 +103,9 @@ export default function AdminTorneiosPage() {
               type="number"
               placeholder="Ano"
               className="p-2 rounded bg-zinc-800 text-white"
+              min={2000}
+              max={2100}
+              autoComplete="off"
             />
             <input
               name="slug"
@@ -97,6 +113,7 @@ export default function AdminTorneiosPage() {
               onChange={handleChange}
               placeholder="Slug do Campeão (link)"
               className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
             />
             <input
               name="campeao"
@@ -104,6 +121,7 @@ export default function AdminTorneiosPage() {
               onChange={handleChange}
               placeholder="Nome do Campeão"
               className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
             />
             <input
               name="imagem"
@@ -111,8 +129,10 @@ export default function AdminTorneiosPage() {
               onChange={handleChange}
               placeholder="Caminho da Imagem"
               className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
             />
             <button
+              type="button"
               onClick={handleSubmit}
               className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400"
             >
@@ -124,7 +144,7 @@ export default function AdminTorneiosPage() {
         {/* LISTAGEM */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {torneios.map((torneio, idx) => (
-            <div key={idx} className="bg-[#1A1A1A] rounded-xl p-4 shadow-md">
+            <div key={torneio.slug + idx} className="bg-[#1A1A1A] rounded-xl p-4 shadow-md">
               <Image
                 src={torneio.imagem}
                 alt={`Imagem do torneio ${torneio.nome}`}

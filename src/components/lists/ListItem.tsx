@@ -1,7 +1,8 @@
+// src/components/lists/ListItem.tsx
 "use client";
 
 import Link from "next/link";
-import { User } from "@/types/interfaces";
+import type { User } from "@/types/interfaces";
 
 type Props = {
   data: User;

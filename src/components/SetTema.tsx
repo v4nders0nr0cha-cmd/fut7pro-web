@@ -1,28 +1,33 @@
+// src/components/SetTema.tsx
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-export function SetTema() {
+export default function SetTema() {
+  const [slug, setSlug] = useState<string>("padrao");
+
   useEffect(() => {
-    const slug = window.location.pathname.split("/")[1] || "padrao";
-
-    const temas: Record<string, Record<string, string>> = {
-      padrao: {
-        "--cor-primaria": "#FFCC00",
-        "--cor-secundaria": "#1a1a1a",
-        "--texto-primario": "#ffffff",
-        "--texto-secundario": "#cccccc",
-        "--cor-destaque": "#FFD700",
-      },
-      // futuros temas poderão ser adicionados aqui com o nome do slug
-    };
-
-    const tema = temas[slug] || temas["padrao"];
-
-    Object.entries(tema).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(key, value);
-    });
+    // Só executa no client-side para evitar hydration mismatch
+    if (typeof window !== "undefined") {
+      const pathSlug = window.location.pathname.split("/")[1] || "padrao";
+      setSlug(pathSlug);
+    }
   }, []);
+
+  useEffect(() => {
+    // Aplica o tema apenas no client-side
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      const tema = {
+        primary: "#FFCC00",
+        highlight: "#1A1A1A",
+        text: "#FFFFFF",
+      };
+
+      Object.entries(tema).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(`--${key}-color`, value);
+      });
+    }
+  }, [slug]);
 
   return null;
 }

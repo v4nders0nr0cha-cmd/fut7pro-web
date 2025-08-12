@@ -3,9 +3,29 @@
 import GameCard from "./GameCard";
 import type { Partida } from "@/types/partida";
 import Link from "next/link";
+import { teamLogoMap, logoPadrao } from "@/config/teamLogoMap";
 
-export default function GamesOfTheDay({ partidas }: { partidas: Partida[] }) {
-  const ultimosJogos = partidas.slice(-3).reverse();
+interface GamesOfTheDayProps {
+  partidas?: Partida[];
+  isLoading?: boolean;
+  isError?: boolean;
+}
+
+export default function GamesOfTheDay({
+  partidas = [],
+  isLoading = false,
+  isError = false,
+}: GamesOfTheDayProps) {
+  const ultimosJogos = partidas
+    .filter(
+      (jogo) =>
+        jogo.timeA &&
+        jogo.timeB &&
+        typeof jogo.golsTimeA !== "undefined" &&
+        typeof jogo.golsTimeB !== "undefined"
+    )
+    .slice(-3)
+    .reverse();
 
   return (
     <div className="bg-[#1A1A1A] rounded-2xl p-5 text-white shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all cursor-pointer w-full min-h-[290px] flex flex-col justify-between">
@@ -17,14 +37,33 @@ export default function GamesOfTheDay({ partidas }: { partidas: Partida[] }) {
       </div>
 
       <div className="space-y-3">
-        {ultimosJogos.map((jogo) => (
-          <GameCard
-            key={jogo.id}
-            teamA={{ name: jogo.timeCasa, logo: jogo.logoCasa }}
-            teamB={{ name: jogo.timeFora, logo: jogo.logoFora }}
-            score={`${jogo.golsCasa} - ${jogo.golsFora}`}
-          />
-        ))}
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400"></div>
+            <span className="ml-2 text-sm text-gray-400">Carregando...</span>
+          </div>
+        ) : isError ? (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+            <p className="text-sm text-red-400 text-center">Erro ao carregar jogos</p>
+          </div>
+        ) : ultimosJogos.length > 0 ? (
+          ultimosJogos.map((jogo) => (
+            <GameCard
+              key={jogo.id}
+              teamA={{
+                name: jogo.timeA,
+                logo: teamLogoMap[jogo.timeA] || logoPadrao,
+              }}
+              teamB={{
+                name: jogo.timeB,
+                logo: teamLogoMap[jogo.timeB] || logoPadrao,
+              }}
+              score={`${jogo.golsTimeA} - ${jogo.golsTimeB}`}
+            />
+          ))
+        ) : (
+          <p className="text-sm text-center text-gray-400">Nenhum jogo disponível</p>
+        )}
       </div>
     </div>
   );
