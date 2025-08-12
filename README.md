@@ -26,22 +26,17 @@ Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Um
 - PostgreSQL
 - Git
 
-## 🛠️ Instalação
+## 🛠️ Instalação Rápida
 
-1. **Clone o repositório**
+### 1. **Clone e Setup**
 
 ```bash
-git clone https://github.com/seu-usuario/fut7pro-web.git
+git clone https://github.com/v4nders0nr0cha-cmd/fut7pro-web.git
 cd fut7pro-web
-```
-
-2. **Instale as dependências**
-
-```bash
 npm install
 ```
 
-3. **Configure as variáveis de ambiente**
+### 2. **Configure as variáveis de ambiente**
 
 ```bash
 cp env.example .env.local
@@ -58,55 +53,18 @@ NEXT_PUBLIC_API_URL=http://localhost:3000/api
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=your-secret-key-here
 
-# Google OAuth
+# Google OAuth (opcional)
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
-
-# Configurações do Banco de Dados
-DATABASE_URL="postgresql://user:password@localhost:5432/fut7pro"
 ```
 
-4. **Configure o banco de dados**
-
-```bash
-# Gerar cliente Prisma
-npm run db:generate
-
-# Executar migrações
-npm run db:migrate
-
-# Popular banco com dados iniciais
-npm run db:seed
-```
-
-5. **Inicie o servidor de desenvolvimento**
+### 3. **Inicie o servidor de desenvolvimento**
 
 ```bash
 npm run dev
 ```
 
 Acesse [http://localhost:3000](http://localhost:3000) para ver o projeto.
-
-## 📁 Estrutura do Projeto
-
-```
-src/
-├── app/                    # App Router (Next.js 13+)
-│   ├── (admin)/           # Rotas do painel admin
-│   ├── (public)/          # Rotas públicas
-│   ├── (superadmin)/      # Rotas do superadmin
-│   └── api/               # API Routes
-├── components/             # Componentes React
-│   ├── admin/             # Componentes específicos do admin
-│   ├── cards/             # Cards reutilizáveis
-│   ├── layout/            # Componentes de layout
-│   └── ui/                # Componentes de UI básicos
-├── context/               # Contextos React
-├── hooks/                 # Hooks customizados
-├── lib/                   # Utilitários e configurações
-├── types/                 # Definições de tipos TypeScript
-└── styles/                # Estilos globais
-```
 
 ## 🔧 Scripts Disponíveis
 
@@ -133,11 +91,79 @@ npm run db:push          # Sincroniza schema com banco
 npm run db:migrate       # Executa migrações
 npm run db:studio        # Abre Prisma Studio
 npm run db:seed          # Popula banco com dados iniciais
-
-# Utilitários
-npm run clean            # Remove arquivos de build
-npm run analyze          # Analisa bundle size
 ```
+
+## 🤖 GitHub Connector & ChatGPT
+
+### 🔗 Configuração Ativa
+
+Este repositório está configurado para uso com o **GitHub Connector do ChatGPT** com permissões de **Read & Write**.
+
+### 📋 Como Usar
+
+1. **No ChatGPT**: Ativar o GitHub Connector
+2. **Selecionar**: `v4nders0nr0cha-cmd/fut7pro-web`
+3. **Permissões**: Read & Write ativadas
+4. **Branch**: Trabalhar em `fix/frontend-stabilization`
+
+### 🎯 PR de Estabilização Ativo
+
+**Branch**: `fix/frontend-stabilization`  
+**Status**: 🟡 Aguardando correções  
+**Objetivo**: Frontend 100% estável
+
+#### 📋 Tarefas para o ChatGPT:
+
+1. **🔧 ESLint**: Corrigir todos os erros e warnings
+2. **🎯 TypeScript**: Resolver problemas de tipos
+3. **🏗️ Build**: Limpar warnings do Next.js
+4. **🧪 Testes**: Corrigir falhas e melhorar cobertura
+5. **📦 Dependências**: Atualizar e auditar segurança
+
+#### 📖 Instruções Detalhadas
+
+Veja o arquivo [`CHATGPT_STABILIZATION_INSTRUCTIONS.md`](./CHATGPT_STABILIZATION_INSTRUCTIONS.md) para instruções completas.
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── app/                    # App Router (Next.js 13+)
+│   ├── (admin)/           # Rotas do painel admin
+│   ├── (public)/          # Rotas públicas
+│   ├── (superadmin)/      # Rotas do superadmin
+│   └── api/               # API Routes
+├── components/             # Componentes React
+│   ├── admin/             # Componentes específicos do admin
+│   ├── cards/             # Cards reutilizáveis
+│   ├── layout/            # Componentes de layout
+│   └── ui/                # Componentes de UI básicos
+├── context/               # Contextos React
+├── hooks/                 # Hooks customizados
+├── lib/                   # Utilitários e configurações
+├── types/                 # Definições de tipos TypeScript
+└── styles/                # Estilos globais
+```
+
+## 🚀 CI/CD Pipeline
+
+### 🔄 GitHub Actions
+
+O projeto possui um workflow completo de CI/CD configurado em `.github/workflows/frontend-ci.yml`:
+
+- **Node 20**: Versão LTS mais recente
+- **Cache**: Dependências otimizadas
+- **Jobs**: Qualidade, testes, build, segurança
+- **Preview**: Deploy automático para PRs
+- **Notificações**: Slack integrado
+
+### 📊 Status dos Workflows
+
+- ✅ **Code Quality**: ESLint + TypeScript + Prettier
+- ✅ **Tests**: Jest + Coverage + E2E
+- ✅ **Build**: Next.js + Bundle Analysis
+- ✅ **Security**: npm audit + Snyk
+- ✅ **Deploy**: Vercel Preview
 
 ## 🏗️ Arquitetura
 
@@ -237,11 +263,41 @@ npm run test:coverage
 
 ## 🤝 Contribuição
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+### 🔄 Fluxo de Trabalho
+
+1. **Fork** o projeto
+2. **Clone** o repositório
+3. **Crie** uma branch para sua feature
+4. **Faça** as mudanças necessárias
+5. **Teste** suas alterações
+6. **Commit** suas mudanças
+7. **Push** para a branch
+8. **Abra** um Pull Request
+
+### 📝 Padrões de Commit
+
+```bash
+# Formato
+type(scope): description
+
+# Exemplos
+feat(auth): adiciona autenticação com Google OAuth
+fix(admin): corrige bug na listagem de jogadores
+docs(readme): atualiza instruções de instalação
+style(components): formata código com Prettier
+refactor(hooks): refatora useAuth para melhor performance
+test(admin): adiciona testes para AdminPanel
+chore(deps): atualiza dependências de desenvolvimento
+```
+
+### 🏷️ Labels para Issues/PRs
+
+- `frontend` - Mudanças no frontend
+- `enhancement` - Novas funcionalidades
+- `bug` - Correções de bugs
+- `documentation` - Atualizações de docs
+- `stabilization` - Trabalho de estabilização
+- `connector` - Questões do GitHub Connector
 
 ## 📄 Licença
 
@@ -251,7 +307,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 - **Email**: suporte@fut7pro.com
 - **Documentação**: [docs.fut7pro.com](https://docs.fut7pro.com)
-- **Issues**: [GitHub Issues](https://github.com/seu-usuario/fut7pro-web/issues)
+- **Issues**: [GitHub Issues](https://github.com/v4nders0nr0cha-cmd/fut7pro-web/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/v4nders0nr0cha-cmd/fut7pro-web/discussions)
 
 ## 🎯 Roadmap
 
@@ -262,6 +319,53 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - [ ] IA para balanceamento de times
 - [ ] Streaming de partidas
 
+## 🔄 Status do Projeto
+
+### ✅ Concluído
+
+- [x] Estrutura base do Next.js
+- [x] Componentes principais
+- [x] Rotas e páginas
+- [x] Sistema de autenticação
+- [x] CI/CD Pipeline
+- [x] GitHub Connector configurado
+
+### 🟡 Em Andamento
+
+- [ ] Estabilização do frontend
+- [ ] Correção de lint e TypeScript
+- [ ] Otimização de performance
+- [ ] Cobertura de testes
+
+### 📋 Próximos Passos
+
+1. **Estabilização**: ChatGPT corrige problemas de qualidade
+2. **Testes**: Cobertura completa e testes E2E
+3. **Performance**: Otimização de bundle e métricas
+4. **Deploy**: Configuração de staging e produção
+
 ---
 
 **Fut7Pro** - O jogo começa aqui! ⚽
+
+---
+
+## 🚨 Notas Importantes
+
+### ⚠️ Desenvolvimento Local
+
+- O frontend não deve acessar banco de dados diretamente em produção
+- Use `env.example` como base para `.env.local`
+- Configure `NEXT_PUBLIC_API_URL` para apontar para o backend
+
+### 🔒 Segurança
+
+- Nunca commite arquivos `.env` com secrets
+- Use variáveis de ambiente para configurações sensíveis
+- Configure rate limiting e headers de segurança
+
+### 🧪 Testes
+
+- Execute testes antes de cada commit
+- Mantenha cobertura de testes acima de 80%
+- Use mocks para dependências externas
