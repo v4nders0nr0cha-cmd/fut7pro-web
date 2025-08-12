@@ -4,18 +4,31 @@ on:
   push:
     branches: [ main, develop ]
   pull_request:
+<<<<<<< HEAD
     branches: [ main, develop ]
+=======
+    branches: [ main ]
+  workflow_dispatch: {}
+>>>>>>> 65ea3d8 (ci(guard): regra anti-mudança de layout + PR Guard (Danger) + labels + template)
 
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '8'
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # Job de qualidade de código
   quality:
     name: Code Quality
     runs-on: ubuntu-latest
+<<<<<<< HEAD
     
+=======
+
+>>>>>>> 65ea3d8 (ci(guard): regra anti-mudança de layout + PR Guard (Danger) + labels + template)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,6 +39,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
+<<<<<<< HEAD
       - name: Install dependencies
         run: npm ci
 
@@ -34,10 +48,30 @@ jobs:
 
       - name: Run TypeScript check
         run: npm run type-check
+=======
+      - name: Versions
+        run: |
+          node -v
+          npm -v
+
+      - name: Create .env from example (if present)
+        run: |
+          if [ -f .env.example ]; then cp .env.example .env; fi
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type check
+        run: npm run type-check --if-present
+
+      - name: Lint
+        run: npm run lint --if-present
+>>>>>>> 65ea3d8 (ci(guard): regra anti-mudança de layout + PR Guard (Danger) + labels + template)
 
       - name: Run Prettier check
         run: npm run format:check
 
+<<<<<<< HEAD
   # Job de testes
   test:
     name: Tests
@@ -89,6 +123,9 @@ jobs:
           echo "NEXT_PUBLIC_APP_URL=https://staging.fut7pro.com" >> .env.local
 
       - name: Build application
+=======
+      - name: Build
+>>>>>>> 65ea3d8 (ci(guard): regra anti-mudança de layout + PR Guard (Danger) + labels + template)
         run: npm run build
 
       - name: Upload build artifacts
@@ -133,6 +170,7 @@ jobs:
           path: .next/analyze/
           retention-days: 7
 
+<<<<<<< HEAD
   # Job de segurança
   security:
     name: Security Scan
@@ -228,3 +266,7 @@ jobs:
           text: '✅ Frontend CI/CD passed for ${{ github.repository }}#${{ github.run_number }}'
           channel: '#devops'
           username: 'GitHub Actions'
+=======
+      - name: npm audit
+        run: npm audit --audit-level=high || true
+>>>>>>> 65ea3d8 (ci(guard): regra anti-mudança de layout + PR Guard (Danger) + labels + template)

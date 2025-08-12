@@ -1,0 +1,9 @@
+# Dono da UI — toda alteração precisa da sua review
+/app/**         @v4nders0nr0cha-cmd
+/src/app/**     @v4nders0nr0cha-cmd
+/components/**  @v4nders0nr0cha-cmd
+/src/components/** @v4nders0nr0cha-cmd
+/styles/**      @v4nders0nr0cha-cmd
+/src/styles/**  @v4nders0nr0cha-cmd
+
+# (opcional) outras áreas podem ter co-owners

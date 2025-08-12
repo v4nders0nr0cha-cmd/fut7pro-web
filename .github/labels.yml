@@ -1,0 +1,54 @@
+- name: bug
+  color: d73a4a
+  description: Erros e falhas
+
+- name: enhancement
+  color: a2eeef
+  description: Melhorias
+
+- name: feature
+  color: 0e8a16
+  description: Nova funcionalidade
+
+- name: docs
+  color: 0075ca
+  description: Documentação
+
+- name: frontend
+  color: 5319e7
+
+- name: backend
+  color: 1d76db
+
+- name: ci
+  color: fbca04
+
+- name: automation
+  color: bfd4f2
+
+- name: security
+  color: ee0701
+
+- name: tech debt
+  color: 7057ff
+
+- name: task
+  color: c2e0c6
+
+- name: priority: high
+  color: d93f0b
+
+- name: priority: low
+  color: cccccc
+
+- name: ui-change
+  color: d93f0b
+  description: Mudança estrutural de UI (precisa screenshots e aprovação)
+
+- name: ui-enhancement
+  color: 0e8a16
+  description: Melhoria visual/efeitos sem alterar estrutura (precisa screenshots)
+
+- name: override: ui-allow
+  color: 5319e7
+  description: Liberação excepcional de mudanças de UI (exige evidências)
