@@ -68,9 +68,9 @@ jobs:
         run: npm audit --audit-level=high || true
 
   preview:
-    name: Deploy Preview (Vercel) — optional
+    name: Deploy Preview (Vercel) — optiona
     needs: ci
-    if: ${{ github.event_name == 'pull_request' && success() && secrets.VERCEL_TOKEN != '' }}
+    if: ${{ github.event_name == 'pull_request' && success() &&
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -92,13 +92,14 @@ jobs:
   notify:
     name: Slack Notify
     needs: [ci]
-    if: ${{ always() && secrets.SLACK_WEBHOOK_URL != '' }}
+
     runs-on: ubuntu-latest
     steps:
-      - name: Send status to Slack
+      - name: Send
         uses: rtCamp/action-slack-notify@v2
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ needs.ci.result == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Frontend CI — ${{ github.repository }}"
           SLACK_MESSAGE: "Workflow *${{ github.workflow }}* for *${{ github.ref_name }}* finished with *${{ needs.ci.result }}*."
+
