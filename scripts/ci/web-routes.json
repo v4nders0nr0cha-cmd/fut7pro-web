@@ -1,0 +1,6 @@
+[
+  { "path": "/", "terms": ["Fut7Pro"] },
+  { "path": "/partidas/historico", "terms": ["Histórico", "Partidas"] },
+  { "path": "/estatisticas/classificacao-dos-times", "terms": ["Classificação", "Times"] },
+  { "path": "/os-campeoes", "terms": ["Campeões", "Ano"] }
+]
