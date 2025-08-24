@@ -21,18 +21,20 @@ export default function ModalDetalhePagamento({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       aria-modal="true"
     >
-      <div className="bg-zinc-900 rounded-2xl shadow-xl p-6 w-full max-w-md mx-2 relative animate-fadeIn">
+      <div className="animate-fadeIn relative mx-2 w-full max-w-md rounded-2xl bg-zinc-900 p-6 shadow-xl">
         <button
-          className="absolute top-3 right-3 text-zinc-300 hover:text-red-500 transition"
+          className="absolute right-3 top-3 text-zinc-300 transition hover:text-red-500"
           onClick={onClose}
           aria-label="Fechar"
         >
           <FaTimes size={22} />
         </button>
-        <h3 className="text-lg font-bold text-white mb-4">Detalhes do Pagamento</h3>
+        <h3 className="mb-4 text-lg font-bold text-white">
+          Detalhes do Pagamento
+        </h3>
         <div className="mb-2 text-zinc-100">
           <b>Status:</b> {pagamento.status}
         </div>
@@ -51,9 +53,9 @@ export default function ModalDetalhePagamento({
         <div className="mb-2 text-zinc-100">
           <b>Descrição:</b> {pagamento.descricao || "--"}
         </div>
-        <div className="flex justify-end mt-6">
+        <div className="mt-6 flex justify-end">
           <button
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white rounded px-5 py-2 font-semibold transition"
+            className="flex items-center gap-2 rounded bg-green-600 px-5 py-2 font-semibold text-white transition hover:bg-green-700"
             onClick={onDownloadRecibo}
             disabled={!onDownloadRecibo}
           >

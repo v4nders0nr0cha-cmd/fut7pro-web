@@ -4,7 +4,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const session = await getSession({ req });
   if (!session) return res.status(401).json({ error: "Não autenticado" });
 
@@ -23,12 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const isAdmin = racha.admins.some((a) => a.usuarioId === userId);
 
   if (req.method === "GET") {
-    if (!(isOwner || isAdmin)) return res.status(403).json({ error: "Sem permissão" });
+    if (!(isOwner || isAdmin))
+      return res.status(403).json({ error: "Sem permissão" });
     return res.json(racha);
   }
 
   if (req.method === "PUT") {
-    if (!(isOwner || isAdmin)) return res.status(403).json({ error: "Sem permissão" });
+    if (!(isOwner || isAdmin))
+      return res.status(403).json({ error: "Sem permissão" });
     const { nome, slug, descricao, logoUrl, tema, regras, ativo } = req.body;
     const rachaAtualizado = await prisma.racha.update({
       where: { id: String(id) },
@@ -38,7 +43,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === "DELETE") {
-    if (!isOwner) return res.status(403).json({ error: "Só owner pode deletar" });
+    if (!isOwner)
+      return res.status(403).json({ error: "Só owner pode deletar" });
     // Soft delete
     await prisma.racha.update({
       where: { id: String(id) },

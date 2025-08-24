@@ -20,9 +20,11 @@ export default function RachaSelect({ value, onChange }: Props) {
 
   return (
     <div className="mb-6 max-w-xs">
-      <label className="block mb-1 text-yellow-500 font-medium">Selecione o Racha</label>
+      <label className="mb-1 block font-medium text-yellow-500">
+        Selecione o Racha
+      </label>
       <select
-        className="w-full border border-yellow-500 rounded px-3 py-2 bg-[#191919] text-white"
+        className="w-full rounded border border-yellow-500 bg-[#191919] px-3 py-2 text-white"
         value={selectValue}
         onChange={(e) => handleChange?.(e.target.value)}
       >

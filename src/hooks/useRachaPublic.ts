@@ -8,8 +8,12 @@ async function fetcher(url: string): Promise<Racha> {
   const res = await fetch(url);
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Erro desconhecido" }));
-    throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+    const errorData = await res
+      .json()
+      .catch(() => ({ message: "Erro desconhecido" }));
+    throw new Error(
+      errorData.message || `HTTP ${res.status}: ${res.statusText}`,
+    );
   }
 
   const data = await res.json();
@@ -37,7 +41,7 @@ export function useRachaPublic(identifier: string) {
       dedupingInterval: 30000, // 30 segundos
       errorRetryCount: 3,
       errorRetryInterval: 5000, // 5 segundos
-    }
+    },
   );
 
   return {

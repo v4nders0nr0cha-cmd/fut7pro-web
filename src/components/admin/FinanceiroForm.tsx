@@ -28,7 +28,9 @@ export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
     adminId,
   });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     const { name, value, type } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -44,14 +46,26 @@ export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl shadow-md"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">Novo Lançamento</h2>
-      <select name="tipo" value={form.tipo} onChange={handleChange} className="input">
+      <h2 className="text-center text-xl font-bold text-yellow-400">
+        Novo Lançamento
+      </h2>
+      <select
+        name="tipo"
+        value={form.tipo}
+        onChange={handleChange}
+        className="input"
+      >
         <option value="entrada">Entrada</option>
         <option value="saida">Saída</option>
       </select>
-      <select name="categoria" value={form.categoria} onChange={handleChange} className="input">
+      <select
+        name="categoria"
+        value={form.categoria}
+        onChange={handleChange}
+        className="input"
+      >
         {CATEGORIAS.map((c) => (
           <option key={c} value={c}>
             {c.charAt(0).toUpperCase() + c.slice(1)}
@@ -88,7 +102,11 @@ export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
         Salvar
       </button>
       {onCancel && (
-        <button type="button" className="btn-secondary w-full" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={onCancel}
+        >
           Cancelar
         </button>
       )}

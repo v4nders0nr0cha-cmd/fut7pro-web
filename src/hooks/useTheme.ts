@@ -139,7 +139,11 @@ export function useTheme() {
 
   // Atualizar cores customizadas
   const updateCustomColors = useCallback(
-    async (colors: { primary?: string; secondary?: string; accent?: string }) => {
+    async (colors: {
+      primary?: string;
+      secondary?: string;
+      accent?: string;
+    }) => {
       try {
         setIsLoading(true);
         setError(null);
@@ -162,7 +166,7 @@ export function useTheme() {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   // Atualizar configurações
@@ -197,7 +201,7 @@ export function useTheme() {
         setIsLoading(false);
       }
     },
-    []
+    [],
   );
 
   // Resetar configurações

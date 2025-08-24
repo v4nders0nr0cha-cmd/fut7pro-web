@@ -10,16 +10,23 @@ type ChampionBannerProps = {
   href: string; // rota dinâmica, obrigatória
 };
 
-const ChampionBanner = ({ image, date, players, href }: ChampionBannerProps) => {
+const ChampionBanner = ({
+  image,
+  date,
+  players,
+  href,
+}: ChampionBannerProps) => {
   const bannerImage =
-    image && image.length > 0 ? image : "/images/timecampeao/time-campeao-do-dia.png";
+    image && image.length > 0
+      ? image
+      : "/images/timecampeao/time-campeao-do-dia.png";
 
   const altText = `Imagem do Time Campeão do Dia - ${date}`;
 
   return (
-    <Link href={href} className="block mb-10">
-      <div className="flex flex-col md:flex-row items-center bg-[#1a1a1a] rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-[0_0_20px_#FFD700] group">
-        <div className="w-full md:w-2/3 aspect-[16/9] relative">
+    <Link href={href} className="mb-10 block">
+      <div className="group flex flex-col items-center overflow-hidden rounded-xl bg-[#1a1a1a] shadow-md transition-all duration-300 hover:shadow-[0_0_20px_#FFD700] md:flex-row">
+        <div className="relative aspect-[16/9] w-full md:w-2/3">
           <Image
             src={bannerImage}
             alt={altText}
@@ -28,12 +35,14 @@ const ChampionBanner = ({ image, date, players, href }: ChampionBannerProps) => 
             priority
           />
         </div>
-        <div className="w-full md:w-1/3 flex flex-col justify-center items-center md:items-start p-6 text-center md:text-left">
-          <p className="text-yellow-400 text-xl sm:text-2xl md:text-3xl uppercase font-extrabold mb-2 drop-shadow-[0_0_5px_#FFD700]">
+        <div className="flex w-full flex-col items-center justify-center p-6 text-center md:w-1/3 md:items-start md:text-left">
+          <p className="mb-2 text-xl font-extrabold uppercase text-yellow-400 drop-shadow-[0_0_5px_#FFD700] sm:text-2xl md:text-3xl">
             Time Campeão do Dia
           </p>
-          <p className="text-white text-base sm:text-lg md:text-xl font-semibold mb-2">{date}</p>
-          <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
+          <p className="mb-2 text-base font-semibold text-white sm:text-lg md:text-xl">
+            {date}
+          </p>
+          <p className="text-sm leading-relaxed text-gray-300 sm:text-base md:text-lg">
             {players.length ? players.join(", ") : "Jogadores não cadastrados"}
           </p>
         </div>

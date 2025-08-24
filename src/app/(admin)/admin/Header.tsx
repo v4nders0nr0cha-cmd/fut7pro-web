@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
+import {
+  FaBell,
+  FaEnvelope,
+  FaUserPlus,
+  FaUser,
+  FaSignOutAlt,
+  FaBars,
+} from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
@@ -19,8 +26,18 @@ interface MenuItem {
 }
 
 const menu: MenuItem[] = [
-  { label: "Notificações", icon: FaBell, href: "/admin/notificacoes", badgeKey: "notificacoes" },
-  { label: "Mensagens", icon: FaEnvelope, href: "/admin/mensagens", badgeKey: "mensagens" },
+  {
+    label: "Notificações",
+    icon: FaBell,
+    href: "/admin/notificacoes",
+    badgeKey: "notificacoes",
+  },
+  {
+    label: "Mensagens",
+    icon: FaEnvelope,
+    href: "/admin/mensagens",
+    badgeKey: "mensagens",
+  },
   {
     label: "Solicitações",
     icon: FaUserPlus,
@@ -42,11 +59,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   return (
-    <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">
+    <header className="fixed left-0 top-0 z-50 flex h-[56px] w-full items-center border-b border-yellow-400 bg-zinc-900 px-4 py-2 shadow-[0_2px_12px_rgba(255,215,0,0.25)]">
       {/* MOBILE: Botão hamburguer */}
       <button
         onClick={onMenuClick}
-        className="md:hidden flex items-center justify-center mr-2 text-yellow-400 hover:bg-zinc-800 p-2 rounded-full"
+        className="mr-2 flex items-center justify-center rounded-full p-2 text-yellow-400 hover:bg-zinc-800 md:hidden"
         aria-label="Abrir menu"
         tabIndex={0}
       >
@@ -54,8 +71,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </button>
 
       {/* LOGO */}
-      <Link href="/admin/dashboard" className="flex items-center gap-2 select-none" tabIndex={0}>
-        <span className="inline-block rounded-full overflow-hidden w-9 h-9 bg-yellow-400">
+      <Link
+        href="/admin/dashboard"
+        className="flex select-none items-center gap-2"
+        tabIndex={0}
+      >
+        <span className="inline-block h-9 w-9 overflow-hidden rounded-full bg-yellow-400">
           <Image
             src="/images/logos/logo_fut7pro.png"
             alt="Logo Fut7Pro Painel Admin"
@@ -68,7 +89,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </Link>
 
       {/* AÇÕES ALINHADAS À DIREITA */}
-      <div className="flex items-center gap-6 ml-auto">
+      <div className="ml-auto flex items-center gap-6">
         {menu.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const badgeValue = badges[item.badgeKey] ?? 0;
@@ -77,13 +98,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
+              className="relative flex items-center gap-2 rounded px-2 py-1 transition hover:bg-zinc-800"
               tabIndex={0}
             >
               <item.icon size={20} className="text-yellow-400" />
-              <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>
+              <span className="hidden text-sm font-medium text-white sm:inline">
+                {item.label}
+              </span>
               {badgeValue > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 font-bold">
+                <span className="absolute -right-1 -top-1 rounded-full bg-red-600 px-1.5 text-xs font-bold text-white">
                   {badgeValue}
                 </span>
               )}
@@ -94,7 +117,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* LOGIN OU PERFIL */}
         {!isLoggedIn ? (
           <button
-            className="flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-4 py-1.5 rounded-full font-bold text-sm uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+            className="flex items-center gap-2 rounded-full border border-yellow-400 bg-[#222] px-4 py-1.5 text-sm font-bold uppercase text-yellow-400 shadow-md transition-all hover:bg-yellow-400 hover:text-black"
             onClick={() => router.push("/admin/login")}
           >
             <FaUser size={16} className="text-yellow-400" />
@@ -102,7 +125,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
           </button>
         ) : (
           <div
-            className="flex items-center gap-2 group relative cursor-pointer"
+            className="group relative flex cursor-pointer items-center gap-2"
             onClick={() => setDropdownOpen((v) => !v)}
             tabIndex={0}
           >
@@ -113,13 +136,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
               height={38}
               className="rounded-full border-2 border-yellow-400"
             />
-            <span className="text-yellow-300 font-bold text-base hidden md:inline">
+            <span className="hidden text-base font-bold text-yellow-300 md:inline">
               {session.user?.name ?? "Admin"}
             </span>
             {dropdownOpen && (
-              <div className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col">
+              <div className="absolute right-0 top-12 z-50 flex w-44 flex-col rounded border border-zinc-800 bg-zinc-900 py-2 shadow-md">
                 <button
-                  className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
+                  className="flex items-center gap-2 px-4 py-2 text-base text-red-500 hover:bg-zinc-800"
                   onClick={() => signOut({ callbackUrl: "/admin/login" })}
                 >
                   <FaSignOutAlt size={18} />

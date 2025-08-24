@@ -28,7 +28,7 @@ export default function JogadorForm({
       status: "ativo",
       mensalista: false,
       posicao: "atacante",
-    }
+    },
   );
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string>(jogador?.foto || "");
@@ -53,7 +53,9 @@ export default function JogadorForm({
     }
   }, [jogador]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     const { name, value, type } = e.target;
     if (type === "checkbox") {
       setForm((prev) => ({
@@ -93,22 +95,24 @@ export default function JogadorForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 bg-[#191919] rounded-xl shadow-lg p-4 border border-[#232323] max-w-xl"
+      className="flex max-w-xl flex-col gap-4 rounded-xl border border-[#232323] bg-[#191919] p-4 shadow-lg"
     >
       <div className="flex gap-4">
         <div
           onClick={handleFotoClick}
-          className="w-20 h-20 bg-[#222] rounded-lg border-2 border-dashed border-yellow-600 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition"
+          className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-yellow-600 bg-[#222] transition hover:border-yellow-400"
           title="Clique para selecionar uma foto"
         >
           {fotoPreview ? (
             <img
               src={fotoPreview}
               alt="Preview Foto"
-              className="object-cover w-full h-full rounded-lg"
+              className="h-full w-full rounded-lg object-cover"
             />
           ) : (
-            <span className="text-gray-400 text-sm text-center px-2">+ Foto</span>
+            <span className="px-2 text-center text-sm text-gray-400">
+              + Foto
+            </span>
           )}
           <input
             ref={fileInputRef}
@@ -118,25 +122,29 @@ export default function JogadorForm({
             className="hidden"
           />
         </div>
-        <div className="flex flex-col gap-2 flex-1">
+        <div className="flex flex-1 flex-col gap-2">
           <div>
-            <label className="block font-medium text-yellow-500 mb-1">Nome</label>
+            <label className="mb-1 block font-medium text-yellow-500">
+              Nome
+            </label>
             <input
               name="nome"
               value={form.nome || ""}
               onChange={handleChange}
-              className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+              className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               maxLength={20}
               required
             />
           </div>
           <div>
-            <label className="block font-medium text-yellow-500 mb-1">Apelido</label>
+            <label className="mb-1 block font-medium text-yellow-500">
+              Apelido
+            </label>
             <input
               name="apelido"
               value={form.apelido || ""}
               onChange={handleChange}
-              className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+              className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
               maxLength={15}
               required
             />
@@ -145,12 +153,14 @@ export default function JogadorForm({
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Status</label>
+          <label className="mb-1 block font-medium text-yellow-500">
+            Status
+          </label>
           <select
             name="status"
             value={form.status}
             onChange={handleChange}
-            className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+            className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           >
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
@@ -158,12 +168,14 @@ export default function JogadorForm({
           </select>
         </div>
         <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Posição</label>
+          <label className="mb-1 block font-medium text-yellow-500">
+            Posição
+          </label>
           <select
             name="posicao"
             value={form.posicao}
             onChange={handleChange}
-            className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+            className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           >
             {POSICOES.map((pos) => (
               <option key={pos.value} value={pos.value}>
@@ -173,7 +185,7 @@ export default function JogadorForm({
           </select>
         </div>
         <div className="flex items-end">
-          <label className="flex items-center gap-2 font-medium text-yellow-500 cursor-pointer mb-1">
+          <label className="mb-1 flex cursor-pointer items-center gap-2 font-medium text-yellow-500">
             <input
               name="mensalista"
               type="checkbox"
@@ -188,7 +200,7 @@ export default function JogadorForm({
       <div className="flex gap-4">
         <button
           type="submit"
-          className="bg-yellow-500 text-gray-900 font-bold py-2 rounded hover:bg-yellow-600 transition shadow flex-1"
+          className="flex-1 rounded bg-yellow-500 py-2 font-bold text-gray-900 shadow transition hover:bg-yellow-600"
         >
           {form.id ? "Salvar Alterações" : "Cadastrar Jogador"}
         </button>
@@ -196,7 +208,7 @@ export default function JogadorForm({
           <button
             type="button"
             onClick={onCancel}
-            className="bg-gray-700 text-white font-bold py-2 rounded hover:bg-gray-600 transition shadow flex-1"
+            className="flex-1 rounded bg-gray-700 py-2 font-bold text-white shadow transition hover:bg-gray-600"
           >
             Cancelar
           </button>

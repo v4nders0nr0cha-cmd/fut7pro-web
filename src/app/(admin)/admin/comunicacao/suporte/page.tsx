@@ -30,7 +30,8 @@ const chamadosMock: Chamado[] = [
   {
     id: 1,
     assunto: "Erro ao cadastrar jogador",
-    mensagem: "Ao tentar cadastrar um novo jogador, aparece uma mensagem de erro.",
+    mensagem:
+      "Ao tentar cadastrar um novo jogador, aparece uma mensagem de erro.",
     tipo: "Problema Técnico",
     status: "respondido",
     data: "2025-07-12T10:00:00Z",
@@ -48,7 +49,13 @@ const chamadosMock: Chamado[] = [
   },
 ];
 
-const tiposChamado = ["Problema Técnico", "Financeiro", "Dúvida", "Sugestão", "Outro"];
+const tiposChamado = [
+  "Problema Técnico",
+  "Financeiro",
+  "Dúvida",
+  "Sugestão",
+  "Outro",
+];
 
 export default function SuportePage() {
   const [chamados, setChamados] = useState<Chamado[]>(chamadosMock);
@@ -60,7 +67,10 @@ export default function SuportePage() {
     imagem: "" as string,
   });
   const [imagemPreview, setImagemPreview] = useState<string>("");
-  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   function handleNovoChamado() {
     if (!novo.assunto.trim() || !novo.mensagem.trim()) {
@@ -79,12 +89,18 @@ export default function SuportePage() {
       },
       ...prev,
     ]);
-    setNovo({ assunto: "", mensagem: "", tipo: "Problema Técnico", imagem: "" });
+    setNovo({
+      assunto: "",
+      mensagem: "",
+      tipo: "Problema Técnico",
+      imagem: "",
+    });
     setImagemPreview("");
     setShowForm(false);
     setFeedback({
       success: true,
-      message: "Chamado aberto com sucesso! Nossa equipe vai te responder em breve.",
+      message:
+        "Chamado aberto com sucesso! Nossa equipe vai te responder em breve.",
     });
   }
 
@@ -99,15 +115,15 @@ export default function SuportePage() {
   function statusLabel(status: Status) {
     return status === "aguardando" ? (
       <>
-        <FaClock className="inline mr-1" /> Aguardando resposta
+        <FaClock className="mr-1 inline" /> Aguardando resposta
       </>
     ) : status === "respondido" ? (
       <>
-        <FaReply className="inline mr-1" /> Respondido
+        <FaReply className="mr-1 inline" /> Respondido
       </>
     ) : (
       <>
-        <FaCheckCircle className="inline mr-1" /> Finalizado
+        <FaCheckCircle className="mr-1 inline" /> Finalizado
       </>
     );
   }
@@ -116,7 +132,10 @@ export default function SuportePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      setFeedback({ success: false, message: "Envie apenas imagens (png, jpg, jpeg, gif, webp)." });
+      setFeedback({
+        success: false,
+        message: "Envie apenas imagens (png, jpg, jpeg, gif, webp).",
+      });
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -144,22 +163,26 @@ export default function SuportePage() {
           name="description"
           content="Abra chamados, tire dúvidas e acompanhe o atendimento dedicado ao administrador Fut7Pro."
         />
-        <meta name="keywords" content="Fut7, racha, suporte, chamado, atendimento, SaaS" />
+        <meta
+          name="keywords"
+          content="Fut7, racha, suporte, chamado, atendimento, SaaS"
+        />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-4xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-4xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           <FaHeadset /> Suporte
         </h1>
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow animate-fadeIn text-sm">
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
           <span className="font-bold text-yellow-300">Como funciona?</span>
           <br />
-          Abra chamados para relatar problemas, tirar dúvidas ou enviar sugestões. Nossa equipe
-          responderá diretamente por aqui, e você pode acompanhar o status de cada atendimento. O
-          suporte do Fut7Pro é 100% dedicado ao administrador.
+          Abra chamados para relatar problemas, tirar dúvidas ou enviar
+          sugestões. Nossa equipe responderá diretamente por aqui, e você pode
+          acompanhar o status de cada atendimento. O suporte do Fut7Pro é 100%
+          dedicado ao administrador.
           <br />
           <span className="text-gray-300">
-            Você pode anexar uma imagem/print para facilitar o atendimento (formatos aceitos: png,
-            jpg, jpeg, gif, webp, até 5MB).
+            Você pode anexar uma imagem/print para facilitar o atendimento
+            (formatos aceitos: png, jpg, jpeg, gif, webp, até 5MB).
           </span>
         </div>
 
@@ -167,7 +190,7 @@ export default function SuportePage() {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="mb-8 flex items-center gap-2 bg-yellow-400 text-black font-semibold px-4 py-2 rounded hover:bg-yellow-300 transition shadow"
+            className="mb-8 flex items-center gap-2 rounded bg-yellow-400 px-4 py-2 font-semibold text-black shadow transition hover:bg-yellow-300"
           >
             <FaPlus /> Abrir chamado
           </button>
@@ -175,26 +198,31 @@ export default function SuportePage() {
 
         {/* Formulário Novo Chamado */}
         {showForm && (
-          <div className="mb-8 bg-[#222] rounded-lg p-5 shadow animate-fadeIn">
-            <div className="grid md:grid-cols-2 gap-5">
+          <div className="animate-fadeIn mb-8 rounded-lg bg-[#222] p-5 shadow">
+            <div className="grid gap-5 md:grid-cols-2">
               <div>
-                <label className="text-gray-300 font-semibold">Assunto</label>
+                <label className="font-semibold text-gray-300">Assunto</label>
                 <input
                   type="text"
-                  className="bg-[#111] border border-yellow-400 rounded px-3 py-2 w-full text-yellow-300 font-bold"
+                  className="w-full rounded border border-yellow-400 bg-[#111] px-3 py-2 font-bold text-yellow-300"
                   maxLength={50}
                   placeholder="Descreva o assunto"
                   value={novo.assunto}
-                  onChange={(e) => setNovo((v) => ({ ...v, assunto: e.target.value }))}
+                  onChange={(e) =>
+                    setNovo((v) => ({ ...v, assunto: e.target.value }))
+                  }
                 />
               </div>
               <div>
-                <label className="text-gray-300 font-semibold">Tipo</label>
+                <label className="font-semibold text-gray-300">Tipo</label>
                 <select
-                  className="bg-[#111] border border-yellow-400 rounded px-3 py-2 w-full text-yellow-300 font-bold"
+                  className="w-full rounded border border-yellow-400 bg-[#111] px-3 py-2 font-bold text-yellow-300"
                   value={novo.tipo}
                   onChange={(e) =>
-                    setNovo((v) => ({ ...v, tipo: e.target.value as Chamado["tipo"] }))
+                    setNovo((v) => ({
+                      ...v,
+                      tipo: e.target.value as Chamado["tipo"],
+                    }))
                   }
                 >
                   {tiposChamado.map((t) => (
@@ -206,18 +234,20 @@ export default function SuportePage() {
               </div>
             </div>
             <div className="mt-5">
-              <label className="text-gray-300 font-semibold">Mensagem</label>
+              <label className="font-semibold text-gray-300">Mensagem</label>
               <textarea
-                className="bg-[#111] border border-yellow-400 rounded px-3 py-2 w-full text-gray-200 min-h-[56px] custom-scroll"
+                className="custom-scroll min-h-[56px] w-full rounded border border-yellow-400 bg-[#111] px-3 py-2 text-gray-200"
                 maxLength={400}
                 placeholder="Descreva o problema, dúvida ou sugestão com detalhes"
                 value={novo.mensagem}
-                onChange={(e) => setNovo((v) => ({ ...v, mensagem: e.target.value }))}
+                onChange={(e) =>
+                  setNovo((v) => ({ ...v, mensagem: e.target.value }))
+                }
               />
             </div>
             {/* Upload de imagem */}
             <div className="mt-5">
-              <label className="text-gray-300 font-semibold mb-2 block">
+              <label className="mb-2 block font-semibold text-gray-300">
                 Anexar imagem (opcional)
               </label>
               {!imagemPreview && (
@@ -229,7 +259,7 @@ export default function SuportePage() {
                 />
               )}
               {imagemPreview && (
-                <div className="flex items-center gap-4 mt-2">
+                <div className="mt-2 flex items-center gap-4">
                   <img
                     src={imagemPreview}
                     alt="Preview do anexo"
@@ -239,7 +269,7 @@ export default function SuportePage() {
                   <button
                     onClick={removerImagem}
                     type="button"
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded transition flex items-center gap-1 font-bold"
+                    className="flex items-center gap-1 rounded bg-red-500 px-3 py-2 font-bold text-white transition hover:bg-red-600"
                     title="Remover imagem"
                   >
                     <FaTrash /> Remover
@@ -247,10 +277,10 @@ export default function SuportePage() {
                 </div>
               )}
             </div>
-            <div className="flex gap-3 mt-5">
+            <div className="mt-5 flex gap-3">
               <button
                 onClick={handleNovoChamado}
-                className="bg-yellow-400 text-black font-bold px-5 py-2 rounded hover:bg-yellow-300 transition"
+                className="rounded bg-yellow-400 px-5 py-2 font-bold text-black transition hover:bg-yellow-300"
               >
                 Enviar chamado
               </button>
@@ -260,7 +290,7 @@ export default function SuportePage() {
                   setImagemPreview("");
                   setNovo((v) => ({ ...v, imagem: "" }));
                 }}
-                className="bg-[#333] text-gray-300 px-5 py-2 rounded hover:bg-[#222] transition"
+                className="rounded bg-[#333] px-5 py-2 text-gray-300 transition hover:bg-[#222]"
               >
                 Cancelar
               </button>
@@ -271,12 +301,14 @@ export default function SuportePage() {
         {/* Feedback */}
         {feedback && (
           <div
-            className={`mb-8 flex items-center gap-2 px-4 py-3 rounded font-bold shadow
-                        ${feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
+            className={`mb-8 flex items-center gap-2 rounded px-4 py-3 font-bold shadow ${feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
           >
             {feedback.success ? <FaCheckCircle /> : <FaTimesCircle />}
             {feedback.message}
-            <button className="ml-4 text-white text-lg" onClick={() => setFeedback(null)}>
+            <button
+              className="ml-4 text-lg text-white"
+              onClick={() => setFeedback(null)}
+            >
               ×
             </button>
           </div>
@@ -284,21 +316,25 @@ export default function SuportePage() {
 
         {/* Histórico de chamados */}
         <div className="mt-4">
-          <div className="font-bold text-gray-300 mb-2 text-lg flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-300">
             <FaHeadset /> Histórico de chamados
           </div>
           <div className="space-y-4">
             {chamados.length === 0 && (
-              <div className="text-gray-400 text-center py-10">Nenhum chamado aberto ainda.</div>
+              <div className="py-10 text-center text-gray-400">
+                Nenhum chamado aberto ainda.
+              </div>
             )}
             {chamados.map((ch) => (
               <div
                 key={ch.id}
-                className="bg-[#181818] rounded-lg p-4 shadow border-l-4 border-yellow-400 animate-fadeIn"
+                className="animate-fadeIn rounded-lg border-l-4 border-yellow-400 bg-[#181818] p-4 shadow"
               >
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
-                    <div className="font-bold text-yellow-300">{ch.assunto}</div>
+                    <div className="font-bold text-yellow-300">
+                      {ch.assunto}
+                    </div>
                     <div className="text-xs text-gray-400">
                       {ch.tipo} • {new Date(ch.data).toLocaleString()}
                     </div>
@@ -314,13 +350,17 @@ export default function SuportePage() {
                       </div>
                     )}
                   </div>
-                  <div className={`mt-3 md:mt-0 md:text-right font-bold ${statusColor(ch.status)}`}>
+                  <div
+                    className={`mt-3 font-bold md:mt-0 md:text-right ${statusColor(ch.status)}`}
+                  >
                     {statusLabel(ch.status)}
                   </div>
                 </div>
                 {ch.resposta && (
-                  <div className="mt-4 bg-[#232323] p-3 rounded-lg border-l-4 border-green-400">
-                    <div className="text-green-400 font-semibold mb-1">Resposta Fut7Pro:</div>
+                  <div className="mt-4 rounded-lg border-l-4 border-green-400 bg-[#232323] p-3">
+                    <div className="mb-1 font-semibold text-green-400">
+                      Resposta Fut7Pro:
+                    </div>
                     <div className="text-gray-100">{ch.resposta}</div>
                   </div>
                 )}

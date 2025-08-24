@@ -5,31 +5,31 @@ import { useState } from "react";
 export default function EnqueteClient() {
   const [votou, setVotou] = useState(false);
   return !votou ? (
-    <div className="bg-zinc-800 rounded-lg p-4 text-zinc-100 mb-4 border-l-4 border-yellow-400">
+    <div className="mb-4 rounded-lg border-l-4 border-yellow-400 bg-zinc-800 p-4 text-zinc-100">
       <strong>🗳️ Qual horário prefere para o próximo racha?</strong>
-      <div className="flex flex-col gap-2 mt-2">
+      <div className="mt-2 flex flex-col gap-2">
         <button
           onClick={() => setVotou(true)}
-          className="bg-yellow-400 text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-yellow-500 transition"
+          className="rounded bg-yellow-400 px-3 py-1 font-semibold text-zinc-900 transition hover:bg-yellow-500"
         >
           14h
         </button>
         <button
           onClick={() => setVotou(true)}
-          className="bg-yellow-400 text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-yellow-500 transition"
+          className="rounded bg-yellow-400 px-3 py-1 font-semibold text-zinc-900 transition hover:bg-yellow-500"
         >
           16h
         </button>
         <button
           onClick={() => setVotou(true)}
-          className="bg-yellow-400 text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-yellow-500 transition"
+          className="rounded bg-yellow-400 px-3 py-1 font-semibold text-zinc-900 transition hover:bg-yellow-500"
         >
           Outro
         </button>
       </div>
     </div>
   ) : (
-    <div className="bg-green-700 rounded-lg p-4 text-white font-semibold text-center">
+    <div className="rounded-lg bg-green-700 p-4 text-center font-semibold text-white">
       ✅ Seu voto foi registrado! Obrigado pela participação.
     </div>
   );

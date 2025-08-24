@@ -2,7 +2,13 @@
 
 import Head from "next/head";
 import { useState, type ChangeEvent } from "react";
-import { FaChevronDown, FaTrash, FaPlus, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import {
+  FaChevronDown,
+  FaTrash,
+  FaPlus,
+  FaArrowUp,
+  FaArrowDown,
+} from "react-icons/fa";
 
 // --- Tipagem ---
 type TituloTópico =
@@ -68,7 +74,8 @@ const TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
-    titulo: "Definição de Mensalistas, Diaristas, Reservas e Critérios para Participação",
+    titulo:
+      "Definição de Mensalistas, Diaristas, Reservas e Critérios para Participação",
     conteudo: [
       "💸 Mensalista: Jogador que contribui mensalmente e tem vaga garantida em todos os jogos. Algumas vagas do racha são exclusivas para mensalistas.",
       "💵 Diarista: Jogador que paga apenas pelo dia jogado. Pode participar das partidas sempre que houver vagas remanescentes, após o preenchimento pelas vagas de mensalistas.",
@@ -133,20 +140,28 @@ export default function EditarEstatutoAdmin() {
 
   // Altera o título
   const alterarTitulo = (idx: number, valor: string) => {
-    setTopicos(topicos.map((t, i) => (i === idx ? { ...t, titulo: valor } : t)));
+    setTopicos(
+      topicos.map((t, i) => (i === idx ? { ...t, titulo: valor } : t)),
+    );
   };
 
   // Adiciona linha no conteúdo
   const adicionarLinha = (idx: number) => {
-    setTopicos(topicos.map((t, i) => (i === idx ? { ...t, conteudo: [...t.conteudo, ""] } : t)));
+    setTopicos(
+      topicos.map((t, i) =>
+        i === idx ? { ...t, conteudo: [...t.conteudo, ""] } : t,
+      ),
+    );
   };
 
   // Remove linha do conteúdo
   const removerLinha = (tIdx: number, lIdx: number) => {
     setTopicos(
       topicos.map((t, i) =>
-        i === tIdx ? { ...t, conteudo: t.conteudo.filter((_, j) => j !== lIdx) } : t
-      )
+        i === tIdx
+          ? { ...t, conteudo: t.conteudo.filter((_, j) => j !== lIdx) }
+          : t,
+      ),
     );
   };
 
@@ -155,9 +170,14 @@ export default function EditarEstatutoAdmin() {
     setTopicos(
       topicos.map((t, i) =>
         i === tIdx
-          ? { ...t, conteudo: t.conteudo.map((linha, j) => (j === lIdx ? valor : linha)) }
-          : t
-      )
+          ? {
+              ...t,
+              conteudo: t.conteudo.map((linha, j) =>
+                j === lIdx ? valor : linha,
+              ),
+            }
+          : t,
+      ),
     );
   };
 
@@ -179,26 +199,30 @@ export default function EditarEstatutoAdmin() {
           content="admin estatuto, regras racha, painel administração, editar estatuto, fut7pro, futebol 7"
         />
       </Head>
-      <main className="max-w-3xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8 flex flex-col gap-8">
+      <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pb-24 pt-20 md:pb-8 md:pt-6">
         <section>
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">Editar Estatuto</h1>
-          <p className="text-white text-base md:text-lg mb-4">
-            Gerencie as regras oficiais, critérios e perguntas frequentes do seu racha de forma
-            simples, rápida e segura.
+          <h1 className="mb-4 text-3xl font-bold text-yellow-400 md:text-4xl">
+            Editar Estatuto
+          </h1>
+          <p className="mb-4 text-base text-white md:text-lg">
+            Gerencie as regras oficiais, critérios e perguntas frequentes do seu
+            racha de forma simples, rápida e segura.
             <br />
-            <span className="text-yellow-300 text-sm font-semibold block mt-2">
-              Os tópicos abaixo já são padrões em praticamente todo racha. Você pode organizar,
-              remover, renomear ou criar outros tópicos de acordo com a necessidade. Máximo de{" "}
-              {MAX_TOPICOS} tópicos.
+            <span className="mt-2 block text-sm font-semibold text-yellow-300">
+              Os tópicos abaixo já são padrões em praticamente todo racha. Você
+              pode organizar, remover, renomear ou criar outros tópicos de
+              acordo com a necessidade. Máximo de {MAX_TOPICOS} tópicos.
             </span>
           </p>
         </section>
 
         <section>
-          <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-2xl font-bold text-yellow-300">Tópicos do Estatuto</h2>
+          <div className="mb-4 flex items-center gap-3">
+            <h2 className="text-2xl font-bold text-yellow-300">
+              Tópicos do Estatuto
+            </h2>
             <button
-              className={`ml-2 px-3 py-2 rounded-md text-sm flex items-center gap-1 font-bold border-2 border-yellow-400 ${topicos.length >= MAX_TOPICOS ? "opacity-40 cursor-not-allowed" : "bg-yellow-400 text-black hover:brightness-110"}`}
+              className={`ml-2 flex items-center gap-1 rounded-md border-2 border-yellow-400 px-3 py-2 text-sm font-bold ${topicos.length >= MAX_TOPICOS ? "cursor-not-allowed opacity-40" : "bg-yellow-400 text-black hover:brightness-110"}`}
               onClick={adicionarTopico}
               disabled={topicos.length >= MAX_TOPICOS}
             >
@@ -210,25 +234,25 @@ export default function EditarEstatutoAdmin() {
             {topicos.map((topico, idx) => (
               <div
                 key={idx}
-                className="bg-neutral-900 rounded-xl shadow-md overflow-hidden border border-neutral-700"
+                className="overflow-hidden rounded-xl border border-neutral-700 bg-neutral-900 shadow-md"
               >
                 {/* Accordion */}
                 <button
-                  className={`flex justify-between items-center w-full px-5 py-4 text-left focus:outline-none transition ${aberto === idx ? "bg-yellow-400 text-black" : "text-yellow-300"}`}
+                  className={`flex w-full items-center justify-between px-5 py-4 text-left transition focus:outline-none ${aberto === idx ? "bg-yellow-400 text-black" : "text-yellow-300"}`}
                   aria-expanded={aberto === idx}
                   onClick={() => setAberto(aberto === idx ? null : idx)}
                   type="button"
                 >
                   <span className="flex items-center gap-2 text-lg font-semibold">
                     <input
-                      className={`font-bold bg-transparent outline-none border-0 border-b-2 border-dashed border-yellow-400 text-lg w-full px-1 ${aberto === idx ? "text-black" : "text-yellow-300"}`}
+                      className={`w-full border-0 border-b-2 border-dashed border-yellow-400 bg-transparent px-1 text-lg font-bold outline-none ${aberto === idx ? "text-black" : "text-yellow-300"}`}
                       value={topico.titulo}
                       onChange={(e) => alterarTitulo(idx, e.target.value)}
                       maxLength={60}
                       title="Título do tópico"
                     />
                     {topico.atualizado && (
-                      <span className="ml-2 text-xs bg-white text-yellow-500 font-bold px-2 py-0.5 rounded">
+                      <span className="ml-2 rounded bg-white px-2 py-0.5 text-xs font-bold text-yellow-500">
                         NOVA
                       </span>
                     )}
@@ -238,7 +262,7 @@ export default function EditarEstatutoAdmin() {
                     <button
                       title="Mover para cima"
                       type="button"
-                      className={`p-1 rounded-full ${idx === 0 ? "opacity-30 cursor-not-allowed" : "hover:bg-yellow-200 text-yellow-700"}`}
+                      className={`rounded-full p-1 ${idx === 0 ? "cursor-not-allowed opacity-30" : "text-yellow-700 hover:bg-yellow-200"}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         moverTopico(idx, idx - 1);
@@ -251,7 +275,7 @@ export default function EditarEstatutoAdmin() {
                     <button
                       title="Mover para baixo"
                       type="button"
-                      className={`p-1 rounded-full ${idx === topicos.length - 1 ? "opacity-30 cursor-not-allowed" : "hover:bg-yellow-200 text-yellow-700"}`}
+                      className={`rounded-full p-1 ${idx === topicos.length - 1 ? "cursor-not-allowed opacity-30" : "text-yellow-700 hover:bg-yellow-200"}`}
                       onClick={(e) => {
                         e.stopPropagation();
                         moverTopico(idx, idx + 1);
@@ -265,7 +289,7 @@ export default function EditarEstatutoAdmin() {
                     <button
                       title="Excluir tópico"
                       type="button"
-                      className={`p-1 ml-2 rounded-full hover:bg-red-600 text-red-400`}
+                      className={`ml-2 rounded-full p-1 text-red-400 hover:bg-red-600`}
                       onClick={(e) => {
                         e.stopPropagation();
                         removerTopico(idx);
@@ -282,23 +306,25 @@ export default function EditarEstatutoAdmin() {
                 </button>
                 {/* Conteúdo do tópico */}
                 <div
-                  className={`transition-all duration-300 px-5 ${aberto === idx ? "max-h-[3000px] py-4 opacity-100" : "max-h-0 py-0 opacity-0"} overflow-hidden bg-neutral-800 text-neutral-200 text-base`}
+                  className={`px-5 transition-all duration-300 ${aberto === idx ? "max-h-[3000px] py-4 opacity-100" : "max-h-0 py-0 opacity-0"} overflow-hidden bg-neutral-800 text-base text-neutral-200`}
                 >
                   <ul className="flex flex-col gap-2">
                     {topico.conteudo.map((linha, lIdx) => (
                       <li key={lIdx} className="flex items-center gap-2">
                         <textarea
-                          className="bg-neutral-900 text-white rounded-lg p-2 w-full border border-neutral-700 focus:border-yellow-400 text-base min-h-[36px] resize-y"
+                          className="min-h-[36px] w-full resize-y rounded-lg border border-neutral-700 bg-neutral-900 p-2 text-base text-white focus:border-yellow-400"
                           value={linha}
                           maxLength={200}
-                          onChange={(e) => alterarLinha(idx, lIdx, e.target.value)}
+                          onChange={(e) =>
+                            alterarLinha(idx, lIdx, e.target.value)
+                          }
                         />
                         {/* Remover linha */}
                         {topico.conteudo.length > 1 && (
                           <button
                             title="Excluir linha"
                             type="button"
-                            className="p-1 rounded-full hover:bg-red-600 text-red-400"
+                            className="rounded-full p-1 text-red-400 hover:bg-red-600"
                             onClick={() => removerLinha(idx, lIdx)}
                           >
                             <FaTrash />
@@ -309,7 +335,7 @@ export default function EditarEstatutoAdmin() {
                   </ul>
                   {/* Adicionar linha */}
                   <button
-                    className="mt-3 px-3 py-1 bg-yellow-400 text-black rounded font-bold text-sm flex items-center gap-1"
+                    className="mt-3 flex items-center gap-1 rounded bg-yellow-400 px-3 py-1 text-sm font-bold text-black"
                     onClick={() => adicionarLinha(idx)}
                     disabled={topico.conteudo.length >= 12}
                     type="button"
@@ -317,8 +343,9 @@ export default function EditarEstatutoAdmin() {
                     <FaPlus /> Nova Linha
                   </button>
                   {/* Orientação para emojis */}
-                  <div className="text-xs text-neutral-400 mt-3">
-                    Dica: você pode colar emojis na frente de cada linha. Recomendo sites como{" "}
+                  <div className="mt-3 text-xs text-neutral-400">
+                    Dica: você pode colar emojis na frente de cada linha.
+                    Recomendo sites como{" "}
                     <a
                       href="https://emojipedia.org/"
                       target="_blank"
@@ -345,13 +372,13 @@ export default function EditarEstatutoAdmin() {
         </section>
 
         {/* Última atualização */}
-        <section className="mt-2 text-right text-neutral-400 text-xs">
+        <section className="mt-2 text-right text-xs text-neutral-400">
           Última atualização: {DATA_ULTIMA_ATUALIZACAO}
         </section>
 
-        <div className="flex justify-end mt-6">
+        <div className="mt-6 flex justify-end">
           <button
-            className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg"
+            className="flex items-center gap-2 rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black shadow-lg transition hover:brightness-110"
             onClick={handleSalvar}
             type="button"
           >

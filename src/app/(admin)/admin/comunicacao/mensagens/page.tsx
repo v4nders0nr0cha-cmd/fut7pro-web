@@ -53,28 +53,37 @@ export default function MensagensAdminPage() {
           name="description"
           content="Visualize e responda as mensagens enviadas pelos atletas e pelo SuperAdmin no painel administrativo do Fut7Pro."
         />
-        <meta name="keywords" content="fut7, mensagens, painel admin, comunicação, SaaS" />
+        <meta
+          name="keywords"
+          content="fut7, mensagens, painel admin, comunicação, SaaS"
+        />
       </Head>
-      <main className="max-w-4xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8 flex flex-col gap-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Mensagens Recebidas</h1>
+      <main className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="text-2xl font-bold text-yellow-400 md:text-3xl">
+          Mensagens Recebidas
+        </h1>
         {loading ? (
           <div className="text-white">Carregando...</div>
         ) : mensagens.length === 0 ? (
-          <div className="text-neutral-400">Nenhuma mensagem recebida ainda.</div>
+          <div className="text-neutral-400">
+            Nenhuma mensagem recebida ainda.
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             {mensagens.map((msg) => (
               <div
                 key={msg.id}
-                className="bg-neutral-900 rounded-xl p-4 shadow border border-neutral-700"
+                className="rounded-xl border border-neutral-700 bg-neutral-900 p-4 shadow"
               >
-                <div className="flex items-center gap-3 mb-2">
+                <div className="mb-2 flex items-center gap-3">
                   {msg.status === "novo" ? (
                     <FaEnvelope className="text-yellow-400" />
                   ) : (
                     <FaEnvelopeOpenText className="text-zinc-400" />
                   )}
-                  <span className="font-semibold text-lg text-yellow-300">{msg.assunto}</span>
+                  <span className="text-lg font-semibold text-yellow-300">
+                    {msg.assunto}
+                  </span>
                   <span className="ml-auto text-xs text-neutral-400">
                     {new Date(msg.dataEnvio).toLocaleString("pt-BR", {
                       dateStyle: "short",
@@ -82,13 +91,13 @@ export default function MensagensAdminPage() {
                     })}
                   </span>
                 </div>
-                <div className="text-white mb-1">
+                <div className="mb-1 text-white">
                   <b>De:</b> {msg.nome} ({msg.email}
                   {msg.telefone ? ` | ${msg.telefone}` : ""})
                 </div>
-                <div className="text-white mb-3">{msg.mensagem}</div>
+                <div className="mb-3 text-white">{msg.mensagem}</div>
                 <button
-                  className="text-yellow-400 flex items-center gap-2 hover:underline"
+                  className="flex items-center gap-2 text-yellow-400 hover:underline"
                   onClick={() => window.open(`mailto:${msg.email}`, "_blank")}
                 >
                   <FaReply /> Responder

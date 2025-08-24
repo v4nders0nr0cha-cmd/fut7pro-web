@@ -36,8 +36,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Seta CSS custom property para fácil uso no Tailwind (opcional)
   useEffect(() => {
     if (typeof window !== "undefined") {
-      document.documentElement.style.setProperty("--primary-color", theme.primary);
-      document.documentElement.style.setProperty("--highlight-color", theme.highlight);
+      document.documentElement.style.setProperty(
+        "--primary-color",
+        theme.primary,
+      );
+      document.documentElement.style.setProperty(
+        "--highlight-color",
+        theme.highlight,
+      );
       document.documentElement.style.setProperty("--text-color", theme.text);
     }
   }, [theme]);

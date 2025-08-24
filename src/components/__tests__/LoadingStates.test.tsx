@@ -130,7 +130,9 @@ describe("Loading States", () => {
       render(<TestComponent />);
 
       expect(screen.getByTestId("error-state")).toBeInTheDocument();
-      expect(screen.getByText(/Erro: Falha na conexão com o servidor/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Erro: Falha na conexão com o servidor/),
+      ).toBeInTheDocument();
     });
 
     it("should show error state with retry button", () => {
@@ -215,7 +217,9 @@ describe("Loading States", () => {
       });
 
       rerender(<TestComponent />);
-      expect(screen.getByText(/Erro: Internal Server Error/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Erro: Internal Server Error/),
+      ).toBeInTheDocument();
     });
   });
 

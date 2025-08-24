@@ -17,10 +17,13 @@ export default function PerfilAtletaPage() {
   if (!atleta) return notFound();
 
   // Agora só existem os filtros "temporada" e "historico"
-  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
+  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">(
+    "temporada",
+  );
   const stats =
     filtroStats === "temporada"
-      ? (atleta.estatisticas.anual?.[temporadaAtual] ?? atleta.estatisticas.historico)
+      ? (atleta.estatisticas.anual?.[temporadaAtual] ??
+        atleta.estatisticas.historico)
       : atleta.estatisticas.historico;
 
   // Níveis de assiduidade padronizados Fut7Pro
@@ -42,7 +45,10 @@ export default function PerfilAtletaPage() {
   return (
     <>
       <Head>
-        <title>Perfil de {atleta.nome} | Estatísticas, Conquistas e Histórico | Fut7Pro</title>
+        <title>
+          Perfil de {atleta.nome} | Estatísticas, Conquistas e Histórico |
+          Fut7Pro
+        </title>
         <meta
           name="description"
           content={`Veja o perfil completo de ${atleta.nome}: estatísticas, conquistas, assiduidade, histórico de jogos e muito mais no Fut7Pro.`}
@@ -54,26 +60,29 @@ export default function PerfilAtletaPage() {
       </Head>
 
       <h1 className="sr-only">
-        Perfil do atleta {atleta.nome} – Estatísticas, Conquistas e Histórico | Fut7Pro
+        Perfil do atleta {atleta.nome} – Estatísticas, Conquistas e Histórico |
+        Fut7Pro
       </h1>
 
       {/* Wrapper externo SEM max-w/mx-auto */}
       <div>
         {/* Bloco centralizador */}
-        <div className="flex flex-col md:flex-row gap-8 mt-8 mb-10 w-full max-w-2xl md:mx-auto">
+        <div className="mb-10 mt-8 flex w-full max-w-2xl flex-col gap-8 md:mx-auto md:flex-row">
           <div className="flex-shrink-0">
             <Image
               src={atleta.foto}
               alt={`Foto de ${atleta.nome}`}
               width={160}
               height={160}
-              className="rounded-full border-4 border-yellow-400 mx-auto md:mx-0"
+              className="mx-auto rounded-full border-4 border-yellow-400 md:mx-0"
             />
           </div>
-          <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
-            <h2 className="text-4xl font-bold text-yellow-400 mb-1">{atleta.nome}</h2>
+          <div className="flex flex-1 flex-col items-center text-center md:items-start md:text-left">
+            <h2 className="mb-1 text-4xl font-bold text-yellow-400">
+              {atleta.nome}
+            </h2>
             {atleta.apelido && (
-              <p className="text-yellow-300 mb-1 text-lg">
+              <p className="mb-1 text-lg text-yellow-300">
                 Apelido: <span className="font-semibold">{atleta.apelido}</span>
               </p>
             )}
@@ -86,14 +95,18 @@ export default function PerfilAtletaPage() {
             >
               Status: <span className="font-semibold">{atleta.status}</span>
             </p>
-            <p className="text-base mt-1">
+            <p className="mt-1 text-base">
               {atleta.mensalista ? (
-                <span className="text-green-400 font-bold">💰 MENSALISTA ATIVO</span>
+                <span className="font-bold text-green-400">
+                  💰 MENSALISTA ATIVO
+                </span>
               ) : (
-                <span className="text-zinc-400 font-bold">NÃO É MENSALISTA</span>
+                <span className="font-bold text-zinc-400">
+                  NÃO É MENSALISTA
+                </span>
               )}
             </p>
-            <p className="text-base mt-1">
+            <p className="mt-1 text-base">
               <span className="font-bold">🔁 Nível de Assiduidade:</span>{" "}
               {nivelAssiduidade(atleta.totalJogos)}
             </p>
@@ -101,24 +114,26 @@ export default function PerfilAtletaPage() {
         </div>
 
         {/* Filtro de estatísticas */}
-        <div className="flex flex-col md:flex-row gap-2 md:gap-4 mb-2 items-center justify-center md:justify-start w-full max-w-2xl md:mx-auto">
-          <span className="font-semibold text-yellow-400 text-lg mb-1 md:mb-0">Estatísticas:</span>
+        <div className="mb-2 flex w-full max-w-2xl flex-col items-center justify-center gap-2 md:mx-auto md:flex-row md:justify-start md:gap-4">
+          <span className="mb-1 text-lg font-semibold text-yellow-400 md:mb-0">
+            Estatísticas:
+          </span>
           <div className="flex flex-row gap-2">
             <button
-              className={`px-3 py-1 rounded font-semibold border transition ${
+              className={`rounded border px-3 py-1 font-semibold transition ${
                 filtroStats === "temporada"
-                  ? "bg-yellow-400 text-black border-yellow-400"
-                  : "bg-zinc-900 text-yellow-300 border-yellow-400"
+                  ? "border-yellow-400 bg-yellow-400 text-black"
+                  : "border-yellow-400 bg-zinc-900 text-yellow-300"
               }`}
               onClick={() => setFiltroStats("temporada")}
             >
               Temporada atual
             </button>
             <button
-              className={`px-3 py-1 rounded font-semibold border transition ${
+              className={`rounded border px-3 py-1 font-semibold transition ${
                 filtroStats === "historico"
-                  ? "bg-yellow-400 text-black border-yellow-400"
-                  : "bg-zinc-900 text-yellow-300 border-yellow-400"
+                  ? "border-yellow-400 bg-yellow-400 text-black"
+                  : "border-yellow-400 bg-zinc-900 text-yellow-300"
               }`}
               onClick={() => setFiltroStats("historico")}
             >
@@ -129,7 +144,7 @@ export default function PerfilAtletaPage() {
 
         {/* Estatísticas */}
         <section className="w-full max-w-2xl md:mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-4">
+          <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
             {[
               { label: "Jogos", valor: stats.jogos ?? "-" },
               { label: "Gols", valor: stats.gols ?? "-" },
@@ -138,13 +153,20 @@ export default function PerfilAtletaPage() {
               {
                 label: "Média Vitórias",
                 valor:
-                  typeof stats.mediaVitorias === "number" ? stats.mediaVitorias.toFixed(2) : "-",
+                  typeof stats.mediaVitorias === "number"
+                    ? stats.mediaVitorias.toFixed(2)
+                    : "-",
               },
               { label: "Pontuação", valor: stats.pontuacao ?? "-" },
             ].map((item) => (
-              <div key={item.label} className="bg-zinc-800 p-4 rounded text-center shadow-md">
-                <p className="text-xl font-bold text-yellow-400">{item.valor}</p>
-                <p className="text-sm text-zinc-400 mt-1">{item.label}</p>
+              <div
+                key={item.label}
+                className="rounded bg-zinc-800 p-4 text-center shadow-md"
+              >
+                <p className="text-xl font-bold text-yellow-400">
+                  {item.valor}
+                </p>
+                <p className="mt-1 text-sm text-zinc-400">{item.label}</p>
               </div>
             ))}
           </div>
@@ -163,13 +185,13 @@ export default function PerfilAtletaPage() {
         {/* Histórico */}
         {atleta.historico && atleta.historico.length > 0 && (
           <section className="mt-12 w-full max-w-2xl md:mx-auto">
-            <div className="overflow-x-auto w-full">
+            <div className="w-full overflow-x-auto">
               <HistoricoJogos historico={atleta.historico} />
             </div>
-            <div className="text-center mt-4">
+            <div className="mt-4 text-center">
               <Link
                 href={`/atletas/${atleta.slug}/historico`}
-                className="inline-block text-yellow-400 hover:underline text-sm"
+                className="inline-block text-sm text-yellow-400 hover:underline"
               >
                 Ver histórico completo →
               </Link>
@@ -178,10 +200,10 @@ export default function PerfilAtletaPage() {
         )}
 
         {/* Comparador */}
-        <div className="mt-10 text-center md:text-right w-full max-w-2xl md:mx-auto">
+        <div className="mt-10 w-full max-w-2xl text-center md:mx-auto md:text-right">
           <Link
             href={`/estatisticas/tira-teima?atleta1=${atleta.slug}`}
-            className="inline-block bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded"
+            className="inline-block rounded bg-yellow-500 px-4 py-2 font-bold text-black hover:bg-yellow-400"
           >
             ⚔️ Comparar com outro atleta
           </Link>

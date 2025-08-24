@@ -19,13 +19,16 @@ export default function ClientWrapper() {
     quadrimestres[anoSelecionado as keyof typeof quadrimestres];
 
   return (
-    <div className="min-h-screen bg-fundo text-white px-4 pt-4 pb-10">
+    <div className="min-h-screen bg-fundo px-4 pb-10 pt-4 text-white">
       {/* Título e Descrição Centralizados */}
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-yellow-400 mb-2">Os Campeões do Racha</h1>
-        <p className="text-gray-300 max-w-2xl mx-auto mb-4">
-          Conheça os destaques do ano, melhores por posição e os campeões de cada quadrimestre.
-          Dados atualizados automaticamente direto das partidas.
+      <div className="mb-6 text-center">
+        <h1 className="mb-2 text-3xl font-bold text-yellow-400">
+          Os Campeões do Racha
+        </h1>
+        <p className="mx-auto mb-4 max-w-2xl text-gray-300">
+          Conheça os destaques do ano, melhores por posição e os campeões de
+          cada quadrimestre. Dados atualizados automaticamente direto das
+          partidas.
         </p>
 
         <div className="inline-block">
@@ -38,23 +41,27 @@ export default function ClientWrapper() {
       </div>
 
       {/* Campeões do Ano */}
-      <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">Campeões do Ano</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8 justify-center">
+      <h2 className="mb-4 text-center text-2xl font-bold text-yellow-400">
+        Campeões do Ano
+      </h2>
+      <div className="mb-8 grid grid-cols-1 justify-center gap-6 sm:grid-cols-2 md:grid-cols-3">
         {campeoesAno.map((item, idx) => (
           <CampeaoAnoCard key={idx} {...item} />
         ))}
       </div>
 
       {/* Melhores por posição */}
-      <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">Melhores por Posição</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8 justify-center">
+      <h2 className="mb-4 text-center text-2xl font-bold text-yellow-400">
+        Melhores por Posição
+      </h2>
+      <div className="mb-8 grid grid-cols-1 justify-center gap-6 sm:grid-cols-2 md:grid-cols-4">
         {melhoresPorPosicao.map((item, idx) => (
           <CampeaoPosicaoCard key={idx} {...item} />
         ))}
       </div>
 
       {/* Campeões por Quadrimestre */}
-      <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">
+      <h2 className="mb-4 text-center text-2xl font-bold text-yellow-400">
         Campeões por Quadrimestre
       </h2>
       {dadosQuadrimestre && <QuadrimestreGrid dados={dadosQuadrimestre} />}

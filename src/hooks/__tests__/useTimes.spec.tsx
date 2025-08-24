@@ -1,17 +1,17 @@
-import { renderHook, waitFor } from '@testing-library/react';
-import { useTimes } from '@/hooks/useTimes';
+import { renderHook, waitFor } from "@testing-library/react";
+import { useTimes } from "@/hooks/useTimes";
 
 afterEach(() => {
   (global.fetch as jest.Mock).mockReset();
 });
 
-describe('useTimes', () => {
-  it('retorna dados básicos do hook', async () => {
+describe("useTimes", () => {
+  it("retorna dados básicos do hook", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce({
-      json: async () => [{ id: 't1', nome: 'Time 1' }],
+      json: async () => [{ id: "t1", nome: "Time 1" }],
     } as any);
 
-    const { result } = renderHook(() => useTimes('r1'));
+    const { result } = renderHook(() => useTimes("r1"));
 
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
@@ -20,5 +20,3 @@ describe('useTimes', () => {
     expect(Array.isArray(result.current.times)).toBe(true);
   });
 });
-
-

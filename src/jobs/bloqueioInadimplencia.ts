@@ -24,7 +24,10 @@ export async function processarBloqueioRachas() {
       const fimTrial = subDays(hoje, diasTrial);
       if (isBefore(criadoEm, fimTrial)) {
         const algumPago = financeiros.some(
-          (f) => f.tipo === "mensalidade" && f.categoria === "receita" && f.valor > 0
+          (f) =>
+            f.tipo === "mensalidade" &&
+            f.categoria === "receita" &&
+            f.valor > 0,
         );
         if (!algumPago) {
           await prisma.racha.update({
@@ -40,7 +43,12 @@ export async function processarBloqueioRachas() {
     if (status === "ATIVO" || status === "INADIMPLENTE") {
       // Busca último lançamento financeiro de mensalidade pago
       const pagamentos = financeiros
-        .filter((f) => f.tipo === "mensalidade" && f.categoria === "receita" && f.valor > 0)
+        .filter(
+          (f) =>
+            f.tipo === "mensalidade" &&
+            f.categoria === "receita" &&
+            f.valor > 0,
+        )
         .sort((a, b) => (b.data > a.data ? 1 : -1));
       const ultimoPagamento = pagamentos[0];
       const prazoMaxAtraso = 5; // dias de tolerância após vencimento
@@ -51,7 +59,10 @@ export async function processarBloqueioRachas() {
           where: { id: racha.id },
           data: { status: "BLOQUEADO" },
         });
-        await registrarLogBloqueio(racha.id, "Pagamento de mensalidade não efetuado");
+        await registrarLogBloqueio(
+          racha.id,
+          "Pagamento de mensalidade não efetuado",
+        );
       }
     }
   }

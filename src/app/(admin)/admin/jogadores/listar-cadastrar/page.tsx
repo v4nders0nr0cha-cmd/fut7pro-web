@@ -2,7 +2,13 @@
 
 import Head from "next/head";
 import { useState } from "react";
-import { FaUserPlus, FaSearch, FaEdit, FaTrash, FaExclamationTriangle } from "react-icons/fa";
+import {
+  FaUserPlus,
+  FaSearch,
+  FaEdit,
+  FaTrash,
+  FaExclamationTriangle,
+} from "react-icons/fa";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
@@ -34,33 +40,35 @@ function ModalExcluirJogador({
 }) {
   if (!open || !jogador) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-      <div className="bg-[#201414] border-2 border-red-700 rounded-2xl shadow-xl p-8 max-w-xs w-full flex flex-col items-center gap-4">
-        <FaExclamationTriangle className="text-4xl text-red-600 animate-pulse" />
-        <h2 className="text-lg text-red-500 font-bold text-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+      <div className="flex w-full max-w-xs flex-col items-center gap-4 rounded-2xl border-2 border-red-700 bg-[#201414] p-8 shadow-xl">
+        <FaExclamationTriangle className="animate-pulse text-4xl text-red-600" />
+        <h2 className="text-center text-lg font-bold text-red-500">
           Atenção! Exclusão definitiva de jogador
         </h2>
-        <div className="text-sm text-gray-200 text-center">
+        <div className="text-center text-sm text-gray-200">
           <b>{jogador.nome}</b> será{" "}
-          <span className="text-red-400 font-bold">
+          <span className="font-bold text-red-400">
             removido de todos os rankings, históricos e estatísticas
           </span>{" "}
           do racha.
           <br />
-          <span className="text-red-400 font-bold block mt-2">Essa ação é IRREVERSÍVEL!</span>
+          <span className="mt-2 block font-bold text-red-400">
+            Essa ação é IRREVERSÍVEL!
+          </span>
           <br />
           Tem certeza que deseja continuar?
         </div>
-        <div className="flex gap-3 mt-2">
+        <div className="mt-2 flex gap-3">
           <button
             onClick={onClose}
-            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
+            className="rounded-md bg-gray-700 px-4 py-2 font-semibold text-white hover:bg-gray-600"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-md"
+            className="rounded-md bg-red-700 px-4 py-2 font-bold text-white hover:bg-red-800"
           >
             Excluir DEFINITIVAMENTE
           </button>
@@ -79,7 +87,9 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
         ? "bg-yellow-700 text-yellow-200"
         : "bg-gray-600 text-gray-200";
   return (
-    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold mr-1 ${color}`}>
+    <span
+      className={`mr-1 inline-block rounded px-2 py-0.5 text-xs font-bold ${color}`}
+    >
       {status}
     </span>
   );
@@ -88,7 +98,8 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const rachaId = rachaConfig.slug;
-  const { jogadores, addJogador, updateJogador, deleteJogador } = useJogadores(rachaId);
+  const { jogadores, addJogador, updateJogador, deleteJogador } =
+    useJogadores(rachaId);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
@@ -96,7 +107,7 @@ export default function Page() {
   const jogadoresFiltrados = jogadores.filter(
     (j) =>
       j.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      j.apelido.toLowerCase().includes(busca.toLowerCase())
+      j.apelido.toLowerCase().includes(busca.toLowerCase()),
   );
 
   const cardVariants = {
@@ -104,7 +115,12 @@ export default function Page() {
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { delay: i * 0.06, type: "spring", stiffness: 60, damping: 18 },
+      transition: {
+        delay: i * 0.06,
+        type: "spring",
+        stiffness: 60,
+        damping: 18,
+      },
     }),
     exit: { opacity: 0, y: 14, transition: { duration: 0.2 } },
   };
@@ -119,42 +135,50 @@ export default function Page() {
         />
       </Head>
 
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-2 sm:px-6 max-w-5xl mx-auto">
+      <div className="mx-auto max-w-5xl px-2 pb-24 pt-20 sm:px-6 md:pb-8 md:pt-6">
         {/* DESCRIÇÃO ADMIN */}
-        <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4 mb-6 text-sm text-gray-300">
+        <div className="mb-6 rounded-lg border border-yellow-600 bg-[#1a1a1a] p-4 text-sm text-gray-300">
           <p className="mb-2">
-            <strong className="text-yellow-400">📌 Importante:</strong> Todos os atletas do seu
-            racha podem se cadastrar diretamente pelo <strong>site público</strong>.
+            <strong className="text-yellow-400">📌 Importante:</strong> Todos os
+            atletas do seu racha podem se cadastrar diretamente pelo{" "}
+            <strong>site público</strong>.
           </p>
           <p className="mb-2">
-            Recomendamos que você incentive os jogadores a realizarem o cadastro por conta própria,
-            garantindo dados corretos e integração automática com os rankings.
+            Recomendamos que você incentive os jogadores a realizarem o cadastro
+            por conta própria, garantindo dados corretos e integração automática
+            com os rankings.
           </p>
           <p className="mb-2">
-            Utilize o botão <strong>"Cadastrar Jogador"</strong> apenas em casos específicos, como:
+            Utilize o botão <strong>"Cadastrar Jogador"</strong> apenas em casos
+            específicos, como:
           </p>
-          <ul className="list-disc ml-5 mt-2">
+          <ul className="ml-5 mt-2 list-disc">
             <li>Jogadores com dificuldade de acesso à internet;</li>
             <li>Atletas com pouca familiaridade com tecnologia;</li>
-            <li>Casos excepcionais onde o administrador precisa intervir manualmente.</li>
+            <li>
+              Casos excepcionais onde o administrador precisa intervir
+              manualmente.
+            </li>
           </ul>
         </div>
 
         {/* BARRA DE BUSCA */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-6">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="mb-6 flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <div className="flex w-full items-center gap-2 sm:w-auto">
             <input
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar por nome ou apelido..."
-              className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-72 focus:border-cyan-600"
+              className="w-full rounded-md border border-gray-700 bg-[#23272f] px-3 py-2 text-white focus:border-cyan-600 sm:w-72"
             />
-            <FaSearch className="text-gray-400 text-lg -ml-8 pointer-events-none" />
+            <FaSearch className="pointer-events-none -ml-8 text-lg text-gray-400" />
           </div>
           <button
-            onClick={() => alert("Cadastro manual implementado apenas em casos específicos.")}
-            className="flex items-center gap-2 bg-cyan-700 hover:bg-cyan-800 text-white px-4 py-2 rounded-lg font-bold"
+            onClick={() =>
+              alert("Cadastro manual implementado apenas em casos específicos.")
+            }
+            className="flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2 font-bold text-white hover:bg-cyan-800"
           >
             <FaUserPlus /> Cadastrar Jogador
           </button>
@@ -162,10 +186,10 @@ export default function Page() {
 
         {/* LISTA DE JOGADORES */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
+          <div className="mb-2 flex items-center gap-2 text-sm font-bold text-cyan-400">
             Jogadores cadastrados ({jogadoresFiltrados.length})
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <AnimatePresence>
               {jogadoresFiltrados.map((j, i) => (
                 <motion.div
@@ -176,7 +200,7 @@ export default function Page() {
                   exit="exit"
                   variants={cardVariants}
                   layout
-                  className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
+                  className="rounded-xl border border-cyan-700 bg-[#23272f] p-4 shadow-xl"
                 >
                   <div className="flex items-center">
                     <Image
@@ -186,30 +210,33 @@ export default function Page() {
                       height={48}
                       className="rounded-full object-cover"
                     />
-                    <div className="pl-4 flex-1">
+                    <div className="flex-1 pl-4">
                       <div className="font-bold text-white">
-                        {j.nome} <span className="text-gray-400">({j.apelido})</span>
+                        {j.nome}{" "}
+                        <span className="text-gray-400">({j.apelido})</span>
                       </div>
                       <div className="text-sm text-gray-300">{j.posicao}</div>
-                      <div className="text-xs mt-1 flex gap-1 items-center">
+                      <div className="mt-1 flex items-center gap-1 text-xs">
                         <StatusBadge status={j.status} />
                         {j.mensalista && (
-                          <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
+                          <span className="rounded bg-yellow-700 px-2 py-0.5 text-xs font-bold text-yellow-200">
                             Mensalista
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                  <div className="mt-4 flex justify-end gap-2 border-t border-cyan-900/40 pt-3">
                     <button
-                      className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                      onClick={() => alert("Função de edição em desenvolvimento.")}
+                      className="flex items-center gap-1 rounded bg-gray-700 px-2 py-1 text-xs text-white hover:bg-cyan-800"
+                      onClick={() =>
+                        alert("Função de edição em desenvolvimento.")
+                      }
                     >
                       <FaEdit /> Editar
                     </button>
                     <button
-                      className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-red-700 px-2 py-1 text-xs text-white hover:bg-red-800"
                       onClick={() => {
                         setExcluirJogador(j);
                         setShowModalExcluir(true);

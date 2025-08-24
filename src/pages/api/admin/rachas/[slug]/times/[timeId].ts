@@ -1,13 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { timeId } = req.query;
 
   if (!timeId) return res.status(400).json({ error: "timeId é obrigatório" });
 
   if (req.method === "PUT") {
-    const { nome, slug, escudoUrl, corPrincipal, corSecundaria, jogadores } = req.body;
+    const { nome, slug, escudoUrl, corPrincipal, corSecundaria, jogadores } =
+      req.body;
     const updated = await prisma.time.update({
       where: { id: String(timeId) },
       data: {

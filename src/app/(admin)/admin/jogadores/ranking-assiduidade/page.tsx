@@ -68,11 +68,13 @@ export default function RankingAssiduidade() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-4xl mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold text-cyan-300">Ranking de Assiduidade</h1>
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 className="text-2xl font-bold text-cyan-300">
+            Ranking de Assiduidade
+          </h1>
           <select
-            className="rounded-xl px-4 py-2 bg-[#23272f] text-white border border-gray-600 focus:border-cyan-500"
+            className="rounded-xl border border-gray-600 bg-[#23272f] px-4 py-2 text-white focus:border-cyan-500"
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
           >
@@ -84,50 +86,55 @@ export default function RankingAssiduidade() {
           </select>
         </div>
 
-        <div className="bg-[#23272f] border-l-4 border-cyan-400 rounded-xl p-4 mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <FaInfoCircle className="text-cyan-300 text-2xl shrink-0" />
-          <div className="flex-1 text-sm text-gray-200 leading-relaxed">
+        <div className="mb-8 flex flex-col items-start gap-4 rounded-xl border-l-4 border-cyan-400 bg-[#23272f] p-4 sm:flex-row sm:items-center">
+          <FaInfoCircle className="shrink-0 text-2xl text-cyan-300" />
+          <div className="flex-1 text-sm leading-relaxed text-gray-200">
             <b>O que é o Ranking de Assiduidade?</b>
             <br />
-            Ele mostra <b>quais atletas mais participam dos jogos</b> do racha, considerando apenas
-            presenças registradas oficialmente.
-            <ul className="list-disc pl-5 my-2 text-gray-300">
+            Ele mostra <b>quais atletas mais participam dos jogos</b> do racha,
+            considerando apenas presenças registradas oficialmente.
+            <ul className="my-2 list-disc pl-5 text-gray-300">
               <li>Visível apenas para administradores.</li>
               <li>Períodos: mês, quadrimestre, ano ou todos os anos.</li>
               <li>Alta assiduidade = comprometimento e regularidade.</li>
               <li>Use para premiar e incentivar os mais assíduos.</li>
               <li>Baseado nos dados registrados no sistema.</li>
             </ul>
-            <span className="block mt-2">
-              <b>Dica:</b> reconheça os mais assíduos com brindes, status VIP ou descontos. Isso
-              gera engajamento e fideliza o grupo.
+            <span className="mt-2 block">
+              <b>Dica:</b> reconheça os mais assíduos com brindes, status VIP ou
+              descontos. Isso gera engajamento e fideliza o grupo.
             </span>
           </div>
         </div>
 
-        <div className="overflow-x-auto bg-[#191b1f] rounded-2xl shadow border border-gray-800">
+        <div className="overflow-x-auto rounded-2xl border border-gray-800 bg-[#191b1f] shadow">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="text-cyan-200 text-left">
-                <th className="py-3 px-4">#</th>
-                <th className="py-3 px-4">Jogador</th>
-                <th className="py-3 px-4">Apelido</th>
-                <th className="py-3 px-4">Jogos</th>
-                <th className="py-3 px-4">Mensalista</th>
+              <tr className="text-left text-cyan-200">
+                <th className="px-4 py-3">#</th>
+                <th className="px-4 py-3">Jogador</th>
+                <th className="px-4 py-3">Apelido</th>
+                <th className="px-4 py-3">Jogos</th>
+                <th className="px-4 py-3">Mensalista</th>
               </tr>
             </thead>
             <tbody>
               {jogadoresFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="text-center text-gray-400 py-8">
+                  <td colSpan={5} className="py-8 text-center text-gray-400">
                     Nenhum jogador registrado no período selecionado.
                   </td>
                 </tr>
               )}
               {jogadoresFiltrados.map((j, idx) => (
-                <tr key={j.id} className="border-t border-gray-800 hover:bg-[#22242b]">
-                  <td className="py-3 px-4 font-bold text-cyan-300">{idx + 1}</td>
-                  <td className="py-3 px-4 flex items-center gap-3">
+                <tr
+                  key={j.id}
+                  className="border-t border-gray-800 hover:bg-[#22242b]"
+                >
+                  <td className="px-4 py-3 font-bold text-cyan-300">
+                    {idx + 1}
+                  </td>
+                  <td className="flex items-center gap-3 px-4 py-3">
                     <Image
                       src={j.avatar}
                       alt={`Foto do jogador ${j.nome}`}
@@ -137,11 +144,13 @@ export default function RankingAssiduidade() {
                     />
                     <span className="text-white">{j.nome}</span>
                   </td>
-                  <td className="py-3 px-4 text-cyan-200 font-semibold">{j.apelido}</td>
-                  <td className="py-3 px-4 text-white font-bold">{j.jogos}</td>
-                  <td className="py-3 px-4">
+                  <td className="px-4 py-3 font-semibold text-cyan-200">
+                    {j.apelido}
+                  </td>
+                  <td className="px-4 py-3 font-bold text-white">{j.jogos}</td>
+                  <td className="px-4 py-3">
                     {j.mensalista && (
-                      <span className="px-2 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
+                      <span className="rounded bg-yellow-500 px-2 py-0.5 text-xs font-semibold text-black">
                         Mensalista
                       </span>
                     )}
@@ -152,7 +161,7 @@ export default function RankingAssiduidade() {
           </table>
         </div>
 
-        <div className="text-xs text-gray-400 mt-4 text-center">
+        <div className="mt-4 text-center text-xs text-gray-400">
           * Apenas presenças lançadas no sistema são contabilizadas.
         </div>
       </main>

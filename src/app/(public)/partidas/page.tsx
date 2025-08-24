@@ -11,7 +11,8 @@ export default function PartidasPage() {
     <>
       <Head>
         <title>
-          Partidas de Futebol 7 | Histórico, Times do Dia e Sorteio Inteligente | Fut7Pro
+          Partidas de Futebol 7 | Histórico, Times do Dia e Sorteio Inteligente
+          | Fut7Pro
         </title>
         <meta
           name="description"
@@ -24,29 +25,30 @@ export default function PartidasPage() {
       </Head>
 
       {/* TÍTULO PRINCIPAL PADRÃO */}
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+      <h1 className="mb-3 mt-10 text-center text-3xl font-extrabold leading-tight text-yellow-400 drop-shadow-sm md:text-4xl">
         Partidas
       </h1>
       {/* DESCRIÇÃO PADRÃO */}
-      <p className="mb-8 text-base md:text-lg text-gray-300 text-center max-w-2xl mx-auto leading-relaxed font-medium">
+      <p className="mx-auto mb-8 max-w-2xl text-center text-base font-medium leading-relaxed text-gray-300 md:text-lg">
         Escolha o que deseja visualizar: histórico, detalhes ou times do dia.
       </p>
 
-      <div className="flex justify-center w-full">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl">
+      <div className="flex w-full justify-center">
+        <div className="grid w-full max-w-4xl grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 md:grid-cols-3">
           {/* Histórico de Partidas */}
           <Link href="/partidas/historico">
-            <div className="group bg-gradient-to-br from-[#181818cc] to-[#212121] border border-yellow-500/40 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] cursor-pointer min-h-[280px]">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-[#222] rounded-full mb-4 sm:mb-6 group-hover:bg-yellow-400/90 transition">
-                <FaHistory className="text-yellow-400 group-hover:text-black text-2xl sm:text-4xl transition" />
+            <div className="group flex min-h-[280px] cursor-pointer flex-col items-center justify-between rounded-2xl border border-yellow-500/40 bg-gradient-to-br from-[#181818cc] to-[#212121] p-5 shadow-lg transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] sm:p-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#222] transition group-hover:bg-yellow-400/90 sm:mb-6 sm:h-16 sm:w-16">
+                <FaHistory className="text-2xl text-yellow-400 transition group-hover:text-black sm:text-4xl" />
               </div>
-              <span className="font-bold text-base sm:text-lg mb-1 sm:mb-2 text-white text-center">
+              <span className="mb-1 text-center text-base font-bold text-white sm:mb-2 sm:text-lg">
                 Histórico de Partidas
               </span>
-              <span className="text-textoSuave text-center mb-4 sm:mb-6 text-xs sm:text-base">
-                Veja todos os jogos já realizados, com placares, locais e filtros detalhados.
+              <span className="text-textoSuave mb-4 text-center text-xs sm:mb-6 sm:text-base">
+                Veja todos os jogos já realizados, com placares, locais e
+                filtros detalhados.
               </span>
-              <span className="mt-auto px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold group-hover:bg-black group-hover:text-yellow-400 transition text-xs sm:text-base">
+              <span className="mt-auto rounded-xl bg-yellow-400 px-5 py-2 text-xs font-semibold text-black transition group-hover:bg-black group-hover:text-yellow-400 sm:text-base">
                 Acessar
               </span>
             </div>
@@ -54,17 +56,18 @@ export default function PartidasPage() {
 
           {/* Times do Dia */}
           <Link href="/partidas/times-do-dia">
-            <div className="group bg-gradient-to-br from-[#181818cc] to-[#212121] border border-yellow-500/40 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] cursor-pointer min-h-[280px]">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-[#222] rounded-full mb-4 sm:mb-6 group-hover:bg-yellow-400/90 transition">
-                <FaUsers className="text-yellow-400 group-hover:text-black text-2xl sm:text-4xl transition" />
+            <div className="group flex min-h-[280px] cursor-pointer flex-col items-center justify-between rounded-2xl border border-yellow-500/40 bg-gradient-to-br from-[#181818cc] to-[#212121] p-5 shadow-lg transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] sm:p-6">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#222] transition group-hover:bg-yellow-400/90 sm:mb-6 sm:h-16 sm:w-16">
+                <FaUsers className="text-2xl text-yellow-400 transition group-hover:text-black sm:text-4xl" />
               </div>
-              <span className="font-bold text-base sm:text-lg mb-1 sm:mb-2 text-white text-center">
+              <span className="mb-1 text-center text-base font-bold text-white sm:mb-2 sm:text-lg">
                 Times do Dia
               </span>
-              <span className="text-textoSuave text-center mb-4 sm:mb-6 text-xs sm:text-base">
-                Confira os times sorteados e a escalação oficial do próximo jogo.
+              <span className="text-textoSuave mb-4 text-center text-xs sm:mb-6 sm:text-base">
+                Confira os times sorteados e a escalação oficial do próximo
+                jogo.
               </span>
-              <span className="mt-auto px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold group-hover:bg-black group-hover:text-yellow-400 transition text-xs sm:text-base">
+              <span className="mt-auto rounded-xl bg-yellow-400 px-5 py-2 text-xs font-semibold text-black transition group-hover:bg-black group-hover:text-yellow-400 sm:text-base">
                 Acessar
               </span>
             </div>
@@ -73,32 +76,32 @@ export default function PartidasPage() {
           {/* Sorteio Inteligente */}
           <div
             title="Apenas administradores podem acessar esta área"
-            className={`group bg-gradient-to-br from-[#181818cc] to-[#212121] border border-yellow-500/40 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] ${
+            className={`group flex flex-col items-center justify-between rounded-2xl border border-yellow-500/40 bg-gradient-to-br from-[#181818cc] to-[#212121] p-5 shadow-lg transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] sm:p-6 ${
               isAdmin ? "cursor-pointer" : "cursor-not-allowed"
             } min-h-[280px]`}
           >
-            <div className="absolute top-0 left-0 right-0 flex justify-center">
-              <span className="bg-red-600 text-white font-bold text-xs px-4 py-1 rounded-b-2xl tracking-wide shadow-md">
+            <div className="absolute left-0 right-0 top-0 flex justify-center">
+              <span className="rounded-b-2xl bg-red-600 px-4 py-1 text-xs font-bold tracking-wide text-white shadow-md">
                 ÁREA RESTRITA PARA ADMINISTRADORES
               </span>
             </div>
-            <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-[#222] rounded-full mb-4 sm:mb-6 mt-6 group-hover:bg-yellow-400/90 transition">
-              <FaRandom className="text-yellow-400 group-hover:text-black text-2xl sm:text-4xl transition" />
+            <div className="mb-4 mt-6 flex h-12 w-12 items-center justify-center rounded-full bg-[#222] transition group-hover:bg-yellow-400/90 sm:mb-6 sm:h-16 sm:w-16">
+              <FaRandom className="text-2xl text-yellow-400 transition group-hover:text-black sm:text-4xl" />
             </div>
-            <span className="font-bold text-base sm:text-lg mb-1 sm:mb-2 text-white text-center">
+            <span className="mb-1 text-center text-base font-bold text-white sm:mb-2 sm:text-lg">
               Sorteio Inteligente
             </span>
-            <span className="text-textoSuave text-center mb-4 sm:mb-6 text-xs sm:text-base">
+            <span className="text-textoSuave mb-4 text-center text-xs sm:mb-6 sm:text-base">
               Gere times equilibrados usando o sistema exclusivo.
             </span>
             {isAdmin ? (
               <Link href="/admin/sorteio-inteligente">
-                <span className="mt-auto px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold transition text-xs sm:text-base">
+                <span className="mt-auto rounded-xl bg-yellow-400 px-5 py-2 text-xs font-semibold text-black transition sm:text-base">
                   Acessar
                 </span>
               </Link>
             ) : (
-              <span className="mt-auto px-5 py-2 rounded-xl bg-[#222] text-yellow-400 font-semibold opacity-80 cursor-not-allowed border border-yellow-400 text-xs sm:text-base">
+              <span className="mt-auto cursor-not-allowed rounded-xl border border-yellow-400 bg-[#222] px-5 py-2 text-xs font-semibold text-yellow-400 opacity-80 sm:text-base">
                 Acesso restrito
               </span>
             )}

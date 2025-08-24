@@ -6,7 +6,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export function useTorneios(rachaId: string) {
   const { data, error, mutate } = useSWR<Torneio[]>(
     rachaId ? `/api/admin/rachas/${rachaId}/torneios` : null,
-    fetcher
+    fetcher,
   );
 
   async function addTorneio(torneio: Partial<Torneio>) {

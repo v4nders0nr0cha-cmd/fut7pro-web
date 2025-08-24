@@ -23,7 +23,11 @@ const iconProps = {
 };
 
 const pages = [
-  { href: "/partidas", label: "Partidas", icon: <PartidasIcon {...iconProps} /> },
+  {
+    href: "/partidas",
+    label: "Partidas",
+    icon: <PartidasIcon {...iconProps} />,
+  },
   {
     href: "/estatisticas",
     label: "Estatísticas",
@@ -39,7 +43,11 @@ const pages = [
     label: "Grandes Torneios",
     icon: <Trophy size={20} className="mr-2 text-yellow-400" />,
   },
-  { href: "/atletas", label: "Atletas", icon: <User size={20} className="mr-2 text-yellow-400" /> },
+  {
+    href: "/atletas",
+    label: "Atletas",
+    icon: <User size={20} className="mr-2 text-yellow-400" />,
+  },
   {
     href: "/sobre-nos",
     label: "Sobre Nós",
@@ -51,11 +59,13 @@ export default function TopNavMenu() {
   const pathname = usePathname() ?? "";
 
   return (
-    <nav className="w-full border-b border-[#232323] bg-[#181818] flex justify-center z-40 select-none animate-slide-down">
-      <ul className="flex gap-6 md:gap-12 py-3">
+    <nav className="z-40 flex w-full animate-slide-down select-none justify-center border-b border-[#232323] bg-[#181818]">
+      <ul className="flex gap-6 py-3 md:gap-12">
         {pages.map(({ href, label, icon }) => {
           const isActive =
-            href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+            href === "/"
+              ? pathname === "/"
+              : pathname === href || pathname.startsWith(href + "/");
 
           return (
             <li key={href} className="relative">
@@ -63,8 +73,8 @@ export default function TopNavMenu() {
                 href={href}
                 className={`flex items-center px-2 transition-all duration-300 ${
                   isActive
-                    ? "text-yellow-400 font-extrabold"
-                    : "text-zinc-200 hover:text-yellow-400 font-semibold"
+                    ? "font-extrabold text-yellow-400"
+                    : "font-semibold text-zinc-200 hover:text-yellow-400"
                 }`}
                 tabIndex={0}
                 aria-current={isActive ? "page" : undefined}
@@ -73,7 +83,7 @@ export default function TopNavMenu() {
                 <span className="text-base uppercase">{label}</span>
               </Link>
               {isActive && (
-                <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-yellow-400 rounded animate-pulse" />
+                <span className="absolute -bottom-1 left-0 h-[2px] w-full animate-pulse rounded bg-yellow-400" />
               )}
             </li>
           );

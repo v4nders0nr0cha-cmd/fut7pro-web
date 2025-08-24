@@ -9,20 +9,25 @@ type ChampionTeamCardProps = {
 };
 
 const ChampionTeamCard = ({ teamName, image }: ChampionTeamCardProps) => {
-  const teamImage = image && image.length > 0 ? image : "/images/times/time_campeao_padrao_01.png";
+  const teamImage =
+    image && image.length > 0
+      ? image
+      : "/images/times/time_campeao_padrao_01.png";
 
   return (
     <Link href="/partidas">
-      <div className="flex items-center gap-3 bg-[#1a1a1a] rounded-xl p-3 mb-4 cursor-pointer hover:bg-[#2a2a2a] transition-all">
+      <div className="mb-4 flex cursor-pointer items-center gap-3 rounded-xl bg-[#1a1a1a] p-3 transition-all hover:bg-[#2a2a2a]">
         <Image
           src={teamImage}
           alt={teamName}
           width={64}
           height={64}
-          className="rounded-lg w-[64px] h-[64px] object-cover"
+          className="h-[64px] w-[64px] rounded-lg object-cover"
         />
         <div className="text-sm">
-          <p className="text-[10px] font-bold uppercase text-yellow-400">Time Campeão do Dia</p>
+          <p className="text-[10px] font-bold uppercase text-yellow-400">
+            Time Campeão do Dia
+          </p>
           <p className="font-semibold text-white">{teamName}</p>
         </div>
       </div>

@@ -59,12 +59,13 @@ export function useApiState(): ApiState & ApiStateActions {
         setSuccess(true);
         return result;
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+        const errorMessage =
+          err instanceof Error ? err.message : "Erro desconhecido";
         setError(errorMessage);
         return null;
       }
     },
-    [setLoading, setError, setSuccess]
+    [setLoading, setError, setSuccess],
   );
 
   return {

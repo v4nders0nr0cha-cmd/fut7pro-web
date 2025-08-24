@@ -62,22 +62,24 @@ export default function SugestoesPage() {
   }
 
   return (
-    <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-xl mx-auto w-full px-4">
-      <h1 className="text-xl font-bold text-zinc-100 mb-4">Sugestões & Feedback</h1>
+    <div className="mx-auto w-full max-w-xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+      <h1 className="mb-4 text-xl font-bold text-zinc-100">
+        Sugestões & Feedback
+      </h1>
 
-      <div className="mb-6 bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
-        <p className="text-yellow-300 font-bold mb-1">
+      <div className="mb-6 rounded-lg border-l-4 border-yellow-400 bg-zinc-800 p-4">
+        <p className="mb-1 font-bold text-yellow-300">
           Envie suas ideias e sugestões ao administrador do racha!
         </p>
-        <p className="text-zinc-300 text-sm">
-          Seu feedback ajuda a melhorar o sistema e o funcionamento do racha. Escreva sua sugestão
-          abaixo:
+        <p className="text-sm text-zinc-300">
+          Seu feedback ajuda a melhorar o sistema e o funcionamento do racha.
+          Escreva sua sugestão abaixo:
         </p>
       </div>
 
       <div className="mb-8">
         <textarea
-          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 mb-2 min-h-[60px] outline-none"
+          className="mb-2 min-h-[60px] w-full rounded border border-yellow-400 bg-zinc-900 p-3 text-gray-100 outline-none"
           placeholder="Digite sua sugestão ou ideia (mínimo 6 caracteres)..."
           value={nova}
           onChange={(e) => {
@@ -88,25 +90,30 @@ export default function SugestoesPage() {
           disabled={enviando}
         />
         <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded shadow disabled:bg-gray-500 transition"
+          className="rounded bg-yellow-400 px-4 py-2 font-bold text-black shadow transition hover:bg-yellow-500 disabled:bg-gray-500"
           onClick={enviarSugestao}
           disabled={enviando || nova.trim().length < 6}
         >
           {enviando ? "Enviando..." : "Enviar Sugestão"}
         </button>
-        {feedback && <div className="mt-2 text-sm text-green-400">{feedback}</div>}
+        {feedback && (
+          <div className="mt-2 text-sm text-green-400">{feedback}</div>
+        )}
       </div>
 
-      <h2 className="text-lg font-bold text-yellow-300 mb-3">Minhas Sugestões Enviadas</h2>
+      <h2 className="mb-3 text-lg font-bold text-yellow-300">
+        Minhas Sugestões Enviadas
+      </h2>
       <ul className="space-y-5">
         {sugestoes.length === 0 && (
-          <li className="text-zinc-400">Você ainda não enviou nenhuma sugestão.</li>
+          <li className="text-zinc-400">
+            Você ainda não enviou nenhuma sugestão.
+          </li>
         )}
         {sugestoes.map((s) => (
           <li
             key={s.id}
-            className={`bg-zinc-800 rounded-lg p-4 border-l-4
-            ${
+            className={`rounded-lg border-l-4 bg-zinc-800 p-4 ${
               s.status === "Respondida"
                 ? "border-green-600"
                 : s.status === "Aguardando"
@@ -114,11 +121,10 @@ export default function SugestoesPage() {
                   : "border-red-400"
             }`}
           >
-            <div className="flex justify-between items-center mb-1">
+            <div className="mb-1 flex items-center justify-between">
               <span className="font-bold text-yellow-200">{s.data}</span>
               <span
-                className={`px-2 py-0.5 rounded text-xs font-bold
-                ${
+                className={`rounded px-2 py-0.5 text-xs font-bold ${
                   s.status === "Respondida"
                     ? "bg-green-800 text-green-300"
                     : s.status === "Aguardando"
@@ -131,9 +137,9 @@ export default function SugestoesPage() {
                 {s.status === "Recusada" && "Recusada"}
               </span>
             </div>
-            <div className="text-gray-200 mb-1">{s.mensagem}</div>
+            <div className="mb-1 text-gray-200">{s.mensagem}</div>
             {s.status === "Respondida" && s.resposta && (
-              <div className="bg-zinc-900 text-green-400 text-sm rounded p-2">
+              <div className="rounded bg-zinc-900 p-2 text-sm text-green-400">
                 <b>Resposta do admin:</b> {s.resposta}
               </div>
             )}

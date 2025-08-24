@@ -9,7 +9,9 @@ export default function CardAlertaDashboard() {
   const alertas: string[] = [];
 
   if (jogadores > 0) {
-    alertas.push(`${jogadores} jogador${jogadores > 1 ? "es" : ""} aguardando aprovação`);
+    alertas.push(
+      `${jogadores} jogador${jogadores > 1 ? "es" : ""} aguardando aprovação`,
+    );
   }
 
   if (partidas > 0) {
@@ -23,11 +25,11 @@ export default function CardAlertaDashboard() {
   if (alertas.length === 0) return null;
 
   return (
-    <div className="bg-yellow-800 text-yellow-100 border-l-4 border-yellow-400 p-4 rounded shadow mb-4 flex items-start gap-3">
-      <FaExclamationTriangle className="text-2xl mt-0.5" />
+    <div className="mb-4 flex items-start gap-3 rounded border-l-4 border-yellow-400 bg-yellow-800 p-4 text-yellow-100 shadow">
+      <FaExclamationTriangle className="mt-0.5 text-2xl" />
       <div>
-        <strong className="block mb-1">Atenção, presidente!</strong>
-        <ul className="list-disc list-inside text-sm space-y-0.5">
+        <strong className="mb-1 block">Atenção, presidente!</strong>
+        <ul className="list-inside list-disc space-y-0.5 text-sm">
           {alertas.map((msg, index) => (
             <li key={index}>{msg}</li>
           ))}

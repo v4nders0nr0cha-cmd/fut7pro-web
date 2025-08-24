@@ -31,7 +31,8 @@ const ICONS: Record<string, JSX.Element> = {
 export default function NotificacoesPage() {
   // Troque "slug-do-racha" para buscar do contexto/session conforme seu projeto SaaS
   const rachaSlug = "slug-do-racha";
-  const { notificacoes, fetchNotifications, loading } = useNotifications(rachaSlug);
+  const { notificacoes, fetchNotifications, loading } =
+    useNotifications(rachaSlug);
 
   // Marcar como lida
   const marcarNotificacaoComoLida = async (id: string) => {
@@ -48,13 +49,17 @@ export default function NotificacoesPage() {
           content="Veja todas as notificações do seu racha, mensagens do SuperAdmin e avisos do Fut7Pro."
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
-        <h1 className="text-2xl font-bold text-yellow-400 mb-6">Notificações</h1>
+      <div className="mx-auto max-w-2xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-6 text-2xl font-bold text-yellow-400">
+          Notificações
+        </h1>
         <div className="flex flex-col gap-4">
           {loading ? (
-            <div className="text-center text-gray-400 py-8">Carregando...</div>
+            <div className="py-8 text-center text-gray-400">Carregando...</div>
           ) : notificacoes.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">Nenhuma notificação encontrada.</div>
+            <div className="py-12 text-center text-gray-400">
+              Nenhuma notificação encontrada.
+            </div>
           ) : (
             notificacoes.map((not) => (
               <div
@@ -62,20 +67,20 @@ export default function NotificacoesPage() {
                 className={`flex items-start gap-3 rounded-lg px-4 py-3 shadow ${
                   not.lida
                     ? "bg-[#222] text-gray-400 opacity-80"
-                    : "bg-[#23272F] text-white border-l-4 border-yellow-400"
+                    : "border-l-4 border-yellow-400 bg-[#23272F] text-white"
                 }`}
               >
                 <div className="mt-1">{ICONS[not.type] || ICONS["outros"]}</div>
                 <div className="flex-1">
-                  <div className="font-bold text-base mb-1">{not.titulo}</div>
+                  <div className="mb-1 text-base font-bold">{not.titulo}</div>
                   <div className="text-sm">{not.mensagem}</div>
-                  <div className="text-xs text-gray-500 mt-2">
+                  <div className="mt-2 text-xs text-gray-500">
                     {new Date(not.data).toLocaleString("pt-BR")}
                   </div>
                 </div>
                 {!not.lida && (
                   <button
-                    className="ml-2 px-2 py-1 text-xs rounded bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition"
+                    className="ml-2 rounded bg-yellow-400 px-2 py-1 text-xs font-bold text-black transition hover:bg-yellow-500"
                     onClick={() => marcarNotificacaoComoLida(not.id)}
                   >
                     Marcar como lida

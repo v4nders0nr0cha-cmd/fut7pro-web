@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   if (isProd) {
     return NextResponse.json(
       { error: "Endpoint indisponível em produção. Use a API do backend." },
-      { status: 501 }
+      { status: 501 },
     );
   }
   const { searchParams } = new URL(req.url);
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   if (isProd) {
     return NextResponse.json(
       { error: "Endpoint indisponível em produção. Use a API do backend." },
-      { status: 501 }
+      { status: 501 },
     );
   }
   // Validação de permissão: apenas admins podem criar estrelas
@@ -57,10 +57,16 @@ export async function POST(req: NextRequest) {
   const { rachaId, jogadorId, estrelas } = body;
 
   if (!rachaId || !jogadorId || typeof estrelas !== "number") {
-    return NextResponse.json({ error: "Dados obrigatórios faltando" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Dados obrigatórios faltando" },
+      { status: 400 },
+    );
   }
   if (estrelas < 0 || estrelas > 5) {
-    return NextResponse.json({ error: "Estrelas deve ser entre 0 e 5" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Estrelas deve ser entre 0 e 5" },
+      { status: 400 },
+    );
   }
 
   const prisma = await getDevPrisma();

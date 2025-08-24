@@ -46,7 +46,11 @@ function calcularIdade(data: string) {
 
 function formatarData(data: string) {
   const dt = new Date(data);
-  return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+  return dt.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 function isAniversarioHoje(data: string) {
@@ -59,7 +63,7 @@ export default function AniversariantesAdminPage() {
   const [mesFiltro, setMesFiltro] = useState<number>(new Date().getMonth());
   const aniversariantesDoMes = useMemo(() => {
     return mockAniversariantes.filter(
-      (aniv) => new Date(aniv.dataNascimento).getMonth() === mesFiltro
+      (aniv) => new Date(aniv.dataNascimento).getMonth() === mesFiltro,
     );
   }, [mesFiltro]);
 
@@ -76,23 +80,22 @@ export default function AniversariantesAdminPage() {
           content="fut7pro, aniversariantes, parabéns, futebol, racha, aniversário, admin, painel, futebol 7"
         />
       </Head>
-      <main className="min-h-screen bg-[#181A1B] text-white pt-20 px-2 md:px-4">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-3">
+      <main className="min-h-screen bg-[#181A1B] px-2 pt-20 text-white md:px-4">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-3 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
             Aniversariantes do Mês
           </h1>
-          <div className="flex flex-col gap-2 mb-6">
+          <div className="mb-6 flex flex-col gap-2">
             <div className="flex flex-wrap justify-center gap-2">
               {meses.slice(0, 6).map((mes, idx) => (
                 <button
                   key={mes}
                   onClick={() => setMesFiltro(idx)}
-                  className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition
-                      ${
-                        mesFiltro === idx
-                          ? "bg-yellow-400 text-black shadow"
-                          : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
-                      }`}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition md:text-sm ${
+                    mesFiltro === idx
+                      ? "bg-yellow-400 text-black shadow"
+                      : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
+                  }`}
                 >
                   {mes}
                 </button>
@@ -103,12 +106,11 @@ export default function AniversariantesAdminPage() {
                 <button
                   key={mes}
                   onClick={() => setMesFiltro(idx + 6)}
-                  className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition
-                      ${
-                        mesFiltro === idx + 6
-                          ? "bg-yellow-400 text-black shadow"
-                          : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
-                      }`}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition md:text-sm ${
+                    mesFiltro === idx + 6
+                      ? "bg-yellow-400 text-black shadow"
+                      : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
+                  }`}
                 >
                   {mes}
                 </button>
@@ -116,9 +118,9 @@ export default function AniversariantesAdminPage() {
             </div>
           </div>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {aniversariantesDoMes.length === 0 && (
-              <div className="col-span-full text-center text-gray-400 text-lg py-8">
+              <div className="col-span-full py-8 text-center text-lg text-gray-400">
                 <span>Nenhum aniversariante neste mês ainda! 🎈</span>
               </div>
             )}
@@ -130,19 +132,20 @@ export default function AniversariantesAdminPage() {
               return (
                 <div
                   key={aniv.id}
-                  className={`rounded-xl bg-[#232323] shadow-lg p-4 flex flex-col items-center gap-3 border-2 relative
-                      ${
-                        ehHoje
-                          ? "border-orange-400 animate-pulse shadow-orange-300/30"
-                          : "border-zinc-700"
-                      }
-                  `}
+                  className={`relative flex flex-col items-center gap-3 rounded-xl border-2 bg-[#232323] p-4 shadow-lg ${
+                    ehHoje
+                      ? "animate-pulse border-orange-400 shadow-orange-300/30"
+                      : "border-zinc-700"
+                  } `}
                 >
-                  <div className="absolute top-2 right-2 text-2xl" title="Bolo de aniversário">
+                  <div
+                    className="absolute right-2 top-2 text-2xl"
+                    title="Bolo de aniversário"
+                  >
                     🎂
                   </div>
                   {ehHoje && (
-                    <div className="absolute top-2 left-2 text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full font-bold animate-bounce">
+                    <div className="absolute left-2 top-2 animate-bounce rounded-full bg-orange-400 px-2 py-0.5 text-xs font-bold text-white">
                       HOJE!
                     </div>
                   )}
@@ -154,15 +157,15 @@ export default function AniversariantesAdminPage() {
                     className="rounded-full border-2 border-yellow-400 object-cover"
                   />
                   <div className="flex flex-col items-center text-center">
-                    <span className="font-bold text-lg md:text-xl text-yellow-200">
+                    <span className="text-lg font-bold text-yellow-200 md:text-xl">
                       {aniv.nome}
                     </span>
-                    <span className="text-gray-300 text-sm">
+                    <span className="text-sm text-gray-300">
                       {formatarData(aniv.dataNascimento)} • {idade} anos
                     </span>
                   </div>
                   {ehHoje && (
-                    <div className="w-full mt-2 bg-orange-100 text-orange-700 text-center rounded px-2 py-1 text-xs font-semibold shadow">
+                    <div className="mt-2 w-full rounded bg-orange-100 px-2 py-1 text-center text-xs font-semibold text-orange-700 shadow">
                       Parabéns, {aniv.nome}! 🎉
                     </div>
                   )}
@@ -170,9 +173,9 @@ export default function AniversariantesAdminPage() {
               );
             })}
           </section>
-          <div className="text-xs text-gray-400 mt-8 text-center">
-            As mensagens de parabéns são enviadas automaticamente para o aniversariante, às 8h do
-            dia, sem exposição de dados pessoais.
+          <div className="mt-8 text-center text-xs text-gray-400">
+            As mensagens de parabéns são enviadas automaticamente para o
+            aniversariante, às 8h do dia, sem exposição de dados pessoais.
           </div>
         </div>
       </main>

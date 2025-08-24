@@ -24,7 +24,7 @@ export default function AdminRegisterPage() {
     }
     if (!/^[a-z0-9-]+$/.test(slug) || slug.length < 3) {
       setErro(
-        "O slug deve ser minúsculo, sem espaços e pode conter apenas letras, números e hífens."
+        "O slug deve ser minúsculo, sem espaços e pode conter apenas letras, números e hífens.",
       );
       return;
     }
@@ -63,15 +63,20 @@ export default function AdminRegisterPage() {
         />
         <meta name="robots" content="noindex,nofollow" />
       </Head>
-      <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-8 md:pt-16 pb-10">
-        <div className="bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm">
-          <h1 className="text-xl font-bold mb-4 text-center">Cadastrar Racha</h1>
-          <p className="text-gray-300 text-center mb-6 text-base font-medium leading-snug">
-            Cadastre seu racha, escolha o slug de acesso e crie a conta de presidente do Painel
-            Admin. O acesso será avaliado e ativado pela equipe Fut7Pro.
+      <main className="flex min-h-[80vh] w-full flex-col items-center justify-center pb-10 pt-8 md:pt-16">
+        <div className="w-full max-w-sm rounded-lg bg-zinc-900 p-6 shadow-lg">
+          <h1 className="mb-4 text-center text-xl font-bold">
+            Cadastrar Racha
+          </h1>
+          <p className="mb-6 text-center text-base font-medium leading-snug text-gray-300">
+            Cadastre seu racha, escolha o slug de acesso e crie a conta de
+            presidente do Painel Admin. O acesso será avaliado e ativado pela
+            equipe Fut7Pro.
           </p>
           {erro && (
-            <div className="bg-red-600 text-white text-sm rounded p-2 mb-4 text-center">{erro}</div>
+            <div className="mb-4 rounded bg-red-600 p-2 text-center text-sm text-white">
+              {erro}
+            </div>
           )}
           <form onSubmit={handleRegister} className="space-y-4">
             <input
@@ -82,7 +87,7 @@ export default function AdminRegisterPage() {
               placeholder="Nome do Racha (3-32 letras)"
               minLength={3}
               maxLength={32}
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <input
               type="text"
@@ -92,7 +97,7 @@ export default function AdminRegisterPage() {
               placeholder="Slug (ex: quarta-fc)"
               minLength={3}
               maxLength={24}
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
               autoCapitalize="none"
               autoCorrect="off"
             />
@@ -102,7 +107,7 @@ export default function AdminRegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="E-mail do presidente"
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <input
               type="password"
@@ -110,7 +115,7 @@ export default function AdminRegisterPage() {
               onChange={(e) => setSenha(e.target.value)}
               required
               placeholder="Senha"
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <input
               type="password"
@@ -118,11 +123,11 @@ export default function AdminRegisterPage() {
               onChange={(e) => setConfirmSenha(e.target.value)}
               required
               placeholder="Confirmar Senha"
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <button
               type="submit"
-              className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+              className="w-full rounded bg-yellow-400 py-2 font-bold text-black transition hover:bg-yellow-300"
             >
               Cadastrar Racha
             </button>

@@ -85,7 +85,9 @@ function InfluencerModal({
 }) {
   const [form, setForm] = useState<InfluencerForm>({ ...influencer });
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     setForm((f) => ({
       ...f,
       [e.target.name]: e.target.value,
@@ -99,16 +101,16 @@ function InfluencerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-2">
-      <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-lg shadow-2xl relative animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2">
+      <div className="animate-fadeIn relative w-full max-w-lg rounded-xl bg-zinc-900 p-6 shadow-2xl">
         <button
-          className="absolute top-2 right-4 text-2xl text-zinc-400 hover:text-red-500"
+          className="absolute right-4 top-2 text-2xl text-zinc-400 hover:text-red-500"
           onClick={onClose}
           aria-label="Fechar"
         >
           ×
         </button>
-        <h2 className="text-xl font-bold mb-4 text-yellow-400">
+        <h2 className="mb-4 text-xl font-bold text-yellow-400">
           {isEdit ? "Editar perfil do influencer" : "Cadastrar novo influencer"}
         </h2>
         <form className="flex flex-col gap-3" onSubmit={handleSubmit}>
@@ -119,7 +121,7 @@ function InfluencerModal({
               onChange={handleChange}
               required
               maxLength={40}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="Nome *"
             />
             <input
@@ -127,7 +129,7 @@ function InfluencerModal({
               value={form.sobrenome}
               onChange={handleChange}
               maxLength={40}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="Sobrenome"
             />
           </div>
@@ -138,7 +140,7 @@ function InfluencerModal({
               onChange={handleChange}
               required
               maxLength={18}
-              className="w-44 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="w-44 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="CPF *"
             />
             <input
@@ -147,14 +149,14 @@ function InfluencerModal({
               onChange={handleChange}
               required
               maxLength={16}
-              className="w-44 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="w-44 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="Cupom único *"
             />
             <select
               name="status"
               value={form.status}
               onChange={handleChange}
-              className="rounded px-2 py-2 bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 px-2 py-2 text-white"
             >
               <option value="ativo">Ativo</option>
               <option value="inativo">Inativo</option>
@@ -166,7 +168,7 @@ function InfluencerModal({
               value={form.whatsapp}
               onChange={handleChange}
               maxLength={20}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="WhatsApp (opcional)"
             />
             <input
@@ -174,7 +176,7 @@ function InfluencerModal({
               value={form.instagram}
               onChange={handleChange}
               maxLength={60}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="Instagram"
             />
           </div>
@@ -184,7 +186,7 @@ function InfluencerModal({
               value={form.youtube}
               onChange={handleChange}
               maxLength={60}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="YouTube"
             />
             <input
@@ -192,7 +194,7 @@ function InfluencerModal({
               value={form.tiktok}
               onChange={handleChange}
               maxLength={60}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="TikTok"
             />
             <input
@@ -200,12 +202,12 @@ function InfluencerModal({
               value={form.outros}
               onChange={handleChange}
               maxLength={60}
-              className="flex-1 rounded px-2 py-2 bg-zinc-800 text-white"
+              className="flex-1 rounded bg-zinc-800 px-2 py-2 text-white"
               placeholder="Outros"
             />
           </div>
           <button
-            className="bg-green-600 text-white font-bold px-4 py-2 rounded hover:bg-green-700 mt-3"
+            className="mt-3 rounded bg-green-600 px-4 py-2 font-bold text-white hover:bg-green-700"
             type="submit"
           >
             {isEdit ? "Salvar alterações" : "Salvar influencer"}
@@ -233,7 +235,8 @@ export default function SuperAdminMarketingPage() {
           cuponsUsados: 0,
           trialsConvertidos: 0,
           trialsNaoConvertidos: 0,
-          valorMensalEstimado: updated.tipoRemuneracao === "fixo" ? "-" : "R$ 0,00/mês",
+          valorMensalEstimado:
+            updated.tipoRemuneracao === "fixo" ? "-" : "R$ 0,00/mês",
           valorRecebido: 0,
         },
         ...prev,
@@ -245,70 +248,85 @@ export default function SuperAdminMarketingPage() {
 
   // Busca filtrada
   const itensFiltrados = itens.filter((inf) =>
-    (inf.nome + " " + inf.sobrenome).toLowerCase().includes(search.trim().toLowerCase())
+    (inf.nome + " " + inf.sobrenome)
+      .toLowerCase()
+      .includes(search.trim().toLowerCase()),
   );
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
-        <h1 className="text-2xl font-bold">Marketing & Expansão — Influencers</h1>
-        <div className="flex gap-2 items-center">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-bold">
+          Marketing & Expansão — Influencers
+        </h1>
+        <div className="flex items-center gap-2">
           <input
             type="text"
             placeholder="Buscar influencer por nome"
-            className="px-3 py-2 rounded bg-zinc-800 text-white text-sm w-64"
+            className="w-64 rounded bg-zinc-800 px-3 py-2 text-sm text-white"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button
-            className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded shadow"
+            className="rounded bg-green-600 px-4 py-2 font-bold text-white shadow hover:bg-green-700"
             onClick={() => setShowAdd(true)}
           >
             + Adicionar influencer
           </button>
         </div>
       </div>
-      <div className="bg-zinc-900 rounded-xl shadow p-6 overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl bg-zinc-900 p-6 shadow">
         <table className="w-full min-w-[1100px]">
           <thead>
             <tr className="border-b border-zinc-800 text-zinc-400">
-              <th className="py-2 px-2">Influencer</th>
-              <th className="py-2 px-2">Cupons Usados</th>
-              <th className="py-2 px-2">Trials Convertidos</th>
-              <th className="py-2 px-2">Trials Não Convertidos</th>
-              <th className="py-2 px-2">Vendas Pagas</th>
-              <th className="py-2 px-2">Forma Pagamento</th>
-              <th className="py-2 px-2">Valor Mensal (estimado)</th>
-              <th className="py-2 px-2">Valor Recebido (total)</th>
-              <th className="py-2 px-2">Ver Detalhes</th>
+              <th className="px-2 py-2">Influencer</th>
+              <th className="px-2 py-2">Cupons Usados</th>
+              <th className="px-2 py-2">Trials Convertidos</th>
+              <th className="px-2 py-2">Trials Não Convertidos</th>
+              <th className="px-2 py-2">Vendas Pagas</th>
+              <th className="px-2 py-2">Forma Pagamento</th>
+              <th className="px-2 py-2">Valor Mensal (estimado)</th>
+              <th className="px-2 py-2">Valor Recebido (total)</th>
+              <th className="px-2 py-2">Ver Detalhes</th>
             </tr>
           </thead>
           <tbody>
             {itensFiltrados.map((inf) => (
-              <tr key={inf.id} className="border-b border-zinc-800 hover:bg-zinc-800 transition">
-                <td className="py-2 px-2">
+              <tr
+                key={inf.id}
+                className="border-b border-zinc-800 transition hover:bg-zinc-800"
+              >
+                <td className="px-2 py-2">
                   <button
-                    className="text-blue-400 hover:underline font-bold"
+                    className="font-bold text-blue-400 hover:underline"
                     onClick={() => setEditId(inf.id)}
                   >
                     {inf.nome}
                   </button>
                 </td>
-                <td className="py-2 px-2">{inf.cuponsUsados}</td>
-                <td className="py-2 px-2 text-green-400">{inf.trialsConvertidos}</td>
-                <td className="py-2 px-2 text-red-400">{inf.trialsNaoConvertidos}</td>
-                <td className="py-2 px-2">{inf.vendasPagas}</td>
-                <td className="py-2 px-2">
+                <td className="px-2 py-2">{inf.cuponsUsados}</td>
+                <td className="px-2 py-2 text-green-400">
+                  {inf.trialsConvertidos}
+                </td>
+                <td className="px-2 py-2 text-red-400">
+                  {inf.trialsNaoConvertidos}
+                </td>
+                <td className="px-2 py-2">{inf.vendasPagas}</td>
+                <td className="px-2 py-2">
                   {inf.tipoRemuneracao === "fixo"
                     ? `R$ ${parseFloat(inf.valorRemuneracao).toFixed(2)} por venda`
                     : `${parseFloat(inf.valorRemuneracao).toFixed(2)}% mensal recorrente`}
                 </td>
-                <td className="py-2 px-2 text-yellow-300">{inf.valorMensalEstimado}</td>
-                <td className="py-2 px-2 text-green-400">R$ {inf.valorRecebido.toFixed(2)}</td>
-                <td className="py-2 px-2">
+                <td className="px-2 py-2 text-yellow-300">
+                  {inf.valorMensalEstimado}
+                </td>
+                <td className="px-2 py-2 text-green-400">
+                  R$ {inf.valorRecebido.toFixed(2)}
+                </td>
+                <td className="px-2 py-2">
                   <Link
                     href={`/superadmin/marketing/${inf.id}`}
-                    className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600 transition"
+                    className="rounded bg-blue-500 px-3 py-1 text-xs text-white transition hover:bg-blue-600"
                   >
                     VER +
                   </Link>
@@ -318,7 +336,9 @@ export default function SuperAdminMarketingPage() {
           </tbody>
         </table>
         {itensFiltrados.length === 0 && (
-          <div className="text-zinc-400 text-center py-8">Nenhum influencer encontrado...</div>
+          <div className="py-8 text-center text-zinc-400">
+            Nenhum influencer encontrado...
+          </div>
         )}
       </div>
       {(editId || showAdd) && (

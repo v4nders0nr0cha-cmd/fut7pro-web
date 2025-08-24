@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaTimes, FaUserShield, FaSave, FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  FaTimes,
+  FaUserShield,
+  FaSave,
+  FaEye,
+  FaEyeSlash,
+} from "react-icons/fa";
 import { Role, Permission } from "@prisma/client";
 
 interface Admin {
@@ -105,10 +111,19 @@ const rolePermissions: Record<Role, Permission[]> = {
     Permission.FINANCE_APPROVE,
     Permission.ANALYTICS_READ,
   ],
-  MARKETING: [Permission.ANALYTICS_READ, Permission.REPORTS_GENERATE, Permission.CONFIG_READ],
+  MARKETING: [
+    Permission.ANALYTICS_READ,
+    Permission.REPORTS_GENERATE,
+    Permission.CONFIG_READ,
+  ],
 };
 
-export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNovoAdminProps) {
+export default function ModalNovoAdmin({
+  open,
+  onClose,
+  onSave,
+  admin,
+}: ModalNovoAdminProps) {
   const [formData, setFormData] = useState<Admin>({
     name: "",
     email: "",
@@ -201,64 +216,84 @@ export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNo
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-gray-900 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-gray-900 shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-700 p-6">
           <div className="flex items-center space-x-3">
             <FaUserShield className="h-6 w-6 text-yellow-400" />
             <h2 className="text-xl font-bold text-white">
               {isEditing ? "Editar Administrador" : "Novo Administrador"}
             </h2>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            className="text-gray-400 transition-colors hover:text-white"
+          >
             <FaTimes className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Informações Básicas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-300">
                 Nome Completo *
               </label>
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                className={`w-full px-3 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, name: e.target.value }))
+                }
+                className={`w-full rounded-lg border bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                   errors.name ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="Nome completo"
               />
-              {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+              )}
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Email *</label>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Email *
+              </label>
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                className={`w-full px-3 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, email: e.target.value }))
+                }
+                className={`w-full rounded-lg border bg-gray-800 px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                   errors.email ? "border-red-500" : "border-gray-600"
                 }`}
                 placeholder="email@exemplo.com"
               />
-              {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email}</p>}
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+              )}
             </div>
           </div>
 
           {/* Senha */}
           {!isEditing && (
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Senha *</label>
+              <label className="mb-2 block text-sm font-medium text-gray-300">
+                Senha *
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
-                  className={`w-full px-3 py-2 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 pr-10 ${
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      password: e.target.value,
+                    }))
+                  }
+                  className={`w-full rounded-lg border bg-gray-800 px-3 py-2 pr-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
                     errors.password ? "border-red-500" : "border-gray-600"
                   }`}
                   placeholder="Senha segura"
@@ -266,7 +301,7 @@ export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNo
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white"
                 >
                   {showPassword ? (
                     <FaEyeSlash className="h-4 w-4" />
@@ -275,17 +310,21 @@ export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNo
                   )}
                 </button>
               </div>
-              {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+              )}
             </div>
           )}
 
           {/* Role */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Função *</label>
+            <label className="mb-2 block text-sm font-medium text-gray-300">
+              Função *
+            </label>
             <select
               value={formData.role}
               onChange={(e) => handleRoleChange(e.target.value as Role)}
-              className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
             >
               {Object.entries(roleLabels).map(([role, label]) => (
                 <option key={role} value={role}>
@@ -297,15 +336,21 @@ export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNo
 
           {/* Permissões */}
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Permissões *</label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto bg-gray-800 rounded-lg p-4">
+            <label className="mb-2 block text-sm font-medium text-gray-300">
+              Permissões *
+            </label>
+            <div className="grid max-h-60 grid-cols-1 gap-2 overflow-y-auto rounded-lg bg-gray-800 p-4 md:grid-cols-2">
               {Object.entries(permissionLabels).map(([permission, label]) => (
                 <label key={permission} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
-                    checked={formData.permissions.includes(permission as Permission)}
-                    onChange={() => handlePermissionToggle(permission as Permission)}
-                    className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400 bg-gray-700"
+                    checked={formData.permissions.includes(
+                      permission as Permission,
+                    )}
+                    onChange={() =>
+                      handlePermissionToggle(permission as Permission)
+                    }
+                    className="rounded border-gray-600 bg-gray-700 text-yellow-400 focus:ring-yellow-400"
                   />
                   <span className="text-sm text-gray-300">{label}</span>
                 </label>
@@ -322,25 +367,27 @@ export default function ModalNovoAdmin({ open, onClose, onSave, admin }: ModalNo
               <input
                 type="checkbox"
                 checked={formData.active}
-                onChange={(e) => setFormData((prev) => ({ ...prev, active: e.target.checked }))}
-                className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400 bg-gray-700"
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, active: e.target.checked }))
+                }
+                className="rounded border-gray-600 bg-gray-700 text-yellow-400 focus:ring-yellow-400"
               />
               <span className="text-sm font-medium text-gray-300">Ativo</span>
             </label>
           </div>
 
           {/* Botões */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+          <div className="flex justify-end space-x-3 border-t border-gray-700 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-gray-400 transition-colors hover:text-white"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-yellow-400 text-gray-900 font-medium rounded-lg hover:bg-yellow-300 transition-colors flex items-center space-x-2"
+              className="flex items-center space-x-2 rounded-lg bg-yellow-400 px-4 py-2 font-medium text-gray-900 transition-colors hover:bg-yellow-300"
             >
               <FaSave className="h-4 w-4" />
               <span>{isEditing ? "Salvar" : "Criar"}</span>

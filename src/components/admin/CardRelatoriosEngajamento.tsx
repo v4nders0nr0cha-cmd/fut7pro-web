@@ -6,21 +6,21 @@ import Link from "next/link";
 
 export default function CardRelatoriosEngajamento() {
   return (
-    <div className="relative bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg cursor-pointer min-h-[210px]">
-      <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-700 to-cyan-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
+    <div className="relative flex min-h-[210px] cursor-pointer flex-col items-center rounded-xl bg-[#23272F] p-6 shadow transition hover:scale-[1.025] hover:shadow-lg">
+      <span className="absolute left-3 top-3 z-10 rounded-xl bg-gradient-to-r from-blue-700 to-cyan-400 px-3 py-1 text-xs font-bold text-white shadow">
         📈 RELATÓRIO
       </span>
-      <FaChartLine className="text-cyan-400 w-12 h-12 mb-2" />
-      <span className="text-xl font-bold text-white mb-1 text-center">
+      <FaChartLine className="mb-2 h-12 w-12 text-cyan-400" />
+      <span className="mb-1 text-center text-xl font-bold text-white">
         Relatórios de Engajamento
       </span>
-      <span className="text-sm text-gray-400 mb-3 text-center">
-        Veja as principais métricas do seu racha: visualizações, acessos, engajamento dos atletas e
-        mais!
+      <span className="mb-3 text-center text-sm text-gray-400">
+        Veja as principais métricas do seu racha: visualizações, acessos,
+        engajamento dos atletas e mais!
       </span>
       <Link
         href="/admin/relatorios"
-        className="mt-auto px-5 py-1 rounded bg-cyan-500 text-white text-xs font-semibold shadow hover:bg-cyan-600 transition"
+        className="mt-auto rounded bg-cyan-500 px-5 py-1 text-xs font-semibold text-white shadow transition hover:bg-cyan-600"
       >
         Ver Relatórios
       </Link>

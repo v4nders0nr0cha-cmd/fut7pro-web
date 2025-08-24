@@ -20,6 +20,8 @@ export function toCSV(_rows: FinanceiroExportRow[]): string {
 
   // Cast explícito resolve qualquer dúvida do TS
   const header = Object.keys(rows[0] as FinanceiroExportRow).join(";");
-  const lines = rows.map((row) => Object.values(row as Record<string, string>).join(";"));
+  const lines = rows.map((row) =>
+    Object.values(row as Record<string, string>).join(";"),
+  );
   return [header, ...lines].join("\n");
 }

@@ -30,7 +30,11 @@ export interface LogAdmin {
 /**
  * Cargos disponíveis (para facilitar enum ou select)
  */
-export type CargoAdmin = "Presidente" | "Vice" | "Diretor de Futebol" | "Diretor Financeiro";
+export type CargoAdmin =
+  | "Presidente"
+  | "Vice"
+  | "Diretor de Futebol"
+  | "Diretor Financeiro";
 
 /**
  * Estrutura de permissão por cargo (para controle dinâmico de acesso)

@@ -25,11 +25,15 @@ export default function CampeaoAnoCard({
   temporario = false,
 }: CampeaoAnoCardProps) {
   // Garante que rankings de campeões do ano sempre vão para as rotas ANUAIS
-  const destino = href.startsWith("/estatisticas") ? href : slug ? `/atletas/${slug}` : "#";
+  const destino = href.startsWith("/estatisticas")
+    ? href
+    : slug
+      ? `/atletas/${slug}`
+      : "#";
 
   // Renderiza o ícone do card de forma flexível
   const renderTitulo = () => (
-    <span className="text-yellow-400 text-lg font-semibold mt-4 mb-2 flex items-center justify-center gap-1">
+    <span className="mb-2 mt-4 flex items-center justify-center gap-1 text-lg font-semibold text-yellow-400">
       {icone && typeof icone === "string" && icone.startsWith("/") ? (
         <Image
           src={icone}
@@ -53,10 +57,10 @@ export default function CampeaoAnoCard({
           ? `Ver ranking anual relacionado a ${titulo}`
           : `Ver perfil de ${nome} - ${titulo}`
       }
-      className="bg-[#1A1A1A] rounded-2xl p-4 shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative"
+      className="relative flex w-full max-w-xs cursor-pointer flex-col items-center rounded-2xl bg-[#1A1A1A] p-4 text-white shadow-md transition-all hover:shadow-yellow-400"
     >
       {temporario && (
-        <span className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-gray-300">
+        <span className="absolute left-1/2 top-2 -translate-x-1/2 text-xs text-gray-300">
           🕓 Temporário
         </span>
       )}
@@ -68,9 +72,9 @@ export default function CampeaoAnoCard({
         alt={`Imagem do campeão ${nome} - ${titulo}`}
         width={100}
         height={100}
-        className="rounded-full object-cover mb-2"
+        className="mb-2 rounded-full object-cover"
       />
-      <h3 className="text-xl font-bold text-center">{nome}</h3>
+      <h3 className="text-center text-xl font-bold">{nome}</h3>
       <p className="text-sm text-gray-300">{valor}</p>
     </Link>
   );

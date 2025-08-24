@@ -69,34 +69,39 @@ function ModalSelecionarJogador({
     (j) =>
       !jaSelecionados.find((s) => s.id === j.id) &&
       (j.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        j.posicao.toLowerCase().includes(busca.toLowerCase()))
+        j.posicao.toLowerCase().includes(busca.toLowerCase())),
   );
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-      <div className="bg-[#23272f] rounded-xl p-6 shadow-lg max-w-sm w-full">
-        <div className="flex items-center justify-between mb-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+      <div className="w-full max-w-sm rounded-xl bg-[#23272f] p-6 shadow-lg">
+        <div className="mb-2 flex items-center justify-between">
           <h2 className="text-lg font-bold text-cyan-300">Selecionar Atleta</h2>
-          <button className="text-gray-300 hover:text-yellow-400 text-xl" onClick={onClose}>
+          <button
+            className="text-xl text-gray-300 hover:text-yellow-400"
+            onClick={onClose}
+          >
             <FaTimes />
           </button>
         </div>
         <input
           type="text"
-          className="w-full rounded px-3 py-2 mb-3 bg-zinc-800 text-white border border-gray-600 focus:border-cyan-500"
+          className="mb-3 w-full rounded border border-gray-600 bg-zinc-800 px-3 py-2 text-white focus:border-cyan-500"
           placeholder="Buscar atleta por nome ou posição..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
           autoFocus
         />
-        <div className="max-h-64 overflow-y-auto space-y-2">
+        <div className="max-h-64 space-y-2 overflow-y-auto">
           {jogadoresFiltrados.length === 0 ? (
-            <div className="text-gray-400 text-center py-4">Nenhum atleta encontrado.</div>
+            <div className="py-4 text-center text-gray-400">
+              Nenhum atleta encontrado.
+            </div>
           ) : (
             jogadoresFiltrados.map((j) => (
               <button
                 key={j.id}
-                className="w-full flex items-center gap-3 py-2 px-2 hover:bg-cyan-900 rounded transition"
+                className="flex w-full items-center gap-3 rounded px-2 py-2 transition hover:bg-cyan-900"
                 onClick={() => {
                   onSelect(j);
                   onClose();
@@ -110,7 +115,7 @@ function ModalSelecionarJogador({
                   className="rounded-full border-2 border-cyan-400"
                 />
                 <div className="flex-1 text-left">
-                  <span className="text-white font-bold">{j.nome}</span>
+                  <span className="font-bold text-white">{j.nome}</span>
                   <div className="text-xs text-cyan-300">{j.posicao}</div>
                 </div>
               </button>
@@ -148,8 +153,8 @@ function ModalCrop({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-      <div className="bg-zinc-900 rounded-xl p-6 max-w-xl w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+      <div className="w-full max-w-xl rounded-xl bg-zinc-900 p-6">
         <div className="mb-4">
           <Cropper
             image={imageSrc}
@@ -157,21 +162,23 @@ function ModalCrop({
             zoom={zoom}
             aspect={aspect}
             onCropChange={setCrop}
-            onCropComplete={(_, croppedPixels) => setCroppedAreaPixels(croppedPixels)}
+            onCropComplete={(_, croppedPixels) =>
+              setCroppedAreaPixels(croppedPixels)
+            }
             onZoomChange={setZoom}
             minZoom={1}
             maxZoom={2.5}
           />
         </div>
-        <div className="flex justify-between mt-3">
+        <div className="mt-3 flex justify-between">
           <button
-            className="bg-gray-700 text-white px-4 py-2 rounded font-semibold hover:bg-gray-600"
+            className="rounded bg-gray-700 px-4 py-2 font-semibold text-white hover:bg-gray-600"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded font-bold"
+            className="rounded bg-yellow-500 px-5 py-2 font-bold text-black hover:bg-yellow-600"
             onClick={handleConfirm}
           >
             Confirmar Corte
@@ -192,8 +199,13 @@ export default function CadastrarTorneioPage() {
   const fileInputBanner = useRef<HTMLInputElement | null>(null);
   const fileInputLogo = useRef<HTMLInputElement | null>(null);
   const [qtdVagas, setQtdVagas] = useState(7);
-  const [campeoes, setCampeoes] = useState<(Jogador | null)[]>(Array(7).fill(null));
-  const [modalSelecao, setModalSelecao] = useState<{ open: boolean; vagaIdx: number | null }>({
+  const [campeoes, setCampeoes] = useState<(Jogador | null)[]>(
+    Array(7).fill(null),
+  );
+  const [modalSelecao, setModalSelecao] = useState<{
+    open: boolean;
+    vagaIdx: number | null;
+  }>({
     open: false,
     vagaIdx: null,
   });
@@ -266,9 +278,9 @@ export default function CadastrarTorneioPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-yellow-400 text-center mb-2">
+    <main className="min-h-screen bg-gradient-to-br from-[#181818] to-[#232323] px-4 pb-24 pt-20 text-white md:pb-8 md:pt-6">
+      <div className="mx-auto max-w-2xl">
+        <h1 className="mb-2 text-center text-3xl font-bold text-yellow-400">
           Cadastrar Novo Torneio
         </h1>
         {/* (todo o restante do form está correto, mantido abaixo como está) */}

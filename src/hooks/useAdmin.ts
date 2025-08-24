@@ -26,7 +26,7 @@ export function useAdmin() {
           console.log("Erro ao carregar dados de admin:", err);
         }
       },
-    }
+    },
   );
 
   const addAdmin = async (admin: Partial<Admin>) => {

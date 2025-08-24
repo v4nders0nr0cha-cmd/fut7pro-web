@@ -103,12 +103,16 @@ const canaisExplicacao = [
 ];
 
 export default function NotificacoesPage() {
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>(notificacoesMock);
+  const [notificacoes, setNotificacoes] =
+    useState<Notificacao[]>(notificacoesMock);
   const [grupo, setGrupo] = useState("todos");
   const [mensagem, setMensagem] = useState("");
   const [canais, setCanais] = useState<string[]>(["badge", "push"]);
   const [enviando, setEnviando] = useState(false);
-  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
   function getGrupoLabel(valor: string) {
     for (const cat of gruposPorCategoria) {
@@ -120,17 +124,23 @@ export default function NotificacoesPage() {
 
   function handleCanalToggle(canal: string) {
     setCanais((prev) =>
-      prev.includes(canal) ? prev.filter((c) => c !== canal) : [...prev, canal]
+      prev.includes(canal) ? prev.filter((c) => c !== canal) : [...prev, canal],
     );
   }
 
   function handleEnviarNotificacao() {
     if (!mensagem.trim()) {
-      setFeedback({ success: false, message: "Digite uma mensagem para enviar." });
+      setFeedback({
+        success: false,
+        message: "Digite uma mensagem para enviar.",
+      });
       return;
     }
     if (canais.length === 0) {
-      setFeedback({ success: false, message: "Selecione ao menos um canal de envio." });
+      setFeedback({
+        success: false,
+        message: "Selecione ao menos um canal de envio.",
+      });
       return;
     }
     setEnviando(true);
@@ -149,7 +159,10 @@ export default function NotificacoesPage() {
       ]);
       setMensagem("");
       setCanais(["badge", "push"]);
-      setFeedback({ success: true, message: "Notificação enviada com sucesso!" });
+      setFeedback({
+        success: true,
+        message: "Notificação enviada com sucesso!",
+      });
       setEnviando(false);
     }, 1100);
   }
@@ -162,59 +175,65 @@ export default function NotificacoesPage() {
           name="description"
           content="Envie notificações em massa, push, e-mails ou mensagens diretas para grupos de jogadores no Fut7Pro."
         />
-        <meta name="keywords" content="Fut7, racha, notificações, mensagens em massa, SaaS" />
+        <meta
+          name="keywords"
+          content="Fut7, racha, notificações, mensagens em massa, SaaS"
+        />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           Notificações / Mensagens em Massa
         </h1>
         {/* Bloco explicativo */}
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow animate-fadeIn text-sm">
-          <div className="font-bold text-yellow-300 mb-1 flex items-center gap-2">
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
+          <div className="mb-1 flex items-center gap-2 font-bold text-yellow-300">
             ✉️ O que são Notificações / Mensagens em Massa?
           </div>
-          <p className="text-gray-200 text-sm mb-2">
-            Envie mensagens em massa para grupos específicos ou para todos os jogadores. Só recebem
-            os jogadores com cadastro completo para cada canal. Use para avisos urgentes, lembretes
-            de mensalidade ou mudanças de horário.
+          <p className="mb-2 text-sm text-gray-200">
+            Envie mensagens em massa para grupos específicos ou para todos os
+            jogadores. Só recebem os jogadores com cadastro completo para cada
+            canal. Use para avisos urgentes, lembretes de mensalidade ou
+            mudanças de horário.
           </p>
-          <div className="font-bold text-yellow-300 mb-1 mt-2 flex items-center gap-2">
+          <div className="mb-1 mt-2 flex items-center gap-2 font-bold text-yellow-300">
             🔔 Como funciona cada canal de envio?
           </div>
-          <ul className="list-disc pl-4 text-gray-200 space-y-1">
+          <ul className="list-disc space-y-1 pl-4 text-gray-200">
             <li>
-              <span className="font-semibold">🛎️ Badge (Painel):</span> Aviso visual dentro do
-              painel do jogador, destacado até ser lido.
+              <span className="font-semibold">🛎️ Badge (Painel):</span> Aviso
+              visual dentro do painel do jogador, destacado até ser lido.
             </li>
             <li>
-              <span className="font-semibold">📱 Push:</span> Notificação instantânea na tela do
-              celular (igual WhatsApp, Instagram). Só recebe quem aceitou.
+              <span className="font-semibold">📱 Push:</span> Notificação
+              instantânea na tela do celular (igual WhatsApp, Instagram). Só
+              recebe quem aceitou.
             </li>
             <li>
-              <span className="font-semibold">✉️ E-mail:</span> Mensagem enviada para o e-mail do
-              jogador. Só recebe quem cadastrou o e-mail.
+              <span className="font-semibold">✉️ E-mail:</span> Mensagem enviada
+              para o e-mail do jogador. Só recebe quem cadastrou o e-mail.
             </li>
             <li>
-              <span className="font-semibold">💬 WhatsApp:</span> Mensagem enviada para o WhatsApp
-              do jogador. Só recebe quem cadastrou corretamente.
+              <span className="font-semibold">💬 WhatsApp:</span> Mensagem
+              enviada para o WhatsApp do jogador. Só recebe quem cadastrou
+              corretamente.
             </li>
           </ul>
         </div>
         {/* Formulário */}
         <form
-          className="bg-[#232323] rounded-lg p-6 shadow mb-10 animate-fadeIn grid grid-cols-1 md:grid-cols-3 gap-6"
+          className="animate-fadeIn mb-10 grid grid-cols-1 gap-6 rounded-lg bg-[#232323] p-6 shadow md:grid-cols-3"
           onSubmit={(e) => {
             e.preventDefault();
             handleEnviarNotificacao();
           }}
         >
           <div className="flex flex-col gap-3">
-            <label className="text-gray-300 font-semibold" htmlFor="grupo">
-              <FaFilter className="inline mr-2" /> Selecionar grupo
+            <label className="font-semibold text-gray-300" htmlFor="grupo">
+              <FaFilter className="mr-2 inline" /> Selecionar grupo
             </label>
             <select
               id="grupo"
-              className="bg-[#111] border border-yellow-400 text-yellow-300 font-bold rounded px-3 py-2"
+              className="rounded border border-yellow-400 bg-[#111] px-3 py-2 font-bold text-yellow-300"
               value={grupo}
               onChange={(e) => setGrupo(e.target.value)}
             >
@@ -230,12 +249,12 @@ export default function NotificacoesPage() {
             </select>
           </div>
           <div className="flex flex-col gap-3">
-            <label className="text-gray-300 font-semibold" htmlFor="mensagem">
+            <label className="font-semibold text-gray-300" htmlFor="mensagem">
               Mensagem
             </label>
             <textarea
               id="mensagem"
-              className="bg-[#111] border border-yellow-400 text-gray-200 rounded px-3 py-2 min-h-[44px] max-h-[120px] custom-scroll"
+              className="custom-scroll max-h-[120px] min-h-[44px] rounded border border-yellow-400 bg-[#111] px-3 py-2 text-gray-200"
               maxLength={240}
               value={mensagem}
               onChange={(e) => setMensagem(e.target.value)}
@@ -243,12 +262,14 @@ export default function NotificacoesPage() {
             />
           </div>
           <div className="flex flex-col gap-3">
-            <label className="text-gray-300 font-semibold">Canais de envio</label>
+            <label className="font-semibold text-gray-300">
+              Canais de envio
+            </label>
             <div className="flex flex-col gap-2">
               {canaisExplicacao.map((canal) => (
                 <label
                   key={canal.value}
-                  className="flex items-center gap-2 group cursor-pointer hover:text-yellow-400 transition"
+                  className="group flex cursor-pointer items-center gap-2 transition hover:text-yellow-400"
                   title={canal.desc}
                 >
                   <input
@@ -260,19 +281,20 @@ export default function NotificacoesPage() {
                   <span className="font-bold text-yellow-300 group-hover:underline">
                     {canal.label}
                   </span>
-                  <span className="text-xs text-gray-400 ml-1">{canal.desc}</span>
+                  <span className="ml-1 text-xs text-gray-400">
+                    {canal.desc}
+                  </span>
                 </label>
               ))}
             </div>
             <button
               type="submit"
               disabled={enviando || !mensagem.trim() || canais.length === 0}
-              className={`flex items-center gap-2 px-4 py-2 font-bold rounded transition mt-4
-                                ${
-                                  enviando || !mensagem.trim() || canais.length === 0
-                                    ? "bg-gray-400 cursor-not-allowed"
-                                    : "bg-yellow-400 hover:bg-yellow-300 text-black shadow"
-                                }`}
+              className={`mt-4 flex items-center gap-2 rounded px-4 py-2 font-bold transition ${
+                enviando || !mensagem.trim() || canais.length === 0
+                  ? "cursor-not-allowed bg-gray-400"
+                  : "bg-yellow-400 text-black shadow hover:bg-yellow-300"
+              }`}
             >
               <FaPaperPlane /> Enviar
             </button>
@@ -282,12 +304,14 @@ export default function NotificacoesPage() {
         {/* Feedback */}
         {feedback && (
           <div
-            className={`mb-8 flex items-center gap-2 px-4 py-3 rounded font-bold shadow
-                        ${feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
+            className={`mb-8 flex items-center gap-2 rounded px-4 py-3 font-bold shadow ${feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}
           >
             {feedback.success ? <FaCheckCircle /> : <FaTimesCircle />}
             {feedback.message}
-            <button className="ml-4 text-white text-lg" onClick={() => setFeedback(null)}>
+            <button
+              className="ml-4 text-lg text-white"
+              onClick={() => setFeedback(null)}
+            >
               ×
             </button>
           </div>
@@ -295,24 +319,26 @@ export default function NotificacoesPage() {
 
         {/* Histórico de notificações */}
         <div>
-          <div className="font-bold text-gray-300 mb-2 flex items-center gap-2 text-lg">
+          <div className="mb-2 flex items-center gap-2 text-lg font-bold text-gray-300">
             <FaUsers /> Histórico de notificações
           </div>
           <div className="space-y-4">
             {notificacoes.length === 0 && (
-              <div className="text-gray-400 text-center py-10">
+              <div className="py-10 text-center text-gray-400">
                 Nenhuma notificação enviada ainda.
               </div>
             )}
             {notificacoes.map((notif) => (
               <div
                 key={notif.id}
-                className="bg-[#181818] rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between shadow border-l-4 border-yellow-400 animate-fadeIn"
+                className="animate-fadeIn flex flex-col justify-between rounded-lg border-l-4 border-yellow-400 bg-[#181818] p-4 shadow md:flex-row md:items-center"
               >
                 <div className="flex-1">
-                  <div className="font-bold text-yellow-300">{notif.destinatario}</div>
+                  <div className="font-bold text-yellow-300">
+                    {notif.destinatario}
+                  </div>
                   <div className="text-gray-200">{notif.mensagem}</div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="mt-1 text-xs text-gray-500">
                     Enviado em {new Date(notif.data).toLocaleString()} •
                     <span className="ml-1">
                       Canais:{" "}
@@ -326,19 +352,19 @@ export default function NotificacoesPage() {
                                 ? "✉️"
                                 : c === "whatsapp"
                                   ? "💬"
-                                  : c
+                                  : c,
                         )
                         .join(" ")}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2 md:mt-0">
+                <div className="mt-2 flex items-center gap-2 md:mt-0">
                   {notif.status === "enviado" ? (
-                    <span className="flex items-center gap-1 text-green-400 font-semibold text-sm">
+                    <span className="flex items-center gap-1 text-sm font-semibold text-green-400">
                       <FaCheckCircle /> Enviado
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-red-400 font-semibold text-sm">
+                    <span className="flex items-center gap-1 text-sm font-semibold text-red-400">
                       <FaTimesCircle /> Erro
                     </span>
                   )}

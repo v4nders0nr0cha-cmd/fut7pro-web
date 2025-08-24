@@ -7,7 +7,12 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Settings, Palette, Save, RotateCcw } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { getAllThemes, getTheme, applyTheme, type ThemeKey } from "@/config/themes";
+import {
+  getAllThemes,
+  getTheme,
+  applyTheme,
+  type ThemeKey,
+} from "@/config/themes";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function ConfiguracaoTemasPage() {
@@ -69,11 +74,11 @@ export default function ConfiguracaoTemasPage() {
   const themes = getAllThemes();
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
+    <div className="container mx-auto space-y-6 px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-primary flex items-center gap-2">
+          <h1 className="text-primary flex items-center gap-2 text-3xl font-bold">
             <Palette className="h-8 w-8" />
             Configuração de Temas
           </h1>
@@ -88,19 +93,19 @@ export default function ConfiguracaoTemasPage() {
             onClick={handleResetTheme}
             disabled={currentTheme === savedTheme}
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="mr-2 h-4 w-4" />
             Restaurar
           </Button>
 
           <Button onClick={handleResetTheme} disabled={isLoading}>
-            <RotateCcw className="h-4 w-4 mr-2" />
+            <RotateCcw className="mr-2 h-4 w-4" />
             {isLoading ? "Resetando..." : "Resetar Configurações"}
           </Button>
         </div>
       </div>
 
       {/* Current Theme Info */}
-      <Card className="bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20">
+      <Card className="from-primary/10 to-secondary/10 border-primary/20 bg-gradient-to-r">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
@@ -110,15 +115,18 @@ export default function ConfiguracaoTemasPage() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div
-              className="w-16 h-16 rounded-lg shadow-lg"
+              className="h-16 w-16 rounded-lg shadow-lg"
               style={{
-                background: currentThemeConfig.gradient || currentThemeConfig.primary,
+                background:
+                  currentThemeConfig.gradient || currentThemeConfig.primary,
               }}
             />
             <div className="flex-1">
-              <h3 className="text-xl font-semibold">{currentThemeConfig.name}</h3>
+              <h3 className="text-xl font-semibold">
+                {currentThemeConfig.name}
+              </h3>
               <p className="text-muted">{currentThemeConfig.description}</p>
-              <div className="flex gap-2 mt-2">
+              <div className="mt-2 flex gap-2">
                 <Badge variant="secondary">
                   {currentTheme === savedTheme ? "Salvo" : "Não salvo"}
                 </Badge>
@@ -148,17 +156,19 @@ export default function ConfiguracaoTemasPage() {
       </Card>
 
       {/* Theme Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
+              <Palette className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm text-muted">Temas Básicos</p>
+                <p className="text-muted text-sm">Temas Básicos</p>
                 <p className="text-2xl font-bold">
                   {
                     themes.filter(
-                      (t) => !t.key.includes("corinthians") && !t.key.includes("palmeiras")
+                      (t) =>
+                        !t.key.includes("corinthians") &&
+                        !t.key.includes("palmeiras"),
                     ).length
                   }
                 </p>
@@ -170,9 +180,9 @@ export default function ConfiguracaoTemasPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
+              <Palette className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm text-muted">Clubes Brasileiros</p>
+                <p className="text-muted text-sm">Clubes Brasileiros</p>
                 <p className="text-2xl font-bold">
                   {
                     themes.filter(
@@ -180,7 +190,7 @@ export default function ConfiguracaoTemasPage() {
                         t.key.includes("corinthians") ||
                         t.key.includes("palmeiras") ||
                         t.key.includes("flamengo") ||
-                        t.key.includes("santos")
+                        t.key.includes("santos"),
                     ).length
                   }
                 </p>
@@ -192,9 +202,9 @@ export default function ConfiguracaoTemasPage() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-2">
-              <Palette className="h-5 w-5 text-primary" />
+              <Palette className="text-primary h-5 w-5" />
               <div>
-                <p className="text-sm text-muted">Total de Temas</p>
+                <p className="text-muted text-sm">Total de Temas</p>
                 <p className="text-2xl font-bold">{themes.length}</p>
               </div>
             </div>
@@ -210,21 +220,24 @@ export default function ConfiguracaoTemasPage() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <p>
-              • <strong>Prévia:</strong> Clique em "Prévia" para ver como o tema ficará antes de
-              aplicar
+              • <strong>Prévia:</strong> Clique em "Prévia" para ver como o tema
+              ficará antes de aplicar
             </p>
             <p>
-              • <strong>Aplicar:</strong> Clique em "Aplicar" para usar o tema imediatamente
+              • <strong>Aplicar:</strong> Clique em "Aplicar" para usar o tema
+              imediatamente
             </p>
             <p>
-              • <strong>Salvar:</strong> Use o botão "Salvar Tema" para persistir sua escolha
+              • <strong>Salvar:</strong> Use o botão "Salvar Tema" para
+              persistir sua escolha
             </p>
             <p>
-              • <strong>Restaurar:</strong> Use "Restaurar" para voltar ao último tema salvo
+              • <strong>Restaurar:</strong> Use "Restaurar" para voltar ao
+              último tema salvo
             </p>
             <p>
-              • <strong>Temas de Clubes:</strong> Temas especiais inspirados nos principais clubes
-              brasileiros
+              • <strong>Temas de Clubes:</strong> Temas especiais inspirados nos
+              principais clubes brasileiros
             </p>
           </div>
         </CardContent>

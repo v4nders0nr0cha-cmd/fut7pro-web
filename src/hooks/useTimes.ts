@@ -14,8 +14,10 @@ export function useTimes(rachaId: string) {
     fetcher,
     {
       fallbackData:
-        typeof window !== "undefined" ? JSON.parse(localStorage.getItem(storageKey) || "[]") : [],
-    }
+        typeof window !== "undefined"
+          ? JSON.parse(localStorage.getItem(storageKey) || "[]")
+          : [],
+    },
   );
 
   if (typeof window !== "undefined" && data) {
@@ -26,7 +28,9 @@ export function useTimes(rachaId: string) {
     const novoTime: Time = {
       id: crypto.randomUUID(),
       nome: time.nome || "Novo Time",
-      slug: (time.slug || time.nome || "novo-time").toLowerCase().replace(/\s+/g, "-"),
+      slug: (time.slug || time.nome || "novo-time")
+        .toLowerCase()
+        .replace(/\s+/g, "-"),
       logo: time.logo || "/images/times/time_padrao_01.png",
       cor: time.cor || "#FFD700",
       corSecundaria: time.corSecundaria || "#FFFFFF",
@@ -40,8 +44,13 @@ export function useTimes(rachaId: string) {
         body: JSON.stringify(novoTime),
       });
     } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      localStorage.setItem(storageKey, JSON.stringify([...localTimes, novoTime]));
+      const localTimes: Time[] = JSON.parse(
+        localStorage.getItem(storageKey) || "[]",
+      );
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify([...localTimes, novoTime]),
+      );
     }
     mutate();
   }
@@ -54,7 +63,9 @@ export function useTimes(rachaId: string) {
         body: JSON.stringify(time),
       });
     } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const localTimes: Time[] = JSON.parse(
+        localStorage.getItem(storageKey) || "[]",
+      );
       const atualizados = localTimes.map((t) => (t.id === time.id ? time : t));
       localStorage.setItem(storageKey, JSON.stringify(atualizados));
     }
@@ -67,7 +78,9 @@ export function useTimes(rachaId: string) {
         method: "DELETE",
       });
     } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
+      const localTimes: Time[] = JSON.parse(
+        localStorage.getItem(storageKey) || "[]",
+      );
       const atualizados = localTimes.filter((t) => t.id !== id);
       localStorage.setItem(storageKey, JSON.stringify(atualizados));
     }

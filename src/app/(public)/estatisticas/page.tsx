@@ -13,7 +13,8 @@ const estatisticasLinks = [
   {
     title: "📋 Ranking Geral",
     href: "/estatisticas/ranking-geral",
-    description: "Pontuação acumulada de todos os jogadores durante a temporada ou quadrimestre.",
+    description:
+      "Pontuação acumulada de todos os jogadores durante a temporada ou quadrimestre.",
   },
   {
     title: "🎯 Artilheiros",
@@ -23,7 +24,8 @@ const estatisticasLinks = [
   {
     title: "🅰️ Assistências",
     href: "/estatisticas/assistencias",
-    description: "Ranking dos principais maestros: veja quem mais distribuiu assistências.",
+    description:
+      "Ranking dos principais maestros: veja quem mais distribuiu assistências.",
   },
   {
     title: "💪 Melhores por Posição",
@@ -33,7 +35,8 @@ const estatisticasLinks = [
   {
     title: "⚖️ Tira-teima (Comparador)",
     href: "/estatisticas/tira-teima",
-    description: "Compare dois jogadores lado a lado, com base em estatísticas oficiais.",
+    description:
+      "Compare dois jogadores lado a lado, com base em estatísticas oficiais.",
   },
 ];
 
@@ -53,18 +56,15 @@ export default function EstatisticasPage() {
       </Head>
 
       {/* TÍTULO PRINCIPAL PADRÃO */}
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+      <h1 className="mb-3 mt-10 text-center text-3xl font-extrabold leading-tight text-yellow-400 drop-shadow-sm md:text-4xl">
         Estatísticas
       </h1>
       {/* DESCRIÇÃO PADRÃO — MAIS HORIZONTAL NO DESKTOP */}
-      <p
-        className="mb-8 text-base md:text-lg text-gray-300 text-center 
-        max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto
-        leading-relaxed font-medium"
-      >
-        Explore todos os rankings: classificação de times, desempenho dos jogadores, artilharia,
-        assistências, destaques por posição e comparador de atletas. Evolua sua performance rodada a
-        rodada, e mostre que está sempre entre os melhores.
+      <p className="mx-auto mb-8 max-w-2xl text-center text-base font-medium leading-relaxed text-gray-300 md:max-w-3xl md:text-lg lg:max-w-4xl xl:max-w-5xl">
+        Explore todos os rankings: classificação de times, desempenho dos
+        jogadores, artilharia, assistências, destaques por posição e comparador
+        de atletas. Evolua sua performance rodada a rodada, e mostre que está
+        sempre entre os melhores.
       </p>
 
       <div
@@ -74,16 +74,16 @@ export default function EstatisticasPage() {
           scrollbarWidth: "thin",
         }}
       >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 w-full max-w-6xl mx-auto">
+        <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {estatisticasLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="bg-[#1a1a1a] hover:bg-[#222] border border-gray-700 hover:border-yellow-400 p-6 rounded-xl shadow transition-all flex flex-col justify-between min-h-[140px] break-words"
+              className="flex min-h-[140px] flex-col justify-between break-words rounded-xl border border-gray-700 bg-[#1a1a1a] p-6 shadow transition-all hover:border-yellow-400 hover:bg-[#222]"
               tabIndex={0}
               aria-label={link.title}
             >
-              <div className="text-yellow-400 font-semibold text-base sm:text-sm mb-2">
+              <div className="mb-2 text-base font-semibold text-yellow-400 sm:text-sm">
                 {link.title}
               </div>
               <p className="text-sm text-gray-400">{link.description}</p>

@@ -22,7 +22,10 @@ const DIAS_FIXOS = [
   { dia: 3, horario: "20:30" },
 ];
 
-function getNextOccurrences(diasFixos: { dia: number; horario: string }[], qtd = 5) {
+function getNextOccurrences(
+  diasFixos: { dia: number; horario: string }[],
+  qtd = 5,
+) {
   const now = new Date();
   let ocorrencias: {
     data: Date;
@@ -99,33 +102,36 @@ export default function ProximosRachasPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4">
-        <div className="max-w-2xl w-full mx-auto bg-[#21252B] rounded-2xl shadow-lg px-6 py-6 flex flex-col min-h-[220px] justify-between">
-          <div className="flex items-center gap-2 mb-4">
-            <FaCalendarAlt className="text-cyan-400 w-6 h-6" />
-            <span className="text-lg font-bold text-cyan-300 tracking-wide">Próximos rachas</span>
+      <main className="px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <div className="mx-auto flex min-h-[220px] w-full max-w-2xl flex-col justify-between rounded-2xl bg-[#21252B] px-6 py-6 shadow-lg">
+          <div className="mb-4 flex items-center gap-2">
+            <FaCalendarAlt className="h-6 w-6 text-cyan-400" />
+            <span className="text-lg font-bold tracking-wide text-cyan-300">
+              Próximos rachas
+            </span>
           </div>
 
-          <div className="flex flex-col gap-2 mb-4">
+          <div className="mb-4 flex flex-col gap-2">
             {ocorrencias.map((racha, idx) => (
               <div
                 key={idx}
-                className={`flex flex-wrap items-center text-base font-medium rounded-lg px-2 py-1
-                                    ${
-                                      racha.feriado
-                                        ? "bg-red-100/10 border border-red-500/30 text-red-300"
-                                        : "text-white"
-                                    }
-                                `}
+                className={`flex flex-wrap items-center rounded-lg px-2 py-1 text-base font-medium ${
+                  racha.feriado
+                    ? "border border-red-500/30 bg-red-100/10 text-red-300"
+                    : "text-white"
+                } `}
                 style={{ letterSpacing: 0.5 }}
               >
                 <span className="capitalize">
-                  {racha.diaSemanaExtenso}, {racha.diaNumero} de {racha.mesExtenso} de {racha.ano}
+                  {racha.diaSemanaExtenso}, {racha.diaNumero} de{" "}
+                  {racha.mesExtenso} de {racha.ano}
                 </span>
-                <span className="ml-2 text-cyan-200 font-semibold">• {racha.horario}</span>
+                <span className="ml-2 font-semibold text-cyan-200">
+                  • {racha.horario}
+                </span>
                 {racha.feriado && (
                   <span
-                    className="ml-3 bg-red-500/80 text-white text-xs px-2 py-0.5 rounded shadow font-semibold"
+                    className="ml-3 rounded bg-red-500/80 px-2 py-0.5 text-xs font-semibold text-white shadow"
                     title={racha.nomeFeriado}
                   >
                     FERIADO{racha.nomeFeriado ? `: ${racha.nomeFeriado}` : ""}
@@ -137,16 +143,17 @@ export default function ProximosRachasPage() {
 
           <Link
             href="/admin/rachas"
-            className="mt-2 w-full text-center bg-cyan-600 hover:bg-cyan-700 transition text-white font-semibold py-2 px-4 rounded-xl text-sm"
+            className="mt-2 w-full rounded-xl bg-cyan-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cyan-700"
           >
             Gerenciar dias e horários
           </Link>
 
-          <div className="mt-3 text-xs text-gray-400 text-center">
-            Os próximos rachas são calculados automaticamente pelos dias fixos cadastrados.
+          <div className="mt-3 text-center text-xs text-gray-400">
+            Os próximos rachas são calculados automaticamente pelos dias fixos
+            cadastrados.
             <br />
             {ocorrencias.some((o) => o.feriado) && (
-              <span className="text-red-400 font-semibold">
+              <span className="font-semibold text-red-400">
                 Atenção: datas em vermelho coincidem com feriados nacionais!
               </span>
             )}

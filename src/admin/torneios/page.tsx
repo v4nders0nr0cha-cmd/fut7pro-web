@@ -28,16 +28,27 @@ export default function AdminTorneiosPage() {
   };
 
   const handleSubmit = () => {
-    if (!novoTorneio.nome || !novoTorneio.slug || !novoTorneio.campeao || !novoTorneio.imagem)
+    if (
+      !novoTorneio.nome ||
+      !novoTorneio.slug ||
+      !novoTorneio.campeao ||
+      !novoTorneio.imagem
+    )
       return;
 
     if (modoEdicao !== null) {
       const atualizados = [...torneios];
-      atualizados[modoEdicao] = { ...novoTorneio, ano: Number(novoTorneio.ano) };
+      atualizados[modoEdicao] = {
+        ...novoTorneio,
+        ano: Number(novoTorneio.ano),
+      };
       setTorneios(atualizados);
       setModoEdicao(null);
     } else {
-      setTorneios([...torneios, { ...novoTorneio, ano: Number(novoTorneio.ano) }]);
+      setTorneios([
+        ...torneios,
+        { ...novoTorneio, ano: Number(novoTorneio.ano) },
+      ]);
     }
 
     setNovoTorneio(getNovoTorneio());
@@ -73,18 +84,24 @@ export default function AdminTorneiosPage() {
     <>
       <Head>
         <title>Admin Torneios | Fut7Pro</title>
-        <meta name="description" content="Administração dos torneios especiais do Fut7Pro." />
-        <meta name="keywords" content="admin torneios, fut7pro, futebol 7, torneios especiais" />
+        <meta
+          name="description"
+          content="Administração dos torneios especiais do Fut7Pro."
+        />
+        <meta
+          name="keywords"
+          content="admin torneios, fut7pro, futebol 7, torneios especiais"
+        />
       </Head>
 
-      <div className="min-h-screen bg-fundo text-white px-4 pt-6 pb-10">
-        <h1 className="text-3xl font-bold text-yellow-400 mb-6 text-center">
+      <div className="min-h-screen bg-fundo px-4 pb-10 pt-6 text-white">
+        <h1 className="mb-6 text-center text-3xl font-bold text-yellow-400">
           Painel Admin – Grandes Torneios
         </h1>
 
         {/* FORMULÁRIO */}
-        <div className="max-w-xl mx-auto bg-[#1A1A1A] rounded-xl p-4 mb-10">
-          <h2 className="text-lg font-bold text-white mb-4">
+        <div className="mx-auto mb-10 max-w-xl rounded-xl bg-[#1A1A1A] p-4">
+          <h2 className="mb-4 text-lg font-bold text-white">
             {modoEdicao !== null ? "Editar Torneio" : "Novo Torneio"}
           </h2>
           <div className="grid grid-cols-1 gap-3">
@@ -93,7 +110,7 @@ export default function AdminTorneiosPage() {
               value={novoTorneio.nome}
               onChange={handleChange}
               placeholder="Nome do Torneio"
-              className="p-2 rounded bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 p-2 text-white"
               autoComplete="off"
             />
             <input
@@ -102,7 +119,7 @@ export default function AdminTorneiosPage() {
               onChange={handleChange}
               type="number"
               placeholder="Ano"
-              className="p-2 rounded bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 p-2 text-white"
               min={2000}
               max={2100}
               autoComplete="off"
@@ -112,7 +129,7 @@ export default function AdminTorneiosPage() {
               value={novoTorneio.slug}
               onChange={handleChange}
               placeholder="Slug do Campeão (link)"
-              className="p-2 rounded bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 p-2 text-white"
               autoComplete="off"
             />
             <input
@@ -120,7 +137,7 @@ export default function AdminTorneiosPage() {
               value={novoTorneio.campeao}
               onChange={handleChange}
               placeholder="Nome do Campeão"
-              className="p-2 rounded bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 p-2 text-white"
               autoComplete="off"
             />
             <input
@@ -128,13 +145,13 @@ export default function AdminTorneiosPage() {
               value={novoTorneio.imagem}
               onChange={handleChange}
               placeholder="Caminho da Imagem"
-              className="p-2 rounded bg-zinc-800 text-white"
+              className="rounded bg-zinc-800 p-2 text-white"
               autoComplete="off"
             />
             <button
               type="button"
               onClick={handleSubmit}
-              className="bg-yellow-500 text-black py-2 px-4 rounded hover:bg-yellow-400"
+              className="rounded bg-yellow-500 px-4 py-2 text-black hover:bg-yellow-400"
             >
               {modoEdicao !== null ? "Salvar Alterações" : "Cadastrar Torneio"}
             </button>
@@ -142,31 +159,37 @@ export default function AdminTorneiosPage() {
         </div>
 
         {/* LISTAGEM */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
           {torneios.map((torneio, idx) => (
-            <div key={torneio.slug + idx} className="bg-[#1A1A1A] rounded-xl p-4 shadow-md">
+            <div
+              key={torneio.slug + idx}
+              className="rounded-xl bg-[#1A1A1A] p-4 shadow-md"
+            >
               <Image
                 src={torneio.imagem}
                 alt={`Imagem do torneio ${torneio.nome}`}
                 width={400}
                 height={200}
-                className="rounded-md object-cover mb-3 w-full h-40"
+                className="mb-3 h-40 w-full rounded-md object-cover"
               />
-              <h3 className="text-lg font-bold text-yellow-400 mb-1">{torneio.nome}</h3>
-              <p className="text-sm text-gray-300 mb-1">Ano: {torneio.ano}</p>
-              <p className="text-sm text-white mb-2">
-                Campeão: <span className="text-blue-400">{torneio.campeao}</span>
+              <h3 className="mb-1 text-lg font-bold text-yellow-400">
+                {torneio.nome}
+              </h3>
+              <p className="mb-1 text-sm text-gray-300">Ano: {torneio.ano}</p>
+              <p className="mb-2 text-sm text-white">
+                Campeão:{" "}
+                <span className="text-blue-400">{torneio.campeao}</span>
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEditar(idx)}
-                  className="text-sm bg-blue-600 py-1 px-3 rounded hover:bg-blue-500"
+                  className="rounded bg-blue-600 px-3 py-1 text-sm hover:bg-blue-500"
                 >
                   ✏️ Editar
                 </button>
                 <button
                   onClick={() => handleExcluir(idx)}
-                  className="text-sm bg-red-600 py-1 px-3 rounded hover:bg-red-500"
+                  className="rounded bg-red-600 px-3 py-1 text-sm hover:bg-red-500"
                 >
                   🗑️ Excluir
                 </button>

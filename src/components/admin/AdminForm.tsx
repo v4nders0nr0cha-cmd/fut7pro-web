@@ -16,10 +16,16 @@ type Props = {
   onCancel?: () => void;
 };
 
-export default function AdminForm({ onSave, initialData = {}, onCancel }: Props) {
+export default function AdminForm({
+  onSave,
+  initialData = {},
+  onCancel,
+}: Props) {
   const [form, setForm] = useState<Partial<Admin>>(initialData);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
@@ -32,9 +38,9 @@ export default function AdminForm({ onSave, initialData = {}, onCancel }: Props)
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 p-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl p-4 shadow-md"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">
+      <h2 className="text-center text-xl font-bold text-yellow-400">
         Adicionar/Editar Administrador
       </h2>
       <input
@@ -54,7 +60,12 @@ export default function AdminForm({ onSave, initialData = {}, onCancel }: Props)
         className="input"
         type="email"
       />
-      <select name="role" value={form.role ?? "leitor"} onChange={handleChange} className="input">
+      <select
+        name="role"
+        value={form.role ?? "leitor"}
+        onChange={handleChange}
+        className="input"
+      >
         {ROLES.map((role) => (
           <option key={role.value} value={role.value}>
             {role.label}
@@ -65,7 +76,11 @@ export default function AdminForm({ onSave, initialData = {}, onCancel }: Props)
         Salvar
       </button>
       {onCancel && (
-        <button type="button" className="btn-secondary w-full" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={onCancel}
+        >
           Cancelar
         </button>
       )}

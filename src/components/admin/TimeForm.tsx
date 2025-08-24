@@ -8,7 +8,11 @@ type Props = {
   onCancel?: () => void;
 };
 
-export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) {
+export default function TimeForm({
+  onSave,
+  initialData = {},
+  onCancel,
+}: Props) {
   const [form, setForm] = useState<Partial<Time>>(initialData);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -24,9 +28,11 @@ export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl shadow-md"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">Adicionar/Editar Time</h2>
+      <h2 className="text-center text-xl font-bold text-yellow-400">
+        Adicionar/Editar Time
+      </h2>
       <input
         name="nome"
         placeholder="Nome do time"
@@ -70,7 +76,11 @@ export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) 
       <input
         name="jogadores"
         placeholder="IDs dos jogadores (separados por vírgula)"
-        value={Array.isArray(form.jogadores) ? form.jogadores.join(",") : (form.jogadores ?? "")}
+        value={
+          Array.isArray(form.jogadores)
+            ? form.jogadores.join(",")
+            : (form.jogadores ?? "")
+        }
         onChange={(e) =>
           setForm((prev) => ({
             ...prev,
@@ -86,7 +96,11 @@ export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) 
         Salvar
       </button>
       {onCancel && (
-        <button type="button" className="btn-secondary w-full" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={onCancel}
+        >
           Cancelar
         </button>
       )}

@@ -1,16 +1,21 @@
 "use client";
 
 import useSWR from "swr";
-import { superAdminApi } from "@/lib/api";
+import { superAdminApi, apiClient } from "@/lib/api";
 import { useApiState } from "./useApiState";
-import type { Racha, Metricas, Usuario } from "@/types/superadmin";
+import type { Racha, Metricas, Usuario } from "@/types";
 
+// Fetcher customizado que usa o apiClient para aplicar normalização
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar dados de SuperAdmin");
+  // Extrair o endpoint da URL completa
+  const endpoint = url.replace(/^https?:\/\/[^\/]+/, "");
+  const response = await apiClient.get(endpoint);
+
+  if (response.error) {
+    throw new Error(response.error);
   }
-  return response.json();
+
+  return response.data;
 };
 
 export function useSuperAdmin() {
@@ -74,51 +79,65 @@ export function useSuperAdmin() {
     });
   };
 
-  const updateRacha = async (id: string, racha: Partial<Racha>) => {
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/superadmin/rachas/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(racha),
-      });
+  const updateRacha = async (id: string, racha: Partial<Racha>) =>
+    apiState.handleAsync(async () => {
+      const response = await superAdminApi.updateRacha(id, racha);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao atualizar racha");
+      if (response.error) {
+        throw new Error(response.error);
       }
 
       await mutateRachas();
-      return response.json();
+      return response.data;
     });
-  };
 
-  const deleteRacha = async (id: string) => {
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/superadmin/rachas/${id}`, {
-        method: "DELETE",
-      });
+  const deleteRacha = async (id: string) =>
+    apiState.handleAsync(async () => {
+      const response = await superAdminApi.deleteRacha(id);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao deletar racha");
+      if (response.error) {
+        throw new Error(response.error);
       }
 
       await mutateRachas();
-      return response.json();
+      return response.data;
     });
-  };
 
-  const getRachaById = (id: string) => {
-    return rachas?.find((r) => r.id === id);
-  };
+  const addUsuario = async (usuario: Partial<Usuario>) =>
+    apiState.handleAsync(async () => {
+      const response = await superAdminApi.createUsuario(usuario);
 
-  const getRachasPorStatus = (status: string) => {
-    return rachas?.filter((r) => r.status === status) || [];
-  };
+      if (response.error) {
+        throw new Error(response.error);
+      }
 
-  const refreshAll = async () => {
-    await Promise.all([mutateRachas(), mutateMetricas(), mutateUsuarios()]);
-  };
+      await mutateUsuarios();
+      return response.data;
+    });
+
+  const updateUsuario = async (id: string, usuario: Partial<Usuario>) =>
+    apiState.handleAsync(async () => {
+      const response = await superAdminApi.updateUsuario(id, usuario);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutateUsuarios();
+      return response.data;
+    });
+
+  const deleteUsuario = async (id: string) =>
+    apiState.handleAsync(async () => {
+      const response = await superAdminApi.deleteUsuario(id);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutateUsuarios();
+      return response.data;
+    });
 
   return {
     rachas: rachas || [],
@@ -126,14 +145,13 @@ export function useSuperAdmin() {
     usuarios: usuarios || [],
     isLoading,
     isError,
-    error: apiState.error,
-    isSuccess: apiState.isSuccess,
+    error: errorRachas || errorMetricas || errorUsuarios,
     addRacha,
     updateRacha,
     deleteRacha,
-    getRachaById,
-    getRachasPorStatus,
-    refreshAll,
+    addUsuario,
+    updateUsuario,
+    deleteUsuario,
     mutateRachas,
     mutateMetricas,
     mutateUsuarios,

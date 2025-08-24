@@ -12,19 +12,44 @@ import type { QuadrimestresAno } from "@/types/estatisticas";
 // --- MOCK VISUAL (se não houver dados reais no ano) ---
 const mockQuadrimestresAno: QuadrimestresAno = {
   "1º QUADRIMESTRE": [
-    { titulo: "Artilheiro", nome: "Matheus Silva", icone: "⚽", slug: "matheus-silva" },
+    {
+      titulo: "Artilheiro",
+      nome: "Matheus Silva",
+      icone: "⚽",
+      slug: "matheus-silva",
+    },
     { titulo: "Meia", nome: "Lucas Rocha", icone: "🥇", slug: "lucas-rocha" },
-    { titulo: "Melhor do Quadrimestre", nome: "Vitão Beta", icone: "🏆", slug: "vitao-beta" },
+    {
+      titulo: "Melhor do Quadrimestre",
+      nome: "Vitão Beta",
+      icone: "🏆",
+      slug: "vitao-beta",
+    },
   ],
   "2º QUADRIMESTRE": [
-    { titulo: "Artilheiro", nome: "João Alpha", icone: "⚽", slug: "joao-alpha" },
+    {
+      titulo: "Artilheiro",
+      nome: "João Alpha",
+      icone: "⚽",
+      slug: "joao-alpha",
+    },
     { titulo: "Meia", nome: "Cris Mid", icone: "🥇", slug: "cris-mid" },
   ],
   "3º QUADRIMESTRE": [],
 };
 
-const ordemCampeoes = ["Melhor do Ano", "Artilheiro do Ano", "Maestro do Ano", "Campeão do Ano"];
-const ordemPosicoes = ["Atacante do Ano", "Meia do Ano", "Zagueiro do Ano", "Goleiro do Ano"];
+const ordemCampeoes = [
+  "Melhor do Ano",
+  "Artilheiro do Ano",
+  "Maestro do Ano",
+  "Campeão do Ano",
+];
+const ordemPosicoes = [
+  "Atacante do Ano",
+  "Meia do Ano",
+  "Zagueiro do Ano",
+  "Goleiro do Ano",
+];
 const prioridadeQuadrimestre = [
   "Melhor do Quadrimestre",
   "Artilheiro",
@@ -37,11 +62,15 @@ const prioridadeQuadrimestre = [
 ];
 
 // --- Dados e seleção do ano ---
-const anosDisponiveis = Array.from(new Set(campeoesAno.map((c) => c.ano))).sort((a, b) => b - a);
+const anosDisponiveis = Array.from(new Set(campeoesAno.map((c) => c.ano))).sort(
+  (a, b) => b - a,
+);
 const anoSelecionado = anosDisponiveis[0];
 
 const campeoesDoAno = ordemCampeoes
-  .map((titulo) => campeoesAno.find((c) => c.ano === anoSelecionado && c.titulo === titulo))
+  .map((titulo) =>
+    campeoesAno.find((c) => c.ano === anoSelecionado && c.titulo === titulo),
+  )
   .filter(Boolean);
 
 campeoesDoAno.forEach((c) => {
@@ -52,7 +81,10 @@ campeoesDoAno.forEach((c) => {
 
 const melhoresPosicaoDoAno = melhoresPorPosicao
   .filter((p) => p.ano === anoSelecionado)
-  .sort((a, b) => ordemPosicoes.indexOf(a.posicao) - ordemPosicoes.indexOf(b.posicao));
+  .sort(
+    (a, b) =>
+      ordemPosicoes.indexOf(a.posicao) - ordemPosicoes.indexOf(b.posicao),
+  );
 
 const quadrimestresAno: QuadrimestresAno =
   anoSelecionado &&
@@ -64,7 +96,9 @@ const quadrimestresAno: QuadrimestresAno =
 const quadrimestresOrdenados: QuadrimestresAno = {};
 Object.keys(quadrimestresAno).forEach((periodo) => {
   quadrimestresOrdenados[periodo] = [...(quadrimestresAno[periodo] || [])].sort(
-    (a, b) => prioridadeQuadrimestre.indexOf(a.titulo) - prioridadeQuadrimestre.indexOf(b.titulo)
+    (a, b) =>
+      prioridadeQuadrimestre.indexOf(a.titulo) -
+      prioridadeQuadrimestre.indexOf(b.titulo),
   );
 });
 
@@ -104,10 +138,10 @@ export default function OsCampeoesAdminPage() {
         />
       </Head>
 
-      <main className="bg-fundo text-white min-h-screen pt-20 pb-24 md:pt-6 md:pb-8 px-4">
+      <main className="min-h-screen bg-fundo px-4 pb-24 pt-20 text-white md:pb-8 md:pt-6">
         {/* Efeito finalização */}
         {finalizado && (
-          <div className="fixed inset-0 z-50 bg-black/80 flex flex-col items-center justify-center">
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80">
             <svg className="mb-8" width="120" height="120">
               <g>
                 <circle cx="20" cy="60" r="8" fill="#FFD700">
@@ -148,16 +182,17 @@ export default function OsCampeoesAdminPage() {
                 </circle>
               </g>
             </svg>
-            <div className="text-2xl md:text-3xl font-bold text-yellow-400 mb-3 text-center animate-bounce">
+            <div className="mb-3 animate-bounce text-center text-2xl font-bold text-yellow-400 md:text-3xl">
               🏆 Temporada Finalizada!
             </div>
-            <div className="text-center text-gray-200 mb-4 max-w-xl">
+            <div className="mb-4 max-w-xl text-center text-gray-200">
               Os campeões do ano e do quadrimestre atual foram registrados.
               <br />
-              Todos os ícones de conquistas já foram aplicados nos perfis dos atletas vencedores.
+              Todos os ícones de conquistas já foram aplicados nos perfis dos
+              atletas vencedores.
             </div>
             <button
-              className="mt-3 px-8 py-3 rounded-xl bg-yellow-500 text-black font-bold text-lg shadow-lg border-2 border-yellow-300 hover:bg-yellow-600"
+              className="mt-3 rounded-xl border-2 border-yellow-300 bg-yellow-500 px-8 py-3 text-lg font-bold text-black shadow-lg hover:bg-yellow-600"
               onClick={handleCloseFestivo}
             >
               Fechar
@@ -165,23 +200,25 @@ export default function OsCampeoesAdminPage() {
           </div>
         )}
 
-        <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 text-center mt-8 mb-2">
+        <div className="mx-auto max-w-5xl">
+          <h1 className="mb-2 mt-8 text-center text-3xl font-bold text-yellow-400 md:text-4xl">
             Os Campeões (Gestão)
           </h1>
-          <p className="text-center text-gray-300 mb-8 max-w-2xl mx-auto">
+          <p className="mx-auto mb-8 max-w-2xl text-center text-gray-300">
             Finalize a temporada para gerar os campeões do ano.
             <br />
-            Campeões por quadrimestre são calculados automaticamente ao final de cada período.
+            Campeões por quadrimestre são calculados automaticamente ao final de
+            cada período.
             <br />
             <span className="text-yellow-300">
-              • Os ícones de conquistas serão aplicados automaticamente nos perfis dos atletas.
+              • Os ícones de conquistas serão aplicados automaticamente nos
+              perfis dos atletas.
             </span>
           </p>
 
-          <div className="flex justify-center mb-10">
+          <div className="mb-10 flex justify-center">
             <button
-              className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-lg px-8 py-3 rounded-2xl shadow-lg border-2 border-yellow-300 transition disabled:opacity-60 disabled:cursor-not-allowed"
+              className="rounded-2xl border-2 border-yellow-300 bg-yellow-500 px-8 py-3 text-lg font-bold text-black shadow-lg transition hover:bg-yellow-600 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={handleFinalizarTemporada}
               disabled={finalizando}
             >
@@ -191,12 +228,12 @@ export default function OsCampeoesAdminPage() {
 
           {/* Modal de confirmação */}
           {modalOpen && (
-            <div className="fixed inset-0 z-40 bg-black/90 flex items-center justify-center">
-              <div className="bg-zinc-900 border-2 border-yellow-400 rounded-2xl p-8 max-w-md w-full flex flex-col items-center shadow-2xl">
-                <div className="text-yellow-400 text-2xl mb-3 font-bold flex items-center gap-2">
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/90">
+              <div className="flex w-full max-w-md flex-col items-center rounded-2xl border-2 border-yellow-400 bg-zinc-900 p-8 shadow-2xl">
+                <div className="mb-3 flex items-center gap-2 text-2xl font-bold text-yellow-400">
                   ⚠️ Encerrar Temporada?
                 </div>
-                <div className="text-gray-200 text-center mb-6 text-sm">
+                <div className="mb-6 text-center text-sm text-gray-200">
                   <b>Esta ação irá:</b>
                   <br />
                   - Encerrar o ano e o quadrimestre atual
@@ -206,22 +243,22 @@ export default function OsCampeoesAdminPage() {
                   - Aplicar os ícones nos perfis dos vencedores
                   <br />
                   <br />
-                  <span className="text-yellow-300 font-semibold">
+                  <span className="font-semibold text-yellow-300">
                     Esta operação é irreversível.
                     <br />
                     Deseja finalizar agora?
                   </span>
                 </div>
-                <div className="flex gap-4 mt-2">
+                <div className="mt-2 flex gap-4">
                   <button
-                    className="px-6 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 font-semibold text-base"
+                    className="rounded-md bg-gray-700 px-6 py-2 text-base font-semibold text-white hover:bg-gray-600"
                     onClick={() => setModalOpen(false)}
                     disabled={finalizando}
                   >
                     Cancelar
                   </button>
                   <button
-                    className="px-6 py-2 rounded-md bg-yellow-500 text-black hover:bg-yellow-600 font-bold text-base shadow-lg border border-yellow-400"
+                    className="rounded-md border border-yellow-400 bg-yellow-500 px-6 py-2 text-base font-bold text-black shadow-lg hover:bg-yellow-600"
                     onClick={handleConfirmarFinalizar}
                     disabled={finalizando}
                   >
@@ -234,8 +271,10 @@ export default function OsCampeoesAdminPage() {
 
           {/* Campeões do Ano */}
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">Campeões do Ano</h2>
-            <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 justify-center items-stretch">
+            <h2 className="mb-6 text-center text-2xl font-bold text-yellow-400">
+              Campeões do Ano
+            </h2>
+            <div className="grid w-full grid-cols-1 items-stretch justify-center gap-6 md:grid-cols-4">
               {campeoesDoAno.map((c) =>
                 c ? (
                   <CampeaoAnoCard
@@ -249,17 +288,17 @@ export default function OsCampeoesAdminPage() {
                     slug={c.slug}
                     temporario={c.temporario}
                   />
-                ) : null
+                ) : null,
               )}
             </div>
           </section>
 
           {/* Melhores por posição */}
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">
+            <h2 className="mb-6 text-center text-2xl font-bold text-yellow-400">
               Melhores por Posição
             </h2>
-            <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 justify-center items-stretch">
+            <div className="grid w-full grid-cols-1 items-stretch justify-center gap-6 md:grid-cols-4">
               {melhoresPosicaoDoAno.map((c) =>
                 c ? (
                   <CampeaoAnoCard
@@ -273,14 +312,14 @@ export default function OsCampeoesAdminPage() {
                     slug={c.slug}
                     temporario={c.temporario}
                   />
-                ) : null
+                ) : null,
               )}
             </div>
           </section>
 
           {/* Quadrimestres */}
           <section className="mb-16">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">
+            <h2 className="mb-6 text-center text-2xl font-bold text-yellow-400">
               Campeões por Quadrimestre
             </h2>
             <QuadrimestreGrid dados={quadrimestresOrdenados} />

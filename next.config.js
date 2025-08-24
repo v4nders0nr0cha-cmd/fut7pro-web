@@ -1,4 +1,4 @@
-/** @type {import('next').NextConfig} */
+﻿/** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configurações de segurança
   async headers() {
@@ -83,17 +83,6 @@ const nextConfig = {
   },
 
   // Configurações de desenvolvimento
-  allowedDevOrigins: [
-    "http://localhost:3000",
-    "http://192.168.0.2:3000",
-    "http://192.168.0.3:3000",
-    "http://192.168.0.4:3000",
-    "http://192.168.0.5:3000",
-    "http://192.168.0.6:3000",
-    "http://192.168.0.7:3000",
-  ],
-
-  // Configurações de performance
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ["react-icons", "lucide-react"],
@@ -103,6 +92,20 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
   },
+
+  // Configuração webpack para suprimir avisos críticos
+  webpack: (config, { isServer }) => {
+    // Suprimir avisos críticos do OpenTelemetry/Prisma instrumentation
+    config.ignoreWarnings = [
+      {
+        module: /@prisma\/instrumentation/,
+        message: /Critical dependency: the request of a dependency is an expression/,
+      },
+    ];
+
+    return config;
+  },
 };
 
 module.exports = nextConfig;
+

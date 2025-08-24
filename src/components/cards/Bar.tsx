@@ -1,15 +1,21 @@
 "use client";
 
-export default function Bar({ title, value }: { title: string; value: number }) {
+export default function Bar({
+  title,
+  value,
+}: {
+  title: string;
+  value: number;
+}) {
   return (
     <div>
-      <div className="flex justify-between text-sm text-white mb-1">
+      <div className="mb-1 flex justify-between text-sm text-white">
         <span>{title}</span>
-        <span className="text-yellow-400 font-bold">{value} pts</span>
+        <span className="font-bold text-yellow-400">{value} pts</span>
       </div>
-      <div className="w-full bg-[#333] h-2 rounded">
+      <div className="h-2 w-full rounded bg-[#333]">
         <div
-          className="bg-yellow-400 h-2 rounded"
+          className="h-2 rounded bg-yellow-400"
           style={{ width: `${value * 5}%`, maxWidth: "100%" }}
         />
       </div>

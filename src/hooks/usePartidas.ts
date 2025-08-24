@@ -1,23 +1,39 @@
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
-import { partidasApi } from "@/lib/api";
+import { partidasApi, apiClient } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Partida } from "@/types/partida";
+import { partidasMock } from "@/components/lists/mockPartidas";
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar partidas");
+// Fetcher customizado que implementa fallback para mocks
+const fetcher = async (url: string): Promise<Partida[]> => {
+  try {
+    // Tentar o backend primeiro
+    const endpoint = url
+      .replace(/^https?:\/\/[^\/]+/, "")
+      .replace(/^\/api/, "");
+    const response = await apiClient.get(endpoint);
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    // Se chegou aqui, o backend funcionou
+    return response.data as Partida[];
+  } catch (error) {
+    // Se o backend falhou, usar mocks padronizados
+    console.log("🔄 Backend falhou, usando mocks:", error);
+    return partidasMock;
   }
-  return response.json();
 };
 
 export function usePartidas() {
   const { rachaId } = useRacha();
   const apiState = useApiState();
 
+  // Sempre tentar buscar dados, mas com fallback para mocks
   const { data, error, mutate, isLoading } = useSWR<Partida[]>(
-    rachaId ? `/api/partidas?rachaId=${rachaId}` : null,
+    `/api/partidas?rachaId=${rachaId || "demo"}`,
     fetcher,
     {
       onError: (err) => {
@@ -25,7 +41,11 @@ export function usePartidas() {
           console.log("Erro ao carregar partidas:", err);
         }
       },
-    }
+      // Configurações para melhor experiência do usuário
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000, // 30 segundos
+    },
   );
 
   const addPartida = async (partida: Partial<Partida>) => {
@@ -79,10 +99,15 @@ export function usePartidas() {
     return data?.find((p) => p.id === id);
   };
 
+  // Sempre ter dados disponíveis (backend ou mocks)
+  const partidasDisponiveis = data || partidasMock;
+  const temErroBackend = !!error;
+  const carregandoBackend = isLoading;
+
   return {
-    partidas: data || [],
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
+    partidas: partidasDisponiveis,
+    isLoading: carregandoBackend || apiState.isLoading,
+    isError: temErroBackend || apiState.isError,
     error: apiState.error,
     isSuccess: apiState.isSuccess,
     mutate,

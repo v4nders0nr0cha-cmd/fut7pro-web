@@ -72,7 +72,7 @@ describe("useRachaData Integration", () => {
         headers: expect.objectContaining({
           "Content-Type": "application/json",
         }),
-      })
+      }),
     );
   });
 
@@ -196,7 +196,7 @@ describe("useRachaData Integration", () => {
         expect(result.current.data).toEqual(mockRachaData);
         expect(result.current.isLoading).toBe(false);
       },
-      { timeout: 5000 }
+      { timeout: 5000 },
     );
   });
 
@@ -263,9 +263,9 @@ describe("useRachaData Integration", () => {
                 ok: true,
                 json: async () => mockRachaData,
               }),
-            100
-          )
-        )
+            100,
+          ),
+        ),
     );
 
     const { result } = renderHook(() => useRachaData(), {
@@ -313,7 +313,10 @@ describe("useRachaData Integration", () => {
 
     // Simular timeout
     (fetch as jest.Mock).mockImplementationOnce(
-      () => new Promise((_, reject) => setTimeout(() => reject(new Error("Request timeout")), 5000))
+      () =>
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Request timeout")), 5000),
+        ),
     );
 
     const { result } = renderHook(() => useRachaData(), {
@@ -338,7 +341,7 @@ describe("useRachaData Integration", () => {
         expect(result.current.error).toBeDefined();
         expect(result.current.isLoading).toBe(false);
       },
-      { timeout: 10000 }
+      { timeout: 10000 },
     );
   });
 });

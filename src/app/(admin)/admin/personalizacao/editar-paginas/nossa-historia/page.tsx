@@ -3,7 +3,13 @@
 import Head from "next/head";
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { FaPlus, FaTrash, FaMapMarkedAlt, FaMedal, FaSave } from "react-icons/fa";
+import {
+  FaPlus,
+  FaTrash,
+  FaMapMarkedAlt,
+  FaMedal,
+  FaSave,
+} from "react-icons/fa";
 import Image from "next/image";
 
 // Scrollbar dark global
@@ -14,12 +20,36 @@ const scrollbarStyle = `
 `;
 
 const JOGADORES_CADASTRADOS = [
-  { id: "1", nome: "Vanderson Rocha", foto: "/images/jogadores/jogador_padrao_01.jpg" },
-  { id: "2", nome: "Rafael Matos", foto: "/images/jogadores/jogador_padrao_02.jpg" },
-  { id: "3", nome: "Lucas Souza", foto: "/images/jogadores/jogador_padrao_03.jpg" },
-  { id: "4", nome: "Matheus Silva", foto: "/images/jogadores/jogador_padrao_04.jpg" },
-  { id: "5", nome: "Daniel Ribeiro", foto: "/images/jogadores/jogador_padrao_05.jpg" },
-  { id: "6", nome: "Pedro Oliveira", foto: "/images/jogadores/jogador_padrao_06.jpg" },
+  {
+    id: "1",
+    nome: "Vanderson Rocha",
+    foto: "/images/jogadores/jogador_padrao_01.jpg",
+  },
+  {
+    id: "2",
+    nome: "Rafael Matos",
+    foto: "/images/jogadores/jogador_padrao_02.jpg",
+  },
+  {
+    id: "3",
+    nome: "Lucas Souza",
+    foto: "/images/jogadores/jogador_padrao_03.jpg",
+  },
+  {
+    id: "4",
+    nome: "Matheus Silva",
+    foto: "/images/jogadores/jogador_padrao_04.jpg",
+  },
+  {
+    id: "5",
+    nome: "Daniel Ribeiro",
+    foto: "/images/jogadores/jogador_padrao_05.jpg",
+  },
+  {
+    id: "6",
+    nome: "Pedro Oliveira",
+    foto: "/images/jogadores/jogador_padrao_06.jpg",
+  },
 ];
 
 interface Marco {
@@ -87,7 +117,8 @@ const MOCK_DADOS = {
     {
       ano: "2020",
       titulo: "Primeiro Campeonato Interno",
-      descricao: "O time Leões venceu o primeiro torneio interno entre os 6 times fundados.",
+      descricao:
+        "O time Leões venceu o primeiro torneio interno entre os 6 times fundados.",
       conquista: "🏆",
     },
     {
@@ -109,41 +140,72 @@ const MOCK_DADOS = {
     {
       nome: "Fundação",
       fotos: [
-        { src: "/images/historia/foto_antiga_01.png", alt: "Primeiro time do Racha Fut7Pro" },
-        { src: "/images/historia/foto_antiga_02.png", alt: "Primeiro gol registrado do racha" },
+        {
+          src: "/images/historia/foto_antiga_01.png",
+          alt: "Primeiro time do Racha Fut7Pro",
+        },
+        {
+          src: "/images/historia/foto_antiga_02.png",
+          alt: "Primeiro gol registrado do racha",
+        },
       ],
     },
     {
       nome: "Torneios",
-      fotos: [{ src: "/images/historia/foto_antiga_03.png", alt: "Primeiro campeonato interno" }],
+      fotos: [
+        {
+          src: "/images/historia/foto_antiga_03.png",
+          alt: "Primeiro campeonato interno",
+        },
+      ],
     },
     {
       nome: "Confraternizações",
-      fotos: [{ src: "/images/historia/foto_antiga_04.png", alt: "Churrasco de final de ano" }],
+      fotos: [
+        {
+          src: "/images/historia/foto_antiga_04.png",
+          alt: "Churrasco de final de ano",
+        },
+      ],
     },
   ],
-  videos: [{ titulo: "Gol Mais Bonito de 2022", url: "https://www.youtube.com/embed/uSUeYncjhXU" }],
+  videos: [
+    {
+      titulo: "Gol Mais Bonito de 2022",
+      url: "https://www.youtube.com/embed/uSUeYncjhXU",
+    },
+  ],
   curiosidades: [
-    { icone: "⚽", texto: "O primeiro gol foi de cabeça após escanteio.", curtidas: 9 },
+    {
+      icone: "⚽",
+      texto: "O primeiro gol foi de cabeça após escanteio.",
+      curtidas: 9,
+    },
     {
       icone: "🏟️",
       texto: "Já tivemos um cachorro invadindo o campo durante a final.",
       curtidas: 7,
     },
-    { icone: "🟨", texto: "O cartão amarelo mais rápido saiu aos 15 segundos.", curtidas: 12 },
+    {
+      icone: "🟨",
+      texto: "O cartão amarelo mais rápido saiu aos 15 segundos.",
+      curtidas: 12,
+    },
   ],
   depoimentos: [
     {
       nome: "Vanderson Rocha",
       cargo: "Fundador",
-      texto: "“Ver o Racha Fut7Pro crescer é motivo de orgulho. Somos uma família!”",
+      texto:
+        "“Ver o Racha Fut7Pro crescer é motivo de orgulho. Somos uma família!”",
       foto: "/images/jogadores/jogador_padrao_01.jpg",
       destaque: true,
     },
     {
       nome: "Rafael Matos",
       cargo: "Veterano",
-      texto: "“Nunca perdi um jogo desde a fundação. Aqui vivi grandes momentos.”",
+      texto:
+        "“Nunca perdi um jogo desde a fundação. Aqui vivi grandes momentos.”",
       foto: "/images/jogadores/jogador_padrao_02.jpg",
       destaque: false,
     },
@@ -184,15 +246,19 @@ function AutocompleteJogador({
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = options.filter((j) => j.nome.toLowerCase().includes(search.toLowerCase()));
+  const filtered = options.filter((j) =>
+    j.nome.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <div className="relative w-full">
       <input
         ref={inputRef}
         type="text"
-        className={`bg-neutral-800 text-white rounded-lg p-2 border border-neutral-700 w-full outline-none focus:border-yellow-400 ${disabled ? "opacity-60" : ""}`}
-        value={value ? options.find((j) => j.id === value)?.nome || search : search}
+        className={`w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white outline-none focus:border-yellow-400 ${disabled ? "opacity-60" : ""}`}
+        value={
+          value ? options.find((j) => j.id === value)?.nome || search : search
+        }
         onChange={(e) => {
           setSearch(e.target.value);
           setOpen(true);
@@ -204,11 +270,11 @@ function AutocompleteJogador({
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg custom-scroll">
+        <ul className="custom-scroll absolute z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-700 bg-neutral-900 shadow-lg">
           {filtered.map((j) => (
             <li
               key={j.id}
-              className="px-3 py-2 cursor-pointer hover:bg-yellow-400 hover:text-black transition"
+              className="cursor-pointer px-3 py-2 transition hover:bg-yellow-400 hover:text-black"
               onMouseDown={() => {
                 setOpen(false);
                 setSearch(j.nome);
@@ -251,17 +317,27 @@ export default function EditarNossaHistoriaAdmin() {
   const [textoHistoria, setTextoHistoria] = useState(MOCK_DADOS.textoHistoria);
   const [marcos, setMarcos] = useState<Marco[]>(MOCK_DADOS.marcos);
   const [categoriasFotos, setCategoriasFotos] = useState<CategoriaFoto[]>(
-    MOCK_DADOS.categoriasFotos
+    MOCK_DADOS.categoriasFotos,
   );
   const [videos, setVideos] = useState<Video[]>(MOCK_DADOS.videos);
-  const [curiosidades, setCuriosidades] = useState<Curiosidade[]>(MOCK_DADOS.curiosidades);
-  const [depoimentos, setDepoimentos] = useState<Depoimento[]>(MOCK_DADOS.depoimentos);
+  const [curiosidades, setCuriosidades] = useState<Curiosidade[]>(
+    MOCK_DADOS.curiosidades,
+  );
+  const [depoimentos, setDepoimentos] = useState<Depoimento[]>(
+    MOCK_DADOS.depoimentos,
+  );
   const [campos, setCampos] = useState<Campo[]>(MOCK_DADOS.campos);
-  const [membrosAntigos, setMembrosAntigos] = useState<MembroAntigo[]>(MOCK_DADOS.membrosAntigos);
+  const [membrosAntigos, setMembrosAntigos] = useState<MembroAntigo[]>(
+    MOCK_DADOS.membrosAntigos,
+  );
 
-  const getJogador = (id: string) => JOGADORES_CADASTRADOS.find((j) => j.id === id);
+  const getJogador = (id: string) =>
+    JOGADORES_CADASTRADOS.find((j) => j.id === id);
 
-  const handleUploadFoto = async (e: ChangeEvent<HTMLInputElement>, cidx: number) => {
+  const handleUploadFoto = async (
+    e: ChangeEvent<HTMLInputElement>,
+    cidx: number,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const src = await getBase64(file);
@@ -272,8 +348,8 @@ export default function EditarNossaHistoriaAdmin() {
               ...c,
               fotos: [...c.fotos, { src, alt: "" }],
             }
-          : c
-      )
+          : c,
+      ),
     );
   };
 
@@ -299,16 +375,20 @@ export default function EditarNossaHistoriaAdmin() {
       <style jsx global>
         {scrollbarStyle}
       </style>
-      <main className={`max-w-6xl mx-auto pt-20 pb-24 md:pt-6 md:pb-8 px-4 flex flex-col gap-10`}>
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-2">
+      <main
+        className={`mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-24 pt-20 md:pb-8 md:pt-6`}
+      >
+        <h1 className="mb-2 text-3xl font-bold text-yellow-400 md:text-4xl">
           Editar Página: Nossa História
         </h1>
 
         {/* Texto institucional */}
         <section>
-          <label className="block font-semibold text-yellow-300 mb-2">Texto Institucional</label>
+          <label className="mb-2 block font-semibold text-yellow-300">
+            Texto Institucional
+          </label>
           <textarea
-            className="bg-neutral-900 text-white rounded-lg p-4 w-full min-h-[80px] border border-neutral-700 focus:border-yellow-400"
+            className="min-h-[80px] w-full rounded-lg border border-neutral-700 bg-neutral-900 p-4 text-white focus:border-yellow-400"
             value={textoHistoria}
             onChange={(e) => setTextoHistoria(e.target.value)}
           />
@@ -316,20 +396,25 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Linha do Tempo (marcos) */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300">Linha do Tempo</h2>
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-yellow-300">
+              Linha do Tempo
+            </h2>
             {marcos.length < 7 && (
               <button
-                className="ml-2 px-2 py-1 bg-yellow-400 text-black rounded-md text-sm flex items-center gap-1"
+                className="ml-2 flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-1 text-sm text-black"
                 onClick={() =>
-                  setMarcos([...marcos, { ano: "", titulo: "", descricao: "", conquista: "" }])
+                  setMarcos([
+                    ...marcos,
+                    { ano: "", titulo: "", descricao: "", conquista: "" },
+                  ])
                 }
               >
                 <FaPlus /> Marco
               </button>
             )}
           </div>
-          <div className="mb-2 text-yellow-300 text-xs">
+          <div className="mb-2 text-xs text-yellow-300">
             Para usar emojis no campo "Emoji", copie de{" "}
             <a
               href="https://emojipedia.org/"
@@ -356,50 +441,60 @@ export default function EditarNossaHistoriaAdmin() {
             {marcos.map((marco, idx) => (
               <div
                 key={idx}
-                className="flex flex-col md:flex-row gap-2 bg-neutral-900 rounded-xl p-3 border border-neutral-700"
+                className="flex flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3 md:flex-row"
               >
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 w-20 border border-neutral-700"
+                  className="w-20 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Ano"
                   value={marco.ano}
                   onChange={(e) =>
-                    setMarcos(marcos.map((m, i) => (i === idx ? { ...m, ano: e.target.value } : m)))
+                    setMarcos(
+                      marcos.map((m, i) =>
+                        i === idx ? { ...m, ano: e.target.value } : m,
+                      ),
+                    )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 flex-1 border border-neutral-700"
+                  className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Título"
                   value={marco.titulo}
                   onChange={(e) =>
                     setMarcos(
-                      marcos.map((m, i) => (i === idx ? { ...m, titulo: e.target.value } : m))
+                      marcos.map((m, i) =>
+                        i === idx ? { ...m, titulo: e.target.value } : m,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 flex-1 border border-neutral-700"
+                  className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Descrição"
                   value={marco.descricao}
                   onChange={(e) =>
                     setMarcos(
-                      marcos.map((m, i) => (i === idx ? { ...m, descricao: e.target.value } : m))
+                      marcos.map((m, i) =>
+                        i === idx ? { ...m, descricao: e.target.value } : m,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 w-16 border border-neutral-700"
+                  className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Emoji"
                   value={marco.conquista || ""}
                   onChange={(e) =>
                     setMarcos(
-                      marcos.map((m, i) => (i === idx ? { ...m, conquista: e.target.value } : m))
+                      marcos.map((m, i) =>
+                        i === idx ? { ...m, conquista: e.target.value } : m,
+                      ),
                     )
                   }
                   maxLength={2}
                 />
                 <button
                   onClick={() => setMarcos(marcos.filter((_, i) => i !== idx))}
-                  className="text-red-500 ml-2"
+                  className="ml-2 text-red-500"
                 >
                   <FaTrash />
                 </button>
@@ -410,44 +505,47 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Galeria de Fotos */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300">Galeria de Fotos</h2>
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-yellow-300">
+              Galeria de Fotos
+            </h2>
           </div>
           <div className="flex flex-col gap-6">
             {categoriasFotos.map((cat, cidx) => {
-              const maxFotos = MAX_FOTOS[cat.nome as keyof typeof MAX_FOTOS] || 2;
+              const maxFotos =
+                MAX_FOTOS[cat.nome as keyof typeof MAX_FOTOS] || 2;
               return (
                 <div
                   key={cidx}
-                  className="bg-neutral-900 rounded-xl p-3 border border-neutral-700 mb-2"
+                  className="mb-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3"
                 >
                   <input
-                    className="bg-neutral-800 text-white rounded-lg p-2 mb-2 w-full border border-neutral-700"
+                    className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                     placeholder="Nome da Categoria"
                     value={cat.nome}
                     onChange={(e) =>
                       setCategoriasFotos(
                         categoriasFotos.map((c, i) =>
-                          i === cidx ? { ...c, nome: e.target.value } : c
-                        )
+                          i === cidx ? { ...c, nome: e.target.value } : c,
+                        ),
                       )
                     }
                   />
                   <div className="flex flex-wrap gap-3">
                     {cat.fotos.map((foto, fidx) => (
                       <div key={fidx} className="relative">
-                        <div className="w-40 h-[120px] rounded-lg overflow-hidden bg-neutral-800 flex items-center justify-center">
+                        <div className="flex h-[120px] w-40 items-center justify-center overflow-hidden rounded-lg bg-neutral-800">
                           <Image
                             src={foto.src}
                             alt={foto.alt}
                             width={160}
                             height={100}
-                            className="object-cover w-full h-full"
+                            className="h-full w-full object-cover"
                             style={{ aspectRatio: "4/3" }}
                           />
                         </div>
                         <input
-                          className="bg-neutral-800 text-white rounded-lg p-1 mt-1 w-36 border border-neutral-700 text-xs"
+                          className="mt-1 w-36 rounded-lg border border-neutral-700 bg-neutral-800 p-1 text-xs text-white"
                           placeholder="Legenda"
                           value={foto.alt}
                           onChange={(e) =>
@@ -457,11 +555,13 @@ export default function EditarNossaHistoriaAdmin() {
                                   ? {
                                       ...c,
                                       fotos: c.fotos.map((f, j) =>
-                                        j === fidx ? { ...f, alt: e.target.value } : f
+                                        j === fidx
+                                          ? { ...f, alt: e.target.value }
+                                          : f,
                                       ),
                                     }
-                                  : c
-                              )
+                                  : c,
+                              ),
                             )
                           }
                         />
@@ -472,20 +572,22 @@ export default function EditarNossaHistoriaAdmin() {
                                 i === cidx
                                   ? {
                                       ...c,
-                                      fotos: c.fotos.filter((_, j) => j !== fidx),
+                                      fotos: c.fotos.filter(
+                                        (_, j) => j !== fidx,
+                                      ),
                                     }
-                                  : c
-                              )
+                                  : c,
+                              ),
                             )
                           }
-                          className="absolute top-0 right-0 bg-red-500 text-xs text-white rounded-full p-1"
+                          className="absolute right-0 top-0 rounded-full bg-red-500 p-1 text-xs text-white"
                         >
                           <FaTrash />
                         </button>
                       </div>
                     ))}
                     {cat.fotos.length < maxFotos && (
-                      <label className="w-40 h-[120px] flex flex-col items-center justify-center bg-neutral-800 text-yellow-400 border-2 border-dashed border-yellow-400 rounded-lg cursor-pointer hover:bg-neutral-900 transition">
+                      <label className="flex h-[120px] w-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-yellow-400 bg-neutral-800 text-yellow-400 transition hover:bg-neutral-900">
                         <FaPlus /> Foto
                         <input
                           type="file"
@@ -497,8 +599,12 @@ export default function EditarNossaHistoriaAdmin() {
                     )}
                   </div>
                   <button
-                    onClick={() => setCategoriasFotos(categoriasFotos.filter((_, i) => i !== cidx))}
-                    className="text-red-500 mt-2"
+                    onClick={() =>
+                      setCategoriasFotos(
+                        categoriasFotos.filter((_, i) => i !== cidx),
+                      )
+                    }
+                    className="mt-2 text-red-500"
                   >
                     <FaTrash /> Remover Categoria
                   </button>
@@ -510,11 +616,13 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Vídeos */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300">Vídeos Históricos</h2>
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-yellow-300">
+              Vídeos Históricos
+            </h2>
             {videos.length < 2 && (
               <button
-                className="ml-2 px-2 py-1 bg-yellow-400 text-black rounded-md text-sm flex items-center gap-1"
+                className="ml-2 flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-1 text-sm text-black"
                 onClick={() => setVideos([...videos, { titulo: "", url: "" }])}
               >
                 <FaPlus /> Vídeo
@@ -525,25 +633,29 @@ export default function EditarNossaHistoriaAdmin() {
             {videos.map((video, idx) => (
               <div
                 key={idx}
-                className="bg-neutral-900 rounded-xl p-3 border border-neutral-700 flex flex-col md:flex-row items-center gap-2"
+                className="flex flex-col items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3 md:flex-row"
               >
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 flex-1 border border-neutral-700"
+                  className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Título"
                   value={video.titulo}
                   onChange={(e) =>
                     setVideos(
-                      videos.map((vid, i) => (i === idx ? { ...vid, titulo: e.target.value } : vid))
+                      videos.map((vid, i) =>
+                        i === idx ? { ...vid, titulo: e.target.value } : vid,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 flex-1 border border-neutral-700"
+                  className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="URL do vídeo (YouTube embed)"
                   value={video.url}
                   onChange={(e) =>
                     setVideos(
-                      videos.map((vid, i) => (i === idx ? { ...vid, url: e.target.value } : vid))
+                      videos.map((vid, i) =>
+                        i === idx ? { ...vid, url: e.target.value } : vid,
+                      ),
                     )
                   }
                 />
@@ -560,58 +672,71 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Curiosidades */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300">Curiosidades do Racha</h2>
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-yellow-300">
+              Curiosidades do Racha
+            </h2>
             <button
-              className="ml-2 px-2 py-1 bg-yellow-400 text-black rounded-md text-sm flex items-center gap-1"
+              className="ml-2 flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-1 text-sm text-black"
               onClick={() =>
-                setCuriosidades([...curiosidades, { icone: "", texto: "", curtidas: 0 }])
+                setCuriosidades([
+                  ...curiosidades,
+                  { icone: "", texto: "", curtidas: 0 },
+                ])
               }
             >
               <FaPlus /> Curiosidade
             </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {curiosidades.map((curio, idx) => (
               <div
                 key={idx}
-                className="bg-neutral-900 rounded-xl p-3 border border-neutral-700 flex items-center gap-2"
+                className="flex items-center gap-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3"
               >
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 w-16 border border-neutral-700"
+                  className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Emoji"
                   value={curio.icone}
                   onChange={(e) =>
                     setCuriosidades(
-                      curiosidades.map((c, i) => (i === idx ? { ...c, icone: e.target.value } : c))
+                      curiosidades.map((c, i) =>
+                        i === idx ? { ...c, icone: e.target.value } : c,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 flex-1 border border-neutral-700"
+                  className="flex-1 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Curiosidade"
                   value={curio.texto}
                   onChange={(e) =>
                     setCuriosidades(
-                      curiosidades.map((c, i) => (i === idx ? { ...c, texto: e.target.value } : c))
+                      curiosidades.map((c, i) =>
+                        i === idx ? { ...c, texto: e.target.value } : c,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 w-16 border border-neutral-700"
+                  className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   type="number"
                   placeholder="Curtidas"
                   value={curio.curtidas}
                   onChange={(e) =>
                     setCuriosidades(
                       curiosidades.map((c, i) =>
-                        i === idx ? { ...c, curtidas: parseInt(e.target.value) || 0 } : c
-                      )
+                        i === idx
+                          ? { ...c, curtidas: parseInt(e.target.value) || 0 }
+                          : c,
+                      ),
                     )
                   }
                 />
                 <button
-                  onClick={() => setCuriosidades(curiosidades.filter((_, i) => i !== idx))}
+                  onClick={() =>
+                    setCuriosidades(curiosidades.filter((_, i) => i !== idx))
+                  }
                   className="text-red-500"
                 >
                   <FaTrash />
@@ -623,11 +748,11 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Depoimentos */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <h2 className="text-2xl font-bold text-yellow-300">Depoimentos</h2>
             {depoimentos.length < 4 && (
               <button
-                className="ml-2 px-2 py-1 bg-yellow-400 text-black rounded-md text-sm flex items-center gap-1"
+                className="ml-2 flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-1 text-sm text-black"
                 onClick={() =>
                   setDepoimentos([
                     ...depoimentos,
@@ -645,70 +770,82 @@ export default function EditarNossaHistoriaAdmin() {
               </button>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {depoimentos.map((dep, idx) => (
               <div
                 key={idx}
-                className="bg-neutral-900 rounded-2xl p-4 flex flex-col items-center border border-neutral-700"
+                className="flex flex-col items-center rounded-2xl border border-neutral-700 bg-neutral-900 p-4"
               >
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 mb-2 w-full border border-neutral-700"
+                  className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Nome"
                   value={dep.nome}
                   onChange={(e) =>
                     setDepoimentos(
-                      depoimentos.map((d, i) => (i === idx ? { ...d, nome: e.target.value } : d))
+                      depoimentos.map((d, i) =>
+                        i === idx ? { ...d, nome: e.target.value } : d,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 mb-2 w-full border border-neutral-700"
+                  className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Cargo"
                   value={dep.cargo}
                   onChange={(e) =>
                     setDepoimentos(
-                      depoimentos.map((d, i) => (i === idx ? { ...d, cargo: e.target.value } : d))
+                      depoimentos.map((d, i) =>
+                        i === idx ? { ...d, cargo: e.target.value } : d,
+                      ),
                     )
                   }
                 />
                 <textarea
-                  className="bg-neutral-800 text-white rounded-lg p-2 mb-2 w-full border border-neutral-700"
+                  className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Depoimento"
                   value={dep.texto}
                   onChange={(e) =>
                     setDepoimentos(
-                      depoimentos.map((d, i) => (i === idx ? { ...d, texto: e.target.value } : d))
+                      depoimentos.map((d, i) =>
+                        i === idx ? { ...d, texto: e.target.value } : d,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 mb-2 w-full border border-neutral-700"
+                  className="mb-2 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="URL da Foto"
                   value={dep.foto}
                   onChange={(e) =>
                     setDepoimentos(
-                      depoimentos.map((d, i) => (i === idx ? { ...d, foto: e.target.value } : d))
+                      depoimentos.map((d, i) =>
+                        i === idx ? { ...d, foto: e.target.value } : d,
+                      ),
                     )
                   }
                 />
                 <div className="flex items-center gap-2">
-                  <label className="text-yellow-300 text-xs">
+                  <label className="text-xs text-yellow-300">
                     <input
                       type="checkbox"
                       checked={dep.destaque}
                       onChange={(e) =>
                         setDepoimentos(
                           depoimentos.map((d, i) =>
-                            i === idx ? { ...d, destaque: e.target.checked } : d
-                          )
+                            i === idx
+                              ? { ...d, destaque: e.target.checked }
+                              : d,
+                          ),
                         )
                       }
                     />{" "}
                     Destaque
                   </label>
                   <button
-                    onClick={() => setDepoimentos(depoimentos.filter((_, i) => i !== idx))}
-                    className="text-red-500 ml-2"
+                    onClick={() =>
+                      setDepoimentos(depoimentos.filter((_, i) => i !== idx))
+                    }
+                    className="ml-2 text-red-500"
                   >
                     <FaTrash />
                   </button>
@@ -720,55 +857,63 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Campos históricos e atual */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-2xl font-bold text-yellow-300">
               <FaMapMarkedAlt /> Campos Históricos e Atual
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {campos.slice(0, 2).map((campo, idx) => (
               <div
                 key={idx}
-                className="bg-neutral-900 rounded-xl p-3 border border-neutral-700 flex flex-col gap-2"
+                className="flex flex-col gap-2 rounded-xl border border-neutral-700 bg-neutral-900 p-3"
               >
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 border border-neutral-700"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Nome"
                   value={campo.nome}
                   onChange={(e) =>
                     setCampos(
-                      campos.map((c, i) => (i === idx ? { ...c, nome: e.target.value } : c))
+                      campos.map((c, i) =>
+                        i === idx ? { ...c, nome: e.target.value } : c,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 border border-neutral-700"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Iframe Google Maps (src)"
                   value={campo.mapa}
                   onChange={(e) =>
                     setCampos(
-                      campos.map((c, i) => (i === idx ? { ...c, mapa: e.target.value } : c))
+                      campos.map((c, i) =>
+                        i === idx ? { ...c, mapa: e.target.value } : c,
+                      ),
                     )
                   }
                 />
                 <input
-                  className="bg-neutral-800 text-white rounded-lg p-2 border border-neutral-700"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   placeholder="Descrição"
                   value={campo.descricao}
                   onChange={(e) =>
                     setCampos(
-                      campos.map((c, i) => (i === idx ? { ...c, descricao: e.target.value } : c))
+                      campos.map((c, i) =>
+                        i === idx ? { ...c, descricao: e.target.value } : c,
+                      ),
                     )
                   }
                 />
                 <select
-                  className="bg-neutral-800 text-white rounded-lg p-2 border border-neutral-700"
+                  className="rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                   value={campo.tipo}
                   onChange={(e) =>
                     setCampos(
                       campos.map((c, i) =>
-                        i === idx ? { ...c, tipo: e.target.value as TipoCampo } : c
-                      )
+                        i === idx
+                          ? { ...c, tipo: e.target.value as TipoCampo }
+                          : c,
+                      ),
                     )
                   }
                 >
@@ -782,23 +927,27 @@ export default function EditarNossaHistoriaAdmin() {
 
         {/* Membros mais antigos */}
         <section>
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-2xl font-bold text-yellow-300 flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2">
+            <h2 className="flex items-center gap-2 text-2xl font-bold text-yellow-300">
               <FaMedal /> Membros Mais Antigos
             </h2>
             {membrosAntigos.length < 5 && (
               <button
-                className="ml-2 px-2 py-1 bg-yellow-400 text-black rounded-md text-sm flex items-center gap-1"
+                className="ml-2 flex items-center gap-1 rounded-md bg-yellow-400 px-2 py-1 text-sm text-black"
                 onClick={() =>
-                  setMembrosAntigos([...membrosAntigos, { jogadorId: "", status: "", desde: 2024 }])
+                  setMembrosAntigos([
+                    ...membrosAntigos,
+                    { jogadorId: "", status: "", desde: 2024 },
+                  ])
                 }
               >
                 <FaPlus /> Membro
               </button>
             )}
           </div>
-          <div className="text-yellow-200 text-sm mb-4">
-            Selecione até <b>5 dos jogadores mais antigos</b> do seu racha para exibir nesta seção.
+          <div className="mb-4 text-sm text-yellow-200">
+            Selecione até <b>5 dos jogadores mais antigos</b> do seu racha para
+            exibir nesta seção.
           </div>
           <div className="flex flex-wrap gap-4">
             {membrosAntigos.map((membro, idx) => {
@@ -806,13 +955,15 @@ export default function EditarNossaHistoriaAdmin() {
               return (
                 <div
                   key={idx}
-                  className="bg-neutral-900 rounded-xl p-4 flex flex-col items-center w-56 border border-neutral-700"
+                  className="flex w-56 flex-col items-center rounded-xl border border-neutral-700 bg-neutral-900 p-4"
                 >
                   <AutocompleteJogador
                     value={membro.jogadorId}
                     onChange={(id: string) =>
                       setMembrosAntigos(
-                        membrosAntigos.map((m, i) => (i === idx ? { ...m, jogadorId: id } : m))
+                        membrosAntigos.map((m, i) =>
+                          i === idx ? { ...m, jogadorId: id } : m,
+                        ),
                       )
                     }
                     options={JOGADORES_CADASTRADOS}
@@ -824,37 +975,43 @@ export default function EditarNossaHistoriaAdmin() {
                       alt={jogador.nome}
                       width={64}
                       height={64}
-                      className="rounded-full border-2 border-yellow-400 my-2"
+                      className="my-2 rounded-full border-2 border-yellow-400"
                     />
                   )}
                   <input
-                    className="bg-neutral-800 text-white rounded-lg p-2 mb-1 w-full border border-neutral-700"
+                    className="mb-1 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                     placeholder="Status"
                     value={membro.status}
                     onChange={(e) =>
                       setMembrosAntigos(
                         membrosAntigos.map((m, i) =>
-                          i === idx ? { ...m, status: e.target.value } : m
-                        )
+                          i === idx ? { ...m, status: e.target.value } : m,
+                        ),
                       )
                     }
                   />
                   <input
                     type="number"
-                    className="bg-neutral-800 text-white rounded-lg p-2 mb-1 w-full border border-neutral-700"
+                    className="mb-1 w-full rounded-lg border border-neutral-700 bg-neutral-800 p-2 text-white"
                     placeholder="Desde"
                     value={membro.desde}
                     onChange={(e) =>
                       setMembrosAntigos(
                         membrosAntigos.map((m, i) =>
-                          i === idx ? { ...m, desde: parseInt(e.target.value) || 0 } : m
-                        )
+                          i === idx
+                            ? { ...m, desde: parseInt(e.target.value) || 0 }
+                            : m,
+                        ),
                       )
                     }
                   />
                   <button
-                    onClick={() => setMembrosAntigos(membrosAntigos.filter((_, i) => i !== idx))}
-                    className="text-red-500 mt-1"
+                    onClick={() =>
+                      setMembrosAntigos(
+                        membrosAntigos.filter((_, i) => i !== idx),
+                      )
+                    }
+                    className="mt-1 text-red-500"
                   >
                     <FaTrash />
                   </button>
@@ -865,9 +1022,9 @@ export default function EditarNossaHistoriaAdmin() {
         </section>
 
         {/* Salvar tudo */}
-        <div className="flex justify-end mt-8">
+        <div className="mt-8 flex justify-end">
           <button
-            className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg"
+            className="flex items-center gap-2 rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black shadow-lg transition hover:brightness-110"
             onClick={handleSalvar}
           >
             <FaSave /> Salvar Alterações

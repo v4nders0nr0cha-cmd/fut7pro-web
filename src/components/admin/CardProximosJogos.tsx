@@ -7,11 +7,14 @@ export default function CardProximosJogos() {
     { dia: "Qua", data: "10/07", hora: "20:30", adversario: "Time Verde" },
   ];
   return (
-    <div className="bg-[#23272F] rounded-xl p-6 shadow flex flex-col h-full min-h-[140px]">
-      <span className="text-[#41b6e6] font-bold text-lg">Próximos Jogos</span>
-      <div className="flex flex-col mt-2 gap-1">
+    <div className="flex h-full min-h-[140px] flex-col rounded-xl bg-[#23272F] p-6 shadow">
+      <span className="text-lg font-bold text-[#41b6e6]">Próximos Jogos</span>
+      <div className="mt-2 flex flex-col gap-1">
         {jogos.map((j, i) => (
-          <div key={i} className="flex items-center justify-between text-white text-sm">
+          <div
+            key={i}
+            className="flex items-center justify-between text-sm text-white"
+          >
             <span>
               {j.dia} {j.data} • {j.hora}
             </span>
@@ -19,7 +22,9 @@ export default function CardProximosJogos() {
           </div>
         ))}
       </div>
-      <span className="text-xs text-gray-400 mt-2">Clique aqui para ver todos</span>
+      <span className="mt-2 text-xs text-gray-400">
+        Clique aqui para ver todos
+      </span>
     </div>
   );
 }

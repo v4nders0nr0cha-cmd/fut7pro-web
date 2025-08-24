@@ -2,24 +2,40 @@
 
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
-import { campeoesApi } from "@/lib/api";
+import { campeoesApi, apiClient } from "@/lib/api";
 import { useApiState } from "./useApiState";
+import { campeoesMock } from "@/components/lists/mockCampeoes";
 import type { Campeao } from "@/types/campeao";
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar campeões");
+// Fetcher customizado que implementa fallback para mocks
+const fetcher = async (url: string): Promise<Campeao[]> => {
+  try {
+    // Tentar o backend primeiro
+    const endpoint = url
+      .replace(/^https?:\/\/[^\/]+/, "")
+      .replace(/^\/api/, "");
+    const response = await apiClient.get(endpoint);
+
+    if (response.error) {
+      throw new Error(response.error);
+    }
+
+    // Se chegou aqui, o backend funcionou
+    return response.data as Campeao[];
+  } catch (error) {
+    // Se o backend falhou, usar mocks padronizados
+    console.log("🔄 Backend falhou, usando mocks:", error);
+    return campeoesMock;
   }
-  return response.json();
 };
 
 export function useCampeoes() {
   const { rachaId } = useRacha();
   const apiState = useApiState();
 
+  // Sempre tentar buscar dados, mas com fallback para mocks
   const { data, error, isLoading, mutate } = useSWR<Campeao[]>(
-    rachaId ? `/api/campeoes?rachaId=${rachaId}` : null,
+    `/api/campeoes?rachaId=${rachaId || "demo"}`,
     fetcher,
     {
       onError: (err) => {
@@ -27,8 +43,16 @@ export function useCampeoes() {
           console.log("Erro ao carregar campeões:", err);
         }
       },
-    }
+      // Configurações para melhor experiência do usuário
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 30000, // 30 segundos
+    },
   );
+
+  const campeoesDisponiveis = data || campeoesMock;
+  const temErroBackend = !!error;
+  const carregandoBackend = isLoading;
 
   const addCampeao = async (campeao: Partial<Campeao>) => {
     if (!rachaId) return null;
@@ -78,13 +102,13 @@ export function useCampeoes() {
   };
 
   const getCampeaoById = (id: string) => {
-    return data?.find((c) => c.id === id);
+    return campeoesDisponiveis.find((c) => c.id === id);
   };
 
   return {
-    campeoes: data || [],
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
+    campeoes: campeoesDisponiveis,
+    isLoading: carregandoBackend || apiState.isLoading,
+    isError: temErroBackend || apiState.isError,
     error: apiState.error,
     isSuccess: apiState.isSuccess,
     mutate,

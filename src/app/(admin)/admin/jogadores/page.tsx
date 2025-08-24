@@ -19,18 +19,18 @@ export default function JogadoresRootPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <FaUsers className="text-yellow-400 text-5xl mb-4" />
-        <h1 className="text-2xl md:text-3xl font-black text-yellow-400 mb-2">
+      <main className="flex min-h-[60vh] flex-col items-center justify-center px-4 pb-24 pt-20 text-center md:pb-8 md:pt-6">
+        <FaUsers className="mb-4 text-5xl text-yellow-400" />
+        <h1 className="mb-2 text-2xl font-black text-yellow-400 md:text-3xl">
           Gerencie seus Jogadores
         </h1>
-        <p className="text-gray-300 mb-6 max-w-md">
-          Acesse uma das subpáginas para cadastrar, editar ou visualizar dados dos atletas do seu
-          racha.
+        <p className="mb-6 max-w-md text-gray-300">
+          Acesse uma das subpáginas para cadastrar, editar ou visualizar dados
+          dos atletas do seu racha.
         </p>
         <Link
           href="/admin/jogadores/listar-cadastrar"
-          className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-6 py-3 rounded-xl shadow transition text-base"
+          className="rounded-xl bg-cyan-600 px-6 py-3 text-base font-bold text-white shadow transition hover:bg-cyan-700"
         >
           Ir para a Lista de Jogadores
         </Link>

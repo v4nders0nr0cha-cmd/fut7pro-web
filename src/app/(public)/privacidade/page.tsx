@@ -1,6 +1,6 @@
 export default function PoliticaPrivacidadePage() {
   return (
-    <main className="container mx-auto px-4 py-8 prose prose-invert">
+    <main className="prose prose-invert container mx-auto px-4 py-8">
       <h1>Política de Privacidade</h1>
       <p>
         Esta é uma versão básica da política de privacidade. Substitua por um
@@ -16,11 +16,7 @@ export default function PoliticaPrivacidadePage() {
         Utilizamos cookies para autenticação, segurança e analytics (com
         consentimento).
       </p>
-      <p>
-        Em caso de dúvidas, entre em contato via página de suporte/contato.
-      </p>
+      <p>Em caso de dúvidas, entre em contato via página de suporte/contato.</p>
     </main>
   );
 }
-
-

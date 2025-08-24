@@ -89,7 +89,9 @@ export default function EnquetesPage() {
   const [opcoes, setOpcoes] = useState<string[]>(["", ""]);
   const [criando, setCriando] = useState(false);
   const [publico, setPublico] = useState<string>("Todos os jogadores");
-  const [filtroStatus, setFiltroStatus] = useState<"Todas" | "Aberta" | "Fechada">("Todas");
+  const [filtroStatus, setFiltroStatus] = useState<
+    "Todas" | "Aberta" | "Fechada"
+  >("Todas");
   const [modalDetalhe, setModalDetalhe] = useState<Enquete | null>(null);
   const [modalExcluir, setModalExcluir] = useState<Enquete | null>(null);
 
@@ -97,7 +99,7 @@ export default function EnquetesPage() {
     (e) =>
       (filtroStatus === "Todas" || e.status === filtroStatus) &&
       (e.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-        e.descricao.toLowerCase().includes(busca.toLowerCase()))
+        e.descricao.toLowerCase().includes(busca.toLowerCase())),
   );
 
   function abrirModalNova() {
@@ -145,8 +147,14 @@ export default function EnquetesPage() {
   function fecharEnquete(id: number) {
     setEnquetes((enquetes) =>
       enquetes.map((e) =>
-        e.id === id ? { ...e, status: "Fechada", encerradaEm: new Date().toLocaleDateString() } : e
-      )
+        e.id === id
+          ? {
+              ...e,
+              status: "Fechada",
+              encerradaEm: new Date().toLocaleDateString(),
+            }
+          : e,
+      ),
     );
   }
 
@@ -163,35 +171,40 @@ export default function EnquetesPage() {
           name="description"
           content="Crie e gerencie enquetes/votações rápidas entre os jogadores do seu racha."
         />
-        <meta name="keywords" content="Fut7, racha, enquetes, votação, SaaS, admin" />
+        <meta
+          name="keywords"
+          content="Fut7, racha, enquetes, votação, SaaS, admin"
+        />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-4xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-3 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-4xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-3 flex items-center gap-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           <FaPoll /> Enquetes
         </h1>
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow text-sm animate-fadeIn">
-          <b className="text-yellow-300">Ferramenta para enquetes e votações rápidas.</b>
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
+          <b className="text-yellow-300">
+            Ferramenta para enquetes e votações rápidas.
+          </b>
           <br />
-          Crie enquetes para decidir horários, eventos, melhores do jogo ou qualquer tema relevante
-          para o grupo. Veja resultados em tempo real, encerre votações e envolva seus jogadores na
-          gestão!
+          Crie enquetes para decidir horários, eventos, melhores do jogo ou
+          qualquer tema relevante para o grupo. Veja resultados em tempo real,
+          encerre votações e envolva seus jogadores na gestão!
         </div>
 
         {/* Barra de busca/filtros/novo */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center gap-3">
-          <div className="flex-1 flex items-center rounded bg-[#181818] border border-yellow-400">
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center">
+          <div className="flex flex-1 items-center rounded border border-yellow-400 bg-[#181818]">
             <FaSearch className="mx-3 text-yellow-400" />
             <input
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar enquetes por título, descrição…"
-              className="bg-transparent border-none outline-none py-2 pr-3 w-full text-gray-200"
+              className="w-full border-none bg-transparent py-2 pr-3 text-gray-200 outline-none"
               autoComplete="off"
             />
           </div>
           <select
-            className="bg-[#181818] border border-yellow-400 rounded px-3 py-2 text-yellow-300 font-bold"
+            className="rounded border border-yellow-400 bg-[#181818] px-3 py-2 font-bold text-yellow-300"
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value as any)}
           >
@@ -200,7 +213,7 @@ export default function EnquetesPage() {
             <option value="Fechada">Fechadas</option>
           </select>
           <button
-            className="bg-yellow-400 hover:bg-yellow-500 text-[#181818] font-bold px-4 py-2 rounded flex items-center gap-2 transition shadow"
+            className="flex items-center gap-2 rounded bg-yellow-400 px-4 py-2 font-bold text-[#181818] shadow transition hover:bg-yellow-500"
             onClick={abrirModalNova}
           >
             <FaPlus /> Nova Enquete
@@ -210,8 +223,8 @@ export default function EnquetesPage() {
         {/* Listagem de enquetes */}
         <div>
           {enquetesFiltradas.length === 0 && (
-            <div className="text-gray-400 py-10 flex flex-col items-center">
-              <FaCalendarCheck className="text-5xl mb-2" />
+            <div className="flex flex-col items-center py-10 text-gray-400">
+              <FaCalendarCheck className="mb-2 text-5xl" />
               Nenhuma enquete encontrada para este filtro.
             </div>
           )}
@@ -219,30 +232,32 @@ export default function EnquetesPage() {
             {enquetesFiltradas.map((e) => (
               <div
                 key={e.id}
-                className={`bg-[#232323] rounded-lg p-4 shadow border-l-4 animate-fadeIn ${e.status === "Aberta" ? "border-yellow-400" : "border-green-600"}`}
+                className={`animate-fadeIn rounded-lg border-l-4 bg-[#232323] p-4 shadow ${e.status === "Aberta" ? "border-yellow-400" : "border-green-600"}`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-bold text-yellow-300 text-lg flex gap-2 items-center">
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-lg font-bold text-yellow-300">
                     {e.titulo}
                     {e.status === "Fechada" && (
-                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-green-800 text-green-300 text-xs font-bold gap-1">
+                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-green-800 px-2 py-1 text-xs font-bold text-green-300">
                         <FaCheckCircle /> Fechada
                       </span>
                     )}
                     {e.status === "Aberta" && (
-                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-yellow-800 text-yellow-300 text-xs font-bold gap-1">
+                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-yellow-800 px-2 py-1 text-xs font-bold text-yellow-300">
                         <FaPoll /> Aberta
                       </span>
                     )}
                   </div>
-                  <div className="text-xs text-gray-400 flex flex-col items-end">
+                  <div className="flex flex-col items-end text-xs text-gray-400">
                     <span>
                       {e.criadaPor} &bull; {e.criadaEm}
                     </span>
-                    <span className="text-yellow-300 font-semibold">{e.publico}</span>
+                    <span className="font-semibold text-yellow-300">
+                      {e.publico}
+                    </span>
                   </div>
                 </div>
-                <div className="text-gray-200 text-sm mb-4">{e.descricao}</div>
+                <div className="mb-4 text-sm text-gray-200">{e.descricao}</div>
                 {/* Resultados */}
                 <div className="mb-3">
                   <div className="flex flex-col gap-1">
@@ -252,48 +267,55 @@ export default function EnquetesPage() {
                         : 0;
                       const maiorVoto = e.opcoes.reduce(
                         (max, cur) => (cur.votos > max ? cur.votos : max),
-                        0
+                        0,
                       );
                       return (
                         <div key={idx} className="flex items-center gap-2">
-                          <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs flex items-center gap-1">
+                          <span className="flex min-w-[80px] items-center gap-1 rounded bg-[#181818] px-2 py-1 text-xs text-gray-200">
                             {op.texto}
-                            {e.status === "Fechada" && op.votos === maiorVoto && maiorVoto > 0 && (
-                              <FaTrophy className="text-yellow-300 ml-1" title="Opção vencedora" />
-                            )}
+                            {e.status === "Fechada" &&
+                              op.votos === maiorVoto &&
+                              maiorVoto > 0 && (
+                                <FaTrophy
+                                  className="ml-1 text-yellow-300"
+                                  title="Opção vencedora"
+                                />
+                              )}
                           </span>
-                          <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
+                          <div className="relative mx-2 h-4 flex-1 rounded-full bg-[#181818]">
                             <div
-                              className="bg-yellow-400 h-4 rounded-full transition-all"
+                              className="h-4 rounded-full bg-yellow-400 transition-all"
                               style={{ width: `${percent}%` }}
                             ></div>
-                            <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
+                            <span className="absolute left-1/2 top-0 -translate-x-1/2 text-xs font-bold text-black">
                               {percent}%
                             </span>
                           </div>
-                          <span className="text-gray-400 text-xs">{op.votos} votos</span>
+                          <span className="text-xs text-gray-400">
+                            {op.votos} votos
+                          </span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
-                <div className="flex gap-3 mt-2">
+                <div className="mt-2 flex gap-3">
                   {e.status === "Aberta" && (
                     <button
-                      className="bg-green-700 hover:bg-green-600 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-green-700 px-3 py-1 text-xs font-bold text-white hover:bg-green-600"
                       onClick={() => fecharEnquete(e.id)}
                     >
                       <FaTimesCircle /> Fechar enquete
                     </button>
                   )}
                   <button
-                    className="bg-[#181818] hover:bg-gray-700 text-yellow-400 font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                    className="flex items-center gap-1 rounded bg-[#181818] px-3 py-1 text-xs font-bold text-yellow-400 hover:bg-gray-700"
                     onClick={() => setModalDetalhe(e)}
                   >
                     <FaChartBar /> Ver detalhes
                   </button>
                   <button
-                    className="bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                    className="flex items-center gap-1 rounded bg-red-700 px-3 py-1 text-xs font-bold text-white hover:bg-red-800"
                     onClick={() => setModalExcluir(e)}
                   >
                     <FaTrashAlt /> Excluir
@@ -306,18 +328,21 @@ export default function EnquetesPage() {
 
         {/* Modal nova enquete */}
         {modalNova && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-[#232323] rounded-lg max-w-md w-full p-6 shadow-lg border-2 border-yellow-400">
-              <h2 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+          <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div className="w-full max-w-md rounded-lg border-2 border-yellow-400 bg-[#232323] p-6 shadow-lg">
+              <h2 className="mb-3 flex items-center gap-2 font-bold text-yellow-400">
                 <FaPlus /> Criar Nova Enquete
               </h2>
               {/* SELECT DE SEGMENTAÇÃO */}
-              <label className="block text-yellow-300 font-bold mb-1 text-xs" htmlFor="publico">
+              <label
+                className="mb-1 block text-xs font-bold text-yellow-300"
+                htmlFor="publico"
+              >
                 Enviar para:
               </label>
               <select
                 id="publico"
-                className="w-full mb-3 p-2 rounded bg-[#181818] border border-yellow-400 text-gray-100 font-bold"
+                className="mb-3 w-full rounded border border-yellow-400 bg-[#181818] p-2 font-bold text-gray-100"
                 value={publico}
                 onChange={(e) => setPublico(e.target.value)}
               >
@@ -328,25 +353,25 @@ export default function EnquetesPage() {
                 ))}
               </select>
               <input
-                className="w-full mb-2 p-2 rounded bg-[#181818] border border-yellow-400 text-gray-100"
+                className="mb-2 w-full rounded border border-yellow-400 bg-[#181818] p-2 text-gray-100"
                 placeholder="Título da enquete"
                 maxLength={60}
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
               />
               <textarea
-                className="w-full mb-2 p-2 rounded bg-[#181818] border border-yellow-400 text-gray-100"
+                className="mb-2 w-full rounded border border-yellow-400 bg-[#181818] p-2 text-gray-100"
                 placeholder="Descrição da enquete (opcional)"
                 maxLength={200}
                 value={descricao}
                 onChange={(e) => setDescricao(e.target.value)}
               />
               <div className="mb-3">
-                <b className="text-yellow-300 text-xs">Opções de resposta</b>
+                <b className="text-xs text-yellow-300">Opções de resposta</b>
                 {opcoes.map((op, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-2">
+                  <div key={i} className="mb-2 flex items-center gap-2">
                     <input
-                      className="flex-1 p-2 rounded bg-[#181818] border border-yellow-400 text-gray-100"
+                      className="flex-1 rounded border border-yellow-400 bg-[#181818] p-2 text-gray-100"
                       placeholder={`Opção ${i + 1}`}
                       maxLength={35}
                       value={op}
@@ -354,7 +379,7 @@ export default function EnquetesPage() {
                     />
                     {opcoes.length > 2 && (
                       <button
-                        className="text-red-400 hover:text-red-600 text-xl"
+                        className="text-xl text-red-400 hover:text-red-600"
                         onClick={() => removerOpcao(i)}
                         type="button"
                         tabIndex={-1}
@@ -365,25 +390,29 @@ export default function EnquetesPage() {
                   </div>
                 ))}
                 <button
-                  className="bg-[#181818] hover:bg-gray-700 text-yellow-400 font-bold px-3 py-1 rounded text-xs mt-1"
+                  className="mt-1 rounded bg-[#181818] px-3 py-1 text-xs font-bold text-yellow-400 hover:bg-gray-700"
                   onClick={adicionarOpcao}
                   type="button"
                 >
                   + Adicionar opção
                 </button>
               </div>
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="mt-4 flex justify-end gap-3">
                 <button
-                  className="bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
+                  className="rounded bg-gray-700 px-4 py-1 text-gray-200 hover:bg-gray-600"
                   onClick={() => setModalNova(false)}
                   disabled={criando}
                 >
                   Cancelar
                 </button>
                 <button
-                  className="bg-yellow-400 hover:bg-yellow-500 text-[#181818] font-bold px-4 py-1 rounded"
+                  className="rounded bg-yellow-400 px-4 py-1 font-bold text-[#181818] hover:bg-yellow-500"
                   onClick={criarEnquete}
-                  disabled={criando || titulo.trim().length < 5 || opcoes.some((op) => !op.trim())}
+                  disabled={
+                    criando ||
+                    titulo.trim().length < 5 ||
+                    opcoes.some((op) => !op.trim())
+                  }
                 >
                   {criando ? "Criando..." : "Criar Enquete"}
                 </button>
@@ -394,56 +423,66 @@ export default function EnquetesPage() {
 
         {/* Modal de detalhe de resultado */}
         {modalDetalhe && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-[#232323] rounded-lg max-w-lg w-full p-7 shadow-lg border border-yellow-500">
-              <h2 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
+          <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div className="w-full max-w-lg rounded-lg border border-yellow-500 bg-[#232323] p-7 shadow-lg">
+              <h2 className="mb-3 flex items-center gap-2 font-bold text-yellow-400">
                 <FaChartBar /> Resultado da Enquete
               </h2>
-              <div className="mb-1 text-lg font-bold text-yellow-200">{modalDetalhe.titulo}</div>
-              <div className="mb-3 text-gray-300 text-sm">{modalDetalhe.descricao}</div>
-              <div className="mb-3 text-gray-400 text-xs">
-                {modalDetalhe.publico} &middot; Criada por {modalDetalhe.criadaPor} em{" "}
-                {modalDetalhe.criadaEm}
-                {modalDetalhe.status === "Fechada" && modalDetalhe.encerradaEm && (
-                  <> &middot; Fechada em {modalDetalhe.encerradaEm}</>
-                )}
+              <div className="mb-1 text-lg font-bold text-yellow-200">
+                {modalDetalhe.titulo}
               </div>
-              <div className="flex flex-col gap-3 mb-4">
+              <div className="mb-3 text-sm text-gray-300">
+                {modalDetalhe.descricao}
+              </div>
+              <div className="mb-3 text-xs text-gray-400">
+                {modalDetalhe.publico} &middot; Criada por{" "}
+                {modalDetalhe.criadaPor} em {modalDetalhe.criadaEm}
+                {modalDetalhe.status === "Fechada" &&
+                  modalDetalhe.encerradaEm && (
+                    <> &middot; Fechada em {modalDetalhe.encerradaEm}</>
+                  )}
+              </div>
+              <div className="mb-4 flex flex-col gap-3">
                 {modalDetalhe.opcoes.map((op, idx) => {
                   const percent = modalDetalhe.totalVotos
                     ? Math.round((op.votos / modalDetalhe.totalVotos) * 100)
                     : 0;
                   const maiorVoto = modalDetalhe.opcoes.reduce(
                     (max, cur) => (cur.votos > max ? cur.votos : max),
-                    0
+                    0,
                   );
                   return (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs flex items-center gap-1">
+                      <span className="flex min-w-[80px] items-center gap-1 rounded bg-[#181818] px-2 py-1 text-xs text-gray-200">
                         {op.texto}
                         {modalDetalhe.status === "Fechada" &&
                           op.votos === maiorVoto &&
                           maiorVoto > 0 && (
-                            <FaTrophy className="text-yellow-300 ml-1" title="Opção vencedora" />
+                            <FaTrophy
+                              className="ml-1 text-yellow-300"
+                              title="Opção vencedora"
+                            />
                           )}
                       </span>
-                      <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
+                      <div className="relative mx-2 h-4 flex-1 rounded-full bg-[#181818]">
                         <div
-                          className="bg-yellow-400 h-4 rounded-full transition-all"
+                          className="h-4 rounded-full bg-yellow-400 transition-all"
                           style={{ width: `${percent}%` }}
                         ></div>
-                        <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
+                        <span className="absolute left-1/2 top-0 -translate-x-1/2 text-xs font-bold text-black">
                           {percent}%
                         </span>
                       </div>
-                      <span className="text-gray-400 text-xs">{op.votos} votos</span>
+                      <span className="text-xs text-gray-400">
+                        {op.votos} votos
+                      </span>
                     </div>
                   );
                 })}
               </div>
               <div className="text-right">
                 <button
-                  className="bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
+                  className="rounded bg-gray-700 px-4 py-1 text-gray-200 hover:bg-gray-600"
                   onClick={() => setModalDetalhe(null)}
                 >
                   Fechar
@@ -455,26 +494,26 @@ export default function EnquetesPage() {
 
         {/* Modal de exclusão */}
         {modalExcluir && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-[#232323] rounded-lg max-w-md w-full p-6 shadow-lg border border-red-500">
-              <h2 className="font-bold text-red-400 mb-2 flex items-center gap-2">
+          <div className="animate-fadeIn fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div className="w-full max-w-md rounded-lg border border-red-500 bg-[#232323] p-6 shadow-lg">
+              <h2 className="mb-2 flex items-center gap-2 font-bold text-red-400">
                 <FaTrashAlt /> Excluir Enquete
               </h2>
-              <div className="mb-3 text-gray-200 text-sm">
+              <div className="mb-3 text-sm text-gray-200">
                 Tem certeza que deseja excluir a enquete{" "}
                 <b className="text-yellow-300">"{modalExcluir.titulo}"</b>?
                 <br />
                 Esta ação não pode ser desfeita.
               </div>
-              <div className="flex justify-end gap-3 mt-2">
+              <div className="mt-2 flex justify-end gap-3">
                 <button
-                  className="bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
+                  className="rounded bg-gray-700 px-4 py-1 text-gray-200 hover:bg-gray-600"
                   onClick={() => setModalExcluir(null)}
                 >
                   Cancelar
                 </button>
                 <button
-                  className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-1 rounded"
+                  className="rounded bg-red-700 px-4 py-1 font-bold text-white hover:bg-red-800"
                   onClick={() => excluirEnquete(modalExcluir.id)}
                 >
                   Excluir

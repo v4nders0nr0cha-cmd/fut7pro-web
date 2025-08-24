@@ -63,27 +63,28 @@ export default function ComunicacaoPage() {
           content="fut7, comunicação, notificações, mensagens, comunicados, enquetes, suporte, racha, futebol 7"
         />
       </Head>
-      <h1 className="text-3xl font-bold text-yellow-400 text-center mt-8 mb-6">
+      <h1 className="mb-6 mt-8 text-center text-3xl font-bold text-yellow-400">
         Central de Comunicação
       </h1>
-      <p className="text-center text-sm text-gray-300 mb-10 max-w-2xl mx-auto">
-        Acesse todas as notificações, mensagens, comunicados, sugestões, enquetes e suporte do racha
-        em um só lugar. Fique por dentro de tudo que acontece no Fut7Pro!
+      <p className="mx-auto mb-10 max-w-2xl text-center text-sm text-gray-300">
+        Acesse todas as notificações, mensagens, comunicados, sugestões,
+        enquetes e suporte do racha em um só lugar. Fique por dentro de tudo que
+        acontece no Fut7Pro!
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
         {items.map((item) => (
           <Link
             href={item.href}
             key={item.href}
-            className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-yellow-400 transition-all border border-zinc-800 hover:border-yellow-400 flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
+            className="group flex min-h-[138px] cursor-pointer flex-col items-start gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-5 shadow transition-all hover:border-yellow-400 hover:shadow-yellow-400"
           >
-            <div className="flex items-center gap-3 mb-1">
+            <div className="mb-1 flex items-center gap-3">
               {item.icon}
-              <span className="font-bold text-base text-yellow-300 group-hover:text-yellow-400">
+              <span className="text-base font-bold text-yellow-300 group-hover:text-yellow-400">
                 {item.label}
               </span>
             </div>
-            <p className="text-gray-400 text-xs">{item.description}</p>
+            <p className="text-xs text-gray-400">{item.description}</p>
           </Link>
         ))}
       </div>

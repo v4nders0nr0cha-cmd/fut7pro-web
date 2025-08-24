@@ -18,9 +18,12 @@ import { MdOutlineSportsSoccer } from "react-icons/md";
 import dynamic from "next/dynamic";
 
 // Gráfico dinâmico
-const DynamicChart = dynamic(() => import("@/components/superadmin/DashboardChart"), {
-  ssr: false,
-});
+const DynamicChart = dynamic(
+  () => import("@/components/superadmin/DashboardChart"),
+  {
+    ssr: false,
+  },
+);
 
 const KPIS = [
   {
@@ -81,9 +84,21 @@ const KPIS = [
 
 // Mock feed atividades
 const FEED = [
-  { type: "novo_racha", text: "Novo racha cadastrado: Ponte Preta", date: "15/06/2025 14:40" },
-  { type: "pagamento", text: "Recebido R$ 500 de Racha Galáticos", date: "14/06/2025 09:32" },
-  { type: "trial", text: "Trial convertido: Racha Real Matismo", date: "13/06/2025 12:11" },
+  {
+    type: "novo_racha",
+    text: "Novo racha cadastrado: Ponte Preta",
+    date: "15/06/2025 14:40",
+  },
+  {
+    type: "pagamento",
+    text: "Recebido R$ 500 de Racha Galáticos",
+    date: "14/06/2025 09:32",
+  },
+  {
+    type: "trial",
+    text: "Trial convertido: Racha Real Matismo",
+    date: "13/06/2025 12:11",
+  },
   {
     type: "inadimplente",
     text: "Racha Bola na Rede entrou em inadimplência",
@@ -106,46 +121,53 @@ export default function DashboardSuperAdminPage() {
         <meta name="description" content={description} />
         <meta name="keywords" content={keywords} />
       </Head>
-      <main className="w-full min-h-screen bg-[#101826] px-2 md:px-8 py-6">
+      <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         {/* Título centralizado e botão exportação */}
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <div className="flex-1 w-full">
-            <h1 className="text-2xl md:text-3xl font-bold text-white mb-1 text-center md:text-left">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div className="w-full flex-1">
+            <h1 className="mb-1 text-center text-2xl font-bold text-white md:text-left md:text-3xl">
               Dashboard Fut7Pro SaaS
             </h1>
-            <p className="text-zinc-400 text-base text-center md:text-left">
-              Visão geral do ecossistema Fut7Pro: vendas, clubes, admins e status financeiro global.
+            <p className="text-center text-base text-zinc-400 md:text-left">
+              Visão geral do ecossistema Fut7Pro: vendas, clubes, admins e
+              status financeiro global.
             </p>
           </div>
-          <div className="w-full md:w-auto flex justify-center md:justify-end">
-            <button className="flex items-center gap-2 bg-zinc-900 text-white font-semibold rounded-xl px-4 py-2 shadow hover:scale-105 transition">
+          <div className="flex w-full justify-center md:w-auto md:justify-end">
+            <button className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 font-semibold text-white shadow transition hover:scale-105">
               <FaChartBar /> Exportar Relatório
             </button>
           </div>
         </div>
 
         {/* Cards KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {KPIS.map((kpi) => (
             <div
               key={kpi.title}
-              className={`rounded-xl p-4 flex flex-col items-center bg-gradient-to-tr ${kpi.color} shadow-lg`}
+              className={`flex flex-col items-center rounded-xl bg-gradient-to-tr p-4 ${kpi.color} shadow-lg`}
             >
               <div className="mb-2">{kpi.icon}</div>
               <div className="text-2xl font-bold text-white">{kpi.value}</div>
               <div className="text-xs text-white">{kpi.title}</div>
-              <div className="flex items-center gap-1 text-xs mt-1">
+              <div className="mt-1 flex items-center gap-1 text-xs">
                 {kpi.changeType === "up" ? (
                   <FaArrowUp className="text-green-300" />
                 ) : (
                   <FaArrowDown className="text-red-300" />
                 )}
-                <span className={kpi.changeType === "up" ? "text-green-300" : "text-red-300"}>
+                <span
+                  className={
+                    kpi.changeType === "up" ? "text-green-300" : "text-red-300"
+                  }
+                >
                   {kpi.change}
                 </span>
               </div>
-              <span className="text-xs text-zinc-100 opacity-80 mt-1">{kpi.desc}</span>
-              <button className="mt-2 px-3 py-1 text-xs bg-white/10 rounded hover:bg-white/20 transition text-white">
+              <span className="mt-1 text-xs text-zinc-100 opacity-80">
+                {kpi.desc}
+              </span>
+              <button className="mt-2 rounded bg-white/10 px-3 py-1 text-xs text-white transition hover:bg-white/20">
                 Ver detalhes
               </button>
             </div>
@@ -154,43 +176,55 @@ export default function DashboardSuperAdminPage() {
 
         {/* Gráfico Faturamento */}
         <section className="mb-8 rounded-xl bg-zinc-900/80 p-4 shadow-lg">
-          <h2 className="text-lg font-semibold text-yellow-400 mb-2">
+          <h2 className="mb-2 text-lg font-semibold text-yellow-400">
             Faturamento dos Últimos 6 Meses
           </h2>
           <DynamicChart />
         </section>
 
         {/* Feed e Alertas */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Feed Atividades */}
           <section className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
-            <h2 className="text-lg font-semibold text-white mb-2">Atividades Recentes</h2>
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              Atividades Recentes
+            </h2>
             <ul className="space-y-2">
               {FEED.map((item, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-zinc-200 text-sm">
-                  <FaBell className="text-yellow-400" aria-label="Notificação" />
+                <li
+                  key={idx}
+                  className="flex items-center gap-3 text-sm text-zinc-200"
+                >
+                  <FaBell
+                    className="text-yellow-400"
+                    aria-label="Notificação"
+                  />
                   <span>{item.text}</span>
-                  <span className="ml-auto text-zinc-400 text-xs">{item.date}</span>
+                  <span className="ml-auto text-xs text-zinc-400">
+                    {item.date}
+                  </span>
                 </li>
               ))}
             </ul>
           </section>
           {/* Alertas e Próximos Passos */}
-          <section className="rounded-xl bg-zinc-900/80 p-4 shadow-lg flex flex-col gap-2">
-            <h2 className="text-lg font-semibold text-white mb-2">Alertas & Próximos Passos</h2>
+          <section className="flex flex-col gap-2 rounded-xl bg-zinc-900/80 p-4 shadow-lg">
+            <h2 className="mb-2 text-lg font-semibold text-white">
+              Alertas & Próximos Passos
+            </h2>
             <ul className="space-y-2">
-              <li className="flex items-center gap-2 text-red-400 text-sm font-bold">
+              <li className="flex items-center gap-2 text-sm font-bold text-red-400">
                 <FaTimesCircle /> 1 racha inadimplente!{" "}
                 <span className="ml-auto">
-                  <a href="#" className="underline text-zinc-100">
+                  <a href="#" className="text-zinc-100 underline">
                     Ver detalhes
                   </a>
                 </span>
               </li>
-              <li className="flex items-center gap-2 text-purple-400 text-sm">
+              <li className="flex items-center gap-2 text-sm text-purple-400">
                 <FaGift /> 2 trials vencendo em 2 dias{" "}
                 <span className="ml-auto">
-                  <a href="#" className="underline text-zinc-100">
+                  <a href="#" className="text-zinc-100 underline">
                     Renovar trials
                   </a>
                 </span>

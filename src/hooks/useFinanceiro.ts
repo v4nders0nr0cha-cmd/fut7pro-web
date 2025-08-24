@@ -27,7 +27,7 @@ export function useFinanceiro() {
           console.log("Erro ao carregar dados financeiros:", err);
         }
       },
-    }
+    },
   );
 
   const addLancamento = async (lancamento: Partial<Lancamento>) => {

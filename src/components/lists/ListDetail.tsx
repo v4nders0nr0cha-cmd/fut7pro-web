@@ -9,8 +9,10 @@ type ListDetailProps = {
 
 export default function ListDetail({ item: user }: ListDetailProps) {
   return (
-    <div className="bg-[#1a1a1a] p-6 rounded-xl text-white shadow-md">
-      <h1 className="text-xl font-bold text-yellow-400 mb-4">Detalhes do Usuário</h1>
+    <div className="rounded-xl bg-[#1a1a1a] p-6 text-white shadow-md">
+      <h1 className="mb-4 text-xl font-bold text-yellow-400">
+        Detalhes do Usuário
+      </h1>
       <p className="mb-2">
         <span className="font-semibold text-white">Nome:</span> {user.name}
       </p>

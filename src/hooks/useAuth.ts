@@ -106,7 +106,13 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "SUPPORT_CREATE",
     "SUPPORT_UPDATE",
   ],
-  AUDITORIA: ["ANALYTICS_READ", "REPORTS_GENERATE", "AUDIT_READ", "AUDIT_CREATE", "AUDIT_EXPORT"],
+  AUDITORIA: [
+    "ANALYTICS_READ",
+    "REPORTS_GENERATE",
+    "AUDIT_READ",
+    "AUDIT_CREATE",
+    "AUDIT_EXPORT",
+  ],
   FINANCEIRO: [
     "FINANCE_READ",
     "FINANCE_CREATE",
@@ -125,29 +131,32 @@ export function useAuth(): UseAuthReturn {
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated" && !!user;
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+  const login = useCallback(
+    async (email: string, password: string): Promise<boolean> => {
+      try {
+        const result = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+        });
 
-      if (result?.error) {
+        if (result?.error) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("Erro no login:", result.error);
+          }
+          return false;
+        }
+
+        return true;
+      } catch (error) {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro no login:", result.error);
+          console.log("Erro no login:", error);
         }
         return false;
       }
-
-      return true;
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro no login:", error);
-      }
-      return false;
-    }
-  }, []);
+    },
+    [],
+  );
 
   const loginWithGoogle = useCallback(async (): Promise<void> => {
     try {
@@ -176,7 +185,7 @@ export function useAuth(): UseAuthReturn {
       const roles = Array.isArray(role) ? role : [role];
       return roles.includes(user.role);
     },
-    [user]
+    [user],
   );
 
   const hasPermission = useCallback(
@@ -186,7 +195,7 @@ export function useAuth(): UseAuthReturn {
       const userPermissions = ROLE_PERMISSIONS[user.role] || [];
       return userPermissions.includes(permission);
     },
-    [user]
+    [user],
   );
 
   const requireAuth = useCallback(
@@ -195,7 +204,7 @@ export function useAuth(): UseAuthReturn {
         router.push(redirectTo);
       }
     },
-    [isAuthenticated, isLoading, router]
+    [isAuthenticated, isLoading, router],
   );
 
   const requireRole = useCallback(
@@ -209,7 +218,7 @@ export function useAuth(): UseAuthReturn {
         router.push(redirectTo);
       }
     },
-    [isAuthenticated, hasRole, router]
+    [isAuthenticated, hasRole, router],
   );
 
   const requirePermission = useCallback(
@@ -223,7 +232,7 @@ export function useAuth(): UseAuthReturn {
         router.push(redirectTo);
       }
     },
-    [isAuthenticated, hasPermission, router]
+    [isAuthenticated, hasPermission, router],
   );
 
   return {

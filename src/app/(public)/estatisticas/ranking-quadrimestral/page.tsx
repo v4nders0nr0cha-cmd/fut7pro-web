@@ -27,8 +27,10 @@ export default function RankingQuadrimestralPage() {
   const [search, setSearch] = useState("");
 
   // Correção do erro: tipos garantidos
-  const ranking: RankingAtleta[] = (rankingsPorQuadrimestre[ano]?.[quadrimestre] || []).filter(
-    (atleta: RankingAtleta) => atleta.nome.toLowerCase().includes(search.toLowerCase())
+  const ranking: RankingAtleta[] = (
+    rankingsPorQuadrimestre[ano]?.[quadrimestre] || []
+  ).filter((atleta: RankingAtleta) =>
+    atleta.nome.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -45,26 +47,28 @@ export default function RankingQuadrimestralPage() {
         />
       </Head>
 
-      <main className="min-h-screen bg-fundo text-white p-2 sm:p-4 md:p-6">
+      <main className="min-h-screen bg-fundo p-2 text-white sm:p-4 md:p-6">
         <h1 className="sr-only">
-          Ranking Quadrimestral de Pontos do Racha de Futebol 7 – Atletas, Pontuação, Estatísticas
+          Ranking Quadrimestral de Pontos do Racha de Futebol 7 – Atletas,
+          Pontuação, Estatísticas
         </h1>
 
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
+        <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">
+            <h2 className="mb-2 text-2xl font-bold text-yellow-400 md:text-3xl">
               Ranking Quadrimestral de Pontos
             </h2>
-            <p className="text-sm text-gray-400 max-w-xl mx-auto md:mx-0">
-              Veja o desempenho dos atletas em cada quadrimestre, filtre pelo seu nome e acompanhe
-              sua posição. Use o seletor ao lado para mudar o ano e o quadrimestre da tabela.
+            <p className="mx-auto max-w-xl text-sm text-gray-400 md:mx-0">
+              Veja o desempenho dos atletas em cada quadrimestre, filtre pelo
+              seu nome e acompanhe sua posição. Use o seletor ao lado para mudar
+              o ano e o quadrimestre da tabela.
             </p>
           </div>
           <div className="flex flex-row gap-2">
             <select
               value={ano}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+              className="rounded border border-yellow-400 bg-zinc-900 px-3 py-2 text-sm text-yellow-400 focus:outline-none"
               aria-label="Selecionar ano"
             >
               {anosDisponiveis.map((anoOpt) => (
@@ -75,8 +79,10 @@ export default function RankingQuadrimestralPage() {
             </select>
             <select
               value={quadrimestre}
-              onChange={(e) => setQuadrimestre(Number(e.target.value) as NumeroQuadrimestre)}
-              className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+              onChange={(e) =>
+                setQuadrimestre(Number(e.target.value) as NumeroQuadrimestre)
+              }
+              className="rounded border border-yellow-400 bg-zinc-900 px-3 py-2 text-sm text-yellow-400 focus:outline-none"
               aria-label="Selecionar quadrimestre"
             >
               {quadrimestres.map((q) => (
@@ -88,10 +94,10 @@ export default function RankingQuadrimestralPage() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 max-w-3xl mx-auto">
+        <div className="mx-auto mb-4 flex max-w-3xl flex-col items-center gap-4 sm:flex-row">
           <input
             type="text"
-            className="w-full sm:w-64 rounded px-4 py-2 border border-gray-600 bg-zinc-900 text-white placeholder-gray-400"
+            className="w-full rounded border border-gray-600 bg-zinc-900 px-4 py-2 text-white placeholder-gray-400 sm:w-64"
             placeholder="Buscar atleta por nome..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -100,12 +106,14 @@ export default function RankingQuadrimestralPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[600px]">
+          <table className="w-full min-w-[600px] border border-gray-700 text-xs sm:text-sm">
             <thead className="bg-[#2a2a2a] text-gray-300">
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Atleta</th>
-                <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
+                <th className="p-2 text-right text-base text-yellow-400">
+                  Pontos
+                </th>
                 <th className="p-2 text-right">Jogos</th>
                 <th className="p-2 text-right">Vitórias</th>
                 <th className="p-2 text-right">Empates</th>
@@ -116,17 +124,20 @@ export default function RankingQuadrimestralPage() {
             <tbody>
               {ranking.map((atleta: RankingAtleta, idx: number) => {
                 let rowClass = "";
-                if (idx === 0) rowClass = "border-2 border-yellow-400 bg-[#232100]";
-                if (idx === 1) rowClass = "border-2 border-gray-400 bg-[#1e1e1e]";
-                if (idx === 2) rowClass = "border-2 border-orange-600 bg-[#231c00]";
+                if (idx === 0)
+                  rowClass = "border-2 border-yellow-400 bg-[#232100]";
+                if (idx === 1)
+                  rowClass = "border-2 border-gray-400 bg-[#1e1e1e]";
+                if (idx === 2)
+                  rowClass = "border-2 border-orange-600 bg-[#231c00]";
 
                 return (
                   <tr
                     key={atleta.id}
-                    className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
+                    className={`border-t border-gray-700 transition-all hover:bg-[#2a2a2a] ${rowClass}`}
                   >
                     <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
-                    <td className="flex items-center gap-2 p-2 whitespace-nowrap">
+                    <td className="flex items-center gap-2 whitespace-nowrap p-2">
                       <Link href={`/atletas/${atleta.slug}`}>
                         <Image
                           src={atleta.foto}
@@ -138,20 +149,20 @@ export default function RankingQuadrimestralPage() {
                       </Link>
                       <Link
                         href={`/atletas/${atleta.slug}`}
-                        className="text-yellow-300 hover:underline font-semibold"
+                        className="font-semibold text-yellow-300 hover:underline"
                         title={`Ver perfil de ${atleta.nome}`}
                       >
                         <span className="break-words">{atleta.nome}</span>
                       </Link>
                     </td>
-                    <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                    <td className="p-2 text-right text-base font-extrabold text-yellow-400">
                       {atleta.pontos}
                     </td>
-                    <td className="text-right p-2">{atleta.jogos}</td>
-                    <td className="text-right p-2">{atleta.vitorias}</td>
-                    <td className="text-right p-2">{atleta.empates}</td>
-                    <td className="text-right p-2">{atleta.derrotas}</td>
-                    <td className="text-right p-2">{atleta.gols}</td>
+                    <td className="p-2 text-right">{atleta.jogos}</td>
+                    <td className="p-2 text-right">{atleta.vitorias}</td>
+                    <td className="p-2 text-right">{atleta.empates}</td>
+                    <td className="p-2 text-right">{atleta.derrotas}</td>
+                    <td className="p-2 text-right">{atleta.gols}</td>
                   </tr>
                 );
               })}

@@ -16,7 +16,9 @@ const CNAME_TARGET = "custom.fut7pro.com.br.";
 
 export default function DominioProprioPage() {
   const [dominio, setDominio] = useState("");
-  const [status, setStatus] = useState<"vazio" | "aguardando" | "aprovado" | "erro">("vazio");
+  const [status, setStatus] = useState<
+    "vazio" | "aguardando" | "aprovado" | "erro"
+  >("vazio");
   const [mensagem, setMensagem] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -29,17 +31,17 @@ export default function DominioProprioPage() {
       if (!dominio.endsWith(".com.br") && !dominio.endsWith(".com")) {
         setStatus("erro");
         setMensagem(
-          "Domínio inválido. Use apenas domínios próprios (ex: meuaracha.com.br). Não são aceitos domínios gratuitos."
+          "Domínio inválido. Use apenas domínios próprios (ex: meuaracha.com.br). Não são aceitos domínios gratuitos.",
         );
       } else if (dominio.includes("fut7pro.com.br")) {
         setStatus("erro");
         setMensagem(
-          "Não é permitido usar subdomínios do próprio Fut7Pro. Cadastre um domínio próprio."
+          "Não é permitido usar subdomínios do próprio Fut7Pro. Cadastre um domínio próprio.",
         );
       } else {
         setStatus("aprovado");
         setMensagem(
-          "Domínio cadastrado com sucesso! Assim que o DNS for propagado, seu painel ficará disponível no domínio configurado."
+          "Domínio cadastrado com sucesso! Assim que o DNS for propagado, seu painel ficará disponível no domínio configurado.",
         );
       }
     }, 1600);
@@ -64,30 +66,36 @@ export default function DominioProprioPage() {
           content="Fut7, domínio próprio, white label, SaaS, admin, DNS, racha"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-2xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-2xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           <FaGlobe /> Domínio Próprio
         </h1>
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow animate-fadeIn text-sm">
-          <b className="text-yellow-300">Configure seu domínio personalizado!</b>
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
+          <b className="text-yellow-300">
+            Configure seu domínio personalizado!
+          </b>
           <br />
-          Use seu próprio domínio (ex: <b>suaracha.com.br</b>) para acessar o painel e página
-          pública do seu racha, reforçando sua identidade visual e profissionalismo.
-          <div className="text-gray-400 mt-2">
-            Disponível para todos os planos pagos. Após o cadastro, siga as instruções de DNS para
-            validar.
+          Use seu próprio domínio (ex: <b>suaracha.com.br</b>) para acessar o
+          painel e página pública do seu racha, reforçando sua identidade visual
+          e profissionalismo.
+          <div className="mt-2 text-gray-400">
+            Disponível para todos os planos pagos. Após o cadastro, siga as
+            instruções de DNS para validar.
           </div>
         </div>
 
-        <div className="bg-[#232323] rounded-lg p-5 shadow-lg border border-yellow-700 mb-8">
-          <label htmlFor="dominio" className="block text-yellow-300 font-bold mb-2">
+        <div className="mb-8 rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow-lg">
+          <label
+            htmlFor="dominio"
+            className="mb-2 block font-bold text-yellow-300"
+          >
             Domínio desejado
           </label>
-          <div className="flex gap-2 mb-2">
+          <div className="mb-2 flex gap-2">
             <input
               id="dominio"
               type="text"
-              className="flex-1 p-3 rounded bg-[#181818] border border-yellow-400 text-gray-100 font-mono"
+              className="flex-1 rounded border border-yellow-400 bg-[#181818] p-3 font-mono text-gray-100"
               placeholder="ex: meuaracha.com.br"
               value={dominio}
               onChange={(e) => {
@@ -99,7 +107,7 @@ export default function DominioProprioPage() {
               autoComplete="off"
             />
             <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-[#232323] font-bold px-4 py-2 rounded transition disabled:opacity-60"
+              className="rounded bg-yellow-400 px-4 py-2 font-bold text-[#232323] transition hover:bg-yellow-500 disabled:opacity-60"
               onClick={handleSalvar}
               disabled={!dominio || dominio.length < 6}
             >
@@ -107,45 +115,48 @@ export default function DominioProprioPage() {
             </button>
           </div>
           <span className="text-xs text-gray-400">
-            Apenas domínios próprios (ex: meuaracha.com.br). Não aceitamos domínios gratuitos tipo
-            .tk, .ml, .ga.
+            Apenas domínios próprios (ex: meuaracha.com.br). Não aceitamos
+            domínios gratuitos tipo .tk, .ml, .ga.
           </span>
 
           {status === "aguardando" && (
-            <div className="flex items-center gap-2 mt-3 text-yellow-300 font-bold animate-pulse">
+            <div className="mt-3 flex animate-pulse items-center gap-2 font-bold text-yellow-300">
               <FaRegQuestionCircle /> Aguardando validação DNS...
             </div>
           )}
           {status === "aprovado" && (
-            <div className="flex items-center gap-2 mt-3 text-green-400 font-bold">
+            <div className="mt-3 flex items-center gap-2 font-bold text-green-400">
               <FaCheckCircle /> Domínio validado e ativo!
             </div>
           )}
           {status === "erro" && (
-            <div className="flex items-center gap-2 mt-3 text-red-400 font-bold">
+            <div className="mt-3 flex items-center gap-2 font-bold text-red-400">
               <FaExclamationCircle /> {mensagem}
             </div>
           )}
           {status === "vazio" && mensagem && (
-            <div className="flex items-center gap-2 mt-3 text-yellow-300 font-bold">
+            <div className="mt-3 flex items-center gap-2 font-bold text-yellow-300">
               <FaRegQuestionCircle /> {mensagem}
             </div>
           )}
         </div>
 
-        <div className="bg-[#232323] rounded-lg p-5 shadow-lg border border-yellow-700 mb-8">
-          <div className="font-bold text-yellow-300 mb-1">Instruções para configuração do DNS:</div>
-          <ol className="list-decimal ml-6 text-gray-200 text-sm mb-2">
+        <div className="mb-8 rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow-lg">
+          <div className="mb-1 font-bold text-yellow-300">
+            Instruções para configuração do DNS:
+          </div>
+          <ol className="mb-2 ml-6 list-decimal text-sm text-gray-200">
             <li>
-              <b>Registre ou acesse</b> o seu domínio próprio em seu provedor de domínios.
+              <b>Registre ou acesse</b> o seu domínio próprio em seu provedor de
+              domínios.
             </li>
             <li>
               <b>Crie um registro CNAME</b> apontando para:{" "}
-              <span className="bg-[#181818] rounded px-2 py-1 font-mono text-yellow-200 select-all">
+              <span className="select-all rounded bg-[#181818] px-2 py-1 font-mono text-yellow-200">
                 {CNAME_TARGET}
               </span>
               <button
-                className="ml-2 text-xs bg-yellow-400 hover:bg-yellow-500 text-[#232323] rounded px-2 py-1 font-bold"
+                className="ml-2 rounded bg-yellow-400 px-2 py-1 text-xs font-bold text-[#232323] hover:bg-yellow-500"
                 onClick={handleCopy}
                 type="button"
               >
@@ -153,41 +164,47 @@ export default function DominioProprioPage() {
               </button>
             </li>
             <li>
-              Aguarde até <b>24 horas</b> para propagação (normalmente em poucos minutos).
+              Aguarde até <b>24 horas</b> para propagação (normalmente em poucos
+              minutos).
             </li>
             <li>
-              Volte aqui e clique em <b>Salvar</b>. O sistema validará o DNS e ativará o domínio.
+              Volte aqui e clique em <b>Salvar</b>. O sistema validará o DNS e
+              ativará o domínio.
             </li>
           </ol>
-          <div className="text-xs text-gray-400 mt-2">
-            <b>Dica:</b> O endereço do painel/admin também será alterado para seu domínio.
+          <div className="mt-2 text-xs text-gray-400">
+            <b>Dica:</b> O endereço do painel/admin também será alterado para
+            seu domínio.
           </div>
         </div>
 
-        <div className="bg-[#232323] rounded-lg p-5 shadow-lg border border-yellow-700">
-          <div className="font-bold text-yellow-300 mb-2">Dúvidas Frequentes</div>
-          <ul className="text-gray-300 text-sm space-y-2">
+        <div className="rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow-lg">
+          <div className="mb-2 font-bold text-yellow-300">
+            Dúvidas Frequentes
+          </div>
+          <ul className="space-y-2 text-sm text-gray-300">
             <li>
-              <b>Quanto tempo leva para ativar?</b> Normalmente de 15min a 2h após o DNS ser
-              propagado.
+              <b>Quanto tempo leva para ativar?</b> Normalmente de 15min a 2h
+              após o DNS ser propagado.
             </li>
             <li>
-              <b>Posso usar domínio gratuito?</b> Não. Apenas domínios próprios (.com.br, .com,
-              etc).
+              <b>Posso usar domínio gratuito?</b> Não. Apenas domínios próprios
+              (.com.br, .com, etc).
             </li>
             <li>
-              <b>Se der erro, o que faço?</b> Verifique se o CNAME está correto e aguarde a
-              propagação. Persistindo, entre em contato pelo suporte abaixo.
+              <b>Se der erro, o que faço?</b> Verifique se o CNAME está correto
+              e aguarde a propagação. Persistindo, entre em contato pelo suporte
+              abaixo.
             </li>
             <li>
-              <b>Meu site vai ficar offline?</b> Não! O domínio Fut7Pro padrão segue funcionando
-              normalmente até o domínio próprio ser validado.
+              <b>Meu site vai ficar offline?</b> Não! O domínio Fut7Pro padrão
+              segue funcionando normalmente até o domínio próprio ser validado.
             </li>
             <li className="flex items-center gap-3">
               <b>Suporte:</b>
               <a
                 href="mailto:suporte@fut7pro.com.br"
-                className="underline text-yellow-400"
+                className="text-yellow-400 underline"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -196,7 +213,7 @@ export default function DominioProprioPage() {
               <span>|</span>
               <Link
                 href="/admin/comunicacao/suporte"
-                className="text-yellow-400 flex items-center gap-1 underline hover:text-yellow-300"
+                className="flex items-center gap-1 text-yellow-400 underline hover:text-yellow-300"
                 title="Abrir chamado no suporte Fut7Pro"
               >
                 <FaHeadset className="inline text-base" />

@@ -27,8 +27,20 @@ export default function DashboardChart() {
         <CartesianGrid strokeDasharray="3 3" stroke="#222" />
         <XAxis dataKey="month" stroke="#fff" />
         <YAxis stroke="#fff" />
-        <Tooltip contentStyle={{ background: "#18181B", borderRadius: 8, color: "#fff" }} />
-        <Line type="monotone" dataKey="receita" stroke="#FFD700" strokeWidth={3} dot={{ r: 5 }} />
+        <Tooltip
+          contentStyle={{
+            background: "#18181B",
+            borderRadius: 8,
+            color: "#fff",
+          }}
+        />
+        <Line
+          type="monotone"
+          dataKey="receita"
+          stroke="#FFD700"
+          strokeWidth={3}
+          dot={{ r: 5 }}
+        />
       </LineChart>
     </ResponsiveContainer>
   );

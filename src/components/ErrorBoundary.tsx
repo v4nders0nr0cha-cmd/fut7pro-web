@@ -74,7 +74,9 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     // Exemplo: abrir email com detalhes do erro
-    const subject = encodeURIComponent(`Relatório de Erro - ${rachaConfig.nome}`);
+    const subject = encodeURIComponent(
+      `Relatório de Erro - ${rachaConfig.nome}`,
+    );
     const body = encodeURIComponent(`
 Erro encontrado no ${rachaConfig.nome}:
 
@@ -89,7 +91,9 @@ Stack do componente:
 ${errorReport.componentStack}
         `);
 
-    window.open(`mailto:${rachaConfig.urls.suporte}?subject=${subject}&body=${body}`);
+    window.open(
+      `mailto:${rachaConfig.urls.suporte}?subject=${subject}&body=${body}`,
+    );
   };
 
   render() {
@@ -100,33 +104,35 @@ ${errorReport.componentStack}
       }
 
       return (
-        <div className="min-h-screen bg-zinc-900 flex items-center justify-center p-4">
-          <div className="bg-zinc-800 rounded-xl p-8 max-w-md w-full text-center">
-            <div className="text-red-500 text-6xl mb-4">⚠️</div>
-            <h1 className="text-2xl font-bold text-white mb-4">Ops! Algo deu errado</h1>
-            <p className="text-gray-300 mb-6">
-              Encontramos um problema inesperado. Nossa equipe foi notificada e está trabalhando
-              para resolver.
+        <div className="flex min-h-screen items-center justify-center bg-zinc-900 p-4">
+          <div className="w-full max-w-md rounded-xl bg-zinc-800 p-8 text-center">
+            <div className="mb-4 text-6xl text-red-500">⚠️</div>
+            <h1 className="mb-4 text-2xl font-bold text-white">
+              Ops! Algo deu errado
+            </h1>
+            <p className="mb-6 text-gray-300">
+              Encontramos um problema inesperado. Nossa equipe foi notificada e
+              está trabalhando para resolver.
             </p>
 
             <div className="space-y-3">
               <button
                 onClick={this.handleRetry}
-                className="w-full bg-yellow-500 text-black font-bold py-3 px-6 rounded-lg hover:bg-yellow-400 transition-colors"
+                className="w-full rounded-lg bg-yellow-500 px-6 py-3 font-bold text-black transition-colors hover:bg-yellow-400"
               >
                 Tentar Novamente
               </button>
 
               <button
                 onClick={() => (window.location.href = "/")}
-                className="w-full bg-zinc-700 text-white py-3 px-6 rounded-lg hover:bg-zinc-600 transition-colors"
+                className="w-full rounded-lg bg-zinc-700 px-6 py-3 text-white transition-colors hover:bg-zinc-600"
               >
                 Voltar ao Início
               </button>
 
               <button
                 onClick={this.handleReportError}
-                className="w-full bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-500 transition-colors"
+                className="w-full rounded-lg bg-red-600 px-6 py-3 text-white transition-colors hover:bg-red-500"
               >
                 Reportar Erro
               </button>
@@ -134,21 +140,23 @@ ${errorReport.componentStack}
 
             {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mt-6 text-left">
-                <summary className="text-yellow-400 cursor-pointer mb-2">
+                <summary className="mb-2 cursor-pointer text-yellow-400">
                   Detalhes do Erro (Desenvolvimento)
                 </summary>
-                <div className="bg-zinc-900 p-4 rounded text-xs text-gray-300 overflow-auto">
+                <div className="overflow-auto rounded bg-zinc-900 p-4 text-xs text-gray-300">
                   <div className="mb-2">
                     <strong>Mensagem:</strong> {this.state.error.message}
                   </div>
                   <div className="mb-2">
                     <strong>Stack:</strong>
-                    <pre className="whitespace-pre-wrap mt-1">{this.state.error.stack}</pre>
+                    <pre className="mt-1 whitespace-pre-wrap">
+                      {this.state.error.stack}
+                    </pre>
                   </div>
                   {this.state.errorInfo && (
                     <div>
                       <strong>Component Stack:</strong>
-                      <pre className="whitespace-pre-wrap mt-1">
+                      <pre className="mt-1 whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </div>
@@ -186,7 +194,10 @@ export const useErrorBoundary = () => {
 
     return () => {
       window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      window.removeEventListener(
+        "unhandledrejection",
+        handleUnhandledRejection,
+      );
     };
   }, []);
 

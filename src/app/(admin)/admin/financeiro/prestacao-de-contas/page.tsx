@@ -3,7 +3,10 @@ import Head from "next/head";
 import { useState, useEffect } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
-import { mockLancamentosFinanceiro, type Lancamento } from "./mocks/mockLancamentosFinanceiro";
+import {
+  mockLancamentosFinanceiro,
+  type Lancamento,
+} from "./mocks/mockLancamentosFinanceiro";
 import CardResumoFinanceiro from "./components/CardResumoFinanceiro";
 import TabelaLancamentos from "./components/TabelaLancamentos";
 import ModalLancamento from "./components/ModalLancamento";
@@ -93,7 +96,9 @@ export default function PrestacaoDeContasAdmin() {
   }
 
   // CRUD mock
-  const [lancamentos, setLancamentos] = useState<Lancamento[]>(mockLancamentosFinanceiro);
+  const [lancamentos, setLancamentos] = useState<Lancamento[]>(
+    mockLancamentosFinanceiro,
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState<Lancamento | null>(null);
 
@@ -124,8 +129,10 @@ export default function PrestacaoDeContasAdmin() {
 
   function filtrarPorPeriodo(lancamentos: Lancamento[]) {
     if (todosAnos) return lancamentos;
-    if (periodo === "mes") return lancamentos.filter((l) => l.data.startsWith(`${ano}-${mes}`));
-    if (periodo === "ano") return lancamentos.filter((l) => l.data.startsWith(`${ano}`));
+    if (periodo === "mes")
+      return lancamentos.filter((l) => l.data.startsWith(`${ano}-${mes}`));
+    if (periodo === "ano")
+      return lancamentos.filter((l) => l.data.startsWith(`${ano}`));
     if (periodo === "quadrimestre") {
       const mesNum = Number(mes);
       let de = "01",
@@ -140,7 +147,9 @@ export default function PrestacaoDeContasAdmin() {
         de = "09";
         ate = "12";
       }
-      return lancamentos.filter((l) => l.data >= `${ano}-${de}` && l.data <= `${ano}-${ate}`);
+      return lancamentos.filter(
+        (l) => l.data >= `${ano}-${de}` && l.data <= `${ano}-${ate}`,
+      );
     }
     return lancamentos;
   }
@@ -149,7 +158,9 @@ export default function PrestacaoDeContasAdmin() {
   const [showAll, setShowAll] = useState(false);
   const limit = 6;
   const lancamentosFiltrados = filtrarPorPeriodo(lancamentos);
-  const exibir = showAll ? lancamentosFiltrados : lancamentosFiltrados.slice(0, limit);
+  const exibir = showAll
+    ? lancamentosFiltrados
+    : lancamentosFiltrados.slice(0, limit);
 
   return (
     <>
@@ -168,29 +179,36 @@ export default function PrestacaoDeContasAdmin() {
         <ToggleVisibilidadePublica visivel={visivel} onToggle={handleToggle} />
         {saving && (
           <div className="mb-4">
-            <span className="text-xs text-yellow-400 animate-pulse">Salvando alteração...</span>
+            <span className="animate-pulse text-xs text-yellow-400">
+              Salvando alteração...
+            </span>
           </div>
         )}
         {!visivel && (
-          <div className="mb-4 bg-yellow-900/70 border border-yellow-700 rounded p-3 text-yellow-300 text-xs">
+          <div className="mb-4 rounded border border-yellow-700 bg-yellow-900/70 p-3 text-xs text-yellow-300">
             Esta página está <b>oculta no site público</b>.<br />
-            Ative a transparência financeira para liberar o acesso aos atletas e visitantes.
+            Ative a transparência financeira para liberar o acesso aos atletas e
+            visitantes.
             <br />
-            Quando ativado, qualquer pessoa poderá visualizar a prestação de contas deste racha.
+            Quando ativado, qualquer pessoa poderá visualizar a prestação de
+            contas deste racha.
           </div>
         )}
 
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">Prestação de Contas</h1>
-            <p className="text-xs sm:text-sm text-gray-400">
+            <h1 className="text-2xl font-bold text-yellow-500 sm:text-3xl">
+              Prestação de Contas
+            </h1>
+            <p className="text-xs text-gray-400 sm:text-sm">
               Gestão total das receitas e despesas do racha.
               <br />
-              Cadastre, filtre, exporte e mantenha o controle financeiro 100% transparente.
+              Cadastre, filtre, exporte e mantenha o controle financeiro 100%
+              transparente.
             </p>
           </div>
           <button
-            className="bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded transition"
+            className="rounded bg-green-600 px-4 py-2 font-bold text-white transition hover:bg-green-700"
             onClick={handleNovo}
           >
             + Novo Lançamento
@@ -198,15 +216,15 @@ export default function PrestacaoDeContasAdmin() {
         </div>
 
         {/* Filtro de período */}
-        <div className="mb-4 flex flex-wrap gap-2 items-end">
-          <label className="text-xs text-gray-300 font-bold">Período:</label>
+        <div className="mb-4 flex flex-wrap items-end gap-2">
+          <label className="text-xs font-bold text-gray-300">Período:</label>
           <select
             value={periodo}
             onChange={(e) => {
               setPeriodo(e.target.value as any);
               setShowAll(false);
             }}
-            className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-xs"
+            className="rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-white"
             disabled={todosAnos}
           >
             <option value="mes">Mês</option>
@@ -217,7 +235,7 @@ export default function PrestacaoDeContasAdmin() {
             <select
               value={mes}
               onChange={(e) => setMes(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-xs"
+              className="rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-white"
               disabled={todosAnos}
             >
               {Array.from({ length: 12 }).map((_, i) => (
@@ -230,7 +248,7 @@ export default function PrestacaoDeContasAdmin() {
           <select
             value={ano}
             onChange={(e) => setAno(e.target.value)}
-            className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-xs"
+            className="rounded border border-neutral-700 bg-neutral-800 px-2 py-1 text-xs text-white"
             disabled={todosAnos}
           >
             <option value="2025">2025</option>
@@ -239,13 +257,11 @@ export default function PrestacaoDeContasAdmin() {
           </select>
           <button
             type="button"
-            className={`ml-2 px-3 py-1 rounded text-xs font-bold border transition
-              ${
-                todosAnos
-                  ? "bg-yellow-500 text-black border-yellow-600"
-                  : "bg-neutral-700 text-white border-neutral-700 hover:bg-yellow-600 hover:text-black"
-              }
-            `}
+            className={`ml-2 rounded border px-3 py-1 text-xs font-bold transition ${
+              todosAnos
+                ? "border-yellow-600 bg-yellow-500 text-black"
+                : "border-neutral-700 bg-neutral-700 text-white hover:bg-yellow-600 hover:text-black"
+            } `}
             onClick={() => setTodosAnos(!todosAnos)}
           >
             {todosAnos ? "Todos os Anos: Ativo" : "Todos os Anos"}
@@ -258,28 +274,37 @@ export default function PrestacaoDeContasAdmin() {
         <div className="overflow-x-auto">
           <TabelaLancamentos lancamentos={exibir} onEdit={handleEdit} />
           {lancamentosFiltrados.length > limit && (
-            <div className="w-full flex justify-center mt-2">
+            <div className="mt-2 flex w-full justify-center">
               <button
-                className="text-sm px-4 py-1 rounded bg-neutral-700 hover:bg-yellow-500 hover:text-black font-bold transition"
+                className="rounded bg-neutral-700 px-4 py-1 text-sm font-bold transition hover:bg-yellow-500 hover:text-black"
                 onClick={() => setShowAll(!showAll)}
                 type="button"
               >
-                {showAll ? "Ver menos" : `Ver mais (${lancamentosFiltrados.length - limit})`}
+                {showAll
+                  ? "Ver menos"
+                  : `Ver mais (${lancamentosFiltrados.length - limit})`}
               </button>
             </div>
           )}
         </div>
 
         {/* Gráfico evolução financeira */}
-        <div className="w-full mt-8 mb-4 bg-neutral-900 rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-bold text-yellow-500 mb-2">Evolução Financeira</h3>
+        <div className="mb-4 mt-8 w-full rounded-lg bg-neutral-900 p-4 shadow-sm">
+          <h3 className="mb-2 text-lg font-bold text-yellow-500">
+            Evolução Financeira
+          </h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={dadosGrafico(lancamentosFiltrados)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis dataKey="mes" stroke="#bbb" />
               <YAxis stroke="#bbb" />
               <Tooltip />
-              <Line type="monotone" dataKey="saldo" stroke="#FFD600" strokeWidth={2} />
+              <Line
+                type="monotone"
+                dataKey="saldo"
+                stroke="#FFD600"
+                strokeWidth={2}
+              />
             </LineChart>
           </ResponsiveContainer>
         </div>

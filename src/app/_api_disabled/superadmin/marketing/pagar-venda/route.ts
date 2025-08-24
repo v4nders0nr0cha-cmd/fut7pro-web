@@ -6,7 +6,11 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   const data = await request.formData();
   const id = data.get("id")?.toString();
-  if (!id) return NextResponse.json({ ok: false, error: "ID inválido" }, { status: 400 });
+  if (!id)
+    return NextResponse.json(
+      { ok: false, error: "ID inválido" },
+      { status: 400 },
+    );
 
   await prisma.influencerVenda.update({
     where: { id },
@@ -16,5 +20,8 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.redirect(request.headers.get("referer") || "/superadmin/marketing", 303);
+  return NextResponse.redirect(
+    request.headers.get("referer") || "/superadmin/marketing",
+    303,
+  );
 }

@@ -5,19 +5,22 @@ type Props = { mensalistas: Mensalista[] };
 export default function TabelaMensalistas({ mensalistas }: Props) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-sm border-separate border-spacing-y-2">
+      <table className="min-w-full border-separate border-spacing-y-2 text-sm">
         <thead>
           <tr className="text-xs text-gray-400">
-            <th className="text-left px-2 py-2">Nome</th>
-            <th className="text-left px-2 py-2">Status</th>
-            <th className="text-left px-2 py-2">Valor</th>
-            <th className="text-left px-2 py-2">Últ. Pagamento</th>
-            <th className="text-left px-2 py-2"></th>
+            <th className="px-2 py-2 text-left">Nome</th>
+            <th className="px-2 py-2 text-left">Status</th>
+            <th className="px-2 py-2 text-left">Valor</th>
+            <th className="px-2 py-2 text-left">Últ. Pagamento</th>
+            <th className="px-2 py-2 text-left"></th>
           </tr>
         </thead>
         <tbody>
           {mensalistas.map((m) => (
-            <tr key={m.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
+            <tr
+              key={m.id}
+              className="rounded-lg bg-neutral-800 transition hover:bg-neutral-700"
+            >
               <td className="px-2 py-1 font-semibold">{m.nome}</td>
               <td
                 className={
@@ -33,10 +36,14 @@ export default function TabelaMensalistas({ mensalistas }: Props) {
               </td>
               <td className="px-2 py-1">R$ {m.valor.toFixed(2)}</td>
               <td className="px-2 py-1">
-                {m.ultimoPagamento ? m.ultimoPagamento.split("-").reverse().join("/") : "-"}
+                {m.ultimoPagamento
+                  ? m.ultimoPagamento.split("-").reverse().join("/")
+                  : "-"}
               </td>
               <td className="px-2 py-1">
-                <button className="text-xs text-yellow-400 hover:underline">Editar</button>
+                <button className="text-xs text-yellow-400 hover:underline">
+                  Editar
+                </button>
               </td>
             </tr>
           ))}

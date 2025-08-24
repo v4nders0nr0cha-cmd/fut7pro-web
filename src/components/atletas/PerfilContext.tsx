@@ -35,6 +35,8 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <PerfilContext.Provider value={{ usuario, atualizarPerfil }}>{children}</PerfilContext.Provider>
+    <PerfilContext.Provider value={{ usuario, atualizarPerfil }}>
+      {children}
+    </PerfilContext.Provider>
   );
 }

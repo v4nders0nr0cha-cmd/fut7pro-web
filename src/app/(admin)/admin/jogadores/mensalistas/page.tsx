@@ -54,30 +54,35 @@ function ModalMensalista({
     (j) =>
       !j.mensalista &&
       (j.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        j.apelido.toLowerCase().includes(busca.toLowerCase()))
+        j.apelido.toLowerCase().includes(busca.toLowerCase())),
   );
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
-      <div className="bg-[#1c1e22] rounded-2xl p-6 min-w-[320px] w-full max-w-md shadow-xl flex flex-col gap-5">
-        <h2 className="text-lg text-yellow-400 font-bold">Cadastrar Jogador Mensalista</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+      <div className="flex w-full min-w-[320px] max-w-md flex-col gap-5 rounded-2xl bg-[#1c1e22] p-6 shadow-xl">
+        <h2 className="text-lg font-bold text-yellow-400">
+          Cadastrar Jogador Mensalista
+        </h2>
         <input
           type="text"
           placeholder="Buscar por nome ou apelido..."
-          className="px-3 py-2 rounded bg-[#23272f] text-white border border-gray-700 focus:border-yellow-400 outline-none"
+          className="rounded border border-gray-700 bg-[#23272f] px-3 py-2 text-white outline-none focus:border-yellow-400"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
-        <div className="flex flex-col gap-3 max-h-72 overflow-y-auto">
+        <div className="flex max-h-72 flex-col gap-3 overflow-y-auto">
           {jogadoresDisponiveis.length === 0 && (
-            <div className="text-center text-gray-400 text-sm">
+            <div className="text-center text-sm text-gray-400">
               Nenhum jogador disponível para se tornar mensalista.
             </div>
           )}
           {jogadoresDisponiveis.map((j) => (
-            <div key={j.id} className="flex items-center gap-3 bg-[#23272f] rounded-xl px-2 py-2">
+            <div
+              key={j.id}
+              className="flex items-center gap-3 rounded-xl bg-[#23272f] px-2 py-2"
+            >
               <Image
                 src={j.avatar}
                 alt={`Foto do jogador ${j.nome}`}
@@ -86,12 +91,12 @@ function ModalMensalista({
                 className="rounded-full border-2 border-gray-500"
               />
               <div className="flex-1">
-                <div className="text-white font-semibold">{j.nome}</div>
+                <div className="font-semibold text-white">{j.nome}</div>
                 <div className="text-xs text-cyan-200">{j.apelido}</div>
               </div>
               <button
                 onClick={() => onAdd(j.id)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded shadow text-xs flex items-center gap-1"
+                className="flex items-center gap-1 rounded bg-yellow-500 px-3 py-1 text-xs font-bold text-black shadow hover:bg-yellow-600"
                 title="Adicionar como mensalista"
               >
                 <FaPlus /> Adicionar
@@ -102,7 +107,7 @@ function ModalMensalista({
         <button
           type="button"
           onClick={onClose}
-          className="mt-1 px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 font-semibold text-sm"
+          className="mt-1 rounded-md bg-gray-700 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-600"
         >
           Fechar
         </button>
@@ -118,13 +123,19 @@ export default function MensalistasPage() {
   const mensalistas = jogadores.filter((j) => j.mensalista);
 
   function handleAddMensalista(id: string) {
-    setJogadores((prev) => prev.map((j) => (j.id === id ? { ...j, mensalista: true } : j)));
+    setJogadores((prev) =>
+      prev.map((j) => (j.id === id ? { ...j, mensalista: true } : j)),
+    );
     setModalOpen(false);
   }
 
   function handleRemoverMensalista(id: string) {
-    if (window.confirm("Deseja realmente remover este jogador dos mensalistas?")) {
-      setJogadores((prev) => prev.map((j) => (j.id === id ? { ...j, mensalista: false } : j)));
+    if (
+      window.confirm("Deseja realmente remover este jogador dos mensalistas?")
+    ) {
+      setJogadores((prev) =>
+        prev.map((j) => (j.id === id ? { ...j, mensalista: false } : j)),
+      );
     }
   }
 
@@ -142,34 +153,37 @@ export default function MensalistasPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto">
-        <h1 className="text-3xl text-yellow-400 font-bold mb-6 text-center">
+      <main className="mx-auto max-w-5xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-6 text-center text-3xl font-bold text-yellow-400">
           Jogadores Mensalistas
         </h1>
 
-        <div className="bg-[#23272f] border-l-4 border-yellow-400 rounded-xl p-4 mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-          <FaInfoCircle className="text-yellow-300 text-2xl shrink-0" />
-          <div className="text-sm text-gray-200 leading-relaxed">
-            <b>Recomendação:</b> Mantenha <b>60% a 70% das vagas do racha para mensalistas</b>.
+        <div className="mb-8 flex flex-col items-start gap-4 rounded-xl border-l-4 border-yellow-400 bg-[#23272f] p-4 sm:flex-row sm:items-center">
+          <FaInfoCircle className="shrink-0 text-2xl text-yellow-300" />
+          <div className="text-sm leading-relaxed text-gray-200">
+            <b>Recomendação:</b> Mantenha{" "}
+            <b>60% a 70% das vagas do racha para mensalistas</b>.
             <br />
             Jogadores mensalistas ajudam a manter o caixa fixo, garantindo:
-            <ul className="list-disc pl-5 mt-2 mb-2 text-gray-300">
+            <ul className="mb-2 mt-2 list-disc pl-5 text-gray-300">
               <li>Vaga garantida em dias de racha</li>
               <li>Descontos no pagamento à vista</li>
               <li>Benefícios em lojas e parceiros</li>
             </ul>
-            Mantenha algumas vagas para <b>diaristas</b> para estimular a concorrência e renovação.
+            Mantenha algumas vagas para <b>diaristas</b> para estimular a
+            concorrência e renovação.
             <br />
-            <span className="block mt-2">
-              Importante: <b>Mensalistas também pagam multa em caso de falta</b>.
+            <span className="mt-2 block">
+              Importante: <b>Mensalistas também pagam multa em caso de falta</b>
+              .
             </span>
           </div>
         </div>
 
-        <div className="flex justify-end mb-8">
+        <div className="mb-8 flex justify-end">
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-5 py-2 rounded-xl shadow transition text-sm"
+            className="flex items-center gap-2 rounded-xl bg-yellow-500 px-5 py-2 text-sm font-bold text-black shadow transition hover:bg-yellow-600"
           >
             <FaPlus />
             Cadastrar Mensalista
@@ -178,44 +192,46 @@ export default function MensalistasPage() {
 
         <div className="flex flex-wrap justify-center gap-7">
           {mensalistas.length === 0 ? (
-            <div className="text-gray-400 font-semibold py-12 text-center w-full">
+            <div className="w-full py-12 text-center font-semibold text-gray-400">
               Nenhum mensalista cadastrado.
             </div>
           ) : (
             mensalistas.map((j) => (
               <div
                 key={j.id}
-                className="bg-[#191b1f] rounded-2xl border-2 border-yellow-400 p-6 flex flex-col items-center w-[320px] max-w-full shadow hover:shadow-xl transition relative"
+                className="relative flex w-[320px] max-w-full flex-col items-center rounded-2xl border-2 border-yellow-400 bg-[#191b1f] p-6 shadow transition hover:shadow-xl"
               >
                 <button
-                  className="absolute top-3 right-3 text-red-700 hover:text-red-500 bg-gray-900 rounded-full p-2 transition"
+                  className="absolute right-3 top-3 rounded-full bg-gray-900 p-2 text-red-700 transition hover:text-red-500"
                   onClick={() => handleRemoverMensalista(j.id)}
                   title="Remover mensalista"
                 >
                   <FaTrash />
                 </button>
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-400 mb-2 shadow-lg bg-black">
+                <div className="mb-2 h-24 w-24 overflow-hidden rounded-full border-4 border-yellow-400 bg-black shadow-lg">
                   <Image
                     src={j.avatar}
                     alt={`Foto do jogador ${j.nome}`}
                     width={96}
                     height={96}
-                    className="object-cover w-full h-full"
+                    className="h-full w-full object-cover"
                     priority
                   />
                 </div>
                 <div className="text-lg font-bold text-white">{j.nome}</div>
-                <div className="text-sm font-semibold text-cyan-200 mb-2">{j.apelido}</div>
-                <div className="flex gap-2 mt-2 flex-wrap justify-center">
-                  <span className="px-3 py-0.5 rounded bg-cyan-700 text-white text-xs">
+                <div className="mb-2 text-sm font-semibold text-cyan-200">
+                  {j.apelido}
+                </div>
+                <div className="mt-2 flex flex-wrap justify-center gap-2">
+                  <span className="rounded bg-cyan-700 px-3 py-0.5 text-xs text-white">
                     {j.posicao}
                   </span>
                   <span
-                    className={`px-3 py-0.5 rounded ${j.status === "Ativo" ? "bg-green-600" : j.status === "Inativo" ? "bg-gray-500" : "bg-red-700"} text-white text-xs`}
+                    className={`rounded px-3 py-0.5 ${j.status === "Ativo" ? "bg-green-600" : j.status === "Inativo" ? "bg-gray-500" : "bg-red-700"} text-xs text-white`}
                   >
                     {j.status}
                   </span>
-                  <span className="px-3 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
+                  <span className="rounded bg-yellow-500 px-3 py-0.5 text-xs font-semibold text-black">
                     Mensalista
                   </span>
                 </div>

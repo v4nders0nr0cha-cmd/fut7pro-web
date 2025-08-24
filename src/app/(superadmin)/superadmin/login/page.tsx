@@ -16,19 +16,19 @@ export default function SuperAdminLogin() {
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-zinc-900">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-900">
       <form
         onSubmit={handleLogin}
-        className="bg-zinc-800 p-8 rounded-xl shadow-lg w-full max-w-xs border border-zinc-700"
+        className="w-full max-w-xs rounded-xl border border-zinc-700 bg-zinc-800 p-8 shadow-lg"
         autoComplete="off"
       >
-        <h1 className="text-xl font-bold mb-6 text-center text-white">
+        <h1 className="mb-6 text-center text-xl font-bold text-white">
           Painel SuperAdmin {rachaConfig.nome}
         </h1>
         <input
           type="email"
           placeholder="E-mail"
-          className="block w-full p-2 mb-4 border rounded bg-zinc-700 text-white border-zinc-600"
+          className="mb-4 block w-full rounded border border-zinc-600 bg-zinc-700 p-2 text-white"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -36,14 +36,14 @@ export default function SuperAdminLogin() {
         <input
           type="password"
           placeholder="Senha"
-          className="block w-full p-2 mb-6 border rounded bg-zinc-700 text-white border-zinc-600"
+          className="mb-6 block w-full rounded border border-zinc-600 bg-zinc-700 p-2 text-white"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           required
         />
         <button
           type="submit"
-          className="w-full bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 font-bold transition"
+          className="w-full rounded bg-yellow-400 py-2 font-bold text-black transition hover:bg-yellow-300"
         >
           Entrar
         </button>

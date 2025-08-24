@@ -14,7 +14,8 @@ export const PUBLIC_ENDPOINTS = {
   // Atletas
   ATLETAS: `${API_BASE_URL}/api/atletas`,
   ATLETA_DETALHES: (slug: string) => `${API_BASE_URL}/api/atletas/${slug}`,
-  ATLETA_HISTORICO: (slug: string) => `${API_BASE_URL}/api/atletas/${slug}/historico`,
+  ATLETA_HISTORICO: (slug: string) =>
+    `${API_BASE_URL}/api/atletas/${slug}/historico`,
 
   // Partidas
   PARTIDAS: `${API_BASE_URL}/api/partidas`,
@@ -44,7 +45,8 @@ export const ADMIN_ENDPOINTS = {
 
   // Comunicação
   NOTIFICACOES: `${API_BASE_URL}/api/admin/notificacoes`,
-  NOTIFICACAO_DETALHES: (id: string) => `${API_BASE_URL}/api/admin/notificacoes/${id}`,
+  NOTIFICACAO_DETALHES: (id: string) =>
+    `${API_BASE_URL}/api/admin/notificacoes/${id}`,
   ENQUETES: `${API_BASE_URL}/api/admin/enquetes`,
   ENQUETE_DETALHES: (id: string) => `${API_BASE_URL}/api/admin/enquetes/${id}`,
 } as const;
@@ -84,7 +86,10 @@ export const getApiBaseUrl = () => {
 };
 
 // Função helper para construir URLs completas
-export const buildApiUrl = (endpoint: string, params?: Record<string, string>) => {
+export const buildApiUrl = (
+  endpoint: string,
+  params?: Record<string, string>,
+) => {
   let url = endpoint;
   if (params) {
     const searchParams = new URLSearchParams(params);

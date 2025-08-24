@@ -3,8 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
-import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
+import {
+  MdDashboard,
+  MdPerson,
+  MdSettings,
+  MdPeopleAlt,
+  MdPalette,
+} from "react-icons/md";
+import {
+  FaPiggyBank,
+  FaRegBell,
+  FaTrophy,
+  FaFutbol,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
 import Image from "next/image";
 
 const sitePublicoUrl = "https://fut7pro.com.br/seu-racha";
@@ -17,9 +29,15 @@ const menu = [
     children: [
       { label: "Histórico", href: "/admin/partidas" },
       { label: "Próximos Rachas", href: "/admin/partidas/proximos-rachas" },
-      { label: "Time Campeão do Dia", href: "/admin/partidas/time-campeao-do-dia" },
+      {
+        label: "Time Campeão do Dia",
+        href: "/admin/partidas/time-campeao-do-dia",
+      },
       { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },
-      { label: "Sorteio Inteligente", href: "/admin/partidas/sorteio-inteligente" },
+      {
+        label: "Sorteio Inteligente",
+        href: "/admin/partidas/sorteio-inteligente",
+      },
       { label: "Criar Partidas", href: "/admin/partidas/criar" },
     ],
   },
@@ -28,7 +46,10 @@ const menu = [
     icon: MdPerson,
     children: [
       { label: "Listar/Cadastrar", href: "/admin/jogadores/listar-cadastrar" },
-      { label: "Ranking Assiduidade", href: "/admin/jogadores/ranking-assiduidade" },
+      {
+        label: "Ranking Assiduidade",
+        href: "/admin/jogadores/ranking-assiduidade",
+      },
       { label: "Mensalistas", href: "/admin/jogadores/mensalistas" },
     ],
   },
@@ -37,7 +58,10 @@ const menu = [
     label: "Financeiro",
     icon: FaPiggyBank,
     children: [
-      { label: "Prestação de Contas", href: "/admin/financeiro/prestacao-de-contas" },
+      {
+        label: "Prestação de Contas",
+        href: "/admin/financeiro/prestacao-de-contas",
+      },
       { label: "Mensalistas", href: "/admin/financeiro/mensalistas" },
       { label: "Patrocinadores", href: "/admin/financeiro/patrocinadores" },
       { label: "Planos & Limites", href: "/admin/financeiro/planos-limites" },
@@ -47,7 +71,10 @@ const menu = [
     label: "Personalização",
     icon: MdPalette,
     children: [
-      { label: "Identidade Visual", href: "/admin/personalizacao/identidade-visual" },
+      {
+        label: "Identidade Visual",
+        href: "/admin/personalizacao/identidade-visual",
+      },
       { label: "Visual/Temas", href: "/admin/personalizacao/visual-temas" },
       { label: "Editar Páginas", href: "/admin/personalizacao/editar-paginas" },
       { label: "Rodapé/Footer", href: "/admin/personalizacao/footer" },
@@ -58,10 +85,16 @@ const menu = [
     label: "Administração",
     icon: MdPeopleAlt,
     children: [
-      { label: "Administradores", href: "/admin/administracao/administradores" },
+      {
+        label: "Administradores",
+        href: "/admin/administracao/administradores",
+      },
       { label: "Permissões", href: "/admin/administracao/permissoes" },
       { label: "Logs/Admin", href: "/admin/administracao/logs" },
-      { label: "Transferir Propriedade", href: "/admin/administracao/transferir-propriedade" },
+      {
+        label: "Transferir Propriedade",
+        href: "/admin/administracao/transferir-propriedade",
+      },
     ],
   },
   {
@@ -80,11 +113,23 @@ const menu = [
     label: "Configurações/Extras",
     icon: MdSettings,
     children: [
-      { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
-      { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
-      { label: "Segurança & Privacidade", href: "/admin/configuracoes/seguranca" },
+      {
+        label: "Domínio Próprio",
+        href: "/admin/configuracoes/dominio-proprio",
+      },
+      {
+        label: "Integrações & Automação",
+        href: "/admin/configuracoes/integracoes",
+      },
+      {
+        label: "Segurança & Privacidade",
+        href: "/admin/configuracoes/seguranca",
+      },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
-      { label: "Histórico de Mudanças", href: "/admin/configuracoes/changelog" },
+      {
+        label: "Histórico de Mudanças",
+        href: "/admin/configuracoes/changelog",
+      },
       { label: "Cancelar Conta", href: "/admin/configuracoes/cancelar-conta" },
       { label: "Sair", href: "/logout" },
     ],
@@ -97,7 +142,11 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProps) {
+export default function Sidebar({
+  mobile = false,
+  isOpen,
+  onClose,
+}: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
 
@@ -114,8 +163,12 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
     : "w-72 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden md:flex z-40";
 
   return (
-    <aside className={wrapperClass} role="navigation" aria-label="Menu administrativo">
-      <div className="px-6 flex items-center justify-between mb-8">
+    <aside
+      className={wrapperClass}
+      role="navigation"
+      aria-label="Menu administrativo"
+    >
+      <div className="mb-8 flex items-center justify-between px-6">
         <div className="flex items-center gap-3">
           <Image
             src="/images/logos/logo_fut7pro.png"
@@ -125,11 +178,11 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             className="rounded"
             priority
           />
-          <span className="font-bold text-xl text-yellow-400">Fut7Pro</span>
+          <span className="text-xl font-bold text-yellow-400">Fut7Pro</span>
         </div>
         {mobile && (
           <button onClick={onClose} aria-label="Fechar menu">
-            <span className="text-white text-2xl">×</span>
+            <span className="text-2xl text-white">×</span>
           </button>
         )}
       </div>
@@ -139,14 +192,14 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             item.children ? (
               <li key={item.label}>
                 <button
-                  className={`w-full flex items-center px-3 py-2 text-left rounded-lg hover:bg-[#232323] transition ${open === item.label ? "bg-[#232323]" : ""}`}
+                  className={`flex w-full items-center rounded-lg px-3 py-2 text-left transition hover:bg-[#232323] ${open === item.label ? "bg-[#232323]" : ""}`}
                   onClick={() => handleToggle(item.label)}
                   aria-expanded={open === item.label}
                 >
-                  <item.icon className="text-yellow-400 text-lg mr-3" />
+                  <item.icon className="mr-3 text-lg text-yellow-400" />
                   <span className="flex-1 font-semibold">{item.label}</span>
                   <span
-                    className={`transition-transform transform duration-200 ${open === item.label ? "rotate-90" : ""}`}
+                    className={`transform transition-transform duration-200 ${open === item.label ? "rotate-90" : ""}`}
                   >
                     ▶
                   </span>
@@ -157,7 +210,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                       <li key={child.href}>
                         <Link
                           href={child.href}
-                          className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
+                          className={`block rounded px-2 py-1 text-sm transition hover:bg-[#222] ${pathname.startsWith(child.href) ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
                           onClick={onClose}
                         >
                           {child.label}
@@ -171,18 +224,18 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center px-3 py-2 rounded-lg hover:bg-[#232323] transition ${pathname === item.href ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
+                  className={`flex items-center rounded-lg px-3 py-2 transition hover:bg-[#232323] ${pathname === item.href ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
                   onClick={onClose}
                 >
-                  <item.icon className="text-yellow-400 text-lg mr-3" />
+                  <item.icon className="mr-3 text-lg text-yellow-400" />
                   <span className="font-semibold">{item.label}</span>
                 </Link>
               </li>
-            )
+            ),
           )}
         </ul>
-        <div className="px-4 mt-3">
-          <div className="bg-[#1a1a1a] border border-yellow-500 rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
+        <div className="mt-3 px-4">
+          <div className="flex items-center justify-between rounded-lg border border-yellow-500 bg-[#1a1a1a] p-3 shadow transition hover:bg-[#222]">
             <a
               href={sitePublicoUrl}
               target="_blank"
@@ -191,11 +244,12 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
               title="Abrir site público do seu racha"
             >
               Ver o Site
-              <FaExternalLinkAlt className="text-yellow-400 ml-1" />
+              <FaExternalLinkAlt className="ml-1 text-yellow-400" />
             </a>
           </div>
-          <div className="text-xs text-gray-400 mt-1 pl-1">
-            Atualizações podem levar até 15 minutos para aparecer no site público.
+          <div className="mt-1 pl-1 text-xs text-gray-400">
+            Atualizações podem levar até 15 minutos para aparecer no site
+            público.
           </div>
         </div>
       </nav>

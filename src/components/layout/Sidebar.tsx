@@ -6,9 +6,9 @@ import { rachaConfig } from "@/config/racha.config";
 
 export default function Sidebar() {
   return (
-    <aside className="w-full h-full bg-[#111] text-white px-1 py-3">
+    <aside className="h-full w-full bg-[#111] px-1 py-3 text-white">
       {/* Logo e nome do racha */}
-      <div className="flex flex-col items-center gap-2 mb-6">
+      <div className="mb-6 flex flex-col items-center gap-2">
         <Image
           src={rachaConfig.logo}
           alt={`Logo do ${rachaConfig.nome} - sistema de futebol 7`}
@@ -16,12 +16,16 @@ export default function Sidebar() {
           height={80}
           className="object-contain"
         />
-        <span className="text-xl font-bold text-yellow-400">{rachaConfig.nome}</span>
+        <span className="text-xl font-bold text-yellow-400">
+          {rachaConfig.nome}
+        </span>
       </div>
 
       {/* Artilheiro do Dia */}
-      <div className="mb-6 bg-[#1A1A1A] rounded-xl p-3 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
-        <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">Artilheiro do Dia</p>
+      <div className="mb-6 cursor-pointer rounded-xl bg-[#1A1A1A] p-3 transition-shadow hover:shadow-[0_0_10px_2px_#FFCC00]">
+        <p className="mb-1 text-[10px] font-bold uppercase text-yellow-400">
+          Artilheiro do Dia
+        </p>
         <div className="flex items-center gap-3">
           <Image
             src="/images/jogadores/jogador_padrao_01.jpg"
@@ -31,15 +35,17 @@ export default function Sidebar() {
             className="rounded-md object-cover"
           />
           <div>
-            <p className="font-semibold text-sm">Jogador XPTO</p>
-            <p className="text-yellow-400 text-xs">3 gols</p>
+            <p className="text-sm font-semibold">Jogador XPTO</p>
+            <p className="text-xs text-yellow-400">3 gols</p>
           </div>
         </div>
       </div>
 
       {/* Maestro do Dia */}
-      <div className="mb-6 bg-[#1A1A1A] rounded-xl p-3 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
-        <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">Maestro do Dia</p>
+      <div className="mb-6 cursor-pointer rounded-xl bg-[#1A1A1A] p-3 transition-shadow hover:shadow-[0_0_10px_2px_#FFCC00]">
+        <p className="mb-1 text-[10px] font-bold uppercase text-yellow-400">
+          Maestro do Dia
+        </p>
         <div className="flex items-center gap-3">
           <Image
             src="/images/jogadores/jogador_padrao_03.jpg"
@@ -49,8 +55,8 @@ export default function Sidebar() {
             className="rounded-md object-cover"
           />
           <div>
-            <p className="font-semibold text-sm">Camisa 10</p>
-            <p className="text-yellow-400 text-xs">4 assistências</p>
+            <p className="text-sm font-semibold">Camisa 10</p>
+            <p className="text-xs text-yellow-400">4 assistências</p>
           </div>
         </div>
       </div>
@@ -157,14 +163,16 @@ function SidebarPlayerCard({
   return (
     <Link
       href={href}
-      className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer"
+      className="relative mb-4 block cursor-pointer rounded-xl bg-[#1A1A1A] p-3 transition-shadow hover:shadow-[0_0_10px_2px_#FFCC00]"
     >
       {/* Selo Temporário */}
-      <span className="absolute top-2 right-3 text-xs text-gray-300">🕓 Temporário</span>
+      <span className="absolute right-3 top-2 text-xs text-gray-300">
+        🕓 Temporário
+      </span>
 
       {/* Ícone grande abaixo do selo */}
       {icon && (
-        <div className="absolute top-7 right-3">
+        <div className="absolute right-3 top-7">
           {typeof icon === "string" && icon.startsWith("/") ? (
             <Image
               src={icon}
@@ -179,7 +187,9 @@ function SidebarPlayerCard({
         </div>
       )}
 
-      <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">{title}</p>
+      <p className="mb-1 text-[10px] font-bold uppercase text-yellow-400">
+        {title}
+      </p>
       <div className="flex items-center gap-3">
         <Image
           src={image}
@@ -189,8 +199,8 @@ function SidebarPlayerCard({
           className="rounded-md object-cover"
         />
         <div className="flex flex-col">
-          <p className="font-semibold text-sm">{name}</p>
-          <p className="text-yellow-400 text-xs">{value}</p>
+          <p className="text-sm font-semibold">{name}</p>
+          <p className="text-xs text-yellow-400">{value}</p>
         </div>
       </div>
     </Link>
@@ -208,16 +218,18 @@ function SidebarRankingCard({
   items: { name: string; value: number }[];
 }) {
   return (
-    <div className="bg-[#1A1A1A] rounded-xl p-3 mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <p className="text-[10px] uppercase font-bold text-yellow-400">{title}</p>
+    <div className="mb-4 rounded-xl bg-[#1A1A1A] p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-[10px] font-bold uppercase text-yellow-400">
+          {title}
+        </p>
         <span className="text-[10px] uppercase text-gray-400">{label}</span>
       </div>
       <ul className="space-y-1 text-sm text-white">
         {items.map((item, index) => (
           <li key={index} className="flex justify-between">
             <span>{item.name}</span>
-            <span className="text-yellow-400 font-semibold">{item.value}</span>
+            <span className="font-semibold text-yellow-400">{item.value}</span>
           </li>
         ))}
       </ul>

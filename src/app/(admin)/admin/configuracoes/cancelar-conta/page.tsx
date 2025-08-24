@@ -11,7 +11,11 @@ import {
 } from "react-icons/fa";
 
 // Mock do usuário logado (troque para integração real)
-type Cargo = "Presidente" | "Vice" | "Diretor de Futebol" | "Diretor Financeiro";
+type Cargo =
+  | "Presidente"
+  | "Vice"
+  | "Diretor de Futebol"
+  | "Diretor Financeiro";
 const cargoLogado: Cargo = "Vice"; // Troque para "Presidente" para simular acesso liberado
 
 export default function CancelarContaPage() {
@@ -39,20 +43,23 @@ export default function CancelarContaPage() {
           content="Fut7, cancelar conta, excluir conta, SaaS, admin, segurança"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-2xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-red-400 mb-2 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-2xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold text-red-400 md:text-3xl">
           <FaUserSlash /> Cancelar Conta
         </h1>
 
         {!isPresidente ? (
-          <div className="bg-[#231a1a] border-l-4 border-red-500 rounded-lg p-6 shadow text-red-300 text-center flex flex-col items-center animate-fadeIn">
-            <FaLock className="text-3xl mb-2" />
+          <div className="animate-fadeIn flex flex-col items-center rounded-lg border-l-4 border-red-500 bg-[#231a1a] p-6 text-center text-red-300 shadow">
+            <FaLock className="mb-2 text-3xl" />
             <b>Recurso restrito ao Presidente do racha.</b>
-            <div className="text-gray-400 mt-2">
+            <div className="mt-2 text-gray-400">
               Apenas o Presidente pode cancelar ou excluir o painel Fut7Pro.
               <br />
               Caso deseje pausar ou migrar a conta, solicite ao presidente ou{" "}
-              <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">
+              <a
+                href="/admin/comunicacao/suporte"
+                className="text-yellow-400 underline"
+              >
                 abra um chamado
               </a>
               .
@@ -60,38 +67,49 @@ export default function CancelarContaPage() {
           </div>
         ) : (
           <>
-            <div className="mb-6 p-4 rounded-lg bg-[#231a1a] border-l-4 border-red-500 shadow animate-fadeIn text-sm">
-              <b className="text-red-300 flex items-center gap-2">
+            <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-red-500 bg-[#231a1a] p-4 text-sm shadow">
+              <b className="flex items-center gap-2 text-red-300">
                 <FaExclamationTriangle /> Atenção: esta ação é irreversível!
               </b>
               <br />
-              Ao cancelar sua conta Fut7Pro, todos os dados do racha, jogadores, partidas e
-              histórico financeiro serão permanentemente excluídos.
+              Ao cancelar sua conta Fut7Pro, todos os dados do racha, jogadores,
+              partidas e histórico financeiro serão permanentemente excluídos.
               <br />
-              <span className="text-gray-300 block mt-2">
-                Se desejar apenas suspender temporariamente ou migrar para outro plano,{" "}
-                <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">
+              <span className="mt-2 block text-gray-300">
+                Se desejar apenas suspender temporariamente ou migrar para outro
+                plano,{" "}
+                <a
+                  href="/admin/comunicacao/suporte"
+                  className="text-yellow-400 underline"
+                >
                   fale com nosso suporte
                 </a>
                 .
               </span>
             </div>
 
-            <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700 mb-10">
-              <div className="font-bold text-yellow-300 mb-2">
+            <div className="mb-10 rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow">
+              <div className="mb-2 font-bold text-yellow-300">
                 O que acontece ao cancelar a conta?
               </div>
-              <ul className="list-disc ml-6 text-gray-200 text-sm space-y-1 mb-4">
+              <ul className="mb-4 ml-6 list-disc space-y-1 text-sm text-gray-200">
                 <li>
-                  Todos os dados do racha e jogadores serão apagados e não poderão ser recuperados.
+                  Todos os dados do racha e jogadores serão apagados e não
+                  poderão ser recuperados.
                 </li>
                 <li>O acesso de todos os administradores será bloqueado.</li>
-                <li>Relatórios, histórico de partidas e conquistas serão excluídos.</li>
+                <li>
+                  Relatórios, histórico de partidas e conquistas serão
+                  excluídos.
+                </li>
                 <li>Seu domínio próprio (se houver) será desvinculado.</li>
                 <li>Não haverá estorno de valores já pagos.</li>
               </ul>
               <div className="mb-3">
-                <label htmlFor="motivo" className="block text-yellow-300 font-bold mb-1">
+                <label
+                  htmlFor="motivo"
+                  className="mb-1 block font-bold text-yellow-300"
+                >
                   Motivo do cancelamento (opcional)
                 </label>
                 <textarea
@@ -99,24 +117,28 @@ export default function CancelarContaPage() {
                   value={motivo}
                   onChange={(e) => setMotivo(e.target.value)}
                   placeholder="Nos ajude a entender o motivo (ex: não vou mais jogar, plataforma não atendeu, etc.)"
-                  className="w-full p-3 rounded bg-[#181818] border border-yellow-400 text-gray-100 min-h-[70px] max-h-36 resize-y"
+                  className="max-h-36 min-h-[70px] w-full resize-y rounded border border-yellow-400 bg-[#181818] p-3 text-gray-100"
                   maxLength={280}
                 />
               </div>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="mb-4 flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="confirmar"
                   checked={confirmado}
                   onChange={(e) => setConfirmado(e.target.checked)}
-                  className="form-checkbox h-5 w-5 text-red-500 bg-[#181818] border-red-400"
+                  className="form-checkbox h-5 w-5 border-red-400 bg-[#181818] text-red-500"
                 />
-                <label htmlFor="confirmar" className="text-red-300 font-semibold">
-                  Eu li e entendi que todos os dados serão apagados de forma permanente.
+                <label
+                  htmlFor="confirmar"
+                  className="font-semibold text-red-300"
+                >
+                  Eu li e entendi que todos os dados serão apagados de forma
+                  permanente.
                 </label>
               </div>
               <button
-                className={`bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-2 rounded transition w-fit flex items-center gap-2 disabled:opacity-60`}
+                className={`flex w-fit items-center gap-2 rounded bg-red-500 px-6 py-2 font-bold text-white transition hover:bg-red-600 disabled:opacity-60`}
                 disabled={!confirmado || enviado}
                 onClick={handleCancelar}
                 type="button"
@@ -124,11 +146,15 @@ export default function CancelarContaPage() {
                 <FaUserSlash /> Cancelar Conta
               </button>
               {enviado && (
-                <div className="mt-4 text-green-400 flex items-center gap-2 font-bold">
-                  <FaCheckCircle /> Solicitação enviada! Sua conta será excluída em até 48h úteis.
-                  <span className="text-xs text-gray-300 ml-2">
+                <div className="mt-4 flex items-center gap-2 font-bold text-green-400">
+                  <FaCheckCircle /> Solicitação enviada! Sua conta será excluída
+                  em até 48h úteis.
+                  <span className="ml-2 text-xs text-gray-300">
                     (Em caso de dúvidas,{" "}
-                    <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">
+                    <a
+                      href="/admin/comunicacao/suporte"
+                      className="text-yellow-400 underline"
+                    >
                       abra um chamado
                     </a>
                     .)
@@ -140,27 +166,30 @@ export default function CancelarContaPage() {
         )}
 
         {/* FAQ */}
-        <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700">
-          <div className="font-bold text-yellow-300 mb-2 flex items-center gap-1">
+        <div className="rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow">
+          <div className="mb-2 flex items-center gap-1 font-bold text-yellow-300">
             <FaQuestionCircle className="text-base" />
             Dúvidas Frequentes
           </div>
-          <ul className="text-gray-300 text-sm space-y-2">
+          <ul className="space-y-2 text-sm text-gray-300">
             <li>
-              <b>Posso reativar a conta depois?</b> Não. Após o cancelamento e exclusão, não há como
-              recuperar dados.
+              <b>Posso reativar a conta depois?</b> Não. Após o cancelamento e
+              exclusão, não há como recuperar dados.
             </li>
             <li>
-              <b>Consigo só pausar ou suspender?</b> Sim! Fale com nosso suporte para suspender sem
-              perder o histórico.
+              <b>Consigo só pausar ou suspender?</b> Sim! Fale com nosso suporte
+              para suspender sem perder o histórico.
             </li>
             <li>
-              <b>Fiz o cancelamento por engano, e agora?</b> Tente abrir chamado imediatamente. Se
-              não foi processado ainda, tentaremos reverter.
+              <b>Fiz o cancelamento por engano, e agora?</b> Tente abrir chamado
+              imediatamente. Se não foi processado ainda, tentaremos reverter.
             </li>
             <li>
               <b>Suporte:</b>{" "}
-              <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">
+              <a
+                href="/admin/comunicacao/suporte"
+                className="text-yellow-400 underline"
+              >
                 Abrir chamado
               </a>
             </li>

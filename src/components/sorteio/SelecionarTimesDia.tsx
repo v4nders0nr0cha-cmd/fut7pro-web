@@ -71,11 +71,11 @@ export default function SelecionarTimesDia({
     : "transition-all duration-300";
 
   return (
-    <div className={`bg-[#202020] rounded-xl p-4 mb-6 ${fadeClasses}`}>
-      <h2 className="text-lg font-bold text-yellow-400 mb-2 text-center">
+    <div className={`mb-6 rounded-xl bg-[#202020] p-4 ${fadeClasses}`}>
+      <h2 className="mb-2 text-center text-lg font-bold text-yellow-400">
         Selecione os Times do Dia
       </h2>
-      <div className="flex flex-wrap gap-4 justify-center">
+      <div className="flex flex-wrap justify-center gap-4">
         {timesPrincipais.map((time) => {
           const checked = timesSelecionados.includes(time.id);
           const podeMarcar = checked || !limiteAtingido;
@@ -83,28 +83,34 @@ export default function SelecionarTimesDia({
             <button
               type="button"
               key={time.id}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all font-bold
-                                ${
-                                  checked
-                                    ? "bg-yellow-100 border-yellow-400 text-black shadow-md"
-                                    : !podeMarcar
-                                      ? "bg-zinc-900 border-zinc-800 text-zinc-500 opacity-50 cursor-not-allowed"
-                                      : "bg-zinc-800 border-zinc-700 text-white opacity-80 hover:opacity-100"
-                                }`}
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 font-bold transition-all ${
+                checked
+                  ? "border-yellow-400 bg-yellow-100 text-black shadow-md"
+                  : !podeMarcar
+                    ? "cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-500 opacity-50"
+                    : "border-zinc-700 bg-zinc-800 text-white opacity-80 hover:opacity-100"
+              }`}
               onClick={() => podeMarcar && toggleTime(time.id)}
               disabled={disabled || !podeMarcar}
               tabIndex={disabled ? -1 : 0}
             >
-              <Image src={time.logo} alt={`Logo do ${time.nome}`} width={32} height={32} />
+              <Image
+                src={time.logo}
+                alt={`Logo do ${time.nome}`}
+                width={32}
+                height={32}
+              />
               {time.nome}
-              {checked && <span className="ml-1 text-green-500 text-lg">✔</span>}
+              {checked && (
+                <span className="ml-1 text-lg text-green-500">✔</span>
+              )}
             </button>
           );
         })}
         {timesExtras.length > 0 && (
           <button
             type="button"
-            className="px-3 py-2 rounded-lg border border-yellow-400 bg-zinc-800 text-yellow-400 font-bold"
+            className="rounded-lg border border-yellow-400 bg-zinc-800 px-3 py-2 font-bold text-yellow-400"
             onClick={() => !disabled && setVerMais(true)}
             disabled={disabled}
             tabIndex={disabled ? -1 : 0}
@@ -115,18 +121,20 @@ export default function SelecionarTimesDia({
       </div>
       {/* Modal de times extras */}
       {verMais && !disabled && (
-        <div className="fixed top-0 left-0 w-full h-full z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-[#202020] rounded-xl p-6 shadow-2xl min-w-[320px] max-w-[90vw]">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-yellow-400">Outros Times Cadastrados</h3>
+        <div className="fixed left-0 top-0 z-50 flex h-full w-full items-center justify-center bg-black bg-opacity-60">
+          <div className="min-w-[320px] max-w-[90vw] rounded-xl bg-[#202020] p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-yellow-400">
+                Outros Times Cadastrados
+              </h3>
               <button
-                className="text-yellow-400 text-2xl font-bold hover:text-yellow-500 px-2"
+                className="px-2 text-2xl font-bold text-yellow-400 hover:text-yellow-500"
                 onClick={() => setVerMais(false)}
               >
                 ×
               </button>
             </div>
-            <div className="flex flex-wrap gap-3 mb-2">
+            <div className="mb-2 flex flex-wrap gap-3">
               {timesExtras.map((time) => {
                 const checked = timesSelecionados.includes(time.id);
                 const podeMarcar = checked || !limiteAtingido;
@@ -134,26 +142,32 @@ export default function SelecionarTimesDia({
                   <button
                     type="button"
                     key={time.id}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all font-bold
-                                            ${
-                                              checked
-                                                ? "bg-yellow-100 border-yellow-400 text-black shadow-md"
-                                                : !podeMarcar
-                                                  ? "bg-zinc-900 border-zinc-800 text-zinc-500 opacity-50 cursor-not-allowed"
-                                                  : "bg-zinc-800 border-zinc-700 text-white opacity-80 hover:opacity-100"
-                                            }`}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 font-bold transition-all ${
+                      checked
+                        ? "border-yellow-400 bg-yellow-100 text-black shadow-md"
+                        : !podeMarcar
+                          ? "cursor-not-allowed border-zinc-800 bg-zinc-900 text-zinc-500 opacity-50"
+                          : "border-zinc-700 bg-zinc-800 text-white opacity-80 hover:opacity-100"
+                    }`}
                     onClick={() => podeMarcar && toggleTime(time.id)}
                     disabled={disabled || !podeMarcar}
                   >
-                    <Image src={time.logo} alt={`Logo do ${time.nome}`} width={28} height={28} />
+                    <Image
+                      src={time.logo}
+                      alt={`Logo do ${time.nome}`}
+                      width={28}
+                      height={28}
+                    />
                     {time.nome}
-                    {checked && <span className="ml-1 text-green-500 text-lg">✔</span>}
+                    {checked && (
+                      <span className="ml-1 text-lg text-green-500">✔</span>
+                    )}
                   </button>
                 );
               })}
             </div>
             <button
-              className="block mt-4 mx-auto bg-yellow-400 hover:bg-yellow-500 text-black rounded px-5 py-2 font-bold"
+              className="mx-auto mt-4 block rounded bg-yellow-400 px-5 py-2 font-bold text-black hover:bg-yellow-500"
               onClick={() => setVerMais(false)}
             >
               Fechar
@@ -162,10 +176,7 @@ export default function SelecionarTimesDia({
         </div>
       )}
       <div
-        className={`text-xs mt-2 text-center font-bold transition-all duration-200 
-                    ${avisoShake ? "animate-shake" : ""} 
-                    ${limiteExato ? "text-green-500" : "text-red-400"}
-                `}
+        className={`mt-2 text-center text-xs font-bold transition-all duration-200 ${avisoShake ? "animate-shake" : ""} ${limiteExato ? "text-green-500" : "text-red-400"} `}
       >
         {avisoTimes}
       </div>

@@ -15,7 +15,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export function useAdminLogs(rachaId: string) {
   const { data, error, mutate } = useSWR<AdminLog[]>(
     rachaId ? `/api/admin/rachas/${rachaId}/logs` : null,
-    fetcher
+    fetcher,
   );
 
   async function addLog(log: Partial<AdminLog>) {

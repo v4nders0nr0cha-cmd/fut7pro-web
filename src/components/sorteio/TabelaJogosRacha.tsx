@@ -4,7 +4,11 @@
 import Image from "next/image";
 import type { JogoConfronto } from "@/utils/sorteioUtils";
 
-export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) {
+export default function TabelaJogosRacha({
+  jogos,
+}: {
+  jogos: JogoConfronto[];
+}) {
   if (!jogos || jogos.length === 0) return null;
 
   // Divide pela metade: ida e volta
@@ -13,12 +17,14 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
   const jogosVolta = jogos.slice(metade);
 
   return (
-    <div className="mt-8 flex flex-col md:flex-row gap-8">
+    <div className="mt-8 flex flex-col gap-8 md:flex-row">
       {/* Tabela de Ida */}
       <div className="flex-1">
-        <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-2 text-center">Ida</h3>
+        <h3 className="mb-2 text-center text-lg font-bold text-yellow-400 md:text-xl">
+          Ida
+        </h3>
         <div className="overflow-x-auto rounded-xl">
-          <table className="min-w-full bg-gray-900 text-white rounded-xl shadow">
+          <table className="min-w-full rounded-xl bg-gray-900 text-white shadow">
             <thead>
               <tr className="bg-[#222a38] text-yellow-300">
                 <th className="px-4 py-2">Rodada</th>
@@ -42,7 +48,9 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                         style={{ objectFit: "cover" }}
                       />
                     </span>
-                    <span className="font-bold text-yellow-400 text-base mx-1">x</span>
+                    <span className="mx-1 text-base font-bold text-yellow-400">
+                      x
+                    </span>
                     <span className="flex items-center gap-1">
                       <Image
                         src={jogo.timeB.logo}
@@ -65,9 +73,11 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
 
       {/* Tabela de Volta */}
       <div className="flex-1">
-        <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-2 text-center">Volta</h3>
+        <h3 className="mb-2 text-center text-lg font-bold text-yellow-400 md:text-xl">
+          Volta
+        </h3>
         <div className="overflow-x-auto rounded-xl">
-          <table className="min-w-full bg-gray-900 text-white rounded-xl shadow">
+          <table className="min-w-full rounded-xl bg-gray-900 text-white shadow">
             <thead>
               <tr className="bg-[#222a38] text-yellow-300">
                 <th className="px-4 py-2">Rodada</th>
@@ -91,7 +101,9 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                         style={{ objectFit: "cover" }}
                       />
                     </span>
-                    <span className="font-bold text-yellow-400 text-base mx-1">x</span>
+                    <span className="mx-1 text-base font-bold text-yellow-400">
+                      x
+                    </span>
                     <span className="flex items-center gap-1">
                       <Image
                         src={jogo.timeB.logo}

@@ -8,9 +8,12 @@ interface ManualMonetizacaoProps {
   onDownload?: () => void;
 }
 
-export default function ManualMonetizacao({ showManual, onDownload }: ManualMonetizacaoProps) {
+export default function ManualMonetizacao({
+  showManual,
+  onDownload,
+}: ManualMonetizacaoProps) {
   return (
-    <div className="bg-gradient-to-r from-yellow-500 to-yellow-300 rounded-2xl shadow-xl p-4 flex items-center gap-4 my-6 relative">
+    <div className="relative my-6 flex items-center gap-4 rounded-2xl bg-gradient-to-r from-yellow-500 to-yellow-300 p-4 shadow-xl">
       <div>
         <div className="text-3xl">
           {showManual ? (
@@ -21,17 +24,18 @@ export default function ManualMonetizacao({ showManual, onDownload }: ManualMone
         </div>
       </div>
       <div className="flex-1">
-        <h3 className="font-bold text-zinc-900 text-lg mb-1">
+        <h3 className="mb-1 text-lg font-bold text-zinc-900">
           Manual: Técnicas para Monetizar seu Racha
         </h3>
         {showManual ? (
-          <p className="text-zinc-800 text-sm mb-2">
-            Parabéns! Você já pode baixar o manual exclusivo com dicas e estratégias para faturar
-            mais no seu racha.
+          <p className="mb-2 text-sm text-zinc-800">
+            Parabéns! Você já pode baixar o manual exclusivo com dicas e
+            estratégias para faturar mais no seu racha.
           </p>
         ) : (
-          <p className="text-zinc-700 text-sm mb-2">
-            Este manual será desbloqueado automaticamente após o seu primeiro pagamento confirmado.
+          <p className="mb-2 text-sm text-zinc-700">
+            Este manual será desbloqueado automaticamente após o seu primeiro
+            pagamento confirmado.
           </p>
         )}
       </div>
@@ -39,8 +43,10 @@ export default function ManualMonetizacao({ showManual, onDownload }: ManualMone
         <button
           disabled={!showManual}
           onClick={onDownload}
-          className={`flex items-center gap-2 px-4 py-2 rounded font-semibold transition text-white ${
-            showManual ? "bg-green-600 hover:bg-green-700" : "bg-zinc-400 cursor-not-allowed"
+          className={`flex items-center gap-2 rounded px-4 py-2 font-semibold text-white transition ${
+            showManual
+              ? "bg-green-600 hover:bg-green-700"
+              : "cursor-not-allowed bg-zinc-400"
           }`}
         >
           <FaDownload /> Baixar Manual

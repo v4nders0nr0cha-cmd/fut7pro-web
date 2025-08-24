@@ -6,10 +6,19 @@ import { FaCalendarAlt } from "react-icons/fa";
 // Props de exemplo, ajuste para dados reais do backend depois
 interface CardCicloPlanoProps {
   diasRestantes: number; // Dias restantes do ciclo
-  tipoPlano: "trial" | "gratuito" | "mensal" | "mensal-marketing" | "anual" | "anual-marketing";
+  tipoPlano:
+    | "trial"
+    | "gratuito"
+    | "mensal"
+    | "mensal-marketing"
+    | "anual"
+    | "anual-marketing";
 }
 
-export default function CardCicloPlano({ diasRestantes, tipoPlano }: CardCicloPlanoProps) {
+export default function CardCicloPlano({
+  diasRestantes,
+  tipoPlano,
+}: CardCicloPlanoProps) {
   // Mensagem escalonada (urgência progressiva)
   const mensagem = useMemo(() => {
     if (tipoPlano !== "trial") return null;
@@ -27,24 +36,26 @@ export default function CardCicloPlano({ diasRestantes, tipoPlano }: CardCicloPl
   }, [diasRestantes, tipoPlano]);
 
   return (
-    <div className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[140px] shadow gap-3 justify-between">
+    <div className="flex h-full min-h-[140px] flex-col justify-between gap-3 rounded-xl bg-[#23272F] p-6 shadow">
       <div className="flex items-center gap-4">
-        <div className="bg-[#222f3e] rounded-full p-3">
-          <FaCalendarAlt className="text-[#00d3d4] w-8 h-8" />
+        <div className="rounded-full bg-[#222f3e] p-3">
+          <FaCalendarAlt className="h-8 w-8 text-[#00d3d4]" />
         </div>
         <div>
-          <div className="text-gray-300 text-sm font-medium">Ciclo do plano</div>
+          <div className="text-sm font-medium text-gray-300">
+            Ciclo do plano
+          </div>
           <div className="flex items-end gap-1">
-            <span className="text-white font-extrabold text-3xl">
+            <span className="text-3xl font-extrabold text-white">
               {diasRestantes > 0 ? diasRestantes : 0}
             </span>
-            <span className="text-[#00d3d4] font-semibold text-lg">dias</span>
+            <span className="text-lg font-semibold text-[#00d3d4]">dias</span>
           </div>
           <span className="text-xs text-gray-400">para finalizar o ciclo</span>
         </div>
       </div>
       {mensagem && (
-        <div className="mt-3 text-sm text-white bg-gradient-to-r from-[#1a222f] via-[#1b2432] to-[#181B20] rounded-lg p-2">
+        <div className="mt-3 rounded-lg bg-gradient-to-r from-[#1a222f] via-[#1b2432] to-[#181B20] p-2 text-sm text-white">
           {mensagem}
         </div>
       )}

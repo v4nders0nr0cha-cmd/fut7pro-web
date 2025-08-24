@@ -19,19 +19,21 @@ const colorMap = {
 
 export default function KPI({ title, value, color, tooltip }: KPIProps) {
   return (
-    <div className="bg-zinc-800 rounded-2xl shadow p-4 flex flex-col items-start justify-center relative group">
-      <span className="text-zinc-400 text-xs font-semibold mb-2 flex items-center gap-1">
+    <div className="group relative flex flex-col items-start justify-center rounded-2xl bg-zinc-800 p-4 shadow">
+      <span className="mb-2 flex items-center gap-1 text-xs font-semibold text-zinc-400">
         {title}
         {tooltip && (
           <span className="relative">
             <FaInfoCircle className="ml-1 cursor-pointer text-blue-400" />
-            <span className="hidden group-hover:block absolute z-50 left-6 top-0 w-52 bg-zinc-900 text-xs text-zinc-100 px-3 py-2 rounded shadow-xl border border-zinc-700 animate-fadeIn">
+            <span className="animate-fadeIn absolute left-6 top-0 z-50 hidden w-52 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-100 shadow-xl group-hover:block">
               {tooltip}
             </span>
           </span>
         )}
       </span>
-      <span className={`text-2xl md:text-3xl font-bold ${colorMap[color]}`}>{value}</span>
+      <span className={`text-2xl font-bold md:text-3xl ${colorMap[color]}`}>
+        {value}
+      </span>
     </div>
   );
 }

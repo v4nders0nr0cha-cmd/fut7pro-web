@@ -6,11 +6,11 @@ export default function ThemeSwitcher() {
   const { themeKey, setThemeKey } = useTheme();
 
   return (
-    <div className="flex gap-2 my-4">
+    <div className="my-4 flex gap-2">
       {Object.entries(themes).map(([key, th]) => (
         <button
           key={key}
-          className={`px-3 py-1 rounded border transition-all font-bold`}
+          className={`rounded border px-3 py-1 font-bold transition-all`}
           style={{
             background: themeKey === key ? th.primary : "#222",
             color: themeKey === key ? "#000" : "#fff",

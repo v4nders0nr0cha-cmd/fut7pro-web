@@ -82,46 +82,49 @@ export default function RelatoriosPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 bg-fundo min-h-screen">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <main className="min-h-screen bg-fundo px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
-              <FaChartLine className="text-cyan-400 text-3xl" />
-              <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
+              <FaChartLine className="text-3xl text-cyan-400" />
+              <h1 className="text-2xl font-bold text-yellow-400 md:text-3xl">
                 Relatórios de Engajamento
               </h1>
             </div>
             <div className="flex gap-2">
               <button
                 onClick={baixarImagemRelatorio}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-sm shadow transition"
+                className="flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-cyan-700"
               >
                 <FaCamera /> Baixar Relatório
               </button>
               <button
                 onClick={() => compartilharRelatorio(periodo)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm shadow transition"
+                className="flex items-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black shadow transition hover:bg-yellow-500"
               >
                 <FaShareAlt /> Compartilhar
               </button>
             </div>
           </div>
 
-          <div ref={relatorioRef} className="bg-[#181b20] p-4 rounded-2xl shadow-lg">
-            <p className="text-gray-300 mb-8">
-              Acompanhe as principais métricas do seu racha: acessos, engajamento, tempo médio e
-              movimentações.
+          <div
+            ref={relatorioRef}
+            className="rounded-2xl bg-[#181b20] p-4 shadow-lg"
+          >
+            <p className="mb-8 text-gray-300">
+              Acompanhe as principais métricas do seu racha: acessos,
+              engajamento, tempo médio e movimentações.
             </p>
 
-            <div className="flex flex-wrap gap-2 mb-8">
+            <div className="mb-8 flex flex-wrap gap-2">
               {PERIODOS.map((p) => (
                 <button
                   key={p.value}
                   onClick={() => setPeriodo(p.value)}
-                  className={`px-4 py-2 rounded-full font-semibold text-sm border ${
+                  className={`rounded-full border px-4 py-2 text-sm font-semibold ${
                     periodo === p.value
-                      ? "bg-cyan-500 text-white border-cyan-600"
-                      : "bg-[#181b20] text-gray-300 border-[#23272f] hover:bg-cyan-900"
+                      ? "border-cyan-600 bg-cyan-500 text-white"
+                      : "border-[#23272f] bg-[#181b20] text-gray-300 hover:bg-cyan-900"
                   } transition`}
                 >
                   {p.label}
@@ -129,86 +132,117 @@ export default function RelatoriosPage() {
               ))}
             </div>
 
-            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 mb-8">
-              <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-                <FaEye className="text-cyan-300 text-2xl mb-1" />
-                <div className="text-2xl font-bold text-white">{metrics.acessos}</div>
-                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Acessos</div>
+            <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
+              <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+                <FaEye className="mb-1 text-2xl text-cyan-300" />
+                <div className="text-2xl font-bold text-white">
+                  {metrics.acessos}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
+                  Acessos
+                </div>
               </div>
-              <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-                <FaUsers className="text-yellow-400 text-2xl mb-1" />
-                <div className="text-2xl font-bold text-white">{metrics.jogadores}</div>
-                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+              <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+                <FaUsers className="mb-1 text-2xl text-yellow-400" />
+                <div className="text-2xl font-bold text-white">
+                  {metrics.jogadores}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
                   Jogadores únicos
                 </div>
               </div>
-              <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-                <FaUserCheck className="text-green-400 text-2xl mb-1" />
-                <div className="text-2xl font-bold text-white">{metrics.engajamento}</div>
-                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+              <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+                <FaUserCheck className="mb-1 text-2xl text-green-400" />
+                <div className="text-2xl font-bold text-white">
+                  {metrics.engajamento}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
                   Engajamentos
                 </div>
               </div>
-              <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-                <FaClock className="text-cyan-200 text-2xl mb-1" />
-                <div className="text-2xl font-bold text-white">{metrics.tempo}</div>
-                <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+              <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+                <FaClock className="mb-1 text-2xl text-cyan-200" />
+                <div className="text-2xl font-bold text-white">
+                  {metrics.tempo}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
                   Tempo médio
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#23272F] rounded-xl shadow p-6 mb-10">
-              <div className="flex items-center mb-4">
-                <FaChartLine className="text-cyan-400 mr-2" />
-                <span className="text-white font-bold">
-                  Evolução do Engajamento ({PERIODOS.find((p) => p.value === periodo)?.label})
+            <div className="mb-10 rounded-xl bg-[#23272F] p-6 shadow">
+              <div className="mb-4 flex items-center">
+                <FaChartLine className="mr-2 text-cyan-400" />
+                <span className="font-bold text-white">
+                  Evolução do Engajamento (
+                  {PERIODOS.find((p) => p.value === periodo)?.label})
                 </span>
               </div>
-              <div className="w-full h-48 flex items-center justify-center text-gray-500 bg-[#181B20] rounded-lg">
-                <span className="text-lg font-semibold opacity-60">[GRÁFICO DE ENG. AQUI]</span>
+              <div className="flex h-48 w-full items-center justify-center rounded-lg bg-[#181B20] text-gray-500">
+                <span className="text-lg font-semibold opacity-60">
+                  [GRÁFICO DE ENG. AQUI]
+                </span>
               </div>
             </div>
 
-            <div className="bg-[#23272F] rounded-xl shadow p-6">
-              <div className="flex items-center mb-4">
-                <FaArrowRight className="text-yellow-400 mr-2" />
-                <span className="text-white font-bold">Movimentações Recentes</span>
+            <div className="rounded-xl bg-[#23272F] p-6 shadow">
+              <div className="mb-4 flex items-center">
+                <FaArrowRight className="mr-2 text-yellow-400" />
+                <span className="font-bold text-white">
+                  Movimentações Recentes
+                </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-gray-400 text-left border-b border-[#23272F]">
-                      <th className="py-2 px-3">Data</th>
-                      <th className="py-2 px-3">Evento</th>
-                      <th className="py-2 px-3">Jogador</th>
-                      <th className="py-2 px-3">Detalhes</th>
+                    <tr className="border-b border-[#23272F] text-left text-gray-400">
+                      <th className="px-3 py-2">Data</th>
+                      <th className="px-3 py-2">Evento</th>
+                      <th className="px-3 py-2">Jogador</th>
+                      <th className="px-3 py-2">Detalhes</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-[#181B20]">
-                      <td className="py-2 px-3 text-gray-300">06/07/2025</td>
-                      <td className="py-2 px-3 text-cyan-400 font-semibold">Acesso ao painel</td>
-                      <td className="py-2 px-3 text-white">Matheus Silva</td>
-                      <td className="py-2 px-3 text-gray-400">Mobile - 7m31s</td>
+                      <td className="px-3 py-2 text-gray-300">06/07/2025</td>
+                      <td className="px-3 py-2 font-semibold text-cyan-400">
+                        Acesso ao painel
+                      </td>
+                      <td className="px-3 py-2 text-white">Matheus Silva</td>
+                      <td className="px-3 py-2 text-gray-400">
+                        Mobile - 7m31s
+                      </td>
                     </tr>
                     <tr className="border-b border-[#181B20]">
-                      <td className="py-2 px-3 text-gray-300">06/07/2025</td>
-                      <td className="py-2 px-3 text-yellow-400 font-semibold">Ranking acessado</td>
-                      <td className="py-2 px-3 text-white">Lucas Rocha</td>
-                      <td className="py-2 px-3 text-gray-400">Desktop - 3m45s</td>
+                      <td className="px-3 py-2 text-gray-300">06/07/2025</td>
+                      <td className="px-3 py-2 font-semibold text-yellow-400">
+                        Ranking acessado
+                      </td>
+                      <td className="px-3 py-2 text-white">Lucas Rocha</td>
+                      <td className="px-3 py-2 text-gray-400">
+                        Desktop - 3m45s
+                      </td>
                     </tr>
                     <tr className="border-b border-[#181B20]">
-                      <td className="py-2 px-3 text-gray-300">05/07/2025</td>
-                      <td className="py-2 px-3 text-green-400 font-semibold">Perfil visualizado</td>
-                      <td className="py-2 px-3 text-white">Pedro Alves</td>
-                      <td className="py-2 px-3 text-gray-400">Mobile - 1m58s</td>
+                      <td className="px-3 py-2 text-gray-300">05/07/2025</td>
+                      <td className="px-3 py-2 font-semibold text-green-400">
+                        Perfil visualizado
+                      </td>
+                      <td className="px-3 py-2 text-white">Pedro Alves</td>
+                      <td className="px-3 py-2 text-gray-400">
+                        Mobile - 1m58s
+                      </td>
                     </tr>
                     <tr>
-                      <td className="py-2 px-3 text-gray-300">05/07/2025</td>
-                      <td className="py-2 px-3 text-cyan-400 font-semibold">Acesso ao painel</td>
-                      <td className="py-2 px-3 text-white">Carlos Freitas</td>
-                      <td className="py-2 px-3 text-gray-400">Desktop - 6m12s</td>
+                      <td className="px-3 py-2 text-gray-300">05/07/2025</td>
+                      <td className="px-3 py-2 font-semibold text-cyan-400">
+                        Acesso ao painel
+                      </td>
+                      <td className="px-3 py-2 text-white">Carlos Freitas</td>
+                      <td className="px-3 py-2 text-gray-400">
+                        Desktop - 6m12s
+                      </td>
                     </tr>
                   </tbody>
                 </table>

@@ -8,11 +8,17 @@ type Props = {
   onCancel?: () => void;
 };
 
-export default function PatrocinadorForm({ onSave, initialData = {}, onCancel }: Props) {
+export default function PatrocinadorForm({
+  onSave,
+  initialData = {},
+  onCancel,
+}: Props) {
   const [form, setForm] = useState<Partial<Patrocinador>>(initialData);
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
   ) {
     const { name, value } = e.target;
     setForm((prev: Partial<Patrocinador>) => ({ ...prev, [name]: value }));
@@ -27,9 +33,9 @@ export default function PatrocinadorForm({ onSave, initialData = {}, onCancel }:
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 p-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl p-4 shadow-md"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">
+      <h2 className="text-center text-xl font-bold text-yellow-400">
         Adicionar/Editar Patrocinador
       </h2>
       <input
@@ -88,7 +94,11 @@ export default function PatrocinadorForm({ onSave, initialData = {}, onCancel }:
         Salvar
       </button>
       {onCancel && (
-        <button type="button" className="btn-secondary w-full" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={onCancel}
+        >
           Cancelar
         </button>
       )}

@@ -15,33 +15,33 @@ export const metadata = {
 export default function TimesDoDiaPage() {
   // WhatsApp share link dinâmico pelo slug do racha
   const texto = encodeURIComponent(
-    "Confira os Times do Dia do nosso racha! Veja a escalação completa no Fut7Pro: "
+    "Confira os Times do Dia do nosso racha! Veja a escalação completa no Fut7Pro: ",
   );
   const url = encodeURIComponent(
-    `https://fut7pro.com.br/${rachaConfig.slug}/partidas/times-do-dia`
+    `https://fut7pro.com.br/${rachaConfig.slug}/partidas/times-do-dia`,
   );
   const whatsappLink = `https://wa.me/?text=${texto}${url}`;
 
   return (
-    <main className="min-h-screen bg-fundo pt-6 px-2 pb-10">
+    <main className="min-h-screen bg-fundo px-2 pb-10 pt-6">
       <h1 className="sr-only">Times do Dia - Sistema Fut7Pro</h1>
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4 text-center">
+      <div className="mx-auto max-w-6xl">
+        <h2 className="mb-4 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
           Times do Dia
         </h2>
-        <p className="text-center text-neutral-300 mb-8">
-          Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
-          jogos estão logo abaixo.
+        <p className="mb-8 text-center text-neutral-300">
+          Veja como ficaram as escalações dos times do racha de hoje. Os
+          confrontos e a ordem dos jogos estão logo abaixo.
         </p>
         <TimesDoDiaClient />
 
         {/* Botão compartilhar só no final */}
-        <div className="flex justify-center mt-10">
+        <div className="mt-10 flex justify-center">
           <a
             href={whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-2.5 rounded-lg shadow transition text-base"
+            className="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-base font-bold text-white shadow transition hover:bg-green-700"
             aria-label="Compartilhar Times do Dia no WhatsApp"
           >
             <FaWhatsapp size={22} />

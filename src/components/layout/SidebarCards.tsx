@@ -11,14 +11,28 @@ type PlayerCardProps = {
   href?: string; // torna o card interativo se fornecido
 };
 
-export function PlayerCard({ title, name, value, imageUrl, href }: PlayerCardProps) {
+export function PlayerCard({
+  title,
+  name,
+  value,
+  imageUrl,
+  href,
+}: PlayerCardProps) {
   const content = (
-    <div className="bg-[#1a1a1a] rounded-xl p-3 flex gap-3 items-center mb-4 shadow-md transition-all duration-300 hover:bg-[#2a2a2a] hover:shadow-[0_0_20px_#FFD700] cursor-pointer">
-      <Image src={imageUrl} alt={name} width={70} height={70} className="rounded-md object-cover" />
+    <div className="mb-4 flex cursor-pointer items-center gap-3 rounded-xl bg-[#1a1a1a] p-3 shadow-md transition-all duration-300 hover:bg-[#2a2a2a] hover:shadow-[0_0_20px_#FFD700]">
+      <Image
+        src={imageUrl}
+        alt={name}
+        width={70}
+        height={70}
+        className="rounded-md object-cover"
+      />
       <div>
-        <p className="text-[11px] text-[#FFCC00] font-bold leading-none uppercase">{title}</p>
-        <p className="text-sm font-semibold text-white leading-tight">{name}</p>
-        <p className="text-xs text-yellow-400 font-medium">{value}</p>
+        <p className="text-[11px] font-bold uppercase leading-none text-[#FFCC00]">
+          {title}
+        </p>
+        <p className="text-sm font-semibold leading-tight text-white">{name}</p>
+        <p className="text-xs font-medium text-yellow-400">{value}</p>
       </div>
     </div>
   );
@@ -35,13 +49,17 @@ type RankingCardProps = {
 export function RankingCard({ title, list, href }: RankingCardProps) {
   return (
     <Link href={href}>
-      <div className="bg-[#1a1a1a] rounded-xl p-3 mb-4 cursor-pointer hover:bg-[#2a2a2a] transition-all duration-300 shadow-md hover:shadow-[0_0_20px_#FFD700]">
-        <p className="text-[11px] text-[#FFCC00] font-bold mb-2 uppercase">{title}</p>
-        <ol className="text-sm text-white space-y-1">
+      <div className="mb-4 cursor-pointer rounded-xl bg-[#1a1a1a] p-3 shadow-md transition-all duration-300 hover:bg-[#2a2a2a] hover:shadow-[0_0_20px_#FFD700]">
+        <p className="mb-2 text-[11px] font-bold uppercase text-[#FFCC00]">
+          {title}
+        </p>
+        <ol className="space-y-1 text-sm text-white">
           {list.map((item, index) => (
             <li key={index}>
               {index + 1}. {item.name}{" "}
-              <span className="text-yellow-400 font-semibold">— {item.value}</span>
+              <span className="font-semibold text-yellow-400">
+                — {item.value}
+              </span>
             </li>
           ))}
         </ol>

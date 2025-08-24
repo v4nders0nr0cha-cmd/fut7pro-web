@@ -14,29 +14,34 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-sm border-separate border-spacing-y-2">
+      <table className="min-w-full border-separate border-spacing-y-2 text-sm">
         <thead>
           <tr className="text-xs text-gray-400">
-            <th className="text-left px-2 py-2">Data</th>
-            <th className="text-left px-2 py-2">Tipo</th>
-            <th className="text-left px-2 py-2">Categoria</th>
-            <th className="text-left px-2 py-2">Descrição</th>
-            <th className="text-left px-2 py-2">Valor</th>
-            <th className="text-left px-2 py-2">Comprovante</th>
-            <th className="text-left px-2 py-2"></th>
+            <th className="px-2 py-2 text-left">Data</th>
+            <th className="px-2 py-2 text-left">Tipo</th>
+            <th className="px-2 py-2 text-left">Categoria</th>
+            <th className="px-2 py-2 text-left">Descrição</th>
+            <th className="px-2 py-2 text-left">Valor</th>
+            <th className="px-2 py-2 text-left">Comprovante</th>
+            <th className="px-2 py-2 text-left"></th>
           </tr>
         </thead>
         <tbody>
           {exibir.length === 0 && (
             <tr>
-              <td colSpan={7} className="text-center text-gray-400 py-4">
+              <td colSpan={7} className="py-4 text-center text-gray-400">
                 Nenhum lançamento neste período.
               </td>
             </tr>
           )}
           {exibir.map((l) => (
-            <tr key={l.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
-              <td className="px-2 py-1 font-mono">{l.data.split("-").reverse().join("/")}</td>
+            <tr
+              key={l.id}
+              className="rounded-lg bg-neutral-800 transition hover:bg-neutral-700"
+            >
+              <td className="px-2 py-1 font-mono">
+                {l.data.split("-").reverse().join("/")}
+              </td>
               <td
                 className={`px-2 py-1 ${l.tipo === "Receita" ? "text-green-400" : "text-red-400"}`}
               >
@@ -54,7 +59,7 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                   <img
                     src={l.comprovante}
                     alt="Comprovante financeiro do racha Fut7Pro"
-                    className="w-8 h-8 rounded shadow object-contain"
+                    className="h-8 w-8 rounded object-contain shadow"
                   />
                 ) : (
                   <span className="text-gray-400">-</span>
@@ -74,9 +79,9 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
         </tbody>
       </table>
       {lancamentos.length > limit && (
-        <div className="w-full flex justify-center mt-2">
+        <div className="mt-2 flex w-full justify-center">
           <button
-            className="text-sm px-4 py-1 rounded bg-neutral-700 hover:bg-yellow-500 hover:text-black font-bold transition"
+            className="rounded bg-neutral-700 px-4 py-1 text-sm font-bold transition hover:bg-yellow-500 hover:text-black"
             onClick={() => setShowAll(!showAll)}
             type="button"
           >

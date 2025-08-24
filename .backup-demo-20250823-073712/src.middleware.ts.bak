@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
+
+// Configuração de rate limiting
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minuto
+const RATE_LIMIT_MAX_REQUESTS = 100; // 100 requests por minuto
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+// Função para verificar rate limit
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userRateLimit = rateLimitMap.get(ip);
+
+  if (!userRateLimit || now > userRateLimit.resetTime) {
+    // Reset ou criar novo rate limit
+    rateLimitMap.set(ip, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW,
+    });
+    return true;
+  }
+
+  if (userRateLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+
+  userRateLimit.count++;
+  return true;
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const ip = request.ip || request.headers.get("x-forwarded-for") || "unknown";
+
+  // Verificar rate limit
+  if (!checkRateLimit(ip)) {
+    return new NextResponse("Rate limit exceeded", { status: 429 });
+  }
+
+  // **CORREÇÃO: Não interceptar rotas demo para evitar loop**
+  if (pathname.startsWith('/demo')) {
+    return NextResponse.next();
+  }
+
+  // Verificar se está em modo demo
+  const demoCookie = request.cookies.get('demo');
+  const isDemoMode = demoCookie?.value === '1';
+
+  // Se está em modo demo, redirecionar para /demo + rota atual
+  if (isDemoMode && !pathname.startsWith('/_next') && !pathname.startsWith('/api')) {
+    const newUrl = new URL(`/demo${pathname}`, request.url);
+    return NextResponse.redirect(newUrl);
+  }
+
+  // **CORREÇÃO: Se não está em modo demo e tenta acessar rota demo, redirecionar para raiz**
+  if (pathname.startsWith('/demo') && !isDemoMode) {
+    const newUrl = new URL('/', request.url);
+    return NextResponse.redirect(newUrl);
+  }
+
+  // Adicionar headers de segurança
+  const response = NextResponse.next();
+  
+  // Adicionar header de tenant para APIs
+  if (pathname.startsWith('/api/')) {
+    if (isDemoMode) {
+      response.headers.set('x-tenant-slug', 'demo');
+    }
+  }
+
+  // Headers de segurança
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
+};

@@ -18,9 +18,15 @@ export const detalheRachaFinanceiro = async (rachaId: string) => {
 
 // Métricas gerais
 export const listarMetricsFinanceiro = async () => {
-  const receitaTotal = await prisma.financeiro.aggregate({ _sum: { valor: true } });
-  const ativos = await prisma.racha.count({ where: { status: { not: "INADIMPLENTE" } } });
-  const inadimplentes = await prisma.racha.count({ where: { status: "INADIMPLENTE" } });
+  const receitaTotal = await prisma.financeiro.aggregate({
+    _sum: { valor: true },
+  });
+  const ativos = await prisma.racha.count({
+    where: { status: { not: "INADIMPLENTE" } },
+  });
+  const inadimplentes = await prisma.racha.count({
+    where: { status: "INADIMPLENTE" },
+  });
   // Implemente MRR, ARR, churn conforme sua lógica de negócio
   return {
     receitaTotal: receitaTotal._sum.valor ?? 0,
@@ -57,7 +63,10 @@ export const novoFinanceiro = async (rachaId: string, data: FinanceiroData) => {
 };
 
 // Atualizar status de inadimplência do racha
-export const atualizarStatusRacha = async (rachaId: string, inadimplente: boolean) => {
+export const atualizarStatusRacha = async (
+  rachaId: string,
+  inadimplente: boolean,
+) => {
   return prisma.racha.update({
     where: { id: rachaId },
     data: { status: inadimplente ? "INADIMPLENTE" : "ATIVO" },
@@ -73,6 +82,9 @@ interface FiltrosFinanceiro {
 }
 
 // Exportação mock (implemente de acordo com sua necessidade)
-export const exportarFinanceiro = async (_formato: string, _filtros: FiltrosFinanceiro) => {
+export const exportarFinanceiro = async (
+  _formato: string,
+  _filtros: FiltrosFinanceiro,
+) => {
   return [];
 };

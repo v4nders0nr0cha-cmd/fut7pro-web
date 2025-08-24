@@ -7,7 +7,8 @@ export function useTema() {
     corPrimaria: rachaConfig?.cores?.primária || "#FFCC00",
     corSecundaria: rachaConfig?.cores?.secundária || "#1A1A1A",
     frases: rachaConfig?.frases || {
-      principal: "Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.",
+      principal:
+        "Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.",
       secundaria: "Fut7Pro – O jogo começa aqui.",
     },
     endereco:

@@ -32,15 +32,15 @@ const PLANOS = {
         "Painel administrativo completo",
         "Feed de notificações e conquistas",
       ],
-      limites: ["1 racha por assinatura"],
+      limites: ["1 racha por assinatura (pode ter múltiplos horários e dias)"],
       botao: "Assinar Mensal Essencial",
     },
     {
       nome: "Mensal + Marketing",
-      preco: "R$ 220/mês",
+      preco: "R$ 280/mês",
       badge: "Plano com Marketing",
       descricao:
-        "Para rachas que querem crescer, atrair patrocinadores e se destacar nas redes sociais.",
+        "Feito para rachas sem equipe de design que precisam de site e Instagram configurados do zero, com identidade visual e chamadas prontas.",
       recursos: [
         "Tudo do Mensal Essencial",
         "Designer dedicado para criação de kit patrocinador personalizado",
@@ -48,7 +48,10 @@ const PLANOS = {
         "Seu site pronto entregue com layout, logo, textos, imagens e vídeos",
         "Suporte prioritário via WhatsApp",
       ],
-      limites: ["1 racha por assinatura"],
+      limites: [
+        "1 racha por assinatura (pode ter múltiplos horários e dias)",
+        "⚠️ Marketing só começa após o primeiro pagamento (após os 30 dias de teste)",
+      ],
       botao: "Assinar Mensal + Marketing",
     },
     {
@@ -95,15 +98,15 @@ const PLANOS = {
         "Até 4 administradores (presidente, vice-presidente, diretor de futebol e diretor financeiro)",
         "Suporte básico por e-mail",
       ],
-      limites: ["1 racha por assinatura"],
+      limites: ["1 racha por assinatura (pode ter múltiplos horários e dias)"],
       botao: "Assinar Anual Essencial",
     },
     {
       nome: "Anual + Marketing",
-      preco: "R$ 2.200/ano",
+      preco: "R$ 2.800/ano",
       badge: "Plano mais completo",
       descricao:
-        "Plano premium para grupos que querem profissionalizar, atrair patrocinadores e crescer rápido.",
+        "Feito para rachas sem equipe de design que precisam de site e Instagram configurados do zero, com identidade visual e chamadas prontas.",
       recursos: [
         "Tudo do Anual Essencial",
         "Designer dedicado para criação de kit patrocinador personalizado",
@@ -112,7 +115,10 @@ const PLANOS = {
         "Bônus: 1 hora de consultoria com especialista em monetização de rachas",
         "Suporte prioritário via WhatsApp",
       ],
-      limites: ["1 racha por assinatura"],
+      limites: [
+        "1 racha por assinatura (pode ter múltiplos horários e dias)",
+        "⚠️ Marketing só começa após o primeiro pagamento (após os 30 dias de teste)",
+      ],
       botao: "Assinar Anual + Marketing",
     },
     {
@@ -153,51 +159,57 @@ export default function PlanosLimitesPage() {
           content="Compare os planos Fut7Pro e escolha o melhor para seu racha. Controle, estatísticas, gestão financeira, patrocinadores, marketing, painel completo e suporte especializado."
         />
       </Head>
-      <main className="max-w-7xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">Planos & Preços</h1>
+      <main className="mx-auto max-w-7xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-4 text-3xl font-bold text-yellow-400 md:text-4xl">
+          Planos & Preços
+        </h1>
         <div className="mb-6 flex justify-center">
-          <div className="bg-green-600/90 text-white font-semibold rounded-xl px-6 py-3 shadow-lg text-lg text-center w-full md:w-auto">
+          <div className="w-full rounded-xl bg-green-600/90 px-6 py-3 text-center text-lg font-semibold text-white shadow-lg md:w-auto">
             Teste grátis por 30 dias:{" "}
-            <span className="font-bold">acesse todas as funções sem compromisso</span> e descubra
-            porque o Fut7Pro é o sistema mais completo para rachas e futebol entre amigos!
+            <span className="font-bold">
+              acesse todas as funções sem compromisso
+            </span>{" "}
+            e descubra porque o Fut7Pro é o sistema mais completo para rachas e
+            futebol entre amigos!
           </div>
         </div>
         <div className="mb-6 flex justify-center">
-          <p className="max-w-md mx-auto text-sm text-neutral-300 text-center leading-relaxed">
+          <p className="mx-auto max-w-md text-center text-sm leading-relaxed text-neutral-300">
             Gerencie os planos e limites do Fut7Pro.
           </p>
         </div>
-        <div className="flex justify-center mb-10">
+        <div className="mb-10 flex justify-center">
           <button
-            className={`px-6 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+            className={`rounded-l-xl border px-6 py-2 font-bold transition ${planoAtivo === "mensal" ? "border-yellow-400 bg-yellow-400 text-black" : "border-neutral-700 bg-neutral-900 text-white hover:bg-yellow-400 hover:text-black"}`}
             onClick={() => setPlanoAtivo("mensal")}
           >
             Pagamento Mensal
           </button>
           <button
-            className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+            className={`rounded-r-xl border-b border-r border-t px-6 py-2 font-bold transition ${planoAtivo === "anual" ? "border-yellow-400 bg-yellow-400 text-black" : "border-neutral-700 bg-neutral-900 text-white hover:bg-yellow-400 hover:text-black"}`}
             onClick={() => setPlanoAtivo("anual")}
           >
-            Pagamento Anual <span className="ml-1 text-xs">(2 meses grátis)</span>
+            Pagamento Anual{" "}
+            <span className="ml-1 text-xs">(2 meses grátis)</span>
           </button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {PLANOS[planoAtivo].map((plano, idx) => (
             <div
               key={plano.nome}
-              className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${plano.destaque ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
+              className={`relative flex flex-col rounded-2xl border-2 p-8 shadow-xl transition ${plano.destaque ? "border-yellow-400 bg-yellow-400 text-black" : "border-neutral-800 bg-neutral-900 text-white hover:border-yellow-300"}`}
             >
               {/* Badge do plano */}
               {plano.badge && (
                 <span
-                  className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
+                  className={`absolute right-4 top-4 rounded-xl px-3 py-1 text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
                 >
                   {plano.badge}
                 </span>
               )}
               {/* Nome e Preço */}
-              <div className="text-2xl font-extrabold mb-1">{plano.nome}</div>
-              <div className="text-xl font-bold mb-2">{plano.preco}</div>
+              <div className="mb-1 text-2xl font-extrabold">{plano.nome}</div>
+              <div className="mb-2 text-xl font-bold">{plano.preco}</div>
               {/* Descrição curta */}
               <div
                 className={`mb-4 text-base ${plano.destaque ? "text-black/80" : "text-neutral-300"}`}
@@ -222,25 +234,25 @@ export default function PlanosLimitesPage() {
                 {plano.limites.map((limite, i) => (
                   <span
                     key={i}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                    className={`rounded-lg px-3 py-1 text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
                   >
                     {limite}
                   </span>
                 ))}
                 {/* Badge verde específico */}
                 {plano.nome === "Enterprise White Label" ? (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
+                  <span className="rounded-lg bg-green-400 px-3 py-1 text-xs font-semibold text-black">
                     Admins ilimitados
                   </span>
                 ) : (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
+                  <span className="rounded-lg bg-green-400 px-3 py-1 text-xs font-semibold text-black">
                     4 administradores
                   </span>
                 )}
               </div>
               {/* Botão de ação */}
               <button
-                className={`mt-auto px-6 py-2 rounded-xl font-bold ${plano.destaque ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black" : "bg-yellow-400 text-black hover:bg-yellow-500"} transition`}
+                className={`mt-auto rounded-xl px-6 py-2 font-bold ${plano.destaque ? "border-2 border-black bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black" : "bg-yellow-400 text-black hover:bg-yellow-500"} transition`}
               >
                 {plano.botao}
               </button>

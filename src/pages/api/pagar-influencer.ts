@@ -3,12 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Caminho correto conforme seu projeto
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   if (req.method !== "POST") return res.status(405).end();
 
   const session = await getServerSession(req, res, authOptions);
 
-  if (!session?.user?.id) return res.status(401).json({ error: "Not authorized" });
+  if (!session?.user?.id)
+    return res.status(401).json({ error: "Not authorized" });
 
   const { influencerId, valor, observacao } = req.body;
   if (!influencerId || !valor)

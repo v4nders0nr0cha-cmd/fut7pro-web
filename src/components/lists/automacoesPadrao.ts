@@ -95,7 +95,8 @@ export const automacoesPadrao: AutomacaoNotificacao[] = [
   {
     id: "11",
     nome: "Alerta de login suspeito",
-    descricao: "Aviso automático em caso de login em dispositivo não reconhecido.",
+    descricao:
+      "Aviso automático em caso de login em dispositivo não reconhecido.",
     gatilho: "Login suspeito",
     canal: ["E-mail"],
     obrigatoria: true,

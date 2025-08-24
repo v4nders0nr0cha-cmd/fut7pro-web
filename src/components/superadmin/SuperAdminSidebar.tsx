@@ -27,28 +27,30 @@ const menus: MenuItem[] = [
 export default function SuperAdminSidebar() {
   const pathname = usePathname() ?? "";
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col py-8 px-4 min-h-screen">
-      <div className="text-2xl font-extrabold mb-10 text-yellow-400 text-center drop-shadow">
+    <aside className="flex min-h-screen w-64 flex-col border-r border-gray-800 bg-gray-900 px-4 py-8">
+      <div className="mb-10 text-center text-2xl font-extrabold text-yellow-400 drop-shadow">
         Fut7Pro
         <br />
-        <span className="text-xl font-bold text-yellow-400">{rachaConfig.nome}</span>
+        <span className="text-xl font-bold text-yellow-400">
+          {rachaConfig.nome}
+        </span>
       </div>
-      <nav className="flex-1 flex flex-col gap-2">
+      <nav className="flex flex-1 flex-col gap-2">
         {menus.map((m) => (
           <Link
             key={m.href}
             href={m.href}
-            className={`rounded-lg px-3 py-2 transition-colors font-semibold ${
+            className={`rounded-lg px-3 py-2 font-semibold transition-colors ${
               pathname.startsWith(m.href)
                 ? "bg-yellow-500 text-gray-900 shadow"
-                : "hover:bg-gray-800 text-gray-200"
+                : "text-gray-200 hover:bg-gray-800"
             }`}
           >
             {m.label}
           </Link>
         ))}
       </nav>
-      <div className="mt-8 text-xs text-gray-400 text-center opacity-80">
+      <div className="mt-8 text-center text-xs text-gray-400 opacity-80">
         © 2025 {rachaConfig.nome} SaaS
       </div>
     </aside>

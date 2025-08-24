@@ -3,7 +3,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { slug } = req.query;
   if (!slug || typeof slug !== "string")
     return res.status(400).json({ error: "Slug é obrigatório" });
@@ -19,7 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // PATCH - Atualizar campos do racha (inclusive financeiroVisivel)
   if (req.method === "PATCH" || req.method === "PUT") {
-    const { nome, descricao, logoUrl, tema, regras, ativo, financeiroVisivel } = req.body;
+    const { nome, descricao, logoUrl, tema, regras, ativo, financeiroVisivel } =
+      req.body;
     const updateData: Record<string, unknown> = {};
     if (nome !== undefined) updateData.nome = nome;
     if (descricao !== undefined) updateData.descricao = descricao;
@@ -27,7 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (tema !== undefined) updateData.tema = tema;
     if (regras !== undefined) updateData.regras = regras;
     if (ativo !== undefined) updateData.ativo = ativo;
-    if (financeiroVisivel !== undefined) updateData.financeiroVisivel = financeiroVisivel;
+    if (financeiroVisivel !== undefined)
+      updateData.financeiroVisivel = financeiroVisivel;
 
     const updated = await prisma.racha.update({
       where: { slug: slug },

@@ -5,16 +5,16 @@ import Image from "next/image";
 
 export default function TimesDoDiaCard() {
   return (
-    <div className="bg-secundario rounded-2xl p-6 shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all">
-      <h2 className="text-xl font-bold mb-2 text-yellow-400">Times do Dia</h2>
-      <p className="mb-4 text-textoSuave text-sm">
+    <div className="bg-secundario rounded-2xl p-6 shadow-md transition-all hover:shadow-[0_0_12px_2px_#FFCC00]">
+      <h2 className="mb-2 text-xl font-bold text-yellow-400">Times do Dia</h2>
+      <p className="text-textoSuave mb-4 text-sm">
         Confira os times sorteados para o próximo jogo!
       </p>
       <div className="flex flex-col gap-6 md:flex-row md:gap-8">
         {timesDoDiaMock.map((time, idx) => (
           <div
             key={idx}
-            className="flex-1 flex flex-col items-center bg-[#181818] rounded-xl p-4 shadow hover:scale-105 transition"
+            className="flex flex-1 flex-col items-center rounded-xl bg-[#181818] p-4 shadow transition hover:scale-105"
           >
             <Image
               src={time.logo}
@@ -23,12 +23,12 @@ export default function TimesDoDiaCard() {
               height={56}
               className="mb-2 rounded-lg"
             />
-            <span className="font-bold text-lg mb-2">{time.nome}</span>
-            <div className="flex flex-wrap gap-1 justify-center">
+            <span className="mb-2 text-lg font-bold">{time.nome}</span>
+            <div className="flex flex-wrap justify-center gap-1">
               {time.jogadores.map((jogador, i) => (
                 <div
                   key={i}
-                  className="flex flex-col items-center mx-2 my-1"
+                  className="mx-2 my-1 flex flex-col items-center"
                   title={jogador.posicao}
                 >
                   <Image
@@ -38,8 +38,8 @@ export default function TimesDoDiaCard() {
                     height={32}
                     className="rounded-full"
                   />
-                  <span className="text-xs mt-1">{jogador.nome}</span>
-                  <span className="text-[10px] text-yellow-400 font-bold uppercase">
+                  <span className="mt-1 text-xs">{jogador.nome}</span>
+                  <span className="text-[10px] font-bold uppercase text-yellow-400">
                     {jogador.posicao}
                   </span>
                 </div>

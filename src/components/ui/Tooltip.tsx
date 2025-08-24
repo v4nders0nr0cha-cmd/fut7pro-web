@@ -19,7 +19,7 @@ export function Tooltip({ content, children }: TooltipProps) {
         {children}
       </span>
       {show && (
-        <span className="absolute z-30 left-1/2 -translate-x-1/2 mt-2 px-3 py-1 bg-zinc-900 text-xs text-white rounded shadow-xl whitespace-nowrap">
+        <span className="absolute left-1/2 z-30 mt-2 -translate-x-1/2 whitespace-nowrap rounded bg-zinc-900 px-3 py-1 text-xs text-white shadow-xl">
           {content}
         </span>
       )}

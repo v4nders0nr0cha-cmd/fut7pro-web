@@ -2,7 +2,14 @@
 
 import Head from "next/head";
 import { useState } from "react";
-import { FaSearch, FaBook, FaVideo, FaFire, FaRegQuestionCircle, FaYoutube } from "react-icons/fa";
+import {
+  FaSearch,
+  FaBook,
+  FaVideo,
+  FaFire,
+  FaRegQuestionCircle,
+  FaYoutube,
+} from "react-icons/fa";
 
 type ArtigoAjuda = {
   id: number;
@@ -299,7 +306,7 @@ export default function CentralAjudaPage() {
   const artigosFiltrados = artigosMock.filter(
     (a) =>
       a.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-      a.conteudo.toLowerCase().includes(busca.toLowerCase())
+      a.conteudo.toLowerCase().includes(busca.toLowerCase()),
   );
 
   const artigosDestaqueFiltrados = artigosFiltrados.filter((a) => a.destaque);
@@ -314,38 +321,45 @@ export default function CentralAjudaPage() {
           name="description"
           content="Manual do administrador, vídeos rápidos, tutoriais e dicas para gestão no Fut7Pro."
         />
-        <meta name="keywords" content="Fut7, racha, ajuda, tutorial, SaaS, admin, manual" />
+        <meta
+          name="keywords"
+          content="Fut7, racha, ajuda, tutorial, SaaS, admin, manual"
+        />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-6xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           <FaBook /> Central de Ajuda
         </h1>
         {/* Bloco Youtube */}
-        <div className="mb-5 p-4 rounded-lg bg-[#232323] border-l-4 border-red-500 shadow flex flex-col md:flex-row md:items-center md:justify-between gap-2 animate-fadeIn">
-          <div className="flex items-center gap-2 mb-2 md:mb-0">
-            <FaYoutube className="text-red-500 text-2xl" />
-            <span className="font-bold text-red-500 text-lg">Nosso Canal no YouTube</span>
+        <div className="animate-fadeIn mb-5 flex flex-col gap-2 rounded-lg border-l-4 border-red-500 bg-[#232323] p-4 shadow md:flex-row md:items-center md:justify-between">
+          <div className="mb-2 flex items-center gap-2 md:mb-0">
+            <FaYoutube className="text-2xl text-red-500" />
+            <span className="text-lg font-bold text-red-500">
+              Nosso Canal no YouTube
+            </span>
           </div>
-          <div className="flex-1 text-gray-300 md:ml-4 text-sm">
-            Assista a tutoriais em vídeo, dicas, novidades e exemplos de uso do Fut7Pro direto no
-            nosso canal.
+          <div className="flex-1 text-sm text-gray-300 md:ml-4">
+            Assista a tutoriais em vídeo, dicas, novidades e exemplos de uso do
+            Fut7Pro direto no nosso canal.
           </div>
           <a
             href="https://www.youtube.com/@Fut7ProSite/videos"
             target="_blank"
             rel="noopener noreferrer"
-            className="bg-red-600 hover:bg-red-700 text-white font-bold px-4 py-2 rounded flex items-center gap-2 transition mt-3 md:mt-0 shadow"
+            className="mt-3 flex items-center gap-2 rounded bg-red-600 px-4 py-2 font-bold text-white shadow transition hover:bg-red-700 md:mt-0"
             title="Acessar canal Fut7Pro no Youtube"
           >
             <FaYoutube className="text-xl" /> Ir para o YouTube
           </a>
         </div>
 
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow animate-fadeIn text-sm">
-          <b className="text-yellow-300">Bem-vindo à Central de Ajuda do Fut7Pro!</b>
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
+          <b className="text-yellow-300">
+            Bem-vindo à Central de Ajuda do Fut7Pro!
+          </b>
           <br />
-          Encontre aqui manuais, vídeos rápidos, tutoriais e dicas práticas para facilitar sua
-          gestão e maximizar os resultados do seu racha.
+          Encontre aqui manuais, vídeos rápidos, tutoriais e dicas práticas para
+          facilitar sua gestão e maximizar os resultados do seu racha.
           <br />
           <span className="text-gray-300">
             Busque um tema, assista a um vídeo ou explore as dúvidas frequentes.
@@ -354,15 +368,17 @@ export default function CentralAjudaPage() {
 
         {/* Vídeos rápidos (mock) */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <FaVideo className="text-yellow-400" />
-            <span className="text-lg font-bold text-yellow-400">Vídeos Rápidos</span>
+            <span className="text-lg font-bold text-yellow-400">
+              Vídeos Rápidos
+            </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {videosMock.map((video) => (
               <div
                 key={video.id}
-                className="bg-[#232323] rounded-lg p-3 shadow flex flex-col items-center"
+                className="flex flex-col items-center rounded-lg bg-[#232323] p-3 shadow"
               >
                 <iframe
                   width="100%"
@@ -371,20 +387,22 @@ export default function CentralAjudaPage() {
                   title={video.titulo}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  className="rounded mb-2"
+                  className="mb-2 rounded"
                 ></iframe>
-                <span className="text-gray-100 font-semibold text-center">{video.titulo}</span>
+                <span className="text-center font-semibold text-gray-100">
+                  {video.titulo}
+                </span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Busca - agora só para tópicos em destaque e artigos */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center gap-3">
+        <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-center">
           <label htmlFor="busca" className="sr-only">
             Buscar em tópicos de ajuda
           </label>
-          <div className="flex flex-1 items-center rounded bg-[#181818] border border-yellow-400">
+          <div className="flex flex-1 items-center rounded border border-yellow-400 bg-[#181818]">
             <FaSearch className="mx-3 text-yellow-400" />
             <input
               id="busca"
@@ -392,7 +410,7 @@ export default function CentralAjudaPage() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Digite uma dúvida, palavra-chave ou função…"
-              className="bg-transparent border-none outline-none py-2 pr-3 w-full text-gray-200"
+              className="w-full border-none bg-transparent py-2 pr-3 text-gray-200 outline-none"
               autoComplete="off"
             />
           </div>
@@ -400,21 +418,25 @@ export default function CentralAjudaPage() {
 
         {/* Tópicos em destaque / dúvidas frequentes */}
         <div className="mb-10">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <FaFire className="text-yellow-400" />
-            <span className="text-lg font-bold text-yellow-400">Tópicos em Destaque</span>
+            <span className="text-lg font-bold text-yellow-400">
+              Tópicos em Destaque
+            </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
             {artigosDestaqueFiltrados.length === 0 && (
-              <div className="text-gray-400 col-span-3">Nenhum tópico em destaque encontrado.</div>
+              <div className="col-span-3 text-gray-400">
+                Nenhum tópico em destaque encontrado.
+              </div>
             )}
             {artigosDestaqueFiltrados.map((a) => (
               <div
                 key={a.id}
-                className="bg-[#232323] rounded-lg p-4 shadow border-l-4 border-yellow-400 animate-fadeIn"
+                className="animate-fadeIn rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 shadow"
               >
-                <div className="font-bold text-yellow-300 mb-1">{a.titulo}</div>
-                <div className="text-gray-200 text-sm mb-2">{a.conteudo}</div>
+                <div className="mb-1 font-bold text-yellow-300">{a.titulo}</div>
+                <div className="mb-2 text-sm text-gray-200">{a.conteudo}</div>
                 <div className="text-xs text-gray-400">{a.categoria}</div>
               </div>
             ))}
@@ -423,24 +445,30 @@ export default function CentralAjudaPage() {
 
         {/* Lista de artigos por categoria + busca */}
         <div className="mb-12">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <FaRegQuestionCircle className="text-yellow-400" />
-            <span className="text-lg font-bold text-yellow-400">Artigos e Tutoriais</span>
+            <span className="text-lg font-bold text-yellow-400">
+              Artigos e Tutoriais
+            </span>
           </div>
           {categorias.map((cat) => (
             <div key={cat} className="mb-5">
-              <div className="font-bold text-gray-200 mb-2 mt-4">{cat}</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mb-2 mt-4 font-bold text-gray-200">{cat}</div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {artigosPorCategoriaFiltrados(cat).length === 0 && (
-                  <div className="text-gray-400 text-sm italic">Nenhum artigo nesta categoria.</div>
+                  <div className="text-sm italic text-gray-400">
+                    Nenhum artigo nesta categoria.
+                  </div>
                 )}
                 {artigosPorCategoriaFiltrados(cat).map((a) => (
                   <div
                     key={a.id}
-                    className="bg-[#181818] rounded-lg p-4 shadow border-l-4 border-yellow-400 animate-fadeIn"
+                    className="animate-fadeIn rounded-lg border-l-4 border-yellow-400 bg-[#181818] p-4 shadow"
                   >
-                    <div className="font-bold text-yellow-300 mb-1">{a.titulo}</div>
-                    <div className="text-gray-200 text-sm">{a.conteudo}</div>
+                    <div className="mb-1 font-bold text-yellow-300">
+                      {a.titulo}
+                    </div>
+                    <div className="text-sm text-gray-200">{a.conteudo}</div>
                   </div>
                 ))}
               </div>

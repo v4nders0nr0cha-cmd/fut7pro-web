@@ -31,7 +31,10 @@ type GrupoPartidas = {
   [key: string]: { idx: number; tipo: "ida" | "volta"; confronto: Confronto }[];
 };
 
-function agruparPorDataELocal(confrontos: Confronto[], times: any[]): GrupoPartidas {
+function agruparPorDataELocal(
+  confrontos: Confronto[],
+  times: any[],
+): GrupoPartidas {
   const grupos: GrupoPartidas = {};
   confrontos.forEach((c, idx) => {
     (["ida", "volta"] as const).forEach((tipo) => {
@@ -50,20 +53,29 @@ export default function AdminHistoricoPartidasPage() {
   const [selected, setSelected] = useState<Date | undefined>(undefined);
   const [calOpen, setCalOpen] = useState(false);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const [confrontos, setConfrontos] = useState<Confronto[]>(mockConfrontos.map((c) => ({ ...c })));
-  const [editPartida, setEditPartida] = useState<null | { idx: number; tipo: "ida" | "volta" }>(
-    null
+  const [confrontos, setConfrontos] = useState<Confronto[]>(
+    mockConfrontos.map((c) => ({ ...c })),
   );
+  const [editPartida, setEditPartida] = useState<null | {
+    idx: number;
+    tipo: "ida" | "volta";
+  }>(null);
 
   const diasComPartida: Date[] = Array.from(
-    new Set(confrontos.flatMap((c) => [(c.ida as any).data, (c.volta as any).data]).filter(Boolean))
+    new Set(
+      confrontos
+        .flatMap((c) => [(c.ida as any).data, (c.volta as any).data])
+        .filter(Boolean),
+    ),
   ).map((data) => new Date(data + "T00:00:00"));
 
   const confrontosFiltrados = selected
     ? confrontos.filter(
         (c) =>
-          new Date((c.ida as any).data).toDateString() === selected.toDateString() ||
-          new Date((c.volta as any).data).toDateString() === selected.toDateString()
+          new Date((c.ida as any).data).toDateString() ===
+            selected.toDateString() ||
+          new Date((c.volta as any).data).toDateString() ===
+            selected.toDateString(),
       )
     : confrontos;
 
@@ -73,7 +85,7 @@ export default function AdminHistoricoPartidasPage() {
     idx: number,
     tipo: "ida" | "volta",
     placar: { a: number; b: number },
-    eventos: any[]
+    eventos: any[],
   ) {
     setConfrontos((prev) =>
       prev.map((c, i) =>
@@ -81,9 +93,12 @@ export default function AdminHistoricoPartidasPage() {
           ? c
           : {
               ...c,
-              [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: { placar, eventos },
-            }
-      )
+              [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: {
+                placar,
+                eventos,
+              },
+            },
+      ),
     );
     setEditPartida(null);
   }
@@ -97,8 +112,8 @@ export default function AdminHistoricoPartidasPage() {
             : {
                 ...c,
                 [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: undefined,
-              }
-        )
+              },
+        ),
       );
     }
   }
@@ -117,19 +132,20 @@ export default function AdminHistoricoPartidasPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto text-white">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
+      <main className="mx-auto max-w-5xl px-4 pb-24 pt-20 text-white md:pb-8 md:pt-6">
+        <h1 className="mb-2 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
           Histórico de Partidas (Admin)
         </h1>
-        <p className="text-base md:text-lg mb-6 text-textoSuave text-center">
-          Corrija eventuais erros de placar, gols ou assistências de qualquer partida do histórico.
-          Edição rápida e fácil, igual ao painel de destaques do dia.
+        <p className="text-textoSuave mb-6 text-center text-base md:text-lg">
+          Corrija eventuais erros de placar, gols ou assistências de qualquer
+          partida do histórico. Edição rápida e fácil, igual ao painel de
+          destaques do dia.
         </p>
 
-        <div className="flex justify-end mb-6">
+        <div className="mb-6 flex justify-end">
           <button
             ref={btnRef}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:bg-yellow-500 transition shadow"
+            className="flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 font-semibold text-black shadow transition hover:bg-yellow-500"
             onClick={() => setCalOpen(!calOpen)}
             aria-label="Abrir calendário"
             type="button"
@@ -145,7 +161,12 @@ export default function AdminHistoricoPartidasPage() {
                 stroke="#222"
                 strokeWidth={1.5}
               />
-              <path d="M8 3v4M16 3v4" stroke="#FFD600" strokeWidth={2} strokeLinecap="round" />
+              <path
+                d="M8 3v4M16 3v4"
+                stroke="#FFD600"
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
               <rect x={7} y={9} width={2} height={2} rx={1} fill="#FFD600" />
               <rect x={11} y={9} width={2} height={2} rx={1} fill="#FFD600" />
               <rect x={15} y={9} width={2} height={2} rx={1} fill="#FFD600" />
@@ -168,16 +189,21 @@ export default function AdminHistoricoPartidasPage() {
 
         <div className="flex flex-col gap-10">
           {Object.keys(grupos).length === 0 && (
-            <p className="text-textoSuave text-center">Nenhuma partida encontrada.</p>
+            <p className="text-textoSuave text-center">
+              Nenhuma partida encontrada.
+            </p>
           )}
           {Object.entries(grupos)
             .sort((a, b) => b[0].localeCompare(a[0]))
             .map(([chave, partidasDia]) => {
               const [data, local] = chave.split("||");
               return (
-                <div key={chave} className="bg-[#171717] rounded-xl shadow p-4 w-full">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-3">
-                    <span className="font-bold text-yellow-400 text-lg">
+                <div
+                  key={chave}
+                  className="w-full rounded-xl bg-[#171717] p-4 shadow"
+                >
+                  <div className="mb-3 flex flex-col md:flex-row md:items-center md:justify-between">
+                    <span className="text-lg font-bold text-yellow-400">
                       {data?.replace(/-/g, "/")}
                     </span>
                     <span className="text-textoSuave text-sm">{local}</span>
@@ -185,13 +211,13 @@ export default function AdminHistoricoPartidasPage() {
                   <div className="w-full overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-yellow-400 border-b border-yellow-700">
-                          <th className="py-2 px-2 text-left">#</th>
-                          <th className="py-2 px-2 text-left">Time A</th>
-                          <th className="py-2 px-2 text-center">Placar</th>
-                          <th className="py-2 px-2 text-left">Time B</th>
-                          <th className="py-2 px-2 text-center">Status</th>
-                          <th className="py-2 px-2 text-center">Ação</th>
+                        <tr className="border-b border-yellow-700 text-yellow-400">
+                          <th className="px-2 py-2 text-left">#</th>
+                          <th className="px-2 py-2 text-left">Time A</th>
+                          <th className="px-2 py-2 text-center">Placar</th>
+                          <th className="px-2 py-2 text-left">Time B</th>
+                          <th className="px-2 py-2 text-center">Status</th>
+                          <th className="px-2 py-2 text-center">Ação</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -199,7 +225,9 @@ export default function AdminHistoricoPartidasPage() {
                           const { tipo, idx: i, confronto } = partida;
                           const p = confronto[tipo];
                           const resultado =
-                            tipo === "ida" ? confronto.resultadoIda : confronto.resultadoVolta;
+                            tipo === "ida"
+                              ? confronto.resultadoIda
+                              : confronto.resultadoVolta;
 
                           const timeA = mockTimes[p.a]?.nome ?? "-";
                           const timeB = mockTimes[p.b]?.nome ?? "-";
@@ -209,10 +237,10 @@ export default function AdminHistoricoPartidasPage() {
                           return (
                             <tr
                               key={i + tipo}
-                              className="border-b border-[#232323] hover:bg-[#232323] transition"
+                              className="border-b border-[#232323] transition hover:bg-[#232323]"
                             >
-                              <td className="py-2 px-2 font-bold">{idx + 1}</td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
+                              <td className="px-2 py-2 font-bold">{idx + 1}</td>
+                              <td className="flex items-center gap-2 px-2 py-2 font-semibold">
                                 <span>{timeA}</span>
                                 <Image
                                   src={logoA}
@@ -222,12 +250,14 @@ export default function AdminHistoricoPartidasPage() {
                                   className="rounded"
                                 />
                               </td>
-                              <td className="py-2 px-2 font-extrabold text-xl text-center">
+                              <td className="px-2 py-2 text-center text-xl font-extrabold">
                                 {resultado?.placar?.a ?? 0}{" "}
-                                <span className="text-yellow-400 font-bold">x</span>{" "}
+                                <span className="font-bold text-yellow-400">
+                                  x
+                                </span>{" "}
                                 {resultado?.placar?.b ?? 0}
                               </td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
+                              <td className="flex items-center gap-2 px-2 py-2 font-semibold">
                                 <span>{timeB}</span>
                                 <Image
                                   src={logoB}
@@ -237,22 +267,26 @@ export default function AdminHistoricoPartidasPage() {
                                   className="rounded"
                                 />
                               </td>
-                              <td className="py-2 px-2 text-center">
+                              <td className="px-2 py-2 text-center">
                                 <span
-                                  className={`px-3 py-1 rounded-xl text-xs ${resultado?.placar ? "bg-green-700" : "bg-yellow-700"} text-white`}
+                                  className={`rounded-xl px-3 py-1 text-xs ${resultado?.placar ? "bg-green-700" : "bg-yellow-700"} text-white`}
                                 >
-                                  {resultado?.placar ? "Concluído" : "Em andamento"}
+                                  {resultado?.placar
+                                    ? "Concluído"
+                                    : "Em andamento"}
                                 </span>
                               </td>
-                              <td className="py-2 px-2 text-center flex gap-2 justify-center">
+                              <td className="flex justify-center gap-2 px-2 py-2 text-center">
                                 <button
-                                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => setEditPartida({ idx: i, tipo })}
+                                  className="rounded-lg bg-cyan-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-cyan-700"
+                                  onClick={() =>
+                                    setEditPartida({ idx: i, tipo })
+                                  }
                                 >
                                   Editar
                                 </button>
                                 <button
-                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                                  className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-red-700"
                                   onClick={() => handleExcluir(i, tipo)}
                                 >
                                   Excluir

@@ -6,7 +6,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export function useRachaAdmins(rachaId: string) {
   const { data, error, mutate } = useSWR<Admin[]>(
     rachaId ? `/api/admin/rachas/${rachaId}/admins` : null,
-    fetcher
+    fetcher,
   );
 
   async function addAdmin(admin: Partial<Admin>) {

@@ -19,11 +19,11 @@ export default function SuperAdminAutomacoesPage() {
           content="automação, notificações automáticas, SaaS, Fut7Pro, cobrança, trial, onboarding"
         />
       </Head>
-      <div className="px-4 py-6 md:px-10 max-w-5xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">
+      <div className="mx-auto max-w-5xl px-4 py-6 md:px-10">
+        <h1 className="mb-6 text-2xl font-bold text-yellow-400 md:text-3xl">
           Automação de Notificações
         </h1>
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-zinc-900">
+        <div className="overflow-x-auto rounded-xl bg-zinc-900 shadow-lg">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-zinc-800">
               <tr>
@@ -38,21 +38,25 @@ export default function SuperAdminAutomacoesPage() {
             <tbody>
               {automacoesPadrao.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-6 text-zinc-500">
+                  <td colSpan={6} className="py-6 text-center text-zinc-500">
                     Nenhuma automação configurada.
                   </td>
                 </tr>
               ) : (
                 automacoesPadrao.map((a: AutomacaoNotificacao) => (
                   <tr key={a.id} className="hover:bg-zinc-800">
-                    <td className="px-4 py-3 font-bold text-zinc-50">{a.nome}</td>
-                    <td className="px-2 py-3 max-w-xs text-zinc-300">{a.descricao}</td>
+                    <td className="px-4 py-3 font-bold text-zinc-50">
+                      {a.nome}
+                    </td>
+                    <td className="max-w-xs px-2 py-3 text-zinc-300">
+                      {a.descricao}
+                    </td>
                     <td className="px-2 py-3">{a.gatilho}</td>
                     <td className="px-2 py-3">
                       {a.canal.map((c) => (
                         <span
                           key={c}
-                          className="inline-block bg-zinc-700 rounded-full px-2 py-1 text-xs text-yellow-200 mr-1"
+                          className="mr-1 inline-block rounded-full bg-zinc-700 px-2 py-1 text-xs text-yellow-200"
                         >
                           {c}
                         </span>
@@ -60,16 +64,18 @@ export default function SuperAdminAutomacoesPage() {
                     </td>
                     <td className="px-2 py-3">
                       {a.obrigatoria ? (
-                        <span className="text-green-400 font-bold">Sim</span>
+                        <span className="font-bold text-green-400">Sim</span>
                       ) : (
-                        <span className="text-yellow-300 font-bold">Opcional</span>
+                        <span className="font-bold text-yellow-300">
+                          Opcional
+                        </span>
                       )}
                     </td>
                     <td className="px-2 py-3">
                       {a.status === "ativo" ? (
-                        <span className="text-green-400 font-bold">Ativo</span>
+                        <span className="font-bold text-green-400">Ativo</span>
                       ) : (
-                        <span className="text-red-400 font-bold">Inativo</span>
+                        <span className="font-bold text-red-400">Inativo</span>
                       )}
                     </td>
                   </tr>
@@ -78,9 +84,10 @@ export default function SuperAdminAutomacoesPage() {
             </tbody>
           </table>
         </div>
-        <div className="mt-8 text-zinc-400 text-xs">
-          Todas as notificações automáticas obrigatórias são controladas pelo Painel SuperAdmin.
-          Personalização futura estará disponível apenas para notificações opcionais.
+        <div className="mt-8 text-xs text-zinc-400">
+          Todas as notificações automáticas obrigatórias são controladas pelo
+          Painel SuperAdmin. Personalização futura estará disponível apenas para
+          notificações opcionais.
         </div>
       </div>
     </>

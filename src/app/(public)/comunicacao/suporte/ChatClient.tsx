@@ -15,7 +15,12 @@ const mockMessages = [
     texto: "Olá! Tenho uma dúvida sobre o próximo racha.",
     data: "2025-07-17 10:03",
   },
-  { id: 3, autor: "admin", texto: "Pode mandar sua dúvida!", data: "2025-07-17 10:05" },
+  {
+    id: 3,
+    autor: "admin",
+    texto: "Pode mandar sua dúvida!",
+    data: "2025-07-17 10:05",
+  },
 ];
 
 export default function ChatClient() {
@@ -32,7 +37,10 @@ export default function ChatClient() {
         id: msgs.length + 1,
         autor: "user",
         texto: valor,
-        data: new Date().toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+        data: new Date().toLocaleString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       },
     ]);
     setValor("");
@@ -43,41 +51,43 @@ export default function ChatClient() {
   }, [messages]);
 
   return (
-    <div className="flex flex-col gap-2 bg-zinc-900 rounded-lg p-4 border-l-4 border-yellow-400 min-h-[360px] max-h-[440px] overflow-y-auto mb-4">
+    <div className="mb-4 flex max-h-[440px] min-h-[360px] flex-col gap-2 overflow-y-auto rounded-lg border-l-4 border-yellow-400 bg-zinc-900 p-4">
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`flex flex-col mb-2 ${msg.autor === "admin" ? "items-start" : "items-end"}`}
+          className={`mb-2 flex flex-col ${msg.autor === "admin" ? "items-start" : "items-end"}`}
         >
           <span
-            className={`text-xs mb-1 ${msg.autor === "admin" ? "text-yellow-400" : "text-zinc-300"}`}
+            className={`mb-1 text-xs ${msg.autor === "admin" ? "text-yellow-400" : "text-zinc-300"}`}
           >
             {msg.autor === "admin" ? "Admin" : "Você"}
           </span>
           <span
-            className={`inline-block px-3 py-2 rounded-xl text-sm ${
-              msg.autor === "admin" ? "bg-yellow-800 text-yellow-100" : "bg-zinc-700 text-zinc-100"
+            className={`inline-block rounded-xl px-3 py-2 text-sm ${
+              msg.autor === "admin"
+                ? "bg-yellow-800 text-yellow-100"
+                : "bg-zinc-700 text-zinc-100"
             }`}
           >
             {msg.texto}
           </span>
-          <span className="text-xs text-zinc-500 mt-0.5">{msg.data}</span>
+          <span className="mt-0.5 text-xs text-zinc-500">{msg.data}</span>
         </div>
       ))}
       <div ref={endRef} />
-      <form onSubmit={sendMsg} className="flex mt-3 gap-2">
+      <form onSubmit={sendMsg} className="mt-3 flex gap-2">
         <input
           type="text"
           value={valor}
           onChange={(e) => setValor(e.target.value)}
-          className="flex-1 rounded px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-100"
+          className="flex-1 rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-zinc-100"
           maxLength={300}
           placeholder="Digite sua mensagem..."
           autoComplete="off"
         />
         <button
           type="submit"
-          className="bg-yellow-400 text-zinc-900 rounded px-4 py-1 font-bold hover:bg-yellow-500 transition"
+          className="rounded bg-yellow-400 px-4 py-1 font-bold text-zinc-900 transition hover:bg-yellow-500"
         >
           Enviar
         </button>

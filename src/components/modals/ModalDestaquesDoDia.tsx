@@ -60,24 +60,27 @@ export default function ModalDestaquesDoDia({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="relative w-full max-w-md bg-[#18181b] rounded-2xl shadow-lg mx-2 pb-2 pt-3 overflow-y-auto max-h-[95vh]">
+      <div className="relative mx-2 max-h-[95vh] w-full max-w-md overflow-y-auto rounded-2xl bg-[#18181b] pb-2 pt-3 shadow-lg">
         {/* Botão Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-yellow-400 hover:text-yellow-300 text-3xl"
+          className="absolute right-4 top-4 text-3xl text-yellow-400 hover:text-yellow-300"
           aria-label="Fechar"
         >
           <IoClose />
         </button>
         {/* Título */}
-        <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-6 mt-2">
+        <h2 className="mb-6 mt-2 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
           Todos os Destaques do Dia
         </h2>
 
         {/* Cards do Time Campeão */}
         <div className="flex flex-col gap-4">
           {destaquesTimeCampeao.map((d, idx) => (
-            <div key={idx} className="flex items-center gap-3 bg-[#111] rounded-xl p-3">
+            <div
+              key={idx}
+              className="flex items-center gap-3 rounded-xl bg-[#111] p-3"
+            >
               <Image
                 src={d.image}
                 alt={d.name}
@@ -86,21 +89,30 @@ export default function ModalDestaquesDoDia({
                 className="rounded-md object-cover"
               />
               <div>
-                <span className="uppercase text-yellow-400 font-bold text-[13px]">{d.title}</span>
-                <p className="text-white font-semibold text-lg leading-5">{d.name}</p>
-                <p className="text-yellow-300 text-[15px] font-medium">{d.info}</p>
+                <span className="text-[13px] font-bold uppercase text-yellow-400">
+                  {d.title}
+                </span>
+                <p className="text-lg font-semibold leading-5 text-white">
+                  {d.name}
+                </p>
+                <p className="text-[15px] font-medium text-yellow-300">
+                  {d.info}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Linha divisória */}
-        <div className="w-1/2 mx-auto my-5 h-[2.5px] rounded-full bg-yellow-400 opacity-80" />
+        <div className="mx-auto my-5 h-[2.5px] w-1/2 rounded-full bg-yellow-400 opacity-80" />
 
         {/* Cards dos Destaques Gerais */}
-        <div className="flex flex-col gap-4 mb-2">
+        <div className="mb-2 flex flex-col gap-4">
           {destaquesGerais.map((d, idx) => (
-            <div key={idx} className="flex items-center gap-3 bg-[#111] rounded-xl p-3">
+            <div
+              key={idx}
+              className="flex items-center gap-3 rounded-xl bg-[#111] p-3"
+            >
               <Image
                 src={d.image}
                 alt={d.name}
@@ -109,9 +121,15 @@ export default function ModalDestaquesDoDia({
                 className="rounded-md object-cover"
               />
               <div>
-                <span className="uppercase text-yellow-400 font-bold text-[13px]">{d.title}</span>
-                <p className="text-white font-semibold text-lg leading-5">{d.name}</p>
-                <p className="text-yellow-300 text-[15px] font-medium">{d.info}</p>
+                <span className="text-[13px] font-bold uppercase text-yellow-400">
+                  {d.title}
+                </span>
+                <p className="text-lg font-semibold leading-5 text-white">
+                  {d.name}
+                </p>
+                <p className="text-[15px] font-medium text-yellow-300">
+                  {d.info}
+                </p>
               </div>
             </div>
           ))}
@@ -119,7 +137,7 @@ export default function ModalDestaquesDoDia({
 
         {/* Botão para regras */}
         <button
-          className="block mx-auto mt-6 mb-2 text-yellow-400 underline text-[15px] font-semibold"
+          className="mx-auto mb-2 mt-6 block text-[15px] font-semibold text-yellow-400 underline"
           onClick={() => setShowRegras(true)}
         >
           Entenda as regras dos destaques do dia
@@ -128,43 +146,48 @@ export default function ModalDestaquesDoDia({
         {/* Modal Regras */}
         {showRegras && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-neutral-900 p-5 rounded-xl max-w-xs w-full shadow-xl border border-yellow-600 text-white relative">
+            <div className="relative w-full max-w-xs rounded-xl border border-yellow-600 bg-neutral-900 p-5 text-white shadow-xl">
               <button
-                className="absolute top-2 right-3 text-yellow-400 text-xl"
+                className="absolute right-3 top-2 text-xl text-yellow-400"
                 onClick={() => setShowRegras(false)}
               >
                 <IoClose />
               </button>
-              <h3 className="text-lg font-bold text-yellow-400 mb-2 text-center">
+              <h3 className="mb-2 text-center text-lg font-bold text-yellow-400">
                 Como são escolhidos os Destaques do Dia?
               </h3>
-              <ul className="text-sm mb-3 space-y-2">
+              <ul className="mb-3 space-y-2 text-sm">
                 <li>
-                  <b>Atacante do Dia:</b> Entre atacantes do time campeão, quem fez mais gols.
-                  Valoriza esforço pelo time.
+                  <b>Atacante do Dia:</b> Entre atacantes do time campeão, quem
+                  fez mais gols. Valoriza esforço pelo time.
                 </li>
                 <li>
-                  <b>Meia do Dia:</b> Entre meias do campeão, quem deu mais assistências.
+                  <b>Meia do Dia:</b> Entre meias do campeão, quem deu mais
+                  assistências.
                 </li>
                 <li>
-                  <b>Zagueiro do Dia:</b> Eleito por votação dos jogadores do campeão.
+                  <b>Zagueiro do Dia:</b> Eleito por votação dos jogadores do
+                  campeão.
                 </li>
                 <li>
                   <b>Goleiro do Dia:</b> Goleiro do time campeão.
                 </li>
                 <li>
-                  <b>Artilheiro do Dia:</b> Jogador com mais gols em toda a rodada.
+                  <b>Artilheiro do Dia:</b> Jogador com mais gols em toda a
+                  rodada.
                 </li>
                 <li>
-                  <b>Maestro do Dia:</b> Jogador com mais assistências na rodada.
+                  <b>Maestro do Dia:</b> Jogador com mais assistências na
+                  rodada.
                 </li>
               </ul>
-              <div className="text-xs text-neutral-300 mb-1 text-center">
-                A escolha do Atacante do Dia prioriza o esforço coletivo e sua importância para o
-                time campeão, não apenas quem fez mais gols na rodada.
+              <div className="mb-1 text-center text-xs text-neutral-300">
+                A escolha do Atacante do Dia prioriza o esforço coletivo e sua
+                importância para o time campeão, não apenas quem fez mais gols
+                na rodada.
               </div>
               <button
-                className="w-full mt-3 bg-yellow-400 text-black rounded font-bold py-2 hover:bg-yellow-300"
+                className="mt-3 w-full rounded bg-yellow-400 py-2 font-bold text-black hover:bg-yellow-300"
                 onClick={() => setShowRegras(false)}
               >
                 Fechar

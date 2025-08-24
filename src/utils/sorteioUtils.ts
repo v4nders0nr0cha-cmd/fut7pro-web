@@ -13,7 +13,8 @@ export interface JogoConfronto {
 
 // Coeficiente geral: pesos dinâmicos (estrelas x ranking), ajustado pelo número de partidas
 export function getCoeficiente(j: Participante, partidasTotais: number) {
-  const mediaVitorias = j.partidas && j.partidas > 0 ? j.vitorias / j.partidas : 0;
+  const mediaVitorias =
+    j.partidas && j.partidas > 0 ? j.vitorias / j.partidas : 0;
 
   let pesoEstrelas = 0.8;
   let pesoRanking = 0.2;
@@ -38,7 +39,7 @@ export function getCoeficiente(j: Participante, partidasTotais: number) {
 // Distribuição serpentina (vai-e-volta) para máxima justiça visual por estrelas
 function distribuirPorEstrelaSerpentina(
   jogadores: Participante[] = [],
-  quantidadeTimes: number
+  quantidadeTimes: number,
 ): Participante[][] {
   if (!Array.isArray(jogadores) || jogadores.length === 0) {
     return Array.from({ length: quantidadeTimes }, () => []);
@@ -46,11 +47,14 @@ function distribuirPorEstrelaSerpentina(
 
   // Ordena do maior para o menor número de estrelas
   const ordenados = [...jogadores].sort(
-    (a, b) => (b.estrelas.estrelas ?? 0) - (a.estrelas.estrelas ?? 0)
+    (a, b) => (b.estrelas.estrelas ?? 0) - (a.estrelas.estrelas ?? 0),
   );
 
   // Inicializa os times vazios
-  const times: Participante[][] = Array.from({ length: quantidadeTimes }, () => []);
+  const times: Participante[][] = Array.from(
+    { length: quantidadeTimes },
+    () => [],
+  );
 
   let idx = 0;
   let direction = 1; // 1 = direita, -1 = esquerda
@@ -77,7 +81,7 @@ function distribuirPorEstrelaSerpentina(
 export function sortearTimesInteligente(
   participantes: Participante[],
   timesSelecionados: Time[],
-  partidasTotais: number
+  partidasTotais: number,
 ): TimeSorteado[] {
   const quantidadeTimes = timesSelecionados.length;
 
@@ -97,7 +101,7 @@ export function sortearTimesInteligente(
   Object.keys(grupos).forEach((posicao) => {
     gruposDistribuidos[posicao] = distribuirPorEstrelaSerpentina(
       grupos[posicao] ?? [],
-      quantidadeTimes
+      quantidadeTimes,
     );
   });
 
@@ -129,17 +133,30 @@ export function sortearTimesInteligente(
       if (ordem[a.posicao] !== ordem[b.posicao]) {
         return ordem[a.posicao] - ordem[b.posicao];
       }
-      return getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais);
-    })
+      return (
+        getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais)
+      );
+    }),
   );
 
   // 6. Calcula médias para UI
   times.forEach((t) => {
-    const totalRanking = t.jogadores.reduce((acc, j) => acc + (j.rankingPontos || 0), 0);
-    const totalEstrelas = t.jogadores.reduce((acc, j) => acc + (j.estrelas?.estrelas ?? 0), 0);
+    const totalRanking = t.jogadores.reduce(
+      (acc, j) => acc + (j.rankingPontos || 0),
+      0,
+    );
+    const totalEstrelas = t.jogadores.reduce(
+      (acc, j) => acc + (j.estrelas?.estrelas ?? 0),
+      0,
+    );
     t.mediaRanking = t.jogadores.length ? totalRanking / t.jogadores.length : 0;
-    t.mediaEstrelas = t.jogadores.length ? totalEstrelas / t.jogadores.length : 0;
-    t.coeficienteTotal = t.jogadores.reduce((acc, j) => acc + getCoeficiente(j, partidasTotais), 0);
+    t.mediaEstrelas = t.jogadores.length
+      ? totalEstrelas / t.jogadores.length
+      : 0;
+    t.coeficienteTotal = t.jogadores.reduce(
+      (acc, j) => acc + getCoeficiente(j, partidasTotais),
+      0,
+    );
   });
 
   // 7. Rebalanceamento leve final, se necessário
@@ -149,7 +166,10 @@ export function sortearTimesInteligente(
 }
 
 // Ajuste fino do balanceamento (troca 1-1 se diferença > 15%)
-export function ajusteFinoBalanceamento(times: TimeSorteado[], partidasTotais: number) {
+export function ajusteFinoBalanceamento(
+  times: TimeSorteado[],
+  partidasTotais: number,
+) {
   const maiorCoef = Math.max(...times.map((t) => t.coeficienteTotal));
   const menorCoef = Math.min(...times.map((t) => t.coeficienteTotal));
 
@@ -158,12 +178,20 @@ export function ajusteFinoBalanceamento(times: TimeSorteado[], partidasTotais: n
     const timeFraco = times.find((t) => t.coeficienteTotal === menorCoef);
 
     if (timeForte && timeFraco) {
-      const jogadorForte = timeForte.jogadores.find((j) => (j.estrelas?.estrelas ?? 0) >= 4);
-      const jogadorFraco = timeFraco.jogadores.find((j) => (j.estrelas?.estrelas ?? 0) <= 2);
+      const jogadorForte = timeForte.jogadores.find(
+        (j) => (j.estrelas?.estrelas ?? 0) >= 4,
+      );
+      const jogadorFraco = timeFraco.jogadores.find(
+        (j) => (j.estrelas?.estrelas ?? 0) <= 2,
+      );
 
       if (jogadorForte && jogadorFraco) {
-        timeForte.jogadores = timeForte.jogadores.filter((j) => j.id !== jogadorForte.id);
-        timeFraco.jogadores = timeFraco.jogadores.filter((j) => j.id !== jogadorFraco.id);
+        timeForte.jogadores = timeForte.jogadores.filter(
+          (j) => j.id !== jogadorForte.id,
+        );
+        timeFraco.jogadores = timeFraco.jogadores.filter(
+          (j) => j.id !== jogadorFraco.id,
+        );
 
         timeForte.jogadores.push(jogadorFraco);
         timeFraco.jogadores.push(jogadorForte);
@@ -171,11 +199,11 @@ export function ajusteFinoBalanceamento(times: TimeSorteado[], partidasTotais: n
         // Recalcula coeficientes após troca
         timeForte.coeficienteTotal = timeForte.jogadores.reduce(
           (acc, j) => acc + getCoeficiente(j, partidasTotais),
-          0
+          0,
         );
         timeFraco.coeficienteTotal = timeFraco.jogadores.reduce(
           (acc, j) => acc + getCoeficiente(j, partidasTotais),
-          0
+          0,
         );
       }
     }
@@ -183,7 +211,10 @@ export function ajusteFinoBalanceamento(times: TimeSorteado[], partidasTotais: n
 }
 
 // ===== Gerar confrontos =====
-export function gerarConfrontos(times: Time[], idaVolta = false): [Time, Time][] {
+export function gerarConfrontos(
+  times: Time[],
+  idaVolta = false,
+): [Time, Time][] {
   const confrontos: [Time, Time][] = [];
   for (let i = 0; i < times.length; i++) {
     for (let j = i + 1; j < times.length; j++) {

@@ -33,11 +33,11 @@ const posicoesAbrev: Record<JogadorTime["posicao"], string> = {
 export function CardTimeDoDia({ time }: Props) {
   return (
     <article
-      className="flex flex-col w-full max-w-md bg-neutral-900 rounded-2xl shadow-lg p-5 mb-8 mx-auto"
+      className="mx-auto mb-8 flex w-full max-w-md flex-col rounded-2xl bg-neutral-900 p-5 shadow-lg"
       style={{ borderTop: `5px solid ${time.cor}` }}
       aria-label={`Time ${time.nome}`}
     >
-      <div className="flex items-center gap-3 mb-2">
+      <div className="mb-2 flex items-center gap-3">
         <Image
           src={time.logo}
           alt={`Logo do time ${time.nome}`}
@@ -45,11 +45,11 @@ export function CardTimeDoDia({ time }: Props) {
           height={42}
           className="rounded-lg"
         />
-        <h2 className="text-lg md:text-xl font-bold text-yellow-400">
+        <h2 className="text-lg font-bold text-yellow-400 md:text-xl">
           {time.nome}
           {time.ehTimeCampeao && (
             <span
-              className="ml-3 px-3 py-1 rounded bg-yellow-400 text-neutral-900 text-sm font-semibold align-middle"
+              className="ml-3 rounded bg-yellow-400 px-3 py-1 align-middle text-sm font-semibold text-neutral-900"
               title="Time Campeão do Dia"
               aria-label="Time Campeão do Dia"
             >
@@ -59,16 +59,19 @@ export function CardTimeDoDia({ time }: Props) {
         </h2>
       </div>
 
-      <ul className="w-full mt-1 flex flex-col gap-3">
+      <ul className="mt-1 flex w-full flex-col gap-3">
         {time.jogadores.map((jogador) => {
-          let liClass = "relative flex items-center gap-3 p-2 rounded-lg transition bg-neutral-800";
-          if (jogador.status === "ausente") liClass += " bg-red-900 opacity-60 line-through";
-          if (jogador.status === "substituto") liClass += " bg-sky-900 opacity-80 italic";
+          let liClass =
+            "relative flex items-center gap-3 p-2 rounded-lg transition bg-neutral-800";
+          if (jogador.status === "ausente")
+            liClass += " bg-red-900 opacity-60 line-through";
+          if (jogador.status === "substituto")
+            liClass += " bg-sky-900 opacity-80 italic";
 
           return (
             <li key={jogador.id} className={liClass}>
               <span
-                className="absolute top-1 right-3 text-[10px] text-neutral-400 tracking-widest font-bold"
+                className="absolute right-3 top-1 text-[10px] font-bold tracking-widest text-neutral-400"
                 title={jogador.posicao}
               >
                 {posicoesAbrev[jogador.posicao]}
@@ -81,10 +84,12 @@ export function CardTimeDoDia({ time }: Props) {
                 className="rounded-full border-2 border-neutral-700"
                 loading="lazy"
               />
-              <div className="flex-1 flex flex-col">
-                <span className="font-semibold text-sm">{jogador.nome}</span>
+              <div className="flex flex-1 flex-col">
+                <span className="text-sm font-semibold">{jogador.nome}</span>
                 {jogador.apelido && (
-                  <span className="text-xs text-neutral-400">({jogador.apelido})</span>
+                  <span className="text-xs text-neutral-400">
+                    ({jogador.apelido})
+                  </span>
                 )}
                 <span className="text-xs text-neutral-400">
                   {jogador.status === "ausente" && "Ausente (não pontua)"}

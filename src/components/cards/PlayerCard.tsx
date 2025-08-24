@@ -22,14 +22,19 @@ export default function PlayerCard({
   showTrophy = false,
 }: PlayerCardProps) {
   // fallback para imagem padrão se não vier nenhuma
-  const imagePath = image && image.length > 0 ? image : "/images/jogadores/default.png";
+  const imagePath =
+    image && image.length > 0 ? image : "/images/jogadores/default.png";
 
   // Tooltip institucional
   const getTooltip = () => {
-    if (title.toLowerCase().includes("atacante")) return "Melhor atacante do time campeão";
-    if (title.toLowerCase().includes("meia")) return "Melhor meia do time campeão";
-    if (title.toLowerCase().includes("zagueiro")) return "Zagueiro destaque do time campeão";
-    if (title.toLowerCase().includes("goleiro")) return "Goleiro do time campeão";
+    if (title.toLowerCase().includes("atacante"))
+      return "Melhor atacante do time campeão";
+    if (title.toLowerCase().includes("meia"))
+      return "Melhor meia do time campeão";
+    if (title.toLowerCase().includes("zagueiro"))
+      return "Zagueiro destaque do time campeão";
+    if (title.toLowerCase().includes("goleiro"))
+      return "Goleiro do time campeão";
     return name;
   };
 
@@ -45,22 +50,28 @@ export default function PlayerCard({
 
   const content = (
     <div className={cardClasses} title={getTooltip()}>
-      <div className="flex items-center gap-4 w-full">
-        <div className="w-[64px] h-[64px] sm:w-[80px] sm:h-[80px] relative rounded-md overflow-hidden flex-shrink-0">
+      <div className="flex w-full items-center gap-4">
+        <div className="relative h-[64px] w-[64px] flex-shrink-0 overflow-hidden rounded-md sm:h-[80px] sm:w-[80px]">
           <Image
             src={imagePath}
             alt={getAltText()}
             fill
-            className="object-cover rounded-md"
+            className="rounded-md object-cover"
             sizes="(max-width: 640px) 64px, 80px"
             priority
           />
         </div>
-        <div className="flex flex-col justify-center w-full">
-          <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">{title}</p>
-          <p className="text-base font-semibold text-white leading-tight break-words">{name}</p>
+        <div className="flex w-full flex-col justify-center">
+          <p className="text-[12px] font-bold uppercase leading-none text-[#FFCC00]">
+            {title}
+          </p>
+          <p className="break-words text-base font-semibold leading-tight text-white">
+            {name}
+          </p>
           {/* Só mostra o value se existir */}
-          {value && <p className="text-sm text-yellow-400 font-medium">{value}</p>}
+          {value && (
+            <p className="text-sm font-medium text-yellow-400">{value}</p>
+          )}
         </div>
       </div>
       {showTrophy && <div className="text-3xl">🏆</div>}

@@ -116,17 +116,23 @@ export default function RachasCadastradosPage() {
   const total = MOCKS_RACHAS.length;
   const ativos = MOCKS_RACHAS.filter((r) => r.status === "ATIVO").length;
   const trials = MOCKS_RACHAS.filter((r) => r.status === "TRIAL").length;
-  const inadimplentes = MOCKS_RACHAS.filter((r) => r.status === "INADIMPLENTE").length;
-  const bloqueados = MOCKS_RACHAS.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
+  const inadimplentes = MOCKS_RACHAS.filter(
+    (r) => r.status === "INADIMPLENTE",
+  ).length;
+  const bloqueados = MOCKS_RACHAS.filter(
+    (r) => r.status === "BLOQUEADO" || r.bloqueado,
+  ).length;
   const novosHoje = MOCKS_RACHAS.filter(
-    (r) => r.criadoEm === format(new Date(), "yyyy-MM-dd")
+    (r) => r.criadoEm === format(new Date(), "yyyy-MM-dd"),
   ).length;
 
   function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
     setSelectedIds(e.target.checked ? rachasFiltrados.map((r) => r.id) : []);
   }
   function handleSelecionar(id: string) {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   }
   function handleImpersonate(racha: any) {
     setImpersonate(racha);
@@ -154,23 +160,35 @@ export default function RachasCadastradosPage() {
           content="fut7pro, gestão de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha"
         />
       </Head>
-      <div className="w-full min-h-screen p-0 m-0">
+      <div className="m-0 min-h-screen w-full p-0">
         {/* RESUMO NO TOPO */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 w-full mb-6">
+        <div className="mb-6 grid w-full grid-cols-2 gap-2 md:grid-cols-6">
           <ResumoCard title="Total" value={total} />
           <ResumoCard title="Ativos" value={ativos} badge="bg-green-700" />
           <ResumoCard title="Trials" value={trials} badge="bg-yellow-700" />
-          <ResumoCard title="Inadimplentes" value={inadimplentes} badge="bg-red-700" />
-          <ResumoCard title="Bloqueados" value={bloqueados} badge="bg-gray-700" />
-          <ResumoCard title="Novos Hoje" value={novosHoje} badge="bg-blue-700" />
+          <ResumoCard
+            title="Inadimplentes"
+            value={inadimplentes}
+            badge="bg-red-700"
+          />
+          <ResumoCard
+            title="Bloqueados"
+            value={bloqueados}
+            badge="bg-gray-700"
+          />
+          <ResumoCard
+            title="Novos Hoje"
+            value={novosHoje}
+            badge="bg-blue-700"
+          />
         </div>
 
         {/* BUSCA E FILTRO */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 mb-4">
-          <div className="flex items-center w-full md:w-auto bg-zinc-900 rounded-lg px-3 py-2">
-            <FaSearch className="text-zinc-500 mr-2" />
+        <div className="mb-4 flex flex-col items-start gap-2 md:flex-row md:items-center">
+          <div className="flex w-full items-center rounded-lg bg-zinc-900 px-3 py-2 md:w-auto">
+            <FaSearch className="mr-2 text-zinc-500" />
             <input
-              className="bg-transparent outline-none w-full text-zinc-100"
+              className="w-full bg-transparent text-zinc-100 outline-none"
               placeholder="Buscar por nome, presidente ou status..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -178,7 +196,7 @@ export default function RachasCadastradosPage() {
             />
           </div>
           <select
-            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg ml-0 md:ml-2"
+            className="ml-0 rounded-lg bg-zinc-800 px-4 py-2 text-zinc-100 md:ml-2"
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
             aria-label="Filtrar status"
@@ -190,7 +208,7 @@ export default function RachasCadastradosPage() {
             <option value="Bloqueado">Bloqueados</option>
           </select>
           <button
-            className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow hover:scale-105 duration-150"
+            className="ml-0 flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-bold text-black shadow duration-150 hover:scale-105 md:ml-2"
             onClick={() => alert("Função de exportação será ativada")}
           >
             <FaDownload /> Exportar .CSV
@@ -198,21 +216,21 @@ export default function RachasCadastradosPage() {
         </div>
 
         {/* AÇÕES EM MASSA */}
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="mb-2 flex flex-wrap gap-2">
           <button
-            className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700"
+            className="rounded bg-blue-900 px-3 py-1 text-zinc-100 shadow hover:bg-blue-700"
             disabled={selectedIds.length === 0}
           >
             Acessar como Admin
           </button>
           <button
-            className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700"
+            className="rounded bg-red-900 px-3 py-1 text-zinc-100 shadow hover:bg-red-700"
             disabled={selectedIds.length === 0}
           >
             Bloquear
           </button>
           <button
-            className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800"
+            className="rounded bg-zinc-600 px-3 py-1 text-zinc-100 shadow hover:bg-zinc-800"
             disabled={selectedIds.length === 0}
           >
             Enviar Aviso
@@ -221,14 +239,15 @@ export default function RachasCadastradosPage() {
 
         {/* TABELA */}
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-zinc-900 rounded-xl shadow text-zinc-100">
+          <table className="min-w-full rounded-xl bg-zinc-900 text-zinc-100 shadow">
             <thead>
               <tr>
                 <th className="p-3 text-left">
                   <input
                     type="checkbox"
                     checked={
-                      selectedIds.length === rachasFiltrados.length && rachasFiltrados.length > 0
+                      selectedIds.length === rachasFiltrados.length &&
+                      rachasFiltrados.length > 0
                     }
                     onChange={handleSelecionarTodos}
                   />
@@ -245,7 +264,7 @@ export default function RachasCadastradosPage() {
             </thead>
             <tbody>
               {rachasFiltrados.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-800 duration-100">
+                <tr key={r.id} className="duration-100 hover:bg-zinc-800">
                   <td className="p-3">
                     <input
                       type="checkbox"
@@ -258,33 +277,39 @@ export default function RachasCadastradosPage() {
                   <td className="p-3">{r.plano}</td>
                   <td className="p-3">
                     <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold cursor-pointer ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
-                      title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
+                      className={`cursor-pointer rounded-full px-2 py-1 text-xs font-bold ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
+                      title={
+                        STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] ||
+                        r.status
+                      }
                     >
                       {statusLabel(r.status)}
                     </span>
                   </td>
                   <td className="p-3 text-center">{r.atletas}</td>
                   <td className="p-3 text-center">
-                    {format(parse(r.criadoEm, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
+                    {format(
+                      parse(r.criadoEm, "yyyy-MM-dd", new Date()),
+                      "dd/MM/yyyy",
+                    )}
                   </td>
-                  <td className="p-3 text-center flex gap-2">
+                  <td className="flex gap-2 p-3 text-center">
                     <button
-                      className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-blue-700 px-3 py-1 text-xs font-bold hover:bg-blue-900"
                       onClick={() => setModalRacha(r)}
                       title="Detalhes e Ações"
                     >
                       <FaInfoCircle /> Detalhes
                     </button>
                     <button
-                      className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-green-800 px-3 py-1 text-xs font-bold hover:bg-green-900"
                       onClick={() => handleImpersonate(r)}
                       title="Acessar Painel Admin como Presidente"
                     >
                       <FaUserShield /> Login como Admin
                     </button>
                     <button
-                      className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1"
+                      className="flex items-center gap-1 rounded bg-red-700 px-3 py-1 text-xs font-bold hover:bg-red-900"
                       title="Bloquear Racha"
                     >
                       <FaLock /> Bloquear
@@ -292,11 +317,11 @@ export default function RachasCadastradosPage() {
                   </td>
                   <td className="p-3 text-center">
                     {r.status === "BLOQUEADO" || r.bloqueado ? (
-                      <span className="flex items-center gap-1 text-red-400 font-bold">
+                      <span className="flex items-center gap-1 font-bold text-red-400">
                         <FaLock /> Bloqueado
                       </span>
                     ) : (
-                      <span className="text-green-400 font-bold">Liberado</span>
+                      <span className="font-bold text-green-400">Liberado</span>
                     )}
                   </td>
                 </tr>
@@ -314,7 +339,10 @@ export default function RachasCadastradosPage() {
 
         {/* MODAL DETALHES DO RACHA */}
         {modalRacha && (
-          <ModalDetalhesRacha racha={modalRacha} onClose={() => setModalRacha(null)} />
+          <ModalDetalhesRacha
+            racha={modalRacha}
+            onClose={() => setModalRacha(null)}
+          />
         )}
 
         {/* MODAL IMPERSONATE (AGINDO COMO PRESIDENTE) */}
@@ -324,32 +352,33 @@ export default function RachasCadastradosPage() {
             onClick={() => setImpersonate(null)}
           >
             <div
-              className="bg-zinc-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-auto text-center"
+              className="mx-auto w-full max-w-lg rounded-xl bg-zinc-900 p-6 text-center shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col items-center">
-                <FaUserShield className="text-green-400 text-3xl mb-2" />
-                <h3 className="text-xl font-bold mb-1">
+                <FaUserShield className="mb-2 text-3xl text-green-400" />
+                <h3 className="mb-1 text-xl font-bold">
                   Você está “agindo como presidente” deste racha
                 </h3>
-                <span className="text-sm text-zinc-400 mb-4">
-                  <b>{impersonate.nome}</b> (Presidente: {impersonate.presidente})<br />
-                  Todo acesso, edição ou exclusão será registrado em log de auditoria, visível para
-                  a equipe da plataforma.
+                <span className="mb-4 text-sm text-zinc-400">
+                  <b>{impersonate.nome}</b> (Presidente:{" "}
+                  {impersonate.presidente})<br />
+                  Todo acesso, edição ou exclusão será registrado em log de
+                  auditoria, visível para a equipe da plataforma.
                 </span>
                 <button
-                  className="bg-blue-700 text-white px-5 py-2 rounded hover:bg-blue-900 mb-2 flex items-center gap-2"
+                  className="mb-2 flex items-center gap-2 rounded bg-blue-700 px-5 py-2 text-white hover:bg-blue-900"
                   onClick={() => {
                     setImpersonate(null);
                     alert(
-                      "Redirecionar para painel Admin real deste racha (/admin?impersonate=rachaId)"
+                      "Redirecionar para painel Admin real deste racha (/admin?impersonate=rachaId)",
                     );
                   }}
                 >
                   <FaArrowRight /> Entrar no Painel Administrativo do Presidente
                 </button>
                 <button
-                  className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-900"
+                  className="rounded bg-zinc-700 px-4 py-2 text-white hover:bg-zinc-900"
                   onClick={() => setImpersonate(null)}
                 >
                   Cancelar
@@ -364,12 +393,20 @@ export default function RachasCadastradosPage() {
 }
 
 // Card de resumo
-function ResumoCard({ title, value, badge }: { title: string; value: number; badge?: string }) {
+function ResumoCard({
+  title,
+  value,
+  badge,
+}: {
+  title: string;
+  value: number;
+  badge?: string;
+}) {
   return (
     <div
-      className={`flex flex-col bg-zinc-800 p-3 rounded-lg items-center justify-center text-center min-w-[85px]`}
+      className={`flex min-w-[85px] flex-col items-center justify-center rounded-lg bg-zinc-800 p-3 text-center`}
     >
-      <span className="text-zinc-400 text-xs uppercase">{title}</span>
+      <span className="text-xs uppercase text-zinc-400">{title}</span>
       <span className={`text-2xl font-bold ${badge || ""}`}>{value}</span>
     </div>
   );

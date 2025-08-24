@@ -88,36 +88,40 @@ export default function VisualTemasPage() {
           content="Fut7Pro, temas, paleta de cores, visual, personalização, painel admin, futebol 7, SaaS"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-4xl mx-auto px-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
+      <div className="mx-auto w-full max-w-4xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-6 text-center text-2xl font-bold text-white md:text-3xl">
           Visual & Temas do Racha
         </h1>
-        <div className="bg-[#191c22] rounded-2xl shadow-lg p-6 flex flex-col gap-6 items-center">
-          <p className="text-gray-200 text-base text-center mb-2">
+        <div className="flex flex-col items-center gap-6 rounded-2xl bg-[#191c22] p-6 shadow-lg">
+          <p className="mb-2 text-center text-base text-gray-200">
             Escolha uma paleta de cores para personalizar o visual do seu racha.
             <br />
-            Todas as telas do seu painel e site ficarão com a identidade escolhida.
+            Todas as telas do seu painel e site ficarão com a identidade
+            escolhida.
           </p>
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
             {PALETAS_MOCK.map((paleta) => {
               // Borda especial para Preto Clássico
-              const borderColor = paleta.id === "preto-classico" ? "#B1B1B1" : paleta.cores[0];
+              const borderColor =
+                paleta.id === "preto-classico" ? "#B1B1B1" : paleta.cores[0];
               const isAtivo = temaAtivo.id === paleta.id;
               return (
                 <button
                   key={paleta.id}
-                  className="flex flex-col items-center gap-3 p-4 rounded-2xl shadow transition border-2 outline-none"
+                  className="flex flex-col items-center gap-3 rounded-2xl border-2 p-4 shadow outline-none transition"
                   style={{
                     borderColor: borderColor,
                     background: isAtivo ? "#23272e" : "#17191f",
-                    boxShadow: isAtivo ? `0 0 0 3px ${borderColor}55` : undefined,
+                    boxShadow: isAtivo
+                      ? `0 0 0 3px ${borderColor}55`
+                      : undefined,
                   }}
                   onClick={() => handleSelecionarTema(paleta.id)}
                   aria-label={`Selecionar tema ${paleta.nome}`}
                   type="button"
                 >
                   <div
-                    className="w-16 h-16 rounded-full overflow-hidden border-2 flex items-center justify-center"
+                    className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2"
                     style={{ borderColor: borderColor, background: "#000" }}
                   >
                     <Image
@@ -129,14 +133,18 @@ export default function VisualTemasPage() {
                     />
                   </div>
                   <div className="flex flex-col items-center">
-                    <span className="text-lg font-bold text-white">{paleta.nome}</span>
-                    <span className="text-sm text-gray-300">{paleta.descricao}</span>
+                    <span className="text-lg font-bold text-white">
+                      {paleta.nome}
+                    </span>
+                    <span className="text-sm text-gray-300">
+                      {paleta.descricao}
+                    </span>
                   </div>
-                  <div className="flex gap-1 mt-2">
+                  <div className="mt-2 flex gap-1">
                     {paleta.cores.map((cor, idx) => (
                       <span
                         key={idx}
-                        className="w-6 h-6 rounded-full border-2 border-[#23272e] shadow"
+                        className="h-6 w-6 rounded-full border-2 border-[#23272e] shadow"
                         style={{ background: cor }}
                         aria-label={`Cor ${cor}`}
                       />
@@ -144,7 +152,7 @@ export default function VisualTemasPage() {
                   </div>
                   {isAtivo && (
                     <div
-                      className="flex items-center gap-2 mt-2 font-semibold text-sm"
+                      className="mt-2 flex items-center gap-2 text-sm font-semibold"
                       style={{ color: borderColor }}
                     >
                       <FaCheckCircle /> Selecionado
@@ -155,16 +163,18 @@ export default function VisualTemasPage() {
             })}
           </div>
           <button
-            className="mt-6 bg-[#FFD600] text-black px-8 py-3 rounded-lg font-bold shadow hover:scale-105 active:scale-95 transition"
+            className="mt-6 rounded-lg bg-[#FFD600] px-8 py-3 font-bold text-black shadow transition hover:scale-105 active:scale-95"
             onClick={handleSalvar}
             disabled={salvo}
           >
             Salvar Tema
           </button>
           {salvo && (
-            <div className="flex items-center gap-2 text-green-400 mt-2">
+            <div className="mt-2 flex items-center gap-2 text-green-400">
               <FaCheckCircle />
-              <span className="font-medium text-sm">Tema salvo com sucesso!</span>
+              <span className="text-sm font-medium">
+                Tema salvo com sucesso!
+              </span>
             </div>
           )}
         </div>

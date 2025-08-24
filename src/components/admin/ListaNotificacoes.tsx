@@ -40,7 +40,7 @@ export default function ListaNotificacoes() {
 
   if (notificacoes.length === 0) {
     return (
-      <div className="text-green-400 bg-green-900 border border-green-700 p-4 rounded shadow">
+      <div className="rounded border border-green-700 bg-green-900 p-4 text-green-400 shadow">
         Nenhuma pendência encontrada. Tudo certo no seu racha! ✅
       </div>
     );
@@ -51,15 +51,15 @@ export default function ListaNotificacoes() {
       {notificacoes.map((n) => (
         <li
           key={n.id}
-          className="bg-[#1e1e1e] border-l-4 border-yellow-500 rounded shadow p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+          className="flex flex-col gap-3 rounded border-l-4 border-yellow-500 bg-[#1e1e1e] p-4 shadow sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p className="text-sm text-yellow-400 font-semibold">{n.tipo}</p>
+            <p className="text-sm font-semibold text-yellow-400">{n.tipo}</p>
             <p className="text-base text-white">{n.mensagem}</p>
           </div>
           <button
             onClick={() => marcarComoResolvido(n.id)}
-            className="flex items-center gap-2 px-3 py-1 rounded text-sm bg-green-600 hover:bg-green-500 text-white transition"
+            className="flex items-center gap-2 rounded bg-green-600 px-3 py-1 text-sm text-white transition hover:bg-green-500"
           >
             <FaCheckCircle /> Marcar como resolvido
           </button>

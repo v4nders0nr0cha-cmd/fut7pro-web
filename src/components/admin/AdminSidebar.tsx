@@ -27,10 +27,18 @@ const menu: MenuItem[] = [
   { label: "Dashboard", icon: FaHome, href: "/admin/dashboard" },
   { label: "Jogadores", icon: FaUsers, href: "/admin/jogadores" },
   { label: "Partidas", icon: FaCalendarAlt, href: "/admin/partidas" },
-  { label: "Ranking & Estatísticas", icon: FaChartBar, href: "/admin/estatisticas" },
+  {
+    label: "Ranking & Estatísticas",
+    icon: FaChartBar,
+    href: "/admin/estatisticas",
+  },
   { label: "Conquistas", icon: FaTrophy, href: "/admin/conquistas" },
   { label: "Financeiro", icon: FaMoneyBill, href: "/admin/financeiro" },
-  { label: "Prestação de Contas", icon: FaUserShield, href: "/admin/prestacao" },
+  {
+    label: "Prestação de Contas",
+    icon: FaUserShield,
+    href: "/admin/prestacao",
+  },
   { label: "Patrocinadores", icon: FaBullhorn, href: "/admin/patrocinadores" },
   { label: "Notificações", icon: FaBullhorn, href: "/admin/notificacoes" },
   { label: "Configurações", icon: FaCogs, href: "/admin/configuracoes" },
@@ -39,8 +47,8 @@ const menu: MenuItem[] = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   return (
-    <aside className="hidden md:flex flex-col w-64 fixed left-0 top-[64px] bottom-0 z-30 bg-[#20232A] py-6 px-3 border-r border-[#292e38]">
-      <div className="flex flex-col items-center gap-2 mb-8">
+    <aside className="fixed bottom-0 left-0 top-[64px] z-30 hidden w-64 flex-col border-r border-[#292e38] bg-[#20232A] px-3 py-6 md:flex">
+      <div className="mb-8 flex flex-col items-center gap-2">
         <Image
           src={rachaConfig.logo}
           alt={`Logo do ${rachaConfig.nome} – Plataforma SaaS de Rachas`}
@@ -48,32 +56,31 @@ export default function AdminSidebar() {
           height={80}
           className="object-contain"
         />
-        <span className="text-lg font-semibold text-yellow-400 text-center truncate max-w-[180px]">
+        <span className="max-w-[180px] truncate text-center text-lg font-semibold text-yellow-400">
           {process.env.NEXT_PUBLIC_RACHA_NOME ?? "Seu Racha"}
         </span>
       </div>
       {/* NAV: agora com scrollbar premium dark/fino só on-hover */}
-      <nav className="flex flex-col gap-1 flex-1 min-h-0 overflow-y-auto admin-sidebar-scroll">
+      <nav className="admin-sidebar-scroll flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
         {menu.map(({ label, icon: Icon, href }) => (
           <Link
             key={href}
             href={href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-lg font-medium transition-all select-none
-                            ${
-                              pathname === href
-                                ? "bg-gradient-to-r from-yellow-400/20 to-yellow-700/10 text-yellow-300 shadow text-base"
-                                : "text-[#b9c1d2] hover:bg-[#2c3141] hover:text-yellow-300"
-                            }`}
+            className={`flex select-none items-center gap-3 rounded-lg px-3 py-2 font-medium transition-all ${
+              pathname === href
+                ? "bg-gradient-to-r from-yellow-400/20 to-yellow-700/10 text-base text-yellow-300 shadow"
+                : "text-[#b9c1d2] hover:bg-[#2c3141] hover:text-yellow-300"
+            }`}
             aria-label={label}
           >
             <Icon
-              className={`w-5 h-5 ${pathname === href ? "text-yellow-300" : "text-[#b9c1d2] group-hover:text-yellow-400"}`}
+              className={`h-5 w-5 ${pathname === href ? "text-yellow-300" : "text-[#b9c1d2] group-hover:text-yellow-400"}`}
             />
             {label}
           </Link>
         ))}
       </nav>
-      <div className="mt-8 text-xs text-center text-[#8d95a9] px-2 opacity-80 select-none">
+      <div className="mt-8 select-none px-2 text-center text-xs text-[#8d95a9] opacity-80">
         © {new Date().getFullYear()} {rachaConfig.nome}
       </div>
     </aside>
