@@ -4,7 +4,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma"; // certifique-se que este arquivo existe: src/lib/prisma.ts
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Método não permitido" });
   }
@@ -16,7 +19,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (nome.length > 10 || apelido.length > 10) {
-    return res.status(400).json({ message: "Nome e Apelido devem ter no máximo 10 letras." });
+    return res
+      .status(400)
+      .json({ message: "Nome e Apelido devem ter no máximo 10 letras." });
   }
 
   try {

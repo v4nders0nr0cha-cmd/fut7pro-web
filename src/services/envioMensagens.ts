@@ -10,7 +10,11 @@ export async function enviarMensagemWhatsapp(numero: string, mensagem: string) {
 
 // Serviço de envio de e-mail (mock ou integração real futuramente)
 // Exemplo: Nodemailer, Resend, SES, etc.
-export async function enviarEmail(email: string, assunto: string, mensagem: string) {
+export async function enviarEmail(
+  email: string,
+  assunto: string,
+  mensagem: string,
+) {
   // Para produção, implemente a integração aqui.
   // Exemplo: await transporter.sendMail({ to: email, subject: assunto, text: mensagem });
   // [Email] Enviando para ${email}: Assunto: ${assunto} | Mensagem: ${mensagem}

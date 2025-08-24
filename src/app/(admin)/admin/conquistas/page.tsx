@@ -19,29 +19,33 @@ export default function ConquistasAdminPage() {
         />
       </Head>
 
-      <main className="min-h-screen bg-fundo text-white px-4 pt-[64px] md:pt-[80px] pb-24 md:pb-8">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-bold text-yellow-400 mb-3 text-center">
+      <main className="min-h-screen bg-fundo px-4 pb-24 pt-[64px] text-white md:pb-8 md:pt-[80px]">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-3 text-center text-3xl font-bold text-yellow-400">
             Gestão de Conquistas
           </h1>
-          <p className="text-center text-gray-300 mb-8 max-w-2xl mx-auto">
-            Gerencie de forma simples e organizada todos os títulos, premiações e conquistas do seu
-            racha. Ao finalizar a temporada, os Campeões do Ano são gerados automaticamente. Você
-            também pode registrar os campeões dos Grandes Torneios, como campeonatos internos, copas
-            e eventos especiais. Todos os ícones de conquistas são exibidos de forma automática nos
-            perfis dos atletas, valorizando suas trajetórias e incentivando a competitividade.
+          <p className="mx-auto mb-8 max-w-2xl text-center text-gray-300">
+            Gerencie de forma simples e organizada todos os títulos, premiações
+            e conquistas do seu racha. Ao finalizar a temporada, os Campeões do
+            Ano são gerados automaticamente. Você também pode registrar os
+            campeões dos Grandes Torneios, como campeonatos internos, copas e
+            eventos especiais. Todos os ícones de conquistas são exibidos de
+            forma automática nos perfis dos atletas, valorizando suas
+            trajetórias e incentivando a competitividade.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
+          <div className="flex flex-col justify-center gap-6 sm:flex-row">
             <Link
               href="/admin/conquistas/os-campeoes"
-              className="flex flex-col items-center bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 hover:shadow-xl transition group w-full sm:w-1/2"
+              className="group flex w-full flex-col items-center rounded-xl border-2 border-yellow-400 bg-zinc-900 p-6 transition hover:shadow-xl sm:w-1/2"
             >
-              <FaCrown className="text-yellow-400 text-4xl mb-3 group-hover:scale-110 transition" />
-              <span className="font-bold text-lg text-yellow-300 mb-1">Os Campeões</span>
-              <span className="text-gray-300 text-center text-sm">
-                Finalize a temporada para gerar os campeões do ano. Se não finalizar, o sistema
-                encerrará automaticamente na virada do ano.
+              <FaCrown className="mb-3 text-4xl text-yellow-400 transition group-hover:scale-110" />
+              <span className="mb-1 text-lg font-bold text-yellow-300">
+                Os Campeões
+              </span>
+              <span className="text-center text-sm text-gray-300">
+                Finalize a temporada para gerar os campeões do ano. Se não
+                finalizar, o sistema encerrará automaticamente na virada do ano.
                 <br />
                 Controle automático dos ícones de premiação.
               </span>
@@ -49,13 +53,15 @@ export default function ConquistasAdminPage() {
 
             <Link
               href="/admin/conquistas/grandes-torneios"
-              className="flex flex-col items-center bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 hover:shadow-xl transition group w-full sm:w-1/2"
+              className="group flex w-full flex-col items-center rounded-xl border-2 border-yellow-400 bg-zinc-900 p-6 transition hover:shadow-xl sm:w-1/2"
             >
-              <FaTrophy className="text-yellow-400 text-4xl mb-3 group-hover:scale-110 transition" />
-              <span className="font-bold text-lg text-yellow-300 mb-1">Grandes Torneios</span>
-              <span className="text-gray-300 text-center text-sm">
-                Cadastre ou edite torneios especiais, campeonatos de confraternização e campeões
-                históricos do seu racha.
+              <FaTrophy className="mb-3 text-4xl text-yellow-400 transition group-hover:scale-110" />
+              <span className="mb-1 text-lg font-bold text-yellow-300">
+                Grandes Torneios
+              </span>
+              <span className="text-center text-sm text-gray-300">
+                Cadastre ou edite torneios especiais, campeonatos de
+                confraternização e campeões históricos do seu racha.
                 <br />
                 Premiações aparecem automaticamente no perfil dos atletas.
               </span>

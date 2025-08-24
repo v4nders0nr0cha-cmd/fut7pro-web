@@ -10,7 +10,10 @@ const DIAS_FIXOS = [
 ];
 
 // MOCK: datas futuras
-function getNextOccurrences(diasFixos: { dia: number; horario: string }[], qtd = 5) {
+function getNextOccurrences(
+  diasFixos: { dia: number; horario: string }[],
+  qtd = 5,
+) {
   const now = new Date();
   let ocorrencias: { dataStr: string }[] = [];
   for (let i = 0; ocorrencias.length < qtd && i < 60; i++) {
@@ -40,18 +43,20 @@ export default function CardProximosRachas() {
   const ocorrencias = getNextOccurrences(DIAS_FIXOS, 5);
 
   return (
-    <div className="bg-[#21252B] rounded-2xl shadow-lg px-6 py-6 flex flex-col min-h-[220px] justify-between w-full">
+    <div className="flex min-h-[220px] w-full flex-col justify-between rounded-2xl bg-[#21252B] px-6 py-6 shadow-lg">
       {/* Título */}
-      <div className="flex items-center gap-2 mb-4">
-        <FaCalendarAlt className="text-cyan-400 w-6 h-6" />
-        <span className="text-lg font-bold text-cyan-300 tracking-wide">Próximos rachas</span>
+      <div className="mb-4 flex items-center gap-2">
+        <FaCalendarAlt className="h-6 w-6 text-cyan-400" />
+        <span className="text-lg font-bold tracking-wide text-cyan-300">
+          Próximos rachas
+        </span>
       </div>
       {/* Lista */}
-      <div className="flex flex-col gap-1 mb-4">
+      <div className="mb-4 flex flex-col gap-1">
         {ocorrencias.map((racha, idx) => (
           <div
             key={idx}
-            className="flex items-center text-base text-white font-medium"
+            className="flex items-center text-base font-medium text-white"
             style={{ letterSpacing: 0.5 }}
           >
             {racha.dataStr}
@@ -61,13 +66,14 @@ export default function CardProximosRachas() {
       {/* Botão */}
       <Link
         href="/admin/rachas"
-        className="mt-2 w-full text-center bg-cyan-600 hover:bg-cyan-700 transition text-white font-semibold py-2 px-4 rounded-xl text-sm"
+        className="mt-2 w-full rounded-xl bg-cyan-600 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-cyan-700"
       >
         Gerenciar dias e horários
       </Link>
       {/* Info extra */}
-      <div className="mt-3 text-xs text-gray-400 text-center">
-        Os próximos rachas são calculados automaticamente pelos dias fixos cadastrados.
+      <div className="mt-3 text-center text-xs text-gray-400">
+        Os próximos rachas são calculados automaticamente pelos dias fixos
+        cadastrados.
       </div>
     </div>
   );

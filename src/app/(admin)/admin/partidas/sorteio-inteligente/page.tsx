@@ -14,10 +14,14 @@ export default function SorteioInteligentePage() {
 
   if (!isAdmin) {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center px-4">
-        <div className="bg-[#23272F] px-8 py-12 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold text-yellow-400 mb-4">Acesso Restrito</h2>
-          <p className="text-gray-200">Apenas administradores podem acessar esta funcionalidade.</p>
+      <main className="flex min-h-screen flex-col items-center justify-center bg-fundo px-4 text-center">
+        <div className="rounded-2xl bg-[#23272F] px-8 py-12 shadow-lg">
+          <h2 className="mb-4 text-2xl font-bold text-yellow-400">
+            Acesso Restrito
+          </h2>
+          <p className="text-gray-200">
+            Apenas administradores podem acessar esta funcionalidade.
+          </p>
         </div>
       </main>
     );
@@ -38,8 +42,8 @@ export default function SorteioInteligentePage() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-fundo">
-        <div className="max-w-5xl mx-auto">
+      <main className="min-h-screen bg-fundo px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <div className="mx-auto max-w-5xl">
           <SorteioInteligenteAdmin />
         </div>
       </main>

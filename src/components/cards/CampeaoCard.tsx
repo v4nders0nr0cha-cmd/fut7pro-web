@@ -10,13 +10,19 @@ interface CampeaoCardProps {
   icone: string; // Pode ser emoji ou caminho de imagem
 }
 
-export default function CampeaoCard({ titulo, nome, image, valor, icone }: CampeaoCardProps) {
+export default function CampeaoCard({
+  titulo,
+  nome,
+  image,
+  valor,
+  icone,
+}: CampeaoCardProps) {
   return (
     <div
-      className="bg-[#1A1A1A] rounded-2xl p-4 shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all"
+      className="flex w-full max-w-xs flex-col items-center rounded-2xl bg-[#1A1A1A] p-4 text-white shadow-md transition-all hover:shadow-yellow-400"
       title={`Melhor ${titulo} do ano: ${nome}`}
     >
-      <span className="text-yellow-400 text-lg font-semibold mb-2 flex items-center gap-1">
+      <span className="mb-2 flex items-center gap-1 text-lg font-semibold text-yellow-400">
         {icone.startsWith("/") ? (
           <Image
             src={icone}
@@ -35,9 +41,9 @@ export default function CampeaoCard({ titulo, nome, image, valor, icone }: Campe
         alt={`Foto do jogador ${nome} - ${titulo}`}
         width={100}
         height={100}
-        className="rounded-full object-cover mb-2"
+        className="mb-2 rounded-full object-cover"
       />
-      <h3 className="text-xl font-bold text-center">{nome}</h3>
+      <h3 className="text-center text-xl font-bold">{nome}</h3>
       <p className="text-sm text-gray-300">{valor}</p>
     </div>
   );

@@ -16,12 +16,19 @@ export default function ConquistasDoAtleta({
   titulosAnuais,
   titulosQuadrimestrais,
 }: Props) {
-  const todasConquistas = [...titulosGrandesTorneios, ...titulosAnuais, ...titulosQuadrimestrais];
+  const todasConquistas = [
+    ...titulosGrandesTorneios,
+    ...titulosAnuais,
+    ...titulosQuadrimestrais,
+  ];
 
   const LIMITE_TITULOS = 24;
   const passouDoLimite = todasConquistas.length > LIMITE_TITULOS;
 
-  function distribuiEmLinhas(arr: TituloAtleta[], colunas = 4): TituloAtleta[][] {
+  function distribuiEmLinhas(
+    arr: TituloAtleta[],
+    colunas = 4,
+  ): TituloAtleta[][] {
     const linhas: TituloAtleta[][] = [];
     for (let i = 0; i < arr.length; i += colunas) {
       linhas.push(arr.slice(i, i + colunas));
@@ -29,27 +36,33 @@ export default function ConquistasDoAtleta({
     return linhas;
   }
 
-  function renderBloco(titulo: string, conquistas: TituloAtleta[], sliceMax = 8) {
+  function renderBloco(
+    titulo: string,
+    conquistas: TituloAtleta[],
+    sliceMax = 8,
+  ) {
     if (conquistas.length === 0) return null;
     const grupos = distribuiEmLinhas(conquistas.slice(0, sliceMax), 4);
 
     return (
       <div className="mb-4">
-        <h3 className="text-lg text-yellow-300 font-semibold mb-1">{titulo}</h3>
+        <h3 className="mb-1 text-lg font-semibold text-yellow-300">{titulo}</h3>
         <div className="flex flex-col gap-1">
           {grupos.map((linha, idx) => (
-            <div key={idx} className="flex flex-wrap gap-2 mb-1">
+            <div key={idx} className="mb-1 flex flex-wrap gap-2">
               {linha.map((tituloItem, i) => (
                 <span
                   key={i}
-                  className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-yellow-100"
+                  className="flex items-center gap-1 rounded-xl bg-[#222] px-3 py-1 text-sm text-yellow-100"
                   title={`${tituloItem.descricao} - ${tituloItem.ano}`}
                   aria-label={`${tituloItem.descricao} ${tituloItem.ano}`}
                 >
                   <span>{tituloItem.icone}</span>
                   <span>
                     {tituloItem.descricao}{" "}
-                    <span className="text-xs text-gray-400">{tituloItem.ano}</span>
+                    <span className="text-xs text-gray-400">
+                      {tituloItem.ano}
+                    </span>
                   </span>
                 </span>
               ))}
@@ -61,8 +74,8 @@ export default function ConquistasDoAtleta({
   }
 
   return (
-    <section className="w-full max-w-4xl mx-auto mb-6">
-      <h2 className="text-2xl text-yellow-400 font-bold flex items-center gap-2 mb-2 justify-center text-center">
+    <section className="mx-auto mb-6 w-full max-w-4xl">
+      <h2 className="mb-2 flex items-center justify-center gap-2 text-center text-2xl font-bold text-yellow-400">
         <span className="inline-block">🏅</span>
         Minhas Conquistas
       </h2>
@@ -75,7 +88,7 @@ export default function ConquistasDoAtleta({
         <div className="mt-2 text-center">
           <Link
             href={`/atletas/${slug}/conquistas`}
-            className="text-yellow-400 hover:underline font-semibold"
+            className="font-semibold text-yellow-400 hover:underline"
           >
             Ver todas as conquistas &rarr;
           </Link>

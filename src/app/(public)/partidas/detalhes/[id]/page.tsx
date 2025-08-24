@@ -19,10 +19,12 @@ export default function PartidaDetalhesPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
+      <div className="mx-auto w-full max-w-[1440px] px-1 pb-10 pt-[40px]">
         <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-4 text-lg text-textoSuave">Carregando detalhes da partida...</span>
+          <div className="border-primary h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <span className="text-textoSuave ml-4 text-lg">
+            Carregando detalhes da partida...
+          </span>
         </div>
       </div>
     );
@@ -30,9 +32,11 @@ export default function PartidaDetalhesPage() {
 
   if (isError) {
     return (
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Erro ao carregar partida</h1>
+      <div className="mx-auto w-full max-w-[1440px] px-1 pb-10 pt-[40px]">
+        <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
+          <h1 className="mb-2 text-2xl font-bold text-red-400">
+            Erro ao carregar partida
+          </h1>
           <p className="text-red-300">{error}</p>
         </div>
       </div>
@@ -41,29 +45,36 @@ export default function PartidaDetalhesPage() {
 
   if (!partida) {
     return (
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Partida não encontrada</h1>
-          <p className="text-yellow-300">A partida solicitada não foi encontrada.</p>
+      <div className="mx-auto w-full max-w-[1440px] px-1 pb-10 pt-[40px]">
+        <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-6">
+          <h1 className="mb-2 text-2xl font-bold text-yellow-400">
+            Partida não encontrada
+          </h1>
+          <p className="text-yellow-300">
+            A partida solicitada não foi encontrada.
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-      <div className="bg-[#1A1A1A] rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold text-yellow-400 mb-4">Detalhes da Partida</h1>
+    <div className="mx-auto w-full max-w-[1440px] px-1 pb-10 pt-[40px]">
+      <div className="rounded-2xl bg-[#1A1A1A] p-6 text-white">
+        <h1 className="mb-4 text-2xl font-bold text-yellow-400">
+          Detalhes da Partida
+        </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <h2 className="text-lg font-semibold mb-2">Informações Gerais</h2>
+            <h2 className="mb-2 text-lg font-semibold">Informações Gerais</h2>
             <div className="space-y-2 text-sm">
               <p>
                 <span className="font-semibold">Data:</span> {partida.data}
               </p>
               <p>
-                <span className="font-semibold">Horário:</span> {partida.horario}
+                <span className="font-semibold">Horário:</span>{" "}
+                {partida.horario}
               </p>
               <p>
                 <span className="font-semibold">Local:</span> {partida.local}
@@ -76,7 +87,7 @@ export default function PartidaDetalhesPage() {
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold mb-2">Placar</h2>
+            <h2 className="mb-2 text-lg font-semibold">Placar</h2>
             <div className="flex items-center justify-center space-x-4 text-2xl font-bold">
               <div className="text-center">
                 <p className="text-lg">{partida.timeA}</p>
@@ -93,10 +104,10 @@ export default function PartidaDetalhesPage() {
 
         {partida.gols && partida.gols.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-2">Gols</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="mb-2 text-lg font-semibold">Gols</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {partida.gols.map((gol, index) => (
-                <div key={index} className="bg-[#232323] rounded-lg p-3">
+                <div key={index} className="rounded-lg bg-[#232323] p-3">
                   <p className="font-semibold">{gol.jogador}</p>
                   <p className="text-sm text-gray-400">Time {gol.time}</p>
                 </div>
@@ -107,12 +118,14 @@ export default function PartidaDetalhesPage() {
 
         {partida.assistencias && partida.assistencias.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-2">Assistências</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h2 className="mb-2 text-lg font-semibold">Assistências</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {partida.assistencias.map((assistencia, index) => (
-                <div key={index} className="bg-[#232323] rounded-lg p-3">
+                <div key={index} className="rounded-lg bg-[#232323] p-3">
                   <p className="font-semibold">{assistencia.jogador}</p>
-                  <p className="text-sm text-gray-400">Time {assistencia.time}</p>
+                  <p className="text-sm text-gray-400">
+                    Time {assistencia.time}
+                  </p>
                 </div>
               ))}
             </div>

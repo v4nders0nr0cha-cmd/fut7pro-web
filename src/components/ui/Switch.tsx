@@ -16,21 +16,21 @@ export function Switch({
   ...props
 }: SwitchProps) {
   return (
-    <label className={`inline-flex items-center cursor-pointer ${className}`}>
+    <label className={`inline-flex cursor-pointer items-center ${className}`}>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onCheckedChange(e.target.checked)}
-        className="sr-only peer"
+        className="peer sr-only"
         aria-label={ariaLabel}
         {...props}
       />
       <div
-        className={`w-11 h-6 bg-zinc-700 peer-checked:bg-amarelo rounded-full transition-colors duration-200 relative`}
+        className={`peer-checked:bg-amarelo relative h-6 w-11 rounded-full bg-zinc-700 transition-colors duration-200`}
       >
         <div
-          className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow transition-all duration-200 ${
-            checked ? "translate-x-5 bg-amarelo" : ""
+          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-all duration-200 ${
+            checked ? "bg-amarelo translate-x-5" : ""
           }`}
         />
       </div>

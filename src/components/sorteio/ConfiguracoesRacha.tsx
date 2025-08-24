@@ -15,16 +15,29 @@ const NUM_TIMES = [2, 3, 4, 5, 6];
 const JOGADORES_POR_TIME = [5, 6, 7];
 
 // Função sempre segura
-function ensureNumber(val: unknown, allowed: number[], fallback: number): number {
+function ensureNumber(
+  val: unknown,
+  allowed: number[],
+  fallback: number,
+): number {
   const n = Number(val);
   return allowed.includes(n) ? n : fallback;
 }
 
-export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props) {
-  const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(DURACOES_RACHA[0]);
-  const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(DURACOES_PARTIDA[0]);
+export default function ConfiguracoesRacha({
+  onSubmit,
+  disabled = false,
+}: Props) {
+  const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(
+    DURACOES_RACHA[0],
+  );
+  const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(
+    DURACOES_PARTIDA[0],
+  );
   const [numTimes, setNumTimes] = useState<number>(NUM_TIMES[0]);
-  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(JOGADORES_POR_TIME[0]);
+  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(
+    JOGADORES_POR_TIME[0],
+  );
 
   // Carrega do localStorage só quando monta
   useEffect(() => {
@@ -33,13 +46,27 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
       if (cfg) {
         const obj = JSON.parse(cfg);
         if (typeof obj === "object" && obj) {
-          setDuracaoRachaMin(ensureNumber(obj.duracaoRachaMin, DURACOES_RACHA, DURACOES_RACHA[0]));
+          setDuracaoRachaMin(
+            ensureNumber(
+              obj.duracaoRachaMin,
+              DURACOES_RACHA,
+              DURACOES_RACHA[0],
+            ),
+          );
           setDuracaoPartidaMin(
-            ensureNumber(obj.duracaoPartidaMin, DURACOES_PARTIDA, DURACOES_PARTIDA[0])
+            ensureNumber(
+              obj.duracaoPartidaMin,
+              DURACOES_PARTIDA,
+              DURACOES_PARTIDA[0],
+            ),
           );
           setNumTimes(ensureNumber(obj.numTimes, NUM_TIMES, NUM_TIMES[0]));
           setJogadoresPorTime(
-            ensureNumber(obj.jogadoresPorTime, JOGADORES_POR_TIME, JOGADORES_POR_TIME[0])
+            ensureNumber(
+              obj.jogadoresPorTime,
+              JOGADORES_POR_TIME,
+              JOGADORES_POR_TIME[0],
+            ),
           );
         }
       }
@@ -54,21 +81,34 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     try {
       localStorage.setItem(
         rachaConfig.storage.configKey,
-        JSON.stringify({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime })
+        JSON.stringify({
+          duracaoRachaMin,
+          duracaoPartidaMin,
+          numTimes,
+          jogadoresPorTime,
+        }),
       );
     } catch {
       /* ignore */
     }
-    onSubmit({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime });
+    onSubmit({
+      duracaoRachaMin,
+      duracaoPartidaMin,
+      numTimes,
+      jogadoresPorTime,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps - onSubmit é estável e não deve ser dependência
   }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
 
   // Se valores ficarem inválidos por alguma alteração externa, sempre recupera o fallback
   useEffect(() => {
-    if (!DURACOES_RACHA.includes(duracaoRachaMin)) setDuracaoRachaMin(DURACOES_RACHA[0]);
-    if (!DURACOES_PARTIDA.includes(duracaoPartidaMin)) setDuracaoPartidaMin(DURACOES_PARTIDA[0]);
+    if (!DURACOES_RACHA.includes(duracaoRachaMin))
+      setDuracaoRachaMin(DURACOES_RACHA[0]);
+    if (!DURACOES_PARTIDA.includes(duracaoPartidaMin))
+      setDuracaoPartidaMin(DURACOES_PARTIDA[0]);
     if (!NUM_TIMES.includes(numTimes)) setNumTimes(NUM_TIMES[0]);
-    if (!JOGADORES_POR_TIME.includes(jogadoresPorTime)) setJogadoresPorTime(JOGADORES_POR_TIME[0]);
+    if (!JOGADORES_POR_TIME.includes(jogadoresPorTime))
+      setJogadoresPorTime(JOGADORES_POR_TIME[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps - Validação de valores válidos
   }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
 
@@ -77,8 +117,10 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     : "transition-all duration-300";
 
   return (
-    <form className={`bg-[#202020] rounded-xl p-4 mb-6 flex flex-col gap-4 ${fadeClasses}`}>
-      <div className="flex flex-col md:flex-row gap-4">
+    <form
+      className={`mb-6 flex flex-col gap-4 rounded-xl bg-[#202020] p-4 ${fadeClasses}`}
+    >
+      <div className="flex flex-col gap-4 md:flex-row">
         <div className="flex-1">
           <label htmlFor="duracao-racha" className="text-sm">
             Duração do Racha (min):
@@ -87,9 +129,11 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
             id="duracao-racha"
             value={duracaoRachaMin}
             onChange={(e) =>
-              setDuracaoRachaMin(ensureNumber(e.target.value, DURACOES_RACHA, DURACOES_RACHA[0]))
+              setDuracaoRachaMin(
+                ensureNumber(e.target.value, DURACOES_RACHA, DURACOES_RACHA[0]),
+              )
             }
-            className="w-full rounded p-1 bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-1 text-white"
             disabled={disabled}
             tabIndex={disabled ? -1 : 0}
           >
@@ -109,10 +153,14 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
             value={duracaoPartidaMin}
             onChange={(e) =>
               setDuracaoPartidaMin(
-                ensureNumber(e.target.value, DURACOES_PARTIDA, DURACOES_PARTIDA[0])
+                ensureNumber(
+                  e.target.value,
+                  DURACOES_PARTIDA,
+                  DURACOES_PARTIDA[0],
+                ),
               )
             }
-            className="w-full rounded p-1 bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-1 text-white"
             disabled={disabled}
             tabIndex={disabled ? -1 : 0}
           >
@@ -124,7 +172,7 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
           </select>
         </div>
       </div>
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="flex flex-col gap-4 md:flex-row">
         <div className="flex-1">
           <label htmlFor="num-times" className="text-sm">
             Nº de Times:
@@ -132,8 +180,10 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
           <select
             id="num-times"
             value={numTimes}
-            onChange={(e) => setNumTimes(ensureNumber(e.target.value, NUM_TIMES, NUM_TIMES[0]))}
-            className="w-full rounded p-1 bg-zinc-800 text-white"
+            onChange={(e) =>
+              setNumTimes(ensureNumber(e.target.value, NUM_TIMES, NUM_TIMES[0]))
+            }
+            className="w-full rounded bg-zinc-800 p-1 text-white"
             disabled={disabled}
             tabIndex={disabled ? -1 : 0}
           >
@@ -147,17 +197,24 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
         <div className="flex-1">
           <label htmlFor="jogadores-por-time" className="text-sm">
             Jogadores por Time{" "}
-            <span className="text-xs text-gray-400">(contando com o goleiro)</span>:
+            <span className="text-xs text-gray-400">
+              (contando com o goleiro)
+            </span>
+            :
           </label>
           <select
             id="jogadores-por-time"
             value={jogadoresPorTime}
             onChange={(e) =>
               setJogadoresPorTime(
-                ensureNumber(e.target.value, JOGADORES_POR_TIME, JOGADORES_POR_TIME[0])
+                ensureNumber(
+                  e.target.value,
+                  JOGADORES_POR_TIME,
+                  JOGADORES_POR_TIME[0],
+                ),
               )
             }
-            className="w-full rounded p-1 bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-1 text-white"
             disabled={disabled}
             tabIndex={disabled ? -1 : 0}
           >

@@ -34,7 +34,11 @@ class RateLimiter {
     });
   }
 
-  isAllowed(identifier: string): { allowed: boolean; remaining: number; resetTime: number } {
+  isAllowed(identifier: string): {
+    allowed: boolean;
+    remaining: number;
+    resetTime: number;
+  } {
     this.cleanup();
 
     const key = this.getKey(identifier);
@@ -110,7 +114,9 @@ export function getClientIP(req: Request): string {
 }
 
 // Middleware para Next.js API routes
-export function withRateLimit(handler: (req: Request, ...args: unknown[]) => Promise<Response>) {
+export function withRateLimit(
+  handler: (req: Request, ...args: unknown[]) => Promise<Response>,
+) {
   return async (req: Request, ...args: unknown[]) => {
     const clientIP = getClientIP(req);
     const rateLimitResult = checkRateLimit(clientIP);
@@ -129,9 +135,11 @@ export function withRateLimit(handler: (req: Request, ...args: unknown[]) => Pro
             "X-RateLimit-Limit": "100",
             "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
             "X-RateLimit-Reset": rateLimitResult.resetTime.toString(),
-            "Retry-After": Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString(),
+            "Retry-After": Math.ceil(
+              (rateLimitResult.resetTime - Date.now()) / 1000,
+            ).toString(),
           },
-        }
+        },
       );
     }
 
@@ -140,8 +148,14 @@ export function withRateLimit(handler: (req: Request, ...args: unknown[]) => Pro
 
     if (response instanceof Response) {
       response.headers.set("X-RateLimit-Limit", "100");
-      response.headers.set("X-RateLimit-Remaining", rateLimitResult.remaining.toString());
-      response.headers.set("X-RateLimit-Reset", rateLimitResult.resetTime.toString());
+      response.headers.set(
+        "X-RateLimit-Remaining",
+        rateLimitResult.remaining.toString(),
+      );
+      response.headers.set(
+        "X-RateLimit-Reset",
+        rateLimitResult.resetTime.toString(),
+      );
     }
 
     return response;

@@ -58,7 +58,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
   const [banner, setBanner] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [qtdVagas, setQtdVagas] = useState(7);
-  const [campeoes, setCampeoes] = useState<(Jogador | null)[]>(Array(7).fill(null));
+  const [campeoes, setCampeoes] = useState<(Jogador | null)[]>(
+    Array(7).fill(null),
+  );
   const [erro, setErro] = useState("");
 
   const [cropping, setCropping] = useState(false);
@@ -96,7 +98,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
     src: string,
     area: { x: number; y: number; width: number; height: number },
     w = 1200,
-    h = 400
+    h = 400,
   ) {
     const img = new window.Image() as HTMLImageElement;
     img.src = src;
@@ -143,8 +145,16 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!titulo || !descricao || !banner || !logo || campeoes.filter(Boolean).length === 0) {
-      setErro("Preencha todos os campos obrigatórios e adicione pelo menos um campeão.");
+    if (
+      !titulo ||
+      !descricao ||
+      !banner ||
+      !logo ||
+      campeoes.filter(Boolean).length === 0
+    ) {
+      setErro(
+        "Preencha todos os campos obrigatórios e adicione pelo menos um campeão.",
+      );
       return;
     }
     setErro("");
@@ -156,16 +166,18 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85">
       <form
-        className="bg-[#191b1f] rounded-2xl p-6 max-w-2xl w-full shadow-2xl overflow-y-auto max-h-[98vh]"
+        className="max-h-[98vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-[#191b1f] p-6 shadow-2xl"
         onSubmit={handleSubmit}
       >
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-bold text-yellow-400">+ Novo Grande Torneio</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-yellow-400">
+            + Novo Grande Torneio
+          </h2>
           <button
             type="button"
-            className="text-gray-300 hover:text-yellow-400 text-xl"
+            className="text-xl text-gray-300 hover:text-yellow-400"
             onClick={onClose}
           >
             <FaTimes />
@@ -174,10 +186,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Título */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Título do Campeonato *</label>
+          <label className="text-sm font-medium text-gray-300">
+            Título do Campeonato *
+          </label>
           <input
             type="text"
-            className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+            className="mt-1 w-full rounded border border-gray-600 bg-zinc-800 px-3 py-2 text-white focus:border-yellow-400"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
             required
@@ -188,9 +202,11 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Descrição */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Descrição do Campeonato *</label>
+          <label className="text-sm font-medium text-gray-300">
+            Descrição do Campeonato *
+          </label>
           <textarea
-            className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400 resize-none"
+            className="mt-1 w-full resize-none rounded border border-gray-600 bg-zinc-800 px-3 py-2 text-white focus:border-yellow-400"
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
             required
@@ -202,13 +218,13 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Banner */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">
+          <label className="text-sm font-medium text-gray-300">
             Banner do Torneio (1200x400px) *
           </label>
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
             <button
               type="button"
-              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded shadow text-sm"
+              className="flex items-center gap-2 rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-black shadow hover:bg-yellow-600"
               onClick={() => inputBannerRef.current?.click()}
             >
               <FaUpload /> Selecionar Imagem
@@ -221,12 +237,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
               onChange={handleBannerUpload}
             />
             {banner && (
-              <div className="w-full sm:w-60 h-20 relative mt-2 sm:mt-0">
+              <div className="relative mt-2 h-20 w-full sm:mt-0 sm:w-60">
                 <Image
                   src={banner}
                   alt="Preview Banner"
                   fill
-                  className="object-cover rounded border-2 border-yellow-400"
+                  className="rounded border-2 border-yellow-400 object-cover"
                 />
               </div>
             )}
@@ -235,11 +251,13 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Logo */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Logo do Time Campeão *</label>
-          <div className="flex gap-3 items-center">
+          <label className="text-sm font-medium text-gray-300">
+            Logo do Time Campeão *
+          </label>
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded shadow text-sm"
+              className="flex items-center gap-2 rounded bg-yellow-500 px-4 py-2 text-sm font-semibold text-black shadow hover:bg-yellow-600"
               onClick={() => inputLogoRef.current?.click()}
             >
               <FaUpload /> Selecionar Logo
@@ -252,12 +270,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
               onChange={handleLogoUpload}
             />
             {logo && (
-              <div className="w-20 h-20 relative">
+              <div className="relative h-20 w-20">
                 <Image
                   src={logo}
                   alt="Preview Logo"
                   fill
-                  className="object-cover rounded-full border-2 border-yellow-400"
+                  className="rounded-full border-2 border-yellow-400 object-cover"
                 />
               </div>
             )}
@@ -266,36 +284,45 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Vagas */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Quantidade de Campeões *</label>
+          <label className="text-sm font-medium text-gray-300">
+            Quantidade de Campeões *
+          </label>
           <input
             type="number"
             min={1}
             max={20}
-            className="bg-zinc-800 text-yellow-200 rounded px-3 py-1 w-24 border border-yellow-500 text-lg font-bold"
+            className="w-24 rounded border border-yellow-500 bg-zinc-800 px-3 py-1 text-lg font-bold text-yellow-200"
             value={qtdVagas}
             onChange={(e) => handleQtdVagasChange(Number(e.target.value))}
           />
         </div>
 
         {/* Campeões */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {campeoes.map((jogador, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 bg-zinc-900 border border-yellow-600 rounded-xl px-3 py-2 relative"
+              className="relative flex items-center gap-3 rounded-xl border border-yellow-600 bg-zinc-900 px-3 py-2"
             >
               {jogador ? (
                 <>
                   <Image
-                    src={jogador.avatar ?? "/images/jogadores/jogador_padrao_01.jpg"}
+                    src={
+                      jogador.avatar ??
+                      "/images/jogadores/jogador_padrao_01.jpg"
+                    }
                     alt={`Avatar de ${jogador.nome}`}
                     width={34}
                     height={34}
                     className="rounded-full border border-yellow-300"
                   />
                   <div className="flex-1">
-                    <span className="font-semibold text-white">{jogador.nome}</span>
-                    <span className="text-xs text-yellow-400 ml-2">{jogador.posicao}</span>
+                    <span className="font-semibold text-white">
+                      {jogador.nome}
+                    </span>
+                    <span className="ml-2 text-xs text-yellow-400">
+                      {jogador.posicao}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -308,7 +335,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
               ) : (
                 <button
                   type="button"
-                  className="flex-1 flex items-center gap-2 text-yellow-300 hover:text-yellow-400 font-semibold py-1"
+                  className="flex flex-1 items-center gap-2 py-1 font-semibold text-yellow-300 hover:text-yellow-400"
                   onClick={() => setVagaEmSelecao(idx)}
                 >
                   <FaUser className="text-lg" /> Adicione o jogador
@@ -318,20 +345,24 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
           ))}
         </div>
 
-        {erro && <div className="text-red-400 font-bold text-sm mt-4 text-center">{erro}</div>}
+        {erro && (
+          <div className="mt-4 text-center text-sm font-bold text-red-400">
+            {erro}
+          </div>
+        )}
 
         {/* Ações */}
-        <div className="flex justify-end gap-2 mt-6">
+        <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
-            className="bg-gray-700 text-white px-4 py-2 rounded font-semibold hover:bg-gray-600"
+            className="rounded bg-gray-700 px-4 py-2 font-semibold text-white hover:bg-gray-600"
             onClick={onClose}
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded font-bold"
+            className="rounded bg-yellow-500 px-5 py-2 font-bold text-black hover:bg-yellow-600"
           >
             Salvar Torneio
           </button>
@@ -339,12 +370,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Modal de crop */}
         {cropping && (
-          <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
-            <div className="bg-[#1c1e22] rounded-xl p-6 shadow-2xl max-w-3xl w-full">
-              <h3 className="text-lg text-yellow-400 font-bold mb-2">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+            <div className="w-full max-w-3xl rounded-xl bg-[#1c1e22] p-6 shadow-2xl">
+              <h3 className="mb-2 text-lg font-bold text-yellow-400">
                 Ajuste o Banner (proporção 3:1)
               </h3>
-              <div className="relative w-full h-48 sm:h-64 bg-black rounded overflow-hidden">
+              <div className="relative h-48 w-full overflow-hidden rounded bg-black sm:h-64">
                 <Cropper
                   image={cropSrc}
                   crop={crop}
@@ -355,17 +386,17 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
                   onCropComplete={(_, cropped) => setCroppedAreaPixels(cropped)}
                 />
               </div>
-              <div className="flex justify-end gap-2 mt-4">
+              <div className="mt-4 flex justify-end gap-2">
                 <button
                   type="button"
-                  className="bg-gray-600 text-white px-4 py-2 rounded"
+                  className="rounded bg-gray-600 px-4 py-2 text-white"
                   onClick={() => setCropping(false)}
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
-                  className="bg-yellow-500 text-black px-4 py-2 rounded font-bold"
+                  className="rounded bg-yellow-500 px-4 py-2 font-bold text-black"
                   onClick={handleCropConfirm}
                 >
                   Confirmar Recorte

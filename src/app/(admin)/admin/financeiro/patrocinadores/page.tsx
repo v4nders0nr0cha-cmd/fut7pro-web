@@ -11,40 +11,64 @@ import ToggleVisibilidadePublica from "./components/ToggleVisibilidadePublica";
 const DATA_ATUAL = new Date().toISOString().slice(0, 10);
 
 export default function PaginaPatrocinadores() {
-  const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>(mockPatrocinadores);
+  const [patrocinadores, setPatrocinadores] =
+    useState<Patrocinador[]>(mockPatrocinadores);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editPatrocinador, setEditPatrocinador] = useState<Patrocinador | undefined>(undefined);
+  const [editPatrocinador, setEditPatrocinador] = useState<
+    Patrocinador | undefined
+  >(undefined);
 
   // Período padrão: últimos 12 meses
   const inicioPadrao = new Date(new Date().setMonth(new Date().getMonth() - 11))
     .toISOString()
     .slice(0, 10);
-  const [periodo, setPeriodo] = useState({ inicio: inicioPadrao, fim: DATA_ATUAL });
+  const [periodo, setPeriodo] = useState({
+    inicio: inicioPadrao,
+    fim: DATA_ATUAL,
+  });
 
   // CRUD handlers
   const handleEditar = (p: Patrocinador) => {
     setEditPatrocinador(p);
     setModalOpen(true);
   };
-  const handleExcluir = (id: string) => setPatrocinadores((arr) => arr.filter((p) => p.id !== id));
+  const handleExcluir = (id: string) =>
+    setPatrocinadores((arr) => arr.filter((p) => p.id !== id));
   const handleSalvar = (p: Partial<Patrocinador>) => {
-    if (!p.nome || !p.valor || !p.periodoInicio || !p.periodoFim || !p.status || !p.logo) return;
+    if (
+      !p.nome ||
+      !p.valor ||
+      !p.periodoInicio ||
+      !p.periodoFim ||
+      !p.status ||
+      !p.logo
+    )
+      return;
     if (p.id) {
       setPatrocinadores((arr) =>
-        arr.map((x) => (x.id === p.id ? ({ ...x, ...p, id: x.id } as Patrocinador) : x))
+        arr.map((x) =>
+          x.id === p.id ? ({ ...x, ...p, id: x.id } as Patrocinador) : x,
+        ),
       );
     } else {
       if (patrocinadores.length >= 10) return;
       setPatrocinadores((arr) => [
         ...arr,
-        { ...p, id: Date.now().toString(), comprovantes: [], visivel: true } as Patrocinador,
+        {
+          ...p,
+          id: Date.now().toString(),
+          comprovantes: [],
+          visivel: true,
+        } as Patrocinador,
       ]);
     }
     setModalOpen(false);
     setEditPatrocinador(undefined);
   };
   const handleToggleVisivel = (id: string) => {
-    setPatrocinadores((arr) => arr.map((p) => (p.id === id ? { ...p, visivel: !p.visivel } : p)));
+    setPatrocinadores((arr) =>
+      arr.map((p) => (p.id === id ? { ...p, visivel: !p.visivel } : p)),
+    );
   };
   const handleNovo = () => {
     if (patrocinadores.length < 10) {
@@ -66,16 +90,23 @@ export default function PaginaPatrocinadores() {
           content="Fut7Pro, painel admin, patrocinadores, racha, futebol, SaaS, financeiro, patrocínio"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-6xl mx-auto w-full">
-        <div className="flex items-center flex-wrap mb-6 gap-2">
-          <h1 className="text-2xl md:text-3xl font-black text-yellow-400">Patrocinadores</h1>
+      <div className="mx-auto w-full max-w-6xl pb-24 pt-20 md:pb-8 md:pt-6">
+        <div className="mb-6 flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-black text-yellow-400 md:text-3xl">
+            Patrocinadores
+          </h1>
         </div>
-        <CardResumoPatrocinio patrocinadores={patrocinadores} periodo={periodo} />
+        <CardResumoPatrocinio
+          patrocinadores={patrocinadores}
+          periodo={periodo}
+        />
         <ToggleVisibilidadePublica
           visivel={patrocinadores.some((p) => p.visivel)}
           onToggle={() => {
             const allVisivel = patrocinadores.some((p) => p.visivel);
-            setPatrocinadores((arr) => arr.map((p) => ({ ...p, visivel: !allVisivel })));
+            setPatrocinadores((arr) =>
+              arr.map((p) => ({ ...p, visivel: !allVisivel })),
+            );
           }}
         />
         <TabelaPatrocinadores

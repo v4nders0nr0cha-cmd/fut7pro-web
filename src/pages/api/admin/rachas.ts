@@ -5,7 +5,10 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {
     return res.status(401).json({ error: "Não autenticado" });
@@ -36,8 +39,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         return res.status(200).json(Array.isArray(rachas) ? rachas : []);
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
-        return res.status(500).json({ error: "Erro ao buscar rachas", details: errorMessage });
+        const errorMessage =
+          e instanceof Error ? e.message : "Erro desconhecido";
+        return res
+          .status(500)
+          .json({ error: "Erro ao buscar rachas", details: errorMessage });
       }
     }
     case "POST": {
@@ -57,8 +63,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         return res.status(201).json(racha);
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
-        return res.status(400).json({ error: "Erro ao criar racha", details: errorMessage });
+        const errorMessage =
+          e instanceof Error ? e.message : "Erro desconhecido";
+        return res
+          .status(400)
+          .json({ error: "Erro ao criar racha", details: errorMessage });
       }
     }
     case "PUT": {
@@ -77,8 +86,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         return res.status(200).json(racha);
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
-        return res.status(400).json({ error: "Erro ao atualizar racha", details: errorMessage });
+        const errorMessage =
+          e instanceof Error ? e.message : "Erro desconhecido";
+        return res
+          .status(400)
+          .json({ error: "Erro ao atualizar racha", details: errorMessage });
       }
     }
     case "DELETE": {
@@ -90,8 +102,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
         return res.status(204).end();
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
-        return res.status(400).json({ error: "Erro ao excluir racha", details: errorMessage });
+        const errorMessage =
+          e instanceof Error ? e.message : "Erro desconhecido";
+        return res
+          .status(400)
+          .json({ error: "Erro ao excluir racha", details: errorMessage });
       }
     }
     default:

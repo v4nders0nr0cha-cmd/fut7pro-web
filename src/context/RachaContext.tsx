@@ -56,8 +56,10 @@ export function RachaProvider({ children }: { children: ReactNode }) {
       clearRachaId,
       isRachaSelected,
     }),
-    [rachaId, setRachaId, clearRachaId, isRachaSelected]
+    [rachaId, setRachaId, clearRachaId, isRachaSelected],
   );
 
-  return <RachaContext.Provider value={value}>{children}</RachaContext.Provider>;
+  return (
+    <RachaContext.Provider value={value}>{children}</RachaContext.Provider>
+  );
 }

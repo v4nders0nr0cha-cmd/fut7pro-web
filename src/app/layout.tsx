@@ -1,4 +1,4 @@
-import "@/styles/globals.css";
+﻿import "@/styles/globals.css";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "./providers";
@@ -25,7 +25,9 @@ export const metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  ),
   alternates: {
     canonical: "/",
   },
@@ -76,7 +78,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
-      <body className={`${inter.className} bg-fundo text-white break-words`}>
+      <body className={`${inter.className} break-words bg-fundo text-white`}>
         <ErrorBoundary>
           <ThemeProvider>
             <Providers>

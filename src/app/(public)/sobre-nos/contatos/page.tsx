@@ -24,7 +24,7 @@ export default function ContatosPage() {
   const [erro, setErro] = useState<string | null>(null);
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setErro(null);
@@ -77,21 +77,22 @@ export default function ContatosPage() {
         />
       </Head>
 
-      <main className="w-full pt-20 pb-10">
-        <div className="max-w-2xl mx-auto px-4">
+      <main className="w-full pb-10 pt-20">
+        <div className="mx-auto max-w-2xl px-4">
           {/* TÍTULO AMARELO */}
-          <h1 className="text-2xl md:text-4xl font-bold text-center text-yellow-400 mb-3">
+          <h1 className="mb-3 text-center text-2xl font-bold text-yellow-400 md:text-4xl">
             Fale Conosco
           </h1>
-          <p className="text-center text-zinc-300 mb-6">
-            Quer ser parceiro, anunciar sua marca ou tirar dúvidas sobre o Racha Fut7Pro? Fale
-            direto com a equipe responsável pela administração através das opções abaixo!
+          <p className="mb-6 text-center text-zinc-300">
+            Quer ser parceiro, anunciar sua marca ou tirar dúvidas sobre o Racha
+            Fut7Pro? Fale direto com a equipe responsável pela administração
+            através das opções abaixo!
           </p>
 
           {/* Formulário */}
           <form
             onSubmit={handleSubmit}
-            className="bg-neutral-900 rounded-2xl shadow p-4 flex flex-col gap-3 mb-6"
+            className="mb-6 flex flex-col gap-3 rounded-2xl bg-neutral-900 p-4 shadow"
           >
             <div>
               <label htmlFor="nome" className="font-semibold text-white">
@@ -104,7 +105,7 @@ export default function ContatosPage() {
                 maxLength={50}
                 value={form.nome}
                 onChange={handleChange}
-                className="w-full bg-black border border-zinc-700 rounded p-2 mt-1 text-white placeholder:text-zinc-400"
+                className="mt-1 w-full rounded border border-zinc-700 bg-black p-2 text-white placeholder:text-zinc-400"
                 placeholder="Digite seu nome ou empresa"
                 required
               />
@@ -120,7 +121,7 @@ export default function ContatosPage() {
                 maxLength={60}
                 value={form.email}
                 onChange={handleChange}
-                className="w-full bg-black border border-zinc-700 rounded p-2 mt-1 text-white placeholder:text-zinc-400"
+                className="mt-1 w-full rounded border border-zinc-700 bg-black p-2 text-white placeholder:text-zinc-400"
                 placeholder="nome@email.com"
                 required
               />
@@ -136,7 +137,7 @@ export default function ContatosPage() {
                 maxLength={20}
                 value={form.telefone}
                 onChange={handleChange}
-                className="w-full bg-black border border-zinc-700 rounded p-2 mt-1 text-white placeholder:text-zinc-400"
+                className="mt-1 w-full rounded border border-zinc-700 bg-black p-2 text-white placeholder:text-zinc-400"
                 placeholder="(xx) xxxxx-xxxx"
               />
             </div>
@@ -149,7 +150,7 @@ export default function ContatosPage() {
                 id="assunto"
                 value={form.assunto}
                 onChange={handleChange}
-                className="w-full bg-black border border-zinc-700 rounded p-2 mt-1 text-white"
+                className="mt-1 w-full rounded border border-zinc-700 bg-black p-2 text-white"
                 required
               >
                 <option value="">Selecione</option>
@@ -171,24 +172,25 @@ export default function ContatosPage() {
                 maxLength={1000}
                 value={form.mensagem}
                 onChange={handleChange}
-                className="w-full bg-black border border-zinc-700 rounded p-2 mt-1 text-white placeholder:text-zinc-400"
+                className="mt-1 w-full rounded border border-zinc-700 bg-black p-2 text-white placeholder:text-zinc-400"
                 placeholder="Digite sua mensagem"
                 required
               />
             </div>
-            {erro && <span className="text-yellow-400 text-sm">{erro}</span>}
+            {erro && <span className="text-sm text-yellow-400">{erro}</span>}
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg p-2 font-bold transition mt-2"
+              className="mt-2 rounded-lg bg-yellow-400 p-2 font-bold text-black transition hover:bg-yellow-500"
               disabled={enviando || enviado}
             >
               {enviando ? (
-                <span className="flex items-center gap-2 justify-center animate-pulse">
+                <span className="flex animate-pulse items-center justify-center gap-2">
                   <FaCheckCircle className="text-yellow-500" /> Enviando...
                 </span>
               ) : enviado ? (
-                <span className="flex items-center gap-2 justify-center">
-                  <FaCheckCircle className="text-green-500" /> Enviado com sucesso!
+                <span className="flex items-center justify-center gap-2">
+                  <FaCheckCircle className="text-green-500" /> Enviado com
+                  sucesso!
                 </span>
               ) : (
                 "Enviar mensagem"
@@ -197,8 +199,10 @@ export default function ContatosPage() {
           </form>
 
           {/* Canais diretos */}
-          <div className="bg-neutral-900 rounded-2xl shadow p-4 flex flex-col gap-3 mb-6">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-2">Canais Diretos</h2>
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl bg-neutral-900 p-4 shadow">
+            <h2 className="mb-2 text-lg font-bold text-white md:text-xl">
+              Canais Diretos
+            </h2>
             <div className="flex flex-col gap-2 md:flex-row md:gap-6">
               <a
                 href="mailto:contato@fut7pro.com.br"
@@ -219,13 +223,13 @@ export default function ContatosPage() {
                 <FaWhatsapp /> WhatsApp Comercial
               </a>
             </div>
-            <div className="flex gap-4 mt-2">
+            <div className="mt-2 flex gap-4">
               <a
                 href="https://instagram.com/fut7pro"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="text-yellow-400 hover:text-white text-2xl"
+                className="text-2xl text-yellow-400 hover:text-white"
               >
                 <FaInstagram />
               </a>
@@ -234,7 +238,7 @@ export default function ContatosPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="text-yellow-400 hover:text-white text-2xl"
+                className="text-2xl text-yellow-400 hover:text-white"
               >
                 <FaFacebook />
               </a>
@@ -242,22 +246,25 @@ export default function ContatosPage() {
           </div>
 
           {/* Bloco Patrocínio e Mídia */}
-          <div className="bg-neutral-950 border border-yellow-400 rounded-2xl shadow p-4 flex flex-col gap-3 mb-6">
-            <div className="flex items-center gap-2 mb-1">
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-yellow-400 bg-neutral-950 p-4 shadow">
+            <div className="mb-1 flex items-center gap-2">
               <FaBuilding className="text-yellow-400" />
-              <h3 className="font-bold text-yellow-400 text-base md:text-lg">
+              <h3 className="text-base font-bold text-yellow-400 md:text-lg">
                 Sua marca em destaque no nosso Racha
               </h3>
             </div>
-            <p className="text-sm md:text-base text-white mb-1">
-              Empresas e patrocinadores podem divulgar sua marca nos jogos e eventos parceiros do
-              Racha Fut7Pro, com exposição em banners, páginas e posts oficiais. Peça nosso Media
-              Kit ou solicite mais informações pelo formulário ou pelos canais diretos!
+            <p className="mb-1 text-sm text-white md:text-base">
+              Empresas e patrocinadores podem divulgar sua marca nos jogos e
+              eventos parceiros do Racha Fut7Pro, com exposição em banners,
+              páginas e posts oficiais. Peça nosso Media Kit ou solicite mais
+              informações pelo formulário ou pelos canais diretos!
             </p>
           </div>
 
           {/* Endereço ou Sede */}
-          <div className="text-center text-zinc-400 text-sm">Racha Fut7pro – São Paulo/SP</div>
+          <div className="text-center text-sm text-zinc-400">
+            Racha Fut7pro – São Paulo/SP
+          </div>
         </div>
       </main>
     </>

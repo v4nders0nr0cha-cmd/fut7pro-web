@@ -20,7 +20,8 @@ const parceirosMock = [
     nome: "Fut7Pro",
     logo: "/images/logos/logo_fut7pro.png",
     categoria: "Apoiador Institucional",
-    descricao: "Plataforma oficial de gestão de rachas e estatísticas do Futebol 7 no Brasil.",
+    descricao:
+      "Plataforma oficial de gestão de rachas e estatísticas do Futebol 7 no Brasil.",
     link: "https://fut7pro.com.br",
     destaque: true,
   },
@@ -102,33 +103,34 @@ export default function NossosParceiros() {
         <meta property="og:url" content={seo.url} />
       </Head>
 
-      <main className="w-full pt-20 pb-10">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col items-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 text-center mb-2 flex items-center justify-center gap-2">
+      <main className="w-full pb-10 pt-20">
+        <div className="mx-auto flex max-w-6xl flex-col items-center px-4">
+          <h1 className="mb-2 flex items-center justify-center gap-2 text-center text-3xl font-bold text-yellow-400 md:text-4xl">
             Nossos Parceiros
             <span
               role="img"
               aria-label="aperto de mãos"
-              className="text-yellow-300 text-2xl md:text-3xl"
+              className="text-2xl text-yellow-300 md:text-3xl"
             >
               🤝
             </span>
           </h1>
-          <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
+          <p className="mb-10 max-w-2xl text-center text-base font-medium text-neutral-200 md:text-lg">
             Ajude quem fortalece o nosso racha! <br />
-            Valorize quem acredita na nossa equipe. Siga, prestigie e dê preferência aos nossos
-            parceiros, empresas e profissionais que apoiam o racha com descontos, patrocínios,
-            produtos e serviços de qualidade.
+            Valorize quem acredita na nossa equipe. Siga, prestigie e dê
+            preferência aos nossos parceiros, empresas e profissionais que
+            apoiam o racha com descontos, patrocínios, produtos e serviços de
+            qualidade.
           </p>
 
           {/* Cards */}
-          <section className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <section className="mb-8 grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {parceirosMock.map((p, idx) => (
               <div
                 key={p.nome + idx}
-                className="flex flex-col items-center bg-neutral-800 rounded-2xl border border-neutral-700 p-5 text-center h-full transition hover:border-yellow-400"
+                className="flex h-full flex-col items-center rounded-2xl border border-neutral-700 bg-neutral-800 p-5 text-center transition hover:border-yellow-400"
               >
-                <div className="w-16 h-16 flex items-center justify-center mb-2">
+                <div className="mb-2 flex h-16 w-16 items-center justify-center">
                   <Image
                     src={p.logo}
                     alt={`Logo de ${p.nome}`}
@@ -138,16 +140,20 @@ export default function NossosParceiros() {
                     loading="lazy"
                   />
                 </div>
-                <span className="text-lg font-bold text-yellow-300 mb-1">{p.nome}</span>
-                <span className="text-sm text-neutral-400 mb-2">{p.categoria}</span>
-                <p className="text-sm text-neutral-200 mb-2">{p.descricao}</p>
+                <span className="mb-1 text-lg font-bold text-yellow-300">
+                  {p.nome}
+                </span>
+                <span className="mb-2 text-sm text-neutral-400">
+                  {p.categoria}
+                </span>
+                <p className="mb-2 text-sm text-neutral-200">{p.descricao}</p>
                 <Link
                   href={p.link}
                   target="_blank"
-                  className={`inline-block mt-auto px-3 py-1 rounded-full text-sm font-semibold ${
+                  className={`mt-auto inline-block rounded-full px-3 py-1 text-sm font-semibold ${
                     p.destaque
                       ? "bg-yellow-400 text-neutral-900 hover:bg-yellow-300"
-                      : "bg-neutral-900 text-yellow-300 border border-yellow-400 hover:bg-yellow-400 hover:text-neutral-900"
+                      : "border border-yellow-400 bg-neutral-900 text-yellow-300 hover:bg-yellow-400 hover:text-neutral-900"
                   } transition`}
                   rel="noopener noreferrer"
                 >
@@ -158,8 +164,9 @@ export default function NossosParceiros() {
           </section>
 
           {/* Texto institucional para novos parceiros */}
-          <p className="text-center text-neutral-400 text-sm md:text-base mb-10 max-w-2xl">
-            Quer apoiar nosso racha, divulgar sua empresa e fortalecer o futebol 7 entre amigos?
+          <p className="mb-10 max-w-2xl text-center text-sm text-neutral-400 md:text-base">
+            Quer apoiar nosso racha, divulgar sua empresa e fortalecer o futebol
+            7 entre amigos?
             <br />
             Fale com a administração e saiba como ser um parceiro.
           </p>

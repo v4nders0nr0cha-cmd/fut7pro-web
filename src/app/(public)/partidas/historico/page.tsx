@@ -1,36 +1,40 @@
-"use client";
+import type { Metadata } from "next";
+import HistoricoClient from "./HistoricoClient";
 
-import HistoricoPartidas from "@/components/partidas/HistoricoPartidas";
-import { usePartidas } from "@/hooks/usePartidas";
+export const metadata: Metadata = {
+  title: "Histórico de Partidas | Fut7Pro",
+  description:
+    "Veja o histórico completo de partidas do seu racha, com placares, locais, datas e destaques. Filtro por time e data.",
+  alternates: { canonical: "/partidas/historico" },
+  openGraph: {
+    title: "Histórico de Partidas | Fut7Pro",
+    description:
+      "Navegue por todas as partidas passadas com filtros, placares e locais.",
+    type: "website",
+  },
+};
 
-export default function HistoricoPage() {
-  const { partidas, isLoading, isError, error } = usePartidas();
-
-  if (isLoading) {
-    return (
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <div className="flex items-center justify-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-4 text-lg text-textoSuave">Carregando histórico de partidas...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Erro ao carregar histórico</h1>
-          <p className="text-red-300">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
+export default function Page() {
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-      <HistoricoPartidas />
-    </div>
+    <main>
+      <section className="mx-auto max-w-6xl">
+        {/* Cabeçalho padrão (igual Estatísticas) */}
+        <div className="text-center">
+          <h1 className="text-3xl font-extrabold text-yellow-400 md:text-4xl">
+            Histórico de Partidas
+          </h1>
+          <p className="mt-2 text-sm text-gray-300 md:text-base">
+            Consulte partidas anteriores, filtre por time ou data e encontre
+            resultados rapidamente. Os dados são atualizados pelo administrador
+            do racha.
+          </p>
+        </div>
+
+        {/* Listagem com filtros e estados visuais padronizados */}
+        <div className="mt-6">
+          <HistoricoClient />
+        </div>
+      </section>
+    </main>
   );
 }

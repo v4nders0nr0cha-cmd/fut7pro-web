@@ -14,47 +14,52 @@ export default function DetalheTorneioPage() {
   if (!torneio) return notFound();
 
   // Filtra apenas os atletas campeões deste torneio
-  const campeoes = atletasMock.filter((jogador) => torneio.jogadores.includes(jogador.slug));
+  const campeoes = atletasMock.filter((jogador) =>
+    torneio.jogadores.includes(jogador.slug),
+  );
 
   return (
-    <main className="min-h-screen bg-fundo text-white pt-6 pb-20">
-      <div className="max-w-5xl mx-auto w-full">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-2 text-center">
+    <main className="min-h-screen bg-fundo pb-20 pt-6 text-white">
+      <div className="mx-auto w-full max-w-5xl">
+        <h1 className="mb-2 text-center text-3xl font-bold text-yellow-400 md:text-4xl">
           {torneio.nome}
         </h1>
-        <p className="text-center text-gray-400 mb-6 text-sm md:text-base">
-          Edição especial realizada em {torneio.ano} com os jogadores mais lendários do racha!
+        <p className="mb-6 text-center text-sm text-gray-400 md:text-base">
+          Edição especial realizada em {torneio.ano} com os jogadores mais
+          lendários do racha!
         </p>
 
         {/* Banner do torneio */}
-        <div className="relative w-full h-64 md:h-96 mb-4">
+        <div className="relative mb-4 h-64 w-full md:h-96">
           <Image
             src={torneio.banner}
             alt={`Banner do torneio ${torneio.nome}`}
             fill
-            className="object-cover rounded-xl border border-yellow-600"
+            className="rounded-xl border border-yellow-600 object-cover"
             priority
           />
         </div>
 
         {/* Logo do time campeão */}
-        <div className="text-center mb-8">
-          <h2 className="text-yellow-400 font-bold text-lg mb-2">TIME CAMPEÃO</h2>
+        <div className="mb-8 text-center">
+          <h2 className="mb-2 text-lg font-bold text-yellow-400">
+            TIME CAMPEÃO
+          </h2>
           <Image
             src={torneio.logo}
             alt={`Logo do time campeão ${torneio.campeao}`}
             width={96}
             height={96}
-            className="rounded-xl bg-white p-2 mx-auto"
+            className="mx-auto rounded-xl bg-white p-2"
           />
-          <div className="text-white font-semibold mt-2">{torneio.campeao}</div>
+          <div className="mt-2 font-semibold text-white">{torneio.campeao}</div>
         </div>
 
-        <h2 className="text-xl font-semibold text-yellow-400 mb-4 text-center uppercase">
+        <h2 className="mb-4 text-center text-xl font-semibold uppercase text-yellow-400">
           Jogadores Campeões
         </h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {campeoes.map((jogador) => (
             <PlayerCard
               key={jogador.id}

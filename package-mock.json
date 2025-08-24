@@ -1,0 +1,17 @@
+{
+  "name": "fut7pro-mock-server",
+  "version": "1.0.0",
+  "description": "Servidor mockado para demo Fut7Pro",
+  "main": "src/app/api/mock-server.js",
+  "scripts": {
+    "start": "node src/app/api/mock-server.js",
+    "dev": "nodemon src/app/api/mock-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

@@ -1,0 +1,58 @@
+import type { Campeao } from "@/types/campeao";
+
+export const campeoesMock: Campeao[] = [
+  {
+    id: "1",
+    nome: "Matheus Silva",
+    categoria: "Melhor Jogador do Ano",
+    data: "2025",
+    descricao: "Destaque absoluto com 1320 pontos e 45 gols",
+    jogadores: ["Matheus Silva"],
+    rachaId: "demo",
+  },
+  {
+    id: "2",
+    nome: "Time Fênix",
+    categoria: "Campeão do Torneio",
+    data: "2025",
+    descricao: "Equipe campeã com 68 pontos e apenas 2 derrotas",
+    jogadores: ["Matheus Silva", "Lucas Rocha", "Arthur Maia", "Jean Passador"],
+    rachaId: "demo",
+  },
+  {
+    id: "3",
+    nome: "Lucas Rocha",
+    categoria: "Maestro do Ano",
+    data: "2025",
+    descricao: "30 assistências em uma temporada",
+    jogadores: ["Lucas Rocha"],
+    rachaId: "demo",
+  },
+  {
+    id: "4",
+    nome: "Estrela Solitária",
+    categoria: "Melhor Jogador do Ano",
+    data: "2024",
+    descricao: "79 pontos e liderança absoluta",
+    jogadores: ["Estrela Solitária"],
+    rachaId: "demo",
+  },
+  {
+    id: "5",
+    nome: "Time Relâmpago",
+    categoria: "Campeão do Torneio",
+    data: "2024",
+    descricao: "62 pontos e jogo ofensivo",
+    jogadores: ["Matador X", "Arthur Maia", "Craque Master"],
+    rachaId: "demo",
+  },
+  {
+    id: "6",
+    nome: "Lenda Viva",
+    categoria: "Melhor Jogador do Ano",
+    data: "2023",
+    descricao: "92 pontos e experiência incomparável",
+    jogadores: ["Lenda Viva"],
+    rachaId: "demo",
+  },
+];

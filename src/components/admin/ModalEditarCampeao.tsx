@@ -26,47 +26,55 @@ export default function ModalEditarCampeao({
   // Aqui você implementaria a lógica de salvar resultados, gols, passes etc.
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center">
-      <div className="bg-[#22252c] rounded-2xl shadow-2xl p-8 w-full max-w-xl relative flex flex-col gap-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="relative flex w-full max-w-xl flex-col gap-4 rounded-2xl bg-[#22252c] p-8 shadow-2xl">
         <button
           type="button"
-          className="absolute top-2 right-3 text-gray-300 hover:text-yellow-400 text-xl"
+          className="absolute right-3 top-2 text-xl text-gray-300 hover:text-yellow-400"
           onClick={onClose}
         >
           <FaTimes />
         </button>
-        <h2 className="text-2xl font-bold text-[#ffd600] mb-1 text-center">
+        <h2 className="mb-1 text-center text-2xl font-bold text-[#ffd600]">
           Editar Campeão do Dia
         </h2>
         <div className="flex flex-col items-center gap-2">
-          <div className="relative w-32 h-24">
+          <div className="relative h-24 w-32">
             <Image
               src={novaFoto ? URL.createObjectURL(novaFoto) : fotoUrl}
               alt="Nova Foto Time Campeão"
               fill
               className="rounded-lg border-4 border-[#ffd600] object-cover shadow"
             />
-            <label className="absolute bottom-1 right-1 bg-[#ffd600] p-2 rounded-full cursor-pointer shadow">
-              <FaUpload className="text-black w-4 h-4" />
-              <input type="file" accept="image/*" className="hidden" onChange={handleFotoChange} />
+            <label className="absolute bottom-1 right-1 cursor-pointer rounded-full bg-[#ffd600] p-2 shadow">
+              <FaUpload className="h-4 w-4 text-black" />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFotoChange}
+              />
             </label>
           </div>
         </div>
 
         <div className="mt-3">
           <label className="font-semibold text-white">Jogadores do Time:</label>
-          <ul className="flex flex-wrap gap-2 mt-1">
+          <ul className="mt-1 flex flex-wrap gap-2">
             {jogadores.map((jog, idx) => (
-              <li key={idx} className="bg-[#222a35] rounded px-2 py-1 text-sm text-yellow-200">
+              <li
+                key={idx}
+                className="rounded bg-[#222a35] px-2 py-1 text-sm text-yellow-200"
+              >
                 {jog}
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           <div>
-            <label className="text-sm font-semibold text-white flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-white">
               <FaFutbol /> Gols do Time:
             </label>
             <input
@@ -76,7 +84,7 @@ export default function ModalEditarCampeao({
             />
           </div>
           <div>
-            <label className="text-sm font-semibold text-white flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm font-semibold text-white">
               <FaHandPaper /> Passes/Assistências:
             </label>
             <input

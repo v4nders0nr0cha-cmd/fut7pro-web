@@ -33,13 +33,7 @@ function CartaoMensalistaPremium({
   return (
     <div
       ref={cardRef}
-      className={`
-                relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl
-                border-4 flex
-                bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center
-                transition
-                ${ativo ? "border-green-400 shadow-green-400/50 cursor-pointer hover:brightness-110" : "border-gray-400 shadow-gray-700/30"}
-            `}
+      className={`relative flex h-[160px] w-[340px] overflow-hidden rounded-2xl border-4 bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center shadow-2xl transition ${ativo ? "cursor-pointer border-green-400 shadow-green-400/50 hover:brightness-110" : "border-gray-400 shadow-gray-700/30"} `}
       style={{
         boxShadow: exportando
           ? "none"
@@ -49,32 +43,36 @@ function CartaoMensalistaPremium({
       }}
       title={ativo ? "Clique para salvar seu Cartão Mensalista" : ""}
       onClick={ativo ? handleDownload : undefined}
-      onKeyDown={ativo ? (e) => e.key === "Enter" && handleDownload() : undefined}
+      onKeyDown={
+        ativo ? (e) => e.key === "Enter" && handleDownload() : undefined
+      }
       role={ativo ? "button" : undefined}
       tabIndex={ativo ? 0 : undefined}
       aria-label={ativo ? "Baixar cartão mensalista" : undefined}
     >
       {/* Lado esquerdo: Selo MENSALISTA */}
-      <div className="flex flex-col justify-between pl-5 py-4 flex-1">
+      <div className="flex flex-1 flex-col justify-between py-4 pl-5">
         <div>
-          <div className="text-green-400 font-extrabold text-base drop-shadow-sm tracking-wide">
+          <div className="text-base font-extrabold tracking-wide text-green-400 drop-shadow-sm">
             MENSALISTA
           </div>
         </div>
       </div>
       {/* Lado direito: Logo + nome abaixo */}
-      <div className="flex flex-col items-center justify-between w-[140px] py-3 pr-5">
-        <div className="text-green-400 font-semibold text-xs mb-1 mt-1">Ativo no mês</div>
+      <div className="flex w-[140px] flex-col items-center justify-between py-3 pr-5">
+        <div className="mb-1 mt-1 text-xs font-semibold text-green-400">
+          Ativo no mês
+        </div>
         <Image
           src={logoRacha}
           alt="Logo do Racha"
           width={54}
           height={54}
-          className="rounded-lg border border-white mb-1"
+          className="mb-1 rounded-lg border border-white"
           draggable={false}
         />
         <div
-          className="text-white font-bold text-sm mt-2 text-center"
+          className="mt-2 text-center text-sm font-bold text-white"
           style={{
             textShadow: "0px 2px 8px #000, 0px 1px 0px #222, 0px 0px 2px #000",
           }}
@@ -84,7 +82,7 @@ function CartaoMensalistaPremium({
       </div>
       {/* Tooltip no canto inferior ESQUERDO */}
       {ativo && !exportando && (
-        <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-green-300 pointer-events-none select-none">
+        <div className="pointer-events-none absolute bottom-2 left-2 select-none rounded bg-black/70 px-2 py-1 text-[10px] text-green-300">
           Clique para baixar seu cartão!
         </div>
       )}

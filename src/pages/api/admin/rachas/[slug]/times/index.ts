@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { slug } = req.query;
 
   if (!slug) return res.status(400).json({ error: "Slug é obrigatório" });
@@ -23,8 +26,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   if (req.method === "POST") {
-    const { nome, slug: timeSlug, escudoUrl, corPrincipal, corSecundaria, jogadores } = req.body;
-    if (!nome || !timeSlug) return res.status(400).json({ error: "Nome e slug são obrigatórios" });
+    const {
+      nome,
+      slug: timeSlug,
+      escudoUrl,
+      corPrincipal,
+      corSecundaria,
+      jogadores,
+    } = req.body;
+    if (!nome || !timeSlug)
+      return res.status(400).json({ error: "Nome e slug são obrigatórios" });
 
     const novo = await prisma.time.create({
       data: {

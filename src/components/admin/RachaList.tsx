@@ -38,14 +38,14 @@ export default function RachaList({ onEdit, onDelete }: Props) {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <table className="w-full text-sm rounded-lg overflow-hidden">
+    <div className="mx-auto w-full max-w-3xl">
+      <table className="w-full overflow-hidden rounded-lg text-sm">
         <thead>
           <tr className="bg-neutral-800 text-yellow-500">
             <th className="px-4 py-2 text-left">Nome</th>
             <th className="px-2 py-2">Slug</th>
-            <th className="px-2 py-2 hidden md:table-cell">Tema</th>
-            <th className="px-2 py-2 hidden md:table-cell">Criado em</th>
+            <th className="hidden px-2 py-2 md:table-cell">Tema</th>
+            <th className="hidden px-2 py-2 md:table-cell">Criado em</th>
             <th className="px-2 py-2"></th>
           </tr>
         </thead>
@@ -53,7 +53,7 @@ export default function RachaList({ onEdit, onDelete }: Props) {
           {rachas.map((racha) => (
             <tr
               key={racha.id}
-              className="border-b border-neutral-800 hover:bg-neutral-900 transition group"
+              className="group border-b border-neutral-800 transition hover:bg-neutral-900"
             >
               <td className="px-4 py-2 font-bold text-white">
                 <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export default function RachaList({ onEdit, onDelete }: Props) {
                     <img
                       src={racha.logoUrl}
                       alt={racha.nome}
-                      className="w-7 h-7 rounded-full border border-yellow-500 bg-neutral-800 object-cover"
+                      className="h-7 w-7 rounded-full border border-yellow-500 bg-neutral-800 object-cover"
                     />
                   )}
                   <span>{racha.nome}</span>
@@ -70,26 +70,28 @@ export default function RachaList({ onEdit, onDelete }: Props) {
               <td className="px-2 py-2 text-gray-300">
                 {racha.slug || <span className="italic text-gray-500">-</span>}
               </td>
-              <td className="px-2 py-2 text-gray-400 hidden md:table-cell">
+              <td className="hidden px-2 py-2 text-gray-400 md:table-cell">
                 {racha.tema || <span className="italic text-gray-500">-</span>}
               </td>
-              <td className="px-2 py-2 text-gray-400 hidden md:table-cell">
+              <td className="hidden px-2 py-2 text-gray-400 md:table-cell">
                 {racha.criadoEm
-                  ? format(new Date(racha.criadoEm), "dd/MM/yyyy", { locale: ptBR })
+                  ? format(new Date(racha.criadoEm), "dd/MM/yyyy", {
+                      locale: ptBR,
+                    })
                   : "-"}
               </td>
               <td className="px-2 py-2">
-                <div className="flex gap-2 justify-end">
+                <div className="flex justify-end gap-2">
                   <button
                     title="Editar"
-                    className="text-yellow-500 hover:text-yellow-400 font-bold"
+                    className="font-bold text-yellow-500 hover:text-yellow-400"
                     onClick={() => onEdit(racha)}
                   >
                     ✏️
                   </button>
                   <button
                     title="Excluir"
-                    className="text-red-500 hover:text-red-400 font-bold"
+                    className="font-bold text-red-500 hover:text-red-400"
                     onClick={() => onDelete(racha)}
                   >
                     🗑️

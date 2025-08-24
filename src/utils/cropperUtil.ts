@@ -14,7 +14,7 @@ export default async function getCroppedImg(
   imageSrc: string,
   croppedAreaPixels: { x: number; y: number; width: number; height: number },
   outputWidth = croppedAreaPixels.width,
-  outputHeight = croppedAreaPixels.height
+  outputHeight = croppedAreaPixels.height,
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -41,7 +41,7 @@ export default async function getCroppedImg(
         0,
         0,
         outputWidth,
-        outputHeight
+        outputHeight,
       );
 
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);

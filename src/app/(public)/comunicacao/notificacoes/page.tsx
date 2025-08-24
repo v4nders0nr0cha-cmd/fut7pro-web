@@ -46,7 +46,9 @@ export default function NotificacoesPage() {
   const router = useRouter();
 
   function handleClick(notif: Notificacao) {
-    setNotificacoes((prev) => prev.map((n) => (n.id === notif.id ? { ...n, lida: true } : n)));
+    setNotificacoes((prev) =>
+      prev.map((n) => (n.id === notif.id ? { ...n, lida: true } : n)),
+    );
     // Redireciona se for enquete
     if (notif.type === "enquete" && notif.enqueteId) {
       router.push(`/comunicacao/enquetes/${notif.enqueteId}`);
@@ -54,28 +56,29 @@ export default function NotificacoesPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
-      <h1 className="text-2xl font-bold text-yellow-400 mb-5 flex items-center gap-2">
+    <main className="mx-auto max-w-3xl px-4 pb-24 pt-20">
+      <h1 className="mb-5 flex items-center gap-2 text-2xl font-bold text-yellow-400">
         <FaBell /> Notificações do Racha
       </h1>
       <div className="flex flex-col gap-5">
         {notificacoes.map((notif) => (
           <div
             key={notif.id}
-            className={`rounded-lg shadow-md p-4 border-l-4 transition cursor-pointer
-                            ${
-                              notif.lida
-                                ? "bg-zinc-900 border-zinc-700 opacity-70"
-                                : notif.type === "enquete"
-                                  ? "bg-zinc-900 border-yellow-400 animate-pulse"
-                                  : notif.type === "cobranca"
-                                    ? "bg-zinc-900 border-red-400"
-                                    : "bg-zinc-900 border-yellow-700"
-                            }`}
+            className={`cursor-pointer rounded-lg border-l-4 p-4 shadow-md transition ${
+              notif.lida
+                ? "border-zinc-700 bg-zinc-900 opacity-70"
+                : notif.type === "enquete"
+                  ? "animate-pulse border-yellow-400 bg-zinc-900"
+                  : notif.type === "cobranca"
+                    ? "border-red-400 bg-zinc-900"
+                    : "border-yellow-700 bg-zinc-900"
+            }`}
             onClick={() => handleClick(notif)}
           >
-            <div className="flex items-center gap-2 mb-2">
-              {notif.type === "enquete" && <FaPoll className="text-yellow-400" />}
+            <div className="mb-2 flex items-center gap-2">
+              {notif.type === "enquete" && (
+                <FaPoll className="text-yellow-400" />
+              )}
               <span className="font-bold text-yellow-300">{notif.titulo}</span>
               <span className="ml-auto text-xs text-gray-400">
                 {new Date(notif.data).toLocaleString("pt-BR")}
@@ -84,7 +87,7 @@ export default function NotificacoesPage() {
             <div className="text-gray-200">{notif.mensagem}</div>
             {!notif.lida && notif.type === "enquete" && (
               <button
-                className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded text-xs"
+                className="mt-2 rounded bg-yellow-400 px-4 py-1 text-xs font-bold text-black hover:bg-yellow-500"
                 onClick={() => handleClick(notif)}
               >
                 Responder

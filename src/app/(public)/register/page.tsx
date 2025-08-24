@@ -39,14 +39,14 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-8 md:pt-16 pb-10">
-      <div className="bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm">
-        <h1 className="text-xl font-bold mb-4 text-center">Criar Conta</h1>
-        <p className="text-gray-300 text-center mb-6 text-base font-medium leading-snug">
-          Junte-se ao nosso time! Faça seu cadastro para participar dos rankings, das partidas e
-          conquistar seu lugar no Hall da Fama do{" "}
-          <span className="text-yellow-400 font-bold">{nomeDoRacha}</span>. Cadastro exclusivo para
-          atletas, sujeito à aprovação do administrador.
+    <main className="flex min-h-[80vh] w-full flex-col items-center justify-center pb-10 pt-8 md:pt-16">
+      <div className="w-full max-w-sm rounded-lg bg-zinc-900 p-6 shadow-lg">
+        <h1 className="mb-4 text-center text-xl font-bold">Criar Conta</h1>
+        <p className="mb-6 text-center text-base font-medium leading-snug text-gray-300">
+          Junte-se ao nosso time! Faça seu cadastro para participar dos
+          rankings, das partidas e conquistar seu lugar no Hall da Fama do{" "}
+          <span className="font-bold text-yellow-400">{nomeDoRacha}</span>.
+          Cadastro exclusivo para atletas, sujeito à aprovação do administrador.
         </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
@@ -57,7 +57,7 @@ export default function RegisterPage() {
             maxLength={10}
             required
             placeholder="Nome (máx. 10 letras)"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-white"
           />
 
           <input
@@ -67,7 +67,7 @@ export default function RegisterPage() {
             maxLength={10}
             required
             placeholder="Apelido (máx. 10 letras)"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-white"
           />
 
           <input
@@ -76,7 +76,7 @@ export default function RegisterPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="E-mail"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-white"
           />
 
           <input
@@ -85,12 +85,12 @@ export default function RegisterPage() {
             onChange={(e) => setSenha(e.target.value)}
             required
             placeholder="Senha"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
+            className="w-full rounded bg-zinc-800 p-2 text-white"
           />
 
           <button
             type="submit"
-            className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300"
+            className="w-full rounded bg-yellow-400 py-2 font-bold text-black hover:bg-yellow-300"
           >
             Cadastrar
           </button>

@@ -16,7 +16,8 @@ const links = [
   {
     href: "/superadmin/ajuda/contato",
     label: "Contato do Suporte",
-    description: "Fale direto com nossa equipe pelo WhatsApp, Email ou Telegram.",
+    description:
+      "Fale direto com nossa equipe pelo WhatsApp, Email ou Telegram.",
   },
 ];
 
@@ -26,9 +27,9 @@ const FaqQuickLinks: React.FC = () => (
       <Link
         href={link.href}
         key={link.href}
-        className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-3 w-full md:w-60 hover:border-yellow-400 hover:scale-105 transition"
+        className="flex w-full flex-col rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3 transition hover:scale-105 hover:border-yellow-400 md:w-60"
       >
-        <span className="font-bold text-yellow-400 mb-1">{link.label}</span>
+        <span className="mb-1 font-bold text-yellow-400">{link.label}</span>
         <span className="text-xs text-zinc-300">{link.description}</span>
       </Link>
     ))}

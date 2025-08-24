@@ -35,7 +35,9 @@ export default function BackupPage() {
       setMensagem("Selecione um arquivo de backup válido (.zip ou .json).");
       return;
     }
-    setMensagem("Backup restaurado com sucesso! Os dados serão atualizados em breve.");
+    setMensagem(
+      "Backup restaurado com sucesso! Os dados serão atualizados em breve.",
+    );
     setTimeout(() => setMensagem(""), 3500);
     setFile(null);
   };
@@ -53,84 +55,97 @@ export default function BackupPage() {
           content="Fut7, backup, exportação, recuperação, restauração, SaaS, admin, segurança"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-3xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 flex items-center gap-2">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold text-yellow-400 md:text-3xl">
           <FaDatabase /> Backup & Recuperação
         </h1>
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow animate-fadeIn text-sm">
-          <b className="text-yellow-300">Proteja e controle os dados do seu racha.</b>
+        <div className="animate-fadeIn mb-6 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-4 text-sm shadow">
+          <b className="text-yellow-300">
+            Proteja e controle os dados do seu racha.
+          </b>
           <br />
-          Faça backup manual dos dados do Fut7Pro, exporte informações para Excel/planilhas e
-          recupere dados em caso de emergência.
+          Faça backup manual dos dados do Fut7Pro, exporte informações para
+          Excel/planilhas e recupere dados em caso de emergência.
           <br />
           <span className="text-gray-300">
-            Recomendamos fazer backup sempre antes de grandes mudanças no painel ou atualizações
-            importantes.
+            Recomendamos fazer backup sempre antes de grandes mudanças no painel
+            ou atualizações importantes.
           </span>
         </div>
 
         {/* Cards de opções */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-          <div className="bg-[#232323] rounded-lg p-5 shadow border-l-4 border-yellow-400 flex flex-col gap-2 animate-fadeIn">
+        <div className="mb-10 grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="animate-fadeIn flex flex-col gap-2 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-5 shadow">
             <div className="flex items-center gap-2">
-              <FaCloudDownloadAlt className="text-yellow-300 text-xl" />
-              <span className="font-bold text-yellow-300 text-lg">Exportar/Backup Manual</span>
+              <FaCloudDownloadAlt className="text-xl text-yellow-300" />
+              <span className="text-lg font-bold text-yellow-300">
+                Exportar/Backup Manual
+              </span>
             </div>
-            <div className="text-gray-200 text-sm">
-              Faça backup de todos os dados do racha e baixe um arquivo seguro (.zip ou .json).
+            <div className="text-sm text-gray-200">
+              Faça backup de todos os dados do racha e baixe um arquivo seguro
+              (.zip ou .json).
             </div>
             <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-[#232323] font-bold px-4 py-2 rounded w-fit mt-2 transition"
+              className="mt-2 w-fit rounded bg-yellow-400 px-4 py-2 font-bold text-[#232323] transition hover:bg-yellow-500"
               onClick={handleBackup}
             >
               Baixar Backup
             </button>
           </div>
-          <div className="bg-[#232323] rounded-lg p-5 shadow border-l-4 border-yellow-400 flex flex-col gap-2 animate-fadeIn">
+          <div className="animate-fadeIn flex flex-col gap-2 rounded-lg border-l-4 border-yellow-400 bg-[#232323] p-5 shadow">
             <div className="flex items-center gap-2">
-              <FaCloudUploadAlt className="text-yellow-300 text-xl" />
-              <span className="font-bold text-yellow-300 text-lg">Restaurar Dados</span>
+              <FaCloudUploadAlt className="text-xl text-yellow-300" />
+              <span className="text-lg font-bold text-yellow-300">
+                Restaurar Dados
+              </span>
             </div>
-            <div className="text-gray-200 text-sm">
-              Importe um backup para recuperar o racha (aceita .zip ou .json exportados do Fut7Pro).
+            <div className="text-sm text-gray-200">
+              Importe um backup para recuperar o racha (aceita .zip ou .json
+              exportados do Fut7Pro).
             </div>
             <input
               type="file"
               accept=".zip,.json"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className="text-gray-200 text-sm bg-[#181818] mt-2 p-2 rounded border border-yellow-400"
+              className="mt-2 rounded border border-yellow-400 bg-[#181818] p-2 text-sm text-gray-200"
             />
             <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-[#232323] font-bold px-4 py-2 rounded w-fit mt-2 transition"
+              className="mt-2 w-fit rounded bg-yellow-400 px-4 py-2 font-bold text-[#232323] transition hover:bg-yellow-500"
               onClick={handleRestore}
               disabled={!file}
             >
               Restaurar Backup
             </button>
           </div>
-          <div className="bg-[#232323] rounded-lg p-5 shadow border-l-4 border-yellow-700 flex flex-col gap-2 animate-fadeIn">
+          <div className="animate-fadeIn flex flex-col gap-2 rounded-lg border-l-4 border-yellow-700 bg-[#232323] p-5 shadow">
             <div className="flex items-center gap-2">
-              <FaHistory className="text-yellow-300 text-xl" />
-              <span className="font-bold text-yellow-300 text-lg">Histórico de Backups</span>
+              <FaHistory className="text-xl text-yellow-300" />
+              <span className="text-lg font-bold text-yellow-300">
+                Histórico de Backups
+              </span>
             </div>
-            <div className="text-gray-200 text-sm">
-              Consulte todos os backups feitos manualmente, datas e quem fez. (Em breve)
+            <div className="text-sm text-gray-200">
+              Consulte todos os backups feitos manualmente, datas e quem fez.
+              (Em breve)
             </div>
-            <span className="text-xs bg-yellow-800 text-yellow-200 px-2 py-1 rounded w-fit mt-2">
+            <span className="mt-2 w-fit rounded bg-yellow-800 px-2 py-1 text-xs text-yellow-200">
               Em breve
             </span>
           </div>
-          <div className="bg-[#232323] rounded-lg p-5 shadow border-l-4 border-yellow-700 flex flex-col gap-2 animate-fadeIn">
+          <div className="animate-fadeIn flex flex-col gap-2 rounded-lg border-l-4 border-yellow-700 bg-[#232323] p-5 shadow">
             <div className="flex items-center gap-2">
-              <FaCheckCircle className="text-yellow-300 text-xl" />
-              <span className="font-bold text-yellow-300 text-lg">Backup Automático</span>
+              <FaCheckCircle className="text-xl text-yellow-300" />
+              <span className="text-lg font-bold text-yellow-300">
+                Backup Automático
+              </span>
             </div>
-            <div className="text-gray-200 text-sm">
-              Seus dados são salvos automaticamente e com criptografia em servidores seguros. (Em
-              breve)
+            <div className="text-sm text-gray-200">
+              Seus dados são salvos automaticamente e com criptografia em
+              servidores seguros. (Em breve)
             </div>
-            <span className="text-xs bg-yellow-800 text-yellow-200 px-2 py-1 rounded w-fit mt-2">
+            <span className="mt-2 w-fit rounded bg-yellow-800 px-2 py-1 text-xs text-yellow-200">
               Em breve
             </span>
           </div>
@@ -138,37 +153,40 @@ export default function BackupPage() {
 
         {/* Mensagem mock de status */}
         {mensagem && (
-          <div className="bg-[#222] border border-yellow-700 rounded-lg p-3 text-yellow-200 font-semibold text-center mb-8 animate-fadeIn">
+          <div className="animate-fadeIn mb-8 rounded-lg border border-yellow-700 bg-[#222] p-3 text-center font-semibold text-yellow-200">
             {mensagem}
           </div>
         )}
 
         {/* FAQ */}
-        <div className="bg-[#232323] rounded-lg p-5 shadow border border-yellow-700">
-          <div className="font-bold text-yellow-300 mb-2 flex items-center gap-1">
+        <div className="rounded-lg border border-yellow-700 bg-[#232323] p-5 shadow">
+          <div className="mb-2 flex items-center gap-1 font-bold text-yellow-300">
             <FaQuestionCircle className="text-base" />
             Dúvidas Frequentes
           </div>
-          <ul className="text-gray-300 text-sm space-y-2">
+          <ul className="space-y-2 text-sm text-gray-300">
             <li>
-              <b>Com que frequência devo fazer backup?</b> Recomendamos fazer ao menos 1x por mês ou
-              antes de grandes alterações.
+              <b>Com que frequência devo fazer backup?</b> Recomendamos fazer ao
+              menos 1x por mês ou antes de grandes alterações.
             </li>
             <li>
-              <b>Perdi meus dados, e agora?</b> Importe seu backup mais recente para restaurar o
-              racha.
+              <b>Perdi meus dados, e agora?</b> Importe seu backup mais recente
+              para restaurar o racha.
             </li>
             <li>
-              <b>Consigo restaurar para uma data específica?</b> Só se você tiver o backup manual do
-              dia desejado.
+              <b>Consigo restaurar para uma data específica?</b> Só se você
+              tiver o backup manual do dia desejado.
             </li>
             <li>
-              <b>Backup automático?</b> Em breve todos os planos pagos terão backup diário
-              automático.
+              <b>Backup automático?</b> Em breve todos os planos pagos terão
+              backup diário automático.
             </li>
             <li>
               <b>Suporte:</b>{" "}
-              <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">
+              <a
+                href="/admin/comunicacao/suporte"
+                className="text-yellow-400 underline"
+              >
                 Abrir chamado
               </a>
             </li>

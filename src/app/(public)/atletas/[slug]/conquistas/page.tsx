@@ -31,7 +31,7 @@ export default function ConquistasTodasPage() {
         />
       </Head>
 
-      <h1 className="text-3xl font-bold text-yellow-400 mt-8 mb-4 text-center">
+      <h1 className="mb-4 mt-8 text-center text-3xl font-bold text-yellow-400">
         Todas as Conquistas de {atleta.nome}
       </h1>
 
@@ -39,30 +39,33 @@ export default function ConquistasTodasPage() {
       <div className="mb-8 text-center">
         <Link
           href={`/atletas/${atleta.slug}`}
-          className="inline-block bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-4 py-2 rounded transition"
+          className="inline-block rounded bg-yellow-400 px-4 py-2 font-bold text-black transition hover:bg-yellow-300"
         >
           ← Voltar para o perfil
         </Link>
       </div>
 
       {/* TÍTULOS GRANDES TORNEIOS */}
-      <section className="mb-8 w-full max-w-3xl mx-auto scrollbar-dark overflow-x-auto">
-        <h2 className="text-xl text-yellow-300 font-semibold mb-3 border-b border-zinc-700 pb-1">
+      <section className="scrollbar-dark mx-auto mb-8 w-full max-w-3xl overflow-x-auto">
+        <h2 className="mb-3 border-b border-zinc-700 pb-1 text-xl font-semibold text-yellow-300">
           Títulos (Grandes Torneios)
         </h2>
         {titulosGrandesTorneios.length === 0 ? (
-          <p className="text-zinc-400 italic">Nenhum título de grande torneio.</p>
+          <p className="italic text-zinc-400">
+            Nenhum título de grande torneio.
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {titulosGrandesTorneios.map((titulo, i) => (
               <span
                 key={i}
-                className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-yellow-100"
+                className="flex items-center gap-1 rounded-xl bg-[#222] px-3 py-1 text-sm text-yellow-100"
                 title={titulo.descricao}
               >
                 <span>{titulo.icone}</span>
                 <span>
-                  {titulo.descricao} <span className="text-xs text-gray-400">{titulo.ano}</span>
+                  {titulo.descricao}{" "}
+                  <span className="text-xs text-gray-400">{titulo.ano}</span>
                 </span>
               </span>
             ))}
@@ -71,23 +74,26 @@ export default function ConquistasTodasPage() {
       </section>
 
       {/* TÍTULOS DA TEMPORADA ATUAL (Anuais) */}
-      <section className="mb-8 w-full max-w-3xl mx-auto scrollbar-dark overflow-x-auto">
-        <h2 className="text-xl text-yellow-300 font-semibold mb-3 border-b border-zinc-700 pb-1">
+      <section className="scrollbar-dark mx-auto mb-8 w-full max-w-3xl overflow-x-auto">
+        <h2 className="mb-3 border-b border-zinc-700 pb-1 text-xl font-semibold text-yellow-300">
           Títulos da Temporada atual
         </h2>
         {titulosAnuais.length === 0 ? (
-          <p className="text-zinc-400 italic">Nenhum título na temporada atual.</p>
+          <p className="italic text-zinc-400">
+            Nenhum título na temporada atual.
+          </p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {titulosAnuais.map((titulo, i) => (
               <span
                 key={i}
-                className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-yellow-100"
+                className="flex items-center gap-1 rounded-xl bg-[#222] px-3 py-1 text-sm text-yellow-100"
                 title={titulo.descricao}
               >
                 <span>{titulo.icone}</span>
                 <span>
-                  {titulo.descricao} <span className="text-xs text-gray-400">{titulo.ano}</span>
+                  {titulo.descricao}{" "}
+                  <span className="text-xs text-gray-400">{titulo.ano}</span>
                 </span>
               </span>
             ))}
@@ -96,23 +102,24 @@ export default function ConquistasTodasPage() {
       </section>
 
       {/* TÍTULOS QUADRIMESTRAIS */}
-      <section className="mb-8 w-full max-w-3xl mx-auto scrollbar-dark overflow-x-auto">
-        <h2 className="text-xl text-yellow-300 font-semibold mb-3 border-b border-zinc-700 pb-1">
+      <section className="scrollbar-dark mx-auto mb-8 w-full max-w-3xl overflow-x-auto">
+        <h2 className="mb-3 border-b border-zinc-700 pb-1 text-xl font-semibold text-yellow-300">
           Títulos Quadrimestrais
         </h2>
         {titulosQuadrimestrais.length === 0 ? (
-          <p className="text-zinc-400 italic">Nenhum título quadrimestral.</p>
+          <p className="italic text-zinc-400">Nenhum título quadrimestral.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {titulosQuadrimestrais.map((titulo, i) => (
               <span
                 key={i}
-                className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-yellow-100"
+                className="flex items-center gap-1 rounded-xl bg-[#222] px-3 py-1 text-sm text-yellow-100"
                 title={titulo.descricao}
               >
                 <span>{titulo.icone}</span>
                 <span>
-                  {titulo.descricao} <span className="text-xs text-gray-400">{titulo.ano}</span>
+                  {titulo.descricao}{" "}
+                  <span className="text-xs text-gray-400">{titulo.ano}</span>
                 </span>
               </span>
             ))}

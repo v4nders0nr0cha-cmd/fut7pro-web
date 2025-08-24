@@ -11,7 +11,7 @@ export default function TimesDoDiaClient() {
   return (
     <>
       <div ref={gridRef}>
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {timesDoDiaMock.map((time) => (
             <CardTimeDoDia key={time.id} time={time} />
           ))}

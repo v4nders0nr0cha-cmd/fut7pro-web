@@ -16,7 +16,10 @@ async function canEditRacha(rachaId: string, userId: string) {
   return racha.admins.some((a) => a.usuarioId === userId);
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {
     return res.status(401).json({ error: "Não autenticado" });
@@ -24,7 +27,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const userId = session.user.id as string;
 
   // Pega rachaId por body ou query
-  const rachaId = (req.method === "GET" ? req.query.rachaId : req.body.rachaId) || undefined;
+  const rachaId =
+    (req.method === "GET" ? req.query.rachaId : req.body.rachaId) || undefined;
 
   if (!rachaId || typeof rachaId !== "string") {
     return res.status(400).json({ error: "rachaId é obrigatório" });
@@ -96,7 +100,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         destaquesB,
         finalizada,
       } = req.body;
-      if (!id) return res.status(400).json({ error: "id da partida é obrigatório" });
+      if (!id)
+        return res.status(400).json({ error: "id da partida é obrigatório" });
       const partidaAtualizada = await prisma.partida.update({
         where: { id },
         data: {
@@ -118,7 +123,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     case "DELETE": {
       const { id } = req.body;
-      if (!id) return res.status(400).json({ error: "id da partida é obrigatório" });
+      if (!id)
+        return res.status(400).json({ error: "id da partida é obrigatório" });
       await prisma.partida.delete({ where: { id } });
       return res.status(204).end();
     }

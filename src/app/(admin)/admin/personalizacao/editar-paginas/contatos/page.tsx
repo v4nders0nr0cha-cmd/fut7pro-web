@@ -60,18 +60,20 @@ export default function EditarContatosPage() {
           content="editar contato, admin fut7pro, painel racha, patrocínio, e-mail, whatsapp, endereço, personalização"
         />
       </Head>
-      <main className="max-w-3xl mx-auto pt-20 pb-24 md:pt-10 md:pb-10 px-4 flex flex-col gap-10">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">
+      <main className="mx-auto flex max-w-3xl flex-col gap-10 px-4 pb-24 pt-20 md:pb-10 md:pt-10">
+        <h1 className="mb-4 text-3xl font-bold text-yellow-400 md:text-4xl">
           Editar Página: Contatos
         </h1>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-10">
           {/* Canais Diretos */}
           <section>
-            <label className="font-bold text-yellow-300 mb-2">Canais Diretos</label>
-            <div className="flex flex-col md:flex-row gap-4 mb-2">
+            <label className="mb-2 font-bold text-yellow-300">
+              Canais Diretos
+            </label>
+            <div className="mb-2 flex flex-col gap-4 md:flex-row">
               <div className="flex-1">
-                <label className="text-sm font-semibold text-white flex items-center gap-2 mb-1">
+                <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
                   <FaEnvelope /> E-mail do racha
                 </label>
                 <input
@@ -80,12 +82,12 @@ export default function EditarContatosPage() {
                   value={contatos.email}
                   onChange={handleChange}
                   maxLength={80}
-                  className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-white focus:border-yellow-400"
                   placeholder="email@seudominio.com.br"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-sm font-semibold text-white flex items-center gap-2 mb-1">
+                <label className="mb-1 flex items-center gap-2 text-sm font-semibold text-white">
                   <FaWhatsapp /> WhatsApp Comercial (link completo)
                 </label>
                 <input
@@ -94,13 +96,13 @@ export default function EditarContatosPage() {
                   value={contatos.whatsapp}
                   onChange={handleChange}
                   maxLength={80}
-                  className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-white focus:border-yellow-400"
                   placeholder="https://wa.me/..."
                 />
               </div>
             </div>
             {/* Preview dos links */}
-            <div className="flex flex-col gap-2 mt-2">
+            <div className="mt-2 flex flex-col gap-2">
               <div>
                 <a
                   href={`mailto:${contatos.email}`}
@@ -121,14 +123,14 @@ export default function EditarContatosPage() {
                   <FaWhatsapp /> WhatsApp Comercial
                 </a>
               </div>
-              <div className="flex gap-4 mt-2 items-center">
-                <span className="text-yellow-400 text-2xl">
+              <div className="mt-2 flex items-center gap-4">
+                <span className="text-2xl text-yellow-400">
                   <FaInstagram />
                 </span>
-                <span className="text-yellow-400 text-2xl">
+                <span className="text-2xl text-yellow-400">
                   <FaFacebook />
                 </span>
-                <span className="text-zinc-400 text-xs">
+                <span className="text-xs text-zinc-400">
                   (redes sociais editáveis em outra página)
                 </span>
               </div>
@@ -137,21 +139,23 @@ export default function EditarContatosPage() {
 
           {/* Endereço/Sede */}
           <section>
-            <label className="font-bold text-yellow-300 mb-2">Endereço ou Sede</label>
+            <label className="mb-2 font-bold text-yellow-300">
+              Endereço ou Sede
+            </label>
             <input
               type="text"
               name="endereco"
               maxLength={120}
               value={contatos.endereco}
               onChange={handleChange}
-              className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
+              className="w-full rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-white focus:border-yellow-400"
               placeholder="Ex: Racha Fut7pro – São Paulo/SP"
             />
           </section>
 
           {/* Bloco Patrocínio/Mídia */}
           <section>
-            <label className="font-bold text-yellow-300 mb-2 flex items-center gap-2">
+            <label className="mb-2 flex items-center gap-2 font-bold text-yellow-300">
               <FaBuilding /> Título do Bloco Patrocínio/Mídia
             </label>
             <input
@@ -160,7 +164,7 @@ export default function EditarContatosPage() {
               maxLength={60}
               value={contatos.tituloPatrocinio}
               onChange={handleChange}
-              className="bg-neutral-900 text-white rounded-lg p-3 w-full mb-3 border border-neutral-700 focus:border-yellow-400"
+              className="mb-3 w-full rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-white focus:border-yellow-400"
             />
             <textarea
               name="descricaoPatrocinio"
@@ -168,19 +172,23 @@ export default function EditarContatosPage() {
               value={contatos.descricaoPatrocinio}
               onChange={handleChange}
               rows={5}
-              className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400 min-h-[120px]"
+              className="min-h-[120px] w-full rounded-lg border border-neutral-700 bg-neutral-900 p-3 text-white focus:border-yellow-400"
             />
           </section>
 
-          <div className="flex justify-end mt-6">
+          <div className="mt-6 flex justify-end">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg"
+              className="flex items-center gap-2 rounded-xl bg-yellow-400 px-6 py-3 font-bold text-black shadow-lg transition hover:brightness-110"
             >
               <FaSave /> Salvar Alterações
             </button>
           </div>
-          {msg && <div className="text-center text-green-400 font-semibold py-2">{msg}</div>}
+          {msg && (
+            <div className="py-2 text-center font-semibold text-green-400">
+              {msg}
+            </div>
+          )}
         </form>
       </main>
     </>

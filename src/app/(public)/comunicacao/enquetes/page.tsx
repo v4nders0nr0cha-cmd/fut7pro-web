@@ -64,35 +64,44 @@ export default function EnquetesPage() {
         if (enq.id !== id) return enq;
         // só permite votar se aberta e ainda não votou
         if (enq.status !== "Aberta" || votou.includes(id)) return enq;
-        const opcoes = enq.opcoes.map((op, i) => (i === idx ? { ...op, votos: op.votos + 1 } : op));
+        const opcoes = enq.opcoes.map((op, i) =>
+          i === idx ? { ...op, votos: op.votos + 1 } : op,
+        );
         return {
           ...enq,
           opcoes,
           totalVotos: enq.totalVotos + 1,
         };
-      })
+      }),
     );
     setVotou((prev) => [...prev, id]);
   }
 
   return (
-    <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto w-full px-3">
-      <h1 className="text-xl font-bold text-zinc-100 mb-4">Enquetes</h1>
+    <div className="mx-auto w-full max-w-2xl px-3 pb-24 pt-20 md:pb-8 md:pt-6">
+      <h1 className="mb-4 text-xl font-bold text-zinc-100">Enquetes</h1>
       <ul className="space-y-6">
         {enquetes.length === 0 && (
-          <li className="text-zinc-400">Nenhuma enquete disponível no momento.</li>
+          <li className="text-zinc-400">
+            Nenhuma enquete disponível no momento.
+          </li>
         )}
         {enquetes.map((enq) => (
-          <li key={enq.id} className="bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
-            <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
-              <span className="text-lg font-bold text-yellow-300">{enq.titulo}</span>
+          <li
+            key={enq.id}
+            className="rounded-lg border-l-4 border-yellow-400 bg-zinc-800 p-4"
+          >
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <span className="text-lg font-bold text-yellow-300">
+                {enq.titulo}
+              </span>
               <span
-                className={`px-2 py-1 rounded text-xs font-bold ${enq.status === "Aberta" ? "bg-yellow-800 text-yellow-300" : "bg-green-800 text-green-300"}`}
+                className={`rounded px-2 py-1 text-xs font-bold ${enq.status === "Aberta" ? "bg-yellow-800 text-yellow-300" : "bg-green-800 text-green-300"}`}
               >
                 {enq.status}
               </span>
             </div>
-            <div className="text-gray-200 mb-3">{enq.descricao}</div>
+            <div className="mb-3 text-gray-200">{enq.descricao}</div>
             {/* Votação disponível */}
             {enq.status === "Aberta" && !votou.includes(enq.id) && (
               <div className="flex flex-col gap-2">
@@ -100,7 +109,7 @@ export default function EnquetesPage() {
                   <button
                     key={idx}
                     onClick={() => votar(enq.id, idx)}
-                    className="bg-yellow-400 text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-yellow-500 transition disabled:bg-gray-400"
+                    className="rounded bg-yellow-400 px-3 py-1 font-semibold text-zinc-900 transition hover:bg-yellow-500 disabled:bg-gray-400"
                     disabled={votou.includes(enq.id)}
                   >
                     {op.texto}
@@ -110,35 +119,40 @@ export default function EnquetesPage() {
             )}
             {/* Resultados - se fechada ou já votou */}
             {(enq.status === "Fechada" || votou.includes(enq.id)) && (
-              <div className="flex flex-col gap-2 mt-2">
+              <div className="mt-2 flex flex-col gap-2">
                 {enq.opcoes.map((op, idx) => {
                   const percent = enq.totalVotos
                     ? Math.round((op.votos / enq.totalVotos) * 100)
                     : 0;
                   const maiorVoto = enq.opcoes.reduce(
                     (max, cur) => (cur.votos > max ? cur.votos : max),
-                    0
+                    0,
                   );
                   return (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs flex items-center gap-1">
+                      <span className="flex min-w-[80px] items-center gap-1 rounded bg-[#181818] px-2 py-1 text-xs text-gray-200">
                         {op.texto}
                         {op.votos === maiorVoto && maiorVoto > 0 && (
-                          <span className="ml-1 text-yellow-300" title="Opção vencedora">
+                          <span
+                            className="ml-1 text-yellow-300"
+                            title="Opção vencedora"
+                          >
                             🏆
                           </span>
                         )}
                       </span>
-                      <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
+                      <div className="relative mx-2 h-4 flex-1 rounded-full bg-[#181818]">
                         <div
-                          className="bg-yellow-400 h-4 rounded-full transition-all"
+                          className="h-4 rounded-full bg-yellow-400 transition-all"
                           style={{ width: `${percent}%` }}
                         ></div>
-                        <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
+                        <span className="absolute left-1/2 top-0 -translate-x-1/2 text-xs font-bold text-black">
                           {percent}%
                         </span>
                       </div>
-                      <span className="text-gray-400 text-xs">{op.votos} votos</span>
+                      <span className="text-xs text-gray-400">
+                        {op.votos} votos
+                      </span>
                     </div>
                   );
                 })}

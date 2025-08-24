@@ -23,9 +23,14 @@ type Atleta = (typeof atletasMock)[number] & {
   };
 };
 
-function adaptarAtletaParaComparador(atleta: Atleta | undefined, historico: boolean) {
+function adaptarAtletaParaComparador(
+  atleta: Atleta | undefined,
+  historico: boolean,
+) {
   if (!atleta) return undefined;
-  const stats = historico ? atleta.estatisticas?.historico : atleta.estatisticas?.anual?.[anoAtual];
+  const stats = historico
+    ? atleta.estatisticas?.historico
+    : atleta.estatisticas?.anual?.[anoAtual];
 
   return {
     ...atleta,
@@ -51,8 +56,8 @@ type PerfilCardProps = {
 function PerfilCard({ atleta }: PerfilCardProps) {
   if (!atleta) {
     return (
-      <div className="bg-[#181818] rounded-2xl shadow-lg px-6 py-8 w-full max-w-xs flex flex-col items-center mx-auto h-[430px]">
-        <div className="h-72 flex items-center justify-center text-gray-500 w-full text-center">
+      <div className="mx-auto flex h-[430px] w-full max-w-xs flex-col items-center rounded-2xl bg-[#181818] px-6 py-8 shadow-lg">
+        <div className="flex h-72 w-full items-center justify-center text-center text-gray-500">
           Selecione um atleta
         </div>
       </div>
@@ -60,7 +65,7 @@ function PerfilCard({ atleta }: PerfilCardProps) {
   }
 
   return (
-    <div className="bg-[#181818] rounded-2xl shadow-lg px-6 py-8 w-full max-w-xs flex flex-col items-center mx-auto min-h-[430px]">
+    <div className="mx-auto flex min-h-[430px] w-full max-w-xs flex-col items-center rounded-2xl bg-[#181818] px-6 py-8 shadow-lg">
       <div className="profile-avatar-share mb-2">
         <Image
           src={atleta.foto}
@@ -83,75 +88,104 @@ function PerfilCard({ atleta }: PerfilCardProps) {
           draggable={false}
         />
       </div>
-      <h3 className="font-bold text-xl text-yellow-400 mb-1 text-center">{atleta.nome}</h3>
-      <div className="uppercase text-yellow-200 text-xs mb-4 tracking-wider">
+      <h3 className="mb-1 text-center text-xl font-bold text-yellow-400">
+        {atleta.nome}
+      </h3>
+      <div className="mb-4 text-xs uppercase tracking-wider text-yellow-200">
         {atleta.posicao || "POSIÇÃO"}
       </div>
-      <div className="w-full grid grid-cols-3 gap-x-4 gap-y-1 text-center text-base mb-2">
+      <div className="mb-2 grid w-full grid-cols-3 gap-x-4 gap-y-1 text-center text-base">
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.campeaoDia}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Campeão</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.campeaoDia}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">Campeão</span>
         </div>
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.gols}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Gols</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.gols}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">Gols</span>
         </div>
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.assistencias}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Assistências</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.assistencias}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">
+            Assistências
+          </span>
         </div>
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.jogos}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Jogos</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.jogos}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">Jogos</span>
         </div>
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.mediaVitorias}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Média Vitórias</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.mediaVitorias}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">
+            Média Vitórias
+          </span>
         </div>
         <div>
-          <span className="block font-bold text-yellow-400 text-lg">{atleta.pontuacao}</span>
-          <span className="block text-[11px] text-gray-200 mt-1">Pontuação</span>
+          <span className="block text-lg font-bold text-yellow-400">
+            {atleta.pontuacao}
+          </span>
+          <span className="mt-1 block text-[11px] text-gray-200">
+            Pontuação
+          </span>
         </div>
       </div>
       {/* Títulos */}
-      <div className="w-full mt-4 text-left">
+      <div className="mt-4 w-full text-left">
         {Array.isArray(atleta.titulosGrandesTorneios) &&
           atleta.titulosGrandesTorneios.length > 0 && (
             <div className="mb-2">
-              <span className="font-bold text-yellow-300 text-[16px] flex items-center gap-1">
+              <span className="flex items-center gap-1 text-[16px] font-bold text-yellow-300">
                 <span>🏆</span> Grandes Torneios:
               </span>
-              {atleta.titulosGrandesTorneios.map((t: TituloAtleta, i: number) => (
-                <div key={i} className="ml-5 text-gray-200 text-[14px]">
-                  {t?.descricao} <span className="text-gray-400">{String(t?.ano)}</span>
+              {atleta.titulosGrandesTorneios.map(
+                (t: TituloAtleta, i: number) => (
+                  <div key={i} className="ml-5 text-[14px] text-gray-200">
+                    {t?.descricao}{" "}
+                    <span className="text-gray-400">{String(t?.ano)}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
+        {Array.isArray(atleta.titulosAnuais) &&
+          atleta.titulosAnuais.length > 0 && (
+            <div className="mb-2">
+              <span className="flex items-center gap-1 text-[16px] font-bold text-yellow-300">
+                <span>🥇</span> Anuais:
+              </span>
+              {atleta.titulosAnuais.map((t: TituloAtleta, i: number) => (
+                <div key={i} className="ml-5 text-[14px] text-gray-200">
+                  {t?.descricao}{" "}
+                  <span className="text-gray-400">{String(t?.ano)}</span>
                 </div>
               ))}
             </div>
           )}
-        {Array.isArray(atleta.titulosAnuais) && atleta.titulosAnuais.length > 0 && (
-          <div className="mb-2">
-            <span className="font-bold text-yellow-300 text-[16px] flex items-center gap-1">
-              <span>🥇</span> Anuais:
-            </span>
-            {atleta.titulosAnuais.map((t: TituloAtleta, i: number) => (
-              <div key={i} className="ml-5 text-gray-200 text-[14px]">
-                {t?.descricao} <span className="text-gray-400">{String(t?.ano)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {Array.isArray(atleta.titulosQuadrimestrais) && atleta.titulosQuadrimestrais.length > 0 && (
-          <div>
-            <span className="font-bold text-yellow-300 text-[16px] flex items-center gap-1">
-              <span>🥈</span> Quadrimestrais:
-            </span>
-            {atleta.titulosQuadrimestrais.map((t: TituloAtleta, i: number) => (
-              <div key={i} className="ml-5 text-gray-200 text-[14px]">
-                {t?.descricao} <span className="text-gray-400">{String(t?.ano)}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        {Array.isArray(atleta.titulosQuadrimestrais) &&
+          atleta.titulosQuadrimestrais.length > 0 && (
+            <div>
+              <span className="flex items-center gap-1 text-[16px] font-bold text-yellow-300">
+                <span>🥈</span> Quadrimestrais:
+              </span>
+              {atleta.titulosQuadrimestrais.map(
+                (t: TituloAtleta, i: number) => (
+                  <div key={i} className="ml-5 text-[14px] text-gray-200">
+                    {t?.descricao}{" "}
+                    <span className="text-gray-400">{String(t?.ano)}</span>
+                  </div>
+                ),
+              )}
+            </div>
+          )}
       </div>
     </div>
   );
@@ -175,10 +209,10 @@ export default function TiraTeimaPage() {
   }, [atletaQuery]);
 
   const atletasFiltradosA = atletasMock.filter((a) =>
-    a.nome.toLowerCase().includes(buscaA.toLowerCase())
+    a.nome.toLowerCase().includes(buscaA.toLowerCase()),
   );
   const atletasFiltradosB = atletasMock.filter((a) =>
-    a.nome.toLowerCase().includes(buscaB.toLowerCase())
+    a.nome.toLowerCase().includes(buscaB.toLowerCase()),
   );
 
   const atletaSelecionadoA = atletasMock.find((a) => a.slug === atletaA);
@@ -221,27 +255,27 @@ export default function TiraTeimaPage() {
           content="Comparador, Tira Teima, Estatísticas, Jogadores, Futebol 7, Racha, Comparação de atletas"
         />
       </Head>
-      <main className="min-h-screen bg-fundo text-white pt-12 pb-12 flex flex-col items-center justify-start">
+      <main className="flex min-h-screen flex-col items-center justify-start bg-fundo pb-12 pt-12 text-white">
         {/* Filtro de estatísticas */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-4 mb-8 w-full">
-          <span className="font-bold text-yellow-400 text-xl mb-2 md:mb-0 md:mr-2">
+        <div className="mb-8 flex w-full flex-col items-center justify-center gap-4 md:flex-row">
+          <span className="mb-2 text-xl font-bold text-yellow-400 md:mb-0 md:mr-2">
             Estatísticas:
           </span>
           <button
-            className={`px-4 py-2 rounded font-semibold border transition text-lg ${
+            className={`rounded border px-4 py-2 text-lg font-semibold transition ${
               !historico
-                ? "bg-yellow-400 text-black border-yellow-400"
-                : "bg-zinc-900 text-yellow-300 border-yellow-400"
+                ? "border-yellow-400 bg-yellow-400 text-black"
+                : "border-yellow-400 bg-zinc-900 text-yellow-300"
             }`}
             onClick={() => setHistorico(false)}
           >
             Temporada Atual
           </button>
           <button
-            className={`px-4 py-2 rounded font-semibold border transition text-lg ${
+            className={`rounded border px-4 py-2 text-lg font-semibold transition ${
               historico
-                ? "bg-yellow-400 text-black border-yellow-400"
-                : "bg-zinc-900 text-yellow-300 border-yellow-400"
+                ? "border-yellow-400 bg-yellow-400 text-black"
+                : "border-yellow-400 bg-zinc-900 text-yellow-300"
             }`}
             onClick={() => setHistorico(true)}
           >
@@ -253,15 +287,17 @@ export default function TiraTeimaPage() {
         <div
           ref={shareRef}
           data-share-card
-          className={`w-full max-w-[1200px] flex flex-col items-center md:items-stretch md:flex-row md:justify-center gap-0 md:gap-0 py-4 px-0 relative ${
+          className={`relative flex w-full max-w-[1200px] flex-col items-center gap-0 px-0 py-4 md:flex-row md:items-stretch md:justify-center md:gap-0 ${
             isExporting ? "no-vs-effect" : ""
           }`}
           style={{ background: "#181818" }}
         >
-          <div className="flex flex-col items-center flex-1 min-w-[350px] max-w-[430px]">
-            <label className="font-bold text-yellow-300 text-lg mb-1 mt-2">Jogador 1</label>
+          <div className="flex min-w-[350px] max-w-[430px] flex-1 flex-col items-center">
+            <label className="mb-1 mt-2 text-lg font-bold text-yellow-300">
+              Jogador 1
+            </label>
             <input
-              className="w-full mb-3 px-3 py-2 rounded bg-zinc-800 text-white border border-yellow-400 outline-none"
+              className="mb-3 w-full rounded border border-yellow-400 bg-zinc-800 px-3 py-2 text-white outline-none"
               type="text"
               placeholder="Buscar atleta..."
               value={buscaA}
@@ -279,9 +315,9 @@ export default function TiraTeimaPage() {
           </div>
 
           {/* VS centralizado */}
-          <div className="flex flex-row items-center justify-center w-full md:w-[180px] min-h-[90px] md:min-h-[430px] my-6 md:my-0">
+          <div className="my-6 flex min-h-[90px] w-full flex-row items-center justify-center md:my-0 md:min-h-[430px] md:w-[180px]">
             <span
-              className="relative z-10 font-extrabold select-none text-[56px] md:text-[90px] leading-[1.15] px-3 vs-animated"
+              className="vs-animated relative z-10 select-none px-3 text-[56px] font-extrabold leading-[1.15] md:text-[90px]"
               style={{
                 display: "inline-block",
                 width: "auto",
@@ -293,10 +329,12 @@ export default function TiraTeimaPage() {
             </span>
           </div>
 
-          <div className="flex flex-col items-center flex-1 min-w-[350px] max-w-[430px]">
-            <label className="font-bold text-yellow-300 text-lg mb-1 mt-2">Jogador 2</label>
+          <div className="flex min-w-[350px] max-w-[430px] flex-1 flex-col items-center">
+            <label className="mb-1 mt-2 text-lg font-bold text-yellow-300">
+              Jogador 2
+            </label>
             <input
-              className="w-full mb-3 px-3 py-2 rounded bg-zinc-800 text-white border border-yellow-400 outline-none"
+              className="mb-3 w-full rounded border border-yellow-400 bg-zinc-800 px-3 py-2 text-white outline-none"
               type="text"
               placeholder="Buscar atleta..."
               value={buscaB}
@@ -315,10 +353,10 @@ export default function TiraTeimaPage() {
         </div>
 
         {/* Botão compartilhar */}
-        <div className="flex justify-center mt-8 w-full">
+        <div className="mt-8 flex w-full justify-center">
           <button
             onClick={handleShare}
-            className="flex items-center justify-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black text-xl font-bold px-8 py-4 rounded-xl shadow transition-all"
+            className="flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-8 py-4 text-xl font-bold text-black shadow transition-all hover:bg-yellow-300"
           >
             <FaShareAlt size={22} />
             Compartilhar

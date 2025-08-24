@@ -241,7 +241,9 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
     return schema.parse(data);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      throw new Error(`Validação falhou: ${error.errors.map((e) => e.message).join(", ")}`);
+      throw new Error(
+        `Validação falhou: ${error.errors.map((e) => e.message).join(", ")}`,
+      );
     }
     throw error;
   }
@@ -250,7 +252,7 @@ export const validateData = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
 // Função helper para validar dados de forma segura
 export const validateDataSafe = <T>(
   schema: z.ZodSchema<T>,
-  data: unknown
+  data: unknown,
 ): { success: true; data: T } | { success: false; errors: string[] } => {
   try {
     const validatedData = schema.parse(data);

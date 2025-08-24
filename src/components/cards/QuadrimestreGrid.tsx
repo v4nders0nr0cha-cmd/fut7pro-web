@@ -27,23 +27,31 @@ export default function QuadrimestreGrid({ dados }: Props) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+    <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3">
       {periodos.map(({ key, label }) => (
         <div
           key={key}
-          className="bg-[#1A1A1A] rounded-xl p-4 shadow-md w-full max-w-sm text-white min-h-[220px] flex flex-col"
+          className="flex min-h-[220px] w-full max-w-sm flex-col rounded-xl bg-[#1A1A1A] p-4 text-white shadow-md"
         >
-          <h3 className="text-center text-xs font-bold text-gray-400 uppercase">{label}</h3>
-          <h4 className="text-center text-yellow-400 text-sm font-bold mb-4 uppercase">
+          <h3 className="text-center text-xs font-bold uppercase text-gray-400">
+            {label}
+          </h3>
+          <h4 className="mb-4 text-center text-sm font-bold uppercase text-yellow-400">
             CAMPEÕES DO QUADRIMESTRE
           </h4>
-          <ul className="space-y-2 flex-1">
+          <ul className="flex-1 space-y-2">
             {dados[key] && dados[key].length > 0 ? (
               [...dados[key]]
-                .sort((a, b) => prioridade.indexOf(a.titulo) - prioridade.indexOf(b.titulo))
+                .sort(
+                  (a, b) =>
+                    prioridade.indexOf(a.titulo) - prioridade.indexOf(b.titulo),
+                )
                 .map((item, index) => (
-                  <li key={index} className="flex items-center justify-between text-sm gap-2">
-                    <span className="w-6 flex justify-center text-xl">
+                  <li
+                    key={index}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="flex w-6 justify-center text-xl">
                       {item.icone &&
                       typeof item.icone === "string" &&
                       item.icone.startsWith("/") ? (
@@ -62,7 +70,7 @@ export default function QuadrimestreGrid({ dados }: Props) {
                       {item.slug ? (
                         <Link
                           href={`/atletas/${item.slug}`}
-                          className="hover:text-yellow-400 transition underline underline-offset-2"
+                          className="underline underline-offset-2 transition hover:text-yellow-400"
                           title={`Ver perfil de ${item.nome} - ${item.titulo}`}
                         >
                           {item.nome}
@@ -71,13 +79,15 @@ export default function QuadrimestreGrid({ dados }: Props) {
                         item.nome
                       )}
                     </span>
-                    <span className="text-xs text-gray-400 text-right w-28 break-words">
+                    <span className="w-28 break-words text-right text-xs text-gray-400">
                       {item.titulo}
                     </span>
                   </li>
                 ))
             ) : (
-              <li className="text-center text-gray-600 py-8">Nenhum campeão registrado</li>
+              <li className="py-8 text-center text-gray-600">
+                Nenhum campeão registrado
+              </li>
             )}
           </ul>
         </div>

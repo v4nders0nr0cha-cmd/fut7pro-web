@@ -14,14 +14,19 @@ export default function HistoricoCompletoPage() {
 
   const historico = atleta.historico;
 
-  const agrupadoPorAno = historico.reduce<Record<string, JogoAtleta[]>>((acc, jogo) => {
-    const ano = new Date(jogo.data).getFullYear().toString();
-    if (!acc[ano]) acc[ano] = [];
-    acc[ano].push(jogo);
-    return acc;
-  }, {});
+  const agrupadoPorAno = historico.reduce<Record<string, JogoAtleta[]>>(
+    (acc, jogo) => {
+      const ano = new Date(jogo.data).getFullYear().toString();
+      if (!acc[ano]) acc[ano] = [];
+      acc[ano].push(jogo);
+      return acc;
+    },
+    {},
+  );
 
-  const anosOrdenados = Object.keys(agrupadoPorAno).sort((a, b) => Number(b) - Number(a));
+  const anosOrdenados = Object.keys(agrupadoPorAno).sort(
+    (a, b) => Number(b) - Number(a),
+  );
 
   return (
     <>
@@ -37,7 +42,7 @@ export default function HistoricoCompletoPage() {
         />
       </Head>
 
-      <h1 className="text-3xl font-bold text-yellow-400 mt-8 mb-6 text-center">
+      <h1 className="mb-6 mt-8 text-center text-3xl font-bold text-yellow-400">
         Histórico completo de {atleta.nome}
       </h1>
 
@@ -45,31 +50,33 @@ export default function HistoricoCompletoPage() {
       <div className="w-full">
         {anosOrdenados.map((ano) => (
           <div key={ano} className="mb-10 w-full">
-            <h2 className="text-lg font-semibold text-white mb-2">📅 {ano}</h2>
-            <div className="w-full overflow-x-auto scrollbar-dark">
-              <table className="min-w-[700px] text-sm border border-zinc-700 bg-zinc-900">
+            <h2 className="mb-2 text-lg font-semibold text-white">📅 {ano}</h2>
+            <div className="scrollbar-dark w-full overflow-x-auto">
+              <table className="min-w-[700px] border border-zinc-700 bg-zinc-900 text-sm">
                 <thead className="bg-zinc-900 text-gray-300">
                   <tr>
-                    <th className="p-2 border">Data</th>
-                    <th className="p-2 border">Time</th>
-                    <th className="p-2 border">Resultado</th>
-                    <th className="p-2 border">Gols</th>
-                    <th className="p-2 border">Campeão?</th>
-                    <th className="p-2 border">Pontuação</th>
-                    <th className="p-2 border">Detalhes</th>
+                    <th className="border p-2">Data</th>
+                    <th className="border p-2">Time</th>
+                    <th className="border p-2">Resultado</th>
+                    <th className="border p-2">Gols</th>
+                    <th className="border p-2">Campeão?</th>
+                    <th className="border p-2">Pontuação</th>
+                    <th className="border p-2">Detalhes</th>
                   </tr>
                 </thead>
                 <tbody>
                   {agrupadoPorAno[ano]?.map((jogo, index) => (
                     <tr key={index} className="text-center">
-                      <td className="p-2 border">{jogo.data}</td>
-                      <td className="p-2 border">{jogo.time}</td>
-                      <td className="p-2 border">{jogo.resultado}</td>
-                      <td className="p-2 border">{jogo.gols}</td>
-                      <td className="p-2 border">{jogo.campeao ? "🏆" : ""}</td>
-                      <td className="p-2 border">{jogo.pontuacao}</td>
-                      <td className="p-2 border">
-                        <button className="text-yellow-400 hover:underline">Ver Detalhes</button>
+                      <td className="border p-2">{jogo.data}</td>
+                      <td className="border p-2">{jogo.time}</td>
+                      <td className="border p-2">{jogo.resultado}</td>
+                      <td className="border p-2">{jogo.gols}</td>
+                      <td className="border p-2">{jogo.campeao ? "🏆" : ""}</td>
+                      <td className="border p-2">{jogo.pontuacao}</td>
+                      <td className="border p-2">
+                        <button className="text-yellow-400 hover:underline">
+                          Ver Detalhes
+                        </button>
                       </td>
                     </tr>
                   ))}

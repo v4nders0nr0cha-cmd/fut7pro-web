@@ -22,13 +22,31 @@ import KPI from "@/components/financeiro/KPI";
 import CardPlano from "@/components/financeiro/CardPlano";
 import TabelaRachas from "@/components/financeiro/TabelaRachas";
 import ModalInadimplentes from "@/components/financeiro/ModalInadimplentes";
-import type { Inadimplente, RachaDetalheResumido } from "@/components/financeiro/types";
+import type {
+  Inadimplente,
+  RachaDetalheResumido,
+} from "@/components/financeiro/types";
 
 const PLANS = [
-  { key: "mensal_essencial", name: "Mensal Essencial", price: 150, freq: "mês" },
-  { key: "mensal_marketing", name: "Mensal + Marketing", price: 180, freq: "mês" },
+  {
+    key: "mensal_essencial",
+    name: "Mensal Essencial",
+    price: 150,
+    freq: "mês",
+  },
+  {
+    key: "mensal_marketing",
+    name: "Mensal + Marketing",
+    price: 280,
+    freq: "mês",
+  },
   { key: "anual_essencial", name: "Anual Essencial", price: 1500, freq: "ano" },
-  { key: "anual_marketing", name: "Anual + Marketing", price: 1800, freq: "ano" },
+  {
+    key: "anual_marketing",
+    name: "Anual + Marketing",
+    price: 2800,
+    freq: "ano",
+  },
 ];
 
 const PLAN_COLORS = ["#32d657", "#4c6fff", "#ffbe30", "#ff7043"];
@@ -42,10 +60,34 @@ const MOCK_FINANCEIRO = {
   ativos: 12,
   inadimplentes: 2,
   porPlano: [
-    { key: "mensal_essencial", ativos: 5, receita: 750, inadimplentes: 1, vencimentos: 2 },
-    { key: "mensal_marketing", ativos: 2, receita: 360, inadimplentes: 0, vencimentos: 0 },
-    { key: "anual_essencial", ativos: 4, receita: 6000, inadimplentes: 1, vencimentos: 1 },
-    { key: "anual_marketing", ativos: 1, receita: 1800, inadimplentes: 0, vencimentos: 0 },
+    {
+      key: "mensal_essencial",
+      ativos: 5,
+      receita: 750,
+      inadimplentes: 1,
+      vencimentos: 2,
+    },
+    {
+      key: "mensal_marketing",
+      ativos: 2,
+      receita: 360,
+      inadimplentes: 0,
+      vencimentos: 0,
+    },
+    {
+      key: "anual_essencial",
+      ativos: 4,
+      receita: 6000,
+      inadimplentes: 1,
+      vencimentos: 1,
+    },
+    {
+      key: "anual_marketing",
+      ativos: 1,
+      receita: 1800,
+      inadimplentes: 0,
+      vencimentos: 0,
+    },
   ],
 };
 
@@ -179,27 +221,27 @@ export default function FinanceiroPage() {
         />
       </Head>
 
-      <main className="bg-zinc-900 min-h-screen px-2 sm:px-4 md:px-8 pt-6 pb-12">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
+      <main className="min-h-screen bg-zinc-900 px-2 pb-12 pt-6 sm:px-4 md:px-8">
+        <h1 className="mb-4 text-2xl font-bold text-white md:text-3xl">
           Painel Financeiro dos Rachas
         </h1>
         {/* Exportação e filtros */}
-        <div className="flex flex-wrap gap-2 mb-6">
+        <div className="mb-6 flex flex-wrap gap-2">
           <button
             onClick={exportCSV}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded font-semibold flex items-center gap-2 transition"
+            className="flex items-center gap-2 rounded bg-yellow-400 px-3 py-2 font-semibold text-black transition hover:bg-yellow-500"
           >
             <FaDownload /> Exportar CSV
           </button>
           <button
             onClick={exportPDF}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded font-semibold flex items-center gap-2 transition"
+            className="flex items-center gap-2 rounded bg-yellow-400 px-3 py-2 font-semibold text-black transition hover:bg-yellow-500"
           >
             <FaDownload /> Exportar PDF
           </button>
           <button
             onClick={exportXLSX}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded font-semibold flex items-center gap-2 transition"
+            className="flex items-center gap-2 rounded bg-yellow-400 px-3 py-2 font-semibold text-black transition hover:bg-yellow-500"
           >
             <FaDownload /> Exportar XLSX
           </button>
@@ -207,7 +249,7 @@ export default function FinanceiroPage() {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="bg-zinc-800 text-white rounded px-2 py-1 ml-2"
+            className="ml-2 rounded bg-zinc-800 px-2 py-1 text-white"
           >
             <option value="7d">Últimos 7 dias</option>
             <option value="30d">Últimos 30 dias</option>
@@ -216,7 +258,7 @@ export default function FinanceiroPage() {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as Status | "all")}
-            className="bg-zinc-800 text-white rounded px-2 py-1"
+            className="rounded bg-zinc-800 px-2 py-1 text-white"
           >
             <option value="all">Todos Status</option>
             <option value="Pago">Pago</option>
@@ -227,7 +269,7 @@ export default function FinanceiroPage() {
           <select
             value={plano}
             onChange={(e) => setPlano(e.target.value)}
-            className="bg-zinc-800 text-white rounded px-2 py-1"
+            className="rounded bg-zinc-800 px-2 py-1 text-white"
           >
             <option value="all">Todos Planos</option>
             {PLANS.map((plan) => (
@@ -239,7 +281,7 @@ export default function FinanceiroPage() {
           <div className="relative ml-auto w-full sm:w-auto">
             <FaSearch className="absolute left-3 top-2.5 text-zinc-400" />
             <input
-              className="bg-zinc-800 text-white pl-10 pr-4 py-2 rounded w-full sm:w-52"
+              className="w-full rounded bg-zinc-800 py-2 pl-10 pr-4 text-white sm:w-52"
               placeholder="Buscar racha ou presidente..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -248,7 +290,7 @@ export default function FinanceiroPage() {
         </div>
 
         {/* KPIs principais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <KPI
             title="Receita Total (R$)"
             value={MOCK_FINANCEIRO.receitaTotal.toLocaleString("pt-BR", {
@@ -257,7 +299,11 @@ export default function FinanceiroPage() {
             })}
             color="green"
           />
-          <KPI title="Rachas Ativos Pagos" value={MOCK_FINANCEIRO.ativos} color="yellow" />
+          <KPI
+            title="Rachas Ativos Pagos"
+            value={MOCK_FINANCEIRO.ativos}
+            color="yellow"
+          />
           <KPI
             title="Inadimplentes"
             value={
@@ -281,7 +327,7 @@ export default function FinanceiroPage() {
         </div>
 
         {/* Cards por plano */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           {MOCK_FINANCEIRO.porPlano.map((plan, idx) => (
             <CardPlano
               key={plan.key}
@@ -293,16 +339,20 @@ export default function FinanceiroPage() {
               vencimentos={plan.vencimentos}
               cor={PLAN_COLORS[idx] ?? "#32d657"} // Fallback padrão
               onClickInadimplentes={
-                plan.inadimplentes > 0 ? () => setModalInadimplentes(true) : undefined
+                plan.inadimplentes > 0
+                  ? () => setModalInadimplentes(true)
+                  : undefined
               }
             />
           ))}
         </div>
 
         {/* Gráficos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-zinc-800 rounded-2xl shadow p-4 flex flex-col">
-            <h2 className="text-white font-semibold mb-2 text-base">Evolução da Receita (R$)</h2>
+        <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div className="flex flex-col rounded-2xl bg-zinc-800 p-4 shadow">
+            <h2 className="mb-2 text-base font-semibold text-white">
+              Evolução da Receita (R$)
+            </h2>
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={MOCK_GRAFICO_RECEITA}>
                 <CartesianGrid stroke="#444" />
@@ -320,8 +370,10 @@ export default function FinanceiroPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div className="bg-zinc-800 rounded-2xl shadow p-4 flex flex-col">
-            <h2 className="text-white font-semibold mb-2 text-base">Rachas Ativos por Plano</h2>
+          <div className="flex flex-col rounded-2xl bg-zinc-800 p-4 shadow">
+            <h2 className="mb-2 text-base font-semibold text-white">
+              Rachas Ativos por Plano
+            </h2>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
@@ -334,17 +386,20 @@ export default function FinanceiroPage() {
                   label
                 >
                   {MOCK_GRAFICO_PLANOS.map((entry, idx) => (
-                    <Cell key={`cell-${idx}`} fill={PLAN_COLORS[idx % PLAN_COLORS.length]} />
+                    <Cell
+                      key={`cell-${idx}`}
+                      fill={PLAN_COLORS[idx % PLAN_COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <PieTooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center mt-2 gap-3 flex-wrap">
+            <div className="mt-2 flex flex-wrap justify-center gap-3">
               {PLANS.map((plan, idx) => (
                 <div key={plan.key} className="flex items-center gap-1 text-sm">
                   <span
-                    className="inline-block w-3 h-3 rounded-full"
+                    className="inline-block h-3 w-3 rounded-full"
                     style={{ backgroundColor: PLAN_COLORS[idx] }}
                   ></span>
                   <span className="text-white">{plan.name}</span>
@@ -357,7 +412,9 @@ export default function FinanceiroPage() {
         {/* Tabela detalhada */}
         <TabelaRachas
           rachas={filteredRachas}
-          onDetalhes={(rachaId) => window.open(`/superadmin/financeiro/${rachaId}`, "_self")}
+          onDetalhes={(rachaId) =>
+            window.open(`/superadmin/financeiro/${rachaId}`, "_self")
+          }
         />
 
         {/* Modal de inadimplentes */}

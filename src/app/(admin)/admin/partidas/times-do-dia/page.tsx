@@ -20,15 +20,15 @@ export default function TimesDoDiaPage() {
         <meta name="robots" content="index, follow" />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 bg-fundo min-h-screen">
+      <main className="min-h-screen bg-fundo px-4 pb-24 pt-20 md:pb-8 md:pt-6">
         <h1 className="sr-only">Times do Dia - Sistema Fut7Pro</h1>
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4 text-center">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-4 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
             Times do Dia
           </h2>
-          <p className="text-center text-neutral-300 mb-8">
-            Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
-            jogos estão logo abaixo.
+          <p className="mb-8 text-center text-neutral-300">
+            Veja como ficaram as escalações dos times do racha de hoje. Os
+            confrontos e a ordem dos jogos estão logo abaixo.
           </p>
           <TimesDoDiaClient />
         </div>

@@ -6,10 +6,10 @@ import type { Partida } from "@/types/partida";
 
 export default function PartidaCard({ partida }: { partida: Partida }) {
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between bg-secundario rounded-xl shadow p-4 gap-3 hover:shadow-lg transition-all">
-      <div className="flex items-center gap-3 w-full">
+    <div className="bg-secundario flex flex-col items-center justify-between gap-3 rounded-xl p-4 shadow transition-all hover:shadow-lg md:flex-row">
+      <div className="flex w-full items-center gap-3">
         {/* Logo e nome time casa */}
-        <div className="flex items-center gap-2 min-w-[90px]">
+        <div className="flex min-w-[90px] items-center gap-2">
           <Image
             src={partida.logoCasa}
             alt={`Logo ${partida.timeCasa}`}
@@ -17,19 +17,20 @@ export default function PartidaCard({ partida }: { partida: Partida }) {
             height={38}
             className="rounded-lg"
           />
-          <span className="font-bold text-base">{partida.timeCasa}</span>
+          <span className="text-base font-bold">{partida.timeCasa}</span>
         </div>
         {/* Placar */}
-        <div className="flex flex-col items-center min-w-[72px]">
+        <div className="flex min-w-[72px] flex-col items-center">
           <span className="text-lg font-bold">
-            {partida.golsCasa} <span className="text-yellow-400">x</span> {partida.golsFora}
+            {partida.golsCasa} <span className="text-yellow-400">x</span>{" "}
+            {partida.golsFora}
           </span>
-          <span className="text-xs text-textoSuave">
+          <span className="text-textoSuave text-xs">
             {partida.data} - {partida.local}
           </span>
         </div>
         {/* Logo e nome time fora */}
-        <div className="flex items-center gap-2 min-w-[90px]">
+        <div className="flex min-w-[90px] items-center gap-2">
           <Image
             src={partida.logoFora}
             alt={`Logo ${partida.timeFora}`}
@@ -37,19 +38,21 @@ export default function PartidaCard({ partida }: { partida: Partida }) {
             height={38}
             className="rounded-lg"
           />
-          <span className="font-bold text-base">{partida.timeFora}</span>
+          <span className="text-base font-bold">{partida.timeFora}</span>
         </div>
       </div>
-      <div className="flex flex-col md:items-end gap-2">
+      <div className="flex flex-col gap-2 md:items-end">
         <Link
           href={`/partidas/${partida.id}`}
-          className="bg-yellow-400 text-black font-semibold px-4 py-1.5 rounded-lg text-sm hover:bg-yellow-500 transition"
+          className="rounded-lg bg-yellow-400 px-4 py-1.5 text-sm font-semibold text-black transition hover:bg-yellow-500"
         >
           Ver detalhes
         </Link>
         <span
-          className={`text-xs px-2 py-1 rounded-lg ${
-            partida.status === "Concluído" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"
+          className={`rounded-lg px-2 py-1 text-xs ${
+            partida.status === "Concluído"
+              ? "bg-green-700 text-white"
+              : "bg-yellow-700 text-white"
           }`}
         >
           {partida.status}

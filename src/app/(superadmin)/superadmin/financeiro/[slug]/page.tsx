@@ -4,7 +4,13 @@ import Head from "next/head";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip as PieTooltip,
+  ResponsiveContainer,
+} from "recharts";
 import type {
   PagamentoFinanceiro,
   StatusPagamento,
@@ -90,10 +96,15 @@ export default function FinanceiroRachaDetalhePage() {
   const [detalhe, setDetalhe] = useState<RachaDetalhe | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [statusPagamento, setStatusPagamento] = useState<StatusPagamento | "all">("all");
-  const [metodoPagamento, setMetodoPagamento] = useState<MetodoPagamento | "all">("all");
+  const [statusPagamento, setStatusPagamento] = useState<
+    StatusPagamento | "all"
+  >("all");
+  const [metodoPagamento, setMetodoPagamento] = useState<
+    MetodoPagamento | "all"
+  >("all");
 
-  const [modalPagamento, setModalPagamento] = useState<PagamentoFinanceiro | null>(null);
+  const [modalPagamento, setModalPagamento] =
+    useState<PagamentoFinanceiro | null>(null);
   const [modalNovo, setModalNovo] = useState(false);
 
   // Funções de ação dos botões (mock)
@@ -104,7 +115,11 @@ export default function FinanceiroRachaDetalhePage() {
     alert("Download da fatura mockado! (implemente integração backend)");
   }
   function handleMarcarInadimplente() {
-    if (window.confirm("Deseja realmente marcar como inadimplente? (ação mockada)")) {
+    if (
+      window.confirm(
+        "Deseja realmente marcar como inadimplente? (ação mockada)",
+      )
+    ) {
       alert("Racha marcado como inadimplente! (mock)");
       // Aqui você faria update no backend depois
     }
@@ -123,7 +138,7 @@ export default function FinanceiroRachaDetalhePage() {
     ? detalhe.pagamentos.filter(
         (p) =>
           (statusPagamento === "all" || p.status === statusPagamento) &&
-          (metodoPagamento === "all" || p.metodo === metodoPagamento)
+          (metodoPagamento === "all" || p.metodo === metodoPagamento),
       )
     : [];
 
@@ -135,7 +150,9 @@ export default function FinanceiroRachaDetalhePage() {
       Trial: 0,
       Cancelado: 0,
     };
-    detalhe.pagamentos.forEach((p) => (count[p.status] = (count[p.status] ?? 0) + 1));
+    detalhe.pagamentos.forEach(
+      (p) => (count[p.status] = (count[p.status] ?? 0) + 1),
+    );
     return (Object.keys(count) as StatusPagamento[])
       .map((k, i) => ({
         name: k,
@@ -150,13 +167,18 @@ export default function FinanceiroRachaDetalhePage() {
     setDetalhe({
       ...detalhe,
       pagamentos: [pag, ...detalhe.pagamentos],
-      totalPago: (detalhe.totalPago ?? 0) + (pag.status === "Pago" ? pag.valor : 0),
+      totalPago:
+        (detalhe.totalPago ?? 0) + (pag.status === "Pago" ? pag.valor : 0),
     });
     setModalNovo(false);
   }
 
-  if (loading) return <div className="text-white p-8">Carregando detalhes...</div>;
-  if (!detalhe) return <div className="text-red-400 p-8">Erro ao carregar dados do racha.</div>;
+  if (loading)
+    return <div className="p-8 text-white">Carregando detalhes...</div>;
+  if (!detalhe)
+    return (
+      <div className="p-8 text-red-400">Erro ao carregar dados do racha.</div>
+    );
 
   return (
     <>
@@ -171,33 +193,39 @@ export default function FinanceiroRachaDetalhePage() {
           content={`racha, financeiro, detalhe, pagamentos, fut7pro, ${detalhe.nome}`}
         />
       </Head>
-      <main className="bg-zinc-900 min-h-screen px-2 sm:px-4 md:px-8 pt-6 pb-12">
-        <div className="max-w-3xl mx-auto">
+      <main className="min-h-screen bg-zinc-900 px-2 pb-12 pt-6 sm:px-4 md:px-8">
+        <div className="mx-auto max-w-3xl">
           <nav className="mb-4">
-            <Link href="/superadmin/financeiro" className="text-blue-400 hover:underline">
+            <Link
+              href="/superadmin/financeiro"
+              className="text-blue-400 hover:underline"
+            >
               ← Voltar ao Financeiro
             </Link>
           </nav>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{detalhe.nome ?? "--"}</h1>
-          <div className="flex flex-wrap gap-3 mb-4">
-            <span className="bg-zinc-800 text-white px-3 py-1 rounded">
+          <h1 className="mb-2 text-2xl font-bold text-white md:text-3xl">
+            {detalhe.nome ?? "--"}
+          </h1>
+          <div className="mb-4 flex flex-wrap gap-3">
+            <span className="rounded bg-zinc-800 px-3 py-1 text-white">
               {detalhe.plano ?? "--"}
             </span>
             <span
-              className={`font-bold px-3 py-1 rounded ${STATUS_COLORS[detalhe.status] ?? "text-white"} bg-zinc-800`}
+              className={`rounded px-3 py-1 font-bold ${STATUS_COLORS[detalhe.status] ?? "text-white"} bg-zinc-800`}
             >
               {detalhe.status}
             </span>
-            <span className="bg-zinc-800 text-white px-3 py-1 rounded">
+            <span className="rounded bg-zinc-800 px-3 py-1 text-white">
               Presidente: <b>{detalhe.presidente ?? "--"}</b>
             </span>
-            <span className="bg-zinc-800 text-white px-3 py-1 rounded">
-              Criado em: {typeof detalhe.criadoEm === "string" ? detalhe.criadoEm : "--"}
+            <span className="rounded bg-zinc-800 px-3 py-1 text-white">
+              Criado em:{" "}
+              {typeof detalhe.criadoEm === "string" ? detalhe.criadoEm : "--"}
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
             <CardResumo
               titulo="Total Pago"
               valor={`R$ ${(detalhe.totalPago ?? 0).toLocaleString("pt-BR")}`}
@@ -206,7 +234,9 @@ export default function FinanceiroRachaDetalhePage() {
             <CardResumo
               titulo="Inadimplente"
               valor={detalhe.inadimplente ? "Sim" : "Não"}
-              corTexto={detalhe.inadimplente ? "text-red-400" : "text-green-400"}
+              corTexto={
+                detalhe.inadimplente ? "text-red-400" : "text-green-400"
+              }
             />
             <CardResumo
               titulo="Próx. Vencimento"
@@ -220,8 +250,10 @@ export default function FinanceiroRachaDetalhePage() {
             />
           </div>
 
-          <div className="bg-zinc-800 rounded-2xl shadow p-4 mb-8 flex flex-col items-center">
-            <h3 className="text-white font-semibold mb-2 text-base">Distribuição dos Pagamentos</h3>
+          <div className="mb-8 flex flex-col items-center rounded-2xl bg-zinc-800 p-4 shadow">
+            <h3 className="mb-2 text-base font-semibold text-white">
+              Distribuição dos Pagamentos
+            </h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -240,11 +272,14 @@ export default function FinanceiroRachaDetalhePage() {
                 <PieTooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center mt-2 gap-3 flex-wrap">
+            <div className="mt-2 flex flex-wrap justify-center gap-3">
               {graficoStatus.map((item) => (
-                <span key={item.name} className="flex items-center gap-2 text-white text-xs">
+                <span
+                  key={item.name}
+                  className="flex items-center gap-2 text-xs text-white"
+                >
                   <span
-                    className="inline-block w-3 h-3 rounded-full"
+                    className="inline-block h-3 w-3 rounded-full"
                     style={{ background: item.color }}
                   ></span>
                   {item.name}
@@ -253,22 +288,24 @@ export default function FinanceiroRachaDetalhePage() {
             </div>
           </div>
 
-          <div className="flex mb-3">
+          <div className="mb-3 flex">
             <button
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold transition"
+              className="rounded bg-green-500 px-4 py-2 font-semibold text-white transition hover:bg-green-600"
               onClick={() => setModalNovo(true)}
             >
               + Novo Lançamento
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-2 items-end">
-            <label className="text-zinc-300 text-xs font-semibold">
+          <div className="mb-2 flex flex-wrap items-end gap-2">
+            <label className="text-xs font-semibold text-zinc-300">
               Status:&nbsp;
               <select
                 value={statusPagamento}
-                onChange={(e) => setStatusPagamento(e.target.value as StatusPagamento | "all")}
-                className="bg-zinc-800 text-white rounded px-2 py-1"
+                onChange={(e) =>
+                  setStatusPagamento(e.target.value as StatusPagamento | "all")
+                }
+                className="rounded bg-zinc-800 px-2 py-1 text-white"
               >
                 <option value="all">Todos</option>
                 <option value="Pago">Pago</option>
@@ -277,12 +314,14 @@ export default function FinanceiroRachaDetalhePage() {
                 <option value="Cancelado">Cancelado</option>
               </select>
             </label>
-            <label className="text-zinc-300 text-xs font-semibold">
+            <label className="text-xs font-semibold text-zinc-300">
               Método:&nbsp;
               <select
                 value={metodoPagamento}
-                onChange={(e) => setMetodoPagamento(e.target.value as MetodoPagamento | "all")}
-                className="bg-zinc-800 text-white rounded px-2 py-1"
+                onChange={(e) =>
+                  setMetodoPagamento(e.target.value as MetodoPagamento | "all")
+                }
+                className="rounded bg-zinc-800 px-2 py-1 text-white"
               >
                 <option value="all">Todos</option>
                 <option value="pix">Pix</option>
@@ -293,8 +332,10 @@ export default function FinanceiroRachaDetalhePage() {
             </label>
           </div>
 
-          <h2 className="text-xl font-bold text-white mb-3">Histórico de Pagamentos</h2>
-          <div className="bg-zinc-800 rounded-2xl shadow p-4 overflow-x-auto mb-8">
+          <h2 className="mb-3 text-xl font-bold text-white">
+            Histórico de Pagamentos
+          </h2>
+          <div className="mb-8 overflow-x-auto rounded-2xl bg-zinc-800 p-4 shadow">
             <table className="min-w-full text-sm text-white">
               <thead>
                 <tr className="border-b border-zinc-700">
@@ -314,7 +355,11 @@ export default function FinanceiroRachaDetalhePage() {
                         {typeof pag.data === "string" ? pag.data : "--"}
                       </td>
                       <td className="px-3 py-2">
-                        R$ {(typeof pag.valor === "number" ? pag.valor : 0).toLocaleString("pt-BR")}
+                        R${" "}
+                        {(typeof pag.valor === "number"
+                          ? pag.valor
+                          : 0
+                        ).toLocaleString("pt-BR")}
                       </td>
                       <td
                         className={`px-3 py-2 font-semibold ${STATUS_COLORS[pag.status] ?? "text-white"}`}
@@ -325,7 +370,7 @@ export default function FinanceiroRachaDetalhePage() {
                       <td className="px-3 py-2">{pag.metodo ?? "--"}</td>
                       <td className="px-3 py-2">
                         <button
-                          className="text-xs bg-blue-500 hover:bg-blue-600 px-2 py-1 rounded text-white"
+                          className="rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600"
                           onClick={() => setModalPagamento(pag)}
                         >
                           Detalhes
@@ -335,7 +380,7 @@ export default function FinanceiroRachaDetalhePage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-6 text-zinc-400">
+                    <td colSpan={6} className="py-6 text-center text-zinc-400">
                       Nenhum pagamento encontrado.
                     </td>
                   </tr>
@@ -345,21 +390,21 @@ export default function FinanceiroRachaDetalhePage() {
           </div>
 
           {/* Ações rápidas */}
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="mb-8 flex flex-wrap gap-3">
             <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold transition"
+              className="rounded bg-yellow-400 px-4 py-2 font-semibold text-black transition hover:bg-yellow-500"
               onClick={handleExportPDF}
             >
               Exportar PDF
             </button>
             <button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold transition"
+              className="rounded bg-blue-500 px-4 py-2 font-semibold text-white transition hover:bg-blue-600"
               onClick={handleBaixarFatura}
             >
               Baixar Fatura
             </button>
             <button
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold transition"
+              className="rounded bg-red-500 px-4 py-2 font-semibold text-white transition hover:bg-red-600"
               onClick={handleMarcarInadimplente}
             >
               Marcar como Inadimplente
@@ -369,8 +414,10 @@ export default function FinanceiroRachaDetalhePage() {
           {/* MODAL DE DETALHE DO PAGAMENTO */}
           {modalPagamento && (
             <Modal onClose={() => setModalPagamento(null)}>
-              <div className="w-full max-w-md bg-zinc-900 rounded-2xl p-6 mx-auto">
-                <h3 className="text-lg font-bold text-white mb-3">Detalhes do Pagamento</h3>
+              <div className="mx-auto w-full max-w-md rounded-2xl bg-zinc-900 p-6">
+                <h3 className="mb-3 text-lg font-bold text-white">
+                  Detalhes do Pagamento
+                </h3>
                 <div className="mb-2 text-white">
                   <b>Status:</b>{" "}
                   <span className={STATUS_COLORS[modalPagamento.status]}>
@@ -398,7 +445,7 @@ export default function FinanceiroRachaDetalhePage() {
                 </div>
                 <button
                   onClick={() => setModalPagamento(null)}
-                  className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold transition"
+                  className="mt-4 w-full rounded bg-blue-500 px-4 py-2 font-semibold text-white transition hover:bg-blue-600"
                 >
                   Fechar
                 </button>
@@ -422,9 +469,15 @@ export default function FinanceiroRachaDetalhePage() {
 }
 
 // Modal genérico (acessível, dark, seguro)
-function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Modal({
+  children,
+  onClose,
+}: {
+  children: React.ReactNode;
+  onClose: () => void;
+}) {
   return (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/70">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg">{children}</div>
     </div>
@@ -449,7 +502,8 @@ function NovoPagamentoForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const valorNum = Number(valor);
-    if (!data || !valorNum || !referencia) return alert("Preencha todos os campos obrigatórios!");
+    if (!data || !valorNum || !referencia)
+      return alert("Preencha todos os campos obrigatórios!");
     onSalvar({
       data,
       valor: valorNum,
@@ -463,36 +517,36 @@ function NovoPagamentoForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full bg-zinc-900 rounded-2xl p-6 flex flex-col gap-3"
+      className="flex w-full flex-col gap-3 rounded-2xl bg-zinc-900 p-6"
     >
-      <h3 className="text-lg font-bold text-white mb-2">Novo Lançamento</h3>
-      <label className="text-white text-sm">
+      <h3 className="mb-2 text-lg font-bold text-white">Novo Lançamento</h3>
+      <label className="text-sm text-white">
         Data*
         <input
           type="date"
           value={data}
           onChange={(e) => setData(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
           required
         />
       </label>
-      <label className="text-white text-sm">
+      <label className="text-sm text-white">
         Valor* (R$)
         <input
           type="number"
           value={valor}
           min={1}
           onChange={(e) => setValor(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
           required
         />
       </label>
-      <label className="text-white text-sm">
+      <label className="text-sm text-white">
         Status*
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value as StatusPagamento)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
         >
           <option value="Pago">Pago</option>
           <option value="Em aberto">Em aberto</option>
@@ -500,22 +554,22 @@ function NovoPagamentoForm({
           <option value="Cancelado">Cancelado</option>
         </select>
       </label>
-      <label className="text-white text-sm">
+      <label className="text-sm text-white">
         Referência*
         <input
           type="text"
           value={referencia}
           onChange={(e) => setReferencia(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
           required
         />
       </label>
-      <label className="text-white text-sm">
+      <label className="text-sm text-white">
         Método*
         <select
           value={metodo}
           onChange={(e) => setMetodo(e.target.value as MetodoPagamento)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
         >
           <option value="pix">Pix</option>
           <option value="cartao">Cartão</option>
@@ -523,26 +577,26 @@ function NovoPagamentoForm({
           <option value="outro">Outro</option>
         </select>
       </label>
-      <label className="text-white text-sm">
+      <label className="text-sm text-white">
         Descrição
         <input
           type="text"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
+          className="mt-1 w-full rounded bg-zinc-800 px-2 py-1 text-white"
         />
       </label>
-      <div className="flex gap-3 mt-2">
+      <div className="mt-2 flex gap-3">
         <button
           type="submit"
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold flex-1"
+          className="flex-1 rounded bg-green-500 px-4 py-2 font-semibold text-white hover:bg-green-600"
         >
           Salvar
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold flex-1"
+          className="flex-1 rounded bg-zinc-700 px-4 py-2 font-semibold text-white hover:bg-zinc-600"
         >
           Cancelar
         </button>

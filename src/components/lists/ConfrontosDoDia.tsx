@@ -10,11 +10,7 @@ const times = {
 function TimeCell({ name, align }: { name: string; align?: "left" | "right" }) {
   return (
     <span
-      className={`
-        flex items-center gap-1 
-        ${align === "left" ? "justify-end" : "justify-start"} 
-        min-w-[106px] md:min-w-[120px]
-      `}
+      className={`flex items-center gap-1 ${align === "left" ? "justify-end" : "justify-start"} min-w-[106px] md:min-w-[120px]`}
     >
       {align === "left" ? (
         <>
@@ -61,17 +57,19 @@ export function ConfrontosDoDia() {
   }));
 
   return (
-    <section className="mt-12 max-w-4xl mx-auto">
-      <h3 className="text-lg font-bold text-yellow-400 mb-4 text-center">Tabela de Confrontos</h3>
-      <div className="flex flex-col md:flex-row gap-8 justify-center">
+    <section className="mx-auto mt-12 max-w-4xl">
+      <h3 className="mb-4 text-center text-lg font-bold text-yellow-400">
+        Tabela de Confrontos
+      </h3>
+      <div className="flex flex-col justify-center gap-8 md:flex-row">
         {/* Jogos de Ida */}
-        <div className="flex-1 bg-neutral-900 rounded-2xl shadow-md overflow-hidden">
-          <div className="bg-neutral-800 text-yellow-400 text-lg font-semibold text-center py-2 rounded-t-2xl">
+        <div className="flex-1 overflow-hidden rounded-2xl bg-neutral-900 shadow-md">
+          <div className="rounded-t-2xl bg-neutral-800 py-2 text-center text-lg font-semibold text-yellow-400">
             Ida
           </div>
           <table className="w-full text-center">
             <thead>
-              <tr className="bg-neutral-800 text-neutral-200 text-base">
+              <tr className="bg-neutral-800 text-base text-neutral-200">
                 <th className="py-2">Rodada</th>
                 <th className="py-2">Jogo</th>
                 <th className="py-2">Tempo</th>
@@ -79,12 +77,15 @@ export function ConfrontosDoDia() {
             </thead>
             <tbody>
               {ida.map((jogo, i) => (
-                <tr key={i} className="border-b border-neutral-800 hover:bg-neutral-800 transition">
+                <tr
+                  key={i}
+                  className="border-b border-neutral-800 transition hover:bg-neutral-800"
+                >
                   <td className="py-2 font-medium">{jogo.rodada}</td>
                   <td className="py-2 font-semibold">
                     <div className="flex items-center justify-center gap-2">
                       <TimeCell name={jogo.timeA} align="left" />
-                      <span className="mx-2 text-yellow-400 font-bold">x</span>
+                      <span className="mx-2 font-bold text-yellow-400">x</span>
                       <TimeCell name={jogo.timeB} align="right" />
                     </div>
                   </td>
@@ -95,13 +96,13 @@ export function ConfrontosDoDia() {
           </table>
         </div>
         {/* Jogos de Volta */}
-        <div className="flex-1 bg-neutral-900 rounded-2xl shadow-md overflow-hidden">
-          <div className="bg-neutral-800 text-yellow-400 text-lg font-semibold text-center py-2 rounded-t-2xl">
+        <div className="flex-1 overflow-hidden rounded-2xl bg-neutral-900 shadow-md">
+          <div className="rounded-t-2xl bg-neutral-800 py-2 text-center text-lg font-semibold text-yellow-400">
             Volta
           </div>
           <table className="w-full text-center">
             <thead>
-              <tr className="bg-neutral-800 text-neutral-200 text-base">
+              <tr className="bg-neutral-800 text-base text-neutral-200">
                 <th className="py-2">Rodada</th>
                 <th className="py-2">Jogo</th>
                 <th className="py-2">Tempo</th>
@@ -109,12 +110,15 @@ export function ConfrontosDoDia() {
             </thead>
             <tbody>
               {volta.map((jogo, i) => (
-                <tr key={i} className="border-b border-neutral-800 hover:bg-neutral-800 transition">
+                <tr
+                  key={i}
+                  className="border-b border-neutral-800 transition hover:bg-neutral-800"
+                >
                   <td className="py-2 font-medium">{jogo.rodada}</td>
                   <td className="py-2 font-semibold">
                     <div className="flex items-center justify-center gap-2">
                       <TimeCell name={jogo.timeA} align="left" />
-                      <span className="mx-2 text-yellow-400 font-bold">x</span>
+                      <span className="mx-2 font-bold text-yellow-400">x</span>
                       <TimeCell name={jogo.timeB} align="right" />
                     </div>
                   </td>

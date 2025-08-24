@@ -30,15 +30,17 @@ export default function LoadingSpinner({
 }: LoadingSpinnerProps) {
   const spinner = (
     <div className="flex flex-col items-center justify-center">
-      <Loader2 className={`animate-spin ${sizeClasses[size]} ${colorClasses[color]}`} />
-      {text && <p className="mt-2 text-sm text-gray-400 text-center">{text}</p>}
+      <Loader2
+        className={`animate-spin ${sizeClasses[size]} ${colorClasses[color]}`}
+      />
+      {text && <p className="mt-2 text-center text-sm text-gray-400">{text}</p>}
     </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-gray-800 rounded-lg p-6 shadow-lg">{spinner}</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="rounded-lg bg-gray-800 p-6 shadow-lg">{spinner}</div>
       </div>
     );
   }
@@ -49,7 +51,7 @@ export default function LoadingSpinner({
 // Componente de loading para páginas
 export function PageLoading() {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-gray-900">
       <LoadingSpinner size="lg" color="yellow" text="Carregando..." />
     </div>
   );
@@ -58,7 +60,7 @@ export function PageLoading() {
 // Componente de loading para cards
 export function CardLoading() {
   return (
-    <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
+    <div className="rounded-lg bg-gray-800 p-6 shadow-lg">
       <LoadingSpinner size="md" color="yellow" text="Carregando dados..." />
     </div>
   );

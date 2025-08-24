@@ -13,11 +13,13 @@ export function CardResumo({
 }) {
   return (
     <div
-      className={`rounded-xl shadow-lg p-6 flex flex-col items-center justify-center bg-gray-900`}
+      className={`flex flex-col items-center justify-center rounded-xl bg-gray-900 p-6 shadow-lg`}
     >
-      <div className={`text-4xl mb-2 ${color ?? "text-yellow-500"}`}>{icon}</div>
+      <div className={`mb-2 text-4xl ${color ?? "text-yellow-500"}`}>
+        {icon}
+      </div>
       <div className="text-2xl font-extrabold text-yellow-400">{value}</div>
-      <div className="text-md text-gray-200 mt-1 text-center">{title}</div>
+      <div className="text-md mt-1 text-center text-gray-200">{title}</div>
     </div>
   );
 }

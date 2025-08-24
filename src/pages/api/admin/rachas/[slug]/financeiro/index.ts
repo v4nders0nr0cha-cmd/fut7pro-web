@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { slug } = req.query;
 
   if (!slug) return res.status(400).json({ error: "Slug é obrigatório" });
@@ -33,14 +36,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         adminId: l.adminId,
         adminNome: l.admin?.nome ?? "",
         adminEmail: l.admin?.email ?? "",
-      }))
+      })),
     );
   }
 
   if (req.method === "POST") {
     const { adminId, tipo, categoria, valor, descricao, data } = req.body;
     if (!adminId || !tipo || !categoria || typeof valor !== "number" || !data) {
-      return res.status(400).json({ error: "Campos obrigatórios não enviados" });
+      return res
+        .status(400)
+        .json({ error: "Campos obrigatórios não enviados" });
     }
 
     const novo = await prisma.financeiro.create({

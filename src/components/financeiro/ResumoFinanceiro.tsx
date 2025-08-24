@@ -24,37 +24,45 @@ export default function ResumoFinanceiro({ resumo }: Props) {
   }));
 
   return (
-    <div className="mb-6 flex flex-col gap-4 w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-3 flex flex-col items-center">
-          <span className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400">
+    <div className="mb-6 flex w-full flex-col gap-4">
+      <div className="grid grid-cols-1 gap-2 text-center sm:grid-cols-3">
+        <div className="flex flex-col items-center rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 sm:text-xs">
             SALDO ATUAL
           </span>
           <span
-            className={`text-lg sm:text-2xl font-bold ${resumo.saldoAtual >= 0 ? "text-green-500" : "text-red-400"}`}
+            className={`text-lg font-bold sm:text-2xl ${resumo.saldoAtual >= 0 ? "text-green-500" : "text-red-400"}`}
           >
-            R$ {resumo.saldoAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            R${" "}
+            {resumo.saldoAtual.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            })}
           </span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-3 flex flex-col items-center">
-          <span className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400">
+        <div className="flex flex-col items-center rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 sm:text-xs">
             RECEITAS NO MÊS
           </span>
-          <span className="text-lg sm:text-2xl font-bold text-yellow-400">
-            R$ {resumo.totalReceitas.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+          <span className="text-lg font-bold text-yellow-400 sm:text-2xl">
+            R${" "}
+            {resumo.totalReceitas.toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            })}
           </span>
         </div>
-        <div className="bg-neutral-900 border border-neutral-700 rounded-xl p-3 flex flex-col items-center">
-          <span className="text-[10px] sm:text-xs uppercase tracking-wider text-gray-400">
+        <div className="flex flex-col items-center rounded-xl border border-neutral-700 bg-neutral-900 p-3">
+          <span className="text-[10px] uppercase tracking-wider text-gray-400 sm:text-xs">
             DESPESAS NO MÊS
           </span>
-          <span className="text-lg sm:text-2xl font-bold text-blue-400">
+          <span className="text-lg font-bold text-blue-400 sm:text-2xl">
             R${" "}
-            {Math.abs(resumo.totalDespesas).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            {Math.abs(resumo.totalDespesas).toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+            })}
           </span>
         </div>
       </div>
-      <div className="w-full h-52 bg-neutral-900 border border-neutral-700 rounded-xl p-2">
+      <div className="h-52 w-full rounded-xl border border-neutral-700 bg-neutral-900 p-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />

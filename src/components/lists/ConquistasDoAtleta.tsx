@@ -13,13 +13,19 @@ interface Props {
 
 export default function ConquistasDoAtleta({ slug }: Props) {
   // Busca automática dos títulos de grandes torneios
-  const grandesTorneios = torneiosMock.filter((torneio) => torneio.jogadores.includes(slug));
-
-  const conquistasAnuais = [...campeoesAno, ...melhoresPorPosicao].filter(
-    (item) => item.slug === slug
+  const grandesTorneios = torneiosMock.filter((torneio) =>
+    torneio.jogadores.includes(slug),
   );
 
-  const conquistasQuadrimestre: { titulo: string; periodo: string; ano: number }[] = [];
+  const conquistasAnuais = [...campeoesAno, ...melhoresPorPosicao].filter(
+    (item) => item.slug === slug,
+  );
+
+  const conquistasQuadrimestre: {
+    titulo: string;
+    periodo: string;
+    ano: number;
+  }[] = [];
 
   Object.entries(quadrimestres).forEach(([ano, dados]) => {
     Object.entries(dados).forEach(([periodo, lista]) => {
@@ -37,13 +43,19 @@ export default function ConquistasDoAtleta({ slug }: Props) {
 
   return (
     <section className="mt-8">
-      <h2 className="text-xl font-bold text-yellow-400 mb-4 text-center">🏅 Minhas Conquistas</h2>
+      <h2 className="mb-4 text-center text-xl font-bold text-yellow-400">
+        🏅 Minhas Conquistas
+      </h2>
 
       {/* 01 - Grandes Torneios com link */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold text-white mb-2">🏆 Títulos (Grandes Torneios)</h3>
+        <h3 className="mb-2 text-lg font-semibold text-white">
+          🏆 Títulos (Grandes Torneios)
+        </h3>
         {grandesTorneios.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Nenhum título de torneio registrado.</p>
+          <p className="text-sm italic text-gray-400">
+            Nenhum título de torneio registrado.
+          </p>
         ) : (
           <ul className="space-y-2">
             {grandesTorneios.map((torneio, index) => (
@@ -51,7 +63,7 @@ export default function ConquistasDoAtleta({ slug }: Props) {
                 <span className="text-xl">🏆</span>
                 <Link
                   href={`/grandes-torneios/${torneio.slug}`}
-                  className="text-sm text-yellow-400 hover:underline font-semibold"
+                  className="text-sm font-semibold text-yellow-400 hover:underline"
                   title={`Ver detalhes do torneio ${torneio.nome}`}
                 >
                   {torneio.nome}
@@ -66,7 +78,9 @@ export default function ConquistasDoAtleta({ slug }: Props) {
       {/* 02 - Títulos Anuais */}
       {conquistasAnuais.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-white mb-2">🥇 Títulos Anuais</h3>
+          <h3 className="mb-2 text-lg font-semibold text-white">
+            🥇 Títulos Anuais
+          </h3>
           <ul className="space-y-2">
             {conquistasAnuais.map((item, index) => {
               const titulo = "titulo" in item ? item.titulo : item.posicao;
@@ -85,7 +99,10 @@ export default function ConquistasDoAtleta({ slug }: Props) {
                   ) : (
                     <span className="text-xl">🏆</span>
                   )}
-                  <span className="text-sm text-white" title={`${titulo} conquistado em ${ano}`}>
+                  <span
+                    className="text-sm text-white"
+                    title={`${titulo} conquistado em ${ano}`}
+                  >
                     {titulo} - {ano}
                   </span>
                 </li>
@@ -98,7 +115,9 @@ export default function ConquistasDoAtleta({ slug }: Props) {
       {/* 03 - Títulos Quadrimestrais */}
       {conquistasQuadrimestre.length > 0 && (
         <div>
-          <h3 className="text-lg font-semibold text-white mb-2">⚽ Títulos Quadrimestrais</h3>
+          <h3 className="mb-2 text-lg font-semibold text-white">
+            ⚽ Títulos Quadrimestrais
+          </h3>
           <ul className="space-y-2">
             {conquistasQuadrimestre.map((item, index) => (
               <li key={index} className="flex items-center gap-2">

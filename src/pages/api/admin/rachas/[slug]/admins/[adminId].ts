@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma"; // ajuste o path conforme seu projeto
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { adminId } = req.query;
 
   if (!adminId) return res.status(400).json({ error: "adminId é obrigatório" });
@@ -9,7 +12,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "PUT") {
     const { role, status } = req.body;
     if (!role && !status)
-      return res.status(400).json({ error: "Envie role ou status para atualizar" });
+      return res
+        .status(400)
+        .json({ error: "Envie role ou status para atualizar" });
 
     const updated = await prisma.rachaAdmin.update({
       where: { id: String(adminId) },

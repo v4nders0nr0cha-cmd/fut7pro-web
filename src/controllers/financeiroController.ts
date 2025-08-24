@@ -42,6 +42,9 @@ export const patchRachaStatus = async (req: Request, res: Response) => {
 // GET /api/superadmin/financeiro/export
 export const exportFinanceiro = async (req: Request, res: Response) => {
   const { formato, ...filtros } = req.query;
-  const relatorio = await service.exportarFinanceiro(formato as string, filtros);
+  const relatorio = await service.exportarFinanceiro(
+    formato as string,
+    filtros,
+  );
   res.json(relatorio);
 };

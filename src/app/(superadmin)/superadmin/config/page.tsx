@@ -51,10 +51,26 @@ const MOCK_CONFIG = {
 };
 
 const LOGS = [
-  { data: "02/07/2025 03:23", acao: "Logo da empresa alterada", usuario: "SuperAdmin" },
-  { data: "30/06/2025 17:10", acao: "Chave API atualizada", usuario: "SuperAdmin" },
-  { data: "28/06/2025 14:45", acao: "Configuração de alertas salva", usuario: "SuperAdmin" },
-  { data: "20/06/2025 09:05", acao: "Backup completo exportado", usuario: "SuperAdmin" },
+  {
+    data: "02/07/2025 03:23",
+    acao: "Logo da empresa alterada",
+    usuario: "SuperAdmin",
+  },
+  {
+    data: "30/06/2025 17:10",
+    acao: "Chave API atualizada",
+    usuario: "SuperAdmin",
+  },
+  {
+    data: "28/06/2025 14:45",
+    acao: "Configuração de alertas salva",
+    usuario: "SuperAdmin",
+  },
+  {
+    data: "20/06/2025 09:05",
+    acao: "Backup completo exportado",
+    usuario: "SuperAdmin",
+  },
 ];
 
 // Modal simples (evite libs pesadas)
@@ -71,21 +87,21 @@ function ConfirmModal({
 }) {
   if (!show) return null;
   return (
-    <div className="fixed z-50 inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-[#191c27] rounded-2xl p-7 max-w-sm w-full shadow-2xl flex flex-col items-center">
-        <div className="text-yellow-400 text-xl mb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="flex w-full max-w-sm flex-col items-center rounded-2xl bg-[#191c27] p-7 shadow-2xl">
+        <div className="mb-3 text-xl text-yellow-400">
           <FaExclamationTriangle />
         </div>
-        <div className="text-white mb-5 text-center">{children}</div>
+        <div className="mb-5 text-center text-white">{children}</div>
         <div className="flex gap-4">
           <button
-            className="bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg px-5 py-2 font-bold"
+            className="rounded-lg bg-zinc-700 px-5 py-2 font-bold text-white hover:bg-zinc-600"
             onClick={onCancel}
           >
             Cancelar
           </button>
           <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg px-5 py-2 font-bold"
+            className="rounded-lg bg-yellow-500 px-5 py-2 font-bold text-black hover:bg-yellow-600"
             onClick={onConfirm}
           >
             Confirmar
@@ -108,11 +124,15 @@ export default function ConfigPage() {
     if (file) {
       const url = URL.createObjectURL(file);
       setForm((prev) => ({ ...prev, logo: url }));
-      toast.success("Logo atualizada (apenas preview, não enviada para o servidor)");
+      toast.success(
+        "Logo atualizada (apenas preview, não enviada para o servidor)",
+      );
     }
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) {
     const { name, value, type } = e.target;
 
     if (name.startsWith("alertas.")) {
@@ -210,23 +230,28 @@ export default function ConfigPage() {
         <br />
         Isso pode levar alguns minutos.
       </ConfirmModal>
-      <div className="py-8 px-4 md:px-10 max-w-3xl mx-auto flex flex-col gap-8">
+      <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 md:px-10">
         <section>
-          <h1 className="text-2xl font-bold text-white mb-3">Configurações Gerais do Sistema</h1>
-          <p className="text-gray-300 max-w-xl">
-            Gerencie as informações globais do Fut7Pro SaaS. Todos os campos são obrigatórios para
-            garantir o funcionamento e a identidade da sua plataforma.
+          <h1 className="mb-3 text-2xl font-bold text-white">
+            Configurações Gerais do Sistema
+          </h1>
+          <p className="max-w-xl text-gray-300">
+            Gerencie as informações globais do Fut7Pro SaaS. Todos os campos são
+            obrigatórios para garantir o funcionamento e a identidade da sua
+            plataforma.
           </p>
         </section>
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
           {/* Empresa & Branding */}
           <div className="rounded-2xl bg-[#181c27] p-6 shadow-lg">
-            <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2 mb-4">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-yellow-400">
               <FaInfoCircle /> Empresa & Branding
             </h2>
             <div className="flex flex-col gap-4 md:gap-6">
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-200">Nome da empresa/SaaS</span>
+                <span className="text-sm text-gray-200">
+                  Nome da empresa/SaaS
+                </span>
                 <input
                   type="text"
                   name="empresa"
@@ -237,15 +262,17 @@ export default function ConfigPage() {
                   required
                   autoComplete="off"
                 />
-                {errors.empresa && <span className="text-xs text-red-400">{errors.empresa}</span>}
+                {errors.empresa && (
+                  <span className="text-xs text-red-400">{errors.empresa}</span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Logo do sistema</span>
-                <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex flex-wrap items-center gap-4">
                   <img
                     src={form.logo}
                     alt="Logo Fut7Pro"
-                    className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-700"
+                    className="h-16 w-16 rounded-lg border border-zinc-700 bg-zinc-900"
                   />
                   <input
                     type="text"
@@ -257,7 +284,7 @@ export default function ConfigPage() {
                   />
                   <button
                     type="button"
-                    className="bg-zinc-700 hover:bg-yellow-400 hover:text-black text-yellow-400 rounded-lg px-3 py-2 flex items-center gap-2 transition font-bold"
+                    className="flex items-center gap-2 rounded-lg bg-zinc-700 px-3 py-2 font-bold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
                     onClick={() => fileRef.current?.click()}
                   >
                     <FaUpload /> Upload logo
@@ -270,11 +297,15 @@ export default function ConfigPage() {
                     onChange={handleLogoChange}
                   />
                 </div>
-                {errors.logo && <span className="text-xs text-red-400">{errors.logo}</span>}
+                {errors.logo && (
+                  <span className="text-xs text-red-400">{errors.logo}</span>
+                )}
               </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm text-gray-200">E-mail de Suporte</span>
+                  <span className="text-sm text-gray-200">
+                    E-mail de Suporte
+                  </span>
                   <input
                     type="email"
                     name="suporteEmail"
@@ -285,11 +316,15 @@ export default function ConfigPage() {
                     autoComplete="off"
                   />
                   {errors.suporteEmail && (
-                    <span className="text-xs text-red-400">{errors.suporteEmail}</span>
+                    <span className="text-xs text-red-400">
+                      {errors.suporteEmail}
+                    </span>
                   )}
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm text-gray-200">Domínio principal</span>
+                  <span className="text-sm text-gray-200">
+                    Domínio principal
+                  </span>
                   <input
                     type="text"
                     name="dominio"
@@ -299,7 +334,11 @@ export default function ConfigPage() {
                     required
                     autoComplete="off"
                   />
-                  {errors.dominio && <span className="text-xs text-red-400">{errors.dominio}</span>}
+                  {errors.dominio && (
+                    <span className="text-xs text-red-400">
+                      {errors.dominio}
+                    </span>
+                  )}
                 </label>
               </div>
             </div>
@@ -307,10 +346,10 @@ export default function ConfigPage() {
 
           {/* Plano & Licenciamento */}
           <div className="rounded-2xl bg-[#181c27] p-6 shadow-lg">
-            <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2 mb-4">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-yellow-400">
               <FaKey /> Plano & Licenciamento
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Plano SaaS</span>
                 <select
@@ -324,10 +363,14 @@ export default function ConfigPage() {
                   <option value="Pro">Pro</option>
                   <option value="Essencial">Essencial</option>
                 </select>
-                {errors.plano && <span className="text-xs text-red-400">{errors.plano}</span>}
+                {errors.plano && (
+                  <span className="text-xs text-red-400">{errors.plano}</span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-200">Vencimento da licença</span>
+                <span className="text-sm text-gray-200">
+                  Vencimento da licença
+                </span>
                 <input
                   type="date"
                   name="vencimento"
@@ -337,7 +380,9 @@ export default function ConfigPage() {
                   required
                 />
                 {errors.vencimento && (
-                  <span className="text-xs text-red-400">{errors.vencimento}</span>
+                  <span className="text-xs text-red-400">
+                    {errors.vencimento}
+                  </span>
                 )}
               </label>
             </div>
@@ -345,12 +390,14 @@ export default function ConfigPage() {
 
           {/* Integrações Globais */}
           <div className="rounded-2xl bg-[#181c27] p-6 shadow-lg">
-            <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2 mb-4">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-yellow-400">
               <FaLink /> Integrações Globais
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-200">Webhook principal (endpoint)</span>
+                <span className="text-sm text-gray-200">
+                  Webhook principal (endpoint)
+                </span>
                 <input
                   type="url"
                   name="webhook"
@@ -359,10 +406,14 @@ export default function ConfigPage() {
                   className={`input-saaspadrao ${errors.webhook ? "border-red-500" : ""}`}
                   placeholder="https://suaapi.com/webhook"
                 />
-                {errors.webhook && <span className="text-xs text-red-400">{errors.webhook}</span>}
+                {errors.webhook && (
+                  <span className="text-xs text-red-400">{errors.webhook}</span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-200">Chave de API (global)</span>
+                <span className="text-sm text-gray-200">
+                  Chave de API (global)
+                </span>
                 <input
                   type="text"
                   name="apiKey"
@@ -372,76 +423,82 @@ export default function ConfigPage() {
                   placeholder="sk-..."
                   autoComplete="off"
                 />
-                {errors.apiKey && <span className="text-xs text-red-400">{errors.apiKey}</span>}
+                {errors.apiKey && (
+                  <span className="text-xs text-red-400">{errors.apiKey}</span>
+                )}
               </label>
             </div>
           </div>
 
           {/* Alertas & Segurança */}
           <div className="rounded-2xl bg-[#181c27] p-6 shadow-lg">
-            <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2 mb-4">
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-yellow-400">
               <FaShieldAlt /> Alertas & Segurança
             </h2>
-            <div className="flex flex-col md:flex-row gap-6">
-              <div className="flex-1 flex flex-col gap-2">
-                <label className="flex gap-2 items-center">
+            <div className="flex flex-col gap-6 md:flex-row">
+              <div className="flex flex-1 flex-col gap-2">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="alertas.financeiro"
                     checked={form.alertas.financeiro}
                     onChange={handleChange}
-                    className="accent-yellow-500 w-4 h-4"
+                    className="h-4 w-4 accent-yellow-500"
                   />
-                  <span className="text-gray-200 text-sm">
+                  <span className="text-sm text-gray-200">
                     Alertar sobre pendências financeiras
                   </span>
                 </label>
-                <label className="flex gap-2 items-center">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="alertas.usuarioNovo"
                     checked={form.alertas.usuarioNovo}
                     onChange={handleChange}
-                    className="accent-yellow-500 w-4 h-4"
+                    className="h-4 w-4 accent-yellow-500"
                   />
-                  <span className="text-gray-200 text-sm">Alertar ao cadastrar novo usuário</span>
+                  <span className="text-sm text-gray-200">
+                    Alertar ao cadastrar novo usuário
+                  </span>
                 </label>
-                <label className="flex gap-2 items-center">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="alertas.incidentes"
                     checked={form.alertas.incidentes}
                     onChange={handleChange}
-                    className="accent-yellow-500 w-4 h-4"
+                    className="h-4 w-4 accent-yellow-500"
                   />
-                  <span className="text-gray-200 text-sm">Alertas de incidentes/segurança</span>
+                  <span className="text-sm text-gray-200">
+                    Alertas de incidentes/segurança
+                  </span>
                 </label>
               </div>
-              <div className="flex-1 flex flex-col gap-2">
-                <label className="flex gap-2 items-center">
+              <div className="flex flex-1 flex-col gap-2">
+                <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     name="backup"
                     checked={form.backup}
                     onChange={handleChange}
-                    className="accent-yellow-500 w-4 h-4"
+                    className="h-4 w-4 accent-yellow-500"
                   />
-                  <span className="text-gray-200 text-sm">
+                  <span className="text-sm text-gray-200">
                     Backup automático diário (recomendado)
                   </span>
                 </label>
                 <button
                   type="button"
-                  className="mt-4 bg-zinc-800 hover:bg-yellow-400 hover:text-black text-yellow-400 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all shadow"
+                  className="mt-4 flex items-center gap-2 rounded-lg bg-zinc-800 px-4 py-2 font-bold text-yellow-400 shadow transition-all hover:bg-yellow-400 hover:text-black"
                   onClick={onBackup}
                 >
                   <FaCloudUploadAlt /> Exportar Backup Agora
                 </button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-4 flex items-center gap-2">
-              <FaExclamationTriangle /> Ações sensíveis requerem confirmação por e-mail para maior
-              segurança.
+            <p className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+              <FaExclamationTriangle /> Ações sensíveis requerem confirmação por
+              e-mail para maior segurança.
             </p>
           </div>
 
@@ -449,7 +506,7 @@ export default function ConfigPage() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl px-6 py-3 flex items-center gap-2 font-bold transition shadow-lg"
+              className="flex items-center gap-2 rounded-xl bg-yellow-500 px-6 py-3 font-bold text-black shadow-lg transition hover:bg-yellow-600"
             >
               <FaSave /> Salvar Configurações
             </button>
@@ -457,16 +514,23 @@ export default function ConfigPage() {
         </form>
 
         {/* Logs Recentes */}
-        <div className="rounded-2xl bg-[#181c27] p-5 shadow-lg mt-8">
-          <h3 className="text-md font-bold text-yellow-400 flex items-center gap-2 mb-3">
+        <div className="mt-8 rounded-2xl bg-[#181c27] p-5 shadow-lg">
+          <h3 className="text-md mb-3 flex items-center gap-2 font-bold text-yellow-400">
             <FaHistory /> Logs Recentes
           </h3>
-          <ul className="text-gray-300 text-sm space-y-2">
+          <ul className="space-y-2 text-sm text-gray-300">
             {LOGS.map((log, i) => (
-              <li key={i} className="flex flex-col md:flex-row md:items-center gap-2">
-                <span className="font-mono text-gray-400 min-w-[125px]">{log.data}</span>
+              <li
+                key={i}
+                className="flex flex-col gap-2 md:flex-row md:items-center"
+              >
+                <span className="min-w-[125px] font-mono text-gray-400">
+                  {log.data}
+                </span>
                 <span className="font-bold text-white">{log.acao}</span>
-                <span className="ml-auto text-xs text-gray-500">{log.usuario}</span>
+                <span className="ml-auto text-xs text-gray-500">
+                  {log.usuario}
+                </span>
               </li>
             ))}
           </ul>

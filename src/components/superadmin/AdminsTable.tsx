@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaEdit, FaTrash, FaEye, FaKey, FaBan, FaCheck, FaUserShield } from "react-icons/fa";
+import {
+  FaEdit,
+  FaTrash,
+  FaEye,
+  FaKey,
+  FaBan,
+  FaCheck,
+  FaUserShield,
+} from "react-icons/fa";
 import { Role, Permission } from "@prisma/client";
 
 interface Admin {
@@ -171,17 +179,17 @@ export default function AdminsTable({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+      <div className="flex items-center justify-center py-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-yellow-400"></div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl shadow-lg overflow-hidden">
+    <div className="overflow-hidden rounded-xl bg-gray-900 shadow-lg">
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-gray-300 uppercase bg-gray-800">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-gray-800 text-xs uppercase text-gray-300">
             <tr>
               <th className="px-6 py-3">Nome</th>
               <th className="px-6 py-3">Email</th>
@@ -194,26 +202,35 @@ export default function AdminsTable({
           </thead>
           <tbody className="divide-y divide-gray-700">
             {admins.map((admin) => (
-              <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
+              <tr
+                key={admin.id}
+                className="transition-colors hover:bg-gray-800"
+              >
+                <td className="whitespace-nowrap px-6 py-4">
                   <div className="flex items-center">
-                    <div className="flex-shrink-0 h-8 w-8">
-                      <div className="h-8 w-8 rounded-full bg-yellow-400 flex items-center justify-center">
+                    <div className="h-8 w-8 flex-shrink-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-400">
                         <FaUserShield className="h-4 w-4 text-gray-900" />
                       </div>
                     </div>
                     <div className="ml-4">
-                      <div className="text-sm font-medium text-white">{admin.name}</div>
+                      <div className="text-sm font-medium text-white">
+                        {admin.name}
+                      </div>
                       {admin.superadmin && (
-                        <div className="text-xs text-yellow-400 font-semibold">SuperAdmin</div>
+                        <div className="text-xs font-semibold text-yellow-400">
+                          SuperAdmin
+                        </div>
                       )}
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-300">{admin.email}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="whitespace-nowrap px-6 py-4 text-gray-300">
+                  {admin.email}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       admin.role === Role.SUPERADMIN
                         ? "bg-red-100 text-red-800"
                         : admin.role === Role.GERENTE
@@ -226,32 +243,39 @@ export default function AdminsTable({
                     {roleLabels[admin.role]}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="whitespace-nowrap px-6 py-4">
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      admin.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      admin.active
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
                     }`}
                   >
                     {admin.active ? "Ativo" : "Inativo"}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="whitespace-nowrap px-6 py-4">
                   <button
                     onClick={() =>
-                      setShowPermissions(showPermissions === admin.id ? null : admin.id)
+                      setShowPermissions(
+                        showPermissions === admin.id ? null : admin.id,
+                      )
                     }
-                    className="text-yellow-400 hover:text-yellow-300 text-sm font-medium"
+                    className="text-sm font-medium text-yellow-400 hover:text-yellow-300"
                   >
                     {admin.permissions.length} permissões
                   </button>
                   {showPermissions === admin.id && (
-                    <div className="absolute z-10 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-4">
-                      <div className="text-sm font-medium text-white mb-2">
+                    <div className="absolute z-10 mt-2 w-80 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-lg">
+                      <div className="mb-2 text-sm font-medium text-white">
                         Permissões de {admin.name}
                       </div>
-                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                      <div className="max-h-40 space-y-1 overflow-y-auto">
                         {admin.permissions.map((permission) => (
-                          <div key={permission} className="text-xs text-gray-300">
+                          <div
+                            key={permission}
+                            className="text-xs text-gray-300"
+                          >
                             • {permissionLabels[permission]}
                           </div>
                         ))}
@@ -259,10 +283,10 @@ export default function AdminsTable({
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-300">
+                <td className="whitespace-nowrap px-6 py-4 text-gray-300">
                   {formatDate(admin.createdAt)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleAction("view", admin)}

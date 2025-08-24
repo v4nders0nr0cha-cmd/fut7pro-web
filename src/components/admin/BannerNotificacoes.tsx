@@ -6,7 +6,12 @@ import { FaExclamationTriangle } from "react-icons/fa";
 // MOCK: Próximos rachas/feriados (simule integração real depois)
 const PROXIMOS_RACHAS = [
   { data: "Sáb 06/07/25", hora: "06:00", feriado: false },
-  { data: "Qua 10/07/25", hora: "20:30", feriado: true, feriadoNome: "Feriado Municipal" },
+  {
+    data: "Qua 10/07/25",
+    hora: "20:30",
+    feriado: true,
+    feriadoNome: "Feriado Municipal",
+  },
 ];
 
 export default function BannerNotificacoes() {
@@ -19,16 +24,17 @@ export default function BannerNotificacoes() {
 
   return (
     <div className="mb-4">
-      <div className="relative flex items-center px-4 py-3 rounded-lg bg-yellow-900 text-yellow-200 border-l-4 border-yellow-400 shadow text-sm font-semibold">
-        <FaExclamationTriangle className="text-yellow-400 mr-3 text-lg" />
+      <div className="relative flex items-center rounded-lg border-l-4 border-yellow-400 bg-yellow-900 px-4 py-3 text-sm font-semibold text-yellow-200 shadow">
+        <FaExclamationTriangle className="mr-3 text-lg text-yellow-400" />
         <span>
-          📣 Atenção: Seu racha está agendado para um dia de feriado ({feriadoRacha.data}
-          {feriadoRacha.feriadoNome ? " - " + feriadoRacha.feriadoNome : ""}). Confirme se o racha
-          irá acontecer normalmente ou reagende.
+          📣 Atenção: Seu racha está agendado para um dia de feriado (
+          {feriadoRacha.data}
+          {feriadoRacha.feriadoNome ? " - " + feriadoRacha.feriadoNome : ""}).
+          Confirme se o racha irá acontecer normalmente ou reagende.
         </span>
         {/* Botão fechar/recolher */}
         <button
-          className="absolute top-2 right-3 text-yellow-300 hover:text-white text-lg transition"
+          className="absolute right-3 top-2 text-lg text-yellow-300 transition hover:text-white"
           aria-label="Fechar alerta"
           onClick={() => setShowBanner(false)}
         >

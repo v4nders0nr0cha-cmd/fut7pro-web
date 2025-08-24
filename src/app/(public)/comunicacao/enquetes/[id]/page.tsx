@@ -36,7 +36,7 @@ export default function EnquetePage() {
     setEnquete((prev) => ({
       ...prev,
       opcoes: prev.opcoes.map((op, idx) =>
-        idx === resposta ? { ...op, votos: op.votos + 1 } : op
+        idx === resposta ? { ...op, votos: op.votos + 1 } : op,
       ),
       totalVotos: prev.totalVotos + 1,
       respondida: true,
@@ -44,16 +44,18 @@ export default function EnquetePage() {
   }
 
   return (
-    <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
-      <h1 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+    <main className="mx-auto max-w-xl px-4 pb-24 pt-20">
+      <h1 className="mb-4 flex items-center gap-2 text-2xl font-bold text-yellow-400">
         <FaPoll /> {enquete.titulo}
       </h1>
       <div className="mb-4 text-gray-200">{enquete.descricao}</div>
       <div className="mb-6">
         {enquete.status === "Fechada" || enquete.respondida ? (
           <>
-            <div className="text-green-400 font-bold mb-2">
-              {enquete.status === "Fechada" ? "Enquete encerrada." : "Seu voto foi computado!"}
+            <div className="mb-2 font-bold text-green-400">
+              {enquete.status === "Fechada"
+                ? "Enquete encerrada."
+                : "Seu voto foi computado!"}
             </div>
             <div>
               {enquete.opcoes.map((op, idx) => {
@@ -63,17 +65,21 @@ export default function EnquetePage() {
                 return (
                   <div key={idx} className="mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-300 font-medium min-w-[64px]">{op.texto}</span>
-                      <div className="flex-1 bg-zinc-700 rounded-full h-3 mx-2 relative">
+                      <span className="min-w-[64px] font-medium text-gray-300">
+                        {op.texto}
+                      </span>
+                      <div className="relative mx-2 h-3 flex-1 rounded-full bg-zinc-700">
                         <div
-                          className="bg-yellow-400 h-3 rounded-full transition-all"
+                          className="h-3 rounded-full bg-yellow-400 transition-all"
                           style={{ width: `${percent}%` }}
                         />
-                        <span className="absolute left-1/2 -translate-x-1/2 text-xs text-black font-bold">
+                        <span className="absolute left-1/2 -translate-x-1/2 text-xs font-bold text-black">
                           {percent}%
                         </span>
                       </div>
-                      <span className="text-gray-300 text-xs">{op.votos} votos</span>
+                      <span className="text-xs text-gray-300">
+                        {op.votos} votos
+                      </span>
                     </div>
                   </div>
                 );
@@ -91,7 +97,7 @@ export default function EnquetePage() {
             {enquete.opcoes.map((op, idx) => (
               <label
                 key={idx}
-                className="flex items-center gap-3 cursor-pointer text-gray-200 bg-zinc-900 p-2 rounded hover:bg-zinc-800"
+                className="flex cursor-pointer items-center gap-3 rounded bg-zinc-900 p-2 text-gray-200 hover:bg-zinc-800"
               >
                 <input
                   type="radio"
@@ -106,7 +112,7 @@ export default function EnquetePage() {
             <button
               type="submit"
               disabled={resposta === null}
-              className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded"
+              className="mt-2 rounded bg-yellow-400 px-4 py-2 font-bold text-black hover:bg-yellow-500"
             >
               Votar
             </button>

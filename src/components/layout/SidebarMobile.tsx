@@ -43,19 +43,19 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 flex md:hidden">
-      <div className="w-72 bg-zinc-900 h-full flex flex-col px-5 py-8 relative animate-slide-in-left shadow-xl">
+    <div className="fixed inset-0 z-50 flex bg-black/70 md:hidden">
+      <div className="relative flex h-full w-72 animate-slide-in-left flex-col bg-zinc-900 px-5 py-8 shadow-xl">
         {/* Botão Fechar */}
         <button
           aria-label="Fechar menu"
           onClick={onClose}
-          className="absolute top-4 right-4 text-zinc-300 hover:text-white text-2xl"
+          className="absolute right-4 top-4 text-2xl text-zinc-300 hover:text-white"
         >
           <FaTimes />
         </button>
 
         {/* Logo e nome do racha */}
-        <div className="flex flex-col items-center gap-2 mb-10 mt-4">
+        <div className="mb-10 mt-4 flex flex-col items-center gap-2">
           <Image
             src={logo}
             alt={`Logo ${rachaConfig.nome}`}
@@ -63,22 +63,25 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
             height={64}
             className="object-contain"
           />
-          <span className="text-yellow-400 font-extrabold text-xl text-center">{nome}</span>
+          <span className="text-center text-xl font-extrabold text-yellow-400">
+            {nome}
+          </span>
         </div>
 
         {/* Navegação */}
         <nav className="flex flex-col gap-4 text-[17px]">
           {links.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(href + "/");
+            const isActive =
+              pathname === href || pathname.startsWith(href + "/");
 
             return (
               <Link
                 key={href}
                 href={href}
                 onClick={onClose}
-                className={`flex items-center gap-4 px-2 py-2 rounded transition-all duration-200 ${
+                className={`flex items-center gap-4 rounded px-2 py-2 transition-all duration-200 ${
                   isActive
-                    ? "text-yellow-400 font-extrabold scale-[1.02]"
+                    ? "scale-[1.02] font-extrabold text-yellow-400"
                     : "text-zinc-200 hover:text-yellow-300"
                 }`}
               >
@@ -95,7 +98,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
             <Link
               href="/perfil"
               onClick={onClose}
-              className="flex items-center gap-3 text-yellow-400 font-semibold hover:underline"
+              className="flex items-center gap-3 font-semibold text-yellow-400 hover:underline"
             >
               <Image
                 src={profileImage}
@@ -112,7 +115,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
                 signOut();
                 onClose();
               }}
-              className="mt-3 text-red-500 hover:text-red-400 font-bold text-sm"
+              className="mt-3 text-sm font-bold text-red-500 hover:text-red-400"
             >
               Sair
             </button>

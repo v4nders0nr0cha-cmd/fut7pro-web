@@ -55,7 +55,9 @@ export interface PersonStructuredData {
 }
 
 // Gerar structured data para evento esportivo
-export function generateEventStructuredData(event: EventStructuredData): string {
+export function generateEventStructuredData(
+  event: EventStructuredData,
+): string {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SportsEvent",
@@ -95,7 +97,9 @@ export function generateEventStructuredData(event: EventStructuredData): string 
 }
 
 // Gerar structured data para organização
-export function generateOrganizationStructuredData(org: OrganizationStructuredData): string {
+export function generateOrganizationStructuredData(
+  org: OrganizationStructuredData,
+): string {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "SportsOrganization",
@@ -121,7 +125,9 @@ export function generateOrganizationStructuredData(org: OrganizationStructuredDa
 }
 
 // Gerar structured data para pessoa
-export function generatePersonStructuredData(person: PersonStructuredData): string {
+export function generatePersonStructuredData(
+  person: PersonStructuredData,
+): string {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -170,7 +176,7 @@ export function generateWebsiteStructuredData(): string {
 
 // Gerar structured data para breadcrumbs
 export function generateBreadcrumbStructuredData(
-  items: Array<{ name: string; url: string }>
+  items: Array<{ name: string; url: string }>,
 ): string {
   const structuredData = {
     "@context": "https://schema.org",
@@ -188,7 +194,7 @@ export function generateBreadcrumbStructuredData(
 
 // Gerar structured data para FAQ
 export function generateFAQStructuredData(
-  questions: Array<{ question: string; answer: string }>
+  questions: Array<{ question: string; answer: string }>,
 ): string {
   const structuredData = {
     "@context": "https://schema.org",
@@ -208,5 +214,10 @@ export function generateFAQStructuredData(
 
 // Componente React para inserir structured data
 export function StructuredData({ data }: { data: string }) {
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: data }} />;
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: data }}
+    />
+  );
 }

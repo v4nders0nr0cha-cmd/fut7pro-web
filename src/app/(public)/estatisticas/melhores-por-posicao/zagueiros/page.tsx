@@ -53,7 +53,9 @@ export default function RankingZagueirosPage() {
   }
 
   const rankingFiltrado = ranking
-    .filter((atleta) => atleta.nome.toLowerCase().includes(search.toLowerCase()))
+    .filter((atleta) =>
+      atleta.nome.toLowerCase().includes(search.toLowerCase()),
+    )
     .sort((a, b) => b.pontos - a.pontos);
 
   return (
@@ -69,24 +71,25 @@ export default function RankingZagueirosPage() {
           content="Ranking Zagueiros, Melhores Zagueiros, Estatísticas, Temporada Atual, Todas as Temporadas, Racha, Futebol 7"
         />
       </Head>
-      <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
+      <main className="min-h-screen w-full bg-fundo pb-16 pt-6 text-white">
         <h1 className="sr-only">Ranking dos Melhores Zagueiros</h1>
 
-        <div className="w-full flex flex-col items-center justify-center">
-          <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-2">
+        <div className="flex w-full flex-col items-center justify-center">
+          <div className="flex w-full max-w-3xl flex-col items-center">
+            <h2 className="mb-2 text-center text-2xl font-bold text-yellow-400 md:text-3xl">
               Melhores Zagueiros
             </h2>
-            <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
-              Confira o <b>Ranking dos Zagueiros</b> com os maiores destaques por quadrimestre, na
-              temporada atual ou no histórico completo do seu racha. Selecione o período para
-              filtrar os defensores mais pontuados na posição!
+            <p className="mb-3 max-w-xl text-center text-sm text-gray-400">
+              Confira o <b>Ranking dos Zagueiros</b> com os maiores destaques
+              por quadrimestre, na temporada atual ou no histórico completo do
+              seu racha. Selecione o período para filtrar os defensores mais
+              pontuados na posição!
             </p>
-            <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
+            <div className="mb-4 flex flex-col items-center gap-2 md:flex-row">
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
-                className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+                className="rounded border border-yellow-400 bg-zinc-900 px-3 py-2 text-sm text-yellow-400 focus:outline-none"
                 aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (
@@ -96,10 +99,10 @@ export default function RankingZagueirosPage() {
                 ))}
               </select>
             </div>
-            <div className="w-full flex justify-center mb-4">
+            <div className="mb-4 flex w-full justify-center">
               <input
                 type="text"
-                className="w-full sm:w-80 rounded px-4 py-2 border border-gray-600 bg-zinc-900 text-white placeholder-gray-400"
+                className="w-full rounded border border-gray-600 bg-zinc-900 px-4 py-2 text-white placeholder-gray-400 sm:w-80"
                 placeholder="Buscar zagueiro por nome..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -109,26 +112,29 @@ export default function RankingZagueirosPage() {
           </div>
         </div>
 
-        <div className="w-full overflow-x-auto scrollbar-dark">
-          <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[400px]">
+        <div className="scrollbar-dark w-full overflow-x-auto">
+          <table className="w-full min-w-[400px] border border-gray-700 text-xs sm:text-sm">
             <thead className="bg-[#2a2a2a] text-gray-300">
               <tr>
                 <th className="p-2 text-left">#</th>
                 <th className="p-2 text-left">Atleta</th>
-                <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
+                <th className="p-2 text-right text-base text-yellow-400">
+                  Pontos
+                </th>
                 <th className="p-2 text-right">Jogos</th>
               </tr>
             </thead>
             <tbody>
               {rankingFiltrado.map((atleta, idx) => {
-                const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
+                const rowClass =
+                  idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
                 return (
                   <tr
                     key={atleta.id}
-                    className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
+                    className={`border-t border-gray-700 transition-all hover:bg-[#2a2a2a] ${rowClass}`}
                   >
                     <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
-                    <td className="flex items-center gap-2 p-2 whitespace-nowrap">
+                    <td className="flex items-center gap-2 whitespace-nowrap p-2">
                       <Link href={`/atletas/${atleta.slug}`}>
                         <Image
                           src={atleta.foto}
@@ -140,16 +146,16 @@ export default function RankingZagueirosPage() {
                       </Link>
                       <Link
                         href={`/atletas/${atleta.slug}`}
-                        className="text-yellow-300 hover:underline font-semibold"
+                        className="font-semibold text-yellow-300 hover:underline"
                         title={`Ver perfil de ${atleta.nome}`}
                       >
                         <span className="break-words">{atleta.nome}</span>
                       </Link>
                     </td>
-                    <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                    <td className="p-2 text-right text-base font-extrabold text-yellow-400">
                       {atleta.pontos}
                     </td>
-                    <td className="text-right p-2">{atleta.jogos}</td>
+                    <td className="p-2 text-right">{atleta.jogos}</td>
                   </tr>
                 );
               })}

@@ -14,7 +14,10 @@ type LogoData = {
 };
 
 export default function LogoDoRachaPage() {
-  const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrão Fut7Pro" });
+  const [logo, setLogo] = useState<LogoData>({
+    url: LOGO_PADRAO,
+    nome: "Logo padrão Fut7Pro",
+  });
   const [nomeRacha, setNomeRacha] = useState("Fut7Pro");
   const [uploading, setUploading] = useState(false);
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -57,31 +60,32 @@ export default function LogoDoRachaPage() {
           content="Fut7Pro, logo, nome, personalização, racha, painel admin, futebol 7, SaaS"
         />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4">
-        <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
+      <div className="mx-auto w-full max-w-2xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-6 text-center text-2xl font-bold text-white md:text-3xl">
           Identidade Visual do Racha
         </h1>
-        <div className="bg-[#191c22] rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center gap-4">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl bg-[#191c22] p-6 shadow-lg">
           {/* Nome do racha */}
-          <div className="w-full max-w-xs mb-3">
-            <label className="block text-yellow-300 font-semibold mb-2">
-              Nome do Racha <span className="text-xs text-gray-400">(até 18 caracteres)</span>
+          <div className="mb-3 w-full max-w-xs">
+            <label className="mb-2 block font-semibold text-yellow-300">
+              Nome do Racha{" "}
+              <span className="text-xs text-gray-400">(até 18 caracteres)</span>
             </label>
             <input
               type="text"
-              className="w-full rounded px-4 py-2 bg-[#181a1e] border border-yellow-800 text-white focus:outline-none text-lg"
+              className="w-full rounded border border-yellow-800 bg-[#181a1e] px-4 py-2 text-lg text-white focus:outline-none"
               placeholder="Digite o nome do seu racha"
               value={nomeRacha}
               onChange={handleNomeChange}
               maxLength={18}
             />
-            <div className="text-xs text-gray-400 mt-1">
+            <div className="mt-1 text-xs text-gray-400">
               Esse nome será exibido no cabeçalho e outras áreas do site.
             </div>
           </div>
 
           {/* Logo do racha */}
-          <div className="w-40 h-40 rounded-full overflow-hidden bg-black flex items-center justify-center shadow-md border-2 border-[#FFD600]">
+          <div className="flex h-40 w-40 items-center justify-center overflow-hidden rounded-full border-2 border-[#FFD600] bg-black shadow-md">
             <Image
               src={logo.url}
               alt={`Logo do racha ${nomeRacha}`}
@@ -91,10 +95,12 @@ export default function LogoDoRachaPage() {
               priority
             />
           </div>
-          <span className="text-white text-base font-medium mt-2">{logo.nome}</span>
+          <span className="mt-2 text-base font-medium text-white">
+            {logo.nome}
+          </span>
           <button
             type="button"
-            className="mt-2 flex items-center gap-2 bg-[#FFD600] text-black px-6 py-2 rounded-lg font-semibold shadow hover:scale-105 active:scale-95 transition"
+            className="mt-2 flex items-center gap-2 rounded-lg bg-[#FFD600] px-6 py-2 font-semibold text-black shadow transition hover:scale-105 active:scale-95"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
@@ -108,7 +114,7 @@ export default function LogoDoRachaPage() {
             onChange={handleLogoUpload}
             aria-label="Upload logo do racha"
           />
-          <div className="text-gray-400 text-xs mt-1 text-center">
+          <div className="mt-1 text-center text-xs text-gray-400">
             Imagem recomendada: PNG transparente, 400×400px.
             <br />
             Apenas PNG ou JPG. Tamanho máx: 1MB.
@@ -116,7 +122,7 @@ export default function LogoDoRachaPage() {
           <div className="mt-4 flex flex-col items-center gap-2">
             <div className="flex items-center gap-2 text-green-400">
               <FaCheckCircle />
-              <span className="font-medium text-sm">Salvo automaticamente</span>
+              <span className="text-sm font-medium">Salvo automaticamente</span>
             </div>
             <span className="text-xs text-gray-500">
               Nome e logo visíveis em todas as telas públicas e do painel admin.
@@ -126,10 +132,12 @@ export default function LogoDoRachaPage() {
 
         {/* Modal de Cropper */}
         {cropModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-            <div className="bg-[#23272e] p-6 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col items-center">
-              <h2 className="text-lg font-bold text-white mb-3">Ajustar Logo</h2>
-              <div className="relative w-64 h-64 bg-gray-900 rounded-lg overflow-hidden mb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+            <div className="flex w-full max-w-lg flex-col items-center rounded-2xl bg-[#23272e] p-6 shadow-2xl">
+              <h2 className="mb-3 text-lg font-bold text-white">
+                Ajustar Logo
+              </h2>
+              <div className="relative mb-4 h-64 w-64 overflow-hidden rounded-lg bg-gray-900">
                 <Cropper
                   image={selectedFile ? URL.createObjectURL(selectedFile) : ""}
                   crop={crop}
@@ -143,13 +151,13 @@ export default function LogoDoRachaPage() {
               </div>
               <div className="flex gap-3">
                 <button
-                  className="px-4 py-2 bg-[#FFD600] text-black font-bold rounded shadow hover:scale-105 transition"
+                  className="rounded bg-[#FFD600] px-4 py-2 font-bold text-black shadow transition hover:scale-105"
                   onClick={handleCropSave}
                 >
                   Salvar
                 </button>
                 <button
-                  className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition"
+                  className="rounded bg-gray-700 px-4 py-2 text-white transition hover:bg-gray-600"
                   onClick={() => setCropModalOpen(false)}
                 >
                   Cancelar

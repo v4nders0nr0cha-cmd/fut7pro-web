@@ -1,6 +1,9 @@
 import type { RankingAtleta } from "@/types/estatisticas";
 
-export const melhoresMeiasPorQuadrimestre: Record<number, Record<1 | 2 | 3, RankingAtleta[]>> = {
+export const melhoresMeiasPorQuadrimestre: Record<
+  number,
+  Record<1 | 2 | 3, RankingAtleta[]>
+> = {
   2025: {
     1: [
       {

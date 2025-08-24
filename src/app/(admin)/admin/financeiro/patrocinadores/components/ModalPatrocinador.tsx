@@ -17,7 +17,12 @@ const statusOptions = [
   { value: "encerrado", label: "Encerrado" },
 ] as const;
 
-export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
+export default function ModalPatrocinador({
+  open,
+  onClose,
+  onSave,
+  initial,
+}: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Partial<Patrocinador>>(initial || {});
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
@@ -56,9 +61,9 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   if (!open) return null;
 
   return (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/80 px-2">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-2">
       <div
-        className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full shadow-xl relative overflow-y-auto max-h-screen custom-scrollbar"
+        className="custom-scrollbar relative max-h-screen w-full max-w-md overflow-y-auto rounded-2xl bg-[#1a1a1a] p-6 shadow-xl"
         style={{
           scrollbarColor: "#444 #191919",
           scrollbarWidth: "thin",
@@ -66,7 +71,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
       >
         {/* Botão de fechar sempre fixo no topo direito */}
         <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-red-400 z-10"
+          className="absolute right-2 top-2 z-10 text-gray-400 hover:text-red-400"
           style={{ zIndex: 10 }}
           onClick={onClose}
           type="button"
@@ -74,7 +79,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         >
           <FaTimes size={22} />
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-4 pt-3 pr-8">
+        <h2 className="mb-4 pr-8 pt-3 text-xl font-bold text-yellow-400">
           {form.id ? "Editar Patrocinador" : "Novo Patrocinador"}
         </h2>
         <form
@@ -84,52 +89,66 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             onSave(form);
           }}
         >
-          <label className="text-sm text-gray-200 font-semibold">Nome *</label>
+          <label className="text-sm font-semibold text-gray-200">Nome *</label>
           <input
             type="text"
             value={form.nome || ""}
             required
             maxLength={40}
             autoFocus
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
           />
-          <label className="text-sm text-gray-200 font-semibold">Valor *</label>
+          <label className="text-sm font-semibold text-gray-200">Valor *</label>
           <input
             type="number"
             value={form.valor || ""}
             required
             min={0}
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, valor: parseFloat(e.target.value) }))}
+            className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+            onChange={(e) =>
+              setForm((f) => ({ ...f, valor: parseFloat(e.target.value) }))
+            }
           />
           <div className="flex gap-2">
             <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Início *</label>
+              <label className="text-sm font-semibold text-gray-200">
+                Início *
+              </label>
               <input
                 type="date"
                 value={form.periodoInicio || ""}
                 required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoInicio: e.target.value }))}
+                className="input input-bordered w-full rounded border-gray-600 bg-[#111] px-2 py-2 text-white"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, periodoInicio: e.target.value }))
+                }
               />
             </div>
             <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Fim *</label>
+              <label className="text-sm font-semibold text-gray-200">
+                Fim *
+              </label>
               <input
                 type="date"
                 value={form.periodoFim || ""}
                 required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoFim: e.target.value }))}
+                className="input input-bordered w-full rounded border-gray-600 bg-[#111] px-2 py-2 text-white"
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, periodoFim: e.target.value }))
+                }
               />
             </div>
           </div>
-          <label className="text-sm text-gray-200 font-semibold">Status *</label>
+          <label className="text-sm font-semibold text-gray-200">
+            Status *
+          </label>
           <select
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
             value={form.status || "ativo"}
-            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, status: e.target.value as any }))
+            }
           >
             {statusOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -137,7 +156,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               </option>
             ))}
           </select>
-          <label className="text-sm text-gray-200 font-semibold">Logo *</label>
+          <label className="text-sm font-semibold text-gray-200">Logo *</label>
           <div className="flex items-center gap-3">
             <input
               type="file"
@@ -149,7 +168,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             <button
               type="button"
               onClick={() => fileLogoRef.current?.click()}
-              className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+              className="flex items-center gap-1 text-yellow-400 hover:text-yellow-300"
             >
               <FaUpload /> Selecionar
             </button>
@@ -163,24 +182,30 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               />
             )}
           </div>
-          <label className="text-sm text-gray-200 font-semibold">Descrição/Observações</label>
+          <label className="text-sm font-semibold text-gray-200">
+            Descrição/Observações
+          </label>
           <textarea
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
             rows={2}
             value={form.observacoes || ""}
-            onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, observacoes: e.target.value }))
+            }
           />
-          <label className="text-sm text-gray-200 font-semibold">Link (opcional)</label>
+          <label className="text-sm font-semibold text-gray-200">
+            Link (opcional)
+          </label>
           <input
             type="url"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
             value={form.link || ""}
             onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
           />
-          <div className="flex justify-end mt-4">
+          <div className="mt-4 flex justify-end">
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl"
+              className="rounded-xl bg-yellow-400 px-6 py-2 font-bold text-black hover:bg-yellow-500"
             >
               Salvar
             </button>

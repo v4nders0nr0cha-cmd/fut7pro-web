@@ -40,7 +40,10 @@ export default function PartidaClassicaPage() {
 
   const [dataRodada, setDataRodada] = useState("");
   const [partidas, setPartidas] = useState<Partida[]>([]);
-  const [modalOpen, setModalOpen] = useState<null | { partidaId: number; lado: "A" | "B" }>(null);
+  const [modalOpen, setModalOpen] = useState<null | {
+    partidaId: number;
+    lado: "A" | "B";
+  }>(null);
   const [rodadaSalva, setRodadaSalva] = useState(false);
 
   const adicionarPartida = () => {
@@ -57,7 +60,11 @@ export default function PartidaClassicaPage() {
     ]);
   };
 
-  const atualizarTime = (id: number, timeKey: "timeA" | "timeB", value: string) => {
+  const atualizarTime = (
+    id: number,
+    timeKey: "timeA" | "timeB",
+    value: string,
+  ) => {
     setPartidas((prev) =>
       prev.map((p) =>
         p.id === id
@@ -66,15 +73,19 @@ export default function PartidaClassicaPage() {
               [timeKey]: TIMES_MOCK.find((t) => t.nome === value) || null,
               ...(timeKey === "timeA" ? { golsA: [] } : { golsB: [] }),
             }
-          : p
-      )
+          : p,
+      ),
     );
   };
 
-  const abrirModalGol = (partidaId: number, lado: "A" | "B") => setModalOpen({ partidaId, lado });
+  const abrirModalGol = (partidaId: number, lado: "A" | "B") =>
+    setModalOpen({ partidaId, lado });
   const fecharModalGol = () => setModalOpen(null);
 
-  const adicionarGolAssist = (jogadorGol: number, jogadorAssist: number | null) => {
+  const adicionarGolAssist = (
+    jogadorGol: number,
+    jogadorAssist: number | null,
+  ) => {
     if (!modalOpen) return;
     setPartidas((prev) =>
       prev.map((p) => {
@@ -83,7 +94,7 @@ export default function PartidaClassicaPage() {
           return { ...p, golsA: [...p.golsA, { jogadorGol, jogadorAssist }] };
         }
         return { ...p, golsB: [...p.golsB, { jogadorGol, jogadorAssist }] };
-      })
+      }),
     );
     fecharModalGol();
   };
@@ -95,7 +106,8 @@ export default function PartidaClassicaPage() {
 
   // Mock persistente: salva partidas em localStorage
   function salvarRodadaNoHistorico() {
-    const historicoRaw = window.localStorage.getItem("fut7pro_historico_partidas") || "[]";
+    const historicoRaw =
+      window.localStorage.getItem("fut7pro_historico_partidas") || "[]";
     const historico = JSON.parse(historicoRaw);
 
     const partidasFormatadas = partidas.map((p) => ({
@@ -120,7 +132,10 @@ export default function PartidaClassicaPage() {
       createdAt: new Date().toISOString(),
     });
 
-    window.localStorage.setItem("fut7pro_historico_partidas", JSON.stringify(historico));
+    window.localStorage.setItem(
+      "fut7pro_historico_partidas",
+      JSON.stringify(historico),
+    );
     setRodadaSalva(true);
     setTimeout(() => router.push("/admin/partidas/historico"), 2000);
   }
@@ -138,28 +153,31 @@ export default function PartidaClassicaPage() {
           content="partida clássica, cadastro manual, retroativo, fut7, racha, painel admin"
         />
       </Head>
-      <main className="max-w-3xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-5 flex items-center gap-3">
+      <main className="mx-auto max-w-3xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-5 flex items-center gap-3 text-3xl font-bold text-yellow-400 md:text-4xl">
           <FaListOl className="text-yellow-400" /> Partida Clássica
         </h1>
-        <p className="text-base text-neutral-300 mb-8">
-          Cadastre rodadas com partidas clássicas(estilo 8 minutos ou 2 gols) ou outros. Também
-          adicione jogos antigos aqui, partidas avulsas e resultados do seu racha sem usar o sorteio
-          inteligente. Escolha a data, crie as partidas da rodada, selecione os times e lance gols e
+        <p className="mb-8 text-base text-neutral-300">
+          Cadastre rodadas com partidas clássicas(estilo 8 minutos ou 2 gols) ou
+          outros. Também adicione jogos antigos aqui, partidas avulsas e
+          resultados do seu racha sem usar o sorteio inteligente. Escolha a
+          data, crie as partidas da rodada, selecione os times e lance gols e
           assistências para cada partida.
         </p>
 
         {/* Data da rodada */}
-        <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
-          <label className="text-yellow-300 font-semibold">Data da Rodada:</label>
+        <div className="mb-8 flex flex-col items-center gap-4 md:flex-row">
+          <label className="font-semibold text-yellow-300">
+            Data da Rodada:
+          </label>
           <input
             type="date"
-            className="bg-neutral-900 border border-yellow-400 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="rounded-lg border border-yellow-400 bg-neutral-900 px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
             value={dataRodada}
             onChange={(e) => setDataRodada(e.target.value)}
           />
           <button
-            className="bg-yellow-400 text-black font-bold px-6 py-2 rounded-xl hover:bg-yellow-500 transition flex items-center gap-2"
+            className="flex items-center gap-2 rounded-xl bg-yellow-400 px-6 py-2 font-bold text-black transition hover:bg-yellow-500"
             onClick={adicionarPartida}
             type="button"
             disabled={!dataRodada}
@@ -173,12 +191,12 @@ export default function PartidaClassicaPage() {
           {partidas.map((p) => (
             <div
               key={p.id}
-              className="bg-neutral-900 border border-yellow-700 rounded-xl px-4 py-4 flex flex-col gap-2 shadow"
+              className="flex flex-col gap-2 rounded-xl border border-yellow-700 bg-neutral-900 px-4 py-4 shadow"
               style={{ borderColor: "#f9b300" }}
             >
-              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
+              <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
                 <select
-                  className="bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
+                  className="rounded border border-yellow-400 bg-neutral-800 px-3 py-2 text-white"
                   value={p.timeA?.nome || ""}
                   onChange={(e) => atualizarTime(p.id, "timeA", e.target.value)}
                 >
@@ -189,9 +207,11 @@ export default function PartidaClassicaPage() {
                     </option>
                   ))}
                 </select>
-                <span className="mx-2 font-bold text-yellow-400 text-lg">x</span>
+                <span className="mx-2 text-lg font-bold text-yellow-400">
+                  x
+                </span>
                 <select
-                  className="bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
+                  className="rounded border border-yellow-400 bg-neutral-800 px-3 py-2 text-white"
                   value={p.timeB?.nome || ""}
                   onChange={(e) => atualizarTime(p.id, "timeB", e.target.value)}
                 >
@@ -203,25 +223,28 @@ export default function PartidaClassicaPage() {
                   ))}
                 </select>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+              <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
                 <button
-                  className="bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-bold text-black transition hover:bg-yellow-400"
                   onClick={() => abrirModalGol(p.id, "A")}
                   disabled={!p.timeA}
                   type="button"
                 >
-                  <FaFutbol /> Gols {p.timeA?.nome || "Time A"}: {p.golsA.length}
+                  <FaFutbol /> Gols {p.timeA?.nome || "Time A"}:{" "}
+                  {p.golsA.length}
                 </button>
                 <button
-                  className="bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 font-bold text-black transition hover:bg-yellow-400"
                   onClick={() => abrirModalGol(p.id, "B")}
                   disabled={!p.timeB}
                   type="button"
                 >
-                  <FaFutbol /> Gols {p.timeB?.nome || "Time B"}: {p.golsB.length}
+                  <FaFutbol /> Gols {p.timeB?.nome || "Time B"}:{" "}
+                  {p.golsB.length}
                 </button>
-                <span className="ml-auto flex gap-2 font-bold text-green-400 text-lg">
-                  {p.golsA.length} <span className="text-yellow-300">x</span> {p.golsB.length}
+                <span className="ml-auto flex gap-2 text-lg font-bold text-green-400">
+                  {p.golsA.length} <span className="text-yellow-300">x</span>{" "}
+                  {p.golsB.length}
                 </span>
               </div>
               {(p.golsA.length > 0 || p.golsB.length > 0) && (
@@ -229,7 +252,7 @@ export default function PartidaClassicaPage() {
                   <div>
                     {p.golsA.map((g, idx) => (
                       <div key={idx}>
-                        <span className="text-yellow-300 font-bold">
+                        <span className="font-bold text-yellow-300">
                           Gol {idx + 1} {p.timeA?.nome && `(${p.timeA.nome})`}:
                         </span>{" "}
                         {getNomeJogador(g.jogadorGol)}
@@ -243,7 +266,7 @@ export default function PartidaClassicaPage() {
                     ))}
                     {p.golsB.map((g, idx) => (
                       <div key={idx}>
-                        <span className="text-yellow-300 font-bold">
+                        <span className="font-bold text-yellow-300">
                           Gol {idx + 1} {p.timeB?.nome && `(${p.timeB.nome})`}:
                         </span>{" "}
                         {getNomeJogador(g.jogadorGol)}
@@ -281,7 +304,7 @@ export default function PartidaClassicaPage() {
         {partidas.length > 0 && (
           <div className="mt-10 flex justify-end">
             <button
-              className="bg-green-500 text-white font-bold px-8 py-3 rounded-xl text-lg hover:bg-green-600 transition"
+              className="rounded-xl bg-green-500 px-8 py-3 text-lg font-bold text-white transition hover:bg-green-600"
               onClick={salvarRodadaNoHistorico}
               type="button"
             >
@@ -293,14 +316,18 @@ export default function PartidaClassicaPage() {
         {/* Sucesso ao salvar */}
         {rodadaSalva && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-neutral-900 border-2 border-green-400 rounded-2xl px-8 py-10 shadow-xl flex flex-col items-center">
-              <FaCheckCircle className="text-green-400 text-5xl mb-4" />
-              <h2 className="text-2xl font-bold text-green-400 mb-2">Rodada salva com sucesso!</h2>
-              <p className="text-base text-neutral-300 mb-1 text-center">
+            <div className="flex flex-col items-center rounded-2xl border-2 border-green-400 bg-neutral-900 px-8 py-10 shadow-xl">
+              <FaCheckCircle className="mb-4 text-5xl text-green-400" />
+              <h2 className="mb-2 text-2xl font-bold text-green-400">
+                Rodada salva com sucesso!
+              </h2>
+              <p className="mb-1 text-center text-base text-neutral-300">
                 As partidas desta rodada já estão disponíveis no{" "}
                 <span className="text-yellow-400">Histórico</span>.
               </p>
-              <p className="text-sm text-neutral-400">Você será redirecionado automaticamente...</p>
+              <p className="text-sm text-neutral-400">
+                Você será redirecionado automaticamente...
+              </p>
             </div>
           </div>
         )}
@@ -324,20 +351,24 @@ function ModalAdicionarGol({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-      <div className="bg-neutral-900 rounded-2xl shadow-xl border-2 border-yellow-600 w-full max-w-md p-8 relative flex flex-col items-center">
+      <div className="relative flex w-full max-w-md flex-col items-center rounded-2xl border-2 border-yellow-600 bg-neutral-900 p-8 shadow-xl">
         <button
-          className="absolute top-4 right-4 text-2xl text-neutral-400 hover:text-yellow-400"
+          className="absolute right-4 top-4 text-2xl text-neutral-400 hover:text-yellow-400"
           onClick={onClose}
           aria-label="Fechar modal"
         >
           ×
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-6">Adicionar Gol e Assistência</h2>
-        <div className="w-full flex flex-col gap-4 mb-6">
+        <h2 className="mb-6 text-xl font-bold text-yellow-400">
+          Adicionar Gol e Assistência
+        </h2>
+        <div className="mb-6 flex w-full flex-col gap-4">
           <div>
-            <label className="block text-neutral-300 font-semibold mb-1">Gol do Jogador</label>
+            <label className="mb-1 block font-semibold text-neutral-300">
+              Gol do Jogador
+            </label>
             <select
-              className="w-full bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
+              className="w-full rounded border border-yellow-400 bg-neutral-800 px-3 py-2 text-white"
               value={jogadorGol}
               onChange={(e) => setJogadorGol(Number(e.target.value))}
             >
@@ -350,11 +381,11 @@ function ModalAdicionarGol({
             </select>
           </div>
           <div>
-            <label className="block text-neutral-300 font-semibold mb-1">
+            <label className="mb-1 block font-semibold text-neutral-300">
               Assistência do Jogador
             </label>
             <select
-              className="w-full bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
+              className="w-full rounded border border-yellow-400 bg-neutral-800 px-3 py-2 text-white"
               value={jogadorAssist}
               onChange={(e) => setJogadorAssist(Number(e.target.value))}
             >
@@ -369,8 +400,10 @@ function ModalAdicionarGol({
           </div>
         </div>
         <button
-          className="w-full bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl text-lg hover:bg-yellow-500 transition"
-          onClick={() => jogadorGol && onSave(jogadorGol, jogadorAssist || null)}
+          className="w-full rounded-xl bg-yellow-400 px-6 py-3 text-lg font-bold text-black transition hover:bg-yellow-500"
+          onClick={() =>
+            jogadorGol && onSave(jogadorGol, jogadorAssist || null)
+          }
           disabled={!jogadorGol}
           type="button"
         >

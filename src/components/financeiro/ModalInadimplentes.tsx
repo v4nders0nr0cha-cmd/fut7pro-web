@@ -21,31 +21,31 @@ export default function ModalInadimplentes({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
       aria-modal="true"
       aria-label={titulo}
       tabIndex={-1}
     >
-      <div className="bg-zinc-900 rounded-2xl shadow-xl p-6 w-full max-w-2xl mx-2 relative animate-fadeIn">
+      <div className="animate-fadeIn relative mx-2 w-full max-w-2xl rounded-2xl bg-zinc-900 p-6 shadow-xl">
         <button
-          className="absolute top-3 right-3 text-zinc-300 hover:text-red-500 transition"
+          className="absolute right-3 top-3 text-zinc-300 transition hover:text-red-500"
           onClick={onClose}
           aria-label="Fechar"
         >
           <FaTimes size={22} />
         </button>
-        <h2 className="text-2xl font-bold text-white mb-2">{titulo}</h2>
-        <p className="text-zinc-400 text-sm mb-4">
-          Confira abaixo todos os rachas com cobranças em aberto no sistema. Clique no ícone para
-          contatar o presidente.
+        <h2 className="mb-2 text-2xl font-bold text-white">{titulo}</h2>
+        <p className="mb-4 text-sm text-zinc-400">
+          Confira abaixo todos os rachas com cobranças em aberto no sistema.
+          Clique no ícone para contatar o presidente.
         </p>
         {inadimplentes.length === 0 ? (
-          <div className="text-center text-zinc-400 py-10">
+          <div className="py-10 text-center text-zinc-400">
             Nenhum inadimplente encontrado neste período. 🎉
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-sm text-white mb-0">
+            <table className="mb-0 min-w-full text-sm text-white">
               <thead>
                 <tr className="border-b border-zinc-700">
                   <th className="px-2 py-2">Racha</th>
@@ -60,16 +60,19 @@ export default function ModalInadimplentes({
                 {inadimplentes.map((item) => (
                   <tr
                     key={item.id}
-                    className="border-b border-zinc-800 hover:bg-zinc-800/50 transition"
+                    className="border-b border-zinc-800 transition hover:bg-zinc-800/50"
                   >
                     <td className="px-2 py-2">{item.racha}</td>
                     <td className="px-2 py-2">{item.presidente}</td>
                     <td className="px-2 py-2">{item.plano}</td>
-                    <td className="px-2 py-2 text-red-400 font-bold">
-                      {item.valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    <td className="px-2 py-2 font-bold text-red-400">
+                      {item.valor.toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
                     </td>
                     <td className="px-2 py-2">{item.vencimento}</td>
-                    <td className="px-2 py-2 flex gap-2 items-center">
+                    <td className="flex items-center gap-2 px-2 py-2">
                       {item.contato.startsWith("55") ? (
                         <a
                           href={`https://wa.me/${item.contato}`}
@@ -98,9 +101,9 @@ export default function ModalInadimplentes({
             </table>
           </div>
         )}
-        <div className="flex justify-end mt-4">
+        <div className="mt-4 flex justify-end">
           <button
-            className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white rounded px-5 py-2 font-semibold transition"
+            className="rounded border border-zinc-700 bg-zinc-800 px-5 py-2 font-semibold text-white transition hover:bg-zinc-700"
             onClick={onClose}
           >
             Fechar

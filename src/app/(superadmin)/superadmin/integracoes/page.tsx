@@ -5,7 +5,12 @@ import { useState } from "react";
 import { FaTrash, FaInfoCircle, FaTimes } from "react-icons/fa";
 
 // 1. TIPAGEM DOS CAMPOS
-type CampoIntegracao = { name: string; label: string; type: string; placeholder: string };
+type CampoIntegracao = {
+  name: string;
+  label: string;
+  type: string;
+  placeholder: string;
+};
 type CamposIntegracao = {
   titulo: string;
   descricao: string;
@@ -29,7 +34,8 @@ type CategoriaIntegracao = {
 const camposIntegracoes: Record<string, CamposIntegracao> = {
   ssl: {
     titulo: "Certificado SSL",
-    descricao: "Seu site precisa ter um certificado SSL ativo para máxima segurança.",
+    descricao:
+      "Seu site precisa ter um certificado SSL ativo para máxima segurança.",
     instrucoes: `Adquira um certificado SSL (Let's Encrypt, Cloudflare, Sectigo, etc.) e instale no seu domínio. 
         Após instalar, insira abaixo o domínio HTTPS para validação.`,
     campos: [
@@ -45,15 +51,33 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     titulo: "Google Safe Browsing",
     descricao: "Verificação de site seguro e reputação Google.",
     instrucoes: `Acesse https://transparencyreport.google.com/safe-browsing/search, pesquise seu domínio, e cole abaixo o status retornado (Seguro/Inseguro).`,
-    campos: [{ name: "safe_status", label: "Status", type: "text", placeholder: "Ex: Seguro" }],
+    campos: [
+      {
+        name: "safe_status",
+        label: "Status",
+        type: "text",
+        placeholder: "Ex: Seguro",
+      },
+    ],
   },
   ebit: {
     titulo: "Ebit | Nielsen",
-    descricao: "Selo de reputação Ebit para aumentar a confiança dos visitantes.",
+    descricao:
+      "Selo de reputação Ebit para aumentar a confiança dos visitantes.",
     instrucoes: `Cole o Store ID e o Buscapé ID fornecidos no seu painel Ebit.`,
     campos: [
-      { name: "store_id", label: "Store ID", type: "text", placeholder: "Ex: 123456" },
-      { name: "buscape_id", label: "Buscapé ID", type: "text", placeholder: "Ex: 654321" },
+      {
+        name: "store_id",
+        label: "Store ID",
+        type: "text",
+        placeholder: "Ex: 123456",
+      },
+      {
+        name: "buscape_id",
+        label: "Buscapé ID",
+        type: "text",
+        placeholder: "Ex: 654321",
+      },
     ],
   },
   reclameaqui: {
@@ -80,7 +104,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Integre reviews automáticos e selo de avaliações.",
     instrucoes: `Cole o Widget ID, API Key, ou código do selo recebido por e-mail ao contratar Trustvox/Yotpo.`,
     campos: [
-      { name: "widget_id", label: "Widget/API Key", type: "text", placeholder: "Ex: tvx-xxxxxxxx" },
+      {
+        name: "widget_id",
+        label: "Widget/API Key",
+        type: "text",
+        placeholder: "Ex: tvx-xxxxxxxx",
+      },
     ],
   },
   mercadopago: {
@@ -98,7 +127,8 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
   },
   webhookpagamento: {
     titulo: "Webhook de Pagamento",
-    descricao: "Receba notificações automáticas de pagamentos de clientes e presidentes.",
+    descricao:
+      "Receba notificações automáticas de pagamentos de clientes e presidentes.",
     instrucoes: `Cole a URL do endpoint de webhook configurada no seu gateway de pagamentos.`,
     campos: [
       {
@@ -133,7 +163,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Envio de e-mails transacionais automáticos.",
     instrucoes: `Cole sua API Key da conta SendGrid e, se quiser, um remetente padrão.`,
     campos: [
-      { name: "api_key", label: "API Key", type: "text", placeholder: "Ex: SG.xxxxxx" },
+      {
+        name: "api_key",
+        label: "API Key",
+        type: "text",
+        placeholder: "Ex: SG.xxxxxx",
+      },
       {
         name: "from_email",
         label: "E-mail do remetente",
@@ -147,9 +182,24 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Envio de SMS para notificações importantes.",
     instrucoes: `Insira Account SID, Auth Token e número Twilio para enviar SMS.`,
     campos: [
-      { name: "account_sid", label: "Account SID", type: "text", placeholder: "Ex: ACxxxx" },
-      { name: "auth_token", label: "Auth Token", type: "text", placeholder: "Ex: xxxxxxxx" },
-      { name: "from", label: "Número Twilio", type: "text", placeholder: "Ex: +5511999999999" },
+      {
+        name: "account_sid",
+        label: "Account SID",
+        type: "text",
+        placeholder: "Ex: ACxxxx",
+      },
+      {
+        name: "auth_token",
+        label: "Auth Token",
+        type: "text",
+        placeholder: "Ex: xxxxxxxx",
+      },
+      {
+        name: "from",
+        label: "Número Twilio",
+        type: "text",
+        placeholder: "Ex: +5511999999999",
+      },
     ],
   },
   whatsapp: {
@@ -157,9 +207,19 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Notificações rápidas e automáticas para admins e atletas.",
     instrucoes: `Insira Token de acesso, número e ID do provedor (Zenvia, Twilio, Gupshup, etc).`,
     campos: [
-      { name: "provider", label: "Provedor", type: "text", placeholder: "Ex: Zenvia, Twilio" },
+      {
+        name: "provider",
+        label: "Provedor",
+        type: "text",
+        placeholder: "Ex: Zenvia, Twilio",
+      },
       { name: "token", label: "Token", type: "text", placeholder: "Ex: XXXXX" },
-      { name: "number", label: "Número", type: "text", placeholder: "Ex: +5511912345678" },
+      {
+        name: "number",
+        label: "Número",
+        type: "text",
+        placeholder: "Ex: +5511912345678",
+      },
     ],
   },
   onesignal: {
@@ -173,7 +233,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
         type: "text",
         placeholder: "Ex: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxx",
       },
-      { name: "api_key", label: "API Key", type: "text", placeholder: "Ex: REST_xxxxxxxx" },
+      {
+        name: "api_key",
+        label: "API Key",
+        type: "text",
+        placeholder: "Ex: REST_xxxxxxxx",
+      },
     ],
   },
   ga4: {
@@ -194,7 +259,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Gerenciamento centralizado de tags/pixels/scripts.",
     instrucoes: `Cole o ID do container do seu Tag Manager.`,
     campos: [
-      { name: "container_id", label: "Container ID", type: "text", placeholder: "Ex: GTM-XXXXXX" },
+      {
+        name: "container_id",
+        label: "Container ID",
+        type: "text",
+        placeholder: "Ex: GTM-XXXXXX",
+      },
     ],
   },
   searchconsole: {
@@ -235,7 +305,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Rastreamento de conversões Facebook/Instagram.",
     instrucoes: `Cole Pixel ID e Access Token do seu pixel Facebook/Meta Business Suite.`,
     campos: [
-      { name: "pixel_id", label: "Pixel ID", type: "text", placeholder: "Ex: 1234567890" },
+      {
+        name: "pixel_id",
+        label: "Pixel ID",
+        type: "text",
+        placeholder: "Ex: 1234567890",
+      },
       {
         name: "access_token",
         label: "Access Token",
@@ -248,7 +323,14 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     titulo: "Hotjar",
     descricao: "Mapa de calor, gravação de sessões e análise UX.",
     instrucoes: `Cole Site ID/Tracking Code do Hotjar.`,
-    campos: [{ name: "site_id", label: "Site ID", type: "text", placeholder: "Ex: 1234567" }],
+    campos: [
+      {
+        name: "site_id",
+        label: "Site ID",
+        type: "text",
+        placeholder: "Ex: 1234567",
+      },
+    ],
   },
   mybusiness: {
     titulo: "Google My Business",
@@ -281,7 +363,12 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Integração para desenvolvedores, plugins e apps.",
     instrucoes: `Solicite sua API Key e cole abaixo.`,
     campos: [
-      { name: "api_key", label: "API Key", type: "text", placeholder: "Ex: 12345abcd67890" },
+      {
+        name: "api_key",
+        label: "API Key",
+        type: "text",
+        placeholder: "Ex: 12345abcd67890",
+      },
     ],
   },
   calendar: {
@@ -315,14 +402,24 @@ const camposIntegracoes: Record<string, CamposIntegracao> = {
     descricao: "Acesso rápido via login social, maior conversão de cadastro.",
     instrucoes: `Cole Client ID, Client Secret e Provider (Google, Facebook, Apple, etc.)`,
     campos: [
-      { name: "provider", label: "Provider", type: "text", placeholder: "Ex: Google, Facebook" },
+      {
+        name: "provider",
+        label: "Provider",
+        type: "text",
+        placeholder: "Ex: Google, Facebook",
+      },
       {
         name: "client_id",
         label: "Client ID",
         type: "text",
         placeholder: "Ex: 12345.apps.googleusercontent.com",
       },
-      { name: "client_secret", label: "Client Secret", type: "text", placeholder: "Ex: xxxxxxx" },
+      {
+        name: "client_secret",
+        label: "Client Secret",
+        type: "text",
+        placeholder: "Ex: xxxxxxx",
+      },
     ],
   },
 };
@@ -557,8 +654,13 @@ export default function IntegracoesSuperAdminPage() {
   }
   function handleSalvar() {
     // Grava no localStorage (mock, troca para API quando quiser)
-    window.localStorage.setItem(`integracao_${modal?.id}`, JSON.stringify(campos));
-    alert(`Configuração salva para ${modal?.nome}:\n${JSON.stringify(campos, null, 2)}`);
+    window.localStorage.setItem(
+      `integracao_${modal?.id}`,
+      JSON.stringify(campos),
+    );
+    alert(
+      `Configuração salva para ${modal?.nome}:\n${JSON.stringify(campos, null, 2)}`,
+    );
     handleFecharModal();
   }
 
@@ -575,50 +677,53 @@ export default function IntegracoesSuperAdminPage() {
           content="fut7, integrações, api, google, facebook, analytics, ebit, ssl, pagamentos, saas, webhook, reviews, reputação"
         />
       </Head>
-      <main className="min-h-screen bg-fundo px-2 py-6 flex flex-col items-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-amarelo mb-6 text-left w-full max-w-7xl">
+      <main className="flex min-h-screen flex-col items-center bg-fundo px-2 py-6">
+        <h1 className="text-amarelo mb-6 w-full max-w-7xl text-left text-2xl font-bold md:text-3xl">
           Integrações
         </h1>
         <div className="w-full max-w-7xl space-y-12">
           {categoriasIntegracoes.map((categoria) => (
             <section key={categoria.nome} className="mb-4">
-              <h2 className="text-lg font-semibold mb-4 text-white">{categoria.nome}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <h2 className="mb-4 text-lg font-semibold text-white">
+                {categoria.nome}
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                 {categoria.integrações.map((integ) => (
                   <div
                     key={integ.id}
-                    className="relative flex flex-col items-center bg-zinc-900 rounded-xl p-4 shadow group transition hover:ring-2 hover:ring-amarelo"
+                    className="hover:ring-amarelo group relative flex flex-col items-center rounded-xl bg-zinc-900 p-4 shadow transition hover:ring-2"
                   >
                     <span
-                      className={`absolute top-3 right-3 px-2 py-0.5 rounded text-xs font-bold 
-                      ${integ.status === "instalado" ? "bg-green-700 text-green-100" : "bg-zinc-700 text-zinc-200"}`}
+                      className={`absolute right-3 top-3 rounded px-2 py-0.5 text-xs font-bold ${integ.status === "instalado" ? "bg-green-700 text-green-100" : "bg-zinc-700 text-zinc-200"}`}
                     >
-                      {integ.status === "instalado" ? "Instalado" : "Disponível"}
+                      {integ.status === "instalado"
+                        ? "Instalado"
+                        : "Disponível"}
                     </span>
                     <img
                       src={integ.logo}
                       alt={`Logo ${integ.nome}`}
-                      className="w-24 h-16 object-contain mx-auto mb-3 rounded bg-white"
+                      className="mx-auto mb-3 h-16 w-24 rounded bg-white object-contain"
                     />
-                    <div className="font-bold text-base text-white text-center mb-1">
+                    <div className="mb-1 text-center text-base font-bold text-white">
                       {integ.nome}
                     </div>
-                    <div className="flex items-center gap-1 text-zinc-300 text-sm text-center mb-3">
+                    <div className="mb-3 flex items-center gap-1 text-center text-sm text-zinc-300">
                       {integ.descricao}
                       <FaInfoCircle
                         title="Saiba mais sobre esta integração"
-                        className="ml-1 text-amarelo"
+                        className="text-amarelo ml-1"
                       />
                     </div>
-                    <div className="flex gap-2 w-full">
+                    <div className="flex w-full gap-2">
                       <button
-                        className="flex-1 px-2 py-2 rounded-xl bg-cyan-600 text-white font-semibold hover:bg-cyan-700 transition text-sm"
+                        className="flex-1 rounded-xl bg-cyan-600 px-2 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700"
                         onClick={() => handleAbrirModal(integ)}
                       >
                         Configurar
                       </button>
                       <button
-                        className="p-2 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-red-700/20 transition"
+                        className="rounded-xl border border-zinc-600 p-2 text-zinc-400 transition hover:bg-red-700/20"
                         title="Remover integração"
                         onClick={() => alert("Remover integração futura!")}
                       >
@@ -634,56 +739,64 @@ export default function IntegracoesSuperAdminPage() {
 
         {/* MODAL DE CONFIGURAÇÃO */}
         {modal && camposIntegracoes[modal.id] && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-2">
-            <div className="relative w-full max-w-lg bg-zinc-900 rounded-2xl shadow-2xl p-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-2">
+            <div className="relative w-full max-w-lg rounded-2xl bg-zinc-900 p-6 shadow-2xl">
               <button
-                className="absolute top-2 right-2 text-zinc-400 hover:text-red-500"
+                className="absolute right-2 top-2 text-zinc-400 hover:text-red-500"
                 onClick={handleFecharModal}
               >
                 <FaTimes size={24} />
               </button>
-              <div className="mb-2 text-xl font-bold text-amarelo">
+              <div className="text-amarelo mb-2 text-xl font-bold">
                 {camposIntegracoes[modal.id]!.titulo}
               </div>
-              <div className="mb-1 text-zinc-100">{camposIntegracoes[modal.id]!.descricao}</div>
+              <div className="mb-1 text-zinc-100">
+                {camposIntegracoes[modal.id]!.descricao}
+              </div>
               <div
-                className="mb-2 text-zinc-400 text-sm"
-                dangerouslySetInnerHTML={{ __html: camposIntegracoes[modal.id]!.instrucoes }}
+                className="mb-2 text-sm text-zinc-400"
+                dangerouslySetInnerHTML={{
+                  __html: camposIntegracoes[modal.id]!.instrucoes,
+                }}
               />
               <form
-                className="space-y-4 mt-4"
+                className="mt-4 space-y-4"
                 onSubmit={(e) => {
                   e.preventDefault();
                   handleSalvar();
                 }}
               >
-                {camposIntegracoes[modal.id]!.campos.map((campo: CampoIntegracao) => (
-                  <div key={campo.name} className="flex flex-col">
-                    <label className="text-sm text-zinc-200 font-semibold mb-1">
-                      {campo.label}
-                    </label>
-                    <input
-                      className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-amarelo"
-                      type={campo.type}
-                      name={campo.name}
-                      value={campos[campo.name] || ""}
-                      onChange={(e) => handleCampoChange(campo.name, e.target.value)}
-                      placeholder={campo.placeholder}
-                      autoComplete="off"
-                    />
-                  </div>
-                ))}
-                <div className="flex justify-end gap-2 mt-6">
+                {camposIntegracoes[modal.id]!.campos.map(
+                  (campo: CampoIntegracao) => (
+                    <div key={campo.name} className="flex flex-col">
+                      <label className="mb-1 text-sm font-semibold text-zinc-200">
+                        {campo.label}
+                      </label>
+                      <input
+                        className="focus:outline-amarelo rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-white"
+                        type={campo.type}
+                        name={campo.name}
+                        value={campos[campo.name] || ""}
+                        onChange={(e) =>
+                          handleCampoChange(campo.name, e.target.value)
+                        }
+                        placeholder={campo.placeholder}
+                        autoComplete="off"
+                      />
+                    </div>
+                  ),
+                )}
+                <div className="mt-6 flex justify-end gap-2">
                   <button
                     type="button"
-                    className="px-5 py-2 rounded-xl bg-zinc-700 text-white hover:bg-zinc-600 font-semibold"
+                    className="rounded-xl bg-zinc-700 px-5 py-2 font-semibold text-white hover:bg-zinc-600"
                     onClick={handleFecharModal}
                   >
                     Fechar
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 font-bold"
+                    className="rounded-xl bg-cyan-600 px-5 py-2 font-bold text-white hover:bg-cyan-700"
                   >
                     Salvar
                   </button>
@@ -693,8 +806,9 @@ export default function IntegracoesSuperAdminPage() {
           </div>
         )}
 
-        <div className="text-center mt-10 text-zinc-400 text-xs">
-          Painel exclusivo para gestão das integrações estratégicas do SaaS Fut7Pro.
+        <div className="mt-10 text-center text-xs text-zinc-400">
+          Painel exclusivo para gestão das integrações estratégicas do SaaS
+          Fut7Pro.
         </div>
       </main>
     </>

@@ -8,11 +8,19 @@ const cores: Record<CargoAdmin, string> = {
   "Diretor Financeiro": "bg-purple-900 text-purple-200",
 };
 
-export function BadgeCargo({ cargo, minimal = false }: { cargo: CargoAdmin; minimal?: boolean }) {
+export function BadgeCargo({
+  cargo,
+  minimal = false,
+}: {
+  cargo: CargoAdmin;
+  minimal?: boolean;
+}) {
   return (
     <span
       className={`inline-block font-semibold ${
-        minimal ? "px-2 py-0.5 text-xs rounded-lg" : "px-3 py-1 text-sm rounded-full"
+        minimal
+          ? "rounded-lg px-2 py-0.5 text-xs"
+          : "rounded-full px-3 py-1 text-sm"
       } ${cores[cargo]} select-none`}
     >
       {cargo}

@@ -13,7 +13,10 @@ async function fetcher(url: string) {
  * Busca todos os rachas cadastrados.
  */
 export function useRachas() {
-  const { data, error, mutate, isLoading } = useSWR<Racha[]>("/api/admin/rachas", fetcher);
+  const { data, error, mutate, isLoading } = useSWR<Racha[]>(
+    "/api/admin/rachas",
+    fetcher,
+  );
 
   return {
     rachas: data ?? [],

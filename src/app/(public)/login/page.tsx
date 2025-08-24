@@ -28,25 +28,26 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-8 md:pt-16 pb-10">
-      <div className="bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm">
-        <h1 className="text-xl font-bold mb-4 text-center">Acesse sua Conta</h1>
-        <p className="text-gray-300 text-center mb-6 text-base font-medium leading-snug">
-          Acesse sua conta para editar seu perfil, participar de discussões e enquetes que melhoram
-          nosso racha, e ficar por dentro de todas as novidades do{" "}
-          <span className="text-yellow-400 font-bold">{nomeDoRacha}</span>.
+    <main className="flex min-h-[80vh] w-full flex-col items-center justify-center pb-10 pt-8 md:pt-16">
+      <div className="w-full max-w-sm rounded-lg bg-zinc-900 p-6 shadow-lg">
+        <h1 className="mb-4 text-center text-xl font-bold">Acesse sua Conta</h1>
+        <p className="mb-6 text-center text-base font-medium leading-snug text-gray-300">
+          Acesse sua conta para editar seu perfil, participar de discussões e
+          enquetes que melhoram nosso racha, e ficar por dentro de todas as
+          novidades do{" "}
+          <span className="font-bold text-yellow-400">{nomeDoRacha}</span>.
         </p>
 
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="mb-6 flex justify-center gap-4">
           <button
             onClick={() => setTab("google")}
-            className={`px-3 py-1 rounded font-semibold transition ${tab === "google" ? "bg-yellow-400 text-black" : "bg-zinc-700 text-white"}`}
+            className={`rounded px-3 py-1 font-semibold transition ${tab === "google" ? "bg-yellow-400 text-black" : "bg-zinc-700 text-white"}`}
           >
             Google
           </button>
           <button
             onClick={() => setTab("email")}
-            className={`px-3 py-1 rounded font-semibold transition ${tab === "email" ? "bg-yellow-400 text-black" : "bg-zinc-700 text-white"}`}
+            className={`rounded px-3 py-1 font-semibold transition ${tab === "email" ? "bg-yellow-400 text-black" : "bg-zinc-700 text-white"}`}
           >
             E-mail e Senha
           </button>
@@ -55,7 +56,7 @@ export default function LoginPage() {
         {tab === "google" && (
           <button
             onClick={() => signIn("google")}
-            className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+            className="w-full rounded bg-yellow-400 py-2 font-bold text-black transition hover:bg-yellow-300"
           >
             Entrar com Google
           </button>
@@ -69,7 +70,7 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Seu e-mail"
               required
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <input
               type="password"
@@ -77,11 +78,11 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Sua senha"
               required
-              className="w-full p-2 rounded bg-zinc-800 text-white"
+              className="w-full rounded bg-zinc-800 p-2 text-white"
             />
             <button
               type="submit"
-              className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+              className="w-full rounded bg-yellow-400 py-2 font-bold text-black transition hover:bg-yellow-300"
             >
               Entrar
             </button>

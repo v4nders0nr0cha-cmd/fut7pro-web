@@ -41,9 +41,9 @@ export default function ToastGlobal() {
   const Icon = ICONS[toastType as keyof typeof ICONS] || <FaBell />;
 
   return (
-    <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[9999] bg-white text-black px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-fade-in-up min-w-[240px] max-w-[350px] border border-gray-200">
+    <div className="animate-fade-in-up fixed left-1/2 top-16 z-[9999] flex min-w-[240px] max-w-[350px] -translate-x-1/2 items-center gap-3 rounded-lg border border-gray-200 bg-white px-6 py-3 text-black shadow-xl">
       {Icon}
-      <span className="text-sm font-semibold flex-1">{visibleToast}</span>
+      <span className="flex-1 text-sm font-semibold">{visibleToast}</span>
       <button
         className="ml-3 text-xl hover:text-black/70"
         aria-label="Fechar"

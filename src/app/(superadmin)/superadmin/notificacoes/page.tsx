@@ -31,7 +31,8 @@ export default function SuperAdminNotificacoesPage() {
   const [destino, setDestino] = useState<string>("todos");
   const [tipo, setTipo] = useState<string>("todos");
   const [modalAberto, setModalAberto] = useState<boolean>(false);
-  const [notificacaoPreview, setNotificacaoPreview] = useState<Notificacao | null>(null);
+  const [notificacaoPreview, setNotificacaoPreview] =
+    useState<Notificacao | null>(null);
 
   const notificacoesFiltradas = mockNotificacoes.filter((n: Notificacao) => {
     const buscaLower = busca.toLowerCase();
@@ -56,13 +57,13 @@ export default function SuperAdminNotificacoesPage() {
           content="notificações, mensagens em massa, SaaS, comunicação, admins, Fut7Pro"
         />
       </Head>
-      <div className="px-4 py-6 md:px-10 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
+      <div className="mx-auto max-w-6xl px-4 py-6 md:px-10">
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <h1 className="text-2xl font-bold text-yellow-400 md:text-3xl">
             Notificações e Mensagens em Massa
           </h1>
           <button
-            className="flex items-center gap-2 bg-yellow-400 text-zinc-900 font-semibold px-4 py-2 rounded-xl hover:bg-yellow-300 transition"
+            className="flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 font-semibold text-zinc-900 transition hover:bg-yellow-300"
             onClick={() => setModalAberto(true)}
             aria-label="Nova Notificação"
           >
@@ -71,16 +72,16 @@ export default function SuperAdminNotificacoesPage() {
         </div>
 
         {/* Filtros */}
-        <div className="flex flex-col md:flex-row gap-3 mb-4">
+        <div className="mb-4 flex flex-col gap-3 md:flex-row">
           <input
-            className="w-full md:w-1/3 px-3 py-2 rounded bg-zinc-800 text-zinc-100 border border-zinc-700 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-100 focus:outline-none md:w-1/3"
             placeholder="Buscar mensagem..."
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             aria-label="Buscar mensagem"
           />
           <select
-            className="bg-zinc-800 text-zinc-100 rounded px-3 py-2 border border-zinc-700"
+            className="rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-100"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
             aria-label="Filtrar status"
@@ -91,7 +92,7 @@ export default function SuperAdminNotificacoesPage() {
             <option value="pendente">Pendente</option>
           </select>
           <select
-            className="bg-zinc-800 text-zinc-100 rounded px-3 py-2 border border-zinc-700"
+            className="rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-100"
             value={destino}
             onChange={(e) => setDestino(e.target.value)}
             aria-label="Filtrar destino"
@@ -102,7 +103,7 @@ export default function SuperAdminNotificacoesPage() {
             <option value="Novos Admin">Novos</option>
           </select>
           <select
-            className="bg-zinc-800 text-zinc-100 rounded px-3 py-2 border border-zinc-700"
+            className="rounded border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-100"
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
             aria-label="Filtrar tipo"
@@ -117,7 +118,7 @@ export default function SuperAdminNotificacoesPage() {
         </div>
 
         {/* Lista de Notificações */}
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-zinc-900">
+        <div className="overflow-x-auto rounded-xl bg-zinc-900 shadow-lg">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-zinc-800">
               <tr>
@@ -133,17 +134,17 @@ export default function SuperAdminNotificacoesPage() {
             <tbody>
               {notificacoesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-6 text-zinc-500">
+                  <td colSpan={7} className="py-6 text-center text-zinc-500">
                     Nenhuma notificação encontrada.
                   </td>
                 </tr>
               ) : (
                 notificacoesFiltradas.map((n: Notificacao, i: number) => (
                   <tr key={n.id} className="hover:bg-zinc-800">
-                    <td className="px-4 py-3 max-w-xs truncate">
+                    <td className="max-w-xs truncate px-4 py-3">
                       <button
                         onClick={() => setNotificacaoPreview(n)}
-                        className="hover:underline text-yellow-400"
+                        className="text-yellow-400 hover:underline"
                       >
                         {n.mensagem}
                       </button>
@@ -163,7 +164,7 @@ export default function SuperAdminNotificacoesPage() {
                       {n.status.charAt(0).toUpperCase() + n.status.slice(1)}
                     </td>
                     <td className="px-2 py-3">{n.enviadoPor}</td>
-                    <td className="px-2 py-3 flex gap-2">
+                    <td className="flex gap-2 px-2 py-3">
                       <button
                         onClick={() => setNotificacaoPreview(n)}
                         aria-label="Ver mensagem"
@@ -177,7 +178,11 @@ export default function SuperAdminNotificacoesPage() {
                       <button aria-label="Reenviar" title="Reenviar">
                         <FaRedo />
                       </button>
-                      <button aria-label="Excluir" title="Excluir" className="text-red-500">
+                      <button
+                        aria-label="Excluir"
+                        title="Excluir"
+                        className="text-red-500"
+                      >
                         <FaTrash />
                       </button>
                     </td>
@@ -189,7 +194,9 @@ export default function SuperAdminNotificacoesPage() {
         </div>
 
         {/* Modal de Preview/Nova Notificação */}
-        {modalAberto && <ModalNovaNotificacao onClose={() => setModalAberto(false)} />}
+        {modalAberto && (
+          <ModalNovaNotificacao onClose={() => setModalAberto(false)} />
+        )}
         {notificacaoPreview && (
           <ModalNotificacaoPreview
             notificacao={notificacaoPreview}

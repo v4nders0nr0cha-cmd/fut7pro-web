@@ -21,8 +21,8 @@ export default function RachaPublicPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-fundo py-10 pb-8">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-yellow-400"></div>
         <p className="mt-4 text-gray-300">Carregando racha...</p>
       </div>
     );
@@ -33,7 +33,7 @@ export default function RachaPublicPage() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-fundo">
+    <div className="min-h-screen w-full bg-fundo">
       {/* Redirecionar para a página principal do racha */}
       <script
         dangerouslySetInnerHTML={{

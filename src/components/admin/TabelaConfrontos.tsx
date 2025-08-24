@@ -8,17 +8,20 @@ type Props = {
 
 const nomesTimes = ["Leões", "Tigres", "Águias", "Furacão"];
 
-export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Props) {
+export default function TabelaConfrontos({
+  confrontos,
+  onSelecionarPartida,
+}: Props) {
   return (
-    <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+    <section className="mx-auto mb-10 grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-2">
       {/* Ida */}
-      <div className="bg-zinc-800 rounded-2xl shadow-lg p-4">
-        <h2 className="text-center text-yellow-400 font-bold text-xl mb-2">
+      <div className="rounded-2xl bg-zinc-800 p-4 shadow-lg">
+        <h2 className="mb-2 text-center text-xl font-bold text-yellow-400">
           Tabela de Confrontos - Ida
         </h2>
         <table className="w-full">
           <thead>
-            <tr className="text-gray-400 text-sm">
+            <tr className="text-sm text-gray-400">
               <th className="text-left">Rodada</th>
               <th className="text-center">Resultado</th>
               <th className="text-center"></th>
@@ -34,7 +37,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
               >
                 <td>{conf.rodada}</td>
                 <td>
-                  <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
+                  <div className="flex items-center justify-center gap-3 text-lg font-bold text-yellow-300">
                     <span className="text-white">{nomesTimes[conf.ida.a]}</span>
                     {conf.resultadoIda ? (
                       <>
@@ -58,7 +61,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                 </td>
                 <td className="text-center">
                   <button
-                    className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
+                    className="rounded bg-yellow-400 px-3 py-1 text-xs font-bold text-black shadow hover:bg-yellow-300"
                     onClick={() => onSelecionarPartida(idx, "ida")}
                   >
                     {conf.resultadoIda ? "Editar" : "Lançar"}
@@ -70,13 +73,13 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
         </table>
       </div>
       {/* Volta */}
-      <div className="bg-zinc-800 rounded-2xl shadow-lg p-4">
-        <h2 className="text-center text-yellow-400 font-bold text-xl mb-2">
+      <div className="rounded-2xl bg-zinc-800 p-4 shadow-lg">
+        <h2 className="mb-2 text-center text-xl font-bold text-yellow-400">
           Tabela de Confrontos - Volta
         </h2>
         <table className="w-full">
           <thead>
-            <tr className="text-gray-400 text-sm">
+            <tr className="text-sm text-gray-400">
               <th className="text-left">Rodada</th>
               <th className="text-center">Resultado</th>
               <th className="text-center"></th>
@@ -92,8 +95,10 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
               >
                 <td>{conf.rodada}</td>
                 <td>
-                  <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
-                    <span className="text-white">{nomesTimes[conf.volta.a]}</span>
+                  <div className="flex items-center justify-center gap-3 text-lg font-bold text-yellow-300">
+                    <span className="text-white">
+                      {nomesTimes[conf.volta.a]}
+                    </span>
                     {conf.resultadoVolta ? (
                       <>
                         <span className="font-extrabold text-yellow-300">
@@ -111,12 +116,14 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                         <span className="text-yellow-300">--</span>
                       </>
                     )}
-                    <span className="text-white">{nomesTimes[conf.volta.b]}</span>
+                    <span className="text-white">
+                      {nomesTimes[conf.volta.b]}
+                    </span>
                   </div>
                 </td>
                 <td className="text-center">
                   <button
-                    className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
+                    className="rounded bg-yellow-400 px-3 py-1 text-xs font-bold text-black shadow hover:bg-yellow-300"
                     onClick={() => onSelecionarPartida(idx, "volta")}
                   >
                     {conf.resultadoVolta ? "Editar" : "Lançar"}

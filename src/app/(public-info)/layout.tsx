@@ -8,6 +8,14 @@ export const metadata = {
   description: "Termos, políticas, regras e documentos institucionais Fut7Pro.",
 };
 
-export default function PublicInfoLayout({ children }: { children: ReactNode }) {
-  return <div className={`${inter.className} bg-fundo text-white min-h-screen`}>{children}</div>;
+export default function PublicInfoLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div className={`${inter.className} min-h-screen bg-fundo text-white`}>
+      {children}
+    </div>
+  );
 }

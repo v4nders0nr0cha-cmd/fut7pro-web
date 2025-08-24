@@ -19,28 +19,28 @@ export default function CardTimeCampeaoDoDia({
   return (
     <Link
       href={editLink}
-      className="relative flex flex-col items-center justify-center bg-[#23272F] rounded-xl shadow-lg px-6 py-7 h-full transition hover:scale-[1.025] hover:ring-2 hover:ring-[#ffd600] cursor-pointer group outline-none"
+      className="group relative flex h-full cursor-pointer flex-col items-center justify-center rounded-xl bg-[#23272F] px-6 py-7 shadow-lg outline-none transition hover:scale-[1.025] hover:ring-2 hover:ring-[#ffd600]"
       tabIndex={0}
       aria-label={`Editar ${nomeTime}`}
     >
-      <div className="relative w-28 h-20 mb-3">
+      <div className="relative mb-3 h-20 w-28">
         <Image
           src={fotoUrl}
           alt={`Foto do ${nomeTime}`}
           fill
-          className="rounded-xl object-cover border-4 border-[#ffd600] shadow-md"
+          className="rounded-xl border-4 border-[#ffd600] object-cover shadow-md"
           sizes="112px"
           priority
         />
-        <div className="absolute bottom-1 right-1 bg-[#ffd600] p-1 rounded-full">
-          <FaCamera className="text-black w-4 h-4" />
+        <div className="absolute bottom-1 right-1 rounded-full bg-[#ffd600] p-1">
+          <FaCamera className="h-4 w-4 text-black" />
         </div>
       </div>
-      <span className="text-xl font-bold text-[#ffd600] mb-1">{nomeTime}</span>
-      <span className="text-sm text-gray-400 mb-4 text-center">
+      <span className="mb-1 text-xl font-bold text-[#ffd600]">{nomeTime}</span>
+      <span className="mb-4 text-center text-sm text-gray-400">
         Clique para cadastrar foto, gols, passes e resultados do dia.
       </span>
-      <span className="mt-2 px-4 py-1 rounded bg-[#ffd600] text-black text-xs font-bold flex items-center gap-2 shadow transition group-hover:bg-yellow-400">
+      <span className="mt-2 flex items-center gap-2 rounded bg-[#ffd600] px-4 py-1 text-xs font-bold text-black shadow transition group-hover:bg-yellow-400">
         <FaUserEdit /> Editar Campeão
       </span>
     </Link>

@@ -12,7 +12,7 @@ export default function ListItem({ data }: Props) {
   return (
     <Link
       href={`/users/${data.id}`}
-      className="block p-3 bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg mb-2 transition-all shadow-md"
+      className="mb-2 block rounded-lg bg-[#1a1a1a] p-3 text-white shadow-md transition-all hover:bg-[#2a2a2a]"
     >
       <p className="font-semibold text-yellow-400">{data.name}</p>
       <span className="text-sm text-gray-400">ID: {data.id}</span>

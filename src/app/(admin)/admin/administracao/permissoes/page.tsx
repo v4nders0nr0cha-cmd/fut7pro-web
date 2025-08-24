@@ -5,8 +5,11 @@ import { BadgeCargo } from "@/components/admin/BadgeCargo";
 import RestrictAccess from "@/components/admin/RestrictAccess";
 import type { PermissaoAdmin } from "@/types/permissao";
 
-const cargoLogado: "Presidente" | "Vice" | "Diretor de Futebol" | "Diretor Financeiro" =
-  "Presidente";
+const cargoLogado:
+  | "Presidente"
+  | "Vice"
+  | "Diretor de Futebol"
+  | "Diretor Financeiro" = "Presidente";
 
 const permissoes: PermissaoAdmin[] = [
   {
@@ -20,7 +23,12 @@ const permissoes: PermissaoAdmin[] = [
       jogadores: true,
       financeiro: true,
     },
-    podeExcluir: { partidas: true, rankings: true, campeoes: true, atletas: true },
+    podeExcluir: {
+      partidas: true,
+      rankings: true,
+      campeoes: true,
+      atletas: true,
+    },
     prazoExclusaoDias: null,
   },
   {
@@ -34,7 +42,12 @@ const permissoes: PermissaoAdmin[] = [
       jogadores: true,
       financeiro: true,
     },
-    podeExcluir: { partidas: true, rankings: true, campeoes: true, atletas: false },
+    podeExcluir: {
+      partidas: true,
+      rankings: true,
+      campeoes: true,
+      atletas: false,
+    },
     prazoExclusaoDias: 15,
   },
   {
@@ -48,7 +61,12 @@ const permissoes: PermissaoAdmin[] = [
       jogadores: true,
       financeiro: false,
     },
-    podeExcluir: { partidas: true, rankings: true, campeoes: true, atletas: false },
+    podeExcluir: {
+      partidas: true,
+      rankings: true,
+      campeoes: true,
+      atletas: false,
+    },
     prazoExclusaoDias: 15,
   },
   {
@@ -62,7 +80,12 @@ const permissoes: PermissaoAdmin[] = [
       jogadores: false,
       financeiro: true,
     },
-    podeExcluir: { partidas: false, rankings: false, campeoes: false, atletas: false },
+    podeExcluir: {
+      partidas: false,
+      rankings: false,
+      campeoes: false,
+      atletas: false,
+    },
     prazoExclusaoDias: 15,
   },
 ];
@@ -96,67 +119,67 @@ export default function PermissoesPage() {
         />
         <meta name="keywords" content="Fut7, racha, permissões, cargos, SaaS" />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-5xl mx-auto w-full">
-        <h1 className="text-2xl font-bold mb-8 text-zinc-100 text-center">
+      <div className="mx-auto w-full max-w-5xl pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-8 text-center text-2xl font-bold text-zinc-100">
           Permissões dos Administradores
         </h1>
         <div className="overflow-x-auto">
-          <table className="min-w-full bg-[#202126] rounded-xl shadow border border-[#27272a]">
+          <table className="min-w-full rounded-xl border border-[#27272a] bg-[#202126] shadow">
             <thead>
-              <tr className="text-zinc-400 text-sm border-b border-[#292929]">
-                <th className="py-3 px-4 text-left font-semibold">Cargo</th>
-                <th className="py-3 px-4 font-semibold">Pode acessar</th>
-                <th className="py-3 px-4 font-semibold">Pode excluir</th>
-                <th className="py-3 px-4 font-semibold">Prazo Exclusão</th>
+              <tr className="border-b border-[#292929] text-sm text-zinc-400">
+                <th className="px-4 py-3 text-left font-semibold">Cargo</th>
+                <th className="px-4 py-3 font-semibold">Pode acessar</th>
+                <th className="px-4 py-3 font-semibold">Pode excluir</th>
+                <th className="px-4 py-3 font-semibold">Prazo Exclusão</th>
               </tr>
             </thead>
             <tbody>
               {permissoes.map((perm) => (
                 <tr
                   key={perm.funcao}
-                  className="border-b border-[#242429] hover:bg-[#242529] transition"
+                  className="border-b border-[#242429] transition hover:bg-[#242529]"
                 >
-                  <td className="py-2 px-4 font-bold">
+                  <td className="px-4 py-2 font-bold">
                     <BadgeCargo cargo={perm.funcao} minimal />
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="px-4 py-2">
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(perm.podeAcessar)
                         .filter(([_, v]) => v)
                         .map(([k]) => (
                           <span
                             key={k}
-                            className="bg-zinc-800 text-zinc-200 px-2 py-0.5 rounded text-xs font-medium border border-zinc-700"
+                            className="rounded border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-200"
                           >
                             {labelAcesso[k] || k}
                           </span>
                         ))}
                     </div>
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="px-4 py-2">
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(perm.podeExcluir)
                         .filter(([_, v]) => v)
                         .map(([k]) => (
                           <span
                             key={k}
-                            className="bg-[#23181b] text-red-300 px-2 py-0.5 rounded text-xs font-medium border border-red-900"
+                            className="rounded border border-red-900 bg-[#23181b] px-2 py-0.5 text-xs font-medium text-red-300"
                           >
                             {labelExcluir[k] || k}
                           </span>
                         ))}
                       {!Object.values(perm.podeExcluir).some(Boolean) && (
-                        <span className="text-zinc-500 italic">Nenhuma</span>
+                        <span className="italic text-zinc-500">Nenhuma</span>
                       )}
                     </div>
                   </td>
-                  <td className="py-2 px-4">
+                  <td className="px-4 py-2">
                     {perm.prazoExclusaoDias === null ? (
-                      <span className="bg-yellow-900 text-yellow-100 px-2 py-0.5 rounded text-xs font-semibold border border-yellow-800">
+                      <span className="rounded border border-yellow-800 bg-yellow-900 px-2 py-0.5 text-xs font-semibold text-yellow-100">
                         Sem limite
                       </span>
                     ) : (
-                      <span className="bg-zinc-800 text-zinc-200 px-2 py-0.5 rounded text-xs font-medium border border-zinc-700">
+                      <span className="rounded border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-xs font-medium text-zinc-200">
                         {perm.prazoExclusaoDias} dias
                       </span>
                     )}

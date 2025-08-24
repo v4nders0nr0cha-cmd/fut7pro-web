@@ -64,8 +64,8 @@ export default function SobreNosPage() {
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+      <div className="flex min-h-screen w-full flex-col items-center justify-center bg-fundo py-10 pb-8">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-yellow-400"></div>
         <p className="mt-4 text-gray-300">Carregando informações...</p>
       </div>
     );
@@ -84,29 +84,32 @@ export default function SobreNosPage() {
           content="fut7pro, sobre nós, história, estatuto, aniversariantes, parceiros, contatos, administração, prestação de contas, futebol 7, racha, futebol amador, ranking, plataforma de racha"
         />
       </Head>
-      <main className="w-full min-h-screen flex flex-col items-center py-10 pb-8 bg-fundo">
+      <main className="flex min-h-screen w-full flex-col items-center bg-fundo py-10 pb-8">
         {/* TÍTULO PRINCIPAL PADRÃO */}
-        <h1 className="mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+        <h1 className="mb-3 text-center text-3xl font-extrabold leading-tight text-yellow-400 drop-shadow-sm md:text-4xl">
           Sobre Nós
         </h1>
         {/* DESCRIÇÃO PADRÃO */}
-        <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Conheça mais sobre nosso futebol entre amigos: nossa história, regras, aniversariantes,
-          parceiros e todas as informações importantes do racha.
+        <p className="mx-auto mb-10 max-w-2xl text-center text-base font-medium leading-relaxed text-gray-300 md:max-w-3xl md:text-lg lg:max-w-4xl xl:max-w-5xl">
+          Conheça mais sobre nosso futebol entre amigos: nossa história, regras,
+          aniversariantes, parceiros e todas as informações importantes do
+          racha.
         </p>
         <section className="w-full max-w-5xl">
-          <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3">
             {cards.map((card) => (
               <Link
                 key={card.href}
                 href={card.href}
-                className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 flex flex-col items-start hover:border-yellow-400 hover:shadow-lg hover:scale-[1.03] transition-all"
+                className="flex flex-col items-start rounded-2xl border border-neutral-700 bg-neutral-900 p-6 transition-all hover:scale-[1.03] hover:border-yellow-400 hover:shadow-lg"
               >
                 <div className="mb-3">{card.icon}</div>
-                <div className="font-bold text-yellow-300 text-xl mb-1 break-words">
+                <div className="mb-1 break-words text-xl font-bold text-yellow-300">
                   {card.title}
                 </div>
-                <div className="text-white text-sm break-words">{card.desc}</div>
+                <div className="break-words text-sm text-white">
+                  {card.desc}
+                </div>
               </Link>
             ))}
           </div>

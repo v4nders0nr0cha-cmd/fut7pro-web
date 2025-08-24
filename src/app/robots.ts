@@ -1,17 +1,17 @@
-import type { MetadataRoute } from 'next';
+import { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://fut7pro.com";
+
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: '/',
-        disallow: ['/api', '/admin/login', '/superadmin/login'],
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/admin", "/admin/*", "/_next", "/api/auth"],
       },
     ],
-    sitemap: `${base}/sitemap.xml`,
+    sitemap: `${baseUrl}/sitemap.xml`,
+    host: baseUrl,
   };
 }
-
-

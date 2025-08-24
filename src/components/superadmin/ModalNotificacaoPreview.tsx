@@ -13,8 +13,10 @@ export const ModalNotificacaoPreview: FC<ModalNotificacaoPreviewProps> = ({
   onClose,
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-    <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md shadow-xl">
-      <h2 className="text-xl font-bold mb-4 text-yellow-400">Detalhe da Notificação</h2>
+    <div className="w-full max-w-md rounded-xl bg-zinc-900 p-6 shadow-xl">
+      <h2 className="mb-4 text-xl font-bold text-yellow-400">
+        Detalhe da Notificação
+      </h2>
       <div className="mb-4">
         <div className="mb-2 text-sm text-zinc-400">Mensagem:</div>
         <div className="mb-2 text-zinc-100">{notificacao.mensagem}</div>
@@ -34,7 +36,7 @@ export const ModalNotificacaoPreview: FC<ModalNotificacaoPreviewProps> = ({
       <div className="flex justify-end">
         <button
           onClick={onClose}
-          className="px-4 py-2 rounded bg-yellow-400 text-zinc-900 font-bold hover:bg-yellow-300 transition"
+          className="rounded bg-yellow-400 px-4 py-2 font-bold text-zinc-900 transition hover:bg-yellow-300"
         >
           Fechar
         </button>

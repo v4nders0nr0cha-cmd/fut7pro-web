@@ -8,7 +8,10 @@ const mensagens: MensagemContato[] = [];
 const notifications: Notification[] = [];
 
 // POST: recebe mensagem do formulário de contato, salva e gera notificação para admin do racha
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   if (req.method === "POST") {
     const { rachaSlug, nome, email, telefone, assunto, mensagem } = req.body;
     if (!rachaSlug || !nome || !email || !assunto || !mensagem) {

@@ -3,7 +3,13 @@
 import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
 import { useState } from "react";
-import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -19,12 +25,20 @@ interface Props {
   jogadoresPorTime?: number;
 }
 
-export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Props) {
-  const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(structuredClone(times));
+export default function TimesGerados({
+  times,
+  onSaveEdit,
+  jogadoresPorTime,
+}: Props) {
+  const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(
+    structuredClone(times),
+  );
   const [editando, setEditando] = useState(false);
 
   // DnD Kit
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   // Handler drag-and-drop dentro do time
   function handleDragEnd(event: DragEndEvent, timeId: string) {
@@ -46,7 +60,11 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
   }
 
   // Mover jogador para outro time (drag manual)
-  function moverJogador(jogador: Participante, timeOrigemId: string, timeDestinoId: string) {
+  function moverJogador(
+    jogador: Participante,
+    timeOrigemId: string,
+    timeDestinoId: string,
+  ) {
     if (timeOrigemId === timeDestinoId) return;
 
     const timesCopy = structuredClone(timesEdit);
@@ -54,9 +72,12 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
     const timeDestino = timesCopy.find((t) => t.id === timeDestinoId);
 
     if (!timeOrigem || !timeDestino) return;
-    if (jogadoresPorTime && timeDestino.jogadores.length >= jogadoresPorTime) return;
+    if (jogadoresPorTime && timeDestino.jogadores.length >= jogadoresPorTime)
+      return;
 
-    timeOrigem.jogadores = timeOrigem.jogadores.filter((j) => j.id !== jogador.id);
+    timeOrigem.jogadores = timeOrigem.jogadores.filter(
+      (j) => j.id !== jogador.id,
+    );
     timeDestino.jogadores.push(jogador);
 
     setTimesEdit(timesCopy);
@@ -74,7 +95,12 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
 
   // Função utilitária para ordenar jogadores na ordem desejada
   function ordenarJogadores(jogadores: Participante[]): Participante[] {
-    const ordemPosicoes: Record<string, number> = { GOL: 0, ZAG: 1, MEI: 2, ATA: 3 };
+    const ordemPosicoes: Record<string, number> = {
+      GOL: 0,
+      ZAG: 1,
+      MEI: 2,
+      ATA: 3,
+    };
     return [...jogadores].sort((a, b) => {
       const posA = ordemPosicoes[a.posicao] ?? 99;
       const posB = ordemPosicoes[b.posicao] ?? 99;
@@ -86,8 +112,14 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
 
   // Calcula médias dinâmicas em tempo real para o time atual
   function calcularMedias(jogadores: Participante[]) {
-    const totalRanking = jogadores.reduce((acc, j) => acc + (j.rankingPontos || 0), 0);
-    const totalEstrelas = jogadores.reduce((acc, j) => acc + (j.estrelas?.estrelas || 0), 0);
+    const totalRanking = jogadores.reduce(
+      (acc, j) => acc + (j.rankingPontos || 0),
+      0,
+    );
+    const totalEstrelas = jogadores.reduce(
+      (acc, j) => acc + (j.estrelas?.estrelas || 0),
+      0,
+    );
     return {
       mediaRanking: jogadores.length ? totalRanking / jogadores.length : 0,
       mediaEstrelas: jogadores.length ? totalEstrelas / jogadores.length : 0,
@@ -95,8 +127,21 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
   }
 
   // Componente SortablePlayer
-  function SortablePlayer({ jogador, timeId }: { jogador: Participante; timeId: string }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  function SortablePlayer({
+    jogador,
+    timeId,
+  }: {
+    jogador: Participante;
+    timeId: string;
+  }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({
       id: jogador.id,
     });
     return (
@@ -109,7 +154,7 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
         }}
         {...attributes}
         {...listeners}
-        className="flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 cursor-grab"
+        className="flex cursor-grab items-center gap-1 rounded bg-zinc-900 px-2 py-1"
       >
         <Image
           src={jogador.foto}
@@ -120,10 +165,12 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
         />
         <span className="text-sm font-semibold">{jogador.nome}</span>
         <span className="text-xs text-gray-400">{jogador.posicao}</span>
-        <span className="ml-1 text-yellow-400">{"⭐".repeat(jogador.estrelas.estrelas)}</span>
+        <span className="ml-1 text-yellow-400">
+          {"⭐".repeat(jogador.estrelas.estrelas)}
+        </span>
         {editando && (
           <select
-            className="ml-2 bg-zinc-800 border border-zinc-700 rounded text-xs text-white"
+            className="ml-2 rounded border border-zinc-700 bg-zinc-800 text-xs text-white"
             value={timeId}
             onChange={(e) => moverJogador(jogador, timeId, e.target.value)}
           >
@@ -141,44 +188,51 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
   // --------- RENDER ---------
   return (
     <div>
-      <div className="flex items-center mb-2 gap-3">
+      <div className="mb-2 flex items-center gap-3">
         <h2 className="text-lg font-bold text-yellow-400">Times Gerados</h2>
         <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold px-3 py-1 rounded text-xs"
+          className="rounded bg-yellow-400 px-3 py-1 text-xs font-semibold text-black hover:bg-yellow-500"
           onClick={() => setEditando(!editando)}
         >
           {editando ? "Cancelar Edição" : "Editar Times"}
         </button>
         {editando && (
           <button
-            className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1 rounded text-xs"
+            className="rounded bg-green-600 px-3 py-1 text-xs font-semibold text-white hover:bg-green-700"
             onClick={salvarEdicao}
             disabled={alertaTimesInvalidos()}
             title={
-              alertaTimesInvalidos() ? "Todos os times devem ter o mesmo número de jogadores" : ""
+              alertaTimesInvalidos()
+                ? "Todos os times devem ter o mesmo número de jogadores"
+                : ""
             }
           >
             Salvar Alterações
           </button>
         )}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+      <div className="my-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         {timesEdit.map((time) => {
           // Ordenar jogadores na ordem desejada!
           const jogadoresOrdenados = ordenarJogadores(time.jogadores);
           // Calcular médias atualizadas em tempo real
-          const { mediaRanking, mediaEstrelas } = calcularMedias(jogadoresOrdenados);
+          const { mediaRanking, mediaEstrelas } =
+            calcularMedias(jogadoresOrdenados);
 
           return (
             <div
               key={time.id}
-              className={`bg-[#232323] rounded-xl p-4 shadow flex flex-col gap-2 ${
-                editando && jogadoresPorTime && time.jogadores.length !== jogadoresPorTime
+              className={`flex flex-col gap-2 rounded-xl bg-[#232323] p-4 shadow ${
+                editando &&
+                jogadoresPorTime &&
+                time.jogadores.length !== jogadoresPorTime
                   ? "border-2 border-red-500"
                   : ""
               }`}
             >
-              <h3 className="text-yellow-400 font-bold text-xl mb-2">{time.nome}</h3>
+              <h3 className="mb-2 text-xl font-bold text-yellow-400">
+                {time.nome}
+              </h3>
               {/* Listagem vertical ordenada */}
               <DndContext
                 sensors={sensors}
@@ -196,19 +250,23 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
                   </div>
                 </SortableContext>
               </DndContext>
-              <div className="flex justify-between mt-2 text-xs text-gray-400">
+              <div className="mt-2 flex justify-between text-xs text-gray-400">
                 <span>
-                  Média Ranking: <b className="text-white">{mediaRanking.toFixed(1)}</b>
+                  Média Ranking:{" "}
+                  <b className="text-white">{mediaRanking.toFixed(1)}</b>
                 </span>
                 <span>
-                  Média Estrelas: <b className="text-yellow-400">{mediaEstrelas.toFixed(1)}</b>
+                  Média Estrelas:{" "}
+                  <b className="text-yellow-400">{mediaEstrelas.toFixed(1)}</b>
                 </span>
               </div>
-              {editando && jogadoresPorTime && time.jogadores.length !== jogadoresPorTime && (
-                <span className="text-xs text-red-400 mt-1">
-                  {`Este time está com ${time.jogadores.length} jogadores (deve ter ${jogadoresPorTime}).`}
-                </span>
-              )}
+              {editando &&
+                jogadoresPorTime &&
+                time.jogadores.length !== jogadoresPorTime && (
+                  <span className="mt-1 text-xs text-red-400">
+                    {`Este time está com ${time.jogadores.length} jogadores (deve ter ${jogadoresPorTime}).`}
+                  </span>
+                )}
             </div>
           );
         })}
@@ -222,5 +280,7 @@ function getCoeficiente(j: Participante) {
   const mediaVitorias = (j as { partidas?: number }).partidas
     ? j.vitorias / (j as { partidas: number }).partidas
     : j.vitorias;
-  return j.rankingPontos * 0.5 + mediaVitorias * 0.3 + j.estrelas.estrelas * 0.2;
+  return (
+    j.rankingPontos * 0.5 + mediaVitorias * 0.3 + j.estrelas.estrelas * 0.2
+  );
 }

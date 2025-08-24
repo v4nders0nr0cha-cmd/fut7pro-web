@@ -1,6 +1,6 @@
 export default function TermosUsoPage() {
   return (
-    <main className="container mx-auto px-4 py-8 prose prose-invert">
+    <main className="prose prose-invert container mx-auto px-4 py-8">
       <h1>Termos de Uso</h1>
       <p>
         Esta é uma versão básica dos termos de uso. Substitua por conteúdo
@@ -19,5 +19,3 @@ export default function TermosUsoPage() {
     </main>
   );
 }
-
-

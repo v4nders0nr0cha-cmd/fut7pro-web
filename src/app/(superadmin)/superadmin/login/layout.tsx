@@ -6,9 +6,13 @@ export const metadata = {
   robots: "noindex,nofollow",
 };
 
-export default function SuperAdminLoginLayout({ children }: { children: ReactNode }) {
+export default function SuperAdminLoginLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   return (
-    <div className="bg-zinc-950 text-white min-h-screen flex items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
       {children}
     </div>
   );

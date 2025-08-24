@@ -14,14 +14,14 @@ export default function QuadrimestreItem({ nome, slug, premio, icone }: Props) {
   const iconeFinal = icone === "🥈" ? "🥇" : icone;
 
   return (
-    <div className="flex items-center justify-between bg-[#1A1A1A] p-2 rounded-lg text-sm text-white">
+    <div className="flex items-center justify-between rounded-lg bg-[#1A1A1A] p-2 text-sm text-white">
       {/* Ícone */}
-      <div className="text-xl w-[24px]">{iconeFinal}</div>
+      <div className="w-[24px] text-xl">{iconeFinal}</div>
 
       {/* Nome do jogador com link */}
       <Link
         href={`/atletas/${slug}`}
-        className="flex-1 text-center text-yellow-400 hover:underline transition-all"
+        className="flex-1 text-center text-yellow-400 transition-all hover:underline"
         title={`Ver perfil de ${nome}`}
       >
         {nome}

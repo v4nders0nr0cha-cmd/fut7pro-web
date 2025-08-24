@@ -1,21 +1,21 @@
 // src/hooks/useRacha.ts
 
 import useSWR from "swr";
+import { apiClient } from "@/lib/api";
 import type { Racha } from "@/types/racha";
-import { validateSafe, rachaSchema } from "@/lib/validation";
+import { rachaSchema } from "@/lib/validations/racha";
 
+// Fetcher customizado que usa o apiClient para aplicar normalização
 async function fetcher(url: string): Promise<Racha> {
-  const res = await fetch(url);
+  // Extrair o endpoint da URL completa
+  const endpoint = url.replace(/^https?:\/\/[^\/]+/, "");
+  const response = await apiClient.get(endpoint);
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+  if (response.error) {
+    throw new Error(response.error);
   }
 
-  const data = await res.json();
-
-  // Validar dados recebidos
-  const validation = validateSafe(rachaSchema, data);
+  const validation = rachaSchema.safeParse(response.data);
   if (!validation.success) {
     throw new Error(`Dados inválidos: ${validation.error}`);
   }
@@ -37,7 +37,7 @@ export function useRacha(rachaId: string) {
       dedupingInterval: 30000, // 30 segundos
       errorRetryCount: 3,
       errorRetryInterval: 5000, // 5 segundos
-    }
+    },
   );
 
   return {

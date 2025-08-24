@@ -42,13 +42,7 @@ function CartaoMensalistaPremium({
   return (
     <div
       ref={cardRef as any}
-      className={`
-        relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl
-        border-4 flex
-        bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center
-        transition
-        ${ativo ? "border-green-400 shadow-green-400/50 cursor-pointer hover:brightness-110" : "border-gray-400 shadow-gray-700/30"}
-      `}
+      className={`relative flex h-[160px] w-[340px] overflow-hidden rounded-2xl border-4 bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center shadow-2xl transition ${ativo ? "cursor-pointer border-green-400 shadow-green-400/50 hover:brightness-110" : "border-gray-400 shadow-gray-700/30"} `}
       style={{
         boxShadow: exportando
           ? "none"
@@ -60,26 +54,28 @@ function CartaoMensalistaPremium({
       onClick={ativo ? handleDownload : undefined}
     >
       {/* Lado esquerdo */}
-      <div className="flex flex-col justify-between pl-5 py-4 flex-1">
+      <div className="flex flex-1 flex-col justify-between py-4 pl-5">
         <div>
-          <div className="text-green-400 font-extrabold text-base drop-shadow-sm tracking-wide">
+          <div className="text-base font-extrabold tracking-wide text-green-400 drop-shadow-sm">
             MENSALISTA
           </div>
         </div>
       </div>
       {/* Lado direito */}
-      <div className="flex flex-col items-center justify-between w-[140px] py-3 pr-5">
-        <div className="text-green-400 font-semibold text-xs mb-1 mt-1">Ativo no mês</div>
+      <div className="flex w-[140px] flex-col items-center justify-between py-3 pr-5">
+        <div className="mb-1 mt-1 text-xs font-semibold text-green-400">
+          Ativo no mês
+        </div>
         <Image
           src={logoRacha}
           alt="Logo do Racha"
           width={54}
           height={54}
-          className="rounded-lg border border-white mb-1"
+          className="mb-1 rounded-lg border border-white"
           draggable={false}
         />
         <div
-          className="text-white font-bold text-sm mt-2 text-center"
+          className="mt-2 text-center text-sm font-bold text-white"
           style={{
             textShadow: "0px 2px 8px #000, 0px 1px 0px #222, 0px 0px 2px #000",
           }}
@@ -89,7 +85,7 @@ function CartaoMensalistaPremium({
       </div>
       {/* Tooltip - canto inferior esquerdo */}
       {ativo && !exportando && (
-        <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-green-300 pointer-events-none select-none">
+        <div className="pointer-events-none absolute bottom-2 left-2 select-none rounded bg-black/70 px-2 py-1 text-[10px] text-green-300">
           Clique para baixar seu cartão!
         </div>
       )}
@@ -113,46 +109,49 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
   return (
     <>
       <div
-        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-yellow-400 flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-yellow-200/60 via-yellow-100/80 to-yellow-300/50 hover:scale-105 transition"
+        className="relative flex h-[160px] w-[340px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-4 border-yellow-400 bg-gradient-to-br from-yellow-200/60 via-yellow-100/80 to-yellow-300/50 shadow-2xl transition hover:scale-105"
         onClick={() => setModalOpen(true)}
         title="Quero ser Mensalista"
         tabIndex={0}
       >
-        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-yellow-400 opacity-60 shadow-yellow-300"></div>
-        <div className="flex flex-col items-center justify-center z-10 px-6 py-3 h-full w-full">
-          <div className="text-yellow-700 font-extrabold text-lg text-center drop-shadow-sm mb-2">
+        <div className="pointer-events-none absolute inset-0 rounded-2xl border-4 border-yellow-400 opacity-60 shadow-yellow-300"></div>
+        <div className="z-10 flex h-full w-full flex-col items-center justify-center px-6 py-3">
+          <div className="mb-2 text-center text-lg font-extrabold text-yellow-700 drop-shadow-sm">
             Torne-se um Mensalista!
           </div>
-          <div className="text-yellow-800 text-[15px] text-center font-medium leading-snug">
+          <div className="text-center text-[15px] font-medium leading-snug text-yellow-800">
             Garanta sua vaga como mensalista
             <br />
             e aproveite sua vaga garantida
             <br />
             no racha, e benefícios exclusivos.
             <br />
-            <span className="font-bold block mt-2">Clique aqui para solicitar!</span>
+            <span className="mt-2 block font-bold">
+              Clique aqui para solicitar!
+            </span>
           </div>
         </div>
       </div>
       {modalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-          <div className="bg-zinc-900 p-8 rounded-xl max-w-sm w-full shadow-xl border border-yellow-600 flex flex-col items-center">
-            <div className="text-lg font-semibold text-yellow-400 mb-2 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="flex w-full max-w-sm flex-col items-center rounded-xl border border-yellow-600 bg-zinc-900 p-8 shadow-xl">
+            <div className="mb-2 text-center text-lg font-semibold text-yellow-400">
               Solicitar vaga de Mensalista
             </div>
-            <div className="text-sm text-zinc-100 text-center mb-6">
-              Ao confirmar, seu pedido para se tornar mensalista será enviado ao administrador.
+            <div className="mb-6 text-center text-sm text-zinc-100">
+              Ao confirmar, seu pedido para se tornar mensalista será enviado ao
+              administrador.
               <br />
               <span className="text-yellow-200">
-                Caso todas as vagas já estejam ocupadas, você entrará automaticamente em uma lista
-                de espera por ordem de solicitação.
+                Caso todas as vagas já estejam ocupadas, você entrará
+                automaticamente em uma lista de espera por ordem de solicitação.
               </span>
               <br />
               Deseja realmente enviar este pedido?
             </div>
-            <div className="flex gap-4 mt-2">
+            <div className="mt-2 flex gap-4">
               <button
-                className="px-5 py-2 rounded bg-yellow-500 text-black font-semibold hover:bg-yellow-400 transition"
+                className="rounded bg-yellow-500 px-5 py-2 font-semibold text-black transition hover:bg-yellow-400"
                 onClick={() => {
                   setModalOpen(false);
                   onConfirm();
@@ -161,7 +160,7 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
                 Confirmar
               </button>
               <button
-                className="px-5 py-2 rounded bg-zinc-700 text-white font-semibold hover:bg-zinc-600 transition"
+                className="rounded bg-zinc-700 px-5 py-2 font-semibold text-white transition hover:bg-zinc-600"
                 onClick={() => setModalOpen(false)}
               >
                 Cancelar
@@ -177,13 +176,16 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 // --- Página ---
 export default function PerfilUsuarioPage() {
   const { usuario } = usePerfil();
-  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
+  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">(
+    "temporada",
+  );
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
 
   const stats =
     filtroStats === "temporada"
-      ? (usuario.estatisticas.anual?.[temporadaAtual] ?? usuario.estatisticas.historico)
+      ? (usuario.estatisticas.anual?.[temporadaAtual] ??
+        usuario.estatisticas.historico)
       : usuario.estatisticas.historico;
 
   const nivelAssiduidade = (jogos: number) => {
@@ -202,11 +204,13 @@ export default function PerfilUsuarioPage() {
   } = usuario.conquistas ?? {};
 
   return (
-    <div className="p-6 text-white w-full">
-      <h1 className="sr-only">Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro</h1>
-      <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+    <div className="w-full p-6 text-white">
+      <h1 className="sr-only">
+        Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro
+      </h1>
+      <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
         {/* Dados do usuário logado */}
-        <div className="flex-1 flex flex-col md:flex-row gap-6 items-center">
+        <div className="flex flex-1 flex-col items-center gap-6 md:flex-row">
           <Image
             src={usuario.foto}
             alt={`Foto de ${usuario.nome}`}
@@ -216,8 +220,10 @@ export default function PerfilUsuarioPage() {
           />
 
           <div className="flex flex-col gap-1">
-            <h2 className="text-3xl font-bold mb-1">{usuario.nome}</h2>
-            {usuario.apelido && <p className="text-yellow-300 mb-1">Apelido: {usuario.apelido}</p>}
+            <h2 className="mb-1 text-3xl font-bold">{usuario.nome}</h2>
+            {usuario.apelido && (
+              <p className="mb-1 text-yellow-300">Apelido: {usuario.apelido}</p>
+            )}
             <p className="text-sm">Posição: {usuario.posicao}</p>
             <p
               className="text-sm text-zinc-300"
@@ -225,20 +231,22 @@ export default function PerfilUsuarioPage() {
             >
               Status: {usuario.status}
             </p>
-            <p className="text-sm mt-1">
+            <p className="mt-1 text-sm">
               {usuario.mensalista ? (
-                <span className="text-green-400 font-semibold">💰 MENSALISTA ATIVO</span>
+                <span className="font-semibold text-green-400">
+                  💰 MENSALISTA ATIVO
+                </span>
               ) : (
                 <span className="text-zinc-400">NÃO É MENSALISTA</span>
               )}
             </p>
-            <p className="text-sm mt-1">
+            <p className="mt-1 text-sm">
               🔁 Nível de Assiduidade: {nivelAssiduidade(usuario.totalJogos)}
             </p>
 
             {/* Botão Editar Perfil */}
             <button
-              className="mt-4 px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded transition w-max"
+              className="mt-4 w-max rounded bg-yellow-500 px-4 py-2 font-semibold text-black transition hover:bg-yellow-400"
               onClick={() => setModalEditarOpen(true)}
             >
               Editar Perfil
@@ -246,7 +254,7 @@ export default function PerfilUsuarioPage() {
           </div>
         </div>
         {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
-        <div className="w-full md:w-auto flex-shrink-0 flex justify-center">
+        <div className="flex w-full flex-shrink-0 justify-center md:w-auto">
           {usuario.mensalista ? (
             <CartaoMensalistaPremium
               nome={usuario.nome}
@@ -260,7 +268,7 @@ export default function PerfilUsuarioPage() {
               }}
             />
           ) : (
-            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-green-900/80 border-4 border-green-500 rounded-2xl shadow-md text-center text-green-200 font-semibold text-lg">
+            <div className="flex h-[160px] w-[340px] flex-col items-center justify-center rounded-2xl border-4 border-green-500 bg-green-900/80 text-center text-lg font-semibold text-green-200 shadow-md">
               Pedido enviado! Aguarde a análise do administrador.
               <br />
               <span className="text-sm font-normal text-green-300">
@@ -272,26 +280,28 @@ export default function PerfilUsuarioPage() {
       </div>
 
       {/* MODAL EDIÇÃO DE PERFIL */}
-      {modalEditarOpen && <ModalEditarPerfil onClose={() => setModalEditarOpen(false)} />}
+      {modalEditarOpen && (
+        <ModalEditarPerfil onClose={() => setModalEditarOpen(false)} />
+      )}
 
       {/* Filtro de estatísticas */}
-      <div className="flex gap-4 mt-8 mb-2 items-center">
+      <div className="mb-2 mt-8 flex items-center gap-4">
         <span className="font-semibold text-yellow-400">Estatísticas:</span>
         <button
-          className={`px-3 py-1 rounded font-semibold border transition ${
+          className={`rounded border px-3 py-1 font-semibold transition ${
             filtroStats === "temporada"
-              ? "bg-yellow-400 text-black border-yellow-400"
-              : "bg-zinc-900 text-yellow-300 border-yellow-400"
+              ? "border-yellow-400 bg-yellow-400 text-black"
+              : "border-yellow-400 bg-zinc-900 text-yellow-300"
           }`}
           onClick={() => setFiltroStats("temporada")}
         >
           Temporada atual
         </button>
         <button
-          className={`px-3 py-1 rounded font-semibold border transition ${
+          className={`rounded border px-3 py-1 font-semibold transition ${
             filtroStats === "historico"
-              ? "bg-yellow-400 text-black border-yellow-400"
-              : "bg-zinc-900 text-yellow-300 border-yellow-400"
+              ? "border-yellow-400 bg-yellow-400 text-black"
+              : "border-yellow-400 bg-zinc-900 text-yellow-300"
           }`}
           onClick={() => setFiltroStats("historico")}
         >
@@ -301,7 +311,7 @@ export default function PerfilUsuarioPage() {
 
       {/* Estatísticas */}
       <section>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
           {[
             { label: "Jogos", valor: stats.jogos ?? "-" },
             { label: "Gols", valor: stats.gols ?? "-" },
@@ -309,13 +319,19 @@ export default function PerfilUsuarioPage() {
             { label: "Campeão do Dia", valor: stats.campeaoDia ?? "-" },
             {
               label: "Média Vitórias",
-              valor: typeof stats.mediaVitorias === "number" ? stats.mediaVitorias.toFixed(2) : "-",
+              valor:
+                typeof stats.mediaVitorias === "number"
+                  ? stats.mediaVitorias.toFixed(2)
+                  : "-",
             },
             { label: "Pontuação", valor: stats.pontuacao ?? "-" },
           ].map((item) => (
-            <div key={item.label} className="bg-zinc-800 p-4 rounded text-center shadow-md">
+            <div
+              key={item.label}
+              className="rounded bg-zinc-800 p-4 text-center shadow-md"
+            >
               <p className="text-xl font-bold text-yellow-400">{item.valor}</p>
-              <p className="text-sm text-zinc-400 mt-1">{item.label}</p>
+              <p className="mt-1 text-sm text-zinc-400">{item.label}</p>
             </div>
           ))}
         </div>
@@ -335,8 +351,8 @@ export default function PerfilUsuarioPage() {
       {usuario.historico && usuario.historico.length > 0 && (
         <section className="mt-12">
           <HistoricoJogos historico={usuario.historico} />
-          <div className="text-center mt-4">
-            <span className="inline-block text-yellow-400 text-sm opacity-70 cursor-not-allowed">
+          <div className="mt-4 text-center">
+            <span className="inline-block cursor-not-allowed text-sm text-yellow-400 opacity-70">
               Ver histórico completo (apenas admin)
             </span>
           </div>

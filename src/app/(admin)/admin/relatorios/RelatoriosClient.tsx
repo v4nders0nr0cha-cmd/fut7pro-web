@@ -35,7 +35,8 @@ const MOCKS = {
 // Função para gerar PDF profissional
 function baixarRelatorioPDF(periodo: string) {
   const metrics = MOCKS[periodo as keyof typeof MOCKS];
-  const periodoLabel = PERIODOS.find((p) => p.value === periodo)?.label || periodo;
+  const periodoLabel =
+    PERIODOS.find((p) => p.value === periodo)?.label || periodo;
   const docDefinition = {
     content: [
       {
@@ -60,7 +61,15 @@ function baixarRelatorioPDF(periodo: string) {
       },
       {
         canvas: [
-          { type: "line", x1: 0, y1: 0, x2: 520, y2: 0, lineWidth: 1, lineColor: "#ffdf38" },
+          {
+            type: "line",
+            x1: 0,
+            y1: 0,
+            x2: 520,
+            y2: 0,
+            lineWidth: 1,
+            lineColor: "#ffdf38",
+          },
         ],
         margin: [0, 10, 0, 10],
       },
@@ -68,8 +77,14 @@ function baixarRelatorioPDF(periodo: string) {
         table: {
           widths: ["*", "*"],
           body: [
-            [{ text: "Acessos ao Sistema", bold: true }, String(metrics.acessos)],
-            [{ text: "Jogadores Únicos", bold: true }, String(metrics.jogadores)],
+            [
+              { text: "Acessos ao Sistema", bold: true },
+              String(metrics.acessos),
+            ],
+            [
+              { text: "Jogadores Únicos", bold: true },
+              String(metrics.jogadores),
+            ],
             [{ text: "Engajamentos", bold: true }, String(metrics.engajamento)],
             [{ text: "Tempo Médio de Sessão", bold: true }, metrics.tempo],
           ],
@@ -94,13 +109,20 @@ function baixarRelatorioPDF(periodo: string) {
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAMAAAC5zwKfAAAAgVBMVEX///8AAADz8/Pb29vZ2dnT09Oc3NwSEhKlpaXk5ORoaGiOjo4fHx/u7u6UlJSPj49TU1NsbGxwcHBiYmKZmZlsbGyCgoKhoaFRUVFycnJiYmK0tLTo6OhKSkpnZ2eQkJBvb28uLi5dXV2mpqbDw8NCQkKZmZnQ0ND39/ft+XpsAAAB5klEQVRoge2W2XLDIAyGVR5jOBiYbtkod///z7WBSSwNn3pqD6TbqlJJjHY/yXyCB7pna/7CEuFu6TqN8RMY1TcVkg1Gkr8VhWyu8YF4XLn6LNakT8FL1DAUn1TkNClKe1ZsRGU0WkAyvIMlTrJw1THqUmA2p2R5oEwlIGYCGqIwckzIm8keQAAI6zDFBxEcG30AnzSR6v5Ds8lAKuKh9URjQjcBv2nqTxZyj3e4KL3EX5oQ8oQKf/W+jssZYuGshHdCTxw5Fj1D+OqEelHzsI3VRXsgFJ/vud4cHoGLcchBrBEr4iW6doR4w9U0yA9eKMrsBy8IIm4VQKp4YyWyGbQLG2e0Hgnw7MIfI7gO9iQkNwQfd4K48ySaQphzZrfCFFCnRK5E1ZAEq25w7eIX/wB1NYDHvWZnSAAAAAElFTkSuQmCC",
     },
     styles: {
-      footer: { fontSize: 9, color: "#888", alignment: "center", margin: [0, 20, 0, 0] },
+      footer: {
+        fontSize: 9,
+        color: "#888",
+        alignment: "center",
+        margin: [0, 20, 0, 0],
+      },
     },
     defaultStyle: {
       font: "Helvetica",
     },
   };
-  pdfMake.createPdf(docDefinition).download(`relatorio-engajamento-${periodo}.pdf`);
+  pdfMake
+    .createPdf(docDefinition)
+    .download(`relatorio-engajamento-${periodo}.pdf`);
 }
 
 // Compartilhamento segue igual
@@ -123,42 +145,43 @@ export default function RelatoriosClient() {
   const metrics = MOCKS[periodo];
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <FaChartLine className="text-cyan-400 text-3xl" />
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
+          <FaChartLine className="text-3xl text-cyan-400" />
+          <h1 className="text-2xl font-bold text-yellow-400 md:text-3xl">
             Relatórios de Engajamento
           </h1>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => baixarRelatorioPDF(periodo)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-600 hover:bg-cyan-700 text-white font-semibold text-sm shadow transition"
+            className="flex items-center gap-2 rounded-full bg-cyan-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-cyan-700"
           >
             <FaDownload /> Baixar PDF Profissional
           </button>
           <button
             onClick={() => compartilharRelatorio(periodo)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold text-sm shadow transition"
+            className="flex items-center gap-2 rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black shadow transition hover:bg-yellow-500"
           >
             <FaShareAlt /> Compartilhar
           </button>
         </div>
       </div>
-      <p className="text-gray-300 mb-8">
-        Acompanhe as principais métricas do seu racha: acessos ao sistema, engajamento de jogadores,
-        visualizações de página, tempo médio e muito mais!
+      <p className="mb-8 text-gray-300">
+        Acompanhe as principais métricas do seu racha: acessos ao sistema,
+        engajamento de jogadores, visualizações de página, tempo médio e muito
+        mais!
       </p>
-      <div className="flex flex-wrap gap-2 mb-8">
+      <div className="mb-8 flex flex-wrap gap-2">
         {PERIODOS.map((p) => (
           <button
             key={p.value}
             onClick={() => setPeriodo(p.value as keyof typeof MOCKS)}
-            className={`px-4 py-2 rounded-full font-semibold text-sm border ${
+            className={`rounded-full border px-4 py-2 text-sm font-semibold ${
               periodo === p.value
-                ? "bg-cyan-500 text-white border-cyan-600"
-                : "bg-[#181b20] text-gray-300 border-[#23272f] hover:bg-cyan-900"
+                ? "border-cyan-600 bg-cyan-500 text-white"
+                : "border-[#23272f] bg-[#181b20] text-gray-300 hover:bg-cyan-900"
             } transition`}
           >
             {p.label}
@@ -166,83 +189,104 @@ export default function RelatoriosClient() {
         ))}
       </div>
       {/* Cards de Métricas */}
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4 mb-8">
-        <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-          <FaEye className="text-cyan-300 text-2xl mb-1" />
+      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-4">
+        <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+          <FaEye className="mb-1 text-2xl text-cyan-300" />
           <div className="text-2xl font-bold text-white">{metrics.acessos}</div>
-          <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Acessos</div>
+          <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
+            Acessos
+          </div>
         </div>
-        <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-          <FaUsers className="text-yellow-400 text-2xl mb-1" />
-          <div className="text-2xl font-bold text-white">{metrics.jogadores}</div>
-          <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">
+        <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+          <FaUsers className="mb-1 text-2xl text-yellow-400" />
+          <div className="text-2xl font-bold text-white">
+            {metrics.jogadores}
+          </div>
+          <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
             Jogadores únicos
           </div>
         </div>
-        <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-          <FaUserCheck className="text-green-400 text-2xl mb-1" />
-          <div className="text-2xl font-bold text-white">{metrics.engajamento}</div>
-          <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Engajamentos</div>
+        <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+          <FaUserCheck className="mb-1 text-2xl text-green-400" />
+          <div className="text-2xl font-bold text-white">
+            {metrics.engajamento}
+          </div>
+          <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
+            Engajamentos
+          </div>
         </div>
-        <div className="bg-[#21272c] rounded-xl p-6 flex flex-col items-center shadow">
-          <FaClock className="text-cyan-200 text-2xl mb-1" />
+        <div className="flex flex-col items-center rounded-xl bg-[#21272c] p-6 shadow">
+          <FaClock className="mb-1 text-2xl text-cyan-200" />
           <div className="text-2xl font-bold text-white">{metrics.tempo}</div>
-          <div className="text-xs text-gray-400 mt-1 uppercase tracking-widest">Tempo médio</div>
+          <div className="mt-1 text-xs uppercase tracking-widest text-gray-400">
+            Tempo médio
+          </div>
         </div>
       </div>
       {/* Gráfico de Engajamento (placeholder) */}
-      <div className="bg-[#23272F] rounded-xl shadow p-6 mb-10 flex flex-col">
-        <div className="flex items-center mb-4">
-          <FaChartLine className="text-cyan-400 mr-2" />
-          <span className="text-white font-bold">
-            Evolução do Engajamento ({PERIODOS.find((p) => p.value === periodo)?.label})
+      <div className="mb-10 flex flex-col rounded-xl bg-[#23272F] p-6 shadow">
+        <div className="mb-4 flex items-center">
+          <FaChartLine className="mr-2 text-cyan-400" />
+          <span className="font-bold text-white">
+            Evolução do Engajamento (
+            {PERIODOS.find((p) => p.value === periodo)?.label})
           </span>
         </div>
-        <div className="w-full h-48 flex items-center justify-center text-gray-500 bg-[#181B20] rounded-lg">
-          <span className="text-lg font-semibold opacity-60">[GRÁFICO DE ENG. AQUI]</span>
+        <div className="flex h-48 w-full items-center justify-center rounded-lg bg-[#181B20] text-gray-500">
+          <span className="text-lg font-semibold opacity-60">
+            [GRÁFICO DE ENG. AQUI]
+          </span>
         </div>
       </div>
       {/* Tabela de Eventos Recentes */}
-      <div className="bg-[#23272F] rounded-xl shadow p-6">
-        <div className="flex items-center mb-4">
-          <FaArrowRight className="text-yellow-400 mr-2" />
-          <span className="text-white font-bold">Movimentações Recentes</span>
+      <div className="rounded-xl bg-[#23272F] p-6 shadow">
+        <div className="mb-4 flex items-center">
+          <FaArrowRight className="mr-2 text-yellow-400" />
+          <span className="font-bold text-white">Movimentações Recentes</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-400 text-left border-b border-[#23272F]">
-                <th className="py-2 px-3">Data</th>
-                <th className="py-2 px-3">Evento</th>
-                <th className="py-2 px-3">Jogador</th>
-                <th className="py-2 px-3">Detalhes</th>
+              <tr className="border-b border-[#23272F] text-left text-gray-400">
+                <th className="px-3 py-2">Data</th>
+                <th className="px-3 py-2">Evento</th>
+                <th className="px-3 py-2">Jogador</th>
+                <th className="px-3 py-2">Detalhes</th>
               </tr>
             </thead>
             <tbody>
               {/* Mock, troque depois */}
               <tr className="border-b border-[#181B20]">
-                <td className="py-2 px-3 text-gray-300">06/07/2025</td>
-                <td className="py-2 px-3 text-cyan-400 font-semibold">Acesso ao painel</td>
-                <td className="py-2 px-3 text-white">Matheus Silva</td>
-                <td className="py-2 px-3 text-gray-400">Mobile - 7m31s</td>
+                <td className="px-3 py-2 text-gray-300">06/07/2025</td>
+                <td className="px-3 py-2 font-semibold text-cyan-400">
+                  Acesso ao painel
+                </td>
+                <td className="px-3 py-2 text-white">Matheus Silva</td>
+                <td className="px-3 py-2 text-gray-400">Mobile - 7m31s</td>
               </tr>
               <tr className="border-b border-[#181B20]">
-                <td className="py-2 px-3 text-gray-300">06/07/2025</td>
-                <td className="py-2 px-3 text-yellow-400 font-semibold">Ranking acessado</td>
-                <td className="py-2 px-3 text-white">Lucas Rocha</td>
-                <td className="py-2 px-3 text-gray-400">Desktop - 3m45s</td>
+                <td className="px-3 py-2 text-gray-300">06/07/2025</td>
+                <td className="px-3 py-2 font-semibold text-yellow-400">
+                  Ranking acessado
+                </td>
+                <td className="px-3 py-2 text-white">Lucas Rocha</td>
+                <td className="px-3 py-2 text-gray-400">Desktop - 3m45s</td>
               </tr>
               <tr className="border-b border-[#181B20]">
-                <td className="py-2 px-3 text-gray-300">05/07/2025</td>
-                <td className="py-2 px-3 text-green-400 font-semibold">Perfil visualizado</td>
-                <td className="py-2 px-3 text-white">Pedro Alves</td>
-                <td className="py-2 px-3 text-gray-400">Mobile - 1m58s</td>
+                <td className="px-3 py-2 text-gray-300">05/07/2025</td>
+                <td className="px-3 py-2 font-semibold text-green-400">
+                  Perfil visualizado
+                </td>
+                <td className="px-3 py-2 text-white">Pedro Alves</td>
+                <td className="px-3 py-2 text-gray-400">Mobile - 1m58s</td>
               </tr>
               <tr>
-                <td className="py-2 px-3 text-gray-300">05/07/2025</td>
-                <td className="py-2 px-3 text-cyan-400 font-semibold">Acesso ao painel</td>
-                <td className="py-2 px-3 text-white">Carlos Freitas</td>
-                <td className="py-2 px-3 text-gray-400">Desktop - 6m12s</td>
+                <td className="px-3 py-2 text-gray-300">05/07/2025</td>
+                <td className="px-3 py-2 font-semibold text-cyan-400">
+                  Acesso ao painel
+                </td>
+                <td className="px-3 py-2 text-white">Carlos Freitas</td>
+                <td className="px-3 py-2 text-gray-400">Desktop - 6m12s</td>
               </tr>
             </tbody>
           </table>

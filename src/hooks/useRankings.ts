@@ -2,16 +2,21 @@
 
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
-import { rankingsApi } from "@/lib/api";
+import { rankingsApi, apiClient } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Ranking } from "@/types/ranking";
 
+// Fetcher customizado que usa o apiClient para aplicar normalização
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar rankings");
+  // Extrair o endpoint da URL completa
+  const endpoint = url.replace(/^https?:\/\/[^\/]+/, "");
+  const response = await apiClient.get(endpoint);
+
+  if (response.error) {
+    throw new Error(response.error);
   }
-  return response.json();
+
+  return response.data;
 };
 
 export function useRankings() {
@@ -23,59 +28,84 @@ export function useRankings() {
     error: errorGeral,
     isLoading: isLoadingGeral,
     mutate: mutateGeral,
-  } = useSWR<Ranking[]>(rachaId ? `/api/rankings/geral?rachaId=${rachaId}` : null, fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking geral:", err);
-      }
+  } = useSWR<Ranking[]>(
+    rachaId ? `/api/rankings/geral?rachaId=${rachaId}` : null,
+    fetcher,
+    {
+      onError: (err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Erro ao carregar ranking geral:", err);
+        }
+      },
     },
-  });
+  );
 
   const {
     data: rankingArtilheiros,
     error: errorArtilheiros,
     isLoading: isLoadingArtilheiros,
     mutate: mutateArtilheiros,
-  } = useSWR<Ranking[]>(rachaId ? `/api/rankings/artilheiros?rachaId=${rachaId}` : null, fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking artilheiros:", err);
-      }
+  } = useSWR<Ranking[]>(
+    rachaId ? `/api/rankings/artilheiros?rachaId=${rachaId}` : null,
+    fetcher,
+    {
+      onError: (err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Erro ao carregar ranking artilheiros:", err);
+        }
+      },
     },
-  });
+  );
 
   const {
     data: rankingAssistencias,
     error: errorAssistencias,
     isLoading: isLoadingAssistencias,
     mutate: mutateAssistencias,
-  } = useSWR<Ranking[]>(rachaId ? `/api/rankings/assistencias?rachaId=${rachaId}` : null, fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking assistências:", err);
-      }
+  } = useSWR<Ranking[]>(
+    rachaId ? `/api/rankings/assistencias?rachaId=${rachaId}` : null,
+    fetcher,
+    {
+      onError: (err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Erro ao carregar ranking assistências:", err);
+        }
+      },
     },
-  });
+  );
 
   const {
     data: rankingTimes,
     error: errorTimes,
     isLoading: isLoadingTimes,
     mutate: mutateTimes,
-  } = useSWR<Ranking[]>(rachaId ? `/api/rankings/times?rachaId=${rachaId}` : null, fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking times:", err);
-      }
+  } = useSWR<Ranking[]>(
+    rachaId ? `/api/rankings/times?rachaId=${rachaId}` : null,
+    fetcher,
+    {
+      onError: (err) => {
+        if (process.env.NODE_ENV === "development") {
+          console.log("Erro ao carregar ranking times:", err);
+        }
+      },
     },
-  });
+  );
 
   const isLoading =
-    isLoadingGeral || isLoadingArtilheiros || isLoadingAssistencias || isLoadingTimes;
-  const isError = !!errorGeral || !!errorArtilheiros || !!errorAssistencias || !!errorTimes;
+    isLoadingGeral ||
+    isLoadingArtilheiros ||
+    isLoadingAssistencias ||
+    isLoadingTimes;
+  const isError =
+    !!errorGeral || !!errorArtilheiros || !!errorAssistencias || !!errorTimes;
 
   const refreshAll = async () => {
-    await Promise.all([mutateGeral(), mutateArtilheiros(), mutateAssistencias(), mutateTimes()]);
+    await Promise.all([
+      mutateGeral(),
+      mutateArtilheiros(),
+      mutateAssistencias(),
+      mutateTimes(),
+    ]);
   };
 
   return {
@@ -85,13 +115,11 @@ export function useRankings() {
     rankingTimes: rankingTimes || [],
     isLoading,
     isError,
-    error: apiState.error,
-    isSuccess: apiState.isSuccess,
-    refreshAll,
+    error: errorGeral || errorArtilheiros || errorAssistencias || errorTimes,
     mutateGeral,
     mutateArtilheiros,
     mutateAssistencias,
     mutateTimes,
-    reset: apiState.reset,
+    refreshAll,
   };
 }

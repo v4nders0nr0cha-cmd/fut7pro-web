@@ -6,7 +6,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export function usePatrocinadores(rachaId: string) {
   const { data, error, mutate } = useSWR<Patrocinador[]>(
     `/api/admin/patrocinadores?rachaId=${rachaId}`,
-    fetcher
+    fetcher,
   );
 
   async function addPatrocinador(p: Partial<Patrocinador>) {

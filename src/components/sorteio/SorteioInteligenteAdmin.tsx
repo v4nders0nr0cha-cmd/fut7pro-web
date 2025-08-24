@@ -6,10 +6,17 @@ import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
-import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
+import {
+  sortearTimesInteligente,
+  gerarTabelaJogos,
+} from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
 import { mockParticipantes } from "./mockParticipantes";
-import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
+import type {
+  Participante,
+  ConfiguracaoRacha,
+  TimeSorteado,
+} from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 
 const mockTimes: Time[] = [
@@ -26,7 +33,13 @@ const mockTimes: Time[] = [
 // SVG Loader animado de bola pulando (não precisa instalar nada)
 function LoaderBolaFutebol() {
   return (
-    <svg width="72" height="72" viewBox="0 0 72 72" className="mb-2" aria-hidden>
+    <svg
+      width="72"
+      height="72"
+      viewBox="0 0 72 72"
+      className="mb-2"
+      aria-hidden
+    >
       <g>
         {/* Sombra */}
         <ellipse cx="36" cy="64" rx="20" ry="5" fill="#000" opacity="0.2">
@@ -46,7 +59,14 @@ function LoaderBolaFutebol() {
           />
         </ellipse>
         {/* Bola */}
-        <circle cx="36" cy="36" r="20" fill="#fff" stroke="#222" strokeWidth="3">
+        <circle
+          cx="36"
+          cy="36"
+          r="20"
+          fill="#fff"
+          stroke="#222"
+          strokeWidth="3"
+        >
           <animate
             attributeName="cy"
             values="36;16;36"
@@ -135,7 +155,7 @@ function LoaderBolaFutebol() {
 export default function SorteioInteligenteAdmin() {
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
   const [participantes, setParticipantes] = useState<Participante[]>(
-    mockParticipantes.filter((p) => p.mensalista)
+    mockParticipantes.filter((p) => p.mensalista),
   );
   const [times, setTimes] = useState<TimeSorteado[]>([]);
   const [publicado, setPublicado] = useState(false);
@@ -144,7 +164,7 @@ export default function SorteioInteligenteAdmin() {
 
   // Estado dos times selecionados
   const [timesSelecionados, setTimesSelecionados] = useState<string[]>(
-    mockTimes.slice(0, 4).map((t) => t.id)
+    mockTimes.slice(0, 4).map((t) => t.id),
   );
 
   // Estado para a tabela de jogos
@@ -175,7 +195,8 @@ export default function SorteioInteligenteAdmin() {
   }
 
   async function handleSortearTimes() {
-    if (!config || participantes.length === 0 || timesSelecionados.length < 2) return;
+    if (!config || participantes.length === 0 || timesSelecionados.length < 2)
+      return;
 
     setLoadingSorteio(true);
 
@@ -183,21 +204,26 @@ export default function SorteioInteligenteAdmin() {
     const partidasTotais = calcularPartidasTotais(participantes);
 
     // Balanceamento "pesado" e delay mínimo de 5s (user experience PRO)
-    const timesParaSorteio = mockTimes.filter((t) => timesSelecionados.includes(t.id));
+    const timesParaSorteio = mockTimes.filter((t) =>
+      timesSelecionados.includes(t.id),
+    );
     const balanceamentoPromise = new Promise<TimeSorteado[]>((resolve) => {
       setTimeout(() => {
         // Agora passa partidasTotais!
         const timesGerados = sortearTimesInteligente(
           participantes,
           timesParaSorteio,
-          partidasTotais
+          partidasTotais,
         );
         resolve(timesGerados);
       }, 150); // pequeno delay para simular "thread" JS
     });
     const delayMinimo = new Promise((resolve) => setTimeout(resolve, 5000));
 
-    const [timesGerados] = await Promise.all([balanceamentoPromise, delayMinimo]);
+    const [timesGerados] = await Promise.all([
+      balanceamentoPromise,
+      delayMinimo,
+    ]);
 
     setTimes(timesGerados);
     setPublicado(false);
@@ -218,33 +244,34 @@ export default function SorteioInteligenteAdmin() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-fundo p-2 md:p-6 rounded-xl shadow-md">
+    <div className="mx-auto max-w-4xl rounded-xl bg-fundo p-2 shadow-md md:p-6">
       {/* LOADING ANIMADO */}
       {loadingSorteio && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-[#181818] border-2 border-yellow-400 shadow-xl">
+          <div className="flex flex-col items-center gap-4 rounded-xl border-2 border-yellow-400 bg-[#181818] p-8 shadow-xl">
             <LoaderBolaFutebol />
-            <div className="text-yellow-200 text-xl font-bold text-center">
-              Aguarde, o melhor Sistema de Balanceamento do Brasil está equilibrando seus times!
+            <div className="text-center text-xl font-bold text-yellow-200">
+              Aguarde, o melhor Sistema de Balanceamento do Brasil está
+              equilibrando seus times!
             </div>
           </div>
         </div>
       )}
 
-      <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">
+      <h1 className="mb-2 text-center text-2xl font-bold text-yellow-400">
         Sorteio Inteligente – Painel do Admin
       </h1>
-      <div className="flex flex-col items-center mb-4">
+      <div className="mb-4 flex flex-col items-center">
         <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded transition-all text-sm"
+          className="rounded bg-yellow-400 px-4 py-1 text-sm font-bold text-black transition-all hover:bg-yellow-500"
           onClick={() => setShowTip((v) => !v)}
         >
           ANTES DE REALIZAR O SORTEIO CLIQUE AQUI
         </button>
         {showTip && (
-          <div className="bg-[#232323] mt-2 p-4 rounded-lg text-sm text-gray-100 w-full shadow-lg max-w-2xl border border-yellow-400 relative">
+          <div className="relative mt-2 w-full max-w-2xl rounded-lg border border-yellow-400 bg-[#232323] p-4 text-sm text-gray-100 shadow-lg">
             <button
-              className="absolute right-2 top-2 text-yellow-400 text-lg font-bold rounded hover:bg-yellow-400 hover:text-black transition px-2 py-0.5"
+              className="absolute right-2 top-2 rounded px-2 py-0.5 text-lg font-bold text-yellow-400 transition hover:bg-yellow-400 hover:text-black"
               onClick={() => setShowTip(false)}
               aria-label="Fechar explicação"
             >
@@ -253,48 +280,54 @@ export default function SorteioInteligenteAdmin() {
             <b>Como garantir um sorteio realmente equilibrado?</b>
             <br />
             <br />
-            O sistema de sorteio inteligente utiliza rankings, posições e estrelas para criar times
-            balanceados e justos.
+            O sistema de sorteio inteligente utiliza rankings, posições e
+            estrelas para criar times balanceados e justos.
             <br />
             <br />
-            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros sorteios do sistema (ou no
-            começo de cada ano/temporada), como ainda não há rankings históricos, o balanceamento
-            será feito <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a cada
-            jogador.
+            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros
+            sorteios do sistema (ou no começo de cada ano/temporada), como ainda
+            não há rankings históricos, o balanceamento será feito{" "}
+            <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a
+            cada jogador.
             <br />
             <br />
-            <b>IMPORTANTE:</b> A partir do momento que o sistema acumula mais jogos, rankings e
-            avaliações começam a ser usados para calibrar o equilíbrio dos times. Leva de 8 a 10
-            rachas para o sistema aprender quem são os melhores, deixando o sorteio cada vez mais
-            justo.
+            <b>IMPORTANTE:</b> A partir do momento que o sistema acumula mais
+            jogos, rankings e avaliações começam a ser usados para calibrar o
+            equilíbrio dos times. Leva de 8 a 10 rachas para o sistema aprender
+            quem são os melhores, deixando o sorteio cada vez mais justo.
             <br />
             <br />
-            <b>Configurações Iniciais:</b> As opções de número de times, tempo de partida e
-            quantidade de jogadores <b>não influenciam no balanceamento</b>. Servem apenas para
-            organizar os jogadores nos times e gerar automaticamente a tabela de confrontos. O
-            algoritmo do sorteio vai sempre priorizar ranking, estrelas e posição.
+            <b>Configurações Iniciais:</b> As opções de número de times, tempo
+            de partida e quantidade de jogadores{" "}
+            <b>não influenciam no balanceamento</b>. Servem apenas para
+            organizar os jogadores nos times e gerar automaticamente a tabela de
+            confrontos. O algoritmo do sorteio vai sempre priorizar ranking,
+            estrelas e posição.
             <br />
             <br />
-            <b>Tabela de Confrontos:</b> A tabela é calculada conforme o tempo total do racha,
-            sempre reservando 15 minutos para organização, trocas de times e imprevistos. Exemplo:
-            Se o racha tem 60 minutos, a tabela será criada para 45 minutos de jogos. O modelo da
-            tabela e o tempo sugerido são <b>opcionais</b> e podem ser ajustados pelo administrador
-            conforme a realidade do grupo.
+            <b>Tabela de Confrontos:</b> A tabela é calculada conforme o tempo
+            total do racha, sempre reservando 15 minutos para organização,
+            trocas de times e imprevistos. Exemplo: Se o racha tem 60 minutos, a
+            tabela será criada para 45 minutos de jogos. O modelo da tabela e o
+            tempo sugerido são <b>opcionais</b> e podem ser ajustados pelo
+            administrador conforme a realidade do grupo.
             <br />
             <br />
-            <b>Dica:</b> Ajuste manualmente os times se notar algum desequilíbrio, até que rankings
-            e estrelas estejam bem definidos. Isso garante jogos mais disputados enquanto a
-            plataforma calibra sozinha.
+            <b>Dica:</b> Ajuste manualmente os times se notar algum
+            desequilíbrio, até que rankings e estrelas estejam bem definidos.
+            Isso garante jogos mais disputados enquanto a plataforma calibra
+            sozinha.
             <br />
             <br />
-            <b>Estrelas:</b> Avalie cada jogador considerando não só habilidade, mas também{" "}
-            <b>condicionamento físico</b> e <b>aspectos psicológicos</b>. Não avalie apenas pelo
-            futebol! As estrelas podem (e devem) ser ajustadas sempre que perceber evolução ou queda
-            de desempenho.
+            <b>Estrelas:</b> Avalie cada jogador considerando não só habilidade,
+            mas também <b>condicionamento físico</b> e{" "}
+            <b>aspectos psicológicos</b>. Não avalie apenas pelo futebol! As
+            estrelas podem (e devem) ser ajustadas sempre que perceber evolução
+            ou queda de desempenho.
             <br />
             <br />
-            Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e
-            divertido!
+            Com o tempo, o sistema aprende e o sorteio fica cada vez mais
+            preciso, justo e divertido!
           </div>
         )}
       </div>
@@ -303,7 +336,7 @@ export default function SorteioInteligenteAdmin() {
       <div
         className={
           configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+            ? "pointer-events-none opacity-60 blur-[2px] transition-all duration-300"
             : "transition-all duration-300"
         }
       >
@@ -314,7 +347,7 @@ export default function SorteioInteligenteAdmin() {
       <div
         className={
           configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+            ? "pointer-events-none opacity-60 blur-[2px] transition-all duration-300"
             : "transition-all duration-300"
         }
       >
@@ -328,10 +361,10 @@ export default function SorteioInteligenteAdmin() {
       </div>
 
       {/* Botão Confirmar/Editar Configuração */}
-      <div className="flex justify-center mt-3 mb-3">
+      <div className="mb-3 mt-3 flex justify-center">
         {!configConfirmada ? (
           <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg shadow transition disabled:opacity-60 disabled:pointer-events-none"
+            className="w-full rounded bg-yellow-400 px-8 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500 disabled:pointer-events-none disabled:opacity-60 md:w-auto"
             onClick={handleConfirmarConfig}
             disabled={!config || timesSelecionados.length !== maxTimes}
           >
@@ -339,7 +372,7 @@ export default function SorteioInteligenteAdmin() {
           </button>
         ) : (
           <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded text-lg shadow transition"
+            className="w-full rounded bg-yellow-100 px-8 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-200 md:w-auto"
             onClick={() => setConfigConfirmada(false)}
           >
             Editar Configuração
@@ -354,7 +387,7 @@ export default function SorteioInteligenteAdmin() {
         setParticipantes={setParticipantes}
       />
       <button
-        className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"
+        className="mb-3 mt-3 w-full rounded bg-yellow-400 py-3 text-lg font-bold text-black hover:bg-yellow-500"
         onClick={handleSortearTimes}
         disabled={timesSelecionados.length < 2 || !config}
       >
@@ -363,7 +396,10 @@ export default function SorteioInteligenteAdmin() {
       {times.length > 0 && (
         <>
           <TimesGerados times={times} />
-          <BotaoPublicarTimes publicado={publicado} onClick={() => setPublicado(true)} />
+          <BotaoPublicarTimes
+            publicado={publicado}
+            onClick={() => setPublicado(true)}
+          />
           {/* NOVO: Tabela de jogos gerada automaticamente */}
           <TabelaJogosRacha jogos={tabelaJogos} />
         </>

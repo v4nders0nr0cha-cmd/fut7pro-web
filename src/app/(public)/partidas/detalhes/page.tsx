@@ -41,14 +41,16 @@ export default function Page() {
 
   if (!partida) {
     return (
-      <main className="flex flex-col items-center justify-center min-h-screen text-white">
+      <main className="flex min-h-screen flex-col items-center justify-center text-white">
         <Head>
           <title>Partida não encontrada | Fut7Pro</title>
         </Head>
-        <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida não encontrada</h1>
+        <h1 className="mb-4 text-2xl font-bold text-yellow-400">
+          Partida não encontrada
+        </h1>
         <Link
           href="/partidas/historico"
-          className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
+          className="rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-black transition hover:bg-yellow-500"
         >
           Voltar ao Histórico
         </Link>
@@ -57,8 +59,20 @@ export default function Page() {
   }
 
   // MOCK jogadores (ajuste para integrar com dados reais no futuro)
-  const mockJogadoresA = ["Jogador 1", "Jogador 2", "Jogador 3", "Jogador 4", "Jogador 5"];
-  const mockJogadoresB = ["Jogador 6", "Jogador 7", "Jogador 8", "Jogador 9", "Jogador 10"];
+  const mockJogadoresA = [
+    "Jogador 1",
+    "Jogador 2",
+    "Jogador 3",
+    "Jogador 4",
+    "Jogador 5",
+  ];
+  const mockJogadoresB = [
+    "Jogador 6",
+    "Jogador 7",
+    "Jogador 8",
+    "Jogador 9",
+    "Jogador 10",
+  ];
 
   return (
     <>
@@ -73,24 +87,24 @@ export default function Page() {
           content="fut7, detalhes da partida, futebol 7, racha, jogadores, placar, destaques"
         />
       </Head>
-      <main className="flex flex-col w-full min-h-screen items-center text-white">
-        <div className="w-full max-w-2xl bg-[#181818] rounded-xl shadow p-6 mt-8 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
-            <span className="font-bold text-yellow-400 text-lg">
+      <main className="flex min-h-screen w-full flex-col items-center text-white">
+        <div className="mt-8 flex w-full max-w-2xl flex-col gap-4 rounded-xl bg-[#181818] p-6 shadow">
+          <div className="mb-2 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <span className="text-lg font-bold text-yellow-400">
               {partida.data?.replace(/-/g, "/")}
             </span>
             <span className="text-textoSuave text-sm">
               {partida.local || "Local não informado"}
             </span>
             <span
-              className={`px-3 py-1 rounded-xl text-xs w-fit ${partida.finalizada ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}
+              className={`w-fit rounded-xl px-3 py-1 text-xs ${partida.finalizada ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}
             >
               {partida.finalizada ? "Concluído" : "Em andamento"}
             </span>
           </div>
           {/* Placar */}
-          <div className="flex flex-col items-center justify-center gap-1 my-2">
-            <div className="flex items-center gap-6 justify-center">
+          <div className="my-2 flex flex-col items-center justify-center gap-1">
+            <div className="flex items-center justify-center gap-6">
               {/* Time B */}
               <div className="flex flex-col items-center gap-1">
                 <Image
@@ -102,9 +116,9 @@ export default function Page() {
                 />
                 <span className="font-bold">{partida.timeB}</span>
               </div>
-              <span className="text-3xl md:text-4xl font-extrabold">
+              <span className="text-3xl font-extrabold md:text-4xl">
                 {partida.golsTimeA}
-                <span className="mx-2 text-yellow-400 font-bold">x</span>
+                <span className="mx-2 font-bold text-yellow-400">x</span>
                 {partida.golsTimeB}
               </span>
               {/* Time A */}
@@ -121,10 +135,12 @@ export default function Page() {
             </div>
           </div>
           {/* Listas de jogadores */}
-          <div className="flex flex-col md:flex-row md:justify-between gap-4">
-            <div className="w-full md:w-1/2 flex flex-col items-center">
-              <span className="font-bold text-yellow-400 mb-1">Jogadores Time B</span>
-              <ul className="text-sm flex flex-col gap-1">
+          <div className="flex flex-col gap-4 md:flex-row md:justify-between">
+            <div className="flex w-full flex-col items-center md:w-1/2">
+              <span className="mb-1 font-bold text-yellow-400">
+                Jogadores Time B
+              </span>
+              <ul className="flex flex-col gap-1 text-sm">
                 {mockJogadoresB.map((jogador, i) => (
                   <li key={i} className="text-white">
                     {jogador}
@@ -132,9 +148,11 @@ export default function Page() {
                 ))}
               </ul>
             </div>
-            <div className="w-full md:w-1/2 flex flex-col items-center">
-              <span className="font-bold text-yellow-400 mb-1">Jogadores Time A</span>
-              <ul className="text-sm flex flex-col gap-1">
+            <div className="flex w-full flex-col items-center md:w-1/2">
+              <span className="mb-1 font-bold text-yellow-400">
+                Jogadores Time A
+              </span>
+              <ul className="flex flex-col gap-1 text-sm">
                 {mockJogadoresA.map((jogador, i) => (
                   <li key={i} className="text-white">
                     {jogador}
@@ -144,17 +162,19 @@ export default function Page() {
             </div>
           </div>
           {/* Área de destaques - pode expandir depois */}
-          <div className="w-full mt-3">
-            <span className="font-bold text-yellow-400">Destaques da Partida</span>
-            <div className="text-sm text-white mt-1">
+          <div className="mt-3 w-full">
+            <span className="font-bold text-yellow-400">
+              Destaques da Partida
+            </span>
+            <div className="mt-1 text-sm text-white">
               Em breve: artilheiros, assistências, melhores em campo...
             </div>
           </div>
           {/* Botão voltar */}
-          <div className="flex justify-center mt-4">
+          <div className="mt-4 flex justify-center">
             <button
               onClick={() => router.back()}
-              className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
+              className="rounded-lg bg-yellow-400 px-4 py-2 text-base font-bold text-black transition hover:bg-yellow-500"
             >
               Voltar
             </button>

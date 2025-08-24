@@ -69,7 +69,7 @@ export default function CalendarioHistorico({
   return (
     <div
       ref={popupRef}
-      className="absolute z-50 mt-2 left-0 right-0 md:left-auto md:right-auto bg-[#1c1c1c] rounded-2xl shadow-xl border border-yellow-500/40 p-2"
+      className="absolute left-0 right-0 z-50 mt-2 rounded-2xl border border-yellow-500/40 bg-[#1c1c1c] p-2 shadow-xl md:left-auto md:right-auto"
       style={{
         width: 340,
         maxWidth: "95vw",
@@ -88,7 +88,7 @@ export default function CalendarioHistorico({
         captionLayout="dropdown"
         fromYear={2020}
         toYear={2028}
-        className="bg-[#1c1c1c] rounded-2xl p-3"
+        className="rounded-2xl bg-[#1c1c1c] p-3"
         locale={ptBR} // <-- Agora em português!
       />
     </div>

@@ -64,9 +64,13 @@ export const atletasMock: Atleta[] = [
     ],
 
     conquistas: {
-      titulosGrandesTorneios: [{ descricao: "Campeão Torneio 2023", ano: 2023, icone: "🏆" }],
+      titulosGrandesTorneios: [
+        { descricao: "Campeão Torneio 2023", ano: 2023, icone: "🏆" },
+      ],
       titulosAnuais: [{ descricao: "Artilheiro 2024", ano: 2024, icone: "⚽" }],
-      titulosQuadrimestrais: [{ descricao: "Melhor Jogador Quadrimestre", ano: 2025, icone: "🥇" }],
+      titulosQuadrimestrais: [
+        { descricao: "Melhor Jogador Quadrimestre", ano: 2025, icone: "🥇" },
+      ],
     } as ConquistasAtleta,
   },
   {
@@ -131,7 +135,9 @@ export const atletasMock: Atleta[] = [
     ],
 
     conquistas: {
-      titulosGrandesTorneios: [{ descricao: "Campeão Torneio Guerreiros", ano: 2023, icone: "🏆" }],
+      titulosGrandesTorneios: [
+        { descricao: "Campeão Torneio Guerreiros", ano: 2023, icone: "🏆" },
+      ],
       titulosAnuais: [{ descricao: "Zagueiro do Ano", ano: 2024, icone: "🥇" }],
       titulosQuadrimestrais: [],
     } as ConquistasAtleta,

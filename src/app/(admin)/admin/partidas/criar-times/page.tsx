@@ -75,46 +75,53 @@ export default function CriarTimesPage() {
       </Head>
 
       <div className="p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4">
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-2xl font-bold text-yellow-400">Criar Times</h1>
           <button
             onClick={() => setDicasOpen(true)}
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1.5 rounded font-bold mt-3 sm:mt-0"
+            className="mt-3 flex items-center gap-2 rounded bg-yellow-400 px-3 py-1.5 font-bold text-black hover:bg-yellow-500 sm:mt-0"
           >
             <FaLightbulb /> Dicas
           </button>
         </div>
 
-        <p className="text-gray-300 mb-6 max-w-3xl">
-          Nesta página você pode cadastrar os <strong>times oficiais do seu racha</strong>. Esses
-          times serão utilizados no <strong>Sorteio Inteligente</strong>, nas{" "}
-          <strong>partidas</strong> e nos <strong>rankings</strong>. Utilize nomes criativos ou
-          aproveite esta funcionalidade para <strong>vender patrocínios</strong> com grande
-          visibilidade.
+        <p className="mb-6 max-w-3xl text-gray-300">
+          Nesta página você pode cadastrar os{" "}
+          <strong>times oficiais do seu racha</strong>. Esses times serão
+          utilizados no <strong>Sorteio Inteligente</strong>, nas{" "}
+          <strong>partidas</strong> e nos <strong>rankings</strong>. Utilize
+          nomes criativos ou aproveite esta funcionalidade para{" "}
+          <strong>vender patrocínios</strong> com grande visibilidade.
         </p>
 
-        <div className="bg-[#1a1a1a] p-4 rounded-lg shadow mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div className="mb-6 rounded-lg bg-[#1a1a1a] p-4 shadow">
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm mb-1 text-gray-300">Nome do Time</label>
+              <label className="mb-1 block text-sm text-gray-300">
+                Nome do Time
+              </label>
               <input
                 type="text"
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
-                className="w-full p-2 rounded bg-[#222] border border-[#333] text-white"
+                className="w-full rounded border border-[#333] bg-[#222] p-2 text-white"
               />
             </div>
             <div>
-              <label className="block text-sm mb-1 text-gray-300">Cor do Time</label>
+              <label className="mb-1 block text-sm text-gray-300">
+                Cor do Time
+              </label>
               <input
                 type="color"
                 value={cor}
                 onChange={(e) => setCor(e.target.value)}
-                className="w-16 h-10 p-1 border border-[#333] rounded"
+                className="h-10 w-16 rounded border border-[#333] p-1"
               />
             </div>
             <div>
-              <label className="block text-sm mb-1 text-gray-300">Logo do Time</label>
+              <label className="mb-1 block text-sm text-gray-300">
+                Logo do Time
+              </label>
               <input
                 type="file"
                 accept="image/*"
@@ -140,22 +147,24 @@ export default function CriarTimesPage() {
 
           <button
             onClick={handleAdicionarTime}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-bold flex items-center gap-2"
+            className="flex items-center gap-2 rounded bg-yellow-400 px-4 py-2 font-bold text-black hover:bg-yellow-500"
           >
             <FaPlus /> {editandoTime ? "Salvar Alterações" : "Adicionar Time"}
           </button>
         </div>
 
         <div>
-          <h2 className="text-lg font-bold text-yellow-400 mb-3">Times Cadastrados</h2>
+          <h2 className="mb-3 text-lg font-bold text-yellow-400">
+            Times Cadastrados
+          </h2>
           {times.length === 0 ? (
             <p className="text-gray-400">Nenhum time cadastrado ainda.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
               {times.map((time) => (
                 <div
                   key={time.id}
-                  className="bg-[#1a1a1a] p-4 rounded-lg border border-[#333] flex flex-col items-center"
+                  className="flex flex-col items-center rounded-lg border border-[#333] bg-[#1a1a1a] p-4"
                 >
                   <Image
                     src={time.logo}
@@ -166,10 +175,10 @@ export default function CriarTimesPage() {
                   />
                   <h3 className="text-lg font-bold text-white">{time.nome}</h3>
                   <span
-                    className="w-6 h-6 rounded-full border mt-1"
+                    className="mt-1 h-6 w-6 rounded-full border"
                     style={{ backgroundColor: time.cor }}
                   />
-                  <div className="flex gap-2 mt-3">
+                  <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => handleEditar(time.id)}
                       className="text-yellow-400 hover:text-yellow-500"
@@ -190,41 +199,47 @@ export default function CriarTimesPage() {
         </div>
       </div>
 
-      <Dialog open={dicasOpen} onClose={() => setDicasOpen(false)} className="relative z-50">
+      <Dialog
+        open={dicasOpen}
+        onClose={() => setDicasOpen(false)}
+        className="relative z-50"
+      >
         <div className="fixed inset-0 bg-black/70" aria-hidden="true" />
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-[#1a1a1a] rounded-lg shadow-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-            <Dialog.Title className="text-2xl font-bold text-yellow-400 mb-4">
+          <Dialog.Panel className="max-h-[80vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-[#1a1a1a] p-6 shadow-lg">
+            <Dialog.Title className="mb-4 text-2xl font-bold text-yellow-400">
               💡 Dicas de Monetização com Times
             </Dialog.Title>
-            <p className="text-gray-300 mb-4">
-              Você pode utilizar a criação de times para gerar novas oportunidades de patrocínio.
-              Cadastre times com <strong>nomes dos patrocinadores</strong> e aumente a visibilidade
+            <p className="mb-4 text-gray-300">
+              Você pode utilizar a criação de times para gerar novas
+              oportunidades de patrocínio. Cadastre times com{" "}
+              <strong>nomes dos patrocinadores</strong> e aumente a visibilidade
               das marcas em diversos pontos da plataforma.
             </p>
-            <ul className="list-disc list-inside text-gray-300 mb-4">
+            <ul className="mb-4 list-inside list-disc text-gray-300">
               <li>
-                <strong>Plano Básico:</strong> Logo e link do patrocinador no rodapé e na página de
-                patrocinadores.
+                <strong>Plano Básico:</strong> Logo e link do patrocinador no
+                rodapé e na página de patrocinadores.
               </li>
               <li>
-                <strong>Plano Médio:</strong> Tudo do Plano Básico + logo nos destaques, rankings e
-                redes sociais.
+                <strong>Plano Médio:</strong> Tudo do Plano Básico + logo nos
+                destaques, rankings e redes sociais.
               </li>
               <li>
-                <strong>Plano Master:</strong> Tudo dos anteriores + time nomeado com o patrocinador
-                e uniformes personalizados.
+                <strong>Plano Master:</strong> Tudo dos anteriores + time
+                nomeado com o patrocinador e uniformes personalizados.
               </li>
             </ul>
             <p className="text-gray-300">
-              Essa estratégia aumenta o engajamento com as marcas e gera mais receita para o seu
-              racha. Combine criatividade e pacotes de patrocínio para oferecer o máximo de
-              visibilidade aos patrocinadores.
+              Essa estratégia aumenta o engajamento com as marcas e gera mais
+              receita para o seu racha. Combine criatividade e pacotes de
+              patrocínio para oferecer o máximo de visibilidade aos
+              patrocinadores.
             </p>
             <div className="mt-6 text-right">
               <button
                 onClick={() => setDicasOpen(false)}
-                className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-bold"
+                className="rounded bg-yellow-400 px-4 py-2 font-bold text-black hover:bg-yellow-500"
               >
                 Fechar
               </button>

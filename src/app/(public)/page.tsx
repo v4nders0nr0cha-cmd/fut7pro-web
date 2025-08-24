@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import ChampionBanner from "@/components/cards/ChampionBanner";
 import GamesOfTheDayMobileModal from "@/components/cards/GamesOfTheDayMobileModal";
@@ -51,10 +51,12 @@ export default function Home() {
 
   return (
     <>
-      <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10 flex flex-col lg:flex-row gap-8">
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-1 pb-10 pt-[40px] lg:flex-row">
         {/* CONTEÚDO PRINCIPAL */}
         <div className="flex-1">
-          <h1 className="sr-only">Fut7Pro: Sistema para Racha, Fut7 e Futebol Amador</h1>
+          <h1 className="sr-only">
+            Fut7Pro: Sistema para Racha, Fut7 e Futebol Amador
+          </h1>
 
           <ChampionBanner
             image="/images/times/time_campeao_padrao_01.png"
@@ -72,7 +74,7 @@ export default function Home() {
           />
 
           {/* GRID DESTAQUES DO DIA - Desktop: Sempre visível; Mobile: sumir e usar modal */}
-          <div className="hidden lg:grid grid-cols-4 gap-4 mt-6 mb-10">
+          <div className="mb-10 mt-6 hidden grid-cols-4 gap-4 lg:grid">
             {destaquesDia.map((destaque) => (
               <PlayerCard
                 key={destaque.title}
@@ -86,30 +88,42 @@ export default function Home() {
           </div>
 
           {/* Só MOBILE: Botão "Ver todos os destaques do dia" */}
-          <div className="block lg:hidden my-6">
+          <div className="my-6 block lg:hidden">
             <button
               onClick={() => setModalOpen(true)}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 transition text-black font-bold rounded-xl py-3 text-base shadow-lg"
+              className="w-full rounded-xl bg-yellow-400 py-3 text-base font-bold text-black shadow-lg transition hover:bg-yellow-500"
             >
               Ver todos os destaques do dia
             </button>
-            <GamesOfTheDayMobileModal open={modalOpen} onClose={() => setModalOpen(false)} />
+            <GamesOfTheDayMobileModal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+            />
           </div>
 
           {/* CARDS PRINCIPAIS COM LINKS E ORDEM CORRETA */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
+          <div className="mt-2 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <Link href="/atletas">
-              <Card title="🔥 Conquistas" description="Colecione medalhas e evolua seu perfil." />
+              <Card
+                title="🔥 Conquistas"
+                description="Colecione medalhas e evolua seu perfil."
+              />
             </Link>
             <Link href="/estatisticas/ranking-geral">
-              <Card title="🎯 Ranking" description="Compare seu desempenho com os melhores." />
+              <Card
+                title="🏆 Ranking"
+                description="Compare seu desempenho com os melhores."
+              />
             </Link>
             <Link href="/os-campeoes">
-              <Card title="🏆 Campeões" description="Veja quem se destacou nos rachas." />
+              <Card
+                title="🏅 Campeões"
+                description="Veja quem se destacou nos rachas."
+              />
             </Link>
             <Link href="/estatisticas/tira-teima">
               <Card
-                title="💬 Tira Teima"
+                title="⚔️ Tira Teima"
                 description="Compare jogadores lado a lado com dados reais."
               />
             </Link>
@@ -125,7 +139,7 @@ export default function Home() {
                 <Card
                   title="Sorteio Inteligente"
                   description="Equipes equilibradas com base no histórico."
-                  icon={<Shuffle size={22} className="text-[#FFCC00] -ml-1" />}
+                  icon={<Shuffle size={22} className="-ml-1 text-[#FFCC00]" />}
                   restricted={true}
                   isAdmin={isAdmin}
                 />
@@ -134,7 +148,7 @@ export default function Home() {
               <Card
                 title="Sorteio Inteligente"
                 description="Equipes equilibradas com base no histórico."
-                icon={<Shuffle size={22} className="text-[#FFCC00] -ml-1" />}
+                icon={<Shuffle size={22} className="-ml-1 text-[#FFCC00]" />}
                 restricted={true}
                 isAdmin={isAdmin}
               />
@@ -142,16 +156,20 @@ export default function Home() {
           </div>
 
           {/* GRID "JOGOS DO DIA" + "CLASSIFICAÇÃO DOS TIMES" */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+          <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="cursor-pointer">
-              <GamesOfTheDay partidas={partidas} isLoading={isLoading} isError={isError} />
+              <GamesOfTheDay
+                partidas={partidas}
+                isLoading={isLoading}
+                isError={isError}
+              />
             </div>
             <TopTeamsCard />
           </div>
         </div>
 
         {/* Sidebar (desktop only) */}
-        <aside className="hidden lg:block w-[340px] flex-shrink-0">
+        <aside className="hidden w-[340px] flex-shrink-0 lg:block">
           <Sidebar />
         </aside>
       </div>

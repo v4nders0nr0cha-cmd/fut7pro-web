@@ -14,15 +14,19 @@ type Props = {
 
 export default function FinanceiroList({ lancamentos }: Props) {
   if (!lancamentos.length)
-    return <div className="p-4 text-center text-gray-400">Nenhum lançamento financeiro.</div>;
+    return (
+      <div className="p-4 text-center text-gray-400">
+        Nenhum lançamento financeiro.
+      </div>
+    );
   return (
-    <div className="w-full flex flex-col gap-2">
+    <div className="flex w-full flex-col gap-2">
       {lancamentos.map((l) => (
         <div
           key={l.id}
-          className="flex flex-col sm:flex-row items-center justify-between bg-fundo border rounded-xl p-3 shadow-sm"
+          className="flex flex-col items-center justify-between rounded-xl border bg-fundo p-3 shadow-sm sm:flex-row"
         >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
             <span className="font-bold text-yellow-400">{l.categoria}</span>
             <span
               className={`ml-2 font-bold ${l.tipo === "saida" ? "text-red-400" : "text-green-400"}`}
@@ -30,8 +34,12 @@ export default function FinanceiroList({ lancamentos }: Props) {
               {formatarValor(l.valor, l.tipo)}
             </span>
             <span className="ml-2 text-xs text-gray-500">{l.adminNome}</span>
-            <span className="ml-2 text-xs text-gray-400">{formatarData(l.data)}</span>
-            {l.descricao && <span className="ml-2 text-xs text-gray-500">{l.descricao}</span>}
+            <span className="ml-2 text-xs text-gray-400">
+              {formatarData(l.data)}
+            </span>
+            {l.descricao && (
+              <span className="ml-2 text-xs text-gray-500">{l.descricao}</span>
+            )}
           </div>
         </div>
       ))}

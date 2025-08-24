@@ -5,7 +5,10 @@ import { useState, useMemo } from "react";
 type Jogador = { nome: string; apelido: string; pos: string };
 type Time = { nome: string; jogadores: Jogador[] };
 type EventoGol = { time: "a" | "b"; jogador: string; assistencia: string };
-type ResultadoPartida = { placar: { a: number; b: number }; eventos: EventoGol[] };
+type ResultadoPartida = {
+  placar: { a: number; b: number };
+  eventos: EventoGol[];
+};
 type Confronto = {
   ida: { a: number; b: number };
   volta: { a: number; b: number };
@@ -61,7 +64,9 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
   const indexTimeCampeao = useMemo(() => {
     const arr = Object.entries(pontosPorTime ?? {});
     if (!arr.length) return null;
-    return Number(arr.sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] ?? null);
+    return Number(
+      arr.sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] ?? null,
+    );
   }, [pontosPorTime]);
 
   const timeCampeao =
@@ -83,7 +88,10 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     return eventos;
   }, [confrontos]);
 
-  function getArtilheiroMaestro(dados: EventoGol[] = [], prop: "jogador" | "assistencia") {
+  function getArtilheiroMaestro(
+    dados: EventoGol[] = [],
+    prop: "jogador" | "assistencia",
+  ) {
     const cont: Record<string, number> = {};
     (dados ?? []).forEach((ev) => {
       if (ev && ev[prop] && ev[prop] !== "faltou")
@@ -95,35 +103,53 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
 
   function contarEventosJogadorTimeCampeao(pos: "ATA" | "MEIA") {
     if (!timeCampeao) return undefined;
-    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter((j) => j.pos === pos);
+    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter(
+      (j) => j.pos === pos,
+    );
     if (!jogadoresFiltrados.length) return undefined;
     const cont: Record<string, number> = {};
     (eventosDia ?? []).forEach((ev) => {
-      if (ev && ev.jogador && jogadoresFiltrados.some((j) => j.nome === ev.jogador))
+      if (
+        ev &&
+        ev.jogador &&
+        jogadoresFiltrados.some((j) => j.nome === ev.jogador)
+      )
         cont[ev.jogador] = (cont[ev.jogador] ?? 0) + 1;
     });
     const ord = Object.entries(cont).sort((a, b) => b[1] - a[1]);
     if (!ord.length) return undefined;
-    const encontrado = (timeCampeao.jogadores ?? []).find((j) => j.nome === ord[0][0]);
+    const encontrado = (timeCampeao.jogadores ?? []).find(
+      (j) => j.nome === ord[0][0],
+    );
     return encontrado ?? undefined;
   }
   function contarAssistenciasMeiaTimeCampeao() {
     if (!timeCampeao) return undefined;
-    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter((j) => j.pos === "MEIA");
+    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter(
+      (j) => j.pos === "MEIA",
+    );
     if (!jogadoresFiltrados.length) return undefined;
     const cont: Record<string, number> = {};
     (eventosDia ?? []).forEach((ev) => {
-      if (ev && ev.assistencia && jogadoresFiltrados.some((j) => j.nome === ev.assistencia))
+      if (
+        ev &&
+        ev.assistencia &&
+        jogadoresFiltrados.some((j) => j.nome === ev.assistencia)
+      )
         cont[ev.assistencia] = (cont[ev.assistencia] ?? 0) + 1;
     });
     const ord = Object.entries(cont).sort((a, b) => b[1] - a[1]);
     if (!ord.length) return undefined;
-    const encontrado = (timeCampeao.jogadores ?? []).find((j) => j.nome === ord[0][0]);
+    const encontrado = (timeCampeao.jogadores ?? []).find(
+      (j) => j.nome === ord[0][0],
+    );
     return encontrado ?? undefined;
   }
 
-  const goleiro = (timeCampeao?.jogadores ?? []).find((j) => j.pos === "GOL") || undefined;
-  const zagueiros = (timeCampeao?.jogadores ?? []).filter((j) => j.pos === "ZAG") ?? [];
+  const goleiro =
+    (timeCampeao?.jogadores ?? []).find((j) => j.pos === "GOL") || undefined;
+  const zagueiros =
+    (timeCampeao?.jogadores ?? []).filter((j) => j.pos === "ZAG") ?? [];
   const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
 
   const [faltou, setFaltou] = useState<Record<string, boolean>>({});
@@ -146,7 +172,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
   }
 
   const aguardando = (
-    <div className="w-full text-center text-zinc-400 font-semibold py-8">
+    <div className="w-full py-8 text-center font-semibold text-zinc-400">
       Aguarde: resultados precisam ser lançados para exibir os destaques do dia.
     </div>
   );
@@ -169,21 +195,24 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
       if (selected && options?.length) {
         const zagueiro = options.find((j: Jogador) => j.nome === selected);
         return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
+          <div className="relative flex min-h-[260px] min-w-[185px] max-w-xs flex-col items-center justify-between rounded-xl bg-zinc-800 px-5 py-4 shadow-lg">
             <img
               src={fotoByIndex(2)}
               alt={zagueiro?.nome ?? ""}
-              className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
+              className="mb-2 h-20 w-20 rounded-full border-4 border-yellow-400 object-cover"
             />
-            <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">
+            <div className="mb-1 text-center text-sm font-bold uppercase text-yellow-400">
               {titulo}
             </div>
-            <div className="text-white text-lg font-bold text-center">{zagueiro?.nome ?? ""}</div>
-            <div className="text-yellow-200 text-xs">
-              {zagueiro?.apelido ?? ""} {zagueiro?.pos ? `| ${zagueiro.pos}` : ""}
+            <div className="text-center text-lg font-bold text-white">
+              {zagueiro?.nome ?? ""}
+            </div>
+            <div className="text-xs text-yellow-200">
+              {zagueiro?.apelido ?? ""}{" "}
+              {zagueiro?.pos ? `| ${zagueiro.pos}` : ""}
             </div>
             {canFaltou && (
-              <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
+              <label className="mt-2 flex cursor-pointer items-center gap-1 text-xs text-yellow-400">
                 <input
                   type="checkbox"
                   checked={!!faltou?.["Zagueiro"]}
@@ -202,12 +231,12 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
         );
       } else {
         return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-center relative">
-            <div className="text-yellow-400 font-bold text-sm text-center mb-3 uppercase">
+          <div className="relative flex min-h-[260px] min-w-[185px] max-w-xs flex-col items-center justify-center rounded-xl bg-zinc-800 px-5 py-4 shadow-lg">
+            <div className="mb-3 text-center text-sm font-bold uppercase text-yellow-400">
               {titulo}
             </div>
             <select
-              className="px-2 py-1 bg-zinc-900 text-yellow-200 rounded w-full"
+              className="w-full rounded bg-zinc-900 px-2 py-1 text-yellow-200"
               value={selected}
               onChange={(e) => onZagueiroChange?.(e.target.value)}
             >
@@ -225,26 +254,34 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
 
     // Cards comuns
     return (
-      <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
+      <div className="relative flex min-h-[260px] min-w-[185px] max-w-xs flex-col items-center justify-between rounded-xl bg-zinc-800 px-5 py-4 shadow-lg">
         {foto ? (
           <img
             src={foto}
             alt={nome || titulo}
-            className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
+            className="mb-2 h-20 w-20 rounded-full border-4 border-yellow-400 object-cover"
           />
         ) : (
-          <div className="w-20 h-20 rounded-full mb-2 flex items-center justify-center bg-zinc-900 border-4 border-yellow-400" />
+          <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full border-4 border-yellow-400 bg-zinc-900" />
         )}
-        <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">{titulo}</div>
+        <div className="mb-1 text-center text-sm font-bold uppercase text-yellow-400">
+          {titulo}
+        </div>
         {nome ? (
           <>
-            <div className="text-white text-lg font-bold text-center">{nome}</div>
-            <div className="text-yellow-200 text-xs">
+            <div className="text-center text-lg font-bold text-white">
+              {nome}
+            </div>
+            <div className="text-xs text-yellow-200">
               {apelido ? apelido : ""} {pos ? `| ${pos}` : ""}
             </div>
-            {infoExtra && <div className="mt-1 text-yellow-400 text-sm font-bold">{infoExtra}</div>}
+            {infoExtra && (
+              <div className="mt-1 text-sm font-bold text-yellow-400">
+                {infoExtra}
+              </div>
+            )}
             {canFaltou && (
-              <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
+              <label className="mt-2 flex cursor-pointer items-center gap-1 text-xs text-yellow-400">
                 <input
                   type="checkbox"
                   checked={!!faltou?.[faltouKey]}
@@ -261,15 +298,17 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
             <div className="h-6"></div>
           </>
         ) : (
-          <div className="text-zinc-400 mt-4 text-center">Aguardando resultado...</div>
+          <div className="mt-4 text-center text-zinc-400">
+            Aguardando resultado...
+          </div>
         )}
       </div>
     );
   }
 
   return (
-    <div className="w-full flex flex-col items-center gap-8">
-      <div className="flex flex-wrap gap-5 justify-center">
+    <div className="flex w-full flex-col items-center gap-8">
+      <div className="flex flex-wrap justify-center gap-5">
         <CardDestaque
           titulo="ATACANTE DO DIA"
           nome={atacante?.nome ?? ""}
@@ -308,7 +347,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
           faltouKey="Goleiro"
         />
       </div>
-      <div className="flex flex-wrap gap-5 justify-center mt-2">
+      <div className="mt-2 flex flex-wrap justify-center gap-5">
         <CardDestaque
           titulo="TIME CAMPEÃO DO DIA"
           nome={timeCampeao?.nome ?? ""}

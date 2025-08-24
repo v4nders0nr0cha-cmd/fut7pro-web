@@ -1,41 +1,31 @@
 // src/hooks/useFinanceiroPublic.ts
 
 import useSWR from "swr";
-
-export interface LancamentoFinanceiro {
-  id: string;
-  tipo: string;
-  categoria: string;
-  valor: number;
-  descricao?: string;
-  data: string;
-  criadoEm: string;
-  adminNome: string;
-  adminEmail: string;
-}
-
-interface ResumoFinanceiro {
-  totalReceitas: number;
-  totalDespesas: number;
-  saldo: number;
-  totalLancamentos: number;
-}
+import { apiClient } from "@/lib/api";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 interface FinanceiroPublicData {
-  resumo: ResumoFinanceiro;
+  resumo: {
+    saldo: number;
+    entradas: number;
+    saidas: number;
+    totalLancamentos: number;
+  };
   lancamentos: LancamentoFinanceiro[];
 }
 
-async function fetcher(url: string): Promise<FinanceiroPublicData> {
-  const res = await fetch(url);
+// Fetcher customizado que usa o apiClient para aplicar normalização
+const fetcher = async (url: string): Promise<FinanceiroPublicData> => {
+  // Extrair o endpoint da URL completa
+  const endpoint = url.replace(/^https?:\/\/[^\/]+/, "");
+  const response = await apiClient.get(endpoint);
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Erro desconhecido" }));
-    throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
+  if (response.error) {
+    throw new Error(response.error);
   }
 
-  return res.json();
-}
+  return response.data;
+};
 
 /**
  * Busca dados financeiros públicos de um racha específico.
@@ -51,7 +41,7 @@ export function useFinanceiroPublic(rachaId: string) {
       dedupingInterval: 30000, // 30 segundos
       errorRetryCount: 3,
       errorRetryInterval: 5000, // 5 segundos
-    }
+    },
   );
 
   return {

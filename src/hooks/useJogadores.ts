@@ -1,16 +1,22 @@
 "use client";
 
 import useSWR from "swr";
-import { jogadoresApi } from "@/lib/api";
+import { useRacha } from "@/context/RachaContext";
+import { jogadoresApi, apiClient } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Jogador } from "@/types/jogador";
 
+// Fetcher customizado que usa o apiClient para aplicar normalização
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar jogadores");
+  // Extrair o endpoint da URL completa
+  const endpoint = url.replace(/^https?:\/\/[^\/]+/, "");
+  const response = await apiClient.get(endpoint);
+
+  if (response.error) {
+    throw new Error(response.error);
   }
-  return response.json();
+
+  return response.data;
 };
 
 export function useJogadores(rachaId: string) {
@@ -25,7 +31,7 @@ export function useJogadores(rachaId: string) {
           console.log("Erro ao carregar jogadores:", err);
         }
       },
-    }
+    },
   );
 
   const addJogador = async (jogador: Partial<Jogador>) => {

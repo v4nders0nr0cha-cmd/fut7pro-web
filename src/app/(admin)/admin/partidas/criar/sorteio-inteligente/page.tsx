@@ -14,7 +14,9 @@ export default function SorteioInteligentePage() {
 
   const toggleTime = (timeId: string) => {
     setTimesSelecionados((prev) =>
-      prev.includes(timeId) ? prev.filter((id) => id !== timeId) : [...prev, timeId]
+      prev.includes(timeId)
+        ? prev.filter((id) => id !== timeId)
+        : [...prev, timeId],
     );
   };
 
@@ -32,34 +34,38 @@ export default function SorteioInteligentePage() {
         />
       </Head>
 
-      <main className="max-w-4xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-5 flex items-center gap-3">
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-5 flex items-center gap-3 text-3xl font-bold text-yellow-400 md:text-4xl">
           <FaRandom className="text-yellow-400" /> Sorteio Inteligente
         </h1>
-        <p className="text-base text-neutral-300 mb-8">
-          Monte rodadas automaticamente com times balanceados, organização de horários e tabela
-          pronta em segundos.
+        <p className="mb-8 text-base text-neutral-300">
+          Monte rodadas automaticamente com times balanceados, organização de
+          horários e tabela pronta em segundos.
           <br />
-          Escolha os jogadores, defina regras de sorteio e deixe o sistema fazer todo o trabalho
-          pesado.{" "}
-          <span className="font-bold text-cyan-400">Recomendado para experiência premium!</span>
+          Escolha os jogadores, defina regras de sorteio e deixe o sistema fazer
+          todo o trabalho pesado.{" "}
+          <span className="font-bold text-cyan-400">
+            Recomendado para experiência premium!
+          </span>
         </p>
 
         {/* Seleção de Times */}
-        <div className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl p-6 mb-8 shadow-lg">
-          <h2 className="text-lg font-semibold text-yellow-400 mb-4">Selecione os Times do Dia</h2>
+        <div className="mb-8 rounded-2xl border-2 border-yellow-500 bg-neutral-900 p-6 shadow-lg">
+          <h2 className="mb-4 text-lg font-semibold text-yellow-400">
+            Selecione os Times do Dia
+          </h2>
           {times.length === 0 ? (
             <p className="text-gray-400">
-              Nenhum time cadastrado. Vá até <strong>"Criar Times"</strong> para adicionar seus
-              times antes do sorteio.
+              Nenhum time cadastrado. Vá até <strong>"Criar Times"</strong> para
+              adicionar seus times antes do sorteio.
             </p>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">
+            <div className="mb-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
               {times.map((time) => (
                 <button
                   key={time.id}
                   onClick={() => toggleTime(time.id)}
-                  className={`flex flex-col items-center p-3 rounded-lg border transition ${
+                  className={`flex flex-col items-center rounded-lg border p-3 transition ${
                     timesSelecionados.includes(time.id)
                       ? "border-yellow-400 bg-yellow-400/10"
                       : "border-gray-700 bg-[#1a1a1a] hover:border-yellow-300"
@@ -70,11 +76,13 @@ export default function SorteioInteligentePage() {
                     alt={time.nome}
                     width={50}
                     height={50}
-                    className="rounded mb-2"
+                    className="mb-2 rounded"
                   />
-                  <span className="text-white text-sm font-semibold">{time.nome}</span>
+                  <span className="text-sm font-semibold text-white">
+                    {time.nome}
+                  </span>
                   <span
-                    className="w-4 h-4 rounded-full border mt-1"
+                    className="mt-1 h-4 w-4 rounded-full border"
                     style={{ backgroundColor: time.cor }}
                   />
                 </button>
@@ -84,15 +92,17 @@ export default function SorteioInteligentePage() {
         </div>
 
         {/* Botão de Sorteio */}
-        <div className="bg-neutral-900 border-2 border-cyan-500 rounded-2xl p-6 mb-8 shadow-lg">
-          <h2 className="text-lg font-semibold text-cyan-300 mb-2">Comece seu sorteio</h2>
-          <p className="text-sm text-neutral-300 mb-4">
-            Selecione os times cadastrados, configure os critérios de balanceamento (ranking,
-            presença, estrelas etc.) e clique no botão abaixo para gerar os times e horários
-            automaticamente.
+        <div className="mb-8 rounded-2xl border-2 border-cyan-500 bg-neutral-900 p-6 shadow-lg">
+          <h2 className="mb-2 text-lg font-semibold text-cyan-300">
+            Comece seu sorteio
+          </h2>
+          <p className="mb-4 text-sm text-neutral-300">
+            Selecione os times cadastrados, configure os critérios de
+            balanceamento (ranking, presença, estrelas etc.) e clique no botão
+            abaixo para gerar os times e horários automaticamente.
           </p>
           <button
-            className="bg-cyan-400 text-black font-bold px-6 py-2 rounded-xl hover:bg-cyan-500 transition disabled:opacity-50"
+            className="rounded-xl bg-cyan-400 px-6 py-2 font-bold text-black transition hover:bg-cyan-500 disabled:opacity-50"
             onClick={() => {
               if (process.env.NODE_ENV === "development") {
                 console.log("Sorteio iniciado com times:", timesSelecionados);
@@ -106,17 +116,17 @@ export default function SorteioInteligentePage() {
         </div>
 
         {/* Importar planilha - recurso avançado */}
-        <div className="bg-neutral-900 border-2 border-yellow-600 rounded-2xl p-6 shadow-lg">
-          <h2 className="text-lg font-semibold text-yellow-400 mb-2">
+        <div className="rounded-2xl border-2 border-yellow-600 bg-neutral-900 p-6 shadow-lg">
+          <h2 className="mb-2 text-lg font-semibold text-yellow-400">
             Importar Partidas via Planilha
           </h2>
-          <p className="text-sm text-neutral-300 mb-4">
-            Prefere preparar tudo fora do sistema? Importe várias partidas em lote utilizando nosso
-            modelo de planilha.
+          <p className="mb-4 text-sm text-neutral-300">
+            Prefere preparar tudo fora do sistema? Importe várias partidas em
+            lote utilizando nosso modelo de planilha.
           </p>
-          <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex flex-col items-center gap-4 md:flex-row">
             <button
-              className="bg-yellow-400 text-black font-bold px-6 py-2 rounded-xl hover:bg-yellow-500 transition"
+              className="rounded-xl bg-yellow-400 px-6 py-2 font-bold text-black transition hover:bg-yellow-500"
               onClick={() => alert("Em breve: Importação de planilhas")}
               type="button"
             >
@@ -124,7 +134,7 @@ export default function SorteioInteligentePage() {
             </button>
             <a
               href="/modelo_importacao_fut7pro.xlsx"
-              className="text-yellow-400 underline hover:text-yellow-300 text-sm"
+              className="text-sm text-yellow-400 underline hover:text-yellow-300"
               download
             >
               Baixar modelo Excel

@@ -18,30 +18,34 @@ export default function UnauthorizedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-fundo flex items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-fundo px-4">
       <div className="w-full max-w-md text-center">
-        <div className="bg-[#1A1A1A] rounded-2xl p-8 shadow-xl border border-[#333]">
-          <div className="flex justify-center mb-6">
-            <Shield className="w-16 h-16 text-red-400" />
+        <div className="rounded-2xl border border-[#333] bg-[#1A1A1A] p-8 shadow-xl">
+          <div className="mb-6 flex justify-center">
+            <Shield className="h-16 w-16 text-red-400" />
           </div>
 
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Acesso Negado</h1>
+          <h1 className="mb-4 text-2xl font-bold text-red-400">
+            Acesso Negado
+          </h1>
 
           <p className="text-textoSuave mb-6">
-            Você não tem permissão para acessar esta página. Entre em contato com o administrador se
-            acredita que isso é um erro.
+            Você não tem permissão para acessar esta página. Entre em contato
+            com o administrador se acredita que isso é um erro.
           </p>
 
           {user && (
-            <div className="bg-[#232323] rounded-lg p-4 mb-6">
-              <p className="text-sm text-gray-400 mb-2">Informações da sua conta:</p>
-              <p className="text-white text-sm">
+            <div className="mb-6 rounded-lg bg-[#232323] p-4">
+              <p className="mb-2 text-sm text-gray-400">
+                Informações da sua conta:
+              </p>
+              <p className="text-sm text-white">
                 <strong>Nome:</strong> {user.name || "N/A"}
               </p>
-              <p className="text-white text-sm">
+              <p className="text-sm text-white">
                 <strong>Email:</strong> {user.email || "N/A"}
               </p>
-              <p className="text-white text-sm">
+              <p className="text-sm text-white">
                 <strong>Função:</strong> {user.role}
               </p>
             </div>
@@ -50,7 +54,7 @@ export default function UnauthorizedPage() {
           <div className="space-y-3">
             <button
               onClick={handleGoHome}
-              className="w-full bg-yellow-400 text-black font-bold py-3 px-4 rounded-lg hover:bg-yellow-500 transition flex items-center justify-center"
+              className="flex w-full items-center justify-center rounded-lg bg-yellow-400 px-4 py-3 font-bold text-black transition hover:bg-yellow-500"
             >
               <Home size={20} className="mr-2" />
               Ir para o Início
@@ -58,7 +62,7 @@ export default function UnauthorizedPage() {
 
             <button
               onClick={handleLogout}
-              className="w-full bg-[#232323] text-white font-medium py-3 px-4 rounded-lg border border-[#333] hover:bg-[#2A2A2A] transition flex items-center justify-center"
+              className="flex w-full items-center justify-center rounded-lg border border-[#333] bg-[#232323] px-4 py-3 font-medium text-white transition hover:bg-[#2A2A2A]"
             >
               <ArrowLeft size={20} className="mr-2" />
               Fazer Logout
@@ -68,7 +72,10 @@ export default function UnauthorizedPage() {
           <div className="mt-6 text-center">
             <p className="text-textoSuave text-sm">
               Precisa de ajuda?{" "}
-              <a href="/suporte" className="text-yellow-400 hover:text-yellow-300">
+              <a
+                href="/suporte"
+                className="text-yellow-400 hover:text-yellow-300"
+              >
                 Entre em contato
               </a>
             </p>

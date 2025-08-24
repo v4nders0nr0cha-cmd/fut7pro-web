@@ -27,17 +27,27 @@ function getMelhorMeia(confrontos: Confronto[], times: Time[]): Jogador | null {
   return times[0]?.jogadores[4] || null;
 }
 
-function getMelhorZagueiro(confrontos: Confronto[], times: Time[]): Jogador | null {
+function getMelhorZagueiro(
+  confrontos: Confronto[],
+  times: Time[],
+): Jogador | null {
   // Implementar lógica real de busca do melhor zagueiro
   return times[0]?.jogadores[1] || null;
 }
 
-function getMelhorGoleiro(confrontos: Confronto[], times: Time[]): Jogador | null {
+function getMelhorGoleiro(
+  confrontos: Confronto[],
+  times: Time[],
+): Jogador | null {
   // Implementar lógica real de busca do melhor goleiro
   return times[0]?.jogadores[0] || null;
 }
 
-export default function CardsDestaquesDia({ confrontos, times, timeCampeao }: Props) {
+export default function CardsDestaquesDia({
+  confrontos,
+  times,
+  timeCampeao,
+}: Props) {
   const [faltou, setFaltou] = useState<Record<string, boolean>>({});
 
   const artilheiro = getArtilheiro(confrontos, times);
@@ -47,14 +57,14 @@ export default function CardsDestaquesDia({ confrontos, times, timeCampeao }: Pr
 
   if (!artilheiro || !melhorMeia || !melhorZagueiro || !melhorGoleiro) {
     return (
-      <div className="text-center text-gray-400 py-8">
+      <div className="py-8 text-center text-gray-400">
         <p>Carregando destaques do dia...</p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
       <CardDestaque
         titulo="Artilheiro do Dia"
         nome={artilheiro.nome}
@@ -134,28 +144,34 @@ function CardDestaque({
   setFaltou,
 }: CardDestaqueProps) {
   return (
-    <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
+    <div className="relative flex min-h-[260px] min-w-[185px] max-w-xs flex-col items-center justify-between rounded-xl bg-zinc-800 px-5 py-4 shadow-lg">
       {foto ? (
         <img
           src={foto}
           alt={nome}
-          className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
+          className="mb-2 h-20 w-20 rounded-full border-4 border-yellow-400 object-cover"
         />
       ) : (
-        <div className="w-20 h-20 rounded-full mb-2 flex items-center justify-center bg-zinc-900 border-4 border-yellow-400" />
+        <div className="mb-2 flex h-20 w-20 items-center justify-center rounded-full border-4 border-yellow-400 bg-zinc-900" />
       )}
 
-      <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">{titulo}</div>
+      <div className="mb-1 text-center text-sm font-bold uppercase text-yellow-400">
+        {titulo}
+      </div>
 
-      <div className="text-white text-lg font-bold text-center">{nome}</div>
-      <div className="text-yellow-200 text-xs">
+      <div className="text-center text-lg font-bold text-white">{nome}</div>
+      <div className="text-xs text-yellow-200">
         {apelido ? apelido : ""} {pos ? `| ${pos}` : ""}
       </div>
 
-      {infoExtra && <div className="mt-1 text-yellow-400 text-sm font-bold">{infoExtra}</div>}
+      {infoExtra && (
+        <div className="mt-1 text-sm font-bold text-yellow-400">
+          {infoExtra}
+        </div>
+      )}
 
       {canFaltou && (
-        <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
+        <label className="mt-2 flex cursor-pointer items-center gap-1 text-xs text-yellow-400">
           <input
             type="checkbox"
             checked={!!faltou[faltouKey]}

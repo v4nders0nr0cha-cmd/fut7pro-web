@@ -52,7 +52,8 @@ const estatutoTópicos = [
     ],
   },
   {
-    titulo: "Definição de Mensalistas, Diaristas, Reservas e Critérios para Participação",
+    titulo:
+      "Definição de Mensalistas, Diaristas, Reservas e Critérios para Participação",
     conteudo: [
       "💸 Mensalista: Jogador que contribui mensalmente e tem vaga garantida em todos os jogos. Algumas vagas do racha são exclusivas para mensalistas.",
       "💵 Diarista: Jogador que paga apenas pelo dia jogado. Pode participar das partidas sempre que houver vagas remanescentes, após o preenchimento pelas vagas de mensalistas.",
@@ -88,7 +89,7 @@ export default function EstatutoPage() {
 
   const handleDownload = () => {
     alert(
-      "Função de download do PDF ainda não implementada.\n(Em breve você poderá baixar o estatuto completo!)"
+      "Função de download do PDF ainda não implementada.\n(Em breve você poderá baixar o estatuto completo!)",
     );
   };
 
@@ -106,32 +107,38 @@ export default function EstatutoPage() {
         />
       </Head>
 
-      <main className="max-w-3xl mx-auto px-4 pt-20 flex flex-col gap-8">
+      <main className="mx-auto flex max-w-3xl flex-col gap-8 px-4 pt-20">
         <section>
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">
+          <h1 className="mb-4 text-3xl font-bold text-yellow-400 md:text-4xl">
             Estatuto do Racha Fut7Pro
           </h1>
-          <p className="text-white text-base md:text-lg mb-4">
-            O Estatuto reúne todas as regras, critérios e boas práticas que regem o funcionamento do
-            nosso racha. Consulte, tire dúvidas e ajude a manter a ordem e o espírito esportivo!
+          <p className="mb-4 text-base text-white md:text-lg">
+            O Estatuto reúne todas as regras, critérios e boas práticas que
+            regem o funcionamento do nosso racha. Consulte, tire dúvidas e ajude
+            a manter a ordem e o espírito esportivo!
           </p>
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition mb-4"
+            className="mb-4 flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 font-bold text-black transition hover:brightness-110"
           >
             <FaDownload /> Baixar PDF do Estatuto
           </button>
         </section>
         <section>
-          <h2 className="text-2xl font-bold text-yellow-300 mb-4">
+          <h2 className="mb-4 text-2xl font-bold text-yellow-300">
             Perguntas Frequentes do Estatuto (FAQ)
           </h2>
           <div className="flex flex-col gap-3">
             {estatutoTópicos.map((topico, idx) => (
-              <div key={idx} className="bg-neutral-900 rounded-xl shadow-md overflow-hidden">
+              <div
+                key={idx}
+                className="overflow-hidden rounded-xl bg-neutral-900 shadow-md"
+              >
                 <button
-                  className={`flex justify-between items-center w-full px-5 py-4 text-left focus:outline-none transition ${
-                    aberto === idx ? "bg-yellow-400 text-black" : "text-yellow-300"
+                  className={`flex w-full items-center justify-between px-5 py-4 text-left transition focus:outline-none ${
+                    aberto === idx
+                      ? "bg-yellow-400 text-black"
+                      : "text-yellow-300"
                   }`}
                   aria-expanded={aberto === idx}
                   onClick={() => setAberto(aberto === idx ? null : idx)}
@@ -139,7 +146,7 @@ export default function EstatutoPage() {
                   <span className="flex items-center gap-2 text-lg font-semibold">
                     {topico.titulo}
                     {topico.atualizado && (
-                      <span className="ml-2 text-xs bg-white text-yellow-500 font-bold px-2 py-0.5 rounded">
+                      <span className="ml-2 rounded bg-white px-2 py-0.5 text-xs font-bold text-yellow-500">
                         NOVA
                       </span>
                     )}
@@ -149,11 +156,13 @@ export default function EstatutoPage() {
                   />
                 </button>
                 <div
-                  className={`transition-all duration-300 px-5 ${
-                    aberto === idx ? "max-h-[1500px] py-3 opacity-100" : "max-h-0 py-0 opacity-0"
-                  } overflow-hidden bg-neutral-800 text-neutral-200 text-base`}
+                  className={`px-5 transition-all duration-300 ${
+                    aberto === idx
+                      ? "max-h-[1500px] py-3 opacity-100"
+                      : "max-h-0 py-0 opacity-0"
+                  } overflow-hidden bg-neutral-800 text-base text-neutral-200`}
                 >
-                  <ul className="list-disc pl-5 flex flex-col gap-2">
+                  <ul className="flex list-disc flex-col gap-2 pl-5">
                     {topico.conteudo.map((linha, liIdx) => (
                       <li key={liIdx}>{linha}</li>
                     ))}
@@ -163,7 +172,7 @@ export default function EstatutoPage() {
             ))}
           </div>
         </section>
-        <section className="mt-2 text-right text-neutral-400 text-xs">
+        <section className="mt-2 text-right text-xs text-neutral-400">
           Última atualização: {dataUltimaAtualizacao}
         </section>
       </main>

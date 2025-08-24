@@ -39,7 +39,7 @@ export default function TransferirPropriedadePage() {
   const atletasFiltrados = atletas.filter(
     (a) =>
       a.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      a.email.toLowerCase().includes(busca.toLowerCase())
+      a.email.toLowerCase().includes(busca.toLowerCase()),
   );
 
   function handleTransferir(e: React.FormEvent) {
@@ -52,7 +52,9 @@ export default function TransferirPropriedadePage() {
   }
 
   if (cargoLogado !== "Presidente") {
-    return <RestrictAccess msg="Apenas o presidente pode transferir a propriedade do racha." />;
+    return (
+      <RestrictAccess msg="Apenas o presidente pode transferir a propriedade do racha." />
+    );
   }
 
   return (
@@ -63,28 +65,33 @@ export default function TransferirPropriedadePage() {
           name="description"
           content="Transfira a presidência do racha para outro administrador de forma segura."
         />
-        <meta name="keywords" content="Fut7, racha, presidente, transferência, SaaS" />
+        <meta
+          name="keywords"
+          content="Fut7, racha, presidente, transferência, SaaS"
+        />
       </Head>
-      <div className="pt-20 pb-24 md:pt-10 md:pb-12 max-w-lg mx-auto w-full">
-        <h1 className="text-2xl font-bold mb-4 text-zinc-100">Transferir Propriedade</h1>
-        <p className="text-zinc-300 mb-6">
+      <div className="mx-auto w-full max-w-lg pb-24 pt-20 md:pb-12 md:pt-10">
+        <h1 className="mb-4 text-2xl font-bold text-zinc-100">
+          Transferir Propriedade
+        </h1>
+        <p className="mb-6 text-zinc-300">
           Você está prestes a transferir a presidência do racha. Essa ação é{" "}
-          <span className="text-yellow-400 font-bold">irreversível</span>.
+          <span className="font-bold text-yellow-400">irreversível</span>.
         </p>
         {confirmado ? (
-          <div className="bg-green-700 text-white rounded p-4 text-center font-bold mt-8">
+          <div className="mt-8 rounded bg-green-700 p-4 text-center font-bold text-white">
             Propriedade transferida com sucesso!
           </div>
         ) : (
           <form className="flex flex-col gap-4" onSubmit={handleTransferir}>
             <div>
-              <label className="block text-sm font-semibold text-zinc-100 mb-1">
+              <label className="mb-1 block text-sm font-semibold text-zinc-100">
                 Buscar Atleta (Novo Presidente)
               </label>
               <input
                 type="text"
                 placeholder="Nome ou e-mail"
-                className="w-full rounded px-3 py-2 bg-zinc-800 text-white border border-zinc-600"
+                className="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-white"
                 value={busca}
                 onChange={(e) => {
                   setBusca(e.target.value);
@@ -93,14 +100,16 @@ export default function TransferirPropriedadePage() {
                 autoComplete="off"
               />
               {busca && (
-                <div className="max-h-36 overflow-y-auto mt-1 border border-zinc-700 rounded bg-zinc-900">
+                <div className="mt-1 max-h-36 overflow-y-auto rounded border border-zinc-700 bg-zinc-900">
                   {atletasFiltrados.length === 0 && (
-                    <div className="text-xs text-zinc-400 px-3 py-2">Nenhum atleta encontrado.</div>
+                    <div className="px-3 py-2 text-xs text-zinc-400">
+                      Nenhum atleta encontrado.
+                    </div>
                   )}
                   {atletasFiltrados.map((a) => (
                     <div
                       key={a.id}
-                      className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-zinc-700 ${
+                      className={`flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-zinc-700 ${
                         atleta?.id === a.id ? "bg-zinc-800" : ""
                       }`}
                       onClick={() => setAtleta(a)}
@@ -119,7 +128,7 @@ export default function TransferirPropriedadePage() {
                 </div>
               )}
               {atleta && (
-                <div className="mt-3 flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded p-2">
+                <div className="mt-3 flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900 p-2">
                   <img
                     src={atleta.avatar}
                     width={32}
@@ -132,7 +141,7 @@ export default function TransferirPropriedadePage() {
                   <button
                     onClick={() => setAtleta(null)}
                     type="button"
-                    className="ml-auto text-red-400 hover:underline text-xs"
+                    className="ml-auto text-xs text-red-400 hover:underline"
                   >
                     remover
                   </button>
@@ -142,7 +151,7 @@ export default function TransferirPropriedadePage() {
             <label className="text-sm font-semibold text-zinc-100">
               E-mail do novo presidente
               <input
-                className="mt-1 w-full rounded px-3 py-2 bg-zinc-800 text-white border border-zinc-600"
+                className="mt-1 w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-white"
                 type="email"
                 required
                 value={email}
@@ -154,7 +163,7 @@ export default function TransferirPropriedadePage() {
             <label className="text-sm font-semibold text-zinc-100">
               Sua senha
               <input
-                className="mt-1 w-full rounded px-3 py-2 bg-zinc-800 text-white border border-zinc-600"
+                className="mt-1 w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-white"
                 type="password"
                 required
                 value={senha}
@@ -163,10 +172,10 @@ export default function TransferirPropriedadePage() {
                 placeholder="Digite sua senha"
               />
             </label>
-            {error && <div className="text-xs text-red-400 mb-1">{error}</div>}
+            {error && <div className="mb-1 text-xs text-red-400">{error}</div>}
             <button
               type="submit"
-              className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded px-6 py-2 mt-2"
+              className="mt-2 rounded bg-yellow-500 px-6 py-2 font-bold text-black hover:bg-yellow-600"
               disabled={!atleta || !email || !senha}
             >
               Confirmar Transferência

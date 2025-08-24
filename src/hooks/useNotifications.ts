@@ -28,7 +28,7 @@ export function useNotifications() {
           console.log("Erro ao carregar notificações:", err);
         }
       },
-    }
+    },
   );
 
   const markAsRead = async (id: string) => {

@@ -14,8 +14,11 @@ import type { Confronto } from "@/mocks/admin/mockDia";
 type EditPartidaState = { index: number; tipo: "ida" | "volta" } | null;
 
 export default function TimeCampeaoDoDiaPage() {
-  const [confrontos, setConfrontos] = useState<Confronto[]>(mockConfrontos.map((c) => ({ ...c })));
-  const [partidaSelecionada, setPartidaSelecionada] = useState<EditPartidaState>(null);
+  const [confrontos, setConfrontos] = useState<Confronto[]>(
+    mockConfrontos.map((c) => ({ ...c })),
+  );
+  const [partidaSelecionada, setPartidaSelecionada] =
+    useState<EditPartidaState>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
 
@@ -23,14 +26,14 @@ export default function TimeCampeaoDoDiaPage() {
     index: number,
     tipo: "ida" | "volta",
     placar: { a: number; b: number },
-    eventos: any[]
+    eventos: any[],
   ) {
     setConfrontos((prev) =>
       prev.map((c, idx) => {
         if (idx !== index) return c;
         if (tipo === "ida") return { ...c, resultadoIda: { placar, eventos } };
         return { ...c, resultadoVolta: { placar, eventos } };
-      })
+      }),
     );
     setPartidaSelecionada(null);
   }
@@ -49,19 +52,22 @@ export default function TimeCampeaoDoDiaPage() {
         />
       </Head>
 
-      <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 text-center drop-shadow">
+      <main className="flex min-h-screen flex-col items-center bg-zinc-900 px-4 pb-24 pt-20 md:pb-8 md:pt-6">
+        <h1 className="mb-3 text-center text-3xl font-bold text-yellow-400 drop-shadow md:text-4xl">
           Lançamento de Resultados do Dia
         </h1>
-        <p className="text-gray-300 mb-8 text-center text-lg">
-          Clique em uma partida na tabela abaixo para lançar resultados, gols e assistências.
+        <p className="mb-8 text-center text-lg text-gray-300">
+          Clique em uma partida na tabela abaixo para lançar resultados, gols e
+          assistências.
           <br />
           Tudo prático, rápido e sem enrolação.
         </p>
 
         <TabelaConfrontos
           confrontos={confrontos}
-          onSelecionarPartida={(index, tipo) => setPartidaSelecionada({ index, tipo })}
+          onSelecionarPartida={(index, tipo) =>
+            setPartidaSelecionada({ index, tipo })
+          }
         />
 
         {partidaSelecionada && (
@@ -75,10 +81,12 @@ export default function TimeCampeaoDoDiaPage() {
           />
         )}
 
-        <div className="w-full flex flex-col items-center mt-10 mb-3">
-          <h2 className="text-2xl font-extrabold text-yellow-400 mb-1">Destaques do Dia</h2>
+        <div className="mb-3 mt-10 flex w-full flex-col items-center">
+          <h2 className="mb-1 text-2xl font-extrabold text-yellow-400">
+            Destaques do Dia
+          </h2>
           <button
-            className="text-sm underline text-yellow-300 hover:text-yellow-500 mb-2 transition"
+            className="mb-2 text-sm text-yellow-300 underline transition hover:text-yellow-500"
             onClick={() => setShowModalRegras(true)}
             tabIndex={0}
           >
@@ -86,12 +94,18 @@ export default function TimeCampeaoDoDiaPage() {
           </button>
         </div>
 
-        {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
+        {showModalRegras && (
+          <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />
+        )}
 
-        <div className="w-full flex flex-col items-center gap-12 mt-4 max-w-5xl">
+        <div className="mt-4 flex w-full max-w-5xl flex-col items-center gap-12">
           <CardsDestaquesDiaV2 confrontos={confrontos} times={mockTimes} />
 
-          <BannerUpload bannerUrl={bannerUrl} setBannerUrl={setBannerUrl} timeCampeao={null} />
+          <BannerUpload
+            bannerUrl={bannerUrl}
+            setBannerUrl={setBannerUrl}
+            timeCampeao={null}
+          />
         </div>
       </main>
     </>

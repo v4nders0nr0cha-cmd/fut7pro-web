@@ -8,10 +8,16 @@ type Props = {
   onCancel?: () => void;
 };
 
-export default function TorneioForm({ onSave, initialData = {}, onCancel }: Props) {
+export default function TorneioForm({
+  onSave,
+  initialData = {},
+  onCancel,
+}: Props) {
   const [form, setForm] = useState<Partial<Torneio>>(initialData);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+  function handleChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
@@ -24,9 +30,11 @@ export default function TorneioForm({ onSave, initialData = {}, onCancel }: Prop
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="bg-card mx-auto flex w-full max-w-md flex-col gap-4 rounded-2xl shadow-md"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">Adicionar/Editar Torneio</h2>
+      <h2 className="text-center text-xl font-bold text-yellow-400">
+        Adicionar/Editar Torneio
+      </h2>
       <input
         name="nome"
         placeholder="Nome do Torneio"
@@ -83,7 +91,11 @@ export default function TorneioForm({ onSave, initialData = {}, onCancel }: Prop
         Salvar
       </button>
       {onCancel && (
-        <button type="button" className="btn-secondary w-full" onClick={onCancel}>
+        <button
+          type="button"
+          className="btn-secondary w-full"
+          onClick={onCancel}
+        >
           Cancelar
         </button>
       )}

@@ -18,8 +18,16 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   }
 
   if (req.method === "POST") {
-    const { rachaSlug, type, titulo, mensagem, prioridade, remetente, assunto, referenciaId } =
-      req.body;
+    const {
+      rachaSlug,
+      type,
+      titulo,
+      mensagem,
+      prioridade,
+      remetente,
+      assunto,
+      referenciaId,
+    } = req.body;
 
     if (!rachaSlug || !type || !titulo || !mensagem) {
       return res.status(400).json({ error: "Campos obrigatórios ausentes" });

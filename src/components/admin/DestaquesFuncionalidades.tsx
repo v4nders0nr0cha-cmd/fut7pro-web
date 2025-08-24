@@ -6,19 +6,21 @@ import Image from "next/image";
 
 export default function DestaquesFuncionalidades() {
   return (
-    <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3 mt-2">
+    <section className="mt-2 grid w-full grid-cols-1 gap-6 md:grid-cols-3">
       {/* Sorteio Inteligente */}
       <Link
         href="/admin/partidas/sorteio-inteligente"
-        className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#ffdf38] cursor-pointer group"
+        className="group flex cursor-pointer flex-col items-center rounded-xl bg-[#23272F] p-6 shadow ring-[#ffdf38] transition hover:scale-[1.025] hover:shadow-lg focus:ring-2"
         aria-label="Sorteio Inteligente"
       >
-        <FaRandom className="text-[#ffdf38] w-10 h-10 mb-2 group-hover:rotate-12 transition" />
-        <span className="text-xl font-bold text-white mb-1">Sorteio Inteligente</span>
-        <span className="text-sm text-gray-400 mb-2 text-center">
+        <FaRandom className="mb-2 h-10 w-10 text-[#ffdf38] transition group-hover:rotate-12" />
+        <span className="mb-1 text-xl font-bold text-white">
+          Sorteio Inteligente
+        </span>
+        <span className="mb-2 text-center text-sm text-gray-400">
           Monte os times de forma automática, balanceada e transparente.
         </span>
-        <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#ffdf38] text-xs font-semibold">
+        <span className="mt-auto rounded bg-[#1a1e22] px-4 py-1 text-xs font-semibold text-[#ffdf38]">
           Acessar Sorteio
         </span>
       </Link>
@@ -26,15 +28,15 @@ export default function DestaquesFuncionalidades() {
       {/* Times do Dia */}
       <Link
         href="/partidas/times-do-dia"
-        className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#00d3d4] cursor-pointer group"
+        className="group flex cursor-pointer flex-col items-center rounded-xl bg-[#23272F] p-6 shadow ring-[#00d3d4] transition hover:scale-[1.025] hover:shadow-lg focus:ring-2"
         aria-label="Times do Dia"
       >
-        <FaUsers className="text-[#00d3d4] w-10 h-10 mb-2 group-hover:scale-110 transition" />
-        <span className="text-xl font-bold text-white mb-1">Times do Dia</span>
-        <span className="text-sm text-gray-400 mb-2 text-center">
+        <FaUsers className="mb-2 h-10 w-10 text-[#00d3d4] transition group-hover:scale-110" />
+        <span className="mb-1 text-xl font-bold text-white">Times do Dia</span>
+        <span className="mb-2 text-center text-sm text-gray-400">
           Veja as escalações e confrontos automáticos do racha de hoje.
         </span>
-        <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#00d3d4] text-xs font-semibold">
+        <span className="mt-auto rounded bg-[#1a1e22] px-4 py-1 text-xs font-semibold text-[#00d3d4]">
           Ver Escalações
         </span>
       </Link>
@@ -42,24 +44,26 @@ export default function DestaquesFuncionalidades() {
       {/* Card do Time Campeão do Dia */}
       <Link
         href="/admin/partidas/time-campeao-do-dia"
-        className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#ffd600] cursor-pointer group"
+        className="group flex cursor-pointer flex-col items-center rounded-xl bg-[#23272F] p-6 shadow ring-[#ffd600] transition hover:scale-[1.025] hover:shadow-lg focus:ring-2"
         aria-label="Time Campeão do Dia"
       >
-        <div className="relative w-28 h-20 mb-2">
+        <div className="relative mb-2 h-20 w-28">
           <Image
             src="/images/times/time_campeao_padrao_01.png"
             alt="Foto do Time Campeão do Dia"
             fill
-            className="rounded-xl object-cover border-4 border-[#ffd600]"
+            className="rounded-xl border-4 border-[#ffd600] object-cover"
             sizes="112px"
             priority
           />
         </div>
-        <span className="text-xl font-bold text-[#ffd600] mb-1">Time Campeão do Dia</span>
-        <span className="text-sm text-gray-400 mb-2 text-center">
+        <span className="mb-1 text-xl font-bold text-[#ffd600]">
+          Time Campeão do Dia
+        </span>
+        <span className="mb-2 text-center text-sm text-gray-400">
           Veja a foto, os jogadores e a conquista do time campeão do racha.
         </span>
-        <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#ffd600] text-xs font-semibold">
+        <span className="mt-auto rounded bg-[#1a1e22] px-4 py-1 text-xs font-semibold text-[#ffd600]">
           Ver Campeão
         </span>
       </Link>

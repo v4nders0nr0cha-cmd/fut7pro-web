@@ -45,23 +45,25 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-          <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-6 text-center">
-            <div className="flex justify-center mb-4">
+        <div className="flex min-h-screen items-center justify-center bg-gray-900 px-4">
+          <div className="w-full max-w-md rounded-lg bg-gray-800 p-6 text-center shadow-lg">
+            <div className="mb-4 flex justify-center">
               <AlertTriangle className="h-12 w-12 text-red-500" />
             </div>
 
-            <h2 className="text-xl font-semibold text-white mb-2">Ops! Algo deu errado</h2>
+            <h2 className="mb-2 text-xl font-semibold text-white">
+              Ops! Algo deu errado
+            </h2>
 
-            <p className="text-gray-300 mb-6">
-              Encontramos um problema inesperado. Tente recarregar a página ou entre em contato
-              conosco se o problema persistir.
+            <p className="mb-6 text-gray-300">
+              Encontramos um problema inesperado. Tente recarregar a página ou
+              entre em contato conosco se o problema persistir.
             </p>
 
             <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
               >
                 <RefreshCw className="h-4 w-4" />
                 Recarregar Página
@@ -69,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <button
                 onClick={() => window.history.back()}
-                className="w-full bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                className="w-full rounded-lg bg-gray-600 px-4 py-2 font-medium text-white transition-colors hover:bg-gray-700"
               >
                 Voltar
               </button>
@@ -77,21 +79,23 @@ export class ErrorBoundary extends Component<Props, State> {
 
             {process.env.NODE_ENV === "development" && this.state.error && (
               <details className="mt-6 text-left">
-                <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+                <summary className="cursor-pointer text-sm text-gray-400 hover:text-gray-300">
                   Detalhes do erro (apenas em desenvolvimento)
                 </summary>
-                <div className="mt-2 p-3 bg-gray-700 rounded text-xs text-red-300 font-mono overflow-auto">
+                <div className="mt-2 overflow-auto rounded bg-gray-700 p-3 font-mono text-xs text-red-300">
                   <div className="mb-2">
                     <strong>Erro:</strong> {this.state.error.message}
                   </div>
                   <div className="mb-2">
                     <strong>Stack:</strong>
-                    <pre className="whitespace-pre-wrap mt-1">{this.state.error.stack}</pre>
+                    <pre className="mt-1 whitespace-pre-wrap">
+                      {this.state.error.stack}
+                    </pre>
                   </div>
                   {this.state.errorInfo && (
                     <div>
                       <strong>Component Stack:</strong>
-                      <pre className="whitespace-pre-wrap mt-1">
+                      <pre className="mt-1 whitespace-pre-wrap">
                         {this.state.errorInfo.componentStack}
                       </pre>
                     </div>
@@ -131,21 +135,23 @@ export function ErrorFallback({
   resetErrorBoundary: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-lg p-6 text-center">
-        <div className="flex justify-center mb-4">
+    <div className="flex min-h-screen items-center justify-center bg-gray-900 px-4">
+      <div className="w-full max-w-md rounded-lg bg-gray-800 p-6 text-center shadow-lg">
+        <div className="mb-4 flex justify-center">
           <AlertTriangle className="h-12 w-12 text-red-500" />
         </div>
 
-        <h2 className="text-xl font-semibold text-white mb-2">Erro na Aplicação</h2>
+        <h2 className="mb-2 text-xl font-semibold text-white">
+          Erro na Aplicação
+        </h2>
 
-        <p className="text-gray-300 mb-6">
+        <p className="mb-6 text-gray-300">
           {error.message || "Ocorreu um erro inesperado. Tente novamente."}
         </p>
 
         <button
           onClick={resetErrorBoundary}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
         >
           Tentar Novamente
         </button>

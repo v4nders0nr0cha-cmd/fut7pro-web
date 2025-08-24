@@ -12,9 +12,9 @@ export default function NotificacaoBadge({ rachaSlug }: NotificacaoBadgeProps) {
 
   return (
     <div className="relative flex items-center">
-      <FaBell className="text-yellow-400 text-2xl" />
+      <FaBell className="text-2xl text-yellow-400" />
       {unreadCount > 0 && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-xs text-white font-bold rounded-full px-1.5 py-0.5 shadow">
+        <span className="absolute -right-2 -top-2 rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white shadow">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}

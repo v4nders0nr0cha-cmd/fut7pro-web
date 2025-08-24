@@ -19,20 +19,21 @@ export default function PartidasPage() {
         />
       </Head>
 
-      <div className="w-full flex flex-col items-center justify-center text-center p-4 pb-24 md:pb-8 min-h-[60vh]">
-        <FaHistory className="text-yellow-400 text-5xl mb-4" />
-        <h2 className="text-2xl md:text-3xl font-black mb-2 text-yellow-400">
+      <div className="flex min-h-[60vh] w-full flex-col items-center justify-center p-4 pb-24 text-center md:pb-8">
+        <FaHistory className="mb-4 text-5xl text-yellow-400" />
+        <h2 className="mb-2 text-2xl font-black text-yellow-400 md:text-3xl">
           Gerencie as Partidas do seu Racha
         </h2>
-        <p className="text-base text-gray-300 mb-8 max-w-xl">
-          As partidas são criadas automaticamente após o sorteio dos times do dia. Para editar,
-          corrigir ou excluir partidas já realizadas, acesse o histórico abaixo.
+        <p className="mb-8 max-w-xl text-base text-gray-300">
+          As partidas são criadas automaticamente após o sorteio dos times do
+          dia. Para editar, corrigir ou excluir partidas já realizadas, acesse o
+          histórico abaixo.
         </p>
         <Link
           href="/admin/partidas/historico"
-          className="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-6 py-3 rounded-xl shadow transition text-lg"
+          className="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-6 py-3 text-lg font-bold text-white shadow transition hover:bg-cyan-700"
         >
-          <FaHistory className="text-white text-xl" />
+          <FaHistory className="text-xl text-white" />
           Ir para o Histórico de Partidas
         </Link>
       </div>

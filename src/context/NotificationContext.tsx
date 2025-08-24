@@ -40,7 +40,9 @@ type NotificationContextType = Alertas & {
   removeToast: (id: string) => void;
   notificacoes: Notificacao[];
   marcarNotificacaoComoLida: (id: string) => void;
-  adicionarNotificacao: (not: Omit<Notificacao, "id" | "lida" | "data">) => void;
+  adicionarNotificacao: (
+    not: Omit<Notificacao, "id" | "lida" | "data">,
+  ) => void;
 };
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -67,11 +69,13 @@ const generateToastId = () => {
 };
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [alertas, setAlertas] = useState<Omit<Alertas, "notificacoesNaoLidas">>({
-    jogadores: 0,
-    partidas: 0,
-    config: 0,
-  });
+  const [alertas, setAlertas] = useState<Omit<Alertas, "notificacoesNaoLidas">>(
+    {
+      jogadores: 0,
+      partidas: 0,
+      config: 0,
+    },
+  );
 
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([
     {
@@ -115,7 +119,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(simulate);
   }, []);
 
-  const notify = ({ message, type = "info" }: { message: string; type?: ToastType }) => {
+  const notify = ({
+    message,
+    type = "info",
+  }: {
+    message: string;
+    type?: ToastType;
+  }) => {
     // Só dispara se não houver toast visível (anti-spam visual)
     if (toasts.length === 0) {
       const id = generateToastId();
@@ -140,10 +150,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [toasts]);
 
   const marcarNotificacaoComoLida = (id: string) => {
-    setNotificacoes((prev) => prev.map((n) => (n.id === id ? { ...n, lida: true } : n)));
+    setNotificacoes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, lida: true } : n)),
+    );
   };
 
-  const adicionarNotificacao = (not: Omit<Notificacao, "id" | "lida" | "data">) => {
+  const adicionarNotificacao = (
+    not: Omit<Notificacao, "id" | "lida" | "data">,
+  ) => {
     setNotificacoes((prev) => [
       {
         ...not,

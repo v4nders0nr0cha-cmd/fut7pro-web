@@ -71,9 +71,11 @@ export default function ProtectedRoute({
   if (isLoading) {
     return (
       fallback || (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-4 text-lg text-textoSuave">Verificando autenticação...</span>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="border-primary h-12 w-12 animate-spin rounded-full border-b-2"></div>
+          <span className="text-textoSuave ml-4 text-lg">
+            Verificando autenticação...
+          </span>
         </div>
       )
     );

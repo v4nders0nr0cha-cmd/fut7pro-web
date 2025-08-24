@@ -4,7 +4,10 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma"; // ajuste o path se seu prisma está em outro local
 // import { getSession } from "next-auth/react"; // Descomente se for usar autenticação
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
   const { slug } = req.query;
 
   // Auth opcional (exemplo):
@@ -34,23 +37,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: a.role,
         status: a.status,
         criadoEm: a.criadoEm,
-      }))
+      })),
     );
   }
 
   if (req.method === "POST") {
     const { email, role } = req.body;
-    if (!email || !role) return res.status(400).json({ error: "Dados obrigatórios não enviados" });
+    if (!email || !role)
+      return res.status(400).json({ error: "Dados obrigatórios não enviados" });
 
     // Busca usuário pelo e-mail (só pode adicionar admin já cadastrado)
     const usuario = await prisma.usuario.findUnique({ where: { email } });
-    if (!usuario) return res.status(400).json({ error: "Usuário não encontrado" });
+    if (!usuario)
+      return res.status(400).json({ error: "Usuário não encontrado" });
 
     // Evita duplicidade
     const exists = await prisma.rachaAdmin.findFirst({
       where: { usuarioId: usuario.id, rachaId: racha.id },
     });
-    if (exists) return res.status(409).json({ error: "Usuário já é admin deste racha" });
+    if (exists)
+      return res.status(409).json({ error: "Usuário já é admin deste racha" });
 
     const novo = await prisma.rachaAdmin.create({
       data: {

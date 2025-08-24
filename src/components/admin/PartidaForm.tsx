@@ -9,7 +9,11 @@ type PartidaFormProps = {
   onCancel?: () => void;
 };
 
-export default function PartidaForm({ partida, onSave, onCancel }: PartidaFormProps) {
+export default function PartidaForm({
+  partida,
+  onSave,
+  onCancel,
+}: PartidaFormProps) {
   const [form, setForm] = useState<Partial<Partida>>(partida || {});
 
   useEffect(() => {
@@ -39,96 +43,102 @@ export default function PartidaForm({ partida, onSave, onCancel }: PartidaFormPr
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 bg-[#191919] rounded-xl shadow-lg p-4 border border-[#232323] max-w-xl w-full"
+      className="flex w-full max-w-xl flex-col gap-4 rounded-xl border border-[#232323] bg-[#191919] p-4 shadow-lg"
       autoComplete="off"
     >
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Data</label>
+        <label className="mb-1 block font-medium text-yellow-500">Data</label>
         <input
           type="date"
           name="data"
           value={form.data ? form.data.slice(0, 10) : ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           required
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Horário</label>
+        <label className="mb-1 block font-medium text-yellow-500">
+          Horário
+        </label>
         <input
           type="time"
           name="horario"
           value={form.horario || ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           required
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Local</label>
+        <label className="mb-1 block font-medium text-yellow-500">Local</label>
         <input
           name="local"
           value={form.local || ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           maxLength={40}
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Time A</label>
+        <label className="mb-1 block font-medium text-yellow-500">Time A</label>
         <input
           name="timeA"
           value={form.timeA || ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           required
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Gols Time A</label>
+        <label className="mb-1 block font-medium text-yellow-500">
+          Gols Time A
+        </label>
         <input
           type="number"
           name="golsTimeA"
           value={form.golsTimeA ?? ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           min={0}
           required
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Time B</label>
+        <label className="mb-1 block font-medium text-yellow-500">Time B</label>
         <input
           name="timeB"
           value={form.timeB || ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           required
         />
       </div>
       <div>
-        <label className="block font-medium text-yellow-500 mb-1">Gols Time B</label>
+        <label className="mb-1 block font-medium text-yellow-500">
+          Gols Time B
+        </label>
         <input
           type="number"
           name="golsTimeB"
           value={form.golsTimeB ?? ""}
           onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          className="w-full rounded border border-[#333] bg-[#111] px-3 py-2 text-white focus:border-yellow-500 focus:outline-none"
           min={0}
           required
         />
       </div>
-      <div className="flex gap-4 mt-2">
+      <div className="mt-2 flex gap-4">
         <button
           type="submit"
-          className="bg-yellow-500 text-gray-900 font-bold py-2 rounded hover:bg-yellow-600 transition shadow w-full"
+          className="w-full rounded bg-yellow-500 py-2 font-bold text-gray-900 shadow transition hover:bg-yellow-600"
         >
           {form.id ? "Salvar Alterações" : "Cadastrar Partida"}
         </button>
         {onCancel && (
           <button
             type="button"
-            className="bg-gray-700 text-white py-2 rounded hover:bg-gray-800 transition w-full"
+            className="w-full rounded bg-gray-700 py-2 text-white transition hover:bg-gray-800"
             onClick={onCancel}
           >
             Cancelar
