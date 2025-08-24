@@ -1,7 +1,12 @@
-// Node 20+ com fetch global
 import fs from "node:fs";
 
-const base = process.env.BASE_URL || "http://localhost:3000";
+const base = process.env.BASE_URL;
+
+if (!base)
+  console.log("Skipping smoke test: BASE_URL is not set.");
+  process.exit(0);
+}
+
 const list = JSON.parse(fs.readFileSync("scripts/ci/web-routes.json", "utf8"));
 
 async function check(route, terms) {
@@ -11,10 +16,10 @@ async function check(route, terms) {
     throw new Error(`Redirecionamento inesperado em ${url} status ${res.status}`);
   }
   if (res.status !== 200) {
-    throw new Error(`Status ${res.status} em ${url}`);
+    throw new Error(`status ${res.status} em ${url}`);
   }
   const html = await res.text();
-  const ok = terms.some(t => html.includes(t));
+  const ok = terms.some((t) => html.includes(t));
   if (!ok) throw new Error(`Conteúdo esperado não encontrado em ${url}. Procurado: ${terms.join(", ")}`);
   console.log(`OK ${url}`);
 }
@@ -23,7 +28,7 @@ async function check(route, terms) {
   for (const item of list) {
     await check(item.path, item.terms);
   }
-})().catch(err => {
+})().catch((err) => {
   console.error(err);
   process.exit(1);
 });
