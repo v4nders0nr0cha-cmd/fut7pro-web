@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useTema } from "@/hooks/useTema";
@@ -23,6 +24,8 @@ const patrocinadores = [
 export default function Footer() {
   const tema = useTema();
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+  const showWhatsApp = pathname === "/partidas/times-do-dia";
 
   useEffect(() => {
     const scroll = () => {
@@ -118,11 +121,13 @@ export default function Footer() {
                   <FaFacebookF className="text-yellow-400 hover:text-black text-lg" />
                 </div>
               </Link>
-              <Link href="https://wa.me/seuNumero" target="_blank" aria-label="WhatsApp">
-                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
-                  <FaWhatsapp className="text-yellow-400 hover:text-black text-lg" />
-                </div>
-              </Link>
+              {showWhatsApp && (
+                <Link href="https://wa.me/seuNumero" target="_blank" aria-label="WhatsApp">
+                  <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
+                    <FaWhatsapp className="text-yellow-400 hover:text-black text-lg" />
+                  </div>
+                </Link>
+              )}
               <Link href="https://instagram.com/seuPerfil" target="_blank" aria-label="Instagram">
                 <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
                   <FaInstagram className="text-yellow-400 hover:text-black text-lg" />
