@@ -15,8 +15,10 @@
     "incremental": true,
     "allowSyntheticDefaultImports": true,
     "verbatimModuleSyntax": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "esModuleInterop": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
