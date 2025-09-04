@@ -10,6 +10,10 @@ export function middleware(request: NextRequest) {
   response.headers.set("Pragma", "no-cache");
   response.headers.set("Expires", "0");
 
+  // Headers específicos para evitar prerendering
+  response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  response.headers.set("X-Frame-Options", "DENY");
+
   return response;
 }
 

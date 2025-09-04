@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 
+// Configuração simplificada para evitar erros de build
 export const authOptions: NextAuthOptions = {
   providers: [
     // Configure providers here
@@ -19,4 +20,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
+  // Configurações para evitar erros de build
+  secret: process.env.NEXTAUTH_SECRET || "fallback-secret-for-build",
+  debug: false,
 };

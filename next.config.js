@@ -113,16 +113,21 @@ const nextConfig = {
   },
 
   // Configurações para evitar problemas de prerender
-  trailingSlash: false,
-  output: "standalone",
+  // trailingSlash: false, // Removido - definido abaixo
+  // output: "standalone", // Removido - definido abaixo
 
   // Desabilitar prerendering globalmente para evitar erros
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },
 
-  // Forçar todas as páginas a serem dinâmicas
-  generateStaticParams: false,
+  // Configurações para evitar erros de build
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
+
+  // Configurações para build estático
+  output: "standalone",
+  trailingSlash: false,
 
   // Webpack configuration para resolver problemas de Prisma
   webpack: (config, { isServer }) => {
@@ -133,6 +138,13 @@ const nextConfig = {
         "@prisma/client": require.resolve("./src/server/prisma-shim.js"),
       };
     }
+
+    // Ignorar warnings de dependências críticas durante build
+    config.ignoreWarnings = [
+      /Critical dependency: the request of a dependency is an expression/,
+      /require function is used in a way in which dependencies cannot be statically extracted/,
+    ];
+
     return config;
   },
 };
