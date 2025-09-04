@@ -112,6 +112,18 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
+  // Configurações para evitar problemas de prerender
+  trailingSlash: false,
+  output: "standalone",
+
+  // Desabilitar prerendering globalmente para evitar erros
+  experimental: {
+    missingSuspenseWithCSRBailout: false,
+  },
+
+  // Forçar todas as páginas a serem dinâmicas
+  generateStaticParams: false,
+
   // Webpack configuration para resolver problemas de Prisma
   webpack: (config, { isServer }) => {
     if (!isServer) {

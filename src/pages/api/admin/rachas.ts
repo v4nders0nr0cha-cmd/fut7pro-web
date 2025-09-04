@@ -14,8 +14,9 @@ import { prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Headers para evitar cache e problemas de prerender
-  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
 
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {
