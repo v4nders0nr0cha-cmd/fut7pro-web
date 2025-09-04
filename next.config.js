@@ -112,10 +112,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // Desabilitar prerendering para páginas problemáticas
-  trailingSlash: false,
-  output: "standalone",
-
   // Webpack configuration para resolver problemas de Prisma
   webpack: (config, { isServer }) => {
     if (!isServer) {
