@@ -1,9 +1,20 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+
+// Configurar runtime para Node.js (necessário para Prisma)
+export const config = {
+  api: {
+    runtime: "nodejs",
+  },
+};
+import { prisma } from "@/server/prisma";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route"; // Caminho correto conforme seu projeto
+import { authOptions } from "@/server/auth/options";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Headers para evitar cache e problemas de prerender
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+
   if (req.method !== "POST") return res.status(405).end();
 
   const session = await getServerSession(req, res, authOptions);

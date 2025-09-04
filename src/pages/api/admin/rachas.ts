@@ -1,11 +1,22 @@
 // src/pages/api/admin/rachas.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
+
+// Configurar runtime para Node.js (necessário para Prisma)
+export const config = {
+  api: {
+    runtime: "nodejs",
+  },
+};
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/server/auth/options";
+import { prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Headers para evitar cache e problemas de prerender
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Pragma", "no-cache");
+
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {
     return res.status(401).json({ error: "Não autenticado" });

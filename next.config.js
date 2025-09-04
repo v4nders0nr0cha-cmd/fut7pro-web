@@ -111,6 +111,18 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // Webpack configuration para resolver problemas de Prisma
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // No lado do cliente, substituir @prisma/client por um shim vazio
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@prisma/client": require.resolve("./src/server/prisma-shim.js"),
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;
