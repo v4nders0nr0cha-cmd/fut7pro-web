@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://app.fut7pro.com.br/sitemap.xml
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /superadmin/
+Disallow: /api/
+
+# Allow public pages
+Allow: /
+Allow: /partidas/
+Allow: /estatisticas/
+Allow: /os-campeoes/
+Allow: /grandes-torneios/
+Allow: /atletas/
+Allow: /sobre-nos/
