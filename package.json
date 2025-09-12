@@ -10,7 +10,7 @@
     "lint:fix": "next lint --dir src --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky install",
+    "prepare": "command -v husky >/dev/null 2>&1 && husky install || true",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
