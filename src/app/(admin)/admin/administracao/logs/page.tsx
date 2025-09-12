@@ -2,6 +2,9 @@
 
 import { useAdminLogs } from "@/hooks/useAdminLogs";
 import { useAdmin } from "@/hooks/useAdmin";
+
+// Forçar renderização no cliente para evitar problemas de template
+export const dynamic = 'force-dynamic';
 import { useState } from "react";
 import { Search, Filter, Download } from "lucide-react";
 

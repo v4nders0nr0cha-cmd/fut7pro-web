@@ -1,4 +1,8 @@
 "use client";
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
 // src/app/admin/partidas/time-campeao-do-dia/page.tsx
 import Head from "next/head";
 import { useState } from "react";
@@ -96,3 +100,5 @@ export default function TimeCampeaoDoDiaPage() {
     </>
   );
 }
+
+

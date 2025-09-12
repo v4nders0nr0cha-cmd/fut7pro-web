@@ -1,8 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaSpinner } from "react-icons/fa";
+import useSubscription from "@/hooks/useSubscription";
+import SubscriptionStatusCard from "@/components/billing/SubscriptionStatusCard";
+import BillingAPI from "@/lib/api/billing";
+import config from "@/config/env";
 
 // Não altere nada nos planos! Apenas use o mock fiel fornecido:
 const ARMAZENAMENTO =
@@ -54,26 +58,28 @@ const PLANOS = {
       botao: "Assinar Mensal + Marketing",
     },
     {
-      nome: "Enterprise White Label",
-      preco: "R$ 990/mês",
+      nome: "Enterprise (Pagamento Mensal)",
+      preco: "R$ 700/mês + PIX R$ 3.480",
       badge: "Exclusivo",
       descricao:
-        "Plano para clubes, ligas e grandes organizações que exigem exclusividade total. Nenhuma referência ao Fut7Pro, sistema 100% com sua marca, domínio próprio, PDFs e e-mails personalizados, suporte premium e limites ampliados.",
+        "Solução completa para rachas profissionais, empresas e grupos que precisam de recursos avançados, suporte prioritário e personalização total.",
       recursos: [
-        "Nenhuma referência ao Fut7Pro (logo, frase, links, PDF, e-mails, favicon, etc)",
-        ARMAZENAMENTO,
-        "Domínio próprio e e-mails personalizados",
-        "Design, cores, frases e ícones com personalização exclusiva",
-        "PDFs e relatórios com a marca do cliente",
-        "Powered by exclusivo para sua marca",
-        "Suporte premium e SLA diferenciado",
-        "Consultoria e onboarding exclusivo",
-        "Limites ampliados (administradores, uploads)",
-        "Contrato, nota fiscal e recursos especiais sob demanda",
-        "Acesso antecipado a novas funcionalidades",
+        "Tudo do Plano Anual + Marketing",
+        "Suporte prioritário 24/7 (WhatsApp, e-mail e telefone)",
+        "Personalização completa da identidade visual (logo, cores, fontes, layout)",
+        "Página personalizada do racha (domínio próprio opcional)",
+        "Integração com sistemas externos (APIs personalizadas)",
+        "Relatórios avançados e analytics detalhados",
+        "Treinamento personalizado para administradores",
+        "Consultoria especializada em monetização",
+        "Backup e segurança de nível empresarial",
+        "SLA de 99.9% de disponibilidade",
+        "Até 10 administradores",
+        "Suporte para múltiplos rachas (até 5)",
+        "Funcionalidades exclusivas e em desenvolvimento",
       ],
-      limites: ["Racha, liga ou clube ilimitado"],
-      botao: "Solicitar Enterprise",
+      limites: ["Até 5 rachas por assinatura", "Domínio próprio opcional"],
+      botao: "Assinar Enterprise",
     },
   ],
   anual: [
@@ -152,9 +158,71 @@ const PLANO_ATUAL = {
 };
 
 export default function PlanosLimitesPage() {
-  const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">(
-    PLANO_ATUAL.tipo as "mensal" | "anual"
-  );
+  // Mock tenantId - em produção, viria do contexto de autenticação
+  const tenantId = config.demoTenantId;
+
+  const {
+    subscription,
+    plans,
+    subscriptionStatus,
+    loading,
+    error,
+    refreshSubscription,
+    refreshPlans,
+  } = useSubscription(tenantId);
+
+  const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
+  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
+
+  // Determinar o tipo de plano baseado na assinatura atual
+  useEffect(() => {
+    if (subscription?.planKey) {
+      const isAnual =
+        subscription.planKey.includes("yearly") || subscription.planKey.includes("anual");
+      setPlanoAtivo(isAnual ? "anual" : "mensal");
+    }
+  }, [subscription]);
+
+  const handleAssinarPlano = async (planKey: string) => {
+    if (!tenantId) {
+      alert("Tenant ID não encontrado");
+      return;
+    }
+
+    try {
+      setIsCreatingSubscription(true);
+
+      if (planKey === "monthly_enterprise") {
+        // Fluxo especial para Enterprise
+        const result = await BillingAPI.startEnterpriseMonthly({
+          tenantId,
+          payerEmail: "admin@exemplo.com", // Em produção, viria do usuário logado
+          payerName: "Administrador", // Em produção, viria do usuário logado
+        });
+
+        // Abrir URL de autorização em nova aba
+        window.open(result.preapprovalUrl, "_blank");
+
+        // Mostrar QR Code do PIX
+        alert(`PIX de R$ 3.480 gerado! QR Code: ${result.pix.qrCode}`);
+      } else {
+        // Fluxo normal para outros planos
+        const result = await BillingAPI.createSubscription({
+          tenantId,
+          planKey,
+          payerEmail: "admin@exemplo.com", // Em produção, viria do usuário logado
+        });
+
+        // Redirecionar para checkout
+        window.location.href = result.checkoutUrl;
+      }
+    } catch (err) {
+      console.error("Erro ao criar assinatura:", err);
+      alert("Erro ao criar assinatura. Tente novamente.");
+    } finally {
+      setIsCreatingSubscription(false);
+    }
+  };
 
   return (
     <>
@@ -176,43 +244,33 @@ export default function PlanosLimitesPage() {
           racha!
         </p>
 
-        {/* Cards do topo */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* Card: Ciclo do Plano */}
-          <div className="rounded-2xl bg-neutral-900 shadow-lg p-6 flex flex-col items-center justify-center border-2 border-neutral-800">
-            <div className="text-xl font-semibold mb-2 text-yellow-400">Ciclo do Plano</div>
-            <div className="flex items-end gap-2 mb-1">
-              <span className="text-4xl font-extrabold text-cyan-300">
-                {PLANO_ATUAL.diasRestantes}
-              </span>
-              <span className="text-lg text-neutral-300 mb-1">dias restantes</span>
-            </div>
-            <div className="w-full h-3 bg-neutral-800 rounded-full my-2">
-              <div
-                className="h-3 rounded-full bg-cyan-400"
-                style={{
-                  width: `${Math.max(0, Math.min((PLANO_ATUAL.diasRestantes / 30) * 100, 100))}%`,
-                }}
-              />
-            </div>
-            <div className="text-xs text-neutral-400">
-              Renovação em{" "}
-              <span className="font-bold text-yellow-400">{PLANO_ATUAL.renovacao}</span>
+        {/* Card de Status da Assinatura Atual */}
+        {subscription && (
+          <div className="mb-8">
+            <SubscriptionStatusCard
+              subscription={subscription}
+              status={subscriptionStatus}
+              onRefresh={refreshSubscription}
+            />
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-8">
+            <FaSpinner className="animate-spin text-2xl text-yellow-400 mr-3" />
+            <span className="text-lg text-gray-300">Carregando planos...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 flex justify-center">
+            <div className="bg-red-600/90 text-white font-semibold rounded-xl px-6 py-3 shadow-lg text-lg text-center w-full md:w-auto">
+              Erro ao carregar dados: {error}
             </div>
           </div>
-          {/* Card: Plano Atual */}
-          <div className="rounded-2xl bg-neutral-900 shadow-lg p-6 flex flex-col items-center justify-center border-2 border-neutral-800">
-            <div className="text-xl font-semibold mb-2 text-yellow-400">Plano Atual</div>
-            <div className="text-2xl font-bold mb-1">{PLANO_ATUAL.nome}</div>
-            <div className="flex items-center gap-2 mb-2">
-              <FaCheckCircle className="text-green-400" aria-label="Ativo" />
-              <span className="text-green-300 font-semibold">Ativo</span>
-            </div>
-            <button className="mt-2 px-6 py-2 rounded-xl bg-yellow-400 text-black font-bold hover:bg-yellow-500 transition text-sm">
-              Renovar Plano
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Botões de seleção de planos */}
         <div className="flex justify-center mb-10">
@@ -231,72 +289,110 @@ export default function PlanosLimitesPage() {
         </div>
 
         {/* Grid de planos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {PLANOS[planoAtivo].map((plano, idx) => (
-            <div
-              key={plano.nome}
-              className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${plano.destaque ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
-            >
-              {/* Badge do plano */}
-              {plano.badge && (
-                <span
-                  className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {PLANOS[planoAtivo].map((plano, idx) => {
+              // Mapear planos estáticos para chaves do MP
+              const getPlanKey = (plano: any) => {
+                if (plano.nome.includes("Mensal Essencial")) return "monthly_essential";
+                if (plano.nome.includes("Mensal + Marketing")) return "monthly_marketing";
+                if (plano.nome.includes("Enterprise")) return "monthly_enterprise";
+                if (plano.nome.includes("Anual Essencial")) return "yearly_essential";
+                if (plano.nome.includes("Anual + Marketing")) return "yearly_marketing";
+                if (plano.nome.includes("Enterprise White Label")) return "yearly_enterprise";
+                return "";
+              };
+
+              const planKey = getPlanKey(plano);
+              const isCurrentPlan = subscription?.planKey === planKey;
+
+              return (
+                <div
+                  key={plano.nome}
+                  className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${plano.destaque ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
                 >
-                  {plano.badge}
-                </span>
-              )}
-              {/* Nome e Preço */}
-              <div className="text-2xl font-extrabold mb-1">{plano.nome}</div>
-              <div className="text-xl font-bold mb-2">{plano.preco}</div>
-              {/* Descrição curta */}
-              <div
-                className={`mb-4 text-base ${plano.destaque ? "text-black/80" : "text-neutral-300"}`}
-              >
-                {plano.descricao}
-              </div>
-              {/* Recursos */}
-              <ul className="mb-4 space-y-1">
-                {plano.recursos.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-base">
+                  {/* Badge do plano */}
+                  {plano.badge && (
                     <span
-                      className={`font-bold ${plano.destaque ? "text-yellow-900" : "text-yellow-400"}`}
+                      className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
                     >
-                      ✓
+                      {plano.badge}
                     </span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              {/* Limites */}
-              <div className="mb-4 flex flex-wrap gap-2">
-                {plano.limites.map((limite, i) => (
-                  <span
-                    key={i}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                  )}
+                  {/* Nome e Preço */}
+                  <div className="text-2xl font-extrabold mb-1">{plano.nome}</div>
+                  <div className="text-xl font-bold mb-2">{plano.preco}</div>
+                  {/* Descrição curta */}
+                  <div
+                    className={`mb-4 text-base ${plano.destaque ? "text-black/80" : "text-neutral-300"}`}
                   >
-                    {limite}
-                  </span>
-                ))}
-                {/* Badge verde específico */}
-                {plano.nome === "Enterprise White Label" ? (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
-                    Admins ilimitados
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
-                    4 administradores
-                  </span>
-                )}
-              </div>
-              {/* Botão de ação */}
-              <button
-                className={`mt-auto px-6 py-2 rounded-xl font-bold ${plano.destaque ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black" : "bg-yellow-400 text-black hover:bg-yellow-500"} transition`}
-              >
-                {plano.botao}
-              </button>
-            </div>
-          ))}
-        </div>
+                    {plano.descricao}
+                  </div>
+                  {/* Recursos */}
+                  <ul className="mb-4 space-y-1">
+                    {plano.recursos.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-base">
+                        <span
+                          className={`font-bold ${plano.destaque ? "text-yellow-900" : "text-yellow-400"}`}
+                        >
+                          ✓
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {/* Limites */}
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {plano.limites.map((limite, i) => (
+                      <span
+                        key={i}
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                      >
+                        {limite}
+                      </span>
+                    ))}
+                    {/* Badge verde específico */}
+                    {plano.nome === "Enterprise White Label" ? (
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
+                        Admins ilimitados
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
+                        4 administradores
+                      </span>
+                    )}
+                  </div>
+                  {/* Botão de ação */}
+                  <button
+                    onClick={() => handleAssinarPlano(planKey)}
+                    disabled={isCreatingSubscription || isCurrentPlan}
+                    className={`mt-auto px-6 py-2 rounded-xl font-bold ${
+                      isCurrentPlan
+                        ? "bg-green-500 text-white cursor-not-allowed"
+                        : plano.destaque
+                          ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black"
+                          : "bg-yellow-400 text-black hover:bg-yellow-500"
+                    } transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {isCreatingSubscription ? (
+                      <>
+                        <FaSpinner className="animate-spin inline mr-2" />
+                        Processando...
+                      </>
+                    ) : isCurrentPlan ? (
+                      <>
+                        <FaCheckCircle className="inline mr-2" />
+                        Plano Atual
+                      </>
+                    ) : (
+                      plano.botao
+                    )}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </main>
     </>
   );

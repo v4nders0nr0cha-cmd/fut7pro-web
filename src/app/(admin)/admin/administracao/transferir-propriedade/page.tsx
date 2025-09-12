@@ -1,6 +1,9 @@
 "use client";
 
 import Head from "next/head";
+
+// Forçar renderização no cliente para evitar problemas de template
+export const dynamic = "force-dynamic";
 import { useState } from "react";
 import RestrictAccess from "@/components/admin/RestrictAccess";
 

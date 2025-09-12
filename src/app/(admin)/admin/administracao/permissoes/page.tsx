@@ -1,6 +1,9 @@
 "use client";
 
 import Head from "next/head";
+
+// Forçar renderização no cliente para evitar problemas de template
+export const dynamic = "force-dynamic";
 import { BadgeCargo } from "@/components/admin/BadgeCargo";
 import RestrictAccess from "@/components/admin/RestrictAccess";
 import type { PermissaoAdmin } from "@/types/permissao";

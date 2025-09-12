@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { SWRConfig } from "swr";
 import { useAdmin } from "../../hooks/useAdmin";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 // Mock do NextAuth
 jest.mock("next-auth/react", () => ({

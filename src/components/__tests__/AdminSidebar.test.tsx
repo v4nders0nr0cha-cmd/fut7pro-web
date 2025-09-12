@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import AdminSidebar from "../admin/AdminSidebar";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 // Mock do Next.js router
 jest.mock("next/router", () => ({

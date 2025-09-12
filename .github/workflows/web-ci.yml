@@ -1,0 +1,44 @@
+name: Web CI
+
+on:
+  push:
+    paths:
+      - "fut7pro-web/**"
+  pull_request:
+    paths:
+      - "fut7pro-web/**"
+
+defaults:
+  run:
+    working-directory: fut7pro-web
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: fut7pro-web/package-lock.json
+
+      - name: Install
+        run: npm ci --legacy-peer-deps
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Test
+        run: npm run test:ci --if-present
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}

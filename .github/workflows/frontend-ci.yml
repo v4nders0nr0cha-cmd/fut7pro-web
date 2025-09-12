@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [quality, test, build]
     if: github.event_name == 'pull_request'
-    environment: preview
+    environment: development
     
     steps:
       - name: Checkout code

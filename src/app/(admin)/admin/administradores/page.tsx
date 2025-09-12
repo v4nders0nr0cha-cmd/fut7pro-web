@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+
+// Forçar renderização no cliente para evitar problemas de template
+export const dynamic = "force-dynamic";
 import { useRachaAdmins } from "@/hooks/useRachaAdmins";
 import AdminForm from "@/components/admin/AdminForm";
 import AdminList from "@/components/admin/AdminList";

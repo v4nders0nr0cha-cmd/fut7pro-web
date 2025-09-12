@@ -1,5 +1,3 @@
-const { withSentryConfig } = require("@sentry/nextjs");
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configurações básicas
@@ -42,8 +40,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withSentryConfig(
-  nextConfig,
-  { silent: true }, // opções do plugin
-  { hideSourceMaps: true } // opções do build (não expõe sourcemaps)
-);
+module.exports = nextConfig;

@@ -1,7 +1,7 @@
 "use client";
 
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function AdminDashboardPage() {

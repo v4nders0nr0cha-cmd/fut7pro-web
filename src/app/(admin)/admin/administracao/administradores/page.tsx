@@ -1,6 +1,9 @@
 "use client";
 
 import { useAdmin } from "@/hooks/useAdmin";
+
+// Forçar renderização no cliente para evitar problemas de template
+export const dynamic = "force-dynamic";
 import { useState } from "react";
 import { Plus, Edit, Trash2, User, Shield, Crown } from "lucide-react";
 

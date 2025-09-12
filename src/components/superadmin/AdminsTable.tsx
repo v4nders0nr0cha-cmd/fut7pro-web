@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaEye, FaKey, FaBan, FaCheck, FaUserShield } from "react-icons/fa";
-import { Role, Permission } from "@prisma/client";
+import { Role, Permission } from "@/common/enums";
 
 interface Admin {
   id: string;

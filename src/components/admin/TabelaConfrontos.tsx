@@ -29,22 +29,18 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
               <tr
                 key={idx}
                 className={`transition ${
-                  conf.resultadoIda ? "bg-green-800/40" : "hover:bg-zinc-700"
+                  conf.finalizada ? "bg-green-800/40" : "hover:bg-zinc-700"
                 }`}
               >
-                <td>{conf.rodada}</td>
+                <td>{conf.id}</td>
                 <td>
                   <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
-                    <span className="text-white">{nomesTimes[conf.ida.a]}</span>
-                    {conf.resultadoIda ? (
+                    <span className="text-white">{conf.timeA}</span>
+                    {conf.finalizada ? (
                       <>
-                        <span className="font-extrabold text-yellow-300">
-                          {conf.resultadoIda.placar.a}
-                        </span>
+                        <span className="font-extrabold text-yellow-300">{conf.golsTimeA}</span>
                         <span className="text-yellow-400">×</span>
-                        <span className="font-extrabold text-yellow-300">
-                          {conf.resultadoIda.placar.b}
-                        </span>
+                        <span className="font-extrabold text-yellow-300">{conf.golsTimeB}</span>
                       </>
                     ) : (
                       <>
@@ -53,7 +49,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                         <span className="text-yellow-300">--</span>
                       </>
                     )}
-                    <span className="text-white">{nomesTimes[conf.ida.b]}</span>
+                    <span className="text-white">{conf.timeB}</span>
                   </div>
                 </td>
                 <td className="text-center">
@@ -61,7 +57,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                     className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
                     onClick={() => onSelecionarPartida(idx, "ida")}
                   >
-                    {conf.resultadoIda ? "Editar" : "Lançar"}
+                    {conf.finalizada ? "Editar" : "Lançar"}
                   </button>
                 </td>
               </tr>
@@ -87,22 +83,18 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
               <tr
                 key={idx}
                 className={`transition ${
-                  conf.resultadoVolta ? "bg-green-800/40" : "hover:bg-zinc-700"
+                  conf.finalizada ? "bg-green-800/40" : "hover:bg-zinc-700"
                 }`}
               >
-                <td>{conf.rodada}</td>
+                <td>{conf.id}</td>
                 <td>
                   <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
-                    <span className="text-white">{nomesTimes[conf.volta.a]}</span>
-                    {conf.resultadoVolta ? (
+                    <span className="text-white">{conf.timeA}</span>
+                    {conf.finalizada ? (
                       <>
-                        <span className="font-extrabold text-yellow-300">
-                          {conf.resultadoVolta.placar.a}
-                        </span>
+                        <span className="font-extrabold text-yellow-300">{conf.golsTimeA}</span>
                         <span className="text-yellow-400">×</span>
-                        <span className="font-extrabold text-yellow-300">
-                          {conf.resultadoVolta.placar.b}
-                        </span>
+                        <span className="font-extrabold text-yellow-300">{conf.golsTimeB}</span>
                       </>
                     ) : (
                       <>
@@ -111,7 +103,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                         <span className="text-yellow-300">--</span>
                       </>
                     )}
-                    <span className="text-white">{nomesTimes[conf.volta.b]}</span>
+                    <span className="text-white">{conf.timeB}</span>
                   </div>
                 </td>
                 <td className="text-center">
@@ -119,7 +111,7 @@ export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Pr
                     className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
                     onClick={() => onSelecionarPartida(idx, "volta")}
                   >
-                    {conf.resultadoVolta ? "Editar" : "Lançar"}
+                    {conf.finalizada ? "Editar" : "Lançar"}
                   </button>
                 </td>
               </tr>

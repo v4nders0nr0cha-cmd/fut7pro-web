@@ -1,5 +1,6 @@
-"use client";
 // src/app/admin/partidas/historico/page.tsx
+"use client";
+
 import Head from "next/head";
 import { useState, useRef } from "react";
 import Link from "next/link";
@@ -27,17 +28,20 @@ function getLogoTime(nome: string) {
 
 // Agrupamento de partidas por data e local
 type GrupoPartidas = {
-  [key: string]: { idx: number; confronto: Confronto }[];
+  [key: string]: { idx: number; tipo: "ida" | "volta"; confronto: Confronto }[];
 };
 
 function agruparPorDataELocal(confrontos: Confronto[], times: any[]): GrupoPartidas {
   const grupos: GrupoPartidas = {};
   confrontos.forEach((c, idx) => {
-    const data = c.data ?? "Data não informada";
-    const local = c.local ?? "Local não informado";
-    const chave = `${data}||${local}`;
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push({ idx, confronto: c });
+    (["ida", "volta"] as const).forEach((tipo) => {
+      const partida = c[tipo];
+      const data = partida?.data ?? "Data não informada";
+      const local = partida?.local ?? "Local não informado";
+      const chave = `${data}||${local}`;
+      if (!grupos[chave]) grupos[chave] = [];
+      grupos[chave].push({ idx, tipo, confronto: c });
+    });
   });
   return grupos;
 }
@@ -52,11 +56,15 @@ export default function AdminHistoricoPartidasPage() {
   );
 
   const diasComPartida: Date[] = Array.from(
-    new Set(confrontos.map((c) => c.data).filter(Boolean))
+    new Set(confrontos.flatMap((c) => [c.ida?.data, c.volta?.data]).filter(Boolean))
   ).map((data) => new Date(data + "T00:00:00"));
 
   const confrontosFiltrados = selected
-    ? confrontos.filter((c) => new Date(c.data || "").toDateString() === selected.toDateString())
+    ? confrontos.filter(
+        (c) =>
+          new Date(c.ida?.data || '').toDateString() === selected.toDateString() ||
+          new Date(c.volta?.data || '').toDateString() === selected.toDateString()
+      )
     : confrontos;
 
   const grupos = agruparPorDataELocal(confrontosFiltrados, mockTimes);
@@ -188,15 +196,19 @@ export default function AdminHistoricoPartidasPage() {
                       </thead>
                       <tbody>
                         {partidasDia.map((partida, idx) => {
-                          const { idx: i, confronto } = partida;
-                          const timeA = confronto.timeA;
-                          const timeB = confronto.timeB;
+                          const { tipo, idx: i, confronto } = partida;
+                          const p = confronto[tipo];
+                          const resultado =
+                            tipo === "ida" ? confronto.resultadoIda : confronto.resultadoVolta;
+
+                          const timeA = mockTimes[p.a]?.nome ?? "-";
+                          const timeB = mockTimes[p.b]?.nome ?? "-";
                           const logoA = getLogoTime(timeA);
                           const logoB = getLogoTime(timeB);
 
                           return (
                             <tr
-                              key={i}
+                              key={i + tipo}
                               className="border-b border-[#232323] hover:bg-[#232323] transition"
                             >
                               <td className="py-2 px-2 font-bold">{idx + 1}</td>
@@ -211,9 +223,9 @@ export default function AdminHistoricoPartidasPage() {
                                 />
                               </td>
                               <td className="py-2 px-2 font-extrabold text-xl text-center">
-                                {confronto.golsTimeA ?? 0}{" "}
+                                {resultado?.placar?.a ?? 0}{" "}
                                 <span className="text-yellow-400 font-bold">x</span>{" "}
-                                {confronto.golsTimeB ?? 0}
+                                {resultado?.placar?.b ?? 0}
                               </td>
                               <td className="py-2 px-2 flex items-center gap-2 font-semibold">
                                 <span>{timeB}</span>
@@ -227,21 +239,21 @@ export default function AdminHistoricoPartidasPage() {
                               </td>
                               <td className="py-2 px-2 text-center">
                                 <span
-                                  className={`px-3 py-1 rounded-xl text-xs ${confronto.finalizada ? "bg-green-700" : "bg-yellow-700"} text-white`}
+                                  className={`px-3 py-1 rounded-xl text-xs ${resultado?.placar ? "bg-green-700" : "bg-yellow-700"} text-white`}
                                 >
-                                  {confronto.finalizada ? "Concluído" : "Em andamento"}
+                                  {resultado?.placar ? "Concluído" : "Em andamento"}
                                 </span>
                               </td>
                               <td className="py-2 px-2 text-center flex gap-2 justify-center">
                                 <button
                                   className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => setEditPartida({ idx: i, tipo: "ida" })}
+                                  onClick={() => setEditPartida({ idx: i, tipo })}
                                 >
                                   Editar
                                 </button>
                                 <button
                                   className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => handleExcluir(i, "ida")}
+                                  onClick={() => handleExcluir(i, tipo)}
                                 >
                                   Excluir
                                 </button>

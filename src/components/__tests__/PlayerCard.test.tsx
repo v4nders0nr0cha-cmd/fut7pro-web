@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import PlayerCard from "../cards/PlayerCard";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 // Mock do Next.js Image
 jest.mock("next/image", () => ({

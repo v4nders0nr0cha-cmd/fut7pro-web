@@ -1,6 +1,6 @@
 import { renderHook, act } from "@testing-library/react";
 import { useAdmin } from "../useAdmin";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 // Mock do SWR
 jest.mock("swr", () => ({
