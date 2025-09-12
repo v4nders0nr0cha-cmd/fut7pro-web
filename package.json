@@ -47,7 +47,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "jspdf": "^3.0.1",
     "lucide-react": "^0.514.0",
-    "next": "14.2.5",
+    "next": "14.2.32",
     "next-auth": "^4.24.11",
     "node-cron": "^4.1.1",
     "pdfmake": "^0.2.20",
@@ -102,7 +102,7 @@
     "typescript": "^5.8.3"
   },
   "overrides": {
-    "next": "14.2.5",
+    "next": "14.2.32",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
