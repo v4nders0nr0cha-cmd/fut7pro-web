@@ -11,8 +11,17 @@ export function middleware(request: NextRequest) {
   response.headers.set("Expires", "0");
 
   // Headers específicos para evitar prerendering
-  response.headers.set("X-Robots-Tag", "noindex, nofollow");
   response.headers.set("X-Frame-Options", "DENY");
+
+  // Aplicar X-Robots-Tag apenas nas rotas privadas
+  const pathname = request.nextUrl.pathname;
+  if (
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/superadmin") ||
+    pathname.startsWith("/api")
+  ) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
 
   return response;
 }
