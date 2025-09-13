@@ -4,6 +4,10 @@ import AdminLayoutContent from "./AdminLayoutContent";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const metadata = {
+  robots: { index: false, follow: false, nocache: true },
+};
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div

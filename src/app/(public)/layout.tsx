@@ -11,6 +11,7 @@ export const metadata = {
   description: "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.",
   keywords:
     "fut7, racha, futebol 7, sistema de torneio, plataforma fut7, estatísticas futebol amador, gerenciamento de times",
+  robots: { index: true, follow: true },
 };
 
 export default function PublicLayout({ children }: { children: ReactNode }) {

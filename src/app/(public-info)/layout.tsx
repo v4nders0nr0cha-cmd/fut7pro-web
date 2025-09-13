@@ -6,6 +6,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Fut7Pro - Informações",
   description: "Termos, políticas, regras e documentos institucionais Fut7Pro.",
+  robots: { index: true, follow: true },
 };
 
 export default function PublicInfoLayout({ children }: { children: ReactNode }) {
