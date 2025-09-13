@@ -1,41 +1,42 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 
+const isProd = process.env.NODE_ENV === "production";
+
+// CSP enxuta e compatível (sem 'unsafe-eval' em prod)
+const cspBase = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "img-src 'self' data: https:",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' 'unsafe-inline'",
+  "connect-src 'self' https://api.fut7pro.com.br",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "upgrade-insecure-requests",
+].join("; ");
+
+// Em dev permitimos 'unsafe-eval' para toolings
+const CSP = isProd ? cspBase : `${cspBase}; script-src 'self' 'unsafe-inline' 'unsafe-eval'`;
+
 // Headers de segurança
 const securityHeaders = [
-  {
-    key: "Strict-Transport-Security",
-    value: "max-age=63072000; includeSubDomains; preload",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "SAMEORIGIN",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "X-XSS-Protection",
-    value: "1; mode=block",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
+  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+  { key: "X-Frame-Options", value: "DENY" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
   },
-  {
-    key: "Content-Security-Policy",
-    value:
-      "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.fut7pro.com.br;",
-  },
+  { key: "Content-Security-Policy", value: CSP },
 ];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configurações básicas
+  reactStrictMode: true,
+  poweredByHeader: false,
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -46,10 +47,16 @@ const nextConfig = {
   // Headers de segurança
   async headers() {
     return [
+      // Headers de segurança para TUDO
+      { source: "/:path*", headers: securityHeaders },
+
+      // Noindex apenas nas áreas privadas e APIs
+      { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       {
-        source: "/(.*)",
-        headers: securityHeaders,
+        source: "/superadmin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },
 
