@@ -50,13 +50,17 @@ const nextConfig = {
       // Headers de segurança para TUDO
       { source: "/:path*", headers: securityHeaders },
 
-      // Noindex apenas nas áreas privadas e APIs
+      // Noindex apenas nas áreas privadas (não em APIs públicas)
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       {
         source: "/superadmin/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
-      { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      // APIs privadas (não públicas)
+      {
+        source: "/api/(?!public).*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
     ];
   },
 

@@ -7,9 +7,10 @@ import { diagHeaders } from "@/lib/api-headers";
 export async function HEAD() {
   // Sem bater no backend: reporte o modo esperado/atual
   // Por enquanto, assume mock (quando SSL estiver OK, mudará para ssl-fix)
+  const headers = diagHeaders("mock");
   return new Response(null, {
     status: 200,
-    headers: diagHeaders("mock"),
+    headers,
   });
 }
 
