@@ -20,34 +20,43 @@ export async function GET() {
   // Testar diferentes endpoints de healthcheck
   const healthEndpoints = ["/health", "/status", "/api/health", "/api/status", "/"];
 
-  for (const endpoint of healthEndpoints) {
-    try {
-      const url = `${base}${endpoint}`;
-      const response = await fetch(url, {
-        method: "HEAD",
-        headers: { accept: "application/json" },
-        // Timeout de 5 segundos
-        signal: AbortSignal.timeout(5000),
-      });
+  // Testar também domínio Railway se disponível
+  const railwayUrl = process.env.RAILWAY_BACKEND_URL || "https://fut7pro-backend.up.railway.app";
+  const testUrls = [
+    { base, endpoints: healthEndpoints },
+    { base: railwayUrl, endpoints: healthEndpoints },
+  ];
 
-      if (response.ok) {
-        return new Response(
-          JSON.stringify({
-            status: "ok",
-            backend: base,
-            endpoint: endpoint,
-            statusCode: response.status,
-            timestamp: new Date().toISOString(),
-          }),
-          {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          }
-        );
+  for (const { base: testBase, endpoints } of testUrls) {
+    for (const endpoint of endpoints) {
+      try {
+        const url = `${testBase}${endpoint}`;
+        const response = await fetch(url, {
+          method: "HEAD",
+          headers: { accept: "application/json" },
+          // Timeout de 5 segundos
+          signal: AbortSignal.timeout(5000),
+        });
+
+        if (response.ok) {
+          return new Response(
+            JSON.stringify({
+              status: "ok",
+              backend: testBase,
+              endpoint: endpoint,
+              statusCode: response.status,
+              timestamp: new Date().toISOString(),
+            }),
+            {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+      } catch (error: any) {
+        // Continuar para o próximo endpoint
+        console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error.message);
       }
-    } catch (error: any) {
-      // Continuar para o próximo endpoint
-      console.log(`Healthcheck failed for ${endpoint}:`, error.message);
     }
   }
 
