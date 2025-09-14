@@ -32,6 +32,19 @@ Hit "Backend /health" "https://api.fut7pro.com.br/health"
 # 2) Fallback do app (sempre responde; x-fallback-source ajuda a ver a rota)
 Hit "App fallback" "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback"
 
+# 2.1) Verificar header de diagnóstico
+Write-Host "`n### Verificação de Headers de Diagnóstico" -ForegroundColor Yellow
+$fallbackHeaders = curl.exe -sI "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback"
+$fallbackSource = ($fallbackHeaders | Select-String -Pattern "x-fallback-source").Line
+$httpStatus = ($fallbackHeaders | Select-String -Pattern "^HTTP").Line
+$cacheControl = ($fallbackHeaders | Select-String -Pattern "Cache-Control").Line
+$vercelCache = ($fallbackHeaders | Select-String -Pattern "X-Vercel-Cache").Line
+
+Write-Host "Status: $httpStatus"
+Write-Host "Fallback Source: $fallbackSource"
+Write-Host "Cache Control: $cacheControl"
+Write-Host "Vercel Cache: $vercelCache"
+
 # 3) Mock direto (para sanity check)
 Hit "App mock" "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock"
 

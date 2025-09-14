@@ -1,5 +1,6 @@
 // Endpoint mock temporário para testar o proxy
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 
 const cacheHeaders = {
   "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
@@ -30,11 +31,10 @@ export async function GET() {
     },
   ];
 
-  return new Response(JSON.stringify(mockData), {
+  return Response.json(mockData, {
     status: 200,
     headers: {
       ...cacheHeaders,
-      "Content-Type": "application/json; charset=utf-8",
     },
   });
 }

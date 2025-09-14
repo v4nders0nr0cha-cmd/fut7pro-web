@@ -1,5 +1,6 @@
 // Endpoint de fallback que tenta SSL fix primeiro, depois mock
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 
 const cacheHeaders = {
   "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
@@ -19,12 +20,11 @@ export async function GET() {
     });
 
     if (response.ok) {
-      const data = await response.text();
-      return new Response(data, {
+      const data = await response.json();
+      return Response.json(data, {
         status: 200,
         headers: {
           ...cacheHeaders,
-          "Content-Type": response.headers.get("content-type") ?? "application/json; charset=utf-8",
           "x-fallback-source": "ssl-fix",
         },
       });
@@ -42,12 +42,11 @@ export async function GET() {
     });
 
     if (response.ok) {
-      const data = await response.text();
-      return new Response(data, {
+      const data = await response.json();
+      return Response.json(data, {
         status: 200,
         headers: {
           ...cacheHeaders,
-          "Content-Type": response.headers.get("content-type") ?? "application/json; charset=utf-8",
           "x-fallback-source": "mock",
         },
       });
@@ -70,11 +69,10 @@ export async function GET() {
     },
   ];
 
-  return new Response(JSON.stringify(fallbackData), {
+  return Response.json(fallbackData, {
     status: 200,
     headers: {
       ...cacheHeaders,
-      "Content-Type": "application/json; charset=utf-8",
       "x-fallback-source": "static",
     },
   });

@@ -1,5 +1,6 @@
 // 1) Mude para Node.js runtime (evita TLS chato do Edge)
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 // Opcional: foque a região mais próxima do seu backend
 export const preferredRegion = "gru1";
 

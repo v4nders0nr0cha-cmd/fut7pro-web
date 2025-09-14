@@ -1,5 +1,6 @@
 // Versão com SSL fix para Railway
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 
 const cacheHeaders = {
   "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
@@ -41,12 +42,11 @@ export async function GET() {
       });
     }
 
-    const data = await r.text();
-    return new Response(data, {
+    const data = await r.json();
+    return Response.json(data, {
       status: 200,
       headers: {
         ...cacheHeaders,
-        "Content-Type": r.headers.get("content-type") ?? "application/json; charset=utf-8",
         "x-fallback-source": "backend",
       },
     });
