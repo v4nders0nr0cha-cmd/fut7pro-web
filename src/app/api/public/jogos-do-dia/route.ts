@@ -15,6 +15,7 @@ export async function HEAD() {
 
 export async function GET() {
   const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
+  const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
   if (!base) {
     // Loga e devolve falha "limpa"
     console.error("BACKEND_URL ausente");
@@ -24,8 +25,7 @@ export async function GET() {
     });
   }
 
-  // 🔁 AJUSTE ESTE PATH para o endpoint real do backend
-  const upstream = `${base}/partidas/jogos-do-dia`;
+  const upstream = `${base}${path}`;
 
   try {
     const r = await fetch(upstream, {

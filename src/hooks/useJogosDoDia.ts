@@ -10,18 +10,18 @@ const fetcher = async (url: string) => {
 };
 
 export function useJogosDoDia() {
-  const { data, error, mutate, isLoading } = useSWR<Partida[]>(
-    "/api/public/jogos-do-dia",
-    fetcher,
-    {
-      refreshInterval: 30000, // Atualiza a cada 30 segundos
-      onError: (err) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar jogos do dia:", err);
-        }
-      },
-    }
-  );
+  // Usar mock se flag estiver ativa
+  const useMock = process.env.NEXT_PUBLIC_USE_JOGOS_MOCK === "1";
+  const endpoint = useMock ? "/api/public/jogos-do-dia-mock" : "/api/public/jogos-do-dia";
+
+  const { data, error, mutate, isLoading } = useSWR<Partida[]>(endpoint, fetcher, {
+    refreshInterval: 30000, // Atualiza a cada 30 segundos
+    onError: (err) => {
+      if (process.env.NODE_ENV === "development") {
+        console.log("Erro ao carregar jogos do dia:", err);
+      }
+    },
+  });
 
   return {
     jogos: data || [],

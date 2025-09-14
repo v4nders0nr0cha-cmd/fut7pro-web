@@ -1,7 +1,23 @@
-# Script de teste para validar endpoint /api/public/jogos-do-dia
+# Script de teste para validar endpoints e configurações
 # Execute no PowerShell: .\scripts\test-endpoint.ps1
 
-Write-Host "🧪 Testando endpoint /api/public/jogos-do-dia" -ForegroundColor Yellow
+Write-Host "🧪 Testando endpoints e configurações" -ForegroundColor Yellow
+Write-Host ""
+
+# Teste healthcheck do backend
+Write-Host "0. Testando healthcheck do backend..." -ForegroundColor Cyan
+try {
+    $healthResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/health/backend" -UseBasicParsing
+    $healthData = $healthResponse.Content | ConvertFrom-Json
+    Write-Host "✅ Healthcheck Status: $($healthData.status)" -ForegroundColor Green
+    Write-Host "   Backend: $($healthData.backend)" -ForegroundColor Gray
+    if ($healthData.endpoint) {
+        Write-Host "   Endpoint funcionando: $($healthData.endpoint)" -ForegroundColor Gray
+    }
+} catch {
+    Write-Host "❌ Healthcheck Error: $($_.Exception.Message)" -ForegroundColor Red
+}
+
 Write-Host ""
 
 # Teste HEAD request
@@ -38,8 +54,28 @@ try {
 
 Write-Host ""
 
+# Teste mock
+Write-Host "3. Testando mock..." -ForegroundColor Cyan
+try {
+    $mockResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock" -UseBasicParsing
+    Write-Host "✅ Mock Status: $($mockResponse.StatusCode)" -ForegroundColor Green
+    Write-Host "   Cache-Control: $($mockResponse.Headers['Cache-Control'])" -ForegroundColor Gray
+    
+    # Tentar parsear JSON
+    try {
+        $mockData = $mockResponse.Content | ConvertFrom-Json
+        Write-Host "✅ Mock JSON válido - $($mockData.Count) itens" -ForegroundColor Green
+    } catch {
+        Write-Host "⚠️  Mock não é JSON válido" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "❌ Mock Error: $($_.Exception.Message)" -ForegroundColor Red
+}
+
+Write-Host ""
+
 # Teste de cache bust
-Write-Host "3. Testando cache bust..." -ForegroundColor Cyan
+Write-Host "4. Testando cache bust..." -ForegroundColor Cyan
 $cacheBust = Get-Random
 try {
     $bustResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/?cb=$cacheBust" -Method HEAD -UseBasicParsing
