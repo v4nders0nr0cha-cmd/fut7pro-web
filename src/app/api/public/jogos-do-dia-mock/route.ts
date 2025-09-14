@@ -1,6 +1,7 @@
 // Endpoint mock temporário para testar o proxy
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
+// Cache de 1 minuto na CDN
+export const revalidate = 60;
 
 import { diagHeaders } from "@/lib/api-headers";
 

@@ -1,6 +1,7 @@
 // 1) Mude para Node.js runtime (evita TLS chato do Edge)
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
+// Cache de 1 minuto na CDN
+export const revalidate = 60;
 // Opcional: foque a região mais próxima do seu backend
 export const preferredRegion = "gru1";
 
