@@ -8,6 +8,7 @@ import Sidebar from "@/components/layout/Sidebar";
 import PlayerCard from "@/components/cards/PlayerCard";
 import GamesOfTheDay from "@/components/cards/GamesOfTheDay";
 import { usePartidas } from "@/hooks/usePartidas";
+import { useJogosDoDia } from "@/hooks/useJogosDoDia";
 import { Shuffle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -48,6 +49,7 @@ const destaquesDia = [
 export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const { partidas, isLoading, isError } = usePartidas();
+  const { jogos: jogosDoDia, isLoading: isLoadingJogos, isError: isErrorJogos } = useJogosDoDia();
 
   return (
     <>
@@ -144,7 +146,11 @@ export default function Home() {
           {/* GRID "JOGOS DO DIA" + "CLASSIFICAÇÃO DOS TIMES" */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
             <div className="cursor-pointer">
-              <GamesOfTheDay partidas={partidas} isLoading={isLoading} isError={isError} />
+              <GamesOfTheDay
+                partidas={jogosDoDia}
+                isLoading={isLoadingJogos}
+                isError={isErrorJogos}
+              />
             </div>
             <TopTeamsCard />
           </div>
