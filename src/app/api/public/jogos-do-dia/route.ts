@@ -1,26 +1,35 @@
 import { NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "https://api.fut7pro.com.br";
-// Em prod, aponte BACKEND_URL para o host real do backend (Railway/ingress) sem expor no cliente.
+export const runtime = "edge"; // opcional (latência menor)
+export const dynamic = "force-dynamic"; // não cachear build
 
-export const dynamic = "force-dynamic"; // ou use cache revalidate se quiser (ex: export const revalidate = 120;)
+const BACKEND_URL = process.env.BACKEND_URL!; // defina no Vercel
 
 export async function GET() {
   try {
-    const url = `${BACKEND_URL}/partidas/jogos-do-dia`;
-    const r = await fetch(url, { cache: "no-store", headers: { accept: "application/json" } });
+    const r = await fetch(`${BACKEND_URL}/partidas/jogos-do-dia`, {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+      // next: { revalidate: 60 } // alternativa a cache header
+    });
 
     if (!r.ok) {
-      const text = await r.text().catch(() => "");
+      const body = await r.text().catch(() => "");
       return NextResponse.json(
-        { error: "upstream_error", status: r.status, detail: text },
+        { error: "upstream_error", status: r.status, detail: body.slice(0, 500) },
         { status: 502 }
       );
     }
 
     const data = await r.json();
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(data, {
+      status: 200,
+      headers: { "Cache-Control": "s-maxage=60, stale-while-revalidate=300" },
+    });
   } catch (e: any) {
-    return NextResponse.json({ error: "proxy_failed", message: e?.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "proxy_failed", message: e?.message ?? "unknown" },
+      { status: 500 }
+    );
   }
 }
