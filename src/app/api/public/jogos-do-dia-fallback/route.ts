@@ -5,7 +5,9 @@ export const revalidate = 60; // habilita ISR na Vercel
 const CACHE = "s-maxage=60, stale-while-revalidate=300";
 const baseHeaders = {
   "Content-Type": "application/json",
-  "Cache-Control": CACHE,
+  // Vercel respeita CDN-Cache-Control mesmo com Cache-Control dinâmico
+  "CDN-Cache-Control": CACHE,
+  "Cache-Control": "public, max-age=0, must-revalidate",
 };
 
 const DATA = [
