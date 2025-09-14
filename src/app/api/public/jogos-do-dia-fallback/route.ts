@@ -2,12 +2,15 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 
-const cacheHeaders = {
-  "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
-};
+import { diagHeaders } from "@/lib/api-headers";
 
 export async function HEAD() {
-  return new Response(null, { status: 200, headers: cacheHeaders });
+  // Sem bater no backend: reporte o modo esperado/atual
+  // Por enquanto, assume mock (quando SSL estiver OK, mudará para ssl-fix)
+  return new Response(null, {
+    status: 200,
+    headers: diagHeaders("mock"),
+  });
 }
 
 export async function GET() {
@@ -23,10 +26,7 @@ export async function GET() {
       const data = await response.json();
       return Response.json(data, {
         status: 200,
-        headers: {
-          ...cacheHeaders,
-          "x-fallback-source": "ssl-fix",
-        },
+        headers: diagHeaders("ssl-fix"),
       });
     }
   } catch (e) {
@@ -45,10 +45,7 @@ export async function GET() {
       const data = await response.json();
       return Response.json(data, {
         status: 200,
-        headers: {
-          ...cacheHeaders,
-          "x-fallback-source": "mock",
-        },
+        headers: diagHeaders("mock"),
       });
     }
   } catch (e) {
@@ -71,9 +68,6 @@ export async function GET() {
 
   return Response.json(fallbackData, {
     status: 200,
-    headers: {
-      ...cacheHeaders,
-      "x-fallback-source": "static",
-    },
+    headers: diagHeaders("static"),
   });
 }

@@ -2,12 +2,13 @@
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRERENDER)
 
-const cacheHeaders = {
-  "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
-};
+import { diagHeaders } from "@/lib/api-headers";
 
 export async function HEAD() {
-  return new Response(null, { status: 200, headers: cacheHeaders });
+  return new Response(null, {
+    status: 200,
+    headers: diagHeaders("ssl-fix"),
+  });
 }
 
 export async function GET() {
@@ -45,10 +46,7 @@ export async function GET() {
     const data = await r.json();
     return Response.json(data, {
       status: 200,
-      headers: {
-        ...cacheHeaders,
-        "x-fallback-source": "backend",
-      },
+      headers: diagHeaders("backend"),
     });
   } catch (e: any) {
     console.error("proxy jogos-do-dia-ssl-fix failed", e?.message);

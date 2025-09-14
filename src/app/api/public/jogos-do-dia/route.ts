@@ -4,14 +4,14 @@ export const dynamic = "force-dynamic"; // Força função dinâmica (evita PRER
 // Opcional: foque a região mais próxima do seu backend
 export const preferredRegion = "gru1";
 
-// 2) Cache para CDN
-const cacheHeaders = {
-  "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
-};
+import { diagHeaders } from "@/lib/api-headers";
 
 // 3) HEAD não chama upstream (evita 5xx desnecessário)
 export async function HEAD() {
-  return new Response(null, { status: 200, headers: cacheHeaders });
+  return new Response(null, {
+    status: 200,
+    headers: diagHeaders("backend"),
+  });
 }
 
 export async function GET() {
@@ -49,7 +49,7 @@ export async function GET() {
     return new Response(data, {
       status: 200,
       headers: {
-        ...cacheHeaders,
+        ...diagHeaders("backend"),
         "Content-Type": r.headers.get("content-type") ?? "application/json; charset=utf-8",
       },
     });
