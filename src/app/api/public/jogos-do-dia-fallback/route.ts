@@ -1,37 +1,38 @@
-// Endpoint de fallback que tenta SSL fix primeiro, depois mock
+// Endpoint de fallback - modelo minimalista para cache CDN
 export const runtime = "nodejs";
-// Cache de 1 minuto na CDN
-export const revalidate = 60;
+export const revalidate = 60; // habilita ISR na Vercel
 
-import { diagHeaders } from "@/lib/api-headers";
+const CACHE = "s-maxage=60, stale-while-revalidate=300";
+const baseHeaders = {
+  "Content-Type": "application/json",
+  "Cache-Control": CACHE,
+};
 
-export async function HEAD() {
-  // Sem bater no backend: reporte o modo esperado/atual
-  // Por enquanto, assume mock (quando SSL estiver OK, mudará para ssl-fix)
-  const headers = diagHeaders("mock");
-  return new Response(null, {
+const DATA = [
+  {
+    id: "fallback-1",
+    timeA: "Time A",
+    timeB: "Time B",
+    golsTimeA: 0,
+    golsTimeB: 0,
+    finalizada: false,
+    data: new Date().toISOString(),
+    _fallback: true,
+  },
+];
+
+// GET: sempre com headers corretos e diagnóstico
+export async function GET() {
+  return new Response(JSON.stringify(DATA), {
     status: 200,
-    headers,
+    headers: { ...baseHeaders, "x-fallback-source": "static" },
   });
 }
 
-export async function GET() {
-  // Dados estáticos de fallback (sem chamadas internas para evitar problemas de cache)
-  const fallbackData = [
-    {
-      id: "fallback-1",
-      timeA: "Time A",
-      timeB: "Time B",
-      golsTimeA: 0,
-      golsTimeB: 0,
-      finalizada: false,
-      data: new Date().toISOString(),
-      _fallback: true,
-    },
-  ];
-
-  return Response.json(fallbackData, {
+// HEAD: precisa setar Cache-Control explicitamente
+export async function HEAD() {
+  return new Response(null, {
     status: 200,
-    headers: diagHeaders("static"),
+    headers: baseHeaders,
   });
 }
