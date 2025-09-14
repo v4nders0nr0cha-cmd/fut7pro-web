@@ -47,6 +47,7 @@ export async function GET() {
       headers: {
         ...cacheHeaders,
         "Content-Type": r.headers.get("content-type") ?? "application/json; charset=utf-8",
+        "x-fallback-source": "backend",
       },
     });
   } catch (e: any) {

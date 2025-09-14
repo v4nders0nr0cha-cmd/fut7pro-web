@@ -25,6 +25,7 @@ export async function GET() {
         headers: {
           ...cacheHeaders,
           "Content-Type": response.headers.get("content-type") ?? "application/json; charset=utf-8",
+          "x-fallback-source": "ssl-fix",
         },
       });
     }
@@ -47,6 +48,7 @@ export async function GET() {
         headers: {
           ...cacheHeaders,
           "Content-Type": response.headers.get("content-type") ?? "application/json; charset=utf-8",
+          "x-fallback-source": "mock",
         },
       });
     }
@@ -73,6 +75,7 @@ export async function GET() {
     headers: {
       ...cacheHeaders,
       "Content-Type": "application/json; charset=utf-8",
+      "x-fallback-source": "static",
     },
   });
 }

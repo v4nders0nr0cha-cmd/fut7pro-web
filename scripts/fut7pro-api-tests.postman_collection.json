@@ -1,0 +1,92 @@
+{
+  "info": {
+    "name": "Fut7Pro API Tests",
+    "description": "Testes para endpoints de jogos do dia e fallback",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Backend SSL Test",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://api.fut7pro.com.br",
+          "protocol": "https",
+          "host": ["api", "fut7pro", "com", "br"]
+        },
+        "description": "Testa certificado SSL do backend"
+      }
+    },
+    {
+      "name": "Backend Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://api.fut7pro.com.br/health",
+          "protocol": "https",
+          "host": ["api", "fut7pro", "com", "br"],
+          "path": ["health"]
+        },
+        "description": "Healthcheck do backend"
+      }
+    },
+    {
+      "name": "App Fallback",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback",
+          "protocol": "https",
+          "host": ["app", "fut7pro", "com", "br"],
+          "path": ["api", "public", "jogos-do-dia-fallback"]
+        },
+        "description": "Endpoint de fallback com diagnóstico"
+      }
+    },
+    {
+      "name": "App Mock",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock",
+          "protocol": "https",
+          "host": ["app", "fut7pro", "com", "br"],
+          "path": ["api", "public", "jogos-do-dia-mock"]
+        },
+        "description": "Mock direto para sanity check"
+      }
+    },
+    {
+      "name": "App Proxy Direto",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia",
+          "protocol": "https",
+          "host": ["app", "fut7pro", "com", "br"],
+          "path": ["api", "public", "jogos-do-dia"]
+        },
+        "description": "Proxy principal (vai 200 quando SSL ok)"
+      }
+    },
+    {
+      "name": "App Healthcheck",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://app.fut7pro.com.br/api/health/backend",
+          "protocol": "https",
+          "host": ["app", "fut7pro", "com", "br"],
+          "path": ["api", "health", "backend"]
+        },
+        "description": "Healthcheck do app"
+      }
+    }
+  ]
+}

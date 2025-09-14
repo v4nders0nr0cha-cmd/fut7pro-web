@@ -1,0 +1,32 @@
+### Fut7Pro API Tests
+### Testes para endpoints de jogos do dia e fallback
+
+### 1. Backend SSL Test
+GET https://api.fut7pro.com.br
+Accept: application/json
+
+### 2. Backend Health
+GET https://api.fut7pro.com.br/health
+Accept: application/json
+
+### 3. App Fallback (com diagnóstico)
+GET https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback
+Accept: application/json
+
+### 4. App Mock (sanity check)
+GET https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
+Accept: application/json
+
+### 5. App Proxy Direto (vai 200 quando SSL ok)
+GET https://app.fut7pro.com.br/api/public/jogos-do-dia
+Accept: application/json
+
+### 6. App Healthcheck
+GET https://app.fut7pro.com.br/api/health/backend
+Accept: application/json
+
+### 7. Teste de Headers (PowerShell equivalente)
+# curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback | findstr /I "x-fallback-source HTTP"
+
+### 8. Teste de Certificado (PowerShell equivalente)
+# curl.exe -sIv https://api.fut7pro.com.br | Select-String -Pattern "subject:|issuer:|altname|WRONG_PRINCIPAL|HTTP"

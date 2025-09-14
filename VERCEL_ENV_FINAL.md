@@ -1,147 +1,128 @@
-# 🔧 Configuração Final - Vercel Environment Variables
+# 🔧 Configuração Final do Vercel - Fut7Pro
 
-## ✅ Variáveis Obrigatórias (já configuradas)
+## 📋 Variáveis de Ambiente
 
-```bash
-BACKEND_URL=https://api.fut7pro.com.br
-NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br
-NEXTAUTH_URL=https://app.fut7pro.com.br
-NEXTAUTH_SECRET=your-secret-here
-AUTH_SECRET=your-secret-here
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-NODE_ENV=production
-```
+| Nome                         | Onde          | Exemplo                                  | Observação                                    |
+| ---------------------------- | ------------- | ---------------------------------------- | --------------------------------------------- |
+| `BACKEND_URL`                | Vercel (Prod) | `https://api.fut7pro.com.br`             | Mantém segurança e SNI corretos               |
+| `JOGOS_DIA_PATH`             | Vercel (Prod) | `/partidas/jogos-do-dia`                 | Ajuste se o backend usar outro caminho        |
+| `NEXT_PUBLIC_USE_JOGOS_MOCK` | Vercel (Prod) | `0` ou `1`                               | `1` força mock na UI, independente do backend |
+| `RAILWAY_BACKEND_URL`        | Vercel (Prod) | `https://fut7pro-backend.up.railway.app` | Fallback para domínio Railway                 |
 
-## 🆕 Variáveis Novas (adicionar)
+## 🔄 Fluxo de Fallback (Produção)
 
-### JOGOS_DIA_PATH (opcional)
+1. **UI chama** `GET /api/public/jogos-do-dia-fallback`
+2. **Server tenta backend** → se falhar por TLS/timeout, tenta ssl-fix (domínio do Railway)
+3. **Se ainda falhar**, retorna mock
+4. **Último recurso**: dados estáticos
+5. **Header `x-fallback-source`** indica a trilha usada
 
-```bash
-# Caminho do endpoint no backend (ajuste quando souber o correto)
-JOGOS_DIA_PATH=/partidas/jogos-do-dia
-# ou
-JOGOS_DIA_PATH=/api/partidas/jogos-do-dia
-# ou
-JOGOS_DIA_PATH=/v1/public/jogos-do-dia
-```
+### Trilhas de Fallback:
 
-### NEXT_PUBLIC_USE_JOGOS_MOCK (opcional)
+- `backend` - Dados reais do backend (SSL OK)
+- `ssl-fix` - Dados via domínio Railway (SSL fix)
+- `mock` - Dados mock estáticos
+- `static` - Dados de emergência
 
-```bash
-# Usar mock temporário até backend estar pronto
-NEXT_PUBLIC_USE_JOGOS_MOCK=1
-```
+## 🚀 Como Migrar do Mock para Produção
 
-## 🧪 Testes de Validação
-
-### 1. Healthcheck do Backend
+### 1. Consertar o SSL no Railway
 
 ```bash
-# Verificar se backend está respondendo
-curl.exe -s https://app.fut7pro.com.br/api/health/backend
+# Verificar certificado (deve NÃO aparecer WRONG_PRINCIPAL)
+curl.exe -sIv https://api.fut7pro.com.br | Select-String -Pattern "subject:|issuer:|altname|WRONG_PRINCIPAL|HTTP"
 ```
 
-### 2. Mock (sempre funciona)
+### 2. Configurar Vercel
 
-```bash
-# Testar mock
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock | findstr /I "HTTP Cache-Control"
-```
-
-### 3. Proxy (funciona quando backend estiver correto)
-
-```bash
-# Testar proxy
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "HTTP"
-```
-
-### 4. Headers SEO
-
-```bash
-# Home sem X-Robots-Tag
-curl.exe -sI https://app.fut7pro.com.br | findstr /I "X-Robots-Tag"
-
-# Admin com X-Robots-Tag
-curl.exe -sI https://app.fut7pro.com.br/admin/login | findstr /I "X-Robots-Tag"
-```
-
-## 🔍 Descobrir Caminho Correto do Backend
-
-### Opção 1: Testar Endpoints Comuns
-
-```bash
-curl.exe -k -I https://api.fut7pro.com.br/health
-curl.exe -k -I https://api.fut7pro.com.br/status
-curl.exe -k -I https://api.fut7pro.com.br/api/health
-curl.exe -k -I https://api.fut7pro.com.br/
-```
-
-### Opção 2: Verificar Documentação
-
-- Swagger/OpenAPI do backend
-- README do projeto backend
-- Logs do Railway
-
-### Opção 3: Usar Healthcheck
-
-```bash
-# O healthcheck testa automaticamente vários endpoints
-curl.exe -s https://app.fut7pro.com.br/api/health/backend
-```
-
-## 🚀 Fluxo de Deploy
-
-### 1. Configurar Variáveis
-
-- Adicionar `JOGOS_DIA_PATH` no Vercel
-- (Opcional) Adicionar `NEXT_PUBLIC_USE_JOGOS_MOCK=1`
-
-### 2. Redeploy
-
-- Deploy automático após push
-- Ou redeploy manual no Vercel
+- Remover `NEXT_PUBLIC_USE_JOGOS_MOCK` (ou setar `0`)
+- Redeploy
 
 ### 3. Validar
 
-- Executar testes de validação
-- Verificar logs do Vercel Functions
-
-### 4. Remover Mock (quando backend estiver pronto)
-
-- Remover `NEXT_PUBLIC_USE_JOGOS_MOCK`
-- Redeploy
-
-## 📊 Status Esperado
-
-### Com Mock Ativo:
-
-```json
-// GET /api/public/jogos-do-dia-mock
-[
-  {
-    "id": "1",
-    "timeA": "Time A",
-    "timeB": "Time B",
-    "golsTimeA": 2,
-    "golsTimeB": 1,
-    "finalizada": true
-  }
-]
+```bash
+# Deve mostrar x-fallback-source: backend
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback | findstr /I "x-fallback-source HTTP"
 ```
 
-### Com Backend Funcionando:
+## ✅ Checklist de Aceite
 
-```json
-// GET /api/public/jogos-do-dia
-[
-  {
-    "id": "...",
-    "timeA": "...",
-    "timeB": "...",
-    "golsTimeA": 0,
-    "golsTimeB": 0,
-    "finalizada": false
-  }
-]
+- [ ] `curl -sIv https://api.fut7pro.com.br` sem `WRONG_PRINCIPAL`
+- [ ] `GET /health` do backend retorna `200`
+- [ ] `GET /api/public/jogos-do-dia` (app) retorna `200` + JSON
+- [ ] `x-fallback-source = backend` em produção
+- [ ] Home sem `X-Robots-Tag`; admin/_ e superadmin/_ com `noindex, nofollow`
+
+## 🧪 Testes
+
+Execute o script de testes:
+
+```powershell
+.\scripts\test-jogos.ps1
 ```
+
+### Testes Manuais:
+
+```bash
+# 1. Certificado SSL
+curl.exe -sIv https://api.fut7pro.com.br
+
+# 2. Backend health
+curl.exe -sI https://api.fut7pro.com.br/health
+
+# 3. App fallback (com diagnóstico)
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback
+
+# 4. Mock direto
+curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
+
+# 5. Proxy principal
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia
+```
+
+## 🔭 Observabilidade
+
+### Logs de Fallback
+
+- **SSL Fix**: `x-fallback-source: ssl-fix`
+- **Mock**: `x-fallback-source: mock`
+- **Static**: `x-fallback-source: static`
+- **Backend**: `x-fallback-source: backend`
+
+### Métricas Recomendadas
+
+- Taxa de fallback (quantos % usam mock vs backend)
+- Tempo de resposta por trilha
+- Alertas para falhas consecutivas do backend
+
+### Monitoramento
+
+- Vercel Function logs mostram qual trilha foi usada
+- Headers de resposta indicam fonte dos dados
+- Healthcheck endpoint para diagnóstico
+
+## 🚨 Troubleshooting
+
+### Problema: 502 Bad Gateway
+
+**Causa**: Certificado SSL inválido
+**Solução**: Usar fallback automático (já implementado)
+
+### Problema: Mock não funciona
+
+**Causa**: `NEXT_PUBLIC_USE_JOGOS_MOCK` não configurado
+**Solução**: Setar para `1` no Vercel
+
+### Problema: Backend não responde
+
+**Causa**: Backend offline ou CORS
+**Solução**: Verificar Railway e configurar CORS
+
+## 📊 Status Atual
+
+- ✅ **Sistema**: Funcionando com fallback
+- ✅ **Mock**: Disponível e testado
+- ✅ **SSL Fix**: Implementado
+- ✅ **Diagnóstico**: Headers de fallback
+- ⚠️ **Backend SSL**: Precisa ser corrigido no Railway
+- ✅ **Testes**: Scripts prontos
