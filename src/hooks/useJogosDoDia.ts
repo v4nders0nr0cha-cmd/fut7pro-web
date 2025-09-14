@@ -10,9 +10,16 @@ const fetcher = async (url: string) => {
 };
 
 export function useJogosDoDia() {
-  // Usar mock se flag estiver ativa
+  // Usar fallback inteligente em produção
+  const useFallback = process.env.NODE_ENV === "production";
   const useMock = process.env.NEXT_PUBLIC_USE_JOGOS_MOCK === "1";
-  const endpoint = useMock ? "/api/public/jogos-do-dia-mock" : "/api/public/jogos-do-dia";
+
+  let endpoint = "/api/public/jogos-do-dia";
+  if (useMock) {
+    endpoint = "/api/public/jogos-do-dia-mock";
+  } else if (useFallback) {
+    endpoint = "/api/public/jogos-do-dia-fallback";
+  }
 
   const { data, error, mutate, isLoading } = useSWR<Partida[]>(endpoint, fetcher, {
     refreshInterval: 30000, // Atualiza a cada 30 segundos
