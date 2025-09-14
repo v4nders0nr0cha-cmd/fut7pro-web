@@ -1,47 +1,62 @@
-export const runtime = "edge";
+// 1) Mude para Node.js runtime (evita TLS chato do Edge)
+export const runtime = "nodejs";
+// Opcional: foque a região mais próxima do seu backend
+export const preferredRegion = "gru1";
 
-const CACHE = "s-maxage=60, stale-while-revalidate=300";
+// 2) Cache para CDN
+const cacheHeaders = {
+  "Cache-Control": "s-maxage=60, stale-while-revalidate=300",
+};
 
-async function fetchUpstream() {
-  if (!process.env.BACKEND_URL) {
-    return new Response(JSON.stringify({ error: "BACKEND_URL not configured" }), {
+// 3) HEAD não chama upstream (evita 5xx desnecessário)
+export async function HEAD() {
+  return new Response(null, { status: 200, headers: cacheHeaders });
+}
+
+export async function GET() {
+  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
+  if (!base) {
+    // Loga e devolve falha "limpa"
+    console.error("BACKEND_URL ausente");
+    return new Response("missing BACKEND_URL", {
       status: 500,
       headers: { "Cache-Control": "no-store" },
     });
   }
 
-  const url = `${process.env.BACKEND_URL}/partidas/jogos-do-dia`;
+  // 🔁 AJUSTE ESTE PATH para o endpoint real do backend
+  const upstream = `${base}/partidas/jogos-do-dia`;
 
   try {
-    const res = await fetch(url, { next: { revalidate: 60 } });
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: "Upstream error", status: res.status }), {
-        status: res.status,
+    const r = await fetch(upstream, {
+      headers: { accept: "application/json" },
+      // revalidate só opera no App Router com Node runtime
+      next: { revalidate: 60 },
+    });
+
+    if (!r.ok) {
+      const body = await r.text().catch(() => "");
+      console.error("Upstream non-OK", r.status, body.slice(0, 300));
+      // pode repassar o status do upstream se preferir
+      return new Response("upstream_error", {
+        status: 502,
         headers: { "Cache-Control": "no-store" },
       });
     }
-    const data = await res.json();
-    return new Response(JSON.stringify(data), {
+
+    const data = await r.text(); // evita parse duplo; mantém content-type se precisar
+    return new Response(data, {
       status: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": CACHE,
+        ...cacheHeaders,
+        "Content-Type": r.headers.get("content-type") ?? "application/json; charset=utf-8",
       },
     });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: "Fetch failed" }), {
+  } catch (err: any) {
+    console.error("proxy jogos-do-dia fetch failed", { message: err?.message, cause: err?.cause });
+    return new Response("proxy_fetch_failed", {
       status: 502,
       headers: { "Cache-Control": "no-store" },
     });
   }
-}
-
-export async function GET() {
-  return fetchUpstream();
-}
-
-export async function HEAD() {
-  const res = await fetchUpstream();
-  // devolve apenas os headers (sem body) para HEAD
-  return new Response(null, { status: res.status, headers: res.headers });
 }
