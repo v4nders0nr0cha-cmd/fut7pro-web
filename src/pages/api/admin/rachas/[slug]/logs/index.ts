@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 // import { getSession } from "next-auth/react"; // Adapte se quiser autenticação
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

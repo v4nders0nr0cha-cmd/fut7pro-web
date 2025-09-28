@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import Image from "next/image";
 import { useState } from "react";
 import { FaTrash, FaInfoCircle, FaTimes } from "react-icons/fa";
 
@@ -595,9 +596,11 @@ export default function IntegracoesSuperAdminPage() {
                     >
                       {integ.status === "instalado" ? "Instalado" : "Disponível"}
                     </span>
-                    <img
+                    <Image
                       src={integ.logo}
                       alt={`Logo ${integ.nome}`}
+                      width={96}
+                      height={64}
                       className="w-24 h-16 object-contain mx-auto mb-3 rounded bg-white"
                     />
                     <div className="font-bold text-base text-white text-center mb-1">

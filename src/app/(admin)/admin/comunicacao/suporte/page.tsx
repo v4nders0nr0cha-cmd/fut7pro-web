@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import Image from "next/image";
 import { useState } from "react";
 import type { ChangeEvent } from "react";
 import {
@@ -230,7 +231,7 @@ export default function SuportePage() {
               )}
               {imagemPreview && (
                 <div className="flex items-center gap-4 mt-2">
-                  <img
+                  <Image
                     src={imagemPreview}
                     alt="Preview do anexo"
                     className="max-h-32 rounded border border-yellow-400"
@@ -305,7 +306,7 @@ export default function SuportePage() {
                     <div className="mt-1 text-gray-200">{ch.mensagem}</div>
                     {ch.imagem && (
                       <div className="mt-2">
-                        <img
+                        <Image
                           src={ch.imagem}
                           alt="Anexo"
                           className="max-h-32 rounded border border-yellow-400"

@@ -2,17 +2,39 @@
 
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
-import { campeoesApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
-import type { Campeao } from "@/types/campeao";
+import type { Campeao, CreateCampeaoInput, UpdateCampeaoInput } from "@/types/campeao";
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
+  const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error("Erro ao buscar campeões");
+    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar campeoes";
+    throw new Error(message);
   }
-  return response.json();
+  return (payload ?? []) as Campeao[];
 };
+
+async function request<T>(input: RequestInfo, init: RequestInit) {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init.headers ?? {}),
+    },
+  });
+
+  if (response.status === 204) {
+    return null as T;
+  }
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao processar campeoes";
+    throw new Error(message);
+  }
+  return payload as T;
+}
 
 export function useCampeoes() {
   const { rachaId } = useRacha();
@@ -24,7 +46,7 @@ export function useCampeoes() {
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar campeões:", err);
+          console.log("Erro ao carregar campeoes:", err);
         }
       },
     }
@@ -34,58 +56,68 @@ export function useCampeoes() {
     if (!rachaId) return null;
 
     return apiState.handleAsync(async () => {
-      const response = await campeoesApi.create({
-        ...campeao,
+      const payload: CreateCampeaoInput = {
         rachaId,
+        nome: campeao.nome ?? "",
+        categoria: campeao.categoria ?? "",
+        data: campeao.data ?? new Date().toISOString(),
+        descricao: campeao.descricao ?? undefined,
+        jogadores: campeao.jogadores ?? undefined,
+        imagem: campeao.imagem ?? undefined,
+      };
+
+      const created = await request<Campeao>("/api/campeoes", {
+        method: "POST",
+        body: JSON.stringify(payload),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return created;
     });
   };
 
   const updateCampeao = async (id: string, campeao: Partial<Campeao>) => {
     return apiState.handleAsync(async () => {
-      const response = await campeoesApi.update(id, {
-        ...campeao,
-        rachaId,
+      const payload: UpdateCampeaoInput = {
+        ...(rachaId ? { rachaId } : {}),
+        nome: campeao.nome ?? undefined,
+        categoria: campeao.categoria ?? undefined,
+        data: campeao.data ?? undefined,
+        descricao: campeao.descricao ?? undefined,
+        jogadores: campeao.jogadores ?? undefined,
+        imagem: campeao.imagem ?? undefined,
+      };
+
+      const updated = await request<Campeao>(`/api/campeoes/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return updated;
     });
   };
 
   const deleteCampeao = async (id: string) => {
     return apiState.handleAsync(async () => {
-      const response = await campeoesApi.delete(id);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
+      await request<null>(`/api/campeoes/${id}`, { method: "DELETE" });
       await mutate();
-      return response.data;
+      return null;
     });
   };
 
   const getCampeaoById = (id: string) => {
-    return data?.find((c) => c.id === id);
+    return data?.find((item) => item.id === id);
   };
+
+  const combinedError = apiState.error ?? (error instanceof Error ? error.message : null);
+  const hasError = Boolean(apiState.isError || error);
 
   return {
     campeoes: data || [],
     isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
+    isError: hasError,
+    error: combinedError,
     isSuccess: apiState.isSuccess,
     mutate,
     addCampeao,

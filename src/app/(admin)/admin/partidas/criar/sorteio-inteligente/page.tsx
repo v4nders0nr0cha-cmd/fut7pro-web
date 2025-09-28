@@ -50,8 +50,8 @@ export default function SorteioInteligentePage() {
           <h2 className="text-lg font-semibold text-yellow-400 mb-4">Selecione os Times do Dia</h2>
           {times.length === 0 ? (
             <p className="text-gray-400">
-              Nenhum time cadastrado. Vá até <strong>"Criar Times"</strong> para adicionar seus
-              times antes do sorteio.
+              Nenhum time cadastrado. Vá até <strong>&quot;Criar Times&quot;</strong> para adicionar
+              seus times antes do sorteio.
             </p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mb-4">

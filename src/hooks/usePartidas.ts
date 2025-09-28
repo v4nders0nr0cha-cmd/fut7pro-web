@@ -1,16 +1,42 @@
 import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
-import { partidasApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Partida } from "@/types/partida";
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
+
   if (!response.ok) {
-    throw new Error("Erro ao buscar partidas");
+    const payload = await response.json().catch(() => null);
+    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar partidas";
+    throw new Error(message);
   }
+
   return response.json();
 };
+
+async function requestPartidas<T>(method: "POST" | "PUT" | "DELETE", body: Record<string, unknown>) {
+  const response = await fetch("/api/admin/partidas", {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (response.status === 204) {
+    return null as T;
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao salvar partidas";
+    throw new Error(message);
+  }
+
+  return payload as T;
+}
 
 export function usePartidas() {
   const { rachaId } = useRacha();
@@ -28,50 +54,44 @@ export function usePartidas() {
     }
   );
 
+  const swrErrorMessage = error instanceof Error ? error.message : null;
+  const combinedError = apiState.error ?? swrErrorMessage;
+  const hasSwrError = Boolean(error);
+  const hasAsyncError = apiState.isError;
+  const hasError = hasSwrError || hasAsyncError;
+
   const addPartida = async (partida: Partial<Partida>) => {
     if (!rachaId) return null;
 
     return apiState.handleAsync(async () => {
-      const response = await partidasApi.create({
+      const created = await requestPartidas<Partida>("POST", {
         ...partida,
         rachaId,
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return created;
     });
   };
 
   const updatePartida = async (id: string, partida: Partial<Partida>) => {
     return apiState.handleAsync(async () => {
-      const response = await partidasApi.update(id, {
+      const updated = await requestPartidas<Partida>("PUT", {
+        id,
         ...partida,
         rachaId,
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return updated;
     });
   };
 
   const deletePartida = async (id: string) => {
     return apiState.handleAsync(async () => {
-      const response = await partidasApi.delete(id);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
+      await requestPartidas<null>("DELETE", { id, rachaId });
       await mutate();
-      return response.data;
+      return null;
     });
   };
 
@@ -82,8 +102,8 @@ export function usePartidas() {
   return {
     partidas: data || [],
     isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
+    isError: hasError,
+    error: combinedError,
     isSuccess: apiState.isSuccess,
     mutate,
     addPartida,

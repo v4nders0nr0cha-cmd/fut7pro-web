@@ -1,376 +1,229 @@
 "use client";
 
 import Head from "next/head";
-import { useState, useMemo } from "react";
-import {
-  FaSearch,
-  FaDownload,
-  FaLock,
-  FaUserShield,
-  FaInfoCircle,
-  FaHistory,
-  FaArrowRight,
-} from "react-icons/fa";
-import { format, parse } from "date-fns";
-import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
+import { useMemo, useState } from "react";
+import { FaSearch, FaDownload, FaSync } from "react-icons/fa";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useSuperadminRachas } from "@/hooks/useSuperadminRachas";
+import type { SuperadminRachaResumo } from "@/types/superadmin";
 
-// --- MOCKS E TIPAGENS ---
-const MOCKS_RACHAS = [
-  {
-    id: "1",
-    nome: "Racha Vila União",
-    presidente: "João Silva",
-    plano: "Mensal",
-    status: "ATIVO",
-    atletas: 23,
-    criadoEm: "2025-06-10",
-    ultimoAcesso: "2025-07-01 19:00",
-    bloqueado: false,
-    historico: [
-      { acao: "Criado", data: "2025-06-10 11:11" },
-      { acao: "Primeiro login", data: "2025-06-10 12:01" },
-      { acao: "Última exportação", data: "2025-07-01 14:43" },
-    ],
-    ultimoLogBloqueio: null,
-  },
-  {
-    id: "2",
-    nome: "Racha Galáticos",
-    presidente: "Pedro Souza",
-    plano: "Trial",
-    status: "BLOQUEADO",
-    atletas: 18,
-    criadoEm: "2025-06-05",
-    ultimoAcesso: "2025-06-30 21:10",
-    bloqueado: true,
-    historico: [
-      { acao: "Criado", data: "2025-06-05 10:00" },
-      { acao: "Primeiro login", data: "2025-06-05 10:05" },
-      { acao: "Bloqueado", data: "2025-06-15 08:00" },
-    ],
-    ultimoLogBloqueio: {
-      motivo: "Trial expirou sem pagamento",
-      data: "2025-06-15 08:00",
-    },
-  },
-  {
-    id: "3",
-    nome: "Racha Real Matismo",
-    presidente: "Paulo Lima",
-    plano: "Mensal",
-    status: "INADIMPLENTE",
-    atletas: 27,
-    criadoEm: "2025-06-02",
-    ultimoAcesso: "2025-07-01 15:44",
-    bloqueado: true,
-    historico: [
-      { acao: "Criado", data: "2025-06-02 08:00" },
-      { acao: "Primeiro login", data: "2025-06-02 09:30" },
-      { acao: "Status alterado para Inadimplente", data: "2025-06-30 19:00" },
-      { acao: "Bloqueado", data: "2025-07-01 09:00" },
-    ],
-    ultimoLogBloqueio: {
-      motivo: "Pagamento mensalidade não efetuado",
-      data: "2025-07-01 09:00",
-    },
-  },
-];
-
-const STATUS_BADGES = {
+const STATUS_COLORS: Record<string, string> = {
   ATIVO: "bg-green-700 text-green-200",
   TRIAL: "bg-yellow-700 text-yellow-200",
   INADIMPLENTE: "bg-red-700 text-red-200",
   BLOQUEADO: "bg-gray-600 text-gray-200",
 };
-const STATUS_LABELS = {
-  ATIVO: "Racha ativo e operando normalmente.",
-  TRIAL: "Período de teste, com limitação de recursos.",
-  INADIMPLENTE: "Pagamento em atraso, risco de bloqueio.",
-  BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
-};
 
-// --- COMPONENTE PRINCIPAL ---
+function formatDate(iso: string | null) {
+  if (!iso) return "-";
+  try {
+    return format(new Date(iso), "dd/MM/yyyy", { locale: ptBR });
+  } catch (error) {
+    return "-";
+  }
+}
+
+function formatDateTime(iso: string | null) {
+  if (!iso) return "-";
+  try {
+    return format(new Date(iso), "dd/MM/yyyy HH:mm", { locale: ptBR });
+  } catch (error) {
+    return "-";
+  }
+}
+
+function computeStats(rachas: SuperadminRachaResumo[]) {
+  const total = rachas.length;
+  const ativos = rachas.filter((r) => r.status === "ATIVO").length;
+  const trials = rachas.filter((r) => r.status === "TRIAL").length;
+  const inadimplentes = rachas.filter((r) => r.status === "INADIMPLENTE").length;
+  const bloqueados = rachas.filter((r) => r.bloqueado).length;
+  const novosHoje = rachas.filter((r) => {
+    try {
+      const data = new Date(r.criadoEm);
+      const hoje = new Date();
+      return (
+        data.getFullYear() === hoje.getFullYear() &&
+        data.getMonth() === hoje.getMonth() &&
+        data.getDate() === hoje.getDate()
+      );
+    } catch (error) {
+      return false;
+    }
+  }).length;
+
+  return { total, ativos, trials, inadimplentes, bloqueados, novosHoje };
+}
+
 export default function RachasCadastradosPage() {
+  const { rachas, isLoading, error, refresh } = useSuperadminRachas();
   const [search, setSearch] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState("");
-  const [modalRacha, setModalRacha] = useState<any>(null);
-  const [impersonate, setImpersonate] = useState<any>(null);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState("");
 
-  // Busca/filtro avançado (já filtrando por enum UPPERCASE)
-  const rachasFiltrados = useMemo(() => {
-    return MOCKS_RACHAS.filter((r) => {
-      const busca = search.toLowerCase();
-      const matchNome = r.nome.toLowerCase().includes(busca);
-      const matchPresidente = r.presidente.toLowerCase().includes(busca);
-      // Se vier filtro visual, transforma para enum
-      const filtro = filtroStatus.toUpperCase();
-      const matchStatus = filtro
-        ? r.status === filtro || (filtro === "BLOQUEADO" && r.bloqueado)
-        : true;
-      return (matchNome || matchPresidente) && matchStatus;
+  const stats = useMemo(() => computeStats(rachas), [rachas]);
+
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const statusNormalized = statusFilter.trim().toUpperCase();
+
+    return rachas.filter((racha) => {
+      const byQuery =
+        query.length === 0 ||
+        racha.nome.toLowerCase().includes(query) ||
+        racha.presidente.toLowerCase().includes(query) ||
+        (racha.emailPresidente ?? "").toLowerCase().includes(query);
+
+      const byStatus = statusNormalized.length === 0 ? true : racha.status === statusNormalized;
+
+      return byQuery && byStatus;
     });
-  }, [search, filtroStatus]);
-
-  // Contadores (tudo por enum UPPERCASE)
-  const total = MOCKS_RACHAS.length;
-  const ativos = MOCKS_RACHAS.filter((r) => r.status === "ATIVO").length;
-  const trials = MOCKS_RACHAS.filter((r) => r.status === "TRIAL").length;
-  const inadimplentes = MOCKS_RACHAS.filter((r) => r.status === "INADIMPLENTE").length;
-  const bloqueados = MOCKS_RACHAS.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
-  const novosHoje = MOCKS_RACHAS.filter(
-    (r) => r.criadoEm === format(new Date(), "yyyy-MM-dd")
-  ).length;
-
-  function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
-    setSelectedIds(e.target.checked ? rachasFiltrados.map((r) => r.id) : []);
-  }
-  function handleSelecionar(id: string) {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  }
-  function handleImpersonate(racha: any) {
-    setImpersonate(racha);
-  }
-
-  // Mapeia status para exibição
-  function statusLabel(status: string) {
-    if (status === "ATIVO") return "Ativo";
-    if (status === "TRIAL") return "Trial";
-    if (status === "INADIMPLENTE") return "Inadimplente";
-    if (status === "BLOQUEADO") return "Bloqueado";
-    return status;
-  }
+  }, [rachas, search, statusFilter]);
 
   return (
     <>
       <Head>
-        <title>Gestão de Rachas – Painel SuperAdmin | Fut7Pro</title>
+        <title>Gestão de Rachas - Painel SuperAdmin | Fut7Pro</title>
         <meta
           name="description"
-          content="Administre todos os rachas SaaS na plataforma Fut7Pro: veja status, planos, atletas, bloqueie, exporte, filtre e otimize sua gestão multi-tenant."
-        />
-        <meta
-          name="keywords"
-          content="fut7pro, gestão de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha"
+          content="Administre todos os rachas SaaS na plataforma Fut7Pro e acompanhe status, planos e bloqueios."
         />
       </Head>
-      <div className="w-full min-h-screen p-0 m-0">
-        {/* RESUMO NO TOPO */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 w-full mb-6">
-          <ResumoCard title="Total" value={total} />
-          <ResumoCard title="Ativos" value={ativos} badge="bg-green-700" />
-          <ResumoCard title="Trials" value={trials} badge="bg-yellow-700" />
-          <ResumoCard title="Inadimplentes" value={inadimplentes} badge="bg-red-700" />
-          <ResumoCard title="Bloqueados" value={bloqueados} badge="bg-gray-700" />
-          <ResumoCard title="Novos Hoje" value={novosHoje} badge="bg-blue-700" />
+      <div className="w-full min-h-screen p-4 md:p-8 bg-[#101826] text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <h1 className="text-2xl font-bold text-yellow-400">Rachas cadastrados</h1>
+          <div className="flex items-center gap-2">
+            {error ? <span className="text-sm text-red-400">Erro ao carregar rachas</span> : null}
+            <button
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-yellow-500 text-black font-semibold shadow hover:bg-yellow-400"
+              onClick={() => refresh()}
+              disabled={isLoading}
+            >
+              <FaSync className={isLoading ? "animate-spin" : ""} /> Atualizar
+            </button>
+          </div>
         </div>
 
-        {/* BUSCA E FILTRO */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 mb-4">
-          <div className="flex items-center w-full md:w-auto bg-zinc-900 rounded-lg px-3 py-2">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 w-full mb-6">
+          <ResumoCard title="Total" value={stats.total} />
+          <ResumoCard title="Ativos" value={stats.ativos} accent="text-green-400" />
+          <ResumoCard title="Trials" value={stats.trials} accent="text-yellow-300" />
+          <ResumoCard title="Inadimplentes" value={stats.inadimplentes} accent="text-red-400" />
+          <ResumoCard title="Bloqueados" value={stats.bloqueados} accent="text-gray-300" />
+          <ResumoCard title="Novos hoje" value={stats.novosHoje} accent="text-blue-300" />
+        </div>
+
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-3 mb-4">
+          <div className="flex items-center w-full md:w-1/2 bg-zinc-900 rounded-lg px-3 py-2">
             <FaSearch className="text-zinc-500 mr-2" />
             <input
               className="bg-transparent outline-none w-full text-zinc-100"
-              placeholder="Buscar por nome, presidente ou status..."
+              placeholder="Buscar por nome, presidente ou email"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               aria-label="Buscar racha"
             />
           </div>
           <select
-            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg ml-0 md:ml-2"
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
+            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
             aria-label="Filtrar status"
           >
             <option value="">Todos os status</option>
-            <option value="Ativo">Ativos</option>
-            <option value="Trial">Trial</option>
-            <option value="Inadimplente">Inadimplentes</option>
-            <option value="Bloqueado">Bloqueados</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="TRIAL">Trial</option>
+            <option value="INADIMPLENTE">Inadimplentes</option>
+            <option value="BLOQUEADO">Bloqueados</option>
           </select>
           <button
-            className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow hover:scale-105 duration-150"
-            onClick={() => alert("Função de exportação será ativada")}
+            className="bg-yellow-500 text-black px-4 py-2 rounded-lg flex items-center gap-2 font-bold shadow hover:scale-105 duration-150"
+            onClick={() => window.print()}
           >
-            <FaDownload /> Exportar .CSV
+            <FaDownload /> Exportar CSV
           </button>
         </div>
 
-        {/* AÇÕES EM MASSA */}
-        <div className="flex flex-wrap gap-2 mb-2">
-          <button
-            className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700"
-            disabled={selectedIds.length === 0}
-          >
-            Acessar como Admin
-          </button>
-          <button
-            className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700"
-            disabled={selectedIds.length === 0}
-          >
-            Bloquear
-          </button>
-          <button
-            className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800"
-            disabled={selectedIds.length === 0}
-          >
-            Enviar Aviso
-          </button>
-        </div>
-
-        {/* TABELA */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-zinc-900 rounded-xl shadow text-zinc-100">
-            <thead>
+        <div className="overflow-x-auto bg-zinc-900 rounded-xl shadow">
+          <table className="min-w-full divide-y divide-zinc-800">
+            <thead className="bg-zinc-950/60 text-zinc-300 uppercase text-xs">
               <tr>
-                <th className="p-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedIds.length === rachasFiltrados.length && rachasFiltrados.length > 0
-                    }
-                    onChange={handleSelecionarTodos}
-                  />
-                </th>
-                <th className="p-3 text-left">Nome</th>
-                <th className="p-3 text-left">Presidente</th>
-                <th className="p-3 text-left">Plano</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-center">Atletas</th>
-                <th className="p-3 text-center">Criado em</th>
-                <th className="p-3 text-center">Ações</th>
-                <th className="p-3 text-center">Bloqueio</th>
+                <th className="px-4 py-3 text-left">Racha</th>
+                <th className="px-4 py-3 text-left">Presidente</th>
+                <th className="px-4 py-3 text-left">Plano</th>
+                <th className="px-4 py-3 text-left">Status</th>
+                <th className="px-4 py-3 text-left">Atletas</th>
+                <th className="px-4 py-3 text-left">Criado em</th>
+                <th className="px-4 py-3 text-left">Último acesso</th>
               </tr>
             </thead>
-            <tbody>
-              {rachasFiltrados.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-800 duration-100">
-                  <td className="p-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(r.id)}
-                      onChange={() => handleSelecionar(r.id)}
-                    />
-                  </td>
-                  <td className="p-3 font-semibold">{r.nome}</td>
-                  <td className="p-3">{r.presidente}</td>
-                  <td className="p-3">{r.plano}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold cursor-pointer ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
-                      title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
-                    >
-                      {statusLabel(r.status)}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">{r.atletas}</td>
-                  <td className="p-3 text-center">
-                    {format(parse(r.criadoEm, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
-                  </td>
-                  <td className="p-3 text-center flex gap-2">
-                    <button
-                      className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
-                      onClick={() => setModalRacha(r)}
-                      title="Detalhes e Ações"
-                    >
-                      <FaInfoCircle /> Detalhes
-                    </button>
-                    <button
-                      className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1"
-                      onClick={() => handleImpersonate(r)}
-                      title="Acessar Painel Admin como Presidente"
-                    >
-                      <FaUserShield /> Login como Admin
-                    </button>
-                    <button
-                      className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1"
-                      title="Bloquear Racha"
-                    >
-                      <FaLock /> Bloquear
-                    </button>
-                  </td>
-                  <td className="p-3 text-center">
-                    {r.status === "BLOQUEADO" || r.bloqueado ? (
-                      <span className="flex items-center gap-1 text-red-400 font-bold">
-                        <FaLock /> Bloqueado
-                      </span>
-                    ) : (
-                      <span className="text-green-400 font-bold">Liberado</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {rachasFiltrados.length === 0 && (
+            <tbody className="divide-y divide-zinc-800">
+              {isLoading ? (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-zinc-400">
-                    Nenhum racha encontrado.
+                  <td colSpan={7} className="px-4 py-6 text-center text-zinc-400">
+                    Carregando rachas...
                   </td>
                 </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-6 text-center text-zinc-400">
+                    Nenhum racha encontrado com os filtros atuais.
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((racha) => (
+                  <tr key={racha.id} className="hover:bg-zinc-800/60 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-white">{racha.nome}</span>
+                        <span className="text-xs text-zinc-400">Slug: {racha.slug}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span>{racha.presidente}</span>
+                        <span className="text-xs text-zinc-400">
+                          {racha.emailPresidente ?? "-"}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-zinc-200">
+                      {racha.plano ?? "Sem plano"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-bold ${STATUS_COLORS[racha.status] ?? "bg-zinc-700 text-zinc-200"}`}
+                      >
+                        {racha.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">{racha.atletas}</td>
+                    <td className="px-4 py-3 text-sm">{formatDate(racha.criadoEm)}</td>
+                    <td className="px-4 py-3 text-sm">{formatDateTime(racha.ultimoAcesso)}</td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
         </div>
-
-        {/* MODAL DETALHES DO RACHA */}
-        {modalRacha && (
-          <ModalDetalhesRacha racha={modalRacha} onClose={() => setModalRacha(null)} />
-        )}
-
-        {/* MODAL IMPERSONATE (AGINDO COMO PRESIDENTE) */}
-        {impersonate && (
-          <div
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-60"
-            onClick={() => setImpersonate(null)}
-          >
-            <div
-              className="bg-zinc-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-auto text-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-col items-center">
-                <FaUserShield className="text-green-400 text-3xl mb-2" />
-                <h3 className="text-xl font-bold mb-1">
-                  Você está “agindo como presidente” deste racha
-                </h3>
-                <span className="text-sm text-zinc-400 mb-4">
-                  <b>{impersonate.nome}</b> (Presidente: {impersonate.presidente})<br />
-                  Todo acesso, edição ou exclusão será registrado em log de auditoria, visível para
-                  a equipe da plataforma.
-                </span>
-                <button
-                  className="bg-blue-700 text-white px-5 py-2 rounded hover:bg-blue-900 mb-2 flex items-center gap-2"
-                  onClick={() => {
-                    setImpersonate(null);
-                    alert(
-                      "Redirecionar para painel Admin real deste racha (/admin?impersonate=rachaId)"
-                    );
-                  }}
-                >
-                  <FaArrowRight /> Entrar no Painel Administrativo do Presidente
-                </button>
-                <button
-                  className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-900"
-                  onClick={() => setImpersonate(null)}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </>
   );
 }
 
-// Card de resumo
-function ResumoCard({ title, value, badge }: { title: string; value: number; badge?: string }) {
+interface ResumoCardProps {
+  title: string;
+  value: number;
+  accent?: string;
+}
+
+function ResumoCard({ title, value, accent }: ResumoCardProps) {
+  const valueClassName = accent ? `text-xl font-bold ${accent}` : "text-xl font-bold text-white";
+
   return (
-    <div
-      className={`flex flex-col bg-zinc-800 p-3 rounded-lg items-center justify-center text-center min-w-[85px]`}
-    >
-      <span className="text-zinc-400 text-xs uppercase">{title}</span>
-      <span className={`text-2xl font-bold ${badge || ""}`}>{value}</span>
+    <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
+      <span className="text-xs text-zinc-400">{title}</span>
+      <div className={valueClassName}>{value}</div>
     </div>
   );
 }

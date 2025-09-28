@@ -1,9 +1,4 @@
 // Tipos globais para resolver problemas de tipos externos
-declare module "@prisma/client" {
-  export const PrismaClient: any;
-  export * from "@prisma/client";
-}
-
 declare module "next-auth" {
   interface Session {
     user: {
@@ -23,3 +18,11 @@ declare global {
     }
   }
 }
+declare module "@/lib/api" {
+  export const partidasApi: {
+    create: (...args: any[]) => Promise<any>;
+    update: (...args: any[]) => Promise<any>;
+    delete: (...args: any[]) => Promise<any>;
+  };
+}
+

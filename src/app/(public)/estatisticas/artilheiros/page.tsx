@@ -3,22 +3,14 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { artilheirosAnual } from "@/components/lists/mockArtilheirosAnual";
-import { artilheirosPorQuadrimestre } from "@/components/lists/mockArtilheirosPorQuadrimestre";
+import { useMemo, useState, type MouseEvent } from "react";
+import { useRankingArtilheiros } from "@/hooks/useEstatisticas";
 import type { RankingAtleta } from "@/types/estatisticas";
 
-// Gera os anos disponíveis pelo mock, do mais recente ao mais antigo
-const anosDisponiveis = Object.keys(artilheirosAnual)
-  .map(Number)
-  .sort((a, b) => b - a);
-
-const anoAtual = anosDisponiveis[0] ?? new Date().getFullYear();
-
 const periodos = [
-  { label: "1º Quadrimestre", value: "q1" },
-  { label: "2º Quadrimestre", value: "q2" },
-  { label: "3º Quadrimestre", value: "q3" },
+  { label: "1o Quadrimestre", value: "q1" },
+  { label: "2o Quadrimestre", value: "q2" },
+  { label: "3o Quadrimestre", value: "q3" },
   { label: "Temporada Atual", value: "temporada" },
   { label: "Todas as Temporadas", value: "todas" },
 ];
@@ -26,145 +18,141 @@ const periodos = [
 export default function RankingArtilheirosPage() {
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState("q1");
+  const { resultados, isLoading, isError, error, atualizadoEm } = useRankingArtilheiros(periodo);
 
-  let ranking: RankingAtleta[] = [];
-
-  if (periodo === "temporada") {
-    // Temporada atual = ano mais recente do mock
-    ranking = artilheirosAnual[anoAtual] ?? [];
-  } else if (periodo === "todas") {
-    // Todas as temporadas = soma todos os anos disponíveis
-    const todos: Record<string, RankingAtleta> = {};
-    anosDisponiveis.forEach((anoOpt) => {
-      const artilheiros = artilheirosAnual[anoOpt];
-      if (artilheiros && Array.isArray(artilheiros)) {
-        artilheiros.forEach((atleta) => {
-          if (!todos[atleta.id]) {
-            todos[atleta.id] = { ...atleta };
-          } else {
-            todos[atleta.id]!.gols += atleta.gols;
-            todos[atleta.id]!.jogos += atleta.jogos;
-          }
-        });
-      }
-    });
-    ranking = Object.values(todos);
-  } else {
-    // Quadrimestres (sempre usa ano atual)
-    const quadrimestre = Number(periodo.replace("q", "")) as 1 | 2 | 3;
-    ranking = artilheirosPorQuadrimestre[anoAtual]?.[quadrimestre] ?? [];
-  }
-
-  const rankingFiltrado = ranking
-    .filter((atleta) => atleta.nome.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => b.gols - a.gols);
+  const rankingFiltrado = useMemo(() => {
+    const termo = search.trim().toLowerCase();
+    return resultados
+      .filter((atleta) => atleta.nome.toLowerCase().includes(termo))
+      .sort((a, b) => b.gols - a.gols);
+  }, [resultados, search]);
 
   return (
     <>
       <Head>
-        <title>Ranking dos Artilheiros | Estatísticas | Fut7Pro</title>
+        <title>Ranking dos Artilheiros | Estatisticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja o ranking dos artilheiros do racha de futebol 7. Descubra quem fez mais gols na temporada atual, por quadrimestre ou em todas as temporadas do Fut7Pro."
+          content="Acompanhe o ranking dos artilheiros do racha. Compare quadrimestres, temporada atual ou historico geral para descobrir quem mais balancou as redes."
         />
         <meta
           name="keywords"
-          content="Ranking Artilheiros, Fut7Pro, futebol 7, estatísticas, temporada atual, todas as temporadas, jogadores, gols, racha"
+          content="Ranking Artilheiros, Fut7Pro, futebol 7, jogadores, gols, estatisticas, racha"
         />
       </Head>
 
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
-        <h1 className="sr-only">
-          Ranking dos Artilheiros do Racha de Futebol 7 – Jogadores com Mais Gols, Estatísticas
-        </h1>
+        <h1 className="sr-only">Ranking dos Artilheiros</h1>
 
-        <div className="w-full flex flex-col items-center justify-center">
-          {/* Bloco centralizado */}
-          <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
+        <section className="w-full flex flex-col items-center">
+          <div className="w-full max-w-3xl flex flex-col items-center gap-3">
+            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center">
               Ranking dos Artilheiros
             </h2>
-            <p className="text-sm text-gray-400 max-w-xl mb-3 text-center">
-              Confira quem balançou mais as redes e compare o desempenho por quadrimestre, na
-              temporada atual ou em todas as temporadas do Racha.
-              <br className="hidden sm:inline" />
-              Selecione o período abaixo para filtrar o ranking.
+            <p className="text-sm text-gray-400 max-w-xl text-center">
+              Veja quem lidera a artilharia do seu racha. Selecione o periodo desejado para analisar
+              os gols por quadrimestre, temporada atual ou historico completo.
             </p>
-            <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
+            <div className="flex flex-col md:flex-row items-center gap-2">
               <select
                 value={periodo}
-                onChange={(e) => setPeriodo(e.target.value)}
+                onChange={(event) => setPeriodo(event.target.value)}
                 className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-                aria-label="Selecionar período do ranking"
+                aria-label="Selecionar periodo do ranking"
               >
-                {periodos.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label}
+                {periodos.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
                   </option>
                 ))}
               </select>
+              {atualizadoEm && (
+                <span className="text-xs text-neutral-400">
+                  Atualizado em {new Date(atualizadoEm).toLocaleString("pt-BR")}
+                </span>
+              )}
             </div>
-
-            <div className="w-full flex justify-center mb-4">
-              <input
-                type="text"
-                className="w-full sm:w-80 rounded px-4 py-2 border border-gray-600 bg-zinc-900 text-white placeholder-gray-400"
-                placeholder="Buscar atleta por nome..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Buscar atleta por nome"
-              />
-            </div>
+            <input
+              type="text"
+              className="w-full sm:w-80 rounded px-4 py-2 border border-gray-600 bg-zinc-900 text-white placeholder-gray-400"
+              placeholder="Buscar atleta por nome..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              aria-label="Buscar atleta por nome"
+            />
           </div>
-        </div>
+        </section>
 
-        <div className="w-full overflow-x-auto scrollbar-dark">
-          <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[400px]">
-            <thead className="bg-[#2a2a2a] text-gray-300">
-              <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Atleta</th>
-                <th className="p-2 text-right text-yellow-400 text-base">Gols</th>
-                <th className="p-2 text-right">Jogos</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rankingFiltrado.map((atleta, idx) => {
-                const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
-                return (
-                  <tr
-                    key={atleta.id}
-                    className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
-                  >
-                    <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
-                    <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                      <Link href={`/atletas/${atleta.slug}`}>
-                        <Image
-                          src={atleta.foto}
-                          alt={`Foto do atleta ${atleta.nome} – Ranking Artilheiros Fut7Pro`}
-                          width={32}
-                          height={32}
-                          className="rounded-full border border-yellow-400"
-                        />
-                      </Link>
-                      <Link
-                        href={`/atletas/${atleta.slug}`}
-                        className="text-yellow-300 hover:underline font-semibold"
-                        title={`Ver perfil de ${atleta.nome}`}
-                      >
-                        <span className="break-words">{atleta.nome}</span>
-                      </Link>
-                    </td>
-                    <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
-                      {atleta.gols}
-                    </td>
-                    <td className="text-right p-2">{atleta.jogos}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400" />
+          </div>
+        ) : isError ? (
+          <div className="max-w-3xl mx-auto rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-center text-red-300">
+            {error ?? "Nao foi possivel carregar o ranking de artilheiros."}
+          </div>
+        ) : rankingFiltrado.length === 0 ? (
+          <div className="max-w-3xl mx-auto rounded-xl border border-neutral-700 bg-neutral-900 p-6 text-center text-neutral-300 mt-6">
+            Nenhum registro encontrado para o periodo escolhido.
+          </div>
+        ) : (
+          <div className="w-full overflow-x-auto scrollbar-dark mt-6">
+            <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[400px]">
+              <thead className="bg-[#2a2a2a] text-gray-300">
+                <tr>
+                  <th className="p-2 text-left">#</th>
+                  <th className="p-2 text-left">Atleta</th>
+                  <th className="p-2 text-right text-yellow-400 text-base">Gols</th>
+                  <th className="p-2 text-right">Jogos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankingFiltrado.map((atleta, idx) => {
+                  const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
+                  const profileHref = atleta.slug ? `/atletas/${atleta.slug}` : "#";
+                  const linkProps = atleta.slug
+                    ? {}
+                    : {
+                        onClick: (event: MouseEvent<HTMLAnchorElement>) => event.preventDefault(),
+                        role: "button",
+                      };
+
+                  return (
+                    <tr
+                      key={atleta.id || `${atleta.nome}-${idx}`}
+                      className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
+                    >
+                      <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
+                      <td className="flex items-center gap-2 p-2 whitespace-nowrap">
+                        <Link href={profileHref} {...linkProps}>
+                          <Image
+                            src={atleta.foto}
+                            alt={`Foto do atleta ${atleta.nome}`}
+                            width={32}
+                            height={32}
+                            className="rounded-full border border-yellow-400"
+                          />
+                        </Link>
+                        <Link
+                          href={profileHref}
+                          className="text-yellow-300 hover:underline font-semibold"
+                          title={`Ver perfil de ${atleta.nome}`}
+                          {...linkProps}
+                        >
+                          <span className="break-words">{atleta.nome}</span>
+                        </Link>
+                      </td>
+                      <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                        {atleta.gols}
+                      </td>
+                      <td className="text-right p-2">{atleta.jogos}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </main>
     </>
   );

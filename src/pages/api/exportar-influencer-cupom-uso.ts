@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { Parser } from "json2csv";
 
@@ -29,3 +29,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Content-Type", "text/csv");
   res.status(200).send(csv);
 }
+

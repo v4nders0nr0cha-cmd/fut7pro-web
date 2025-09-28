@@ -27,6 +27,24 @@ export const PUBLIC_ENDPOINTS = {
   SUGESTOES: `${API_BASE_URL}/api/sugestoes`,
 } as const;
 
+// Endpoints multi-tenant (protegidos por tenant)
+export const TENANT_ENDPOINTS = {
+  // Partidas
+  PARTIDAS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/partidas`,
+  PARTIDA_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/partidas/${id}`,
+
+  // Times
+  TIMES: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/times`,
+  TIME_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/times/${id}`,
+
+  // Jogadores
+  JOGADORES: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/jogadores`,
+  JOGADOR_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/jogadores/${id}`,
+
+  // Estatísticas do tenant
+  ESTATISTICAS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/estatisticas`,
+} as const;
+
 // Endpoints do painel admin
 export const ADMIN_ENDPOINTS = {
   // Gestão de Jogadores
@@ -70,7 +88,25 @@ export const AUTH_ENDPOINTS = {
   LOGOUT: `${API_BASE_URL}/api/auth/logout`,
   REFRESH: `${API_BASE_URL}/api/auth/refresh`,
   REGISTER: `${API_BASE_URL}/api/auth/register`,
-  PROFILE: `${API_BASE_URL}/api/auth/profile`,
+  REGISTER_ADMIN: `${API_BASE_URL}/api/auth/register-admin`,
+  PROFILE: `${API_BASE_URL}/api/auth/me`,
+} as const;
+
+// Endpoints de tenants (rachas)
+export const TENANT_AUTH_ENDPOINTS = {
+  RACHAS: `${API_BASE_URL}/api/rachas`,
+  RACHA_DETALHES: (id: string) => `${API_BASE_URL}/api/rachas/${id}`,
+  RACHA_BY_SLUG: (slug: string) => `${API_BASE_URL}/api/rachas/slug/${slug}`,
+} as const;
+
+// Endpoints de membership
+export const MEMBERSHIP_ENDPOINTS = {
+  MEMBERSHIPS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships`,
+  MEMBERSHIP_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}`,
+  MEMBERSHIPS_PENDING: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/pending`,
+  APPROVE_MEMBERSHIP: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/approve`,
+  SUSPEND_MEMBERSHIP: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/suspend`,
+  INVITE_USER: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/invite`,
 } as const;
 
 // Função helper para verificar se estamos em desenvolvimento

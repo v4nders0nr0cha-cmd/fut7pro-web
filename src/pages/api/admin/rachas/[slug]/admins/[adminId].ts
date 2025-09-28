@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma"; // ajuste o path conforme seu projeto
+import { prisma } from "@/server/prisma"; // ajuste o path conforme seu projeto
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { adminId } = req.query;
@@ -29,3 +29,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["PUT", "DELETE"]);
   res.status(405).json({ error: "Método não permitido" });
 }
+

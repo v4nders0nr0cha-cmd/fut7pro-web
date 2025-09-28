@@ -1,7 +1,7 @@
 // src/pages/api/admin/rachas/[slug]/index.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { slug } = req.query;
@@ -39,3 +39,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["GET", "PATCH", "PUT"]);
   return res.status(405).json({ error: "Método não permitido" });
 }
+

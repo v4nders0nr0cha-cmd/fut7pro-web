@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { Role } from "@prisma/client";
+import type { Role } from "@prisma/client";
 
 export interface AuthUser {
   id: string;

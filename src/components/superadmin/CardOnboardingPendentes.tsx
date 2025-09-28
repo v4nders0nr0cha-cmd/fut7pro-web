@@ -19,7 +19,7 @@ const CardOnboardingPendentes: React.FC<Props> = ({ onboardings }) => {
   return (
     <div className="w-full bg-gradient-to-r from-yellow-900/60 to-zinc-900/80 border border-yellow-700 rounded-xl p-4 mb-5 shadow flex flex-col gap-2">
       <div className="font-bold text-yellow-400 mb-1 flex items-center gap-2">
-        <span>🚩 Rachas com onboarding pendente</span>
+        <span>Rachas com onboarding pendente</span>
         <span className="ml-2 text-xs text-zinc-300">
           (finalize para liberar todos os recursos)
         </span>

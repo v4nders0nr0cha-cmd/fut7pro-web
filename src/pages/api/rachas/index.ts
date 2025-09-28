@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession({ req });
@@ -59,3 +59,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return res.status(405).json({ error: "Método não permitido" });
 }
+

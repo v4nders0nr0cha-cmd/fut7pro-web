@@ -2,44 +2,56 @@
 
 import Image from "next/image";
 
-type JogadorTime = {
+const DEFAULT_LOGO = "/images/logos/logo_fut7pro.png";
+const DEFAULT_AVATAR = "/images/logos/logo_fut7pro.png";
+
+export type JogadorTime = {
   id: string;
   nome: string;
-  apelido?: string;
-  foto: string;
-  posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
-  status: "titular" | "substituto" | "ausente";
+  apelido?: string | null;
+  foto?: string | null;
+  posicao?: string | null;
+  status?: "titular" | "substituto" | "ausente";
 };
 
-type TimeDoDia = {
+export type TimeDoDia = {
+  id?: string;
   nome: string;
-  logo: string;
-  cor: string;
+  logo?: string | null;
+  cor?: string | null;
   ehTimeCampeao?: boolean;
   jogadores: JogadorTime[];
 };
 
-type Props = {
-  time: TimeDoDia;
-};
+function buildPosicaoLabel(posicao?: string | null) {
+  if (!posicao) return "";
+  const normalized = posicao.toUpperCase();
+  const map: Record<string, string> = {
+    GOL: "GOL",
+    GOLEIRO: "GOL",
+    ZAG: "ZAG",
+    ZAGUEIRO: "ZAG",
+    MEI: "MEI",
+    MEIA: "MEI",
+    ATA: "ATA",
+    ATACANTE: "ATA",
+  };
+  return map[normalized] ?? normalized.slice(0, 3);
+}
 
-const posicoesAbrev: Record<JogadorTime["posicao"], string> = {
-  Goleiro: "GOL",
-  Zagueiro: "ZAG",
-  Meia: "MEIA",
-  Atacante: "ATA",
-};
+export function CardTimeDoDia({ time }: { time: TimeDoDia }) {
+  const logo = time.logo || DEFAULT_LOGO;
+  const borderColor = time.cor || "#facc15";
 
-export function CardTimeDoDia({ time }: Props) {
   return (
     <article
       className="flex flex-col w-full max-w-md bg-neutral-900 rounded-2xl shadow-lg p-5 mb-8 mx-auto"
-      style={{ borderTop: `5px solid ${time.cor}` }}
+      style={{ borderTop: `5px solid ${borderColor}` }}
       aria-label={`Time ${time.nome}`}
     >
       <div className="flex items-center gap-3 mb-2">
         <Image
-          src={time.logo}
+          src={logo}
           alt={`Logo do time ${time.nome}`}
           width={42}
           height={42}
@@ -61,20 +73,26 @@ export function CardTimeDoDia({ time }: Props) {
 
       <ul className="w-full mt-1 flex flex-col gap-3">
         {time.jogadores.map((jogador) => {
+          const posicaoLabel = buildPosicaoLabel(jogador.posicao);
+          const foto = jogador.foto || DEFAULT_AVATAR;
+          const status = jogador.status ?? "titular";
+
           let liClass = "relative flex items-center gap-3 p-2 rounded-lg transition bg-neutral-800";
-          if (jogador.status === "ausente") liClass += " bg-red-900 opacity-60 line-through";
-          if (jogador.status === "substituto") liClass += " bg-sky-900 opacity-80 italic";
+          if (status === "ausente") liClass += " bg-red-900 opacity-60 line-through";
+          if (status === "substituto") liClass += " bg-sky-900 opacity-80 italic";
 
           return (
             <li key={jogador.id} className={liClass}>
-              <span
-                className="absolute top-1 right-3 text-[10px] text-neutral-400 tracking-widest font-bold"
-                title={jogador.posicao}
-              >
-                {posicoesAbrev[jogador.posicao]}
-              </span>
+              {posicaoLabel && (
+                <span
+                  className="absolute top-1 right-3 text-[10px] text-neutral-400 tracking-widest font-bold"
+                  title={jogador.posicao ?? "Posição"}
+                >
+                  {posicaoLabel}
+                </span>
+              )}
               <Image
-                src={jogador.foto}
+                src={foto}
                 alt={`Foto de ${jogador.nome}`}
                 width={36}
                 height={36}
@@ -86,10 +104,12 @@ export function CardTimeDoDia({ time }: Props) {
                 {jogador.apelido && (
                   <span className="text-xs text-neutral-400">({jogador.apelido})</span>
                 )}
-                <span className="text-xs text-neutral-400">
-                  {jogador.status === "ausente" && "Ausente (não pontua)"}
-                  {jogador.status === "substituto" && "Apenas completou o time"}
-                </span>
+                {status !== "titular" && (
+                  <span className="text-xs text-neutral-400">
+                    {status === "ausente" && "Ausente (não pontua)"}
+                    {status === "substituto" && "Apenas completou o time"}
+                  </span>
+                )}
               </div>
             </li>
           );

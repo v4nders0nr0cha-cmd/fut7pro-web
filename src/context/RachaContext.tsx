@@ -9,6 +9,7 @@ import {
   useEffect,
 } from "react";
 import { rachaMap } from "@/config/rachaMap";
+import { useTenant } from "@/hooks/useTenant";
 
 type RachaContextType = {
   rachaId: string;
@@ -33,17 +34,28 @@ export function useRacha() {
 }
 
 export function RachaProvider({ children }: { children: ReactNode }) {
-  // Definir rachaId padrão como o primeiro do rachaMap
-  const defaultRachaId = Object.keys(rachaMap)[0] || "";
-  const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
+  const { tenant } = useTenant();
+  const fallbackRachaId = useMemo(() => Object.keys(rachaMap)[0] || "", []);
+  const initialRachaId = tenant?.id ?? fallbackRachaId;
+  const [rachaId, setRachaIdState] = useState<string>(initialRachaId);
+
+  useEffect(() => {
+    if (tenant?.id && tenant.id !== rachaId) {
+      setRachaIdState(tenant.id);
+      return;
+    }
+    if (!tenant?.id && !rachaId && fallbackRachaId) {
+      setRachaIdState(fallbackRachaId);
+    }
+  }, [tenant?.id, rachaId, fallbackRachaId]);
 
   const setRachaId = useCallback((id: string) => {
     setRachaIdState(id);
   }, []);
 
   const clearRachaId = useCallback(() => {
-    setRachaIdState(defaultRachaId);
-  }, [defaultRachaId]);
+    setRachaIdState(tenant?.id ?? fallbackRachaId);
+  }, [tenant?.id, fallbackRachaId]);
 
   const isRachaSelected = useMemo(() => {
     return rachaId.length > 0;

@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { Notification } from "@/types/notification";
+import type { Notification } from "@/types/notificacao";
 import { v4 as uuidv4 } from "uuid";
 
 // Simulação: banco em memória. Troque por integração real (Prisma, etc)
@@ -46,3 +46,4 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader("Allow", ["GET", "POST"]);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+

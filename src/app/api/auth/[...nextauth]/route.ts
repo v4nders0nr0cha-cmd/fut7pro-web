@@ -2,7 +2,6 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 
 import type { NextAuthOptions, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
@@ -20,6 +19,7 @@ const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: "E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
+        rachaSlug: { label: "Racha", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
@@ -34,6 +34,7 @@ const authOptions: NextAuthOptions = {
             body: JSON.stringify({
               email: credentials.email,
               password: credentials.password,
+              rachaSlug: credentials.rachaSlug,
             }),
           });
 
@@ -69,6 +70,9 @@ const authOptions: NextAuthOptions = {
             email: userData.email,
             role: userData.role,
             tenantId: userData.tenantId,
+            tenantSlug: userData.tenantSlug,
+            tenant: userData.tenant,
+            membership: userData.membership,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           };
@@ -120,6 +124,9 @@ const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.tenantId = token.tenantId as string;
+        session.user.tenantSlug = token.tenantSlug as string;
+        session.user.tenant = token.tenant as any;
+        session.user.membership = token.membership as any;
         session.user.accessToken = token.accessToken as string;
         session.user.refreshToken = token.refreshToken as string;
       }
@@ -131,6 +138,9 @@ const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.tenantId = (user as any).tenantId;
+        token.tenantSlug = (user as any).tenantSlug;
+        token.tenant = (user as any).tenant;
+        token.membership = (user as any).membership;
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
       }
@@ -190,3 +200,4 @@ const authOptions: NextAuthOptions = {
 const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
+

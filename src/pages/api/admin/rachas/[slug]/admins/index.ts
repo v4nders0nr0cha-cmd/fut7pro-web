@@ -1,7 +1,7 @@
 // src/pages/api/admin/rachas/[slug]/admins/index.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma"; // ajuste o path se seu prisma está em outro local
+import { prisma } from "@/server/prisma"; // ajuste o path se seu prisma está em outro local
 // import { getSession } from "next-auth/react"; // Descomente se for usar autenticação
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -74,3 +74,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["GET", "POST"]);
   res.status(405).json({ error: "Método não permitido" });
 }
+

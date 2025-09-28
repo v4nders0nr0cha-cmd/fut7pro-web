@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import React, { useRef, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import type { Jogador, PosicaoJogador } from "@/types/jogador";
@@ -102,9 +103,11 @@ export default function JogadorForm({
           title="Clique para selecionar uma foto"
         >
           {fotoPreview ? (
-            <img
+            <Image
               src={fotoPreview}
               alt="Preview Foto"
+              width={80}
+              height={80}
               className="object-cover w-full h-full rounded-lg"
             />
           ) : (
@@ -205,3 +208,4 @@ export default function JogadorForm({
     </form>
   );
 }
+

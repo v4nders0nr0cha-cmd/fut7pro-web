@@ -462,7 +462,7 @@ export default function EnquetesPage() {
               </h2>
               <div className="mb-3 text-gray-200 text-sm">
                 Tem certeza que deseja excluir a enquete{" "}
-                <b className="text-yellow-300">"{modalExcluir.titulo}"</b>?
+                <b className="text-yellow-300">&quot;{modalExcluir.titulo}&quot;</b>?
                 <br />
                 Esta ação não pode ser desfeita.
               </div>

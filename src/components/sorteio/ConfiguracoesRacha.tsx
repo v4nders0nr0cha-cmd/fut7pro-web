@@ -46,7 +46,6 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     } catch {
       /* ignore */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps - Dependências controladas manualmente
   }, []);
 
   // Salva no localStorage e executa onSubmit a cada alteração
@@ -60,8 +59,7 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
       /* ignore */
     }
     onSubmit({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime });
-    // eslint-disable-next-line react-hooks/exhaustive-deps - onSubmit é estável e não deve ser dependência
-  }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
+  }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime, onSubmit]);
 
   // Se valores ficarem inválidos por alguma alteração externa, sempre recupera o fallback
   useEffect(() => {
@@ -69,7 +67,6 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     if (!DURACOES_PARTIDA.includes(duracaoPartidaMin)) setDuracaoPartidaMin(DURACOES_PARTIDA[0]);
     if (!NUM_TIMES.includes(numTimes)) setNumTimes(NUM_TIMES[0]);
     if (!JOGADORES_POR_TIME.includes(jogadoresPorTime)) setJogadoresPorTime(JOGADORES_POR_TIME[0]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps - Validação de valores válidos
   }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
 
   const fadeClasses = disabled

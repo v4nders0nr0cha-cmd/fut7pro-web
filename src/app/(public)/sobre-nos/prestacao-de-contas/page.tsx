@@ -32,15 +32,21 @@ export default function PrestacaoDeContasPage() {
     notFound();
   }
 
-  // Função para filtrar por período
-  function filtrarPorPeriodo(lancamentos: LancamentoFinanceiro[]) {
+  const lancamentosFiltrados = useMemo(() => {
     if (todosAnos) return lancamentos;
-    if (periodo === "mes") return lancamentos.filter((l) => l.data.startsWith(`${ano}-${mes}`));
-    if (periodo === "ano") return lancamentos.filter((l) => l.data.startsWith(`${ano}`));
+
+    if (periodo === "mes") {
+      return lancamentos.filter((l) => l.data.startsWith(`${ano}-${mes}`));
+    }
+
+    if (periodo === "ano") {
+      return lancamentos.filter((l) => l.data.startsWith(`${ano}`));
+    }
+
     if (periodo === "quadrimestre") {
       const mesNum = Number(mes);
-      let de = "01",
-        ate = "04";
+      let de = "01";
+      let ate = "04";
       if (mesNum <= 4) {
         de = "01";
         ate = "04";
@@ -53,11 +59,8 @@ export default function PrestacaoDeContasPage() {
       }
       return lancamentos.filter((l) => l.data >= `${ano}-${de}` && l.data <= `${ano}-${ate}`);
     }
-    return lancamentos;
-  }
 
-  const lancamentosFiltrados = useMemo(() => {
-    return filtrarPorPeriodo(lancamentos);
+    return lancamentos;
   }, [lancamentos, periodo, mes, ano, todosAnos]);
 
   if (isLoadingRacha || isLoadingFinanceiro) {

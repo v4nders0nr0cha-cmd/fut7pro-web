@@ -3,7 +3,7 @@
 ## 📋 Notas de Arquitetura de Dados
 
 - O frontend não deve acessar banco de dados diretamente em produção.
-- O módulo `src/lib/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
+- O módulo `src/server/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
 - Todas as operações de dados devem passar pela API do backend `NEXT_PUBLIC_API_URL`.
 - As rotas sob `src/pages/api/*` existem apenas para ambientes locais de desenvolvimento; em produção, essas rotas devem ser desativadas ou delegar ao backend.
 
@@ -12,7 +12,7 @@ Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Um
 ## 📋 Notas de Arquitetura de Dados
 
 - O frontend não deve acessar banco de dados diretamente em produção.
-- O módulo `src/lib/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
+- O módulo `src/server/prisma.ts` é um stub para evitar uso de `PrismaClient` no runtime do Next.js.
 - Todas as operações de dados devem passar pela API do backend `NEXT_PUBLIC_API_URL`.
 - As rotas sob `src/pages/api/*` existem apenas para ambientes locais de desenvolvimento; em produção, essas rotas devem ser desativadas ou delegar ao backend.
 
@@ -272,3 +272,21 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ---
 
 **Fut7Pro** - O jogo começa aqui! ⚽
+
+### Seeds locais
+
+Para criar partidas de exemplo e popular os fluxos de `Times do Dia` e histórico, rode:
+
+    npm run seed:partidas -- demo-racha "Racha Demo" 2025-09-25
+
+O script aceita: `slug` do racha, nome opcional e a data (YYYY-MM-DD).
+
+### Postgres local rapido
+
+```bash
+npm run db:up
+npm run dev:migrate-seed
+npm run db:down
+```
+
+O script `dev-migrate-seed.ps1` sobe o Postgres via Docker, aplica a migration `add-campeao` e executa o seed de campeoes para o slug informado (padrao `demo-rachao`).

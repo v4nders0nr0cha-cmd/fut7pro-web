@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Head from "next/head";
 import { useState, useRef } from "react";
 import {
@@ -199,7 +200,8 @@ export default function ConfigPage() {
         onConfirm={onConfirmSave}
         onCancel={() => setShowModal(null)}
       >
-        Deseja realmente <b>salvar</b> as configurações globais do sistema?
+        Este recurso de salvar configurações globais será habilitado em breve. Entre em contato com
+        o suporte para alterações urgentes.
       </ConfirmModal>
       <ConfirmModal
         show={showModal === "backup"}
@@ -242,9 +244,11 @@ export default function ConfigPage() {
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Logo do sistema</span>
                 <div className="flex items-center gap-4 flex-wrap">
-                  <img
+                  <Image
                     src={form.logo}
                     alt="Logo Fut7Pro"
+                    width={64}
+                    height={64}
                     className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-700"
                   />
                   <input

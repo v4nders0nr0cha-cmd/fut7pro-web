@@ -18,6 +18,20 @@ export interface ApiError {
   details?: unknown;
 }
 
+type SessionUserLite = {
+  id?: string;
+  name?: string | null;
+  email?: string | null;
+  image?: string | null;
+  accessToken?: string;
+  refreshToken?: string;
+  tenantSlug?: string;
+};
+
+type SessionLite = {
+  user?: SessionUserLite | null;
+};
+
 class ApiClient {
   private baseURL: string;
 
@@ -27,13 +41,19 @@ class ApiClient {
 
   private async getAuthHeaders(): Promise<Record<string, string>> {
     try {
-      const session = await getSession();
+      const session = (await getSession()) as SessionLite | null;
+      const user = session?.user;
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
       };
 
-      if (session?.user?.accessToken) {
-        headers["Authorization"] = `Bearer ${session.user.accessToken}`;
+      if (user?.accessToken) {
+        headers["Authorization"] = `Bearer ${user.accessToken}`;
+      }
+
+      // Adicionar header do tenant se disponível
+      if (user?.tenantSlug) {
+        headers["x-tenant-slug"] = user.tenantSlug;
       }
 
       return headers;
@@ -197,10 +217,12 @@ export const configuracoesApi = {
 
 // API de Autenticação
 export const authApi = {
-  login: (credentials: { email: string; password: string }) =>
+  login: (credentials: { email: string; password: string; rachaSlug?: string }) =>
     apiClient.post("/auth/login", credentials),
   register: (userData: { email: string; password: string; name: string }) =>
     apiClient.post("/auth/register", userData),
+  registerAdmin: (userData: { email: string; password: string; name: string; rachaSlug: string }) =>
+    apiClient.post("/auth/register-admin", userData),
   refresh: (refreshToken: string) => apiClient.post("/auth/refresh", { refreshToken }),
   logout: () => apiClient.post("/auth/logout"),
   me: () => apiClient.get("/auth/me"),
@@ -293,3 +315,72 @@ export const healthApi = {
   checkDatabase: () => apiClient.get("/health/database"),
   checkRedis: () => apiClient.get("/health/redis"),
 };
+
+// API de Tenants (Rachas)
+export const tenantApi = {
+  getAll: () => apiClient.get("/rachas"),
+  getById: (id: string) => apiClient.get(`/rachas/${id}`),
+  getBySlug: (slug: string) => apiClient.get(`/rachas/slug/${slug}`),
+  create: (data: ApiRequestData) => apiClient.post("/rachas", data),
+  update: (id: string, data: ApiRequestData) => apiClient.put(`/rachas/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/rachas/${id}`),
+  getJogos: (slug: string) => apiClient.get(`/rachas/${slug}/jogos`),
+  getEstatisticas: (slug: string) => apiClient.get(`/rachas/${slug}/estatisticas`),
+};
+
+// API de Membership
+export const membershipApi = {
+  getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/memberships`),
+  getPending: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/memberships/pending`),
+  getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/memberships/${id}`),
+  approve: (tenantSlug: string, id: string) => apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/approve`),
+  suspend: (tenantSlug: string, id: string) => apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/suspend`),
+  delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/memberships/${id}`),
+  invite: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/memberships/invite`, data),
+};
+
+// API Multi-tenant (dados protegidos por tenant)
+export const tenantDataApi = {
+  // Partidas
+  partidas: {
+    getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/partidas`),
+    getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/partidas/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/partidas`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/partidas/${id}`, data),
+    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/partidas/${id}`),
+  },
+  
+  // Times
+  times: {
+    getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/times`),
+    getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/times/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/times`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/times/${id}`, data),
+    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/times/${id}`),
+  },
+  
+  // Jogadores
+  jogadores: {
+    getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/jogadores`),
+    getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/jogadores/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/jogadores`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/jogadores/${id}`, data),
+    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/jogadores/${id}`),
+  },
+  
+  // Estatísticas
+  estatisticas: {
+    getArtilheiros: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/artilheiros`),
+    getAssistencias: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/assistencias`),
+    getRankingGeral: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/ranking-geral`),
+    getClassificacaoTimes: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/classificacao-times`),
+  },
+};
+
+
+
+
+
+
+
+

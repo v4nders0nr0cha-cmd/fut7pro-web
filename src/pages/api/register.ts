@@ -2,7 +2,7 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma"; // certifique-se que este arquivo existe: src/lib/prisma.ts
+import { prisma } from "@/server/prisma"; // Usa o client compartilhado definido em src/server/prisma.ts
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -43,3 +43,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: "Erro interno do servidor." });
   }
 }
+
+

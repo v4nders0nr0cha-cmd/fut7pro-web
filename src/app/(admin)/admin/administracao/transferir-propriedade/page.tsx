@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import Image from "next/image";
 
 // Forçar renderização no cliente para evitar problemas de template
 export const dynamic = "force-dynamic";
@@ -108,7 +109,7 @@ export default function TransferirPropriedadePage() {
                       }`}
                       onClick={() => setAtleta(a)}
                     >
-                      <img
+                      <Image
                         src={a.avatar}
                         width={32}
                         height={32}
@@ -123,7 +124,7 @@ export default function TransferirPropriedadePage() {
               )}
               {atleta && (
                 <div className="mt-3 flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded p-2">
-                  <img
+                  <Image
                     src={atleta.avatar}
                     width={32}
                     height={32}

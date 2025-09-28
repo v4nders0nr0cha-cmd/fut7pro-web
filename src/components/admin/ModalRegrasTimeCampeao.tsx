@@ -25,8 +25,8 @@ export default function ModalRegrasTimeCampeao({ onClose }: Props) {
             jogador realmente compareceu ao racha neste dia.
           </p>
           <p className="mb-3">
-            Caso algum jogador <b>não tenha comparecido</b>, marque a opção "Jogador não compareceu
-            ao racha". Isso impede que esse atleta receba os pontos, gols, assistências e qualquer
+            Caso algum jogador <b>não tenha comparecido</b>, marque a opção &quot;Jogador não compareceu
+            ao racha&quot;. Isso impede que esse atleta receba os pontos, gols, assistências e qualquer
             estatística deste dia.
           </p>
           <p className="mb-3">
@@ -44,3 +44,5 @@ export default function ModalRegrasTimeCampeao({ onClose }: Props) {
     </div>
   );
 }
+
+

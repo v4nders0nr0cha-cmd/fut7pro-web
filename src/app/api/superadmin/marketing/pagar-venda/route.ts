@@ -1,6 +1,6 @@
 // src/app/api/superadmin/marketing/pagar-venda/route.ts
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request) {
@@ -18,3 +18,4 @@ export async function POST(request: Request) {
 
   return NextResponse.redirect(request.headers.get("referer") || "/superadmin/marketing", 303);
 }
+

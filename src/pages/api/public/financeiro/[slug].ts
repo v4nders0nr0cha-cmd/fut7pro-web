@@ -1,7 +1,7 @@
 // src/pages/api/public/financeiro/[slug].ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -91,3 +91,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: "Erro interno do servidor" });
   }
 }
+

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRacha } from "@/context/RachaContext";
+import { toast } from "react-hot-toast";
+import { mutate } from "swr";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
@@ -133,12 +136,16 @@ function LoaderBolaFutebol() {
 }
 
 export default function SorteioInteligenteAdmin() {
+  const { rachaId } = useRacha();
+
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
   const [participantes, setParticipantes] = useState<Participante[]>(
     mockParticipantes.filter((p) => p.mensalista)
   );
   const [times, setTimes] = useState<TimeSorteado[]>([]);
   const [publicado, setPublicado] = useState(false);
+  const [publicando, setPublicando] = useState(false);
+  const [erroPublicacao, setErroPublicacao] = useState<string | null>(null);
   const [showTip, setShowTip] = useState(false);
   const [configConfirmada, setConfigConfirmada] = useState(false);
 
@@ -201,6 +208,7 @@ export default function SorteioInteligenteAdmin() {
 
     setTimes(timesGerados);
     setPublicado(false);
+    setErroPublicacao(null);
 
     // GERA A TABELA DE JOGOS conforme times selecionados
     if (timesParaSorteio.length >= 2) {
@@ -215,6 +223,57 @@ export default function SorteioInteligenteAdmin() {
     }
 
     setLoadingSorteio(false);
+  }
+
+  async function handlePublicarTimes() {
+    if (!rachaId) {
+      const message = "Selecione um racha antes de publicar.";
+      setErroPublicacao(message);
+      toast.error(message);
+      return;
+    }
+
+    if (times.length === 0 || tabelaJogos.length === 0) {
+      const message = "Realize o sorteio antes de publicar.";
+      setErroPublicacao(message);
+      toast.error(message);
+      return;
+    }
+
+    setPublicando(true);
+    setErroPublicacao(null);
+
+    try {
+      const response = await fetch("/api/admin/sorteio/publicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rachaId,
+          data: new Date().toISOString(),
+          jogos: tabelaJogos,
+          times,
+          config,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        const message = (payload && typeof payload.error === "string")
+          ? payload.error
+          : "Falha ao publicar os times.";
+        throw new Error(message);
+      }
+
+      setPublicado(true);
+      toast.success("Times publicados com sucesso!");
+      mutate(`/api/partidas?rachaId=${rachaId}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao publicar os times.";
+      setErroPublicacao(message);
+      toast.error(message);
+    } finally {
+      setPublicando(false);
+    }
   }
 
   return (
@@ -349,6 +408,7 @@ export default function SorteioInteligenteAdmin() {
 
       {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
       <ParticipantesRacha
+        rachaId={rachaId}
         config={config}
         participantes={participantes}
         setParticipantes={setParticipantes}
@@ -363,7 +423,13 @@ export default function SorteioInteligenteAdmin() {
       {times.length > 0 && (
         <>
           <TimesGerados times={times} />
-          <BotaoPublicarTimes publicado={publicado} onClick={() => setPublicado(true)} />
+          <BotaoPublicarTimes
+            publicado={publicado}
+            onClick={handlePublicarTimes}
+            loading={publicando}
+            disabled={!rachaId}
+            errorMessage={erroPublicacao}
+          />
           {/* NOVO: Tabela de jogos gerada automaticamente */}
           <TabelaJogosRacha jogos={tabelaJogos} />
         </>
@@ -371,3 +437,11 @@ export default function SorteioInteligenteAdmin() {
     </div>
   );
 }
+
+
+
+
+
+
+
+

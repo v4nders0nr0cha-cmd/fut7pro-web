@@ -330,7 +330,7 @@ export default function EditarNossaHistoriaAdmin() {
             )}
           </div>
           <div className="mb-2 text-yellow-300 text-xs">
-            Para usar emojis no campo "Emoji", copie de{" "}
+            Para usar emojis no campo &quot;Emoji&quot;, copie de{" "}
             <a
               href="https://emojipedia.org/"
               target="_blank"

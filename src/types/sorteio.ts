@@ -5,11 +5,12 @@ export type Posicao = "GOL" | "ZAG" | "MEI" | "ATA";
 
 // Novo tipo refletindo estrutura do banco
 export interface AvaliacaoEstrela {
-  id: string; // id do registro de estrela no banco
-  rachaId: string; // racha ao qual essa estrela pertence
-  jogadorId: string; // jogador avaliado
+  id?: string; // id do registro de estrela no banco
+  rachaId?: string; // racha ao qual essa estrela pertence
+  jogadorId?: string; // jogador avaliado
   estrelas: number; // 1-5 estrelas
   atualizadoPor?: string; // id do admin que avaliou
+  adminId?: string; // compatibilidade com mocks antigos
   atualizadoEm: string; // timestamp ISO
 }
 
@@ -47,3 +48,6 @@ export interface ConfiguracaoRacha {
   numTimes: number;
   jogadoresPorTime: number;
 }
+
+
+

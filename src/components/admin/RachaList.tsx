@@ -1,6 +1,7 @@
 // src/components/admin/RachaList.tsx
 "use client";
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Racha } from "@/types/racha";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
@@ -58,9 +59,11 @@ export default function RachaList({ onEdit, onDelete }: Props) {
               <td className="px-4 py-2 font-bold text-white">
                 <div className="flex items-center gap-2">
                   {racha.logoUrl && (
-                    <img
+                    <Image
                       src={racha.logoUrl}
                       alt={racha.nome}
+                      width={28}
+                      height={28}
                       className="w-7 h-7 rounded-full border border-yellow-500 bg-neutral-800 object-cover"
                     />
                   )}
@@ -103,3 +106,4 @@ export default function RachaList({ onEdit, onDelete }: Props) {
     </div>
   );
 }
+

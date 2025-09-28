@@ -131,7 +131,8 @@ export default function Page() {
             garantindo dados corretos e integração automática com os rankings.
           </p>
           <p className="mb-2">
-            Utilize o botão <strong>"Cadastrar Jogador"</strong> apenas em casos específicos, como:
+            Utilize o botão <strong>&quot;Cadastrar Jogador&quot;</strong> apenas em casos
+            específicos, como:
           </p>
           <ul className="list-disc ml-5 mt-2">
             <li>Jogadores com dificuldade de acesso à internet;</li>

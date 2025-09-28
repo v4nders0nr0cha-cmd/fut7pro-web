@@ -29,8 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
+      - name: Run Prisma audit
+        run: npm run audit:prisma
+
       - name: Run ESLint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=0
 
       - name: Run TypeScript check
         run: npm run type-check
@@ -42,6 +46,10 @@ jobs:
   test:
     name: Tests
     runs-on: ubuntu-latest
+    env:
+      SEED_SLUG: demo-rachao
+      RACHA_PATH: /rachas/demo-rachao
+      PLAYWRIGHT_BASE_URL: https://app.fut7pro.com.br
     
     steps:
       - name: Checkout code
@@ -56,8 +64,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
       - name: Run tests
         run: npm run test:ci
+
+      - name: Run E2E - Times do Dia
+        run: npx playwright test -c tests/playwright.times.config.ts tests/e2e/times-do-dia.spec.ts
+
+      - name: Run E2E - Estatisticas
+        run: npx playwright test -c tests/playwright.times.config.ts tests/e2e/estatisticas.spec.ts
+
+      - name: Run E2E - Os Campeoes
+        run: npx playwright test -c tests/playwright.times.config.ts tests/e2e/os-campeoes.spec.ts
+
+      - name: Run E2E - Sorteio Publicar Historico
+        run: npx playwright test -c tests/playwright.times.config.ts tests/e2e/sorteio-publicar-historico.spec.ts
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
@@ -81,6 +105,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
 
       - name: Setup environment
         run: |
@@ -118,6 +143,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
       - name: Setup environment
         run: |
           cp env.example .env.local
@@ -151,6 +177,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+
       - name: Run security audit
         run: npm audit --audit-level=moderate
 
@@ -181,6 +208,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
 
       - name: Setup environment
         run: |
@@ -228,3 +256,12 @@ jobs:
           text: '✅ Frontend CI/CD passed for ${{ github.repository }}#${{ github.run_number }}'
           channel: '#devops'
           username: 'GitHub Actions'
+
+
+
+
+
+
+
+
+

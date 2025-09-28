@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { MensagemContato } from "@/types/contato";
-import type { Notification } from "@/types/notification";
+import type { Notification } from "@/types/notificacao";
 import { v4 as uuidv4 } from "uuid";
 
 // Simulação de DB em memória (substitua por integração real)
@@ -60,3 +60,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["POST", "GET"]);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+

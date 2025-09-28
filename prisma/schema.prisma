@@ -25,6 +25,7 @@ model Racha {
   partidas          Partida[]
   patrocinadores    Patrocinador[]
   times             Time[]
+  campeoes         Campeao[]
   logs              AdminLog[]
   financeiros       Financeiro[]
   financeiroVisivel Boolean        @default(false)
@@ -71,6 +72,21 @@ model Patrocinador {
   descricao    String?
   rachaId      String
   racha        Racha    @relation(fields: [rachaId], references: [id])
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+}
+
+
+model Campeao {
+  id           String   @id @default(cuid())
+  rachaId      String
+  racha        Racha    @relation(fields: [rachaId], references: [id])
+  nome         String
+  categoria    String
+  data         DateTime
+  descricao    String?
+  jogadores    String?
+  imagem       String?
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 }
