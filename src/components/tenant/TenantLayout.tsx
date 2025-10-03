@@ -14,23 +14,23 @@ interface TenantLayoutProps {
   requireAdmin?: boolean;
 }
 
-export function TenantLayout({ 
-  children, 
-  showBackButton = false, 
+export function TenantLayout({
+  children,
+  showBackButton = false,
   requireAuth = true,
-  requireAdmin = false 
+  requireAdmin = false,
 }: TenantLayoutProps) {
-  const { 
-    tenant, 
-    membership, 
-    loading, 
-    isAuthenticated, 
-    hasTenant, 
-    hasMembership, 
-    isApproved, 
-    isAdmin 
+  const {
+    tenant,
+    membership,
+    loading,
+    isAuthenticated,
+    hasTenant,
+    hasMembership,
+    isApproved,
+    isAdmin,
   } = useTenant();
-  
+
   const router = useRouter();
 
   useEffect(() => {
@@ -61,15 +61,15 @@ export function TenantLayout({
       return;
     }
   }, [
-    loading, 
-    isAuthenticated, 
-    hasTenant, 
-    hasMembership, 
-    isApproved, 
-    isAdmin, 
-    requireAuth, 
-    requireAdmin, 
-    router
+    loading,
+    isAuthenticated,
+    hasTenant,
+    hasMembership,
+    isApproved,
+    isAdmin,
+    requireAuth,
+    requireAdmin,
+    router,
   ]);
 
   if (loading) {
@@ -94,9 +94,7 @@ export function TenantLayout({
   return (
     <div className="min-h-screen bg-fundo">
       <TenantHeader showBackButton={showBackButton} />
-      <main className="container mx-auto px-4 py-6">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-6">{children}</main>
     </div>
   );
 }

@@ -29,4 +29,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Content-Type", "text/csv");
   res.status(200).send(csv);
 }
-

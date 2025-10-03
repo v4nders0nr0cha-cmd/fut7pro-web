@@ -18,10 +18,7 @@ async function resolveRachaId(rachaId: string | null, slug: string | null): Prom
   return record?.id ?? null;
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { slug: string } }
-) {
+export async function GET(request: Request, { params }: { params: { slug: string } }) {
   const { searchParams } = new URL(request.url);
   const rachaIdParam = searchParams.get("rachaId");
   const tenantSlug = searchParams.get("tenant");
@@ -29,10 +26,7 @@ export async function GET(
   try {
     const rachaId = await resolveRachaId(rachaIdParam, tenantSlug);
     if (!rachaId) {
-      return NextResponse.json(
-        { error: "rachaId or tenant slug is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "rachaId or tenant slug is required" }, { status: 400 });
     }
 
     const atleta = await obterAtletaPorSlug(rachaId, params.slug);
@@ -46,4 +40,3 @@ export async function GET(
     return NextResponse.json({ error: "failed to fetch athlete" }, { status: 500 });
   }
 }
-

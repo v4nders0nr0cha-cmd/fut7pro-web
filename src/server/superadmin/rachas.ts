@@ -1,13 +1,20 @@
-import { prisma } from '@/server/prisma';
-import type { SuperadminFinanceValores, SuperadminRachaHistorico, SuperadminRachaResumo, SuperadminUsuarioResumo } from '@/types/superadmin';
+import { prisma } from "@/server/prisma";
+import type {
+  SuperadminFinanceValores,
+  SuperadminRachaHistorico,
+  SuperadminRachaResumo,
+  SuperadminUsuarioResumo,
+} from "@/types/superadmin";
 
-function computeFinance(valores: { tipo: string; valor: number | null | undefined }[]): SuperadminFinanceValores {
+function computeFinance(
+  valores: { tipo: string; valor: number | null | undefined }[]
+): SuperadminFinanceValores {
   return valores.reduce<SuperadminFinanceValores>(
     (acc, item) => {
-      const value = typeof item.valor === 'number' ? item.valor : 0;
-      if (item.tipo.toLowerCase() === 'entrada') {
+      const value = typeof item.valor === "number" ? item.valor : 0;
+      if (item.tipo.toLowerCase() === "entrada") {
         acc.entradas += value;
-      } else if (item.tipo.toLowerCase() === 'saida') {
+      } else if (item.tipo.toLowerCase() === "saida") {
         acc.saidas += value;
       }
       return acc;
@@ -29,12 +36,17 @@ function mapAdmin(usuario: {
     nome: usuario.nome,
     email: usuario.email,
     role: usuario.role,
-    ativo: usuario.status === 'ativo',
+    ativo: usuario.status === "ativo",
     criadoEm: usuario.createdAt.toISOString(),
   };
 }
 
-function mapHistorico(item: { id: string; acao: string; detalhes: string | null; criadoEm: Date }): SuperadminRachaHistorico {
+function mapHistorico(item: {
+  id: string;
+  acao: string;
+  detalhes: string | null;
+  criadoEm: Date;
+}): SuperadminRachaHistorico {
   return {
     id: item.id,
     acao: item.acao,
@@ -64,7 +76,7 @@ export async function loadSuperadminRachas(): Promise<SuperadminRachaResumo[]> {
         },
       },
       logs: {
-        orderBy: { criadoEm: 'desc' },
+        orderBy: { criadoEm: "desc" },
         take: 6,
       },
       financeiros: {
@@ -75,7 +87,7 @@ export async function loadSuperadminRachas(): Promise<SuperadminRachaResumo[]> {
         },
       },
     },
-    orderBy: { criadoEm: 'desc' },
+    orderBy: { criadoEm: "desc" },
   });
 
   return rachas.map((racha) => {
@@ -96,12 +108,12 @@ export async function loadSuperadminRachas(): Promise<SuperadminRachaResumo[]> {
       slug: racha.slug,
       status: racha.status,
       plano: racha.plano?.nome ?? null,
-      presidente: racha.owner?.nome ?? 'Nao informado',
+      presidente: racha.owner?.nome ?? "Nao informado",
       emailPresidente: racha.owner?.email ?? null,
       atletas: racha.jogadores.length,
       criadoEm: racha.criadoEm.toISOString(),
       ultimoAcesso: ultimoLog ? ultimoLog.criadoEm.toISOString() : null,
-      bloqueado: racha.status === 'BLOQUEADO' || racha.status === 'INADIMPLENTE',
+      bloqueado: racha.status === "BLOQUEADO" || racha.status === "INADIMPLENTE",
       admins,
       historico,
       financeiro: financeiroValores,

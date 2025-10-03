@@ -16,7 +16,7 @@ interface MembershipsPageProps {
 export default function MembershipsPage({ params }: MembershipsPageProps) {
   const { isAdmin } = useTenant();
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending'>('all');
+  const [activeTab, setActiveTab] = useState<"all" | "pending">("all");
 
   if (!isAdmin) {
     return (
@@ -46,21 +46,21 @@ export default function MembershipsPage({ params }: MembershipsPageProps) {
           <div className="border-b border-white/20 p-4">
             <div className="flex space-x-4">
               <button
-                onClick={() => setActiveTab('all')}
+                onClick={() => setActiveTab("all")}
                 className={`px-4 py-2 rounded-md transition-colors ${
-                  activeTab === 'all'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  activeTab === "all"
+                    ? "bg-primary text-white"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
                 }`}
               >
                 Todos os Membros
               </button>
               <button
-                onClick={() => setActiveTab('pending')}
+                onClick={() => setActiveTab("pending")}
                 className={`px-4 py-2 rounded-md transition-colors ${
-                  activeTab === 'pending'
-                    ? 'bg-primary text-white'
-                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                  activeTab === "pending"
+                    ? "bg-primary text-white"
+                    : "text-gray-300 hover:text-white hover:bg-white/10"
                 }`}
               >
                 Pendentes
@@ -70,7 +70,7 @@ export default function MembershipsPage({ params }: MembershipsPageProps) {
 
           <div className="p-6">
             <MembershipList
-              showPendingOnly={activeTab === 'pending'}
+              showPendingOnly={activeTab === "pending"}
               onMembershipUpdate={() => {
                 // Recarregar lista se necessário
               }}

@@ -63,7 +63,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             logoUrl,
             tema,
             regras,
-            ativo: true,
+            ativo: false, // 👈 nasce inativo por padrão
+            status: "INATIVO",
             ownerId: session.user.id,
           },
         });

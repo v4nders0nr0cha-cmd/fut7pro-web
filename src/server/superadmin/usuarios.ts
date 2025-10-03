@@ -1,5 +1,5 @@
-import { prisma } from '@/server/prisma';
-import type { SuperadminUsuarioResumo, SuperadminUsuariosSnapshot } from '@/types/superadmin';
+import { prisma } from "@/server/prisma";
+import type { SuperadminUsuarioResumo, SuperadminUsuariosSnapshot } from "@/types/superadmin";
 
 function mapUsuario(usuario: {
   id: string;
@@ -14,7 +14,7 @@ function mapUsuario(usuario: {
     nome: usuario.nome,
     email: usuario.email,
     role: usuario.role,
-    ativo: usuario.status === 'ativo',
+    ativo: usuario.status === "ativo",
     criadoEm: usuario.createdAt.toISOString(),
   };
 }
@@ -29,7 +29,7 @@ export async function loadSuperadminUsuarios(): Promise<SuperadminUsuariosSnapsh
       status: true,
       createdAt: true,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { createdAt: "desc" },
   });
 
   const itens: SuperadminUsuarioResumo[] = usuarios.map(mapUsuario);

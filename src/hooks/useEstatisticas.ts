@@ -1,6 +1,6 @@
-import useSWR from 'swr';
-import { useRacha } from '@/context/RachaContext';
-import type { RankingAtleta, TimeClassificacao } from '@/types/estatisticas';
+import useSWR from "swr";
+import { useRacha } from "@/context/RachaContext";
+import type { RankingAtleta, TimeClassificacao } from "@/types/estatisticas";
 
 interface RankingResponse<T> {
   results: T[];
@@ -33,10 +33,13 @@ type BaseResult<T> = {
 };
 
 async function fetcher<T>(url: string): Promise<T> {
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, { cache: "no-store" });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload && typeof payload.error === 'string' ? payload.error : 'Erro ao carregar estatisticas';
+    const message =
+      payload && typeof payload.error === "string"
+        ? payload.error
+        : "Erro ao carregar estatisticas";
     throw new Error(message);
   }
   return payload as T;
@@ -45,15 +48,19 @@ async function fetcher<T>(url: string): Promise<T> {
 function createKey(rachaId: string | null, config: EndpointConfig) {
   if (!rachaId) return null;
   const params = new URLSearchParams();
-  params.set('rachaId', rachaId);
-  params.set('periodo', config.periodo);
-  if (typeof config.ano === 'number' && Number.isFinite(config.ano)) {
-    params.set('ano', String(config.ano));
+  params.set("rachaId", rachaId);
+  params.set("periodo", config.periodo);
+  if (typeof config.ano === "number" && Number.isFinite(config.ano)) {
+    params.set("ano", String(config.ano));
   }
   return `${config.endpoint}?${params.toString()}`;
 }
 
-function useRankingEndpoint<T>(endpoint: string, periodo: string, options?: RankingOptions): BaseResult<T> {
+function useRankingEndpoint<T>(
+  endpoint: string,
+  periodo: string,
+  options?: RankingOptions
+): BaseResult<T> {
   const { rachaId } = useRacha();
   const key = createKey(rachaId ?? null, {
     endpoint,
@@ -74,17 +81,17 @@ function useRankingEndpoint<T>(endpoint: string, periodo: string, options?: Rank
 }
 
 export function useRankingGeral(periodo: string, options?: RankingOptions) {
-  return useRankingEndpoint<RankingAtleta>('/api/estatisticas/ranking-geral', periodo, options);
+  return useRankingEndpoint<RankingAtleta>("/api/estatisticas/ranking-geral", periodo, options);
 }
 
 export function useRankingArtilheiros(periodo: string, options?: RankingOptions) {
-  return useRankingEndpoint<RankingAtleta>('/api/estatisticas/artilheiros', periodo, options);
+  return useRankingEndpoint<RankingAtleta>("/api/estatisticas/artilheiros", periodo, options);
 }
 
 export function useRankingAssistencias(periodo: string, options?: RankingOptions) {
-  return useRankingEndpoint<RankingAtleta>('/api/estatisticas/assistencias', periodo, options);
+  return useRankingEndpoint<RankingAtleta>("/api/estatisticas/assistencias", periodo, options);
 }
 
 export function useClassificacaoTimes(periodo: string, options?: RankingOptions) {
-  return useRankingEndpoint<TimeClassificacao>('/api/estatisticas/classificacao', periodo, options);
+  return useRankingEndpoint<TimeClassificacao>("/api/estatisticas/classificacao", periodo, options);
 }

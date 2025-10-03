@@ -69,4 +69,3 @@ async function registrarLogBloqueio(rachaId: string, motivo: string) {
     },
   });
 }
-

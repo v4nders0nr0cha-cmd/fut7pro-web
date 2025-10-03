@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import path from "path";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? "https://app.fut7pro.com.br";
+const baseURL =
+  process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? "https://app.fut7pro.com.br";
 
 export default defineConfig({
   testDir: path.join(__dirname, "e2e"),

@@ -23,13 +23,13 @@ export default function RachaPage({ params }: RachaPageProps) {
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await tenantApi.getBySlug(params.slug);
-        
+
         if (response.error) {
           throw new Error(response.error);
         }
-        
+
         setTenant(response.data);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro ao carregar racha";
@@ -76,14 +76,10 @@ export default function RachaPage({ params }: RachaPageProps) {
     <TenantLayout requireAuth={false}>
       <div className="max-w-4xl mx-auto">
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6 border border-white/20">
-          <h1 className="text-3xl font-bold text-white mb-4">
-            {tenant?.name || "Racha"}
-          </h1>
-          
-          {tenant?.description && (
-            <p className="text-gray-300 mb-6">{tenant.description}</p>
-          )}
-          
+          <h1 className="text-3xl font-bold text-white mb-4">{tenant?.name || "Racha"}</h1>
+
+          {tenant?.description && <p className="text-gray-300 mb-6">{tenant.description}</p>}
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-white/5 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-white mb-2">Jogos</h3>
@@ -92,7 +88,7 @@ export default function RachaPage({ params }: RachaPageProps) {
                 Ver Jogos
               </button>
             </div>
-            
+
             <div className="bg-white/5 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-white mb-2">Times</h3>
               <p className="text-gray-300">Gerencie os times</p>
@@ -100,7 +96,7 @@ export default function RachaPage({ params }: RachaPageProps) {
                 Ver Times
               </button>
             </div>
-            
+
             <div className="bg-white/5 rounded-lg p-4">
               <h3 className="text-lg font-semibold text-white mb-2">Jogadores</h3>
               <p className="text-gray-300">Lista de jogadores</p>

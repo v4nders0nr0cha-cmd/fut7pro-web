@@ -1,11 +1,11 @@
-import useSWR from 'swr';
-import type { SuperadminUsuariosSnapshot } from '@/types/superadmin';
+import useSWR from "swr";
+import type { SuperadminUsuariosSnapshot } from "@/types/superadmin";
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    const message = await response.text().catch(() => 'Erro ao carregar usuarios');
-    throw new Error(message || 'Erro ao carregar usuarios');
+    const message = await response.text().catch(() => "Erro ao carregar usuarios");
+    throw new Error(message || "Erro ao carregar usuarios");
   }
   return response.json();
 };
@@ -19,7 +19,7 @@ const emptySnapshot: SuperadminUsuariosSnapshot = {
 
 export function useSuperadminUsuarios() {
   const { data, error, isLoading, mutate } = useSWR<SuperadminUsuariosSnapshot>(
-    '/api/superadmin/usuarios',
+    "/api/superadmin/usuarios",
     fetcher,
     { revalidateOnFocus: false }
   );

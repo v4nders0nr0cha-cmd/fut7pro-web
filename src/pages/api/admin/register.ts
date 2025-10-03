@@ -1,23 +1,26 @@
+// src/pages/api/admin/register.ts
 import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import type { Role, RachaStatus } from "@prisma/client";
 import { prisma } from "@/server/prisma";
 
-interface RegisterBody {
-  nome?: string;
-  slug?: string;
-  email?: string;
-  senha?: string;
-  presidenteNome?: string;
-  presidenteApelido?: string;
-}
+type RegisterBody = {
+  nome?: string; // nome do racha
+  slug?: string; // slug do racha
+  email?: string; // email do presidente (Usuario + Jogador)
+  senha?: string; // senha do presidente
+  presidenteNome?: string; // nome completo do presidente
+  presidenteApelido?: string; // apelido do presidente
+  logoUrl?: string; // opcional: logo do racha
+};
 
-type RegisterResponse =
-  | { message: string; rachaId?: string }
-  | { error: string };
+type Ok = { message: string; rachaId: string };
+type Err = { error: string };
+type Res = Ok | Err;
 
 const PRESIDENT_ROLE: Role = "PRESIDENTE";
 const RACHA_STATUS_INATIVO: RachaStatus = "INATIVO";
+const POSICAO_PADRAO = "ATACANTE" as const; // posição inicial do jogador do presidente
 
 function normalizeSlug(value: string): string {
   return value
@@ -28,88 +31,89 @@ function normalizeSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<RegisterResponse>
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse<Res>) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Metodo nao permitido" });
+    return res.status(405).json({ error: "Método não permitido" });
   }
 
   const body = (req.body ?? {}) as RegisterBody;
+
   const nomeRacha = body.nome?.trim() ?? "";
   const slugInput = body.slug?.trim() ?? "";
   const emailInput = body.email?.trim() ?? "";
   const senha = body.senha ?? "";
   const presidenteNome = body.presidenteNome?.trim() ?? "";
   const presidenteApelido = body.presidenteApelido?.trim() ?? "";
+  const logoUrl = body.logoUrl?.trim() || null;
 
+  // ---- validações básicas
   if (nomeRacha.length < 3 || nomeRacha.length > 64) {
     return res.status(400).json({ error: "Nome do racha deve ter entre 3 e 64 caracteres" });
   }
-
   if (presidenteNome.length < 3 || presidenteNome.length > 60) {
     return res.status(400).json({ error: "Nome do presidente deve ter entre 3 e 60 caracteres" });
   }
-
   if (presidenteApelido.length < 2 || presidenteApelido.length > 20) {
     return res.status(400).json({ error: "Apelido deve ter entre 2 e 20 caracteres" });
   }
-
   if (!emailInput || !emailInput.includes("@")) {
-    return res.status(400).json({ error: "Email invalido" });
+    return res.status(400).json({ error: "Email inválido" });
   }
-
   if (senha.length < 8) {
     return res.status(400).json({ error: "Senha deve ter pelo menos 8 caracteres" });
   }
 
-  const normalizedSlug = normalizeSlug(slugInput);
-  if (normalizedSlug.length < 3 || normalizedSlug.length > 32) {
+  const slug = normalizeSlug(slugInput);
+  if (slug.length < 3 || slug.length > 32) {
     return res.status(400).json({ error: "Slug deve ter entre 3 e 32 caracteres" });
   }
-  if (!/^[a-z0-9-]+$/.test(normalizedSlug)) {
-    return res.status(400).json({ error: "Slug deve conter apenas letras minusculas, numeros e hifens" });
+  if (!/^[a-z0-9-]+$/.test(slug)) {
+    return res
+      .status(400)
+      .json({ error: "Slug deve conter apenas letras minúsculas, números e hífens" });
   }
 
-  const normalizedEmail = emailInput.toLowerCase();
+  const email = emailInput.toLowerCase();
 
   try {
-    const [existingSlug, existingUser] = await prisma.$transaction([
-      prisma.racha.findUnique({ where: { slug: normalizedSlug } }),
-      prisma.usuario.findUnique({ where: { email: normalizedEmail } }),
+    // conflitos óbvios
+    const [existingRacha, existingUser] = await prisma.$transaction([
+      prisma.racha.findUnique({ where: { slug } }),
+      prisma.usuario.findUnique({ where: { email } }),
     ]);
 
-    if (existingSlug) {
-      return res.status(409).json({ error: "Slug ja esta em uso" });
+    if (existingRacha) {
+      return res.status(409).json({ error: "Slug já está em uso" });
     }
-
     if (existingUser) {
-      return res.status(409).json({ error: "Email ja esta cadastrado" });
+      // Opção conservadora: não sobrescreve usuário existente nessa rota pública
+      return res.status(409).json({ error: "Email já está cadastrado" });
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
 
+    // transação: cria Usuario + Racha + RachaAdmin + (reusa ou cria) Jogador + RachaJogador
     const result = await prisma.$transaction(async (tx) => {
       const usuario = await tx.usuario.create({
         data: {
           nome: presidenteNome,
           apelido: presidenteApelido,
-          email: normalizedEmail,
+          email,
           senhaHash,
           role: PRESIDENT_ROLE,
-          status: "pendente",
+          status: "ativo",
         },
       });
 
       const racha = await tx.racha.create({
         data: {
           nome: nomeRacha,
-          slug: normalizedSlug,
+          slug,
           ownerId: usuario.id,
           ativo: false,
           status: RACHA_STATUS_INATIVO,
+          logoUrl: logoUrl ?? undefined,
         },
       });
 
@@ -118,19 +122,55 @@ export default async function handler(
           rachaId: racha.id,
           usuarioId: usuario.id,
           role: "PRESIDENTE",
-          status: "pendente",
+          status: "ativo",
         },
       });
 
-      return { racha };
+      // Jogador: reaproveita por email ou cria novo
+      let jogador = await tx.jogador.findUnique({ where: { email } });
+      if (!jogador) {
+        jogador = await tx.jogador.create({
+          data: {
+            nome: presidenteNome,
+            apelido: presidenteApelido,
+            email,
+            posicao: POSICAO_PADRAO,
+            status: "ativo",
+          },
+        });
+      }
+
+      // Vincula Jogador ao Racha (idempotente com unique no par rachaId+jogadorId, se existir)
+      // Se não tiver unique no schema, este create simples funciona; se tiver, você pode trocar por upsert-like.
+      await tx.rachaJogador.create({
+        data: {
+          rachaId: racha.id,
+          jogadorId: jogador.id,
+        },
+      });
+
+      return { rachaId: racha.id };
     });
 
     return res.status(201).json({
-      message: "Cadastro recebido. Nossa equipe vai validar os dados e liberar o acesso em breve.",
-      rachaId: result.racha.id,
+      message:
+        "Cadastro recebido! Vamos validar os dados e liberar o acesso em breve. Você já está configurado como presidente e jogador do racha.",
+      rachaId: result.rachaId,
     });
-  } catch (error) {
-    console.error("POST /api/admin/register failed", error);
+  } catch (err: any) {
+    // Trata conflito de unique (caso você adicione @@unique([rachaId, jogadorId]) e a chamada seja repetida)
+    const msg = typeof err?.message === "string" ? err.message : String(err);
+    if (msg.includes("Unique constraint failed")) {
+      // cenário: RachaJogador já existe; considere sucesso
+      return res.status(201).json({
+        message:
+          "Cadastro processado. Vinculações já existiam ou foram criadas. Aguardando liberação do racha.",
+        rachaId:
+          (await prisma.racha.findUnique({ where: { slug }, select: { id: true } }))?.id ?? "",
+      });
+    }
+
+    console.error("POST /api/admin/register failed", err);
     return res.status(500).json({ error: "Erro interno ao cadastrar racha" });
   }
 }

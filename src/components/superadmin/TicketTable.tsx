@@ -1,4 +1,4 @@
-import type { SuperadminTicketResumo } from '@/types/superadmin';
+import type { SuperadminTicketResumo } from "@/types/superadmin";
 
 interface TicketTableProps {
   tickets: SuperadminTicketResumo[];
@@ -6,21 +6,21 @@ interface TicketTableProps {
 }
 
 const statusStyles: Record<string, string> = {
-  aberto: 'text-yellow-400',
-  pendente: 'text-orange-300',
-  andamento: 'text-blue-400',
-  em_andamento: 'text-blue-400',
-  resolvido: 'text-green-400',
-  fechado: 'text-green-400',
+  aberto: "text-yellow-400",
+  pendente: "text-orange-300",
+  andamento: "text-blue-400",
+  em_andamento: "text-blue-400",
+  resolvido: "text-green-400",
+  fechado: "text-green-400",
 };
 
 const statusLabels: Record<string, string> = {
-  aberto: 'Aberto',
-  pendente: 'Aguardando',
-  andamento: 'Em andamento',
-  em_andamento: 'Em andamento',
-  resolvido: 'Resolvido',
-  fechado: 'Fechado',
+  aberto: "Aberto",
+  pendente: "Aguardando",
+  andamento: "Em andamento",
+  em_andamento: "Em andamento",
+  resolvido: "Resolvido",
+  fechado: "Fechado",
 };
 
 export default function TicketTable({ tickets, isLoading }: TicketTableProps) {
@@ -59,16 +59,14 @@ export default function TicketTable({ tickets, isLoading }: TicketTableProps) {
             return (
               <tr key={ticket.id} className="border-b border-zinc-800 hover:bg-zinc-800 transition">
                 <td className="px-4 py-3">{ticket.assunto}</td>
-                <td className="px-4 py-3">{ticket.racha ?? '-'}</td>
-                <td className="px-4 py-3">{ticket.responsavel ?? '-'}</td>
+                <td className="px-4 py-3">{ticket.racha ?? "-"}</td>
+                <td className="px-4 py-3">{ticket.responsavel ?? "-"}</td>
                 <td className="px-4 py-3 font-bold">
-                  <span className={statusStyles[key] ?? 'text-zinc-300'}>
+                  <span className={statusStyles[key] ?? "text-zinc-300"}>
                     {statusLabels[key] ?? ticket.status}
                   </span>
                 </td>
-                <td className="px-4 py-3">
-                  {new Date(ticket.criadoEm).toLocaleString('pt-BR')}
-                </td>
+                <td className="px-4 py-3">{new Date(ticket.criadoEm).toLocaleString("pt-BR")}</td>
                 <td className="px-4 py-3">
                   <button className="bg-blue-500 text-white rounded px-3 py-1 text-xs hover:bg-blue-600 transition">
                     Ver

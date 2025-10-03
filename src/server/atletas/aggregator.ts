@@ -91,9 +91,7 @@ function parseJogadores(raw: string | null): ParsedJogador[] {
             : `Atleta ${index + 1}`;
 
         const id =
-          typeof record.id === "string" && record.id.trim().length > 0
-            ? record.id.trim()
-            : null;
+          typeof record.id === "string" && record.id.trim().length > 0 ? record.id.trim() : null;
 
         const apelido =
           typeof record.apelido === "string" && record.apelido.trim().length > 0

@@ -18,4 +18,3 @@ export async function POST(request: Request) {
 
   return NextResponse.redirect(request.headers.get("referer") || "/superadmin/marketing", 303);
 }
-

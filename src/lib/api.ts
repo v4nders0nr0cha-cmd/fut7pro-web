@@ -332,11 +332,16 @@ export const tenantApi = {
 export const membershipApi = {
   getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/memberships`),
   getPending: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/memberships/pending`),
-  getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/memberships/${id}`),
-  approve: (tenantSlug: string, id: string) => apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/approve`),
-  suspend: (tenantSlug: string, id: string) => apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/suspend`),
-  delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/memberships/${id}`),
-  invite: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/memberships/invite`, data),
+  getById: (tenantSlug: string, id: string) =>
+    apiClient.get(`/rachas/${tenantSlug}/memberships/${id}`),
+  approve: (tenantSlug: string, id: string) =>
+    apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/approve`),
+  suspend: (tenantSlug: string, id: string) =>
+    apiClient.put(`/rachas/${tenantSlug}/memberships/${id}/suspend`),
+  delete: (tenantSlug: string, id: string) =>
+    apiClient.delete(`/rachas/${tenantSlug}/memberships/${id}`),
+  invite: (tenantSlug: string, data: ApiRequestData) =>
+    apiClient.post(`/rachas/${tenantSlug}/memberships/invite`, data),
 };
 
 // API Multi-tenant (dados protegidos por tenant)
@@ -344,43 +349,50 @@ export const tenantDataApi = {
   // Partidas
   partidas: {
     getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/partidas`),
-    getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/partidas/${id}`),
-    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/partidas`, data),
-    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/partidas/${id}`, data),
-    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/partidas/${id}`),
+    getById: (tenantSlug: string, id: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/partidas/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) =>
+      apiClient.post(`/rachas/${tenantSlug}/partidas`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) =>
+      apiClient.put(`/rachas/${tenantSlug}/partidas/${id}`, data),
+    delete: (tenantSlug: string, id: string) =>
+      apiClient.delete(`/rachas/${tenantSlug}/partidas/${id}`),
   },
-  
+
   // Times
   times: {
     getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/times`),
     getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/times/${id}`),
-    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/times`, data),
-    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/times/${id}`, data),
-    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/times/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) =>
+      apiClient.post(`/rachas/${tenantSlug}/times`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) =>
+      apiClient.put(`/rachas/${tenantSlug}/times/${id}`, data),
+    delete: (tenantSlug: string, id: string) =>
+      apiClient.delete(`/rachas/${tenantSlug}/times/${id}`),
   },
-  
+
   // Jogadores
   jogadores: {
     getAll: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/jogadores`),
-    getById: (tenantSlug: string, id: string) => apiClient.get(`/rachas/${tenantSlug}/jogadores/${id}`),
-    create: (tenantSlug: string, data: ApiRequestData) => apiClient.post(`/rachas/${tenantSlug}/jogadores`, data),
-    update: (tenantSlug: string, id: string, data: ApiRequestData) => apiClient.put(`/rachas/${tenantSlug}/jogadores/${id}`, data),
-    delete: (tenantSlug: string, id: string) => apiClient.delete(`/rachas/${tenantSlug}/jogadores/${id}`),
+    getById: (tenantSlug: string, id: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/jogadores/${id}`),
+    create: (tenantSlug: string, data: ApiRequestData) =>
+      apiClient.post(`/rachas/${tenantSlug}/jogadores`, data),
+    update: (tenantSlug: string, id: string, data: ApiRequestData) =>
+      apiClient.put(`/rachas/${tenantSlug}/jogadores/${id}`, data),
+    delete: (tenantSlug: string, id: string) =>
+      apiClient.delete(`/rachas/${tenantSlug}/jogadores/${id}`),
   },
-  
+
   // Estatísticas
   estatisticas: {
-    getArtilheiros: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/artilheiros`),
-    getAssistencias: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/assistencias`),
-    getRankingGeral: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/ranking-geral`),
-    getClassificacaoTimes: (tenantSlug: string) => apiClient.get(`/rachas/${tenantSlug}/estatisticas/classificacao-times`),
+    getArtilheiros: (tenantSlug: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/estatisticas/artilheiros`),
+    getAssistencias: (tenantSlug: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/estatisticas/assistencias`),
+    getRankingGeral: (tenantSlug: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/estatisticas/ranking-geral`),
+    getClassificacaoTimes: (tenantSlug: string) =>
+      apiClient.get(`/rachas/${tenantSlug}/estatisticas/classificacao-times`),
   },
 };
-
-
-
-
-
-
-
-

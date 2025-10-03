@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
-import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
+import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol } from "react-icons/fa";
 import Image from "next/image";
-
-const sitePublicoUrl = "https://fut7pro.com.br/seu-racha";
+import { useRacha } from "@/context/RachaContext";
+import SidebarPublicacaoStatus from "@/components/admin/SidebarPublicacaoStatus";
 
 const menu = [
   { label: "Dashboard", icon: MdDashboard, href: "/admin/dashboard" },
@@ -100,18 +100,30 @@ interface SidebarProps {
 export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
+  const { rachaId } = useRacha();
+
+  // Expande automaticamente o menu que contém a página atual (apenas na montagem)
+  useEffect(() => {
+    const activeMenu = menu.find((item) =>
+      item.children?.some((child) => pathname.startsWith(child.href))
+    );
+    if (activeMenu && !open) {
+      setOpen(activeMenu.label);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) setOpen(null);
-  }, [isOpen]);
+    if (mobile && !isOpen) setOpen(null);
+  }, [isOpen, mobile]);
 
   const handleToggle = (label: string) => {
     setOpen((prev) => (prev === label ? null : label));
   };
 
   const wrapperClass = mobile
-    ? `fixed z-50 top-0 left-0 w-72 h-full bg-[#181818] border-r border-[#292929] transition-transform duration-300 transform ${isOpen ? "translate-x-0" : "-translate-x-full"}`
-    : "w-72 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden md:flex z-40";
+    ? `fixed z-[100] top-0 left-0 w-72 h-full bg-[#181818] border-r border-[#292929] transition-transform duration-300 transform pointer-events-auto ${isOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"}`
+    : "w-72 flex-shrink-0 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden md:flex relative pointer-events-auto z-10";
 
   return (
     <aside className={wrapperClass} role="navigation" aria-label="Menu administrativo">
@@ -139,8 +151,13 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             item.children ? (
               <li key={item.label}>
                 <button
-                  className={`w-full flex items-center px-3 py-2 text-left rounded-lg hover:bg-[#232323] transition ${open === item.label ? "bg-[#232323]" : ""}`}
-                  onClick={() => handleToggle(item.label)}
+                  type="button"
+                  className={`w-full flex items-center px-3 py-2 text-left rounded-lg hover:bg-[#232323] transition cursor-pointer select-none ${open === item.label ? "bg-[#232323]" : ""}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggle(item.label);
+                  }}
                   aria-expanded={open === item.label}
                 >
                   <item.icon className="text-yellow-400 text-lg mr-3" />
@@ -181,23 +198,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             )
           )}
         </ul>
-        <div className="px-4 mt-3">
-          <div className="bg-[#1a1a1a] border border-yellow-500 rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
-            <a
-              href={sitePublicoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 font-bold text-yellow-300"
-              title="Abrir site público do seu racha"
-            >
-              Ver o Site
-              <FaExternalLinkAlt className="text-yellow-400 ml-1" />
-            </a>
-          </div>
-          <div className="text-xs text-gray-400 mt-1 pl-1">
-            Atualizações podem levar até 15 minutos para aparecer no site público.
-          </div>
-        </div>
+        <SidebarPublicacaoStatus rachaId={rachaId || ""} />
       </nav>
     </aside>
   );

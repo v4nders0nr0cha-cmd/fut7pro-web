@@ -37,14 +37,13 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const sessionUser = session?.user as (
+  const sessionUser = session?.user as
     | (Record<string, unknown> & {
         tenant?: Tenant | null;
         membership?: Membership | null;
         tenantId?: string | null;
       })
-    | undefined
-  );
+    | undefined;
 
   useEffect(() => {
     if (status === "loading") {

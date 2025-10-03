@@ -6,7 +6,7 @@ import { Role } from "@/common/enums";
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: any) => {
-    const { alt = '', ...rest } = props;
+    const { alt = "", ...rest } = props;
     // eslint-disable-next-line @next/next/no-img-element
     return <img alt={alt} {...rest} />;
   },

@@ -1,12 +1,12 @@
-import type { Partida } from '@prisma/client';
-import { teamLogoMap, logoPadrao } from '@/config/teamLogoMap';
+import type { Partida } from "@prisma/client";
+import { teamLogoMap, logoPadrao } from "@/config/teamLogoMap";
 
 function toSafeNumber(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
-  if (typeof value === 'string') {
-    const normalized = value.replace(',', '.').trim();
+  if (typeof value === "string") {
+    const normalized = value.replace(",", ".").trim();
     const parsed = Number(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
   }
@@ -62,11 +62,11 @@ const LOSS_POINTS = 0;
 
 function slugify(value: string): string {
   return value
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "")
     .trim();
 }
 
@@ -78,30 +78,34 @@ function parseJogadores(raw: string | null): ParsedPlayer[] {
 
     return parsed
       .map((item, index) => {
-        if (!item || typeof item !== 'object') return null;
-        const nome = typeof item.nome === 'string' && item.nome.trim().length > 0 ? item.nome.trim() : `Jogador ${index + 1}`;
+        if (!item || typeof item !== "object") return null;
+        const nome =
+          typeof item.nome === "string" && item.nome.trim().length > 0
+            ? item.nome.trim()
+            : `Jogador ${index + 1}`;
         const fallbackId = slugify(nome) || `jogador-${index}`;
-        const id = typeof item.id === 'string' && item.id.trim().length > 0 ? item.id.trim() : fallbackId;
-        const status = typeof item.status === 'string' ? item.status.toLowerCase() : undefined;
-        const foto = typeof item.foto === 'string' && item.foto.trim().length > 0 ? item.foto : undefined;
-        const apelido = typeof item.apelido === 'string' ? item.apelido : null;
+        const id =
+          typeof item.id === "string" && item.id.trim().length > 0 ? item.id.trim() : fallbackId;
+        const status = typeof item.status === "string" ? item.status.toLowerCase() : undefined;
+        const foto =
+          typeof item.foto === "string" && item.foto.trim().length > 0 ? item.foto : undefined;
+        const apelido = typeof item.apelido === "string" ? item.apelido : null;
         const gols = toSafeNumber((item as Record<string, unknown>).gols);
         const assistencias = toSafeNumber((item as Record<string, unknown>).assistencias);
         return { id, nome, foto, status, apelido, gols, assistencias };
       })
       .filter((player): player is ParsedPlayer => Boolean(player));
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('Falha ao interpretar jogadores da partida', error);
+    if (process.env.NODE_ENV === "development") {
+      console.warn("Falha ao interpretar jogadores da partida", error);
     }
     return [];
   }
 }
 
-
 function isParticipanteAtivo(player: ParsedPlayer): boolean {
   const status = player.status?.toLowerCase();
-  return status !== 'ausente';
+  return status !== "ausente";
 }
 
 function ensurePlayer(map: Map<string, PlayerStats>, player: ParsedPlayer) {
@@ -132,7 +136,7 @@ function ensurePlayer(map: Map<string, PlayerStats>, player: ParsedPlayer) {
 }
 
 function ensureTeam(map: Map<string, TeamStats>, nome: string) {
-  const id = slugify(nome || 'time');
+  const id = slugify(nome || "time");
   if (!map.has(id)) {
     map.set(id, {
       id,
@@ -161,13 +165,13 @@ export function computePlayerStats(partidas: Partida[]): PlayerStats[] {
     const golsA = partida.golsTimeA ?? 0;
     const golsB = partida.golsTimeB ?? 0;
 
-    let resultadoA: 'vitoria' | 'empate' | 'derrota';
-    if (golsA > golsB) resultadoA = 'vitoria';
-    else if (golsA === golsB) resultadoA = 'empate';
-    else resultadoA = 'derrota';
+    let resultadoA: "vitoria" | "empate" | "derrota";
+    if (golsA > golsB) resultadoA = "vitoria";
+    else if (golsA === golsB) resultadoA = "empate";
+    else resultadoA = "derrota";
 
-    const resultadoB: 'vitoria' | 'empate' | 'derrota' =
-      resultadoA === 'vitoria' ? 'derrota' : resultadoA === 'derrota' ? 'vitoria' : 'empate';
+    const resultadoB: "vitoria" | "empate" | "derrota" =
+      resultadoA === "vitoria" ? "derrota" : resultadoA === "derrota" ? "vitoria" : "empate";
 
     jogadoresA.forEach((player) => {
       if (!isParticipanteAtivo(player)) return;
@@ -175,10 +179,10 @@ export function computePlayerStats(partidas: Partida[]): PlayerStats[] {
       entry.jogos += 1;
       entry.gols += player.gols;
       entry.assistencias += player.assistencias;
-      if (resultadoA === 'vitoria') {
+      if (resultadoA === "vitoria") {
         entry.vitorias += 1;
         entry.pontos += WIN_POINTS;
-      } else if (resultadoA === 'empate') {
+      } else if (resultadoA === "empate") {
         entry.empates += 1;
         entry.pontos += DRAW_POINTS;
       } else {
@@ -193,10 +197,10 @@ export function computePlayerStats(partidas: Partida[]): PlayerStats[] {
       entry.jogos += 1;
       entry.gols += player.gols;
       entry.assistencias += player.assistencias;
-      if (resultadoB === 'vitoria') {
+      if (resultadoB === "vitoria") {
         entry.vitorias += 1;
         entry.pontos += WIN_POINTS;
-      } else if (resultadoB === 'empate') {
+      } else if (resultadoB === "empate") {
         entry.empates += 1;
         entry.pontos += DRAW_POINTS;
       } else {
@@ -271,24 +275,28 @@ export function extractAvailableYears(partidas: Partida[]): number[] {
   return Array.from(years).sort((a, b) => b - a);
 }
 
-export function filterPartidasByPeriodo(partidas: Partida[], periodo: string, ano?: number): Partida[] {
-  const normalized = (periodo ?? 'historico').toLowerCase();
+export function filterPartidasByPeriodo(
+  partidas: Partida[],
+  periodo: string,
+  ano?: number
+): Partida[] {
+  const normalized = (periodo ?? "historico").toLowerCase();
   const yearToUse = Number.isFinite(ano) ? Number(ano) : new Date().getFullYear();
 
   return partidas.filter((partida) => {
     const data = new Date(partida.data);
     const partidaAno = data.getFullYear();
 
-    if (['historico', 'todas', 'geral'].includes(normalized)) {
+    if (["historico", "todas", "geral"].includes(normalized)) {
       return true;
     }
 
-    if (normalized === 'anual' || normalized === 'temporada') {
+    if (normalized === "anual" || normalized === "temporada") {
       return partidaAno === yearToUse;
     }
 
-    if (normalized.startsWith('q')) {
-      const quadrimestre = Number(normalized.replace('q', ''));
+    if (normalized.startsWith("q")) {
+      const quadrimestre = Number(normalized.replace("q", ""));
       if (![1, 2, 3].includes(quadrimestre)) {
         return partidaAno === yearToUse;
       }
@@ -304,7 +312,7 @@ export function filterPartidasByPeriodo(partidas: Partida[], periodo: string, an
       return data.getMonth() >= 8;
     }
 
-    if (normalized === 'todas') {
+    if (normalized === "todas") {
       return true;
     }
 

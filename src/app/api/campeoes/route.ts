@@ -74,10 +74,7 @@ export async function GET(request: Request) {
         rachaId,
         ...(categoria ? { categoria } : {}),
       },
-      orderBy: [
-        { data: "desc" },
-        { criadoEm: "desc" },
-      ],
+      orderBy: [{ data: "desc" }, { criadoEm: "desc" }],
       ...(Number.isFinite(take) && take ? { take } : {}),
     });
 
@@ -95,15 +92,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid payload" }, { status: 400 });
     }
 
-    const {
-      rachaId,
-      nome,
-      categoria,
-      data,
-      descricao,
-      jogadores,
-      imagem,
-    } = body as Record<string, unknown>;
+    const { rachaId, nome, categoria, data, descricao, jogadores, imagem } = body as Record<
+      string,
+      unknown
+    >;
 
     if (typeof rachaId !== "string" || rachaId.trim().length === 0) {
       return NextResponse.json({ error: "rachaId is required" }, { status: 400 });

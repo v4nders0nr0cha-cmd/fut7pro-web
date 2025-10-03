@@ -30,7 +30,10 @@ export default function ConfrontosDoDia({ partidas }: ConfrontosDoDiaProps) {
           </thead>
           <tbody>
             {ordenadas.map((partida, index) => (
-              <tr key={partida.id} className="border-b border-neutral-800 hover:bg-neutral-800 transition">
+              <tr
+                key={partida.id}
+                className="border-b border-neutral-800 hover:bg-neutral-800 transition"
+              >
                 <td className="py-2 font-medium">{index + 1}</td>
                 <td className="py-2 font-semibold">
                   <div className="flex items-center justify-center gap-2">

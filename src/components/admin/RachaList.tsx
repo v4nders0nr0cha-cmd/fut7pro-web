@@ -106,4 +106,3 @@ export default function RachaList({ onEdit, onDelete }: Props) {
     </div>
   );
 }
-

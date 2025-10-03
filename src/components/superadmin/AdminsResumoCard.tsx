@@ -1,6 +1,6 @@
 "use client";
-import type { FC } from 'react';
-import type { SuperadminUsuariosSnapshot } from '@/types/superadmin';
+import type { FC } from "react";
+import type { SuperadminUsuariosSnapshot } from "@/types/superadmin";
 
 interface Props {
   snapshot: SuperadminUsuariosSnapshot;
@@ -29,7 +29,9 @@ interface ResumoProps {
 }
 
 function ResumoCard({ label, value, highlight }: ResumoProps) {
-  const valueClassName = highlight ? `text-xl font-bold ${highlight}` : 'text-xl font-bold text-white';
+  const valueClassName = highlight
+    ? `text-xl font-bold ${highlight}`
+    : "text-xl font-bold text-white";
 
   return (
     <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[160px]">

@@ -10,7 +10,13 @@ interface Props {
   errorMessage?: string | null;
 }
 
-export default function BotaoPublicarTimes({ publicado, onClick, loading = false, disabled = false, errorMessage }: Props) {
+export default function BotaoPublicarTimes({
+  publicado,
+  onClick,
+  loading = false,
+  disabled = false,
+  errorMessage,
+}: Props) {
   function handleClick(e: MouseEvent<HTMLButtonElement>) {
     if (publicado || loading || disabled) {
       e.preventDefault();

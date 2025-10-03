@@ -23,7 +23,8 @@ const fetcher = async (url: string) => {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao carregar perfil";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao carregar perfil";
     throw new Error(message);
   }
 
@@ -76,7 +77,11 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
   const { rachaId } = useRacha();
 
   const slug = tenant?.slug ?? rachaConfig.slug;
-  const requestKey = slug ? `/api/atletas/me?slug=${slug}` : rachaId ? `/api/atletas/me?rachaId=${rachaId}` : null;
+  const requestKey = slug
+    ? `/api/atletas/me?slug=${slug}`
+    : rachaId
+      ? `/api/atletas/me?rachaId=${rachaId}`
+      : null;
 
   const { data, error, isLoading, mutate } = useSWR(requestKey, fetcher);
 

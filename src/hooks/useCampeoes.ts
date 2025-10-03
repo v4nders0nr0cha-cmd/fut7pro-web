@@ -9,7 +9,8 @@ const fetcher = async (url: string) => {
   const response = await fetch(url, { cache: "no-store" });
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar campeoes";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar campeoes";
     throw new Error(message);
   }
   return (payload ?? []) as Campeao[];
@@ -30,7 +31,8 @@ async function request<T>(input: RequestInfo, init: RequestInit) {
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao processar campeoes";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao processar campeoes";
     throw new Error(message);
   }
   return payload as T;

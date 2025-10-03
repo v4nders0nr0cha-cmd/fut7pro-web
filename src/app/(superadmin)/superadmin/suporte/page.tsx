@@ -1,25 +1,25 @@
 "use client";
 
-import Head from 'next/head';
-import { useMemo, useState } from 'react';
-import HeaderSuporte from '@/components/superadmin/HeaderSuporte';
-import TicketTable from '@/components/superadmin/TicketTable';
-import CardOnboardingPendentes from '@/components/superadmin/CardOnboardingPendentes';
-import FaqQuickLinks from '@/components/superadmin/FaqQuickLinks';
-import { useSuperadminTickets } from '@/hooks/useSuperadminTickets';
+import Head from "next/head";
+import { useMemo, useState } from "react";
+import HeaderSuporte from "@/components/superadmin/HeaderSuporte";
+import TicketTable from "@/components/superadmin/TicketTable";
+import CardOnboardingPendentes from "@/components/superadmin/CardOnboardingPendentes";
+import FaqQuickLinks from "@/components/superadmin/FaqQuickLinks";
+import { useSuperadminTickets } from "@/hooks/useSuperadminTickets";
 
 const SEO = {
-  title: 'Central de Suporte e Onboarding | Fut7Pro SuperAdmin',
+  title: "Central de Suporte e Onboarding | Fut7Pro SuperAdmin",
   description:
-    'Gerencie tickets, onboarding e suporte SaaS dos rachas Fut7Pro. Painel completo de helpdesk, FAQ e acompanhamento do onboarding dos clientes.',
+    "Gerencie tickets, onboarding e suporte SaaS dos rachas Fut7Pro. Painel completo de helpdesk, FAQ e acompanhamento do onboarding dos clientes.",
   keywords:
-    'suporte, helpdesk, onboarding, fut7, plataforma futebol, SaaS, tickets, racha, administracao',
+    "suporte, helpdesk, onboarding, fut7, plataforma futebol, SaaS, tickets, racha, administracao",
 };
 
 export default function SuporteSuperAdminPage() {
   const { snapshot, tickets, isLoading, error, refresh } = useSuperadminTickets();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -27,18 +27,18 @@ export default function SuporteSuperAdminPage() {
       const matchQuery =
         query.length === 0 ||
         ticket.assunto.toLowerCase().includes(query) ||
-        (ticket.racha ?? '').toLowerCase().includes(query);
+        (ticket.racha ?? "").toLowerCase().includes(query);
 
-      if (statusFilter === 'all') return matchQuery;
+      if (statusFilter === "all") return matchQuery;
       return matchQuery && ticket.status.toLowerCase() === statusFilter;
     });
   }, [tickets, search, statusFilter]);
 
   const stats = [
-    { label: 'Abertos', value: snapshot.abertos },
-    { label: 'Em andamento', value: snapshot.emAndamento },
-    { label: 'Resolvidos', value: snapshot.resolvidos },
-    { label: 'Total', value: snapshot.total },
+    { label: "Abertos", value: snapshot.abertos },
+    { label: "Em andamento", value: snapshot.emAndamento },
+    { label: "Resolvidos", value: snapshot.resolvidos },
+    { label: "Total", value: snapshot.total },
   ];
 
   return (

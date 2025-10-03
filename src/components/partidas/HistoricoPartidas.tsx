@@ -42,7 +42,8 @@ export default function HistoricoPartidas() {
     return partidas.filter((partida) => {
       const data = new Date(partida.data);
       const anoPartida = Number.isNaN(data.getTime()) ? null : data.getFullYear().toString();
-      const atendeAno = anosDisponiveis.length === 0 || !anoSelecionado || anoPartida === anoSelecionado;
+      const atendeAno =
+        anosDisponiveis.length === 0 || !anoSelecionado || anoPartida === anoSelecionado;
 
       if (!atendeAno) {
         return false;
@@ -52,8 +53,8 @@ export default function HistoricoPartidas() {
         return true;
       }
 
-      return [normalize(partida.timeA), normalize(partida.timeB), normalize(partida.local)].some((campo) =>
-        campo.includes(termo)
+      return [normalize(partida.timeA), normalize(partida.timeB), normalize(partida.local)].some(
+        (campo) => campo.includes(termo)
       );
     });
   }, [partidas, anosDisponiveis, anoSelecionado, search]);
@@ -75,7 +76,9 @@ export default function HistoricoPartidas() {
       <div className="mb-10">
         <h2 className="text-xl font-bold mb-2">Histórico de Partidas</h2>
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-          <p className="text-red-400">Erro ao carregar partidas: {error ?? "tente novamente mais tarde"}</p>
+          <p className="text-red-400">
+            Erro ao carregar partidas: {error ?? "tente novamente mais tarde"}
+          </p>
         </div>
       </div>
     );
@@ -120,4 +123,3 @@ export default function HistoricoPartidas() {
     </div>
   );
 }
-

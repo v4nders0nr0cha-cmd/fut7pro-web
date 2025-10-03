@@ -9,9 +9,12 @@ import CardResumoFinanceiro from "@/components/admin/CardResumoFinanceiro";
 import CardProximosRachas from "@/components/admin/CardProximosRachas";
 import CardAcoesRapidas from "@/components/admin/CardAcoesRapidas";
 import CardRelatoriosEngajamento from "@/components/admin/CardRelatoriosEngajamento";
+import PublicarSiteCard from "@/components/admin/PublicarSiteCard";
 import { FaRandom, FaUsers, FaMoneyBillWave, FaMedal, FaBirthdayCake } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
+import { useRacha } from "@/context/RachaContext";
+import { useEffect, useState } from "react";
 
 // MOCKS — use sempre suas fontes reais depois!
 const jogadoresAssiduos = [
@@ -34,6 +37,56 @@ const tipoPlano:
   | "anual-marketing" = "trial";
 
 export default function AdminDashboard() {
+  const { rachaId: contextRachaId } = useRacha();
+  const [rachaData, setRachaData] = useState<{ slug: string; ativo: boolean; id: string } | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadRacha() {
+      // Se tem rachaId no contexto, usar ele
+      if (contextRachaId) {
+        console.log("✅ Usando rachaId do contexto:", contextRachaId);
+        try {
+          const res = await fetch(`/api/rachas/${contextRachaId}`);
+          const data = await res.json();
+          console.log("📦 Dados do racha:", data);
+          if (data.slug !== undefined && data.ativo !== undefined) {
+            setRachaData({ id: contextRachaId, slug: data.slug, ativo: data.ativo });
+          }
+        } catch (error) {
+          console.error("❌ Erro ao buscar racha:", error);
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Se não tem contexto, buscar primeiro racha disponível
+      console.log("⚠️ rachaId não disponível no contexto, buscando primeiro racha...");
+      try {
+        const res = await fetch("/api/admin/rachas");
+        const rachas = await res.json();
+        if (Array.isArray(rachas) && rachas.length > 0) {
+          const firstRacha = rachas[0];
+          console.log("✅ Usando primeiro racha encontrado:", firstRacha.id);
+          setRachaData({
+            id: firstRacha.id,
+            slug: firstRacha.slug,
+            ativo: firstRacha.ativo,
+          });
+        } else {
+          console.log("⚠️ Nenhum racha encontrado");
+        }
+      } catch (error) {
+        console.error("❌ Erro ao buscar rachas:", error);
+      }
+      setLoading(false);
+    }
+
+    loadRacha();
+  }, [contextRachaId]);
+
   return (
     <>
       <Head>
@@ -51,6 +104,26 @@ export default function AdminDashboard() {
       <div className="flex flex-col gap-6 w-full px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         {/* Banner só para alertas importantes */}
         <BannerNotificacoes />
+
+        {/* Card de Publicação do Site */}
+        {loading ? (
+          <div className="rounded-xl border border-yellow-600/40 bg-[#161616] p-4 md:p-5 shadow-lg">
+            <div className="flex items-center justify-center">
+              <span className="text-gray-400">Carregando informações do racha...</span>
+            </div>
+          </div>
+        ) : rachaData ? (
+          <PublicarSiteCard rachaId={rachaData.id} slug={rachaData.slug} ativo={rachaData.ativo} />
+        ) : (
+          <div className="rounded-xl border border-red-600/40 bg-[#161616] p-4 md:p-5 shadow-lg">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <span className="text-red-400 font-semibold">Nenhum racha encontrado</span>
+              <span className="text-gray-400 text-sm">
+                Configure o tenant ou crie seu primeiro racha
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Cards principais */}
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3">

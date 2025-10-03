@@ -32,4 +32,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["PUT", "DELETE"]);
   res.status(405).json({ error: "Método não permitido" });
 }
-

@@ -16,13 +16,13 @@ export default function RachasPage() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const response = await tenantApi.getAll();
-        
+
         if (response.error) {
           throw new Error(response.error);
         }
-        
+
         setRachas(response.data || []);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Erro ao carregar rachas";
@@ -106,20 +106,14 @@ export default function RachasPage() {
                     <p className="text-gray-400 text-sm">@{racha.slug}</p>
                   </div>
                 </div>
-                
+
                 {racha.description && (
-                  <p className="text-gray-300 mb-4 line-clamp-2">
-                    {racha.description}
-                  </p>
+                  <p className="text-gray-300 mb-4 line-clamp-2">{racha.description}</p>
                 )}
-                
+
                 <div className="flex items-center justify-between text-sm text-gray-400">
-                  <span>
-                    {racha.autoJoinEnabled ? "Entrada livre" : "Convite necessário"}
-                  </span>
-                  <span>
-                    Criado em {new Date(racha.createdAt).toLocaleDateString('pt-BR')}
-                  </span>
+                  <span>{racha.autoJoinEnabled ? "Entrada livre" : "Convite necessário"}</span>
+                  <span>Criado em {new Date(racha.createdAt).toLocaleDateString("pt-BR")}</span>
                 </div>
               </Link>
             ))}

@@ -12,7 +12,10 @@ interface MembershipListProps {
   onMembershipUpdate?: () => void;
 }
 
-export function MembershipList({ showPendingOnly = false, onMembershipUpdate }: MembershipListProps) {
+export function MembershipList({
+  showPendingOnly = false,
+  onMembershipUpdate,
+}: MembershipListProps) {
   const { tenant } = useTenant();
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +97,7 @@ export function MembershipList({ showPendingOnly = false, onMembershipUpdate }: 
     return (
       <div className="text-center p-8">
         <p className="text-red-500">{error}</p>
-        <button 
+        <button
           onClick={loadMemberships}
           className="mt-4 px-4 py-2 bg-primary text-white rounded hover:bg-primary/80"
         >
@@ -132,25 +135,32 @@ export function MembershipList({ showPendingOnly = false, onMembershipUpdate }: 
                 <h3 className="font-semibold text-white">{membership.user.name}</h3>
                 <p className="text-gray-300 text-sm">{membership.user.email}</p>
                 <div className="flex items-center space-x-2 mt-1">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    membership.status === 'APROVADO' ? 'bg-green-500/20 text-green-400' :
-                    membership.status === 'PENDENTE' ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-red-500/20 text-red-400'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      membership.status === "APROVADO"
+                        ? "bg-green-500/20 text-green-400"
+                        : membership.status === "PENDENTE"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-red-500/20 text-red-400"
+                    }`}
+                  >
                     {membership.status}
                   </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    membership.role === 'ADMIN' ? 'bg-blue-500/20 text-blue-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
+                  <span
+                    className={`px-2 py-1 rounded-full text-xs ${
+                      membership.role === "ADMIN"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : "bg-gray-500/20 text-gray-400"
+                    }`}
+                  >
                     {membership.role}
                   </span>
                 </div>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-2">
-              {membership.status === 'PENDENTE' && (
+              {membership.status === "PENDENTE" && (
                 <button
                   onClick={() => handleApprove(membership.id)}
                   className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
@@ -158,8 +168,8 @@ export function MembershipList({ showPendingOnly = false, onMembershipUpdate }: 
                   Aprovar
                 </button>
               )}
-              
-              {membership.status === 'APROVADO' && (
+
+              {membership.status === "APROVADO" && (
                 <button
                   onClick={() => handleSuspend(membership.id)}
                   className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
@@ -167,7 +177,7 @@ export function MembershipList({ showPendingOnly = false, onMembershipUpdate }: 
                   Suspender
                 </button>
               )}
-              
+
               <button
                 onClick={() => handleRemove(membership.id)}
                 className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"

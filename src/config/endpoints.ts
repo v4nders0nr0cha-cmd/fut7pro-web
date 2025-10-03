@@ -31,15 +31,18 @@ export const PUBLIC_ENDPOINTS = {
 export const TENANT_ENDPOINTS = {
   // Partidas
   PARTIDAS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/partidas`,
-  PARTIDA_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/partidas/${id}`,
+  PARTIDA_DETALHES: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/partidas/${id}`,
 
   // Times
   TIMES: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/times`,
-  TIME_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/times/${id}`,
+  TIME_DETALHES: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/times/${id}`,
 
   // Jogadores
   JOGADORES: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/jogadores`,
-  JOGADOR_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/jogadores/${id}`,
+  JOGADOR_DETALHES: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/jogadores/${id}`,
 
   // Estatísticas do tenant
   ESTATISTICAS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/estatisticas`,
@@ -102,11 +105,16 @@ export const TENANT_AUTH_ENDPOINTS = {
 // Endpoints de membership
 export const MEMBERSHIP_ENDPOINTS = {
   MEMBERSHIPS: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships`,
-  MEMBERSHIP_DETALHES: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}`,
-  MEMBERSHIPS_PENDING: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/pending`,
-  APPROVE_MEMBERSHIP: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/approve`,
-  SUSPEND_MEMBERSHIP: (tenantSlug: string, id: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/suspend`,
-  INVITE_USER: (tenantSlug: string) => `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/invite`,
+  MEMBERSHIP_DETALHES: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}`,
+  MEMBERSHIPS_PENDING: (tenantSlug: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/pending`,
+  APPROVE_MEMBERSHIP: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/approve`,
+  SUSPEND_MEMBERSHIP: (tenantSlug: string, id: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/${id}/suspend`,
+  INVITE_USER: (tenantSlug: string) =>
+    `${API_BASE_URL}/api/rachas/${tenantSlug}/memberships/invite`,
 } as const;
 
 // Função helper para verificar se estamos em desenvolvimento

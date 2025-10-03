@@ -8,14 +8,18 @@ const fetcher = async (url: string) => {
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
-    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar partidas";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao buscar partidas";
     throw new Error(message);
   }
 
   return response.json();
 };
 
-async function requestPartidas<T>(method: "POST" | "PUT" | "DELETE", body: Record<string, unknown>) {
+async function requestPartidas<T>(
+  method: "POST" | "PUT" | "DELETE",
+  body: Record<string, unknown>
+) {
   const response = await fetch("/api/admin/partidas", {
     method,
     headers: {
@@ -31,7 +35,8 @@ async function requestPartidas<T>(method: "POST" | "PUT" | "DELETE", body: Recor
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = payload && typeof payload.error === "string" ? payload.error : "Erro ao salvar partidas";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao salvar partidas";
     throw new Error(message);
   }
 

@@ -3,21 +3,21 @@ const { withSentryConfig } = require("@sentry/nextjs");
 const isProd = process.env.NODE_ENV === "production";
 
 // CSP enxuta e compatível (sem 'unsafe-eval' em prod)
-const cspBase = [
+const cspDirectives = [
   "default-src 'self'",
   "base-uri 'self'",
   "img-src 'self' data: https:",
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "script-src 'self' 'unsafe-inline'",
+  // script-src varia entre dev e prod
+  isProd ? "script-src 'self' 'unsafe-inline'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "connect-src 'self' https://api.fut7pro.com.br",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "upgrade-insecure-requests",
-].join("; ");
+];
 
-// Em dev permitimos 'unsafe-eval' para toolings
-const CSP = isProd ? cspBase : `${cspBase}; script-src 'self' 'unsafe-inline' 'unsafe-eval'`;
+const CSP = cspDirectives.join("; ");
 
 // Headers de segurança
 const securityHeaders = [

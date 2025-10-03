@@ -258,9 +258,10 @@ export default function SorteioInteligenteAdmin() {
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);
-        const message = (payload && typeof payload.error === "string")
-          ? payload.error
-          : "Falha ao publicar os times.";
+        const message =
+          payload && typeof payload.error === "string"
+            ? payload.error
+            : "Falha ao publicar os times.";
         throw new Error(message);
       }
 
@@ -437,11 +438,3 @@ export default function SorteioInteligenteAdmin() {
     </div>
   );
 }
-
-
-
-
-
-
-
-

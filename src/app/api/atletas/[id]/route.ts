@@ -62,9 +62,15 @@ function parseStoredPlayers(raw: string | null): ParsedStoredPlayer[] {
     return parsed
       .map((item: any, index: number) => {
         if (!item || typeof item !== "object") return null;
-        const nome = typeof item.nome === "string" && item.nome.trim().length > 0 ? item.nome.trim() : `Jogador ${index + 1}`;
+        const nome =
+          typeof item.nome === "string" && item.nome.trim().length > 0
+            ? item.nome.trim()
+            : `Jogador ${index + 1}`;
         const id = typeof item.id === "string" && item.id.trim().length > 0 ? item.id.trim() : null;
-        const apelido = typeof item.apelido === "string" && item.apelido.trim().length > 0 ? item.apelido.trim() : null;
+        const apelido =
+          typeof item.apelido === "string" && item.apelido.trim().length > 0
+            ? item.apelido.trim()
+            : null;
         const gols = Number.isFinite(item.gols) ? Number(item.gols) : Number(item.gols ?? 0) || 0;
         const assistencias = Number.isFinite(item.assistencias)
           ? Number(item.assistencias)
@@ -133,12 +139,23 @@ function buildStats(matches: PlayerMatchSummary[]): EstatisticasSimples {
   };
 }
 
-function categorizeTitulo(categoria: string | null | undefined): { bucket: keyof ConquistasAtleta; icon: string } {
+function categorizeTitulo(categoria: string | null | undefined): {
+  bucket: keyof ConquistasAtleta;
+  icon: string;
+} {
   const normalized = (categoria ?? "").toLowerCase();
-  if (normalized.includes("quadr") || normalized.includes("trim") || normalized.includes("mensal")) {
+  if (
+    normalized.includes("quadr") ||
+    normalized.includes("trim") ||
+    normalized.includes("mensal")
+  ) {
     return { bucket: "titulosQuadrimestrais", icon: "🥇" };
   }
-  if (normalized.includes("anual") || normalized.includes("temporada") || normalized.includes("ano")) {
+  if (
+    normalized.includes("anual") ||
+    normalized.includes("temporada") ||
+    normalized.includes("ano")
+  ) {
     return { bucket: "titulosAnuais", icon: "🌟" };
   }
   return { bucket: "titulosGrandesTorneios", icon: "🏆" };
@@ -177,7 +194,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   let rachaId = rawRachaId;
   if (!rachaId && rachaSlug) {
-    const rachaRecord = await prisma.racha.findUnique({ where: { slug: rachaSlug }, select: { id: true } });
+    const rachaRecord = await prisma.racha.findUnique({
+      where: { slug: rachaSlug },
+      select: { id: true },
+    });
     if (!rachaRecord) {
       return NextResponse.json({ error: "Racha não encontrado" }, { status: 404 });
     }
@@ -273,7 +293,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const team = jogadorTimeA ? "A" : jogadorTimeB ? "B" : null;
     const jogadorDados = jogadorTimeA ?? jogadorTimeB;
 
-    if (!team || !jogadorDados || (jogadorDados.status && jogadorDados.status.toLowerCase() === "ausente")) {
+    if (
+      !team ||
+      !jogadorDados ||
+      (jogadorDados.status && jogadorDados.status.toLowerCase() === "ausente")
+    ) {
       continue;
     }
 
@@ -371,7 +395,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const atletaBase = defaultAtleta();
 
   const posicao = jogadorCadastro?.posicao
-    ? (jogadorCadastro.posicao.charAt(0).toUpperCase() + jogadorCadastro.posicao.slice(1).toLowerCase())
+    ? jogadorCadastro.posicao.charAt(0).toUpperCase() +
+      jogadorCadastro.posicao.slice(1).toLowerCase()
     : atletaBase.posicao;
   const status = jogadorCadastro?.status
     ? jogadorCadastro.status.toLowerCase() === "suspenso"
@@ -400,7 +425,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
     posicao: posicao as Atleta["posicao"],
     status: status as Atleta["status"],
     mensalista: Boolean(jogadorCadastro?.mensalista),
-    ultimaPartida: sortedMatches.length > 0 ? format(sortedMatches[0].data, "yyyy-MM-dd") : undefined,
+    ultimaPartida:
+      sortedMatches.length > 0 ? format(sortedMatches[0].data, "yyyy-MM-dd") : undefined,
     totalJogos: estatisticasHistorico.jogos,
     estatisticas,
     historico,

@@ -234,8 +234,8 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
             src={foto}
             alt={nome || titulo}
             width={80}
-              height={80}
-              className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
+            height={80}
+            className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
           />
         ) : (
           <div className="w-20 h-20 rounded-full mb-2 flex items-center justify-center bg-zinc-900 border-4 border-yellow-400" />
@@ -347,4 +347,3 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     </div>
   );
 }
-

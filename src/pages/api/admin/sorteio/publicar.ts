@@ -113,11 +113,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const baseMinutesFromTime =
     parseTimeToMinutes(body.horarioBase) ??
     parseTimeToMinutes(body.config?.horarioInicio ?? "") ??
-    ((baseDate.getHours() * 60 + baseDate.getMinutes()) || 19 * 60); // fallback to 19:00 when date has no time info
+    (baseDate.getHours() * 60 + baseDate.getMinutes() || 19 * 60); // fallback to 19:00 when date has no time info
 
-  const matchDuration = body.config?.duracaoPartidaMin && body.config.duracaoPartidaMin > 0
-    ? body.config.duracaoPartidaMin
-    : 15;
+  const matchDuration =
+    body.config?.duracaoPartidaMin && body.config.duracaoPartidaMin > 0
+      ? body.config.duracaoPartidaMin
+      : 15;
 
   const timesMap = new Map<string, TimeInput>();
   body.times.forEach((time) => {
@@ -150,9 +151,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             throw new Error("timeA/timeB nome is required");
           }
 
-          const offset = (typeof jogo.ordem === "number" && jogo.ordem > 0
-            ? jogo.ordem - 1
-            : index) * matchDuration;
+          const offset =
+            (typeof jogo.ordem === "number" && jogo.ordem > 0 ? jogo.ordem - 1 : index) *
+            matchDuration;
 
           const horarioMinutes = baseMinutesFromTime + offset;
           const horario = minutesToTime(horarioMinutes);
@@ -191,4 +192,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: message });
   }
 }
-

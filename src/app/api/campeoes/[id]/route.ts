@@ -19,7 +19,12 @@ function parseJogadores(raw: string | null): string[] {
         if (typeof item === "string") {
           return item.trim();
         }
-        if (item && typeof item === "object" && "nome" in item && typeof (item as Record<string, unknown>).nome === "string") {
+        if (
+          item &&
+          typeof item === "object" &&
+          "nome" in item &&
+          typeof (item as Record<string, unknown>).nome === "string"
+        ) {
           return ((item as Record<string, unknown>).nome as string).trim();
         }
         return "";
@@ -57,10 +62,7 @@ function mapCampeao(record: CampeaoModel) {
   };
 }
 
-export async function GET(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const { id } = params;
   try {
     const campeao = await prisma.campeao.findUnique({ where: { id } });
@@ -74,10 +76,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   const { id } = params;
   try {
     const body = await request.json().catch(() => null);
@@ -85,15 +84,10 @@ export async function PUT(
       return NextResponse.json({ error: "invalid payload" }, { status: 400 });
     }
 
-    const {
-      nome,
-      categoria,
-      data,
-      descricao,
-      jogadores,
-      imagem,
-      rachaId,
-    } = body as Record<string, unknown>;
+    const { nome, categoria, data, descricao, jogadores, imagem, rachaId } = body as Record<
+      string,
+      unknown
+    >;
 
     const updateData: Prisma.CampeaoUpdateInput = {};
 
@@ -139,10 +133,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
   const { id } = params;
   try {
     await prisma.campeao.delete({ where: { id } });

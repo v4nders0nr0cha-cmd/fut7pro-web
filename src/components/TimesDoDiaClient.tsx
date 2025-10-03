@@ -172,7 +172,8 @@ export default function TimesDoDiaClient() {
   if (datasDisponiveis.length === 0) {
     return (
       <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-6 text-center text-neutral-300">
-        Nenhuma partida publicada para exibir. Publique o sorteio no painel admin para liberar esta seção.
+        Nenhuma partida publicada para exibir. Publique o sorteio no painel admin para liberar esta
+        seção.
       </div>
     );
   }

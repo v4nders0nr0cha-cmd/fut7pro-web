@@ -1,8 +1,8 @@
 // src/types/tenant.ts
 // Tipos para o sistema multi-tenant do Fut7Pro
 
-export type MembershipStatus = 'APROVADO' | 'PENDENTE' | 'SUSPENSO';
-export type MembershipRole = 'ATLETA' | 'ADMIN';
+export type MembershipStatus = "APROVADO" | "PENDENTE" | "SUSPENSO";
+export type MembershipRole = "ATLETA" | "ADMIN";
 
 export interface Tenant {
   id: string;
@@ -42,8 +42,8 @@ export interface Membership {
 }
 
 export interface JwtPayload {
-  sub: string;           // userId
-  role: 'ADMIN' | 'SUPERADMIN';
+  sub: string; // userId
+  role: "ADMIN" | "SUPERADMIN";
   email: string;
   name: string;
   rachaId?: string;

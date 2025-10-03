@@ -48,6 +48,3 @@ export interface ConfiguracaoRacha {
   numTimes: number;
   jogadoresPorTime: number;
 }
-
-
-

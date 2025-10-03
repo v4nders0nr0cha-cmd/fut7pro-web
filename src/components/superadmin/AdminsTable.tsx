@@ -1,6 +1,6 @@
 "use client";
 
-import type { SuperadminUsuarioResumo } from '@/types/superadmin';
+import type { SuperadminUsuarioResumo } from "@/types/superadmin";
 
 interface AdminsTableProps {
   admins: SuperadminUsuarioResumo[];
@@ -40,8 +40,10 @@ export default function AdminsTable({ admins, isLoading }: AdminsTableProps) {
           <tbody className="divide-y divide-gray-700">
             {admins.map((admin) => (
               <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap font-semibold text-white">{admin.nome}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-zinc-300">{admin.email ?? '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap font-semibold text-white">
+                  {admin.nome}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-zinc-300">{admin.email ?? "-"}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="px-2 py-1 rounded-full text-xs font-bold bg-zinc-800 text-zinc-200">
                     {admin.role}
@@ -49,13 +51,13 @@ export default function AdminsTable({ admins, isLoading }: AdminsTableProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-bold ${admin.ativo ? 'bg-green-600 text-green-100' : 'bg-gray-700 text-gray-300'}`}
+                    className={`px-2 py-1 rounded-full text-xs font-bold ${admin.ativo ? "bg-green-600 text-green-100" : "bg-gray-700 text-gray-300"}`}
                   >
-                    {admin.ativo ? 'Ativo' : 'Inativo'}
+                    {admin.ativo ? "Ativo" : "Inativo"}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-zinc-300">
-                  {new Date(admin.criadoEm).toLocaleString('pt-BR')}
+                  {new Date(admin.criadoEm).toLocaleString("pt-BR")}
                 </td>
               </tr>
             ))}

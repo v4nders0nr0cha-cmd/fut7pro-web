@@ -1,5 +1,5 @@
-import { prisma } from '@/server/prisma';
-import type { SuperadminTicketResumo, SuperadminTicketsSnapshot } from '@/types/superadmin';
+import { prisma } from "@/server/prisma";
+import type { SuperadminTicketResumo, SuperadminTicketsSnapshot } from "@/types/superadmin";
 
 function mapTicket(ticket: {
   id: string;
@@ -29,7 +29,7 @@ export async function loadSuperadminTickets(): Promise<SuperadminTicketsSnapshot
       racha: { select: { nome: true } },
       usuario: { select: { nome: true } },
     },
-    orderBy: { criadoEm: 'desc' },
+    orderBy: { criadoEm: "desc" },
     take: 80,
   });
 
@@ -41,11 +41,11 @@ export async function loadSuperadminTickets(): Promise<SuperadminTicketsSnapshot
 
   for (const ticket of itens) {
     const status = ticket.status.toLowerCase();
-    if (status === 'aberto' || status === 'pendente') {
+    if (status === "aberto" || status === "pendente") {
       abertos += 1;
-    } else if (status === 'em_andamento' || status === 'andamento') {
+    } else if (status === "em_andamento" || status === "andamento") {
       emAndamento += 1;
-    } else if (status === 'resolvido' || status === 'fechado') {
+    } else if (status === "resolvido" || status === "fechado") {
       resolvidos += 1;
     }
   }

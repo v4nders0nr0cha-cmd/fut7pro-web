@@ -15,7 +15,8 @@ const fetcher = async (url: string) => {
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message = payload && typeof payload.error === "string" ? payload.error : "Falha ao carregar atletas";
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Falha ao carregar atletas";
     throw new Error(message);
   }
 
@@ -69,7 +70,8 @@ export function useAtletaDetalhe(
   tenantSlug?: string | null
 ) {
   const query = buildDetalheQuery(rachaId, tenantSlug);
-  const key = atletaSlug && query ? `/api/atletas/${encodeURIComponent(atletaSlug)}?${query}` : null;
+  const key =
+    atletaSlug && query ? `/api/atletas/${encodeURIComponent(atletaSlug)}?${query}` : null;
 
   const { data, error, isLoading, mutate } = useSWR<AtletaDetalheResponse>(key, fetcher, {
     revalidateOnFocus: false,

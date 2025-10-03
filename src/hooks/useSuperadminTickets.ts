@@ -1,11 +1,11 @@
-import useSWR from 'swr';
-import type { SuperadminTicketsSnapshot } from '@/types/superadmin';
+import useSWR from "swr";
+import type { SuperadminTicketsSnapshot } from "@/types/superadmin";
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url, { cache: 'no-store' });
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    const message = await response.text().catch(() => 'Erro ao carregar tickets');
-    throw new Error(message || 'Erro ao carregar tickets');
+    const message = await response.text().catch(() => "Erro ao carregar tickets");
+    throw new Error(message || "Erro ao carregar tickets");
   }
   return response.json();
 };
@@ -20,7 +20,7 @@ const emptySnapshot: SuperadminTicketsSnapshot = {
 
 export function useSuperadminTickets() {
   const { data, error, isLoading, mutate } = useSWR<SuperadminTicketsSnapshot>(
-    '/api/superadmin/tickets',
+    "/api/superadmin/tickets",
     fetcher,
     { revalidateOnFocus: false }
   );

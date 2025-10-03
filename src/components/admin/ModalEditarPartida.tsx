@@ -57,14 +57,23 @@ function parseJogadores(raw?: string | null): JogadorEstatistica[] {
       .map((item, index) => {
         if (!item || typeof item !== "object") return null;
         const record = item as Record<string, unknown>;
-        const nome = typeof record.nome === "string" && record.nome.trim().length > 0 ? record.nome.trim() : `Jogador ${index + 1}`;
-        const id = typeof record.id === "string" && record.id.trim().length > 0 ? record.id.trim() : `${nome.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`;
+        const nome =
+          typeof record.nome === "string" && record.nome.trim().length > 0
+            ? record.nome.trim()
+            : `Jogador ${index + 1}`;
+        const id =
+          typeof record.id === "string" && record.id.trim().length > 0
+            ? record.id.trim()
+            : `${nome.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${index}`;
         const foto = typeof record.foto === "string" ? record.foto : null;
         const posicao = typeof record.posicao === "string" ? record.posicao : null;
         const apelido = typeof record.apelido === "string" ? record.apelido : null;
         const status = typeof record.status === "string" ? record.status : null;
         const gols = typeof record.gols === "number" ? record.gols : Number(record.gols ?? 0) || 0;
-        const assistencias = typeof record.assistencias === "number" ? record.assistencias : Number(record.assistencias ?? 0) || 0;
+        const assistencias =
+          typeof record.assistencias === "number"
+            ? record.assistencias
+            : Number(record.assistencias ?? 0) || 0;
         return {
           id,
           nome,
@@ -86,7 +95,7 @@ function parseJogadores(raw?: string | null): JogadorEstatistica[] {
 }
 
 function formatTeamLabel(team: TeamKey, defaultName: string) {
-  const fallback = team === "A" ? 'A' : 'B';
+  const fallback = team === "A" ? "A" : "B";
   const normalized = defaultName && defaultName.trim().length > 0 ? defaultName : fallback;
   return team === "A" ? `Time ${normalized}` : `Adversário ${normalized}`;
 }
@@ -155,7 +164,12 @@ export default function ModalEditarPartida({
     }));
   }
 
-  function handlePlayerStatChange(team: TeamKey, index: number, field: StatKey, event: ChangeEvent<HTMLInputElement>) {
+  function handlePlayerStatChange(
+    team: TeamKey,
+    index: number,
+    field: StatKey,
+    event: ChangeEvent<HTMLInputElement>
+  ) {
     const value = Math.max(0, Number(event.target.value) || 0);
     if (team === "A") {
       setPlayersA((prev) =>
@@ -165,8 +179,8 @@ export default function ModalEditarPartida({
                 ...player,
                 [field]: value,
               }
-            : player,
-        ),
+            : player
+        )
       );
     } else {
       setPlayersB((prev) =>
@@ -176,8 +190,8 @@ export default function ModalEditarPartida({
                 ...player,
                 [field]: value,
               }
-            : player,
-        ),
+            : player
+        )
       );
     }
   }
@@ -226,7 +240,9 @@ export default function ModalEditarPartida({
         <div className="flex items-start justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-yellow-400">{title}</h2>
-            <p className="text-sm text-neutral-400">Ajuste placar, data, local, status e as estatísticas individuais dos atletas.</p>
+            <p className="text-sm text-neutral-400">
+              Ajuste placar, data, local, status e as estatísticas individuais dos atletas.
+            </p>
           </div>
           <button
             type="button"
@@ -429,18 +445,27 @@ type TeamStatsEditorProps = {
   teamKey: TeamKey;
   teamName: string;
   jogadores: JogadorEstatistica[];
-  onChange: (team: TeamKey, index: number, field: StatKey, event: ChangeEvent<HTMLInputElement>) => void;
+  onChange: (
+    team: TeamKey,
+    index: number,
+    field: StatKey,
+    event: ChangeEvent<HTMLInputElement>
+  ) => void;
 };
 
 function TeamStatsEditor({ teamKey, teamName, jogadores, onChange }: TeamStatsEditorProps) {
   return (
     <section className="rounded-xl border border-neutral-800 bg-[#181818] p-4">
       <header className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold text-yellow-300">{formatTeamLabel(teamKey, teamName)}</h3>
+        <h3 className="text-lg font-semibold text-yellow-300">
+          {formatTeamLabel(teamKey, teamName)}
+        </h3>
         <span className="text-xs text-neutral-500">{jogadores.length} atleta(s)</span>
       </header>
       {jogadores.length === 0 ? (
-        <p className="text-sm text-neutral-400">Nenhum jogador registrado para este time nesta partida.</p>
+        <p className="text-sm text-neutral-400">
+          Nenhum jogador registrado para este time nesta partida.
+        </p>
       ) : (
         <div className="flex flex-col gap-3">
           {jogadores.map((player, index) => (
@@ -458,7 +483,9 @@ function TeamStatsEditor({ teamKey, teamName, jogadores, onChange }: TeamStatsEd
                 />
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-neutral-200">{player.nome}</span>
-                  {player.apelido && <span className="text-xs text-neutral-400">{player.apelido}</span>}
+                  {player.apelido && (
+                    <span className="text-xs text-neutral-400">{player.apelido}</span>
+                  )}
                 </div>
               </div>
               <label className="flex flex-col gap-1 text-xs text-neutral-400">

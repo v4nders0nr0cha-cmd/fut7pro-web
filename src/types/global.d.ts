@@ -25,4 +25,3 @@ declare module "@/lib/api" {
     delete: (...args: any[]) => Promise<any>;
   };
 }
-
