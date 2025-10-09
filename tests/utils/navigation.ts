@@ -1,85 +1,64 @@
-﻿// tests/utils/navigation.ts
 import type { Page } from "@playwright/test";
 
-export function baseUrl(): string {
-  return process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
-}
+const FALLBACK_BASE_URL = "http://127.0.0.1:3000";
+const LOCAL_BASE_RE = /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]):3000/i;
 
-export function rachaPrefix(): string {
+/** Prefixo de rota do racha (via SLUG ou caminho fixo) */
+function rachaPrefix(): string {
   const path = (process.env.RACHA_PATH || "").trim();
   if (path) return path.startsWith("/") ? path : `/${path}`;
+
   const slug = (process.env.SLUG || "").trim();
   if (slug) return `/rachas/${encodeURIComponent(slug)}`;
+
   return "";
 }
 
-function targetUrl(pathname: string): string {
-  const prefixed = `${rachaPrefix()}${pathname}`.replace(/\/{2,}/g, "/");
-  const normalized = prefixed.startsWith("/") ? prefixed : `/${prefixed}`;
-  return new URL(normalized, baseUrl()).toString();
+/** Garante que o caminho seja relativo + com prefixo do racha quando configurado */
+function resolveRelative(pathOrUrl: string): string {
+  const prefixed = `${rachaPrefix()}${pathOrUrl}`.replace(/\/{2,}/g, "/");
+  return prefixed.startsWith("/") ? prefixed : `/${prefixed}`;
+}
+
+/** Descobre o baseURL: prioridade context -> E2E_BASE_URL -> FALLBACK_BASE_URL */
+function resolveBaseURL(page: Page): string {
+  // @ts-expect-error acesso interno do Playwright é suficiente para testes
+  const contextBaseURL = page.context()?._options?.baseURL as string | undefined;
+  return contextBaseURL || (process.env.E2E_BASE_URL || "").trim() || FALLBACK_BASE_URL;
+}
+
+/** Normaliza URLs absolutas antigas (localhost:3000) para o baseURL atual */
+function replaceLocalWithBase(url: string, baseURL: string): string {
+  return url.replace(LOCAL_BASE_RE, baseURL);
+}
+
+/** Monta a URL final (absoluta) a partir de um caminho ou URL absoluta */
+function buildUrl(page: Page, pathOrUrl: string): string {
+  const baseURL = resolveBaseURL(page);
+
+  if (/^https?:\/\//i.test(pathOrUrl)) {
+    return replaceLocalWithBase(pathOrUrl, baseURL);
+  }
+  // caminho relativo
+  return new URL(resolveRelative(pathOrUrl), baseURL).toString();
 }
 
 /**
- * Navegação resiliente para dev (Next.js com HMR):
- * - controla orçamento total
- * - tolera erros transitórios (ERR_ABORTED, frame detach, timeouts)
- * - evita travar em networkidle
+ * Navega e espera DOM pronto. Tenta rapidamente atingir estado de 'networkidle'
+ * sem travar caso a página mantenha conexões longas (catch silencioso).
  */
-export async function gotoAndIdle(
-  page: Page,
-  pathname: string,
-  opts: { timeoutMs?: number } = {}
-): Promise<void> {
-  const url = targetUrl(pathname);
-  // orçamento padrão maior para cobrir a 1ª compilação da rota
-  const budget = Math.max(2_000, opts.timeoutMs ?? 10_000);
-  const deadline = Date.now() + budget;
-  const transient =
-    /Timeout \d+ms exceeded|ERR_ABORTED|frame was detached|Navigation failed|Target closed|context was destroyed/i;
+export async function gotoAndIdle(page: Page, pathOrUrl: string) {
+  const url = buildUrl(page, pathOrUrl);
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const remaining = deadline - Date.now();
-    if (remaining <= 0) break;
+  await page.goto(url, {
+    waitUntil: "domcontentloaded",
+    timeout: 12_000,
+  });
 
-    try {
-      await page.goto(url, {
-        waitUntil: "domcontentloaded",
-        // permite uma navegação de até 12s se ainda houver orçamento
-        timeout: Math.min(12_000, Math.max(1_000, remaining)),
-      });
-
-      // apenas um pequeno "idle" — não dependa disso em HMR
-      try {
-        await page.waitForLoadState("networkidle", { timeout: 1_000 });
-      } catch {
-        /* ignore */
-      }
-
-      await page
-        .locator("main,body")
-        .first()
-        .waitFor({ state: "attached", timeout: 1_500 })
-        .catch(() => {});
-
-      if (!page.isClosed()) return;
-      throw new Error("Page closed right after goto()");
-    } catch (error) {
-      if (page.isClosed()) throw error;
-      const msg = String((error as Error)?.message ?? "");
-      if (!transient.test(msg) || attempt === 2) throw error;
-
-      // pequeno backoff antes do retry dentro do orçamento
-      const settle = Math.min(500, Math.max(100, deadline - Date.now()));
-      if (settle > 0) await page.waitForTimeout(settle).catch(() => {});
-    }
-  }
-
-  if (!page.isClosed()) {
-    await page.waitForLoadState("domcontentloaded").catch(() => {});
-  }
+  // Tentativa best-effort de estabilizar rede; ignora timeout curto
+  await page.waitForLoadState("networkidle", { timeout: 2_000 }).catch(() => {});
 }
 
-/** Helpers */
 export const paths = {
   timesDoDia: () => "/partidas/times-do-dia",
   historico: () => "/partidas/historico",

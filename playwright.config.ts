@@ -1,33 +1,36 @@
-import { defineConfig, devices } from "@playwright/test";
+import type { PlaywrightTestConfig } from "@playwright/test";
 
-export default defineConfig({
+const PORT = 3000;
+const HOST = "127.0.0.1";
+const baseURL = `http://${HOST}:${PORT}`;
+
+const config: PlaywrightTestConfig = {
   testDir: "./tests",
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  workers: process.env.CI ? 2 : undefined,
   use: {
-    baseURL: "https://app.fut7pro.com.br",
-    trace: "on-first-retry",
+    baseURL,
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
+  },
+  // Agora o Playwright apenas inicia o servidor (o build roda antes, no script test:e2e)
+  webServer: {
+    command: "npm run e2e:start",
+    url: baseURL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000, // só para o start (sem build no meio)
+    stdout: "pipe",
+    stderr: "pipe",
   },
   projects: [
-    {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
-    },
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
+    { name: "chromium", use: { browserName: "chromium" } },
+    { name: "firefox", use: { browserName: "firefox" } },
+    { name: "webkit", use: { browserName: "webkit" } },
   ],
-  // webServer: {
-  //   command: 'npm run build && npm run start',
-  //   url: 'http://localhost:3000',
-  //   reuseExistingServer: !process.env.CI,
-  // },
-});
+};
+
+export default config;

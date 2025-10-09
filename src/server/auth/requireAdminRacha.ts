@@ -1,18 +1,21 @@
 import { getServerSession } from "next-auth";
+import type { NextApiRequest, NextApiResponse } from "next";
+
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/prisma";
-import type { NextApiRequest, NextApiResponse } from "next";
+import type { AdminRole } from "./roles";
+import { normalizeAdminRole } from "./roles";
 
 export type AdminContext = {
   userId: string;
   rachaId: string;
   slug: string;
-  role: string;
+  role: AdminRole;
 };
 
 /**
- * Guard para rotas admin que requerem permissão sobre um racha específico.
- * Valida sessão e verifica se usuário é owner ou admin do racha.
+ * Guard para rotas admin que requerem permissao sobre um racha especifico.
+ * Valida sessao e verifica se usuario e owner ou admin do racha.
  *
  * @throws Error com "UNAUTHENTICATED" ou "FORBIDDEN"
  */
@@ -24,18 +27,16 @@ export async function requireAdminRacha(
   const session = await getServerSession(req, res, authOptions);
 
   if (!session || !session.user?.id) {
-    res.status(401).json({ error: "Não autenticado" });
+    res.status(401).json({ error: "Nao autenticado" });
     throw new Error("UNAUTHENTICATED");
   }
 
   const userId = session.user.id as string;
+  const sessionRole = normalizeAdminRole(session.user.role);
 
-  // Se rachaId veio do body/query, validar contra ele
-  // Senão, buscar primeiro racha do usuário
   let targetRachaId = rachaIdParam;
 
   if (!targetRachaId) {
-    // Buscar primeiro racha onde usuário é owner ou admin
     const firstRacha = await prisma.racha.findFirst({
       where: {
         OR: [{ ownerId: userId }, { admins: { some: { usuarioId: userId, status: "ativo" } } }],
@@ -49,11 +50,10 @@ export async function requireAdminRacha(
   }
 
   if (!targetRachaId) {
-    res.status(403).json({ error: "Sem permissão neste racha" });
+    res.status(403).json({ error: "Sem permissao neste racha" });
     throw new Error("FORBIDDEN");
   }
 
-  // Validar permissão: ownerId OU relação RachaAdmin ativa
   const racha = await prisma.racha.findFirst({
     where: {
       id: targetRachaId,
@@ -72,13 +72,15 @@ export async function requireAdminRacha(
   });
 
   if (!racha) {
-    res.status(403).json({ error: "Sem permissão neste racha" });
+    res.status(403).json({ error: "Sem permissao neste racha" });
     throw new Error("FORBIDDEN");
   }
 
-  // Determinar role: owner → PRESIDENTE, ou pegar da relação admin
   const isOwner = racha.ownerId === userId;
-  const role = isOwner ? "PRESIDENTE" : (racha.admins[0]?.role ?? "ADMIN");
+  const relationRole = normalizeAdminRole(racha.admins[0]?.role as string | undefined);
+  const fallbackRole = relationRole ?? sessionRole ?? null;
+  const canonicalRole: AdminRole | null = isOwner ? "PRESIDENTE" : fallbackRole;
+  const role: AdminRole = canonicalRole ?? "ADMIN";
 
   return {
     userId,
@@ -89,8 +91,8 @@ export async function requireAdminRacha(
 }
 
 /**
- * Valida se usuário tem permissão específica (ex: apenas PRESIDENTE pode publicar)
+ * Valida se usuario tem permissao especifica (ex: apenas PRESIDENTE pode publicar)
  */
-export function requireRole(ctx: AdminContext, allowedRoles: string[]): boolean {
+export function requireRole(ctx: AdminContext, allowedRoles: AdminRole[]): boolean {
   return allowedRoles.includes(ctx.role);
 }

@@ -1,5 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import type { Session } from "next-auth";
+import { getServerSession } from "next-auth/next";
+
 import { prisma } from "@/server/prisma";
+import { authOptions } from "@/server/auth/options";
+import { withAdminApiRoute } from "@/server/auth/guards";
 
 type JogadorInput = {
   id?: string;
@@ -88,7 +93,7 @@ function serializeJogadores(jogadores: JogadorInput[] | undefined) {
   return JSON.stringify(normalized);
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function publicarSorteioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", ["POST"]);
     return res.status(405).json({ error: "Method not allowed" });
@@ -99,6 +104,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (!rachaId || typeof rachaId !== "string") {
     return res.status(400).json({ error: "rachaId is required" });
+  }
+
+  const session = (await getServerSession(req, res, authOptions)) as Session | null;
+  const userId = session?.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Nao autenticado" });
+  }
+
+  const racha = await prisma.racha.findUnique({
+    where: { id: rachaId },
+    select: { ownerId: true, admins: { select: { usuarioId: true } } },
+  });
+
+  if (!racha) {
+    return res.status(404).json({ error: "Racha nao encontrado" });
+  }
+
+  const canManageRacha =
+    racha.ownerId === userId || racha.admins.some((admin) => admin.usuarioId === userId);
+  if (!canManageRacha) {
+    return res.status(403).json({ error: "Sem permissao para publicar partidas" });
   }
 
   if (!Array.isArray(body.jogos) || body.jogos.length === 0) {
@@ -192,3 +218,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: message });
   }
 }
+
+export default withAdminApiRoute(publicarSorteioHandler);

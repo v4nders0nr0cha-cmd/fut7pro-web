@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Vídeo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            margin: 20px 0;
+            border: 2px solid #333;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background: #1a2f26; border: 1px solid #4ade80; }
+        .error { background: #2d1b1b; border: 1px solid #f87171; }
+        .info { background: #1a1b2f; border: 1px solid #60a5fa; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Vídeos - Página de Login</h1>
+    
+    <div class="status info">
+        <strong>Status:</strong> Testando vídeos de fundo para a página de login
+    </div>
+
+    <h2>🎬 Vídeo Desktop (soccer-background.mp4)</h2>
+    <div class="video-container">
+        <video
+            controls
+            autoplay
+            muted
+            loop
+            playsinline
+            style="opacity: 0.3;"
+        >
+            <source src="/videos/soccer-background.mp4" type="video/mp4">
+            Seu navegador não suporta vídeos MP4.
+        </video>
+    </div>
+
+    <h2>📱 Vídeo Mobile (soccer-background-mobile.mp4)</h2>
+    <div class="video-container">
+        <video
+            controls
+            autoplay
+            muted
+            loop
+            playsinline
+            style="opacity: 0.2;"
+        >
+            <source src="/videos/soccer-background-mobile.mp4" type="video/mp4">
+            Seu navegador não suporta vídeos MP4.
+        </video>
+    </div>
+
+    <h2>🔍 Informações dos Arquivos</h2>
+    <div class="status info">
+        <strong>Desktop:</strong> /videos/soccer-background.mp4<br>
+        <strong>Mobile:</strong> /videos/soccer-background-mobile.mp4<br>
+        <strong>Formato:</strong> MP4 (H.264)<br>
+        <strong>Status:</strong> Verificando...
+    </div>
+
+    <h2>📋 Checklist</h2>
+    <ul>
+        <li>✅ Arquivos existem na pasta /public/videos/</li>
+        <li>✅ Formato MP4 compatível</li>
+        <li>✅ Código HTML correto</li>
+        <li>❓ Vídeo reproduzindo automaticamente</li>
+        <li>❓ Opacity funcionando</li>
+        <li>❓ Loop funcionando</li>
+    </ul>
+
+    <h2>🚨 Problemas Comuns</h2>
+    <div class="status error">
+        <strong>Se o vídeo não aparecer:</strong><br>
+        1. Verificar console do navegador (F12)<br>
+        2. Verificar se os arquivos estão acessíveis<br>
+        3. Verificar formato e codec dos vídeos<br>
+        4. Verificar permissões dos arquivos
+    </div>
+
+    <script>
+        // Teste automático dos vídeos
+        document.addEventListener('DOMContentLoaded', function() {
+            const videos = document.querySelectorAll('video');
+            let successCount = 0;
+            
+            videos.forEach((video, index) => {
+                video.addEventListener('loadeddata', function() {
+                    console.log(`✅ Vídeo ${index + 1} carregado com sucesso`);
+                    successCount++;
+                    
+                    if (successCount === videos.length) {
+                        document.querySelector('.status.info').innerHTML = 
+                            '<strong>Status:</strong> Todos os vídeos carregados com sucesso! 🎉';
+                        document.querySelector('.status.info').className = 'status success';
+                    }
+                });
+                
+                video.addEventListener('error', function(e) {
+                    console.error(`❌ Erro no vídeo ${index + 1}:`, e);
+                    document.querySelector('.status.info').innerHTML = 
+                        '<strong>Status:</strong> Erro ao carregar vídeo(s) ❌';
+                    document.querySelector('.status.info').className = 'status error';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { signIn } from "next-auth/react";
 import { useRacha } from "@/context/RachaContext";
 import { toast } from "react-hot-toast";
 import { mutate } from "swr";
@@ -255,6 +256,11 @@ export default function SorteioInteligenteAdmin() {
           config,
         }),
       });
+
+      if (response.status === 401) {
+        await signIn();
+        return;
+      }
 
       if (!response.ok) {
         const payload = await response.json().catch(() => null);

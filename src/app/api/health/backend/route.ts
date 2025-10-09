@@ -1,4 +1,5 @@
 // Healthcheck do backend para validar conectividade
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {

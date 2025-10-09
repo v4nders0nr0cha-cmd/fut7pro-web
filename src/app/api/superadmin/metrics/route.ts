@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadSuperadminMetrics } from "@/server/superadmin/dashboard";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {

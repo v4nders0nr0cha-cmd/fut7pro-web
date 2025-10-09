@@ -1,202 +1,148 @@
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
+import { apiFetch } from "@/lib/api/fetcher";
+import type {
+  LoginRequest,
+  LoginResponse,
+  RefreshRequest,
+  RefreshResponse,
+  MeResponse,
+} from "@/lib/api/types";
 
-import type { NextAuthOptions, Session, User } from "next-auth";
-import type { JWT } from "next-auth/jwt";
+const BACKEND_URL = process.env.BACKEND_URL!;
+const AUTH_LOGIN_PATH = process.env.AUTH_LOGIN_PATH ?? "/auth/login";
+const AUTH_REFRESH_PATH = process.env.AUTH_REFRESH_PATH ?? "/auth/refresh";
+const AUTH_ME_PATH = process.env.AUTH_ME_PATH ?? "/auth/me";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+if (!process.env.NEXTAUTH_SECRET) {
+  // eslint-disable-next-line no-console
+  console.warn("NEXTAUTH_SECRET nao definido, defina-o no .env");
+}
 
 const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
     CredentialsProvider({
-      name: "Credentials",
+      name: "Credenciais",
       credentials: {
         email: { label: "E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
-        rachaSlug: { label: "Racha", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Informe e-mail e senha.");
+        }
+        const payload: LoginRequest = {
+          email: String(credentials.email),
+          password: String(credentials.password),
+        };
+        const data = await apiFetch<LoginResponse>(`${BACKEND_URL}${AUTH_LOGIN_PATH}`, {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
 
+        if (!data?.accessToken) throw new Error("Login invalido.");
+
+        // opcional: validacao de /auth/me para preencher user atualizada
         try {
-          // Autenticação via backend JWT
-          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-              rachaSlug: credentials.rachaSlug,
-            }),
+          const me = await apiFetch<MeResponse>(`${BACKEND_URL}${AUTH_ME_PATH}`, {
+            headers: { Authorization: `Bearer ${data.accessToken}` },
           });
-
-          if (!response.ok) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Erro na autenticação:", response.status, response.statusText);
-            }
-            return null;
-          }
-
-          const data = await response.json();
-
-          if (!data.accessToken) {
-            return null;
-          }
-
-          // Buscar informações do usuário no backend
-          const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-            headers: {
-              Authorization: `Bearer ${data.accessToken}`,
-            },
-          });
-
-          if (!userResponse.ok) {
-            return null;
-          }
-
-          const userData = await userResponse.json();
-
           return {
-            id: userData.id,
-            name: userData.name,
-            email: userData.email,
-            role: userData.role,
-            tenantId: userData.tenantId,
-            tenantSlug: userData.tenantSlug,
-            tenant: userData.tenant,
-            membership: userData.membership,
+            ...data.user,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
+            expiresIn: data.expiresIn,
+            // preferir dados do /me (role, rachaId, etc)
+            role: me?.role ?? data.user.role,
+            rachaId: me?.rachaId ?? data.user.rachaId ?? null,
           };
-        } catch (error) {
-          if (process.env.NODE_ENV === "development") {
-            console.log("Erro na autenticação:", error);
-          }
-          return null;
+        } catch {
+          // fallback, ainda autoriza
+          return {
+            ...data.user,
+            accessToken: data.accessToken,
+            refreshToken: data.refreshToken,
+            expiresIn: data.expiresIn,
+          };
         }
       },
     }),
   ],
-
+  session: { strategy: "jwt" },
+  pages: {
+    // use sua rota de login publica se quiser customizar
+    // signIn: "/login"
+  },
+  debug: process.env.NEXTAUTH_DEBUG === "true",
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Para login Google, criar usuário no backend se não existir
-      if (user?.email && account?.provider === "google") {
-        try {
-          const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              image: (user as any).image,
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            (user as any).accessToken = data.accessToken;
-            (user as any).refreshToken = data.refreshToken;
-            (user as any).role = data.role;
-            (user as any).tenantId = data.tenantId;
-          }
-        } catch (error) {
-          if (process.env.NODE_ENV === "development") {
-            console.log("Erro no login Google:", error);
-          }
-        }
-      }
-      return true;
-    },
-
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.tenantId = token.tenantId as string;
-        session.user.tenantSlug = token.tenantSlug as string;
-        session.user.tenant = token.tenant as any;
-        session.user.membership = token.membership as any;
-        session.user.accessToken = token.accessToken as string;
-        session.user.refreshToken = token.refreshToken as string;
-      }
-      return session;
-    },
-
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async jwt({ token, user }) {
+      // no login inicial
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.tenantId = (user as any).tenantId;
-        token.tenantSlug = (user as any).tenantSlug;
-        token.tenant = (user as any).tenant;
-        token.membership = (user as any).membership;
-        token.accessToken = (user as any).accessToken;
-        token.refreshToken = (user as any).refreshToken;
+        const now = Date.now();
+        const expiresAt = now + (user.expiresIn ?? 3600) * 1000;
+        token.user = {
+          id: user.id,
+          email: user.email ?? null,
+          name: user.name ?? null,
+          role: user.role,
+          rachaId: user.rachaId ?? null,
+        };
+        token.accessToken = user.accessToken;
+        token.refreshToken = user.refreshToken;
+        token.expiresAt = expiresAt;
+        return token;
       }
 
-      // Refresh token se necessário
-      if (token.accessToken && token.refreshToken) {
-        const tokenExp = (token as any).exp;
-        const now = Math.floor(Date.now() / 1000);
+      // refresh automatico quando faltar menos de 30s
+      const now = Date.now();
+      const safetyWindowMs = 30_000;
+      if (token.expiresAt && now < token.expiresAt - safetyWindowMs) {
+        return token;
+      }
 
-        if (tokenExp && tokenExp < now + 300) {
-          // 5 minutos antes de expirar
-          try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                refreshToken: token.refreshToken,
-              }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              token.accessToken = data.accessToken;
-              token.refreshToken = data.refreshToken;
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Erro no refresh token:", error);
-            }
-          }
+      // tenta refresh
+      if (token.refreshToken) {
+        try {
+          const body: RefreshRequest = { refreshToken: token.refreshToken };
+          const refreshed = await apiFetch<RefreshResponse>(`${BACKEND_URL}${AUTH_REFRESH_PATH}`, {
+            method: "POST",
+            body: JSON.stringify(body),
+          });
+          token.accessToken = refreshed.accessToken;
+          if (refreshed.refreshToken) token.refreshToken = refreshed.refreshToken;
+          token.expiresAt = Date.now() + (refreshed.expiresIn ?? 3600) * 1000;
+          return token;
+        } catch {
+          // falha de refresh, invalida sessao
+          token.error = "RefreshAccessTokenError";
+          return token;
         }
       }
 
       return token;
     },
-  },
 
-  pages: {
-    signIn: "/login",
-    error: "/login",
+    async session({ session, token }) {
+      if (token?.error === "RefreshAccessTokenError") {
+        session.error = "RefreshAccessTokenError";
+      }
+      session.accessToken = token.accessToken;
+      session.refreshToken = token.refreshToken;
+      session.expiresAt = token.expiresAt;
+      if (token.user) {
+        session.user = {
+          ...session.user,
+          id: token.user.id,
+          email: token.user.email ?? undefined,
+          name: token.user.name ?? undefined,
+          role: token.user.role,
+          rachaId: token.user.rachaId ?? undefined,
+        };
+      }
+      return session;
+    },
   },
-
-  session: {
-    strategy: "jwt" as const,
-    maxAge: 24 * 60 * 60, // 24 horas
-  },
-
-  jwt: {
-    maxAge: 24 * 60 * 60, // 24 horas
-  },
-
-  secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };

@@ -1,5 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getServerSession } from "next-auth/next";
+
 import { prisma } from "@/server/prisma";
+import { authOptions } from "@/server/auth/options";
+import { withAdminApiRoute } from "@/server/auth/guards";
 
 function pickStr(x: unknown): string {
   if (typeof x === "string") return x;
@@ -7,65 +11,79 @@ function pickStr(x: unknown): string {
   return "";
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Apenas POST
+async function unpublishHandler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Método não permitido" });
+    return res.status(405).json({ error: "Metodo nao permitido" });
   }
 
-  // Não cachear respostas deste endpoint
   res.setHeader("Cache-Control", "no-store");
 
-  // rachaId pode vir no body (JSON) ou via query
   const rachaId = pickStr(req.body?.rachaId ?? req.query?.rachaId).trim();
-  if (!rachaId) return res.status(400).json({ error: "rachaId obrigatório" });
+  if (!rachaId) {
+    return res.status(400).json({ error: "rachaId obrigatorio" });
+  }
 
-  // Bypass para E2E/dev (sem sessão)
-  const bypass = process.env.E2E_ALLOW_NOAUTH === "1";
+  const session = await getServerSession(req, res, authOptions);
+  const userId = session?.user?.id;
+  if (!userId) {
+    return res.status(401).json({ error: "Nao autenticado" });
+  }
 
-  // Se não for bypass, por enquanto exigimos autenticação
-  if (!bypass) {
-    return res.status(401).json({ error: "Não autenticado" });
+  const racha = await prisma.racha.findUnique({
+    where: { id: rachaId },
+    select: {
+      id: true,
+      slug: true,
+      ativo: true,
+      status: true,
+      ownerId: true,
+      admins: { select: { usuarioId: true } },
+    },
+  });
+
+  if (!racha) {
+    return res.status(404).json({ error: "Racha nao encontrado" });
+  }
+
+  const isOwner = racha.ownerId === userId;
+  const isAdmin = racha.admins.some((admin) => admin.usuarioId === userId);
+  if (!isOwner && !isAdmin) {
+    return res.status(403).json({ error: "Sem permissao para despublicar este racha" });
+  }
+
+  if (!racha.ativo) {
+    return res.status(200).json({
+      ok: true,
+      racha: {
+        id: racha.id,
+        slug: racha.slug,
+        ativo: racha.ativo,
+        status: racha.status,
+      },
+    });
   }
 
   try {
-    // Verifica existência (e já traz status atual)
-    const exists = await prisma.racha.findUnique({
-      where: { id: rachaId },
-      select: { id: true, slug: true, ativo: true, status: true },
-    });
-    if (!exists) return res.status(404).json({ error: "Racha não encontrado" });
-
-    // Idempotente: se já está inativo, apenas confirma
-    if (exists.ativo === false) {
-      return res.status(200).json({ ok: true, racha: exists, bypass: true });
-    }
-
-    // Atualiza para inativo
-    const racha = await prisma.racha.update({
+    const updated = await prisma.racha.update({
       where: { id: rachaId },
       data: {
         ativo: false,
-        // use o enum do Prisma se existir (ex.: RachaStatus.INATIVO)
         status: "INATIVO" as any,
       },
-      select: { id: true, slug: true, ativo: true, status: true },
+      select: {
+        id: true,
+        slug: true,
+        ativo: true,
+        status: true,
+      },
     });
 
-    // Log administrativo — pule quando bypass estiver ativo
-    if (!bypass) {
-      try {
-        // const adminId = session.user.id;
-        // await prisma.adminLog.create({ data: { action: "unpublish", rachaId, adminId } });
-      } catch (e) {
-        console.warn("adminLog.unpublish falhou (aviso):", e);
-      }
-    }
-
-    return res.status(200).json({ ok: true, racha, bypass: true });
-  } catch (e) {
-    console.error("POST /api/admin/racha/unpublish failed", e);
+    return res.status(200).json({ ok: true, racha: updated });
+  } catch (error) {
+    console.error("POST /api/admin/racha/unpublish failed", error);
     return res.status(500).json({ error: "Erro interno" });
   }
 }
+
+export default withAdminApiRoute(unpublishHandler);

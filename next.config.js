@@ -1,22 +1,46 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const { withSentryConfig } = require("@sentry/nextjs");
 
 const isProd = process.env.NODE_ENV === "production";
+
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
+  /\/+$/,
+  ""
+);
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.fut7pro.com.br").replace(
+  /\/+$/,
+  ""
+);
+const apiOrigin = (() => {
+  try {
+    return new URL(API_URL).origin;
+  } catch {
+    return "https://api.fut7pro.com.br";
+  }
+})();
+const apiHostname = (() => {
+  try {
+    return new URL(API_URL).hostname;
+  } catch {
+    return "api.fut7pro.com.br";
+  }
+})();
 
 // CSP enxuta e compatível (sem 'unsafe-eval' em prod)
 const cspDirectives = [
   "default-src 'self'",
   "base-uri 'self'",
   "img-src 'self' data: https:",
+  "media-src 'self'", // vídeos locais
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   // script-src varia entre dev e prod
   isProd ? "script-src 'self' 'unsafe-inline'" : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "connect-src 'self' https://api.fut7pro.com.br",
+  `connect-src 'self' ${apiOrigin} https://*.sentry.io`,
   "frame-ancestors 'none'",
   "form-action 'self'",
   "upgrade-insecure-requests",
 ];
-
 const CSP = cspDirectives.join("; ");
 
 // Headers de segurança
@@ -34,29 +58,19 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configurações básicas
   reactStrictMode: true,
   poweredByHeader: false,
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
+  eslint: { ignoreDuringBuilds: true },
+  typescript: { ignoreBuildErrors: true },
 
-  // Headers de segurança
   async headers() {
     return [
-      // Headers de segurança para TUDO
       { source: "/:path*", headers: securityHeaders },
-
-      // Noindex apenas nas áreas privadas (não em APIs públicas)
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       {
         source: "/superadmin/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
-      // APIs privadas (não públicas) - usar múltiplas rotas específicas
       {
         source: "/api/admin/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
@@ -80,94 +94,52 @@ const nextConfig = {
     ];
   },
 
-  // Redirects canônicos
   async redirects() {
     return [
-      // Redirect www para non-www
       {
         source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "www.fut7pro.com.br",
-          },
-        ],
-        destination: "https://app.fut7pro.com.br/:path*",
+        has: [{ type: "host", value: "www.fut7pro.com.br" }],
+        destination: `${APP_URL}/:path*`,
         permanent: true,
       },
-      // Redirect fut7pro-web.vercel.app para domínio principal
       {
         source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "fut7pro-web.vercel.app",
-          },
-        ],
-        destination: "https://app.fut7pro.com.br/:path*",
+        has: [{ type: "host", value: "fut7pro-web.vercel.app" }],
+        destination: `${APP_URL}/:path*`,
         permanent: true,
       },
-      // Redirect fut7pro-web-git-main para domínio principal
       {
         source: "/:path*",
-        has: [
-          {
-            type: "host",
-            value: "fut7pro-web-git-main-vanderson-rochas-projects.vercel.app",
-          },
-        ],
-        destination: "https://app.fut7pro.com.br/:path*",
+        has: [{ type: "host", value: "fut7pro-web-git-main-vanderson-rochas-projects.vercel.app" }],
+        destination: `${APP_URL}/:path*`,
         permanent: true,
       },
     ];
   },
 
-  // Configurações de imagens
   images: {
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "api.fut7pro.com.br",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "fonts.gstatic.com",
-        port: "",
-        pathname: "/**",
-      },
+      { protocol: "http", hostname: "localhost", port: "", pathname: "/**" },
+      { protocol: "https", hostname: apiHostname, port: "", pathname: "/**" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "fut7pro.s3.amazonaws.com", port: "", pathname: "/**" },
+      // adicione aqui outros hosts se precisar (ex.: CDN própria)
     ],
   },
 
-  // Webpack configuration para resolver problemas de Prisma
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // No lado do cliente, substituir @prisma/client por um shim vazio
       config.resolve.alias = {
         ...config.resolve.alias,
         "@prisma/client": require.resolve("./src/server/prisma-shim.js"),
       };
     }
-
-    // Ignorar warnings de dependências críticas durante build
     config.ignoreWarnings = [
       /Critical dependency: the request of a dependency is an expression/,
       /require function is used in a way in which dependencies cannot be statically extracted/,
     ];
-
     return config;
   },
 };
 
-module.exports = withSentryConfig(
-  nextConfig,
-  { silent: true }, // opções do plugin
-  { hideSourceMaps: true } // opções do build (não expõe sourcemaps)
-);
+module.exports = withSentryConfig(nextConfig, { silent: true }, { hideSourceMaps: true });

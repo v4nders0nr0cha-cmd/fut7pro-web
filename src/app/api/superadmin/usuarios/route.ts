@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadSuperadminUsuarios } from "@/server/superadmin/usuarios";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {

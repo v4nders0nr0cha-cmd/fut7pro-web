@@ -9,7 +9,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { IconType } from "react-icons";
 
-type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
+type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes" | "perfil";
 
 interface MenuItem {
   label: string;
@@ -21,12 +21,14 @@ interface MenuItem {
 const menu: MenuItem[] = [
   { label: "Notificações", icon: FaBell, href: "/admin/notificacoes", badgeKey: "notificacoes" },
   { label: "Mensagens", icon: FaEnvelope, href: "/admin/mensagens", badgeKey: "mensagens" },
+  // Alinhado ao padrão oficial: solicitações → /admin/jogadores/listar-cadastrar
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/solicitacoes",
+    href: "/admin/jogadores/listar-cadastrar",
     badgeKey: "solicitacoes",
   },
+  { label: "Perfil", icon: FaUser, href: "/admin/perfil", badgeKey: "perfil" },
 ];
 
 type HeaderProps = {
@@ -40,6 +42,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession();
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const closeDropdown = () => setDropdownOpen(false);
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">
@@ -70,7 +74,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
       {/* AÇÕES ALINHADAS À DIREITA */}
       <div className="flex items-center gap-6 ml-auto">
         {menu.map((item) => {
-          const isActive = pathname.startsWith(item.href);
           const badgeValue = badges[item.badgeKey] ?? 0;
 
           return (
@@ -79,6 +82,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               href={item.href}
               className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
               tabIndex={0}
+              aria-current={pathname.startsWith(item.href) ? "page" : undefined}
             >
               <item.icon size={20} className="text-yellow-400" />
               <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>
@@ -107,23 +111,34 @@ export default function Header({ onMenuClick }: HeaderProps) {
             tabIndex={0}
           >
             <Image
-              src={session.user?.image ?? "/images/avatar_padrao_admin.png"}
-              alt={session.user?.name ?? "Admin"}
+              src={session.user?.image ?? "/images/Perfil-sem-Foto-Fut7.png"}
+              alt={session.user?.name ?? session.user?.email ?? "Administrador Fut7Pro"}
               width={38}
               height={38}
               className="rounded-full border-2 border-yellow-400"
             />
             <span className="text-yellow-300 font-bold text-base hidden md:inline">
-              {session.user?.name ?? "Admin"}
+              {session.user?.name ?? session.user?.email ?? "Admin"}
             </span>
             {dropdownOpen && (
               <div className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col">
+                <Link
+                  href="/admin/perfil"
+                  className="flex items-center gap-2 px-4 py-2 text-base text-white hover:bg-zinc-800"
+                  onClick={closeDropdown}
+                >
+                  <FaUser size={18} />
+                  Meu Perfil
+                </Link>
                 <button
                   className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
-                  onClick={() => signOut({ callbackUrl: "/admin/login" })}
+                  onClick={() => {
+                    closeDropdown();
+                    signOut({ callbackUrl: "/admin/login" });
+                  }}
                 >
                   <FaSignOutAlt size={18} />
-                  Sair do painel
+                  Sair
                 </button>
               </div>
             )}
