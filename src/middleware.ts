@@ -27,10 +27,12 @@ export function middleware(req: NextRequest) {
   const isAdmin = pathname.startsWith("/admin");
   const isSuper = pathname.startsWith("/superadmin");
   const isAdminLogin = /^\/admin\/login(?:\/|$)?/.test(pathname);
+  const isAdminRegister = /^\/admin\/register(?:\/|$)?/.test(pathname);
+  const isAdminRecover = /^\/admin\/recuperar(?:\/|$)?/.test(pathname);
   const isSuperLogin = /^\/superadmin\/login(?:\/|$)?/.test(pathname);
 
   // 1) Guard de autenticação (NÃO proteger as próprias páginas de login)
-  const needAdminGuard = isAdmin && !isAdminLogin;
+  const needAdminGuard = isAdmin && !isAdminLogin && !isAdminRegister && !isAdminRecover;
   const needSuperGuard = isSuper && !isSuperLogin;
 
   if ((needAdminGuard || needSuperGuard) && !hasNextAuthSession(req)) {
