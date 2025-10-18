@@ -15,11 +15,14 @@ model Racha {
   criadoEm            DateTime             @default(now())
   descricao           String?
   logoUrl             String?
+  cidade              String?
+  estado              String?
   ownerId             String
   regras              String?
   slug                String               @unique
   tema                String?
   financeiroVisivel   Boolean              @default(false)
+  autoAprovarAtletas  Boolean              @default(false)
   planoId             String?
   status              RachaStatus          @default(ATIVO)
   logs                AdminLog[]
@@ -35,6 +38,7 @@ model Racha {
   jogadores           RachaJogador[]
   tickets             Ticket[]
   times               Time[]
+  solicitacoes        Solicitacao[]
 
   @@index([ownerId])
   @@index([status])
@@ -142,6 +146,25 @@ model RachaJogador {
   @@index([jogadorId])
 }
 
+// Solicitações de jogadores para entrar no racha (fluxo de aprovação)
+model Solicitacao {
+  id        String   @id @default(cuid())
+  rachaId   String
+  nome      String
+  apelido   String?
+  email     String
+  posicao   String
+  fotoUrl   String?
+  mensagem  String?
+  status    String   @default("PENDENTE") // PENDENTE | APROVADA | REJEITADA
+  criadoEm  DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+  racha     Racha    @relation(fields: [rachaId], references: [id])
+
+  @@index([rachaId])
+  @@index([status])
+}
+
 model Usuario {
   id                   String                @id @default(cuid())
   nome                 String
@@ -160,6 +183,7 @@ model Usuario {
   rachasAdmin          RachaAdmin[]
   tickets              Ticket[]
   ticketRespostas      TicketResposta[]
+  resetTokens          PasswordResetToken[]
 
   @@index([role])
   @@index([status])
@@ -339,6 +363,18 @@ model InfluencerCupomUso {
   @@index([usuarioId])
   @@index([rachaId])
   @@index([status])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      Usuario  @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 enum Role {
