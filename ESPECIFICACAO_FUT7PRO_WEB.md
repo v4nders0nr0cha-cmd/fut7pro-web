@@ -65,6 +65,15 @@ O `fut7pro-web` só é considerado pronto para produção quando:
 
 - Gestão de Patrocinadores
   - Cadastro/visibilidade no site; carrossel de logos; UTM/click tracking; relatórios mensais (PDF).
+  - Requisitos detalhados:
+    - Publicação automática: ao salvar no admin (`/admin/financeiro/patrocinadores`), publicar em `/{slug}/sobre-nos/nossos-parceiros` e no carrossel do rodapé, com mesma ordem.
+    - Modal (Parte 1 – Conteúdo): logo (upload), nome (obrigatórios); ramo, sobre, link (URL), cupom, benefício (opcionais). Card público clica no link em nova aba.
+    - Modal (Parte 2 – Finanças & Tempo): valor, período início/fim; status automático por data: `em_breve` (faltam 30 dias para início), `ativo` (entre início e fim), `expirado` (após fim). Ocultar `expirado` no público; exibir badge "Em breve" quando aplicável.
+    - Ordem e Tiers: `displayOrder` (inteiro) e `tier` (`basic`|`plus`|`pro`). Ordenar por tier (pro>plus>basic), depois `displayOrder` asc, depois `atualizadoEm` desc. `showOnFooter` decide presença no rodapé; `plus`/`pro` aparecem por padrão.
+    - Validação de link e upload: normalizar `https://`, bloquear `javascript:` e esquemas inseguros, validar contra domínios permitidos (config). Upload em storage (Supabase/S3) com URL assinada; aceitar imagens até 2MB (png/jpg/webp/svg sanitizado).
+    - Notificações e Dashboard: notificar "a expirar" (30 dias antes do fim) e "expirado"; widget "Patrocínios a expirar" no Dashboard (filtro 30 dias).
+    - Auditoria: registrar `createdById` e `updatedById` em todas as mudanças.
+    - Revalidação: cada alteração dispara `revalidateTag('sponsors:{slug}')` e `revalidateTag('footer:{slug}')`.
 
 ### Enterprise
 
