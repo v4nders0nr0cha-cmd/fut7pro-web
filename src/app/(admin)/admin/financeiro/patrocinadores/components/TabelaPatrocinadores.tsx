@@ -40,12 +40,14 @@ export default function TabelaPatrocinadores({
               />
               <div className="flex-1">
                 <div className="font-bold text-yellow-300 text-base truncate">{p.nome}</div>
-                <div className="text-xs text-gray-400">
-                  Valor:{" "}
-                  <span className="font-semibold text-green-400">
-                    R$ {p.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
+                {typeof p.valor === "number" && !Number.isNaN(p.valor) && p.valor > 0 && (
+                  <div className="text-xs text-gray-400">
+                    Valor:{" "}
+                    <span className="font-semibold text-green-400">
+                      R$ {p.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
               </div>
               <button
                 title={p.visivel ? "Ocultar do site público" : "Exibir no site público"}
@@ -59,10 +61,12 @@ export default function TabelaPatrocinadores({
               <span className="bg-gray-900 text-xs text-gray-200 px-2 py-1 rounded">
                 {p.status.toUpperCase()}
               </span>
-              <span className="bg-gray-800 text-xs text-gray-300 px-2 py-1 rounded">
-                {new Date(p.periodoInicio).toLocaleDateString()} ~{" "}
-                {new Date(p.periodoFim).toLocaleDateString()}
-              </span>
+              {p.periodoInicio && p.periodoFim && (
+                <span className="bg-gray-800 text-xs text-gray-300 px-2 py-1 rounded">
+                  {new Date(p.periodoInicio).toLocaleDateString()} ~{" "}
+                  {new Date(p.periodoFim).toLocaleDateString()}
+                </span>
+              )}
               {p.link && (
                 <a
                   href={p.link}

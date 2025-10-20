@@ -1,19 +1,28 @@
 "use client";
 import Head from "next/head";
-import { useState } from "react";
-import { mockPatrocinadores } from "./mocks/mockPatrocinadores";
-import type { Patrocinador } from "@/types/financeiro";
+import { useMemo, useState } from "react";
+import type { Patrocinador as PatroFin } from "@/types/financeiro";
 import CardResumoPatrocinio from "./components/CardResumoPatrocinio";
 import TabelaPatrocinadores from "./components/TabelaPatrocinadores";
 import ModalPatrocinador from "./components/ModalPatrocinador";
 import ToggleVisibilidadePublica from "./components/ToggleVisibilidadePublica";
+import { usePatrocinadores } from "@/hooks/usePatrocinadores";
+import { rachaConfig } from "@/config/racha.config";
+import type { Patrocinador as PatroDb } from "@/types/patrocinador";
 
 const DATA_ATUAL = new Date().toISOString().slice(0, 10);
 
 export default function PaginaPatrocinadores() {
-  const [patrocinadores, setPatrocinadores] = useState<Patrocinador[]>(mockPatrocinadores);
+  const rachaId = rachaConfig.slug;
+  const {
+    patrocinadores: patrocinadoresDb,
+    addPatrocinador,
+    updatePatrocinador,
+    deletePatrocinador,
+    mutate,
+  } = usePatrocinadores(rachaId);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editPatrocinador, setEditPatrocinador] = useState<Patrocinador | undefined>(undefined);
+  const [editPatrocinador, setEditPatrocinador] = useState<PatroFin | undefined>(undefined);
 
   // Período padrão: últimos 12 meses
   const inicioPadrao = new Date(new Date().setMonth(new Date().getMonth() - 11))
@@ -21,30 +30,63 @@ export default function PaginaPatrocinadores() {
     .slice(0, 10);
   const [periodo, setPeriodo] = useState({ inicio: inicioPadrao, fim: DATA_ATUAL });
 
+  // Mapeia o tipo de DB -> tipo de UI financeiro (campos não mapeados recebem defaults)
+  const patrocinadores: PatroFin[] = useMemo(() => {
+    const map = (p: PatroDb): PatroFin => ({
+      id: p.id,
+      nome: p.nome,
+      valor: 0,
+      periodoInicio: inicioPadrao,
+      periodoFim: DATA_ATUAL,
+      descricao: p.descricao ?? undefined,
+      logo: p.logo,
+      status: (p.status as any) || "ativo",
+      comprovantes: [],
+      observacoes: undefined,
+      link: p.link || "",
+      visivel: (p.status || "ativo") === "ativo",
+    });
+    return (patrocinadoresDb ?? []).map(map);
+  }, [patrocinadoresDb, inicioPadrao]);
+
   // CRUD handlers
   const handleEditar = (p: Patrocinador) => {
     setEditPatrocinador(p);
     setModalOpen(true);
   };
-  const handleExcluir = (id: string) => setPatrocinadores((arr) => arr.filter((p) => p.id !== id));
-  const handleSalvar = (p: Partial<Patrocinador>) => {
-    if (!p.nome || !p.valor || !p.periodoInicio || !p.periodoFim || !p.status || !p.logo) return;
-    if (p.id) {
-      setPatrocinadores((arr) =>
-        arr.map((x) => (x.id === p.id ? ({ ...x, ...p, id: x.id } as Patrocinador) : x))
-      );
-    } else {
-      if (patrocinadores.length >= 10) return;
-      setPatrocinadores((arr) => [
-        ...arr,
-        { ...p, id: Date.now().toString(), comprovantes: [], visivel: true } as Patrocinador,
-      ]);
-    }
+  const handleExcluir = async (id: string) => {
+    await deletePatrocinador(id);
+  };
+  const handleSalvar = async (p: Partial<PatroFin>) => {
+    if (!p.nome || !p.logo) return;
+    const payload: Partial<PatroDb> = {
+      id: p.id,
+      nome: p.nome,
+      logo: p.logo,
+      link: p.link || "",
+      status: (p.status as any) || "ativo",
+      descricao: p.descricao || p.observacoes,
+      rachaId,
+      prioridade: 1,
+    } as any;
+    if (p.id) await updatePatrocinador(payload as PatroDb);
+    else await addPatrocinador(payload);
     setModalOpen(false);
     setEditPatrocinador(undefined);
   };
-  const handleToggleVisivel = (id: string) => {
-    setPatrocinadores((arr) => arr.map((p) => (p.id === id ? { ...p, visivel: !p.visivel } : p)));
+  const handleToggleVisivel = async (id: string) => {
+    const base = patrocinadores.find((x) => x.id === id);
+    if (!base) return;
+    await updatePatrocinador({
+      id,
+      nome: base.nome,
+      logo: base.logo,
+      link: base.link,
+      status: base.visivel ? "inativo" : "ativo",
+      prioridade: 1,
+      rachaId,
+    } as any);
+    await mutate();
   };
   const handleNovo = () => {
     if (patrocinadores.length < 10) {
