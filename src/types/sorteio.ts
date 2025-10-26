@@ -31,6 +31,9 @@ export interface Participante {
   estrelas: AvaliacaoEstrela; // Um por racha (via API busca o correto)
   mensalista: boolean;
   partidas?: number;
+  // Marcadores especiais
+  isFicticio?: boolean; // indica jogador sintético (ex.: goleiro fictício)
+  naoRanqueavel?: boolean; // não gera estatísticas/ranking
 }
 
 export interface TimeSorteado {

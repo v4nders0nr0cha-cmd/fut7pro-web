@@ -1,13 +1,12 @@
 "use client";
 import Image from "next/image";
 import type { Patrocinador } from "@/types/financeiro";
-import { FaEdit, FaTrash, FaGlobe, FaEye, FaEyeSlash, FaPlus } from "react-icons/fa";
+import { FaEdit, FaTrash, FaGlobe, FaPlus } from "react-icons/fa";
 
 interface Props {
   patrocinadores: Patrocinador[];
   onEditar: (p: Patrocinador) => void;
   onExcluir: (id: string) => void;
-  onToggleVisivel: (id: string) => void;
   onNovo: () => void;
 }
 
@@ -15,7 +14,6 @@ export default function TabelaPatrocinadores({
   patrocinadores,
   onEditar,
   onExcluir,
-  onToggleVisivel,
   onNovo,
 }: Props) {
   // Garante exatamente 10 posições
@@ -40,6 +38,21 @@ export default function TabelaPatrocinadores({
               />
               <div className="flex-1">
                 <div className="font-bold text-yellow-300 text-base truncate">{p.nome}</div>
+                {/* Badge de nível no ADMIN somente */}
+                {p.tier && (
+                  <span
+                    className={`inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded ${
+                      p.tier === "pro"
+                        ? "bg-purple-800/40 text-purple-200 border border-purple-600"
+                        : p.tier === "plus"
+                        ? "bg-blue-800/40 text-blue-200 border border-blue-600"
+                        : "bg-gray-800/40 text-gray-200 border border-gray-600"
+                    }`}
+                    title={`Nível de apoio: ${p.tier.toUpperCase()}`}
+                  >
+                    {p.tier === "pro" ? "PRO" : p.tier === "plus" ? "PLUS" : "BÁSICO"}
+                  </span>
+                )}
                 {typeof p.valor === "number" && !Number.isNaN(p.valor) && p.valor > 0 && (
                   <div className="text-xs text-gray-400">
                     Valor:{" "}
@@ -49,13 +62,6 @@ export default function TabelaPatrocinadores({
                   </div>
                 )}
               </div>
-              <button
-                title={p.visivel ? "Ocultar do site público" : "Exibir no site público"}
-                onClick={() => onToggleVisivel(p.id)}
-                className={`ml-2 ${p.visivel ? "text-green-500" : "text-gray-600"} hover:text-yellow-400`}
-              >
-                {p.visivel ? <FaEye /> : <FaEyeSlash />}
-              </button>
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="bg-gray-900 text-xs text-gray-200 px-2 py-1 rounded">
@@ -116,3 +122,5 @@ export default function TabelaPatrocinadores({
     </div>
   );
 }
+
+

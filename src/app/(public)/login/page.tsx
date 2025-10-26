@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useMemo } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, getSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { safeCallbackUrl } from "@/lib/url";
 import { NotificationProvider, useNotification } from "@/context/NotificationContext";
@@ -46,6 +46,17 @@ function LoginContentInner() {
         notify({ message: result?.error || "Credenciais inválidas", type: "error" });
         return;
       }
+
+      // Se não houver callbackUrl explícito e o usuário for admin, ir para o painel
+      try {
+        const session = await getSession();
+        const role = (session as any)?.user?.role as string | undefined;
+        const isAdmin = role === "ADMIN" || role === "SUPERADMIN" || role === "GERENTE";
+        if (!searchParams?.get("callbackUrl") && isAdmin) {
+          router.push("/admin/dashboard");
+          return;
+        }
+      } catch {}
 
       const target = safeCallbackUrl(
         result.url,

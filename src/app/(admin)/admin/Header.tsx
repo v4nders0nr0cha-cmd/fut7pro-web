@@ -9,7 +9,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { IconType } from "react-icons";
 
-type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes" | "perfil";
+type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
 interface MenuItem {
   label: string;
@@ -28,7 +28,6 @@ const menu: MenuItem[] = [
     href: "/admin/jogadores/listar-cadastrar",
     badgeKey: "solicitacoes",
   },
-  { label: "Perfil", icon: FaUser, href: "/admin/perfil", badgeKey: "perfil" },
 ];
 
 type HeaderProps = {
@@ -58,16 +57,23 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </button>
 
       {/* LOGO */}
-      <Link href="/admin/dashboard" className="flex items-center gap-2 select-none" tabIndex={0}>
-        <span className="inline-block rounded-full overflow-hidden w-9 h-9 bg-yellow-400">
-          <Image
-            src="/images/logos/logo_fut7pro.png"
-            alt="Logo Fut7Pro Painel Admin"
-            width={36}
-            height={36}
-            className="rounded-full"
-            priority
-          />
+      <Link
+        href="/admin/dashboard"
+        className="flex items-center gap-3 select-none group"
+        tabIndex={0}
+      >
+        <Image
+          src="/images/logos/logo_fut7pro.png"
+          alt="Logo Fut7Pro Painel Admin"
+          width={40}
+          height={40}
+          className="w-10 h-10 object-contain drop-shadow-[0_0_8px_rgba(255,215,0,0.4)]"
+          priority
+        />
+        <span className="text-white font-black text-xl tracking-wide drop-shadow-[0_0_12px_rgba(255,215,0,0.45)]">
+          Fut
+          <span className="text-yellow-400 animate-pulse drop-shadow-[0_0_14px_rgba(255,215,0,0.7)]">7</span>
+          Pro
         </span>
       </Link>
 
@@ -75,16 +81,23 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <div className="flex items-center gap-6 ml-auto">
         {menu.map((item) => {
           const badgeValue = badges[item.badgeKey] ?? 0;
+          const isActive = pathname.startsWith(item.href);
+          const highlight = badgeValue > 0;
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
+              className={`relative flex items-center gap-2 px-3 py-1.5 rounded transition ${
+                isActive ? "bg-zinc-800 text-yellow-200" : "hover:bg-zinc-800"
+              } ${highlight ? "ring-2 ring-yellow-400/80 shadow-[0_0_12px_rgba(255,215,0,0.45)]" : ""}`}
               tabIndex={0}
-              aria-current={pathname.startsWith(item.href) ? "page" : undefined}
+              aria-current={isActive ? "page" : undefined}
             >
-              <item.icon size={20} className="text-yellow-400" />
+              <item.icon
+                size={18}
+                className={highlight ? "text-yellow-200" : "text-yellow-400"}
+              />
               <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>
               {badgeValue > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 font-bold">
@@ -148,3 +161,4 @@ export default function Header({ onMenuClick }: HeaderProps) {
     </header>
   );
 }
+

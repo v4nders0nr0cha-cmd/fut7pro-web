@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import type { Time as TimeDomain } from "@/types/time";
 
 const mockTimes = [
   { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
@@ -20,6 +21,7 @@ interface Props {
   disabled?: boolean;
   maxTimes?: number;
   shake?: boolean; // NOVO: prop do pai para animar o aviso!
+  timesDisponiveis?: Array<Pick<TimeDomain, "id" | "nome" | "logo">>;
 }
 
 export default function SelecionarTimesDia({
@@ -28,11 +30,12 @@ export default function SelecionarTimesDia({
   disabled = false,
   maxTimes = 4,
   shake = false,
+  timesDisponiveis,
 }: Props) {
   const [verMais, setVerMais] = useState(false);
-
-  const timesPrincipais = mockTimes.slice(0, 4);
-  const timesExtras = mockTimes.slice(4);
+  const pool = timesDisponiveis && timesDisponiveis.length > 0 ? timesDisponiveis : mockTimes;
+  const timesPrincipais = pool.slice(0, 4);
+  const timesExtras = pool.slice(4);
 
   // Bloqueia acima do limite, libera só para desmarcar
   function toggleTime(id: string) {

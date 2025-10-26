@@ -5,7 +5,7 @@ import { useState, useEffect, type Dispatch, type SetStateAction } from "react";
 import Image from "next/image";
 
 import EditorEstrelas from "./EditorEstrelas";
-
+import * as api from "@/lib/api";
 import { mockParticipantes } from "./mockParticipantes";
 
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela } from "@/types/sorteio";
@@ -22,6 +22,7 @@ interface Props {
   participantes: Participante[];
 
   setParticipantes: Dispatch<SetStateAction<Participante[]>>;
+  disponiveis: Participante[];
 }
 
 function createDefaultEstrela(rachaId: string, jogadorId: string): AvaliacaoEstrela {
@@ -33,6 +34,31 @@ function createDefaultEstrela(rachaId: string, jogadorId: string): AvaliacaoEstr
     atualizadoEm: "",
     atualizadoPor: "",
   };
+}
+
+// Goleiros fictícios disponíveis conforme quantidade de times
+function buildGoleirosFicticios(numTimes: number): Participante[] {
+  const n = Math.max(0, Math.min(8, Number(numTimes || 0)));
+  const items: Participante[] = [];
+  for (let i = 1; i <= n; i++) {
+    items.push({
+      id: `fict-gol-${i}`,
+      nome: `Goleiro Fictício ${i}`,
+      slug: `goleiro-ficticio-${i}`,
+      foto: "/images/Perfil-sem-Foto-Fut7.png",
+      posicao: "GOL",
+      rankingPontos: 0,
+      vitorias: 0,
+      gols: 0,
+      assistencias: 0,
+      estrelas: { estrelas: 3, atualizadoEm: new Date().toISOString() },
+      mensalista: false,
+      partidas: 0,
+      isFicticio: true,
+      naoRanqueavel: true,
+    });
+  }
+  return items;
 }
 
 function PopoverSelecionarJogador({
@@ -139,12 +165,10 @@ function PopoverSelecionarJogador({
 
 export default function ParticipantesRacha({
   rachaId,
-
   config,
-
   participantes,
-
   setParticipantes,
+  disponiveis,
 }: Props) {
   const [estrelasGlobais, setEstrelasGlobais] = useState<{ [id: string]: AvaliacaoEstrela }>({});
 
@@ -214,16 +238,20 @@ export default function ParticipantesRacha({
 
   useEffect(() => {
     if (participantes.length === 0 && config) {
-      const selecionadosIniciais = mockParticipantes.filter((p) => p.mensalista);
+      const selecionadosIniciais = (disponiveis || []).filter((p) => p.mensalista);
 
       setParticipantes(selecionadosIniciais);
     }
-  }, [config, participantes.length, setParticipantes]);
+  }, [config, participantes.length, setParticipantes, disponiveis]);
 
   function handleSelect(id: string) {
     const isSelected = participantes.some((p) => p.id === id);
 
-    const participanteOriginal = mockParticipantes.find((p) => p.id === id);
+    const poolBase = disponiveis || [];
+    const poolFict = buildGoleirosFicticios(Number(config?.numTimes || 0));
+    const idsBase = new Set(poolBase.map((p) => p.id));
+    const poolDisponiveis = poolBase.concat(poolFict.filter((f) => !idsBase.has(f.id)));
+    const participanteOriginal = poolDisponiveis.find((p) => p.id === id);
 
     if (isSelected) {
       setParticipantes(participantes.filter((p) => p.id !== id));
@@ -250,7 +278,12 @@ export default function ParticipantesRacha({
 
   const listSelecionados = participantes;
 
-  const atletasDisponiveis = mockParticipantes.filter(
+  const poolBase = disponiveis || [];
+  const poolFict = buildGoleirosFicticios(Number(config?.numTimes || 0));
+  const idsBase = new Set(poolBase.map((p) => p.id));
+  const poolDisponiveis = poolBase.concat(poolFict.filter((f) => !idsBase.has(f.id)));
+
+  const atletasDisponiveis = poolDisponiveis.filter(
     (p) => !participantes.some((sel) => sel.id === p.id)
   );
 
@@ -279,6 +312,7 @@ export default function ParticipantesRacha({
 
     const handleUpdateEstrela = async (val: number) => {
       if (!selecionado) return;
+      if ((jogador as any)?.isFicticio) return;
 
       // Atualiza otimista no front
 
@@ -336,21 +370,20 @@ export default function ParticipantesRacha({
         )
       );
 
-      // Faz o POST/PUT para a API do backend
-
-      await fetch(`/api/estrelas`, {
-        method: "POST",
-
-        headers: { "Content-Type": "application/json" },
-
-        body: JSON.stringify({
-          rachaId,
-
-          jogadorId: jogador.id,
-
-          estrelas: val,
-        }),
-      });
+      // Persistir no backend via API central (fallback dev: rota local)
+      try {
+        await api.estrelasApi.upsert({ rachaId, jogadorId: jogador.id, estrelas: val });
+      } catch {
+        try {
+          await fetch(`/api/estrelas`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rachaId, jogadorId: jogador.id, estrelas: val }),
+          });
+        } catch {
+          /* ignore */
+        }
+      }
     };
 
     return (
@@ -418,7 +451,7 @@ export default function ParticipantesRacha({
             <EditorEstrelas
               value={estrelaAtual}
               onChange={handleUpdateEstrela}
-              disabled={!selecionado || loadingEstrelas}
+              disabled={!selecionado || loadingEstrelas || Boolean((jogador as any)?.isFicticio)}
             />
           </div>
         </div>

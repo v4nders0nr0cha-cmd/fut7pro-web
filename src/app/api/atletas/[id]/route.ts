@@ -12,6 +12,19 @@ import { extractAvailableYears } from "@/server/estatisticas/aggregator";
 import type { ConquistasAtleta, EstatisticasSimples, TituloAtleta } from "@/types/estatisticas";
 import type { Atleta } from "@/types/atletas";
 
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
+
+const TEST_EMAIL = process.env.TEST_EMAIL?.toLowerCase();
+const TEST_PASSWORD = process.env.TEST_PASSWORD;
+const TEST_MODE = Boolean(TEST_EMAIL && TEST_PASSWORD);
+const TEST_TENANT_ID = process.env.TEST_TENANT_ID ?? "fut7pro";
+const TEST_TENANT_SLUG = process.env.TEST_TENANT_SLUG ?? TEST_TENANT_ID;
+const TEST_USER_ID = process.env.TEST_USER_ID ?? "test-admin";
+const TEST_USER_NAME = process.env.TEST_USER_NAME ?? "Administrador Demo";
+const TEST_USER_SLUG = process.env.TEST_USER_SLUG ?? "admin-demo";
+
 interface ParsedStoredPlayer {
   id: string | null;
   nome: string;
@@ -187,25 +200,117 @@ function defaultAtleta(): Atleta {
   };
 }
 
+function buildTestAtleta(): Atleta {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const anoAtual = new Date().getFullYear();
+
+  return {
+    id: TEST_USER_ID,
+    nome: TEST_USER_NAME,
+    apelido: "Admin Demo",
+    slug: TEST_USER_SLUG,
+    foto: "/images/jogadores/jogador_padrao_01.jpg",
+    posicao: "Atacante",
+    status: "Ativo",
+    mensalista: true,
+    ultimaPartida: hoje,
+    totalJogos: 12,
+    estatisticas: {
+      historico: {
+        jogos: 12,
+        gols: 18,
+        assistencias: 9,
+        campeaoDia: 7,
+        mediaVitorias: 0.58,
+        pontuacao: 42,
+      },
+      anual: {
+        [anoAtual]: {
+          jogos: 12,
+          gols: 18,
+          assistencias: 9,
+          campeaoDia: 7,
+          mediaVitorias: 0.58,
+          pontuacao: 42,
+        },
+      },
+    },
+    historico: [
+      {
+        data: hoje,
+        time: "Fut7Pro",
+        resultado: "Vitória (4x2)",
+        gols: 2,
+        campeao: true,
+        pontuacao: 5,
+      },
+    ],
+    conquistas: {
+      titulosGrandesTorneios: [
+        { descricao: "Copa Demo 2024", ano: anoAtual, icone: "🏆" },
+      ],
+      titulosAnuais: [{ descricao: "Melhor do Ano", ano: anoAtual, icone: "🥇" }],
+      titulosQuadrimestrais: [
+        { descricao: "Destaque do Quadrimestre", ano: anoAtual, icone: "⭐" },
+      ],
+    },
+    icones: ["🏆", "🥇", "⭐"],
+  };
+}
+
+function matchesTestIdentifiers(
+  identifier: string,
+  sessionUserId: string | null,
+  sessionUserEmail: string | null
+) {
+  const normalized = identifier.trim().toLowerCase();
+  if (normalized === "me") {
+    if (sessionUserEmail && sessionUserEmail.toLowerCase() === TEST_EMAIL) return true;
+    if (sessionUserId && sessionUserId === TEST_USER_ID) return true;
+    return false;
+  }
+
+  if (normalized === TEST_USER_ID.toLowerCase()) return true;
+  if (normalized === TEST_USER_SLUG.toLowerCase()) return true;
+  if (TEST_EMAIL && normalized === TEST_EMAIL) return true;
+  return false;
+}
+
 export async function GET(request: Request, { params }: { params: { id: string } }) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para atletas/[id]" },
+      { status: 501 }
+    );
+  }
   const url = new URL(request.url);
   const rawRachaId = url.searchParams.get("rachaId");
   const rachaSlug = url.searchParams.get("slug");
 
   let rachaId = rawRachaId;
   if (!rachaId && rachaSlug) {
-    const rachaRecord = await prisma.racha.findUnique({
-      where: { slug: rachaSlug },
-      select: { id: true },
-    });
-    if (!rachaRecord) {
-      return NextResponse.json({ error: "Racha não encontrado" }, { status: 404 });
+    if (TEST_MODE && rachaSlug === TEST_TENANT_SLUG) {
+      rachaId = TEST_TENANT_ID;
+    } else {
+      const rachaRecord = await prisma.racha.findUnique({
+        where: { slug: rachaSlug },
+        select: { id: true },
+      });
+      if (!rachaRecord) {
+        return NextResponse.json({ error: "Racha não encontrado" }, { status: 404 });
+      }
+      rachaId = rachaRecord.id;
     }
-    rachaId = rachaRecord.id;
   }
 
   if (!rachaId) {
-    return NextResponse.json({ error: "rachaId ou slug é obrigatório" }, { status: 400 });
+    if (TEST_MODE) {
+      rachaId = TEST_TENANT_ID;
+    } else {
+      return NextResponse.json({ error: "rachaId ou slug é obrigatório" }, { status: 400 });
+    }
+  } else if (TEST_MODE && rachaId !== TEST_TENANT_ID) {
+    return NextResponse.json({ error: "Racha indisponível no modo de teste" }, { status: 400 });
   }
 
   const period = url.searchParams.get("periodo") ?? "historico";
@@ -217,13 +322,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
   let sessionUserEmail: string | null = null;
 
   if (playerIdentifier === "me") {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
     if (!session || !session.user) {
       return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
     }
     sessionUserId = (session.user.id as string) ?? null;
     sessionUserEmail = (session.user.email as string) ?? null;
     playerIdentifier = sessionUserId ?? sessionUserEmail ?? "";
+  }
+
+  if (TEST_MODE && matchesTestIdentifiers(playerIdentifier, sessionUserId, sessionUserEmail)
+      && (!rachaSlug || rachaSlug === TEST_TENANT_SLUG)) {
+    const atleta = buildTestAtleta();
+    return NextResponse.json({ atleta, periodo: period, ano: anoFilter ?? null });
   }
 
   const candidateIds = new Set<string>();
@@ -436,3 +547,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
   return NextResponse.json({ atleta, periodo: period, ano: anoFilter ?? null });
 }
+// Guard: rotas deste arquivo executam consultas ao Prisma.
+// A verificação de bloqueio em produção é aplicada no nível do cliente Prisma
+// por meio de src/server/prisma.ts. Caso seja necessário, adicione short‑circuit
+// específico nas handlers exportadas.

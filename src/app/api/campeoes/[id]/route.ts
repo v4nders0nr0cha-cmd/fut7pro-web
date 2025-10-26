@@ -63,6 +63,12 @@ function mapCampeao(record: CampeaoModel) {
 }
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para campeoes" },
+      { status: 501 }
+    );
+  }
   const { id } = params;
   try {
     const campeao = await prisma.campeao.findUnique({ where: { id } });
@@ -77,6 +83,12 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 }
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para campeoes" },
+      { status: 501 }
+    );
+  }
   const { id } = params;
   try {
     const body = await request.json().catch(() => null);
@@ -134,6 +146,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 }
 
 export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para campeoes" },
+      { status: 501 }
+    );
+  }
   const { id } = params;
   try {
     await prisma.campeao.delete({ where: { id } });
@@ -146,3 +164,6 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     return NextResponse.json({ error: "failed to delete champion" }, { status: 500 });
   }
 }
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";

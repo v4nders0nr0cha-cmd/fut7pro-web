@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/api/fetcher";
 import type { Atleta, EstatisticasSimples, JogoAtleta } from "@/types/atletas";
 import type { ConquistasAtleta } from "@/types/estatisticas";
 
-const ADMIN_ATLETA_BASE = "/admin/atletas/me";
+const ADMIN_ATLETA_BASE = "/api/admin/atletas/me";
 
 type PerfilPayload = { atleta?: Atleta } | { data?: Atleta } | Atleta | null | undefined;
 

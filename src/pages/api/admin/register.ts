@@ -3,15 +3,27 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
 import type { Role, RachaStatus } from "@prisma/client";
 import { prisma } from "@/server/prisma";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 
 type RegisterBody = {
+  // Racha
   nome?: string; // nome do racha
   slug?: string; // slug do racha
+  cidade?: string; // cidade do racha
+  estado?: string; // estado do racha (UF)
+  logoUrl?: string; // opcional: logo do racha
+
+  // Login
   email?: string; // email do presidente (Usuario + Jogador)
   senha?: string; // senha do presidente
-  presidenteNome?: string; // nome completo do presidente
-  presidenteApelido?: string; // apelido do presidente
-  logoUrl?: string; // opcional: logo do racha
+
+  // Dados pessoais do presidente
+  presidenteNome?: string; // nome (apenas primeiro nome)
+  presidenteApelido?: string; // apelido (opcional)
+  presidentePosicao?: string; // posição obrigatória
+  presidenteFotoUrl?: string; // opcional: foto (url/dataurl)
 };
 
 type Ok = { message: string; rachaId: string };
@@ -32,6 +44,9 @@ function normalizeSlug(value: string): string {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<Res>) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: use API backend para admin/register" } as Err);
+  }
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Método não permitido" });
@@ -43,19 +58,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   const slugInput = body.slug?.trim() ?? "";
   const emailInput = body.email?.trim() ?? "";
   const senha = body.senha ?? "";
-  const presidenteNome = body.presidenteNome?.trim() ?? "";
+  const presidenteNomeRaw = body.presidenteNome?.trim() ?? "";
   const presidenteApelido = body.presidenteApelido?.trim() ?? "";
+  const presidentePosicao = body.presidentePosicao?.trim().toUpperCase() ?? "";
+  const presidenteFotoUrl = body.presidenteFotoUrl?.trim() || null;
   const logoUrl = body.logoUrl?.trim() || null;
+  const cidade = body.cidade?.trim() ?? "";
+  const estado = body.estado?.trim().toUpperCase() ?? "";
 
   // ---- validações básicas
   if (nomeRacha.length < 3 || nomeRacha.length > 64) {
     return res.status(400).json({ error: "Nome do racha deve ter entre 3 e 64 caracteres" });
   }
-  if (presidenteNome.length < 3 || presidenteNome.length > 60) {
-    return res.status(400).json({ error: "Nome do presidente deve ter entre 3 e 60 caracteres" });
+  if (presidenteNomeRaw.length < 2 || presidenteNomeRaw.length > 60) {
+    return res.status(400).json({ error: "Nome do presidente deve ter entre 2 e 60 caracteres" });
   }
-  if (presidenteApelido.length < 2 || presidenteApelido.length > 20) {
+  if (presidenteApelido && (presidenteApelido.length < 2 || presidenteApelido.length > 20)) {
     return res.status(400).json({ error: "Apelido deve ter entre 2 e 20 caracteres" });
+  }
+  if (!presidentePosicao) {
+    return res.status(400).json({ error: "Posição do presidente é obrigatória" });
+  }
+  if (!cidade || !estado) {
+    return res.status(400).json({ error: "Cidade e estado do racha são obrigatórios" });
   }
   if (!emailInput || !emailInput.includes("@")) {
     return res.status(400).json({ error: "Email inválido" });
@@ -75,6 +100,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   const email = emailInput.toLowerCase();
+  // apenas o primeiro nome
+  const presidenteNome = presidenteNomeRaw.split(/\s+/)[0];
 
   try {
     // conflitos óbvios
@@ -110,6 +137,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         data: {
           nome: nomeRacha,
           slug,
+          cidade,
+          estado,
           ownerId: usuario.id,
           ativo: false,
           status: RACHA_STATUS_INATIVO,
@@ -134,7 +163,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             nome: presidenteNome,
             apelido: presidenteApelido,
             email,
-            posicao: POSICAO_PADRAO,
+            posicao: presidentePosicao || POSICAO_PADRAO,
+            foto: presidenteFotoUrl ?? undefined,
             status: "ativo",
           },
         });

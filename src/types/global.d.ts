@@ -19,9 +19,15 @@ declare global {
   }
 }
 declare module "@/lib/api" {
-  export const partidasApi: {
-    create: (...args: any[]) => Promise<any>;
-    update: (...args: any[]) => Promise<any>;
-    delete: (...args: any[]) => Promise<any>;
-  };
+  export const apiClient: any;
+  export const partidasApi: any;
+  export const jogadoresApi: any;
+  export const tenantDataApi: any;
+  export const estrelasApi: any;
+  export const sorteioApi: any;
+  export const financeiroApi: any;
+  export const estatisticasApi: any;
+  export const superAdminApi: any;
+  export const rachaApi: any;
+  export const tenantApi: any;
 }

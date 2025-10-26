@@ -7,10 +7,16 @@ export const config = {
   },
 };
 import { prisma } from "@/server/prisma";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: use API backend para pagar-influencer" });
+  }
   // Headers para evitar cache e problemas de prerender
   res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("Pragma", "no-cache");

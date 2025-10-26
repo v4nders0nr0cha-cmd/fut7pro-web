@@ -1,9 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
-if (!API_BASE) {
-  // Evita erro silencioso em build
-  // eslint-disable-next-line no-console
-  console.warn("NEXT_PUBLIC_API_URL nao definido.");
-}
+import { getBrowserApiBase, getServerApiBase } from "@/config/env";
 
 type ApiFetchOptions = RequestInit & {
   accessToken?: string;
@@ -14,7 +9,11 @@ export async function apiFetch<T = unknown>(
   path: string,
   { accessToken, tenantSlug, headers, ...rest }: ApiFetchOptions = {}
 ): Promise<T> {
-  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const base = typeof window === "undefined" ? getServerApiBase() : getBrowserApiBase();
+  if (!base) {
+    throw new Error("API base URL não definido. Configure NEXT_PUBLIC_API_URL e API_URL.");
+  }
+  const url = path.startsWith("http") ? path : `${base}${path}`;
   const h = new Headers(headers ?? {});
   h.set("Accept", "application/json");
   if (!h.has("Content-Type") && rest.body && !(rest.body instanceof FormData)) {

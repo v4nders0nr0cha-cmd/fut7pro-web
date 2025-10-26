@@ -4,6 +4,7 @@ import Head from "next/head";
 import Image from "next/image";
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useSession } from "next-auth/react";
+import AvatarCropModal from "@/components/admin/AvatarCropModal";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import { useNotification } from "@/context/NotificationContext";
@@ -55,6 +56,41 @@ function cloneEstatisticas(value?: EstatisticasSimples) {
   return { ...value };
 }
 
+function sanitizeFileBaseName(value?: string | null): string {
+  if (!value) return "avatar";
+  const base = value.replace(/\.[^/.]+$/, "");
+  const normalized = base
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9-_]/gi, "")
+    .toLowerCase()
+    .trim();
+  if (!normalized) return "avatar";
+  return normalized.slice(0, 40);
+}
+
+function dataUrlToFile(dataUrl: string, originalName?: string | null): File | null {
+  const [header, body] = dataUrl.split(",");
+  if (!header || !body) return null;
+  const mimeMatch = header.match(/data:(.*?);/);
+  const mime = mimeMatch?.[1] ?? "image/jpeg";
+  const binaryString = atob(body);
+  const len = binaryString.length;
+  const buffer = new Uint8Array(len);
+  for (let i = 0; i < len; i += 1) {
+    buffer[i] = binaryString.charCodeAt(i);
+  }
+  const extensionRaw = mime.split("/")[1] ?? "jpeg";
+  const extension = extensionRaw === "jpeg" ? "jpg" : extensionRaw;
+  const fileName = `${sanitizeFileBaseName(originalName)}.${extension}`;
+  try {
+    return new File([buffer], fileName, { type: mime });
+  } catch (error) {
+    console.error("dataUrlToFile failed", error);
+    return null;
+  }
+}
+
 export default function PerfilAdministradorPage() {
   const { data: session, update } = useSession();
   const { notify } = useNotification();
@@ -80,6 +116,9 @@ export default function PerfilAdministradorPage() {
   const [filtroEstatistica, setFiltroEstatistica] = useState<"temporada" | "historico">(
     "temporada"
   );
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [pendingFileName, setPendingFileName] = useState<string | null>(null);
 
   const previewUrlRef = useRef<string | null>(null);
 
@@ -184,16 +223,25 @@ export default function PerfilAdministradorPage() {
       return;
     }
 
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    previewUrlRef.current = objectUrl;
-    setFotoFile(file);
-    setRemoverFoto(false);
-    setFotoPreview(objectUrl);
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const result = loadEvent.target?.result;
+      if (typeof result !== "string") {
+        notify({ type: "error", message: "Não foi possível carregar a imagem selecionada." });
+        return;
+      }
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+        previewUrlRef.current = null;
+      }
+      setCropImageSrc(result);
+      setPendingFileName(file.name);
+      setIsCropModalOpen(true);
+    };
+    reader.onerror = () => {
+      notify({ type: "error", message: "Não foi possível carregar a imagem selecionada." });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoverFoto = () => {
@@ -205,7 +253,31 @@ export default function PerfilAdministradorPage() {
     setFotoFile(null);
     setRemoverFoto(true);
     setFotoPreview(AVATAR_FALLBACK);
+    setCropImageSrc(null);
+    setPendingFileName(null);
+    setIsCropModalOpen(false);
   };
+
+  const fecharCropModal = useCallback(() => {
+    setIsCropModalOpen(false);
+    setCropImageSrc(null);
+    setPendingFileName(null);
+  }, []);
+
+  const handleCropConfirm = useCallback(
+    (dataUrl: string) => {
+      const file = dataUrlToFile(dataUrl, pendingFileName);
+      if (!file) {
+        notify({ type: "error", message: "Não foi possível processar a imagem recortada." });
+        return;
+      }
+      setFotoFile(file);
+      setRemoverFoto(false);
+      resetPreview(dataUrl);
+      fecharCropModal();
+    },
+    [fecharCropModal, pendingFileName, notify, resetPreview]
+  );
 
   const iniciarEdicao = () => {
     setIsEditing(true);
@@ -221,6 +293,7 @@ export default function PerfilAdministradorPage() {
     setPosicao(perfil.posicao ?? "");
     setFotoFile(null);
     setRemoverFoto(false);
+    fecharCropModal();
     resetPreview(perfil.foto);
   };
 
@@ -240,7 +313,22 @@ export default function PerfilAdministradorPage() {
     formData.set("apelido", apelidoTrim);
     formData.set("posicao", posicao ? posicao : "");
     if (fotoFile) {
-      formData.set("foto", fotoFile);
+      try {
+        const up = new FormData();
+        up.set("kind", "avatar");
+        up.set("slug", perfil.slug || "fut7pro");
+        if ((session?.user as any)?.id) up.set("userId", String((session?.user as any).id));
+        up.set("file", fotoFile);
+        const resp = await fetch("/api/upload", { method: "POST", body: up });
+        const json = await resp.json();
+        if (resp.ok && json?.url) {
+          formData.set("fotoUrl", json.url as string);
+        } else {
+          throw new Error(json?.error || "Falha no upload da foto");
+        }
+      } catch (e) {
+        notify({ type: "error", message: "Falha ao enviar a foto do perfil." });
+      }
     } else if (removerFoto) {
       formData.set("removerFoto", "true");
     }
@@ -566,6 +654,14 @@ export default function PerfilAdministradorPage() {
           )}
         </section>
       </section>
+
+      <AvatarCropModal
+        open={isCropModalOpen}
+        imageSrc={cropImageSrc}
+        onClose={fecharCropModal}
+        onConfirm={handleCropConfirm}
+      />
     </>
   );
 }
+

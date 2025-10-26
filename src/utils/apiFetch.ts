@@ -15,7 +15,7 @@ function ensureServerSide() {
 export async function authedFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   ensureServerSide();
 
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   const headers = new Headers(init.headers);
 
   if (session?.accessToken) {

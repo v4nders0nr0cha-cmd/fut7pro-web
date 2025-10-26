@@ -49,3 +49,8 @@ Este arquivo espelha as variáveis hoje configuradas no projeto `fut7pro-web` na
 4. Manter `DATABASE_URL`/`DIRECT_URL` sempre com `sslmode=require` (já está correto).
 
 > Sempre que o código passar a depender de uma nova variável, inclua-a aqui e crie no painel da Vercel para evitar divergências.
+
+## Segurança (Produção)
+
+- DISABLE_WEB_DIRECT_DB = true: bloqueia Prisma no web em produção; usar somente API do backend.
+- NEXT_PUBLIC_API_URL = https://api.fut7pro.com.br: padroniza o domínio do backend consumido pelo web.

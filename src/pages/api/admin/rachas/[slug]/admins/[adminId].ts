@@ -1,7 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/server/prisma"; // ajuste o path conforme seu projeto
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: admin/admins endpoint desabilitado em prod" });
+  }
   const { adminId } = req.query;
 
   if (!adminId) return res.status(400).json({ error: "adminId é obrigatório" });

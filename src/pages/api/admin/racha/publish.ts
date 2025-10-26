@@ -1,4 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 import { getServerSession } from "next-auth/next";
 
 import { prisma } from "@/server/prisma";
@@ -12,6 +15,11 @@ function pickStr(x: unknown): string {
 }
 
 async function publishHandler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res
+      .status(501)
+      .json({ error: "web_db_disabled: endpoint admin dev-only em produção" });
+  }
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ error: "Metodo nao permitido" });
@@ -86,4 +94,13 @@ async function publishHandler(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-export default withAdminApiRoute(publishHandler);
+const wrapped = withAdminApiRoute(publishHandler);
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res
+      .status(501)
+      .json({ error: "web_db_disabled: endpoint admin dev-only em produção" });
+  }
+  return wrapped(req, res);
+}
+

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "functions": {
+    "api/**": {
+      "memory": 512,
+      "maxDuration": 10
+    }
+  }
+}
+

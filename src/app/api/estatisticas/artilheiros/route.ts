@@ -3,6 +3,9 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/prisma";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 import {
   computePlayerStats,
   computeUpdatedAt,
@@ -11,6 +14,12 @@ import {
 } from "@/server/estatisticas/aggregator";
 
 export async function GET(request: Request) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para estatisticas/artilheiros" },
+      { status: 501 }
+    );
+  }
   const { searchParams } = new URL(request.url);
   const rachaId = searchParams.get("rachaId");
   if (!rachaId) {

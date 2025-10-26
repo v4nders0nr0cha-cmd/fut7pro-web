@@ -1,33 +1,28 @@
-// Configuracao de variaveis de ambiente
-export const config = {
-  // API Configuration
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || "https://api.fut7pro.com.br",
-  appUrl: (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(/\/+$/, ""),
+export const ENV = {
+  NODE_ENV: process.env.NODE_ENV ?? 'development',
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL ?? '',
+  NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? '',
+  API_URL: process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '',
+} as const;
 
-  // Mercado Pago
-  mpPublicKey: process.env.NEXT_PUBLIC_MP_PUBLIC_KEY || "",
+export function normalizeBaseUrl(u: string): string {
+  return u.endsWith('/') ? u.slice(0, -1) : u;
+}
 
-  // Tenant ID (em producao, viria do contexto de autenticacao)
-  demoTenantId: process.env.NEXT_PUBLIC_DEMO_TENANT_ID || "demo-tenant",
+export function getBrowserApiBase(): string {
+  if (typeof window !== 'undefined') {
+    return ENV.NEXT_PUBLIC_API_URL || `${window.location.protocol}//${window.location.host}`;
+  }
+  return ENV.API_URL || ENV.NEXT_PUBLIC_API_URL || '';
+}
 
-  // Monitoring / Analytics
-  sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "",
-  analyticsUrl: process.env.NEXT_PUBLIC_ANALYTICS_URL || "",
+export function getServerApiBase(): string {
+  return ENV.API_URL || ENV.NEXT_PUBLIC_API_URL || '';
+}
 
-  // Assets / Uploads
-  maxFileSize: Number(process.env.MAX_FILE_SIZE || 5_242_880),
-  allowedFileTypes: (process.env.ALLOWED_FILE_TYPES || "image/jpeg,image/png,image/webp")
-    .split(",")
-    .map((type) => type.trim())
-    .filter(Boolean),
-
-  // Meta
-  siteName: process.env.SITE_NAME || "Fut7Pro",
-  googleSiteVerification: process.env.GOOGLE_SITE_VERIFICATION || "",
-
-  // Environment flags
-  isDevelopment: process.env.NODE_ENV === "development",
-  isProduction: process.env.NODE_ENV === "production",
+// Compat: alguns módulos esperam default export com apiUrl
+const defaultExport = {
+  apiUrl: ENV.API_URL || ENV.NEXT_PUBLIC_API_URL || '',
 };
 
-export default config;
+export default defaultExport;

@@ -5,20 +5,20 @@ import { jogadoresApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Jogador } from "@/types/jogador";
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar jogadores");
+const fetcher = async (rachaId: string) => {
+  const response = await jogadoresApi.getAll(rachaId);
+  if (response.error) {
+    throw new Error(response.error);
   }
-  return response.json();
+  return (response.data ?? []) as Jogador[];
 };
 
 export function useJogadores(rachaId: string) {
   const apiState = useApiState();
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId ? `/api/jogadores?rachaId=${rachaId}` : null,
-    fetcher,
+    rachaId ? ["admin-jogadores", rachaId] : null,
+    () => fetcher(rachaId),
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import * as api from "@/lib/api";
 import type { ConfiguracaoRacha } from "@/types/sorteio";
 import { rachaConfig } from "@/config/racha.config";
 
@@ -50,15 +51,14 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
 
   // Salva no localStorage e executa onSubmit a cada alteração
   useEffect(() => {
+    const config = { duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime };
     try {
-      localStorage.setItem(
-        rachaConfig.storage.configKey,
-        JSON.stringify({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime })
-      );
+      localStorage.setItem(rachaConfig.storage.configKey, JSON.stringify(config));
     } catch {
       /* ignore */
     }
-    onSubmit({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime });
+    onSubmit(config);
+    // TODO: persist config via backend when endpoint is available
   }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime, onSubmit]);
 
   // Se valores ficarem inválidos por alguma alteração externa, sempre recupera o fallback

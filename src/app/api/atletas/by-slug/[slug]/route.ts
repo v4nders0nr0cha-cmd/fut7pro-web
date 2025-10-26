@@ -6,6 +6,10 @@ import { NextResponse } from "next/server";
 import { obterAtletaPorSlug } from "@/server/atletas/aggregator";
 import { prisma } from "@/server/prisma";
 
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
+
 async function resolveRachaId(rachaId: string | null, slug: string | null): Promise<string | null> {
   if (rachaId) return rachaId;
   if (!slug) return null;
@@ -19,6 +23,12 @@ async function resolveRachaId(rachaId: string | null, slug: string | null): Prom
 }
 
 export async function GET(request: Request, { params }: { params: { slug: string } }) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para atletas/by-slug" },
+      { status: 501 }
+    );
+  }
   const { searchParams } = new URL(request.url);
   const rachaIdParam = searchParams.get("rachaId");
   const tenantSlug = searchParams.get("tenant");

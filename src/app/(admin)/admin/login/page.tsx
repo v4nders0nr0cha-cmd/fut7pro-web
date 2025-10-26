@@ -4,6 +4,7 @@ import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { HiOutlineEye, HiOutlineEyeOff } from "react-icons/hi";
 import { useNotification } from "@/context/NotificationContext";
 import { safeCallbackUrl } from "@/lib/url";
 
@@ -21,6 +22,7 @@ function getSafeTarget(url: string | null | undefined, fallback: string): string
 function AdminLoginPageInner() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
@@ -124,16 +126,26 @@ function AdminLoginPageInner() {
 
             <label className="block text-left text-sm font-medium text-zinc-200">
               Senha
-              <input
-                type="password"
-                name="password"
-                value={senha}
-                onChange={(event) => setSenha(event.target.value)}
-                required
-                autoComplete="current-password"
-                className="mt-1 w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 text-white placeholder:text-zinc-400 focus:border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
-                placeholder="Sua senha"
-              />
+              <div className="relative mt-1">
+                <input
+                  type={mostrarSenha ? "text" : "password"}
+                  name="password"
+                  value={senha}
+                  onChange={(event) => setSenha(event.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-3 pr-12 text-white placeholder:text-zinc-400 focus:border-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
+                  placeholder="Sua senha"
+                />
+                <button
+                  type="button"
+                  onClick={() => setMostrarSenha((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-zinc-300 transition hover:text-yellow-200 focus-visible:text-yellow-200 focus-visible:outline-none"
+                  aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {mostrarSenha ? <HiOutlineEyeOff className="h-5 w-5" /> : <HiOutlineEye className="h-5 w-5" />}
+                </button>
+              </div>
             </label>
 
             <button
@@ -145,20 +157,20 @@ function AdminLoginPageInner() {
             </button>
           </form>
 
-          <div className="mt-8 space-y-4 text-center text-sm text-zinc-200">
-            <p>
-              Primeiro acesso?{" "}
-              <Link
-                href="/admin/register"
-                className="font-semibold text-yellow-300 hover:text-yellow-200"
+          <div className="mt-8 space-y-3 text-center text-sm text-zinc-200">
+            <p className="flex flex-col items-center gap-1">
+              <span>Primeiro acesso?</span>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/register")}
+                className="font-semibold text-yellow-300 hover:text-yellow-200 transition"
               >
                 Cadastre seu racha
-              </Link>
+              </button>
             </p>
             <p>
-              Precisa de ajuda?{" "}
-              <Link href="/contato" className="font-semibold text-yellow-300 hover:text-yellow-200">
-                Fale com o suporte
+              <Link href="/admin/recuperar" className="font-semibold text-yellow-300 hover:text-yellow-200">
+                Esqueceu sua senha?
               </Link>
             </p>
           </div>

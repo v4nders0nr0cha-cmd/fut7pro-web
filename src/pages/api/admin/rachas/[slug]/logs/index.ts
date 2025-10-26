@@ -1,8 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/server/prisma";
 // import { getSession } from "next-auth/react"; // Adapte se quiser autenticação
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res
+      .status(501)
+      .json({ error: "web_db_disabled: use a API do backend para logs/admin" });
+  }
   const { slug } = req.query;
 
   if (!slug) return res.status(400).json({ error: "Slug é obrigatório" });

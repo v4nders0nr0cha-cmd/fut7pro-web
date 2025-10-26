@@ -82,14 +82,19 @@ function endOfDay(date: Date) {
 }
 
 function serializeJogadores(jogadores: JogadorInput[] | undefined) {
-  const normalized = (jogadores ?? []).map((jogador, index) => ({
-    id: jogador.id || `temp-${index}`,
-    nome: jogador.nome ?? "",
-    posicao: jogador.posicao ?? null,
-    foto: jogador.foto ?? null,
-    apelido: jogador.apelido ?? null,
-    status: jogador.status ?? "titular",
-  }));
+  const normalized = (jogadores ?? []).map((jogador, index) => {
+    const id = jogador.id || `temp-${index}`;
+    const isFict = typeof id === "string" && id.startsWith("fict-gol-");
+    return {
+      id,
+      nome: jogador.nome ?? "",
+      posicao: jogador.posicao ?? null,
+      foto: jogador.foto ?? null,
+      apelido: jogador.apelido ?? null,
+      // goleiro fictício não deve ranquear: marca como ausente para agregadores atuais ignorarem
+      status: isFict ? "ausente" : jogador.status ?? "titular",
+    };
+  });
   return JSON.stringify(normalized);
 }
 

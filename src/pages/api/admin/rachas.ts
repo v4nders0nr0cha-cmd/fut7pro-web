@@ -1,19 +1,24 @@
 // src/pages/api/admin/rachas.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-
-// Configurar runtime para Node.js (necessário para Prisma)
-export const config = {
-  api: {
-    runtime: "nodejs",
-  },
-};
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/prisma";
 
+// Configurar runtime para Node.js (necessário para Prisma)
+export const config = {
+  api: { runtime: "nodejs" },
+};
+
+// Guardes de ambiente para bloquear acesso direto ao DB no web em produção
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled = (process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1");
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Headers para evitar cache e problemas de prerender
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: use API backend para admin/rachas" });
+  }
+  // Anti-cache para não poluir SSR/prerender
   res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
@@ -40,9 +45,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             criadoEm: true,
             atualizadoEm: true,
             ativo: true,
-            // Para admins e jogadores, ajuste se quiser trazer objetos completos:
-            // admins: { select: { id: true, usuarioId: true } },
-            // jogadores: { select: { id: true, jogadorId: true } },
           },
           orderBy: { criadoEm: "desc" },
         });
@@ -53,8 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
     case "POST": {
-      const { nome, slug, descricao, logoUrl, tema, regras } = req.body;
+      const { nome, slug, descricao, logoUrl, tema, regras } = req.body ?? {};
       try {
+        // Regra: apenas um racha por administrador (owner)
+        const existing = await prisma.racha.findFirst({ where: { ownerId: session.user.id } });
+        if (existing) {
+          return res
+            .status(400)
+            .json({ error: "Cada administrador pode cadastrar apenas um racha." });
+        }
+
         const racha = await prisma.racha.create({
           data: {
             nome,
@@ -63,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             logoUrl,
             tema,
             regras,
-            ativo: false, // 👈 nasce inativo por padrão
+            ativo: false, // nasce inativo por padrão
             status: "INATIVO",
             ownerId: session.user.id,
           },
@@ -75,18 +85,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
     case "PUT": {
-      const { id, nome, slug, descricao, logoUrl, tema, regras } = req.body;
+      const { id, nome, slug, descricao, logoUrl, tema, regras } = req.body ?? {};
       try {
         const racha = await prisma.racha.update({
           where: { id },
-          data: {
-            nome,
-            slug,
-            descricao,
-            logoUrl,
-            tema,
-            regras,
-          },
+          data: { nome, slug, descricao, logoUrl, tema, regras },
         });
         return res.status(200).json(racha);
       } catch (e) {
@@ -95,20 +98,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
     case "DELETE": {
-      const { id } = req.body;
+      const { id } = req.body ?? {};
       try {
-        await prisma.racha.update({
-          where: { id },
-          data: { ativo: false },
-        });
+        await prisma.racha.update({ where: { id }, data: { ativo: false } });
         return res.status(204).end();
       } catch (e) {
         const errorMessage = e instanceof Error ? e.message : "Erro desconhecido";
         return res.status(400).json({ error: "Erro ao excluir racha", details: errorMessage });
       }
     }
-    default:
+    default: {
       res.setHeader("Allow", ["GET", "POST", "PUT", "DELETE"]);
       return res.status(405).end(`Método ${req.method} não permitido`);
+    }
   }
 }
+

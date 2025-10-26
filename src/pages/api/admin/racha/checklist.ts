@@ -6,6 +6,10 @@ import { prisma } from "@/server/prisma";
 type Item = { key: string; ok: boolean; help?: string };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (process.env.NODE_ENV === "production" &&
+      (process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1")) {
+    return res.status(501).json({ error: "web_db_disabled: use API backend para checklist" });
+  }
   if (req.method !== "GET") {
     res.setHeader("Allow", "GET");
     return res.status(405).json({ error: "Método não permitido" });

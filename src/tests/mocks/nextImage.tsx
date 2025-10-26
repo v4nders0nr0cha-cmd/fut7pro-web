@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import type { ImgHTMLAttributes } from "react";
 
 const NextImage = (props: ImgHTMLAttributes<HTMLImageElement>) => {

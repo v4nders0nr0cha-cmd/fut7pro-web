@@ -58,6 +58,12 @@ function mapCampeao(record: CampeaoModel) {
 }
 
 export async function GET(request: Request) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para campeoes" },
+      { status: 501 }
+    );
+  }
   const { searchParams } = new URL(request.url);
   const rachaId = searchParams.get("rachaId");
   if (!rachaId) {
@@ -86,6 +92,12 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (isProd && isWebDirectDbDisabled) {
+    return NextResponse.json(
+      { error: "web_db_disabled: use a API do backend para campeoes" },
+      { status: 501 }
+    );
+  }
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
@@ -138,3 +150,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "failed to create champion" }, { status: 500 });
   }
 }
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";

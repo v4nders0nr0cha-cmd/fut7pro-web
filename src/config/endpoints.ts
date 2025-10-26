@@ -6,10 +6,49 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 // Endpoints públicos
 export const PUBLIC_ENDPOINTS = {
   // Estatísticas
-  ARTILHEIROS: `${API_BASE_URL}/api/estatisticas/artilheiros`,
-  ASSISTENCIAS: `${API_BASE_URL}/api/estatisticas/assistencias`,
-  RANKING_GERAL: `${API_BASE_URL}/api/estatisticas/ranking-geral`,
-  TIMES_CLASSIFICACAO: `${API_BASE_URL}/api/estatisticas/times-classificacao`,
+  ARTILHEIROS: (slug: string, params: Record<string, string | number | undefined> = {}) => {
+    const search = new URLSearchParams();
+    search.set("slug", slug);
+    search.set("type", "artilheiros");
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        search.set(key, String(value));
+      }
+    });
+    return `${API_BASE_URL}/api/public/player-rankings?${search.toString()}`;
+  },
+  ASSISTENCIAS: (slug: string, params: Record<string, string | number | undefined> = {}) => {
+    const search = new URLSearchParams();
+    search.set("slug", slug);
+    search.set("type", "assistencias");
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        search.set(key, String(value));
+      }
+    });
+    return `${API_BASE_URL}/api/public/player-rankings?${search.toString()}`;
+  },
+  RANKING_GERAL: (slug: string, params: Record<string, string | number | undefined> = {}) => {
+    const search = new URLSearchParams();
+    search.set("slug", slug);
+    search.set("type", "geral");
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        search.set(key, String(value));
+      }
+    });
+    return `${API_BASE_URL}/api/public/player-rankings?${search.toString()}`;
+  },
+  TIMES_CLASSIFICACAO: (slug: string, params: Record<string, string | number | undefined> = {}) => {
+    const search = new URLSearchParams();
+    search.set("slug", slug);
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        search.set(key, String(value));
+      }
+    });
+    return `${API_BASE_URL}/api/public/team-rankings?${search.toString()}`;
+  },
 
   // Atletas
   ATLETAS: `${API_BASE_URL}/api/atletas`,

@@ -81,7 +81,7 @@ export function withAdminAppRoute<T extends (req: NextRequest) => Promise<Respon
   const { mustOwnRacha = false } = opts;
 
   return async (req: NextRequest) => {
-    const session = (await getServerSession(authOptions)) as AppSession | null;
+    const session = (await getServerSession()) as AppSession | null;
 
     const role = normalizeAdminRole(session?.user?.role);
     if (!role || !isAdminRole(role)) {

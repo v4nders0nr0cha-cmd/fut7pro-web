@@ -8,6 +8,17 @@ Aplicação web multi-tenant (painel do racha + site público) que oferece todas
 - Público-alvo: presidentes de racha e administradores (painel), atletas (mínimo acesso) e visitantes (site público).
 - Arquitetura: multi-tenant com isolamento lógico por racha; site responsivo, mobile-first e PWA-ready; LGPD-ready.
 
+## Ambiente & Integração
+
+- Deploy: Vercel (`app.fut7pro.com.br`), com NextAuth integrado ao backend (Render, `api.fut7pro.com.br`).
+- Base de API (produção): `NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br`. Em servidor, `API_URL`/`BACKEND_URL` podem ser usados.
+- Autenticação: use os paths do backend Nest (sem proxy do Next):
+  - `AUTH_LOGIN_PATH=/auth/login`, `AUTH_REFRESH_PATH=/auth/refresh`, `AUTH_ME_PATH=/auth/me`.
+  - Remova `AUTH_SECRET` e mantenha apenas `NEXTAUTH_SECRET`.
+- Banco: Neon (Postgres). Em produção, `DISABLE_WEB_DIRECT_DB=true` para bloquear acesso Prisma nas rotas do Next (usar sempre o backend).
+- Storage: Supabase (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE`, buckets `sponsors`, `public-media`, `private-media`, `temp-uploads`).
+- Imagens (next.config): `images.remotePatterns` inclui `*.supabase.co`.
+
 ## Escopo do Módulo (Web)
 
 - Painel Admin (presidente/vice/diretores): operação completa do racha, configuração, auditoria e relatórios.

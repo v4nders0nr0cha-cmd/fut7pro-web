@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRacha } from "@/context/RachaContext";
+import { useTenant } from "@/context/TenantContext";
 import { toast } from "react-hot-toast";
 import { mutate } from "swr";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
@@ -10,11 +11,14 @@ import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
-import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
+import { sortearTimesInteligenteV2 as sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
 import { mockParticipantes } from "./mockParticipantes";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
+import type { Time as TimeDomain } from "@/types/time";
+import * as api from "@/lib/api";
+import { useJogadoresRacha } from "@/hooks/useJogadoresRacha";
 
 const mockTimes: Time[] = [
   { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
@@ -138,11 +142,17 @@ function LoaderBolaFutebol() {
 
 export default function SorteioInteligenteAdmin() {
   const { rachaId } = useRacha();
+  const { tenant } = useTenant();
+  const tenantSlug = tenant?.slug;
+
+  // Jogadores do racha
+  const { participantesDisponiveis } = useJogadoresRacha(rachaId);
+
+  // Times do racha
+  const [allTimes, setAllTimes] = useState<Array<Pick<TimeDomain, "id" | "nome" | "logo">>>([]);
 
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
-  const [participantes, setParticipantes] = useState<Participante[]>(
-    mockParticipantes.filter((p) => p.mensalista)
-  );
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [times, setTimes] = useState<TimeSorteado[]>([]);
   const [publicado, setPublicado] = useState(false);
   const [publicando, setPublicando] = useState(false);
@@ -151,9 +161,7 @@ export default function SorteioInteligenteAdmin() {
   const [configConfirmada, setConfigConfirmada] = useState(false);
 
   // Estado dos times selecionados
-  const [timesSelecionados, setTimesSelecionados] = useState<string[]>(
-    mockTimes.slice(0, 4).map((t) => t.id)
-  );
+  const [timesSelecionados, setTimesSelecionados] = useState<string[]>([]);
 
   // Estado para a tabela de jogos
   const [tabelaJogos, setTabelaJogos] = useState<JogoConfronto[]>([]);
@@ -176,6 +184,43 @@ export default function SorteioInteligenteAdmin() {
     setConfigConfirmada(true);
   }
 
+  // Load times from backend and auto-select according to config
+  useEffect(() => {
+    let mounted = true;
+    async function loadTimes() {
+      try {
+        if (!tenantSlug) {
+          setAllTimes([]);
+          return;
+        }
+        const resp = await api.tenantDataApi.times.getAll(tenantSlug as string);
+        const items = (resp as any)?.data ?? [];
+        const mapped: Array<Pick<TimeDomain, "id" | "nome" | "logo">> = items.map((t: any) => ({
+          id: t.id ?? t.timeId ?? String(t.id ?? ""),
+          nome: t.nome ?? t.name ?? "Time",
+          logo: t.logo ?? t.logoUrl ?? "/images/times/time_padrao_01.png",
+        }));
+        if (!mounted) return;
+        setAllTimes(mapped);
+      } catch {
+        if (!mounted) return;
+        setAllTimes([]);
+      }
+    }
+    loadTimes();
+    return () => {
+      mounted = false;
+    };
+  }, [tenantSlug]);
+
+  useEffect(() => {
+    if (!config) return;
+    const pool = allTimes.length > 0 ? allTimes : mockTimes;
+    const desired = config.numTimes || 2;
+    const next = pool.slice(0, desired).map((t) => t.id);
+    setTimesSelecionados(next);
+  }, [config, allTimes]);
+
   // NOVO: Função para somar o total de partidas já jogadas pelos participantes
   function calcularPartidasTotais(participantes: Participante[]): number {
     // Soma o campo "partidas" de cada participante (fallback para 0 se não existir)
@@ -191,7 +236,8 @@ export default function SorteioInteligenteAdmin() {
     const partidasTotais = calcularPartidasTotais(participantes);
 
     // Balanceamento "pesado" e delay mínimo de 5s (user experience PRO)
-    const timesParaSorteio = mockTimes.filter((t) => timesSelecionados.includes(t.id));
+    const baseTimes = (allTimes.length > 0 ? allTimes : mockTimes) as unknown as Time[];
+    const timesParaSorteio = baseTimes.filter((t) => timesSelecionados.includes(t.id));
     const balanceamentoPromise = new Promise<TimeSorteado[]>((resolve) => {
       setTimeout(() => {
         // Agora passa partidasTotais!
@@ -245,29 +291,22 @@ export default function SorteioInteligenteAdmin() {
     setErroPublicacao(null);
 
     try {
-      const response = await fetch("/api/admin/sorteio/publicar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rachaId,
-          data: new Date().toISOString(),
-          jogos: tabelaJogos,
-          times,
-          config,
-        }),
-      });
+      const payload = {
+        rachaId,
+        data: new Date().toISOString(),
+        jogos: tabelaJogos,
+        times,
+        config,
+      };
+      const response = await api.sorteioApi.publicar(payload);
 
-      if (response.status === 401) {
+      if ((response as any)?.status === 401) {
         await signIn();
         return;
       }
 
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        const message =
-          payload && typeof payload.error === "string"
-            ? payload.error
-            : "Falha ao publicar os times.";
+      if ((response as any)?.error) {
+        const message = (response as any)?.error || "Falha ao publicar os times.";
         throw new Error(message);
       }
 
@@ -390,6 +429,7 @@ export default function SorteioInteligenteAdmin() {
           disabled={configConfirmada}
           maxTimes={maxTimes}
           shake={avisoTimesShake}
+          timesDisponiveis={(allTimes.length > 0 ? allTimes : mockTimes).map((t) => ({ id: t.id, nome: t.nome, logo: t.logo }))}
         />
       </div>
 
@@ -419,6 +459,7 @@ export default function SorteioInteligenteAdmin() {
         config={config}
         participantes={participantes}
         setParticipantes={setParticipantes}
+        disponiveis={participantesDisponiveis}
       />
       <button
         className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"

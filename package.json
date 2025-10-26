@@ -10,7 +10,7 @@
     "lint:fix": "next lint --dir src --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || husky install",
+    "prepare": "node -e \"const fs=require('fs');const run=!process.env.CI && !process.env.RENDER && !process.env.RENDER_SERVICE_ID && fs.existsSync('.git');process.exit(run?0:1)\" && husky install",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -20,6 +20,7 @@
     "test:integration": "jest --testPathPattern=src/hooks/__tests__ --testPathPattern=src/components/__tests__",
     "test:all": "npm run test:unit && npm run test:components && npm run test:cov",
     "test:e2e": "npm run e2e:build && playwright test",
+    "test:e2e:env": "tsx scripts/run-e2e.ts",
     "test:e2e:ui": "npm run e2e:build && playwright test --ui",
     "test:e2e:headed": "npm run e2e:build && playwright test --headed",
     "test:e2e:grep": "npm run e2e:build && npm run pw:grep --",
@@ -47,6 +48,9 @@
     "e2e:serve": "npm run e2e:build && npm run e2e:start",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate || echo prisma:generate skipped"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -118,6 +122,7 @@
     "prettier": "^3.5.3",
     "prisma": "^6.16.2",
     "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
     "typescript": "^5.8.3"
   },
@@ -134,5 +139,6 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.17.0+sha512.fce8a3dd29a4ed2ec566fb53efbb04d8c44a0f05bc6f24a73046910fb9c3ce7afa35a0980500668fa3573345bd644644fa98338fa168235c80f4aa17aa17fbef"
 }

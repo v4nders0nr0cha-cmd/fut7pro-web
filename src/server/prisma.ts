@@ -8,9 +8,25 @@ declare global {
 }
 
 const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 const shouldLogQueries = process.env.PRISMA_LOG_QUERIES === "1";
 
 function prismaClientFactory() {
+  if (isProd && isWebDirectDbDisabled) {
+    // Bloqueia acesso direto ao DB no web em produção, conforme especificação.
+    const message =
+      "[WEB_DB_DISABLED] Acesso direto ao banco está desabilitado no web em produção. Utilize a API do backend.";
+    // Proxy que lança erro em qualquer acesso a propriedades/métodos
+    return new Proxy({}, {
+      get() {
+        throw new Error(message);
+      },
+      apply() {
+        throw new Error(message);
+      },
+    }) as unknown as PrismaClient;
+  }
   return new PrismaClient({
     log: shouldLogQueries
       ? (["query", "info", "warn", "error"] as const)

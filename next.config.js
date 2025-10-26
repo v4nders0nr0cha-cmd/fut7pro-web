@@ -25,6 +25,15 @@ const apiHostname = (() => {
     return "api.fut7pro.com.br";
   }
 })();
+const imagesCdnHostname = (() => {
+  const cdn = process.env.NEXT_PUBLIC_IMAGES_CDN;
+  if (!cdn) return null;
+  try {
+    return new URL(cdn).hostname;
+  } catch {
+    return null;
+  }
+})();
 
 // CSP enxuta e compatível (sem 'unsafe-eval' em prod)
 const cspDirectives = [
@@ -66,6 +75,18 @@ const nextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
+      {
+        source: "/robots.txt",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=300" },
+        ],
+      },
+      {
+        source: "/sitemap.xml",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=300" },
+        ],
+      },
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       {
         source: "/superadmin/:path*",
@@ -120,9 +141,15 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "http", hostname: "localhost", port: "", pathname: "/**" },
+      { protocol: "http", hostname: "127.0.0.1", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "127.0.0.1", port: "", pathname: "/**" },
       { protocol: "https", hostname: apiHostname, port: "", pathname: "/**" },
       { protocol: "https", hostname: "lh3.googleusercontent.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.supabase.co", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.s3.amazonaws.com", port: "", pathname: "/**" },
       { protocol: "https", hostname: "fut7pro.s3.amazonaws.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "app.fut7pro.com.br", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "www.fut7pro.com.br", port: "", pathname: "/**" },
       // adicione aqui outros hosts se precisar (ex.: CDN própria)
     ],
   },

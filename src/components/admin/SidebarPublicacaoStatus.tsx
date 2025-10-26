@@ -47,7 +47,7 @@ export default function SidebarPublicacaoStatus({ rachaId }: Props) {
       <div className="px-4 mt-3">
         <div className="bg-[#1a1a1a] border border-yellow-500 rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
           <a
-            href="/seu-racha"
+            href="/fut7pro"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 font-bold text-yellow-300"

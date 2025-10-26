@@ -11,13 +11,13 @@ const nextConfig = {
   // Configurações de imagens
   images: {
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "",
-        pathname: "/**",
-      },
+      { protocol: "http", hostname: "localhost", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.supabase.co", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.s3.amazonaws.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "fut7pro.s3.amazonaws.com", port: "", pathname: "/**" },
     ],
+    formats: ["image/webp", "image/avif"],
   },
 
   // Webpack configuration para resolver problemas de Prisma
