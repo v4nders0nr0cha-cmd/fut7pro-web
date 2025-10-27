@@ -9,6 +9,48 @@ Este documento consolida a auditoria do módulo `fut7pro-web` (app.fut7pro.com.b
 - Pipeline E2E (18/10): 15 passed, 4 skipped, 0 failed. Backend ouvindo em http://127.0.0.1:3333, CORS/health OK. Fase 1 (Sorteio) cravada com dados reais.
 - Gaps críticos: uso de Prisma no web em produção (contraria a especificação), rankings individuais/destaques ainda servidos via mocks, cadastros públicos/fluxos sem delegar ao backend, relatórios/exportações incompletos, notificações/engajamento sem integração real.
 
+## Atualizacoes - 26/10/2025
+
+1. **Padronizacao de runtime e gerenciador de pacotes**
+   - `fut7pro-backend/package.json`: `engines.node = 22.x` e `packageManager = pnpm@9.12.3`.
+   - `fut7pro-backend/render.yaml`: adicionada `NODE_VERSION=22` e comandos de build/start com `corepack pnpm` (evita `corepack enable` no Render).
+   - `fut7pro-web/render.yaml`: ajustado para `NODE_VERSION=22` e build/start com `corepack pnpm`.
+   - Motivo: impedir selecao automatica incorreta de Node em Render/GitHub, fixar pnpm previsivel e evitar erro `EROFS` ao habilitar corepack.
+
+2. **GitHub Actions (hardening)**
+   - Workflows `.github/workflows/backend-ci.yml` e `.github/workflows/backend.yml` corrigidos (indentacao, condicionais e passos `run`).
+   - `actions/setup-node@v4` fixa Node 22; `pnpm/action-setup@v4` (v9.12.3) garante o binario.
+   - Passo "Apply database schema" combina `prisma migrate deploy` com fallback controlado `prisma db push --force-reset --accept-data-loss` apenas em falha da migracao.
+   - Pipeline executa lint, typecheck, testes unit/e2e e build; summary sempre presente.
+   - Resultado: `Backend CI` verde apos as correcoes.
+
+3. **Webhook Mercado Pago (E2E)**
+   - Falha original: `this.mp.handleWebhook is not a function` no teste.
+   - Ajuste: mock de `MpService` em `test/app.e2e-spec.ts` passou a expor `handleWebhook`, alinhando com o controller.
+   - Alternativa descartada: condicional no controller para ignorar o webhook durante CI.
+
+4. **Incidente reportado (ambiente local)**
+   - Execucao local de `pnpm test:cov` carregou `.env` com credenciais de producao (Neon) e disparou `prisma db push --force-reset --accept-data-loss` no schema `prod_fut7pro`.
+   - Acoes imediatas sugeridas: auditar/restaurar producao via PITR ou branch de restore, revisar logs de acesso e alinhar comunicacao com stakeholders.
+   - Plano de blindagem em andamento:
+     - Adotar `.env.test` + `dotenv-cli` nos scripts `pretest:cov`, `test:cov` e `test:e2e` para forcar `DATABASE_URL` de teste.
+     - Criar `scripts/guard-nonprod.cjs` (hookado em `pretest` e utilitarios Prisma) que aborta se host ou schema apontar para producao (`neon.tech`, `prod_fut7pro`, `NODE_ENV=production`).
+     - Remover `--force-reset --accept-data-loss` fora do CI e documentar excecoes (apenas runners efemeros com banco descartavel).
+     - Checklist adicional: revisar politicas de acesso ao Neon e habilitar branch protection para variaveis secretas.
+
+5. **Render (validacao)**
+   - Backend: Build `corepack pnpm install --frozen-lockfile && corepack pnpm run build`; PreDeploy `corepack pnpm prisma:migrate:deploy`; Start `corepack pnpm start:prod`; `NODE_VERSION=22` configurada.
+   - Web preview: `NODE_VERSION=22` e comandos equivalentes; confirmar no painel caso `render.yaml` nao esteja em uso IaC.
+
+6. **Fluxo Git/PR**
+   - Backend: PR `feature/production-hardening` revisado, CI verde e merge em `main`; cleanup local (`git gc`, remocao de branches`).
+   - Web: branch `feat/fase1-sorteio-ok` publicada (merge/CI conforme prioridade).
+
+7. **Status atual**
+   - Backend em `main`: Node 22 + pnpm 9.12.3, pipelines e testes passando com mock do MP, `pnpm-lock.yaml` oficial.
+   - Render: configuracoes atualizadas (recomenda-se validacao manual).
+   - Plano de blindagem acima permanece como proximo deliverable critico para evitar novo uso de credenciais de producao durante testes.
+
 ## Andamento por Módulo
 
 - Core
@@ -45,13 +87,13 @@ Este documento consolida a auditoria do módulo `fut7pro-web` (app.fut7pro.com.b
 ## O que falta
 
 - Remover acesso direto ao DB em produção (usar apenas API do backend).
-- Substituir mocks restantes: rankings individuais (artilheiros/assist�ncias/melhores por posi��o), destaques e widgets de dashboard.
+- Substituir mocks restantes: rankings individuais (artilheiros/assistencias/melhores por posicao), destaques e widgets de dashboard.
 - Fluxo de cadastro público de atletas (solicitações/approvals) 100% via backend.
 - Relatórios/exportações (PDF/CSV/XLSX) implementados no backend e consumidos pelo web.
 - Notificações/engajamento via endpoints reais; corrigir hooks para usar backend.
 - Padronização de variáveis de ambiente (`NEXT_PUBLIC_API_URL` → domínio oficial) e revalidate on‑demand em publicações.
 - Auditoria/logs centralizados no backend, expostos ao web somente via API.
-- Endpoint p�blico consolidado de times (logo, varia��o) para eliminar fallbacks locais no ranking.
+- Endpoint publico consolidado de times (logo, variacao) para eliminar fallbacks locais no ranking.
 
 ## Status de Produção
 
