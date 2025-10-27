@@ -1,12 +1,18 @@
 name: SEO / Headers CI
 
 on:
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-    branches: [ main ]
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
 
 jobs:
   seo:

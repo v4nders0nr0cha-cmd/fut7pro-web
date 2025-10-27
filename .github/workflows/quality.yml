@@ -1,16 +1,26 @@
 name: Quality
 
-on: [pull_request]
+on:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
 
 jobs:
   ts_eslint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.0
+          run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - run: npm ci
-      - run: npm run typecheck # ex: "tsc --noEmit"
-      - run: npm run lint # ex: "eslint ."
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: pnpm run typecheck # ex: "tsc --noEmit"
+      - run: pnpm run lint # ex: "eslint ."
 

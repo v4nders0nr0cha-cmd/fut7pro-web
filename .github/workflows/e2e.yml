@@ -1,15 +1,17 @@
 name: E2E
 
 on:
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
 jobs:
   e2e-site-bypass:
     name: E2E (site / publish flow com bypass)

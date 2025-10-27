@@ -2,18 +2,25 @@ name: e2e-campeoes
 
 on:
   workflow_dispatch:
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-    branches: [ main, develop ]
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-branches: [ feat/**, fix/**, chore/** ]
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+      - 'fix/**'
+      - 'chore/**'
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
 
 jobs:
   e2e-campeoes:

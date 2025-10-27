@@ -1,18 +1,18 @@
 name: Frontend CI/CD
 
 on:
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-branches: [ main, develop ]
-
-  paths-ignore:
-    - '**/*.md'
-    - 'docs/**'
-    - 'AUDITORIA_*'
-    branches: [ main, develop ]
+  push:
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  pull_request:
+    branches: [main, develop]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
 
 env:
   NODE_VERSION: '20'
