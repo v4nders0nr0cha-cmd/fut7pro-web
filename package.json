@@ -29,6 +29,7 @@
     "analyze": "ANALYZE=true npm run build",
     "clean": "rm -rf .next out",
     "db:generate": "prisma generate",
+    "prisma:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
