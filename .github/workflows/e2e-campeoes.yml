@@ -2,10 +2,18 @@ name: e2e-campeoes
 
 on:
   workflow_dispatch:
-  pull_request:
+
+  paths-ignore:
+    - '**/*.md'
+    - 'docs/**'
+    - 'AUDITORIA_*'
     branches: [ main, develop ]
-  push:
-    branches: [ feat/**, fix/**, chore/** ]
+
+  paths-ignore:
+    - '**/*.md'
+    - 'docs/**'
+    - 'AUDITORIA_*'
+branches: [ feat/**, fix/**, chore/** ]
 
 jobs:
   e2e-campeoes:
@@ -81,3 +89,4 @@ jobs:
         with:
           name: playwright-traces
           path: playwright-report
+

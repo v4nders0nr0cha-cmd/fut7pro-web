@@ -1,9 +1,17 @@
 name: Frontend CI/CD
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
+
+  paths-ignore:
+    - '**/*.md'
+    - 'docs/**'
+    - 'AUDITORIA_*'
+branches: [ main, develop ]
+
+  paths-ignore:
+    - '**/*.md'
+    - 'docs/**'
+    - 'AUDITORIA_*'
     branches: [ main, develop ]
 
 env:
@@ -256,6 +264,7 @@ jobs:
           text: '✅ Frontend CI/CD passed for ${{ github.repository }}#${{ github.run_number }}'
           channel: '#devops'
           username: 'GitHub Actions'
+
 
 
 
