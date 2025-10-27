@@ -180,3 +180,6 @@ test-results/
 .next/
 out/
 .vercel/
+
+# Vercel
+.vercel/output
