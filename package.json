@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "dev": "next",
+    "prebuild": "pnpm run prisma:generate",
     "build": "next build",
     "start": "next start",
     "type-check": "tsc --noEmit",
@@ -119,5 +120,6 @@
     "*.{json,css,md}": [
       "prettier --write"
     ]
-  }
+  },
+  "packageManager": "pnpm@10.19.0"
 }
