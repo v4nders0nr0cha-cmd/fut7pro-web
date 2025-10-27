@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: fut7pro-web-preview
+    env: node
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: |
+      corepack pnpm install --frozen-lockfile
+      corepack pnpm run build
+    startCommand: |
+      corepack pnpm start -p 3000 -H 0.0.0.0
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_APP_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: API_URL
+        sync: false
+      - key: BACKEND_URL
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      - key: DISABLE_WEB_DIRECT_DB
+        value: "true"
+      - key: AUTH_LOGIN_PATH
+        value: /auth/login
+      - key: AUTH_REFRESH_PATH
+        value: /auth/refresh
+      - key: AUTH_ME_PATH
+        value: /auth/me
+      - key: JOGOS_DIA_PATH
+        value: /partidas/jogos-do-dia
+      - key: NEXT_PUBLIC_SPONSOR_DOMAIN_MODE
+        value: strict
+      - key: NEXT_PUBLIC_ALLOWED_SPONSOR_DOMAINS
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE
+        sync: false
+      - key: SUPABASE_BUCKET_SPONSORS
+        value: sponsors
+      - key: SUPABASE_BUCKET_PUBLIC
+        value: public-media
+      - key: SUPABASE_BUCKET_PRIVATE
+        value: private-media
+      - key: SUPABASE_BUCKET_TEMP
+        value: temp-uploads
+    healthCheckPath: /

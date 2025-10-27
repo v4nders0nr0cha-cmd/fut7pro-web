@@ -1,7 +1,11 @@
 name: Web PR3 CI
 
 on:
-  pull_request:
+
+  paths-ignore:
+    - '**/*.md'
+    - 'docs/**'
+    - 'AUDITORIA_*'
     branches: [ main, develop ]
     paths:
       - 'src/**'
@@ -116,3 +120,4 @@ jobs:
           else
             echo "❌ Build failed (runtime errors - see P1 issues)"
           fi
+

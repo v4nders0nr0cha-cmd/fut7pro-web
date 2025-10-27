@@ -1,17 +1,68 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
-import type { ReactNode } from "react";
-import { usuarioLogadoMock } from "@/components/lists/mockUsuarioLogado"; // Substitua pelo backend depois
-import { StateData } from "@/types/interfaces";
+import { createContext, useContext, useMemo, useCallback, type ReactNode } from "react";
+import useSWR from "swr";
 
-// Interface para o contexto do perfil
-interface PerfilContextType {
-  usuario: typeof usuarioLogadoMock;
-  atualizarPerfil: (dados: Partial<typeof usuarioLogadoMock>) => void;
-}
+import { useTenant } from "@/hooks/useTenant";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
+import type { Atleta } from "@/types/atletas";
+
+type PerfilContextType = {
+  usuario: Atleta;
+  isLoading: boolean;
+  error: string | null;
+  atualizarPerfil: (dados: Partial<Atleta>) => void;
+  refresh: () => Promise<Atleta | undefined>;
+};
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
+
+const fetcher = async (url: string) => {
+  const response = await fetch(url, { cache: "no-store" });
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    const message =
+      payload && typeof payload.error === "string" ? payload.error : "Erro ao carregar perfil";
+    throw new Error(message);
+  }
+
+  return payload;
+};
+
+function createFallbackAtleta(): Atleta {
+  return {
+    id: "",
+    nome: "Atleta Fut7",
+    apelido: null,
+    slug: "",
+    foto: "/images/jogadores/jogador_padrao_01.jpg",
+    posicao: "Atacante",
+    status: "Ativo",
+    mensalista: false,
+    ultimaPartida: undefined,
+    totalJogos: 0,
+    estatisticas: {
+      historico: {
+        jogos: 0,
+        gols: 0,
+        assistencias: 0,
+        campeaoDia: 0,
+        mediaVitorias: 0,
+        pontuacao: 0,
+      },
+      anual: {},
+    },
+    historico: [],
+    conquistas: {
+      titulosGrandesTorneios: [],
+      titulosAnuais: [],
+      titulosQuadrimestrais: [],
+    },
+    icones: [],
+  };
+}
 
 export function usePerfil() {
   const context = useContext(PerfilContext);
@@ -22,19 +73,52 @@ export function usePerfil() {
 }
 
 export function PerfilProvider({ children }: { children: ReactNode }) {
-  // No futuro: buscar de API pelo usuário autenticado
-  const [usuario, setUsuario] = useState(usuarioLogadoMock);
+  const { tenant } = useTenant();
+  const { rachaId } = useRacha();
 
-  function atualizarPerfil(dados: Partial<typeof usuarioLogadoMock>) {
-    setUsuario((prev) => ({
-      ...prev,
-      ...dados,
-      // Atualiza também campos aninhados, se quiser
-    }));
-    // Aqui já pode salvar em localStorage/sessionStorage para persistir
-  }
+  const slug = tenant?.slug ?? rachaConfig.slug;
+  const requestKey = slug
+    ? `/api/atletas/me?slug=${slug}`
+    : rachaId
+      ? `/api/atletas/me?rachaId=${rachaId}`
+      : null;
 
-  return (
-    <PerfilContext.Provider value={{ usuario, atualizarPerfil }}>{children}</PerfilContext.Provider>
+  const { data, error, isLoading, mutate } = useSWR(requestKey, fetcher);
+
+  const usuario = useMemo(() => {
+    if (data && data.atleta) {
+      return data.atleta as Atleta;
+    }
+    return createFallbackAtleta();
+  }, [data]);
+
+  const atualizarPerfil = useCallback(
+    (dados: Partial<Atleta>) => {
+      mutate(
+        (prev: any) => {
+          if (!prev || !prev.atleta) {
+            return { atleta: { ...usuario, ...dados } };
+          }
+          return { ...prev, atleta: { ...prev.atleta, ...dados } };
+        },
+        { revalidate: false }
+      );
+    },
+    [mutate, usuario]
   );
+
+  const refresh = useCallback(() => mutate(), [mutate]);
+
+  const value = useMemo(
+    () => ({
+      usuario,
+      isLoading,
+      error: error instanceof Error ? error.message : null,
+      atualizarPerfil,
+      refresh,
+    }),
+    [usuario, isLoading, error, atualizarPerfil, refresh]
+  );
+
+  return <PerfilContext.Provider value={value}>{children}</PerfilContext.Provider>;
 }

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import type { Lancamento } from "../mocks/mockLancamentosFinanceiro";
 
@@ -198,7 +199,7 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
             className="w-full text-xs bg-neutral-800 rounded"
           />
           {preview && (
-            <img
+            <Image
               src={preview}
               alt="Comprovante preview"
               className="w-16 h-16 rounded mt-1 border border-neutral-700 object-contain"

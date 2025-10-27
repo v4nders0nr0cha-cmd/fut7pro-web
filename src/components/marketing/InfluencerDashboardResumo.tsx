@@ -1,6 +1,6 @@
 // src/components/marketing/InfluencerDashboardResumo.tsx
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 
 export default async function InfluencerDashboardResumo() {
   // KPI: Total de usos de cupons

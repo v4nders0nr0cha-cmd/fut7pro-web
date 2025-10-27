@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { Notification } from "@/types/notification";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
+import type { Notification } from "@/types/notificacao";
 import { v4 as uuidv4 } from "uuid";
 
 // Simulação: banco em memória. Troque por integração real (Prisma, etc)
@@ -7,7 +10,12 @@ const notifications: Notification[] = [];
 
 // GET: Lista todas as notificações do rachaSlug informado
 // POST: Cria uma nova notificação (qualquer origem do sistema)
-export default function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res
+      .status(501)
+      .json({ error: "web_db_disabled: endpoint admin dev-only em produção" });
+  }
   if (req.method === "GET") {
     const { rachaSlug } = req.query;
     if (!rachaSlug || typeof rachaSlug !== "string") {
@@ -46,3 +54,4 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader("Allow", ["GET", "POST"]);
   return res.status(405).end(`Method ${req.method} Not Allowed`);
 }
+

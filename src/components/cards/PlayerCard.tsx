@@ -5,9 +5,9 @@ import Link from "next/link";
 import { rachaConfig } from "@/config/racha.config";
 
 interface PlayerCardProps {
-  title: string;
+  title?: string;
   name: string;
-  value?: string; // Opcional (gols, assistências etc)
+  value?: string; // Opcional (gols, assistencias etc)
   image: string;
   href?: string; // Opcional
   showTrophy?: boolean; // Opcional
@@ -23,19 +23,21 @@ export default function PlayerCard({
 }: PlayerCardProps) {
   // fallback para imagem padrão se não vier nenhuma
   const imagePath = image && image.length > 0 ? image : "/images/jogadores/default.png";
+  const normalizedTitle = (title || "").toLowerCase();
+  const displayTitle = title || "Jogador destaque";
 
   // Tooltip institucional
   const getTooltip = () => {
-    if (title.toLowerCase().includes("atacante")) return "Melhor atacante do time campeão";
-    if (title.toLowerCase().includes("meia")) return "Melhor meia do time campeão";
-    if (title.toLowerCase().includes("zagueiro")) return "Zagueiro destaque do time campeão";
-    if (title.toLowerCase().includes("goleiro")) return "Goleiro do time campeão";
+    if (normalizedTitle.includes("atacante")) return "Melhor atacante do time campeão";
+    if (normalizedTitle.includes("meia")) return "Melhor meia do time campeão";
+    if (normalizedTitle.includes("zagueiro")) return "Zagueiro destaque do time campeão";
+    if (normalizedTitle.includes("goleiro")) return "Goleiro do time campeão";
     return name;
   };
 
   // ALT institucional SEO
   const getAltText = () => {
-    const cargo = title.replace(" do Dia", "");
+    const cargo = title ? title.replace(" do Dia", "") : "Destaque";
     return `${cargo} do dia - ${name} | ${rachaConfig.nome}`;
   };
 
@@ -57,13 +59,13 @@ export default function PlayerCard({
           />
         </div>
         <div className="flex flex-col justify-center w-full">
-          <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">{title}</p>
+          <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">{displayTitle}</p>
           <p className="text-base font-semibold text-white leading-tight break-words">{name}</p>
           {/* Só mostra o value se existir */}
           {value && <p className="text-sm text-yellow-400 font-medium">{value}</p>}
         </div>
       </div>
-      {showTrophy && <div className="text-3xl">🏆</div>}
+      {showTrophy && <div className="text-3xl">{"\u{1F3C6}"}</div>}
     </div>
   );
 

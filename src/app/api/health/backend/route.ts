@@ -1,8 +1,9 @@
 // Healthcheck do backend para validar conectividade
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
+  const base = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || "http://127.0.0.1:3333").replace(/\/+$/, "");
   if (!base) {
     return new Response(
       JSON.stringify({

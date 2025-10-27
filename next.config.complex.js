@@ -1,3 +1,12 @@
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.fut7pro.com.br").replace(/\/+$/, "");
+const apiOrigin = (() => {
+  try {
+    return new URL(API_URL).origin;
+  } catch {
+    return "https://api.fut7pro.com.br";
+  }
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configurações de segurança
@@ -34,8 +43,28 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://www.google-analytics.com https://api.fut7pro.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';",
+              `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://www.google-analytics.com ${apiOrigin}; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self';`,
           },
+        ],
+      },
+      {
+        source: "/admin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
+        source: "/superadmin/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
+        source: "/robots.txt",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=300" },
+        ],
+      },
+      {
+        source: "/sitemap.xml",
+        headers: [
+          { key: "Cache-Control", value: "public, s-maxage=600, stale-while-revalidate=300" },
         ],
       },
       {
@@ -70,12 +99,11 @@ const nextConfig = {
   // Configurações de imagens
   images: {
     remotePatterns: [
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "",
-        pathname: "/**",
-      },
+      { protocol: "http", hostname: "localhost", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "lh3.googleusercontent.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.supabase.co", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "*.s3.amazonaws.com", port: "", pathname: "/**" },
+      { protocol: "https", hostname: "fut7pro.s3.amazonaws.com", port: "", pathname: "/**" },
     ],
     formats: ["image/webp", "image/avif"],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

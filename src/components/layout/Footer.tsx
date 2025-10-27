@@ -2,27 +2,58 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
+import { usePathname } from "next/navigation";
 
-const patrocinadores = [
-  { nome: "Patrocínio 1", logo: "/images/patrocinadores/patrocinador_01.png" },
-  { nome: "Patrocínio 2", logo: "/images/patrocinadores/patrocinador_02.png" },
-  { nome: "Patrocínio 3", logo: "/images/patrocinadores/patrocinador_03.png" },
-  { nome: "Patrocínio 4", logo: "/images/patrocinadores/patrocinador_04.png" },
-  { nome: "Patrocínio 5", logo: "/images/patrocinadores/patrocinador_05.png" },
-  { nome: "Patrocínio 6", logo: "/images/patrocinadores/patrocinador_06.png" },
-  { nome: "Patrocínio 7", logo: "/images/patrocinadores/patrocinador_07.png" },
-  { nome: "Patrocínio 8", logo: "/images/patrocinadores/patrocinador_08.png" },
-  { nome: "Patrocínio 9", logo: "/images/patrocinadores/patrocinador_09.png" },
-  { nome: "Patrocínio 10", logo: "/images/patrocinadores/patrocinador_10.png" },
-];
+type SponsorPublic = {
+  id: string;
+  name: string;
+  logoUrl: string;
+  link?: string | null;
+  tier?: "BASIC" | "PLUS" | "PRO";
+  showOnFooter?: boolean;
+};
 
 export default function Footer() {
   const tema = useTema();
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const pathname = usePathname();
+  const slug = (pathname || "/").split("/").filter(Boolean)[0] || "fut7pro";
+  const [patros, setPatros] = useState<SponsorPublic[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let cancelled = false;
+
+    const loadSponsors = async () => {
+      try {
+        const res = await fetch(`/api/public/sponsors?slug=${encodeURIComponent(slug)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`status_${res.status}`);
+        const payload = (await res.json().catch(() => ({}))) as { data?: SponsorPublic[] };
+        const arr = Array.isArray(payload.data) ? payload.data : [];
+        if (cancelled) return;
+        const visible = arr.filter((sponsor) =>
+          sponsor.showOnFooter || sponsor.tier === "PLUS" || sponsor.tier === "PRO"
+        );
+        setPatros(visible.length ? visible : arr);
+      } catch (error) {
+        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
+        setPatros([]);
+      }
+    };
+
+    loadSponsors();
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [slug]);
 
   useEffect(() => {
     const scroll = () => {
@@ -74,15 +105,12 @@ export default function Footer() {
           >
             &#9654;
           </button>
-          <div
-            ref={carouselRef}
-            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
-          >
-            {[...patrocinadores, ...patrocinadores].map((patro, index) => (
-              <div key={index} className="min-w-[180px] flex justify-center items-center">
+          <div ref={carouselRef} className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide">
+            {[...patros, ...patros].map((p, idx) => (
+              <div key={`${p.id}-${idx}`} className="min-w-[180px] flex justify-center items-center">
                 <Image
-                  src={patro.logo}
-                  alt={`Logo do patrocinador ${patro.nome} - sistema de racha ${rachaConfig.nome}`}
+                  src={p.logoUrl}
+                  alt={`Logo do patrocinador ${p.name} - sistema de racha ${rachaConfig.nome}`}
                   width={160}
                   height={96}
                   className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
@@ -94,7 +122,7 @@ export default function Footer() {
 
         {/* Grid inferior */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] lg:grid-cols-3 gap-10 items-start">
-          {/* Coluna 1 – Campo + Mapa */}
+          {/* Coluna 1 - Campo + Mapa */}
           <div>
             <p className="text-yellow-400 font-bold mb-2">NOSSO CAMPO OFICIAL</p>
             <p className="text-gray-300 mb-3">{tema.endereco || "Endereço não informado"}</p>
@@ -109,7 +137,7 @@ export default function Footer() {
             ></iframe>
           </div>
 
-          {/* Coluna 2 – Siga-nos centralizado */}
+          {/* Coluna 2 - Siga-nos centralizado */}
           <div className="flex flex-col items-center justify-start gap-2">
             <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
             <div className="flex gap-3">
@@ -131,7 +159,7 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Coluna 3 – Links rápidos atualizados com todos os 7 tópicos */}
+          {/* Coluna 3 - Links */}
           <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
             <Link href="/sistema-de-ranking" className="hover:underline">
               Sistema de Ranking
@@ -159,11 +187,7 @@ export default function Footer() {
 
         {/* Logo e frase final */}
         <div className="mt-10 text-center">
-          <Link
-            href={rachaConfig.urls.site}
-            target="_blank"
-            aria-label={`Site ${rachaConfig.nome}`}
-          >
+          <Link href={rachaConfig.urls.site} target="_blank" aria-label={`Site ${rachaConfig.nome}`}>
             <Image
               src={rachaConfig.logo}
               alt={`Logo ${rachaConfig.nome} sistema de futebol 7 entre amigos`}

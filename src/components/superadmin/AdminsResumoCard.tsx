@@ -1,36 +1,44 @@
-// src/components/superadmin/AdminsResumoCard.tsx
 "use client";
 import type { FC } from "react";
-import type { AdminRacha } from "./mockAdmins";
+import type { SuperadminUsuariosSnapshot } from "@/types/superadmin";
 
 interface Props {
-  admins: AdminRacha[];
+  snapshot: SuperadminUsuariosSnapshot;
 }
 
-const AdminsResumoCard: FC<Props> = ({ admins }) => {
-  const total = admins.length;
-  const ativos = admins.filter((a) => a.status === "ativo").length;
-  const trial = admins.filter((a) => a.status === "trial").length;
-  const bloqueados = admins.filter((a) => a.status === "bloqueado").length;
+const AdminsResumoCard: FC<Props> = ({ snapshot }) => {
+  const total = snapshot.total;
+  const ativos = snapshot.ativos;
+  const superadmins = snapshot.porRole.SUPERADMIN ?? 0;
+  const presidentes = snapshot.porRole.PRESIDENTE ?? 0;
+
   return (
     <div className="flex flex-wrap gap-4 mb-6">
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
-        <span className="text-xs text-zinc-400">Total de Rachas</span>
-        <div className="text-xl font-bold text-yellow-400">{total}</div>
-      </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
-        <span className="text-xs text-zinc-400">Ativos</span>
-        <div className="text-xl font-bold text-green-400">{ativos}</div>
-      </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
-        <span className="text-xs text-zinc-400">Trial</span>
-        <div className="text-xl font-bold text-blue-400">{trial}</div>
-      </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
-        <span className="text-xs text-zinc-400">Bloqueados</span>
-        <div className="text-xl font-bold text-red-400">{bloqueados}</div>
-      </div>
+      <ResumoCard label="Usuários cadastrados" value={total} highlight="text-yellow-400" />
+      <ResumoCard label="Usuários ativos" value={ativos} highlight="text-green-400" />
+      <ResumoCard label="SuperAdmins" value={superadmins} highlight="text-blue-400" />
+      <ResumoCard label="Presidentes" value={presidentes} highlight="text-emerald-400" />
     </div>
   );
 };
+
+interface ResumoProps {
+  label: string;
+  value: number;
+  highlight: string;
+}
+
+function ResumoCard({ label, value, highlight }: ResumoProps) {
+  const valueClassName = highlight
+    ? `text-xl font-bold ${highlight}`
+    : "text-xl font-bold text-white";
+
+  return (
+    <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[160px]">
+      <span className="text-xs text-zinc-400">{label}</span>
+      <div className={valueClassName}>{value}</div>
+    </div>
+  );
+}
+
 export default AdminsResumoCard;

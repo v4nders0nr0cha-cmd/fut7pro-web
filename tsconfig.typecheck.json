@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/app/(public)/partidas/times-do-dia/page.tsx",
+    "src/app/(admin)/admin/partidas/times-do-dia/page.tsx",
+    "src/app/(admin)/admin/partidas/sorteio-inteligente/page.tsx",
+    "src/app/api/partidas/route.ts",
+    "src/components/TimesDoDiaClient.tsx",
+    "src/components/cards/CardTimeDoDia.tsx",
+    "src/components/lists/ConfrontosDoDia.tsx",
+    "src/components/sorteio/BotaoPublicarTimes.tsx",
+    "src/components/sorteio/SorteioInteligenteAdmin.tsx",
+    "src/config/teamLogoMap.ts",
+    "src/hooks/usePartidas.ts",
+    "src/pages/api/admin/sorteio/publicar.ts",
+    "src/server/prisma.ts",
+    "src/types/partida.ts",
+    "next-env.d.ts",
+    "src/components/sorteio/ParticipantesRacha.tsx",
+    "src/components/sorteio/mockParticipantes.ts",
+    "src/lib/api.ts",
+    "src/types/**/*.ts"
+  ]
+}

@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useState, useMemo } from "react";
 
 // Tipos
@@ -170,9 +171,11 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
         const zagueiro = options.find((j: Jogador) => j.nome === selected);
         return (
           <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-            <img
+            <Image
               src={fotoByIndex(2)}
               alt={zagueiro?.nome ?? ""}
+              width={80}
+              height={80}
               className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
             />
             <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">
@@ -227,9 +230,11 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     return (
       <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
         {foto ? (
-          <img
+          <Image
             src={foto}
             alt={nome || titulo}
+            width={80}
+            height={80}
             className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
           />
         ) : (

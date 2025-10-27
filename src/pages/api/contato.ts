@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { MensagemContato } from "@/types/mensagem";
-import type { Notification } from "@/types/notification";
+import type { Notification } from "@/types/notificacao";
 import { v4 as uuidv4 } from "uuid";
 
 // Simulação de DB em memória (substitua por integração real)
@@ -8,7 +8,14 @@ const mensagens: MensagemContato[] = [];
 const notifications: Notification[] = [];
 
 // POST: recebe mensagem do formulário de contato, salva e gera notificação para admin do racha
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: pages/api desabilitada em producao" });
+  }
   if (req.method === "POST") {
     const { rachaSlug, nome, email, telefone, assunto, mensagem } = req.body;
     if (!rachaSlug || !nome || !email || !assunto || !mensagem) {

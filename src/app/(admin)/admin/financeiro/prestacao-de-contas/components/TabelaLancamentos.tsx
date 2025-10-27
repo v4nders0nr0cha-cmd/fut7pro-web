@@ -1,4 +1,5 @@
 import type { Lancamento } from "../mocks/mockLancamentosFinanceiro";
+import Image from "next/image";
 import { useState } from "react";
 
 type Props = {
@@ -51,7 +52,7 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
               </td>
               <td className="px-2 py-1">
                 {l.comprovante ? (
-                  <img
+                  <Image
                     src={l.comprovante}
                     alt="Comprovante financeiro do racha Fut7Pro"
                     className="w-8 h-8 rounded shadow object-contain"

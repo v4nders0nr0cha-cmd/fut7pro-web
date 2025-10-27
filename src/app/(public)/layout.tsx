@@ -7,52 +7,62 @@ import JsonLd from "@/components/seo/JsonLd";
 
 const inter = Inter({ subsets: ["latin"] });
 
+const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
+  /\/+$/,
+  ""
+);
+const SITE_NAME = process.env.SITE_NAME || "Fut7Pro";
+const DEFAULT_TITLE = `${SITE_NAME} - Sistema Completo para Futebol 7 entre Amigos`;
+const DEFAULT_DESCRIPTION =
+  "Fut7Pro - O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatisticas e muito mais!";
+const DEFAULT_KEYWORDS = [
+  "fut7",
+  "racha",
+  "futebol 7",
+  "sistema de torneio",
+  "plataforma fut7",
+  "estatisticas futebol amador",
+  "gerenciamento de times",
+  "futebol entre amigos",
+  "torneio de futebol",
+  "classificacao de times",
+];
+const OG_IMAGE = new URL("/og-image.jpg", APP_URL).toString();
+const GOOGLE_SITE_VERIFICATION =
+  process.env.GOOGLE_SITE_VERIFICATION || "your-google-verification-code";
+
 export const metadata = {
-  title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
-  description:
-    "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
-  keywords: [
-    "fut7",
-    "racha",
-    "futebol 7",
-    "sistema de torneio",
-    "plataforma fut7",
-    "estatísticas futebol amador",
-    "gerenciamento de times",
-    "futebol entre amigos",
-    "torneio de futebol",
-    "classificação de times",
-  ],
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
+  keywords: DEFAULT_KEYWORDS,
   robots: { index: true, follow: true },
   alternates: {
-    canonical: "https://app.fut7pro.com.br",
+    canonical: APP_URL,
   },
   openGraph: {
     type: "website",
     locale: "pt_BR",
-    url: "https://app.fut7pro.com.br",
-    siteName: "Fut7Pro",
-    title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
-    description:
-      "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
+    url: APP_URL,
+    siteName: SITE_NAME,
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
     images: [
       {
-        url: "https://app.fut7pro.com.br/og-image.jpg",
+        url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "Fut7Pro - Sistema para Futebol 7 entre Amigos",
+        alt: `${SITE_NAME} - Sistema para Futebol 7 entre Amigos`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
-    description:
-      "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
-    images: ["https://app.fut7pro.com.br/og-image.jpg"],
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   verification: {
-    google: "your-google-verification-code", // Substitua pelo código real do Search Console
+    google: GOOGLE_SITE_VERIFICATION,
   },
 };
 
@@ -64,7 +74,7 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <LayoutClient>{children}</LayoutClient>
         </Providers>
       </ThemeProvider>
-      <JsonLd siteName="Fut7Pro" siteUrl="https://app.fut7pro.com.br" logoUrl="/og-image.jpg" />
+      <JsonLd siteName={SITE_NAME} siteUrl={APP_URL} logoUrl="/og-image.jpg" />
     </div>
   );
 }

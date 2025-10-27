@@ -1,12 +1,13 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
-import { FaUserPlus, FaSearch, FaEdit, FaTrash, FaExclamationTriangle } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaUserPlus, FaSearch, FaEdit, FaTrash, FaExclamationTriangle, FaInfoCircle, FaCheck, FaTimes } from "react-icons/fa";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
 import { rachaConfig } from "@/config/racha.config";
+import { useSolicitacoes } from "@/hooks/useSolicitacoes";
 
 // --- TIPAGEM ---
 interface Jogador {
@@ -89,9 +90,36 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 export default function Page() {
   const rachaId = rachaConfig.slug;
   const { jogadores, addJogador, updateJogador, deleteJogador } = useJogadores(rachaId);
+  const { solicitacoes, mutate: reloadSolic } = useSolicitacoes("PENDENTE");
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
+  const [autoApprove, setAutoApprove] = useState<boolean>(false);
+  const [showAutoModal, setShowAutoModal] = useState(false);
+
+  useEffect(() => {
+    // Carrega flag autoAprovarAtletas do racha
+    async function loadFlag() {
+      try {
+        const res = await fetch(`/api/admin/rachas/${rachaConfig.slug}`);
+        const data = await res.json();
+        if (res.ok && typeof data.autoAprovarAtletas === "boolean") setAutoApprove(Boolean(data.autoAprovarAtletas));
+      } catch {}
+    }
+    loadFlag();
+  }, []);
+
+  async function toggleAutoApprove() {
+    const next = !autoApprove;
+    setAutoApprove(next);
+    try {
+      await fetch(`/api/admin/rachas/${rachaConfig.slug}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ autoAprovarAtletas: next }),
+      });
+    } catch {}
+  }
 
   const jogadoresFiltrados = jogadores.filter(
     (j) =>
@@ -120,6 +148,80 @@ export default function Page() {
       </Head>
 
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-2 sm:px-6 max-w-5xl mx-auto">
+        {/* SOLICITAÇÕES DE ENTRADA */}
+        <div className="bg-[#1a1a1a] border border-[#2b2b2b] rounded-lg p-4 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-cyan-400 font-bold">Solicitações para fazer parte do racha</span>
+              <button
+                type="button"
+                onClick={() => setShowAutoModal(true)}
+                className="text-yellow-400 hover:text-yellow-300"
+                aria-label="Ajuda sobre aprovação automática"
+              >
+                <FaInfoCircle />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-300">Aprovação automática</span>
+              <button
+                onClick={toggleAutoApprove}
+                className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                  autoApprove
+                    ? "bg-green-600/20 border-green-500 text-green-300"
+                    : "bg-red-600/20 border-red-500 text-red-300"
+                }`}
+              >
+                {autoApprove ? "ATIVADA" : "DESATIVADA"}
+              </button>
+            </div>
+          </div>
+          {solicitacoes.length === 0 ? (
+            <div className="text-gray-400 text-sm">Nenhuma solicitação pendente no momento.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {solicitacoes.map((s) => (
+                <div key={s.id} className="bg-[#23272f] border border-cyan-800 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <Image
+                      src={s.fotoUrl || "/images/Perfil-sem-Foto-Fut7.png"}
+                      alt={s.nome}
+                      width={44}
+                      height={44}
+                      className="rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="text-white font-bold">{s.nome}</div>
+                      <div className="text-gray-300 text-xs">{s.apelido || ""} • {s.posicao}</div>
+                      <div className="text-gray-400 text-xs">{s.email}</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2 justify-end">
+                    <button
+                      className="bg-green-700 hover:bg-green-800 text-white text-xs px-3 py-1 rounded flex items-center gap-1"
+                      onClick={async () => {
+                        await fetch(`/api/admin/solicitacoes/${s.id}/approve`, { method: "PUT" });
+                        reloadSolic();
+                      }}
+                    >
+                      <FaCheck /> Aceitar
+                    </button>
+                    <button
+                      className="bg-red-700 hover:bg-red-800 text-white text-xs px-3 py-1 rounded flex items-center gap-1"
+                      onClick={async () => {
+                        await fetch(`/api/admin/solicitacoes/${s.id}/reject`, { method: "PUT" });
+                        reloadSolic();
+                      }}
+                    >
+                      <FaTimes /> Rejeitar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* DESCRIÇÃO ADMIN */}
         <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4 mb-6 text-sm text-gray-300">
           <p className="mb-2">
@@ -131,7 +233,8 @@ export default function Page() {
             garantindo dados corretos e integração automática com os rankings.
           </p>
           <p className="mb-2">
-            Utilize o botão <strong>"Cadastrar Jogador"</strong> apenas em casos específicos, como:
+            Utilize o botão <strong>&quot;Cadastrar Jogador&quot;</strong> apenas em casos
+            específicos, como:
           </p>
           <ul className="list-disc ml-5 mt-2">
             <li>Jogadores com dificuldade de acesso à internet;</li>
@@ -234,6 +337,32 @@ export default function Page() {
           setShowModalExcluir(false);
         }}
       />
+
+      {/* Modal explicativo da aprovação automática */}
+      {showAutoModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-[#1a1a1a] border border-yellow-700 rounded-xl max-w-xl w-full p-6 text-gray-200">
+            <h2 className="text-yellow-400 font-bold text-lg mb-3">Aprovação automática de atletas</h2>
+            <p className="text-sm leading-relaxed">
+              Ao ativar esta opção, toda nova solicitação de cadastro no site do seu racha será
+              aprovada automaticamente, sem revisão do administrador. Recomendamos manter esta
+              opção desativada na maior parte do tempo. Use apenas em situações específicas, por
+              exemplo, no primeiro dia em que você divulgar o site no grupo de WhatsApp para
+              agilizar a entrada dos atletas que você já conhece. Em seguida, desligue a opção
+              para evitar cadastros de visitantes e manter controle total sobre quem realmente
+              faz parte do racha.
+            </p>
+            <div className="flex justify-end mt-4">
+              <button
+                className="px-4 py-1.5 rounded bg-yellow-500 text-black font-bold hover:bg-yellow-400"
+                onClick={() => setShowAutoModal(false)}
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

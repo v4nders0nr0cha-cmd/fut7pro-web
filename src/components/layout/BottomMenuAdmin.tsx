@@ -6,7 +6,7 @@ import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession } from "next-auth/react";
 import type { IconType } from "react-icons";
 
-type BadgeKey = "dashboard" | "notificacoes" | "mensagens" | "solicitacoes" | "perfil";
+type BadgeKey = "dashboard" | "notificacoes" | "mensagens" | "solicitacoes";
 
 interface MenuItem {
   label: string;
@@ -22,10 +22,9 @@ const menu: MenuItem[] = [
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/solicitacoes",
+    href: "/admin/jogadores/listar-cadastrar",
     badgeKey: "solicitacoes",
   },
-  { label: "Perfil", icon: FaUser, href: "/admin/perfil", badgeKey: "perfil" },
 ];
 
 export default function BottomMenuAdmin() {

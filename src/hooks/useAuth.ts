@@ -2,8 +2,9 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
-import { Role } from "@prisma/client";
+import { useCallback, useMemo } from "react";
+import type { Role } from "@prisma/client";
+import { safeCallbackUrl } from "@/lib/url";
 
 export interface AuthUser {
   id: string;
@@ -11,23 +12,37 @@ export interface AuthUser {
   email?: string | null;
   image?: string | null;
   role: Role;
-  tenantId: string;
-  accessToken: string;
-  refreshToken: string;
+  tenantId?: string | null;
+  tenantSlug?: string | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
 }
+
+type LoginOptions = {
+  callbackUrl?: string;
+  autoRedirect?: boolean;
+};
 
 export interface UseAuthReturn {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
-  loginWithGoogle: () => Promise<void>;
+  login: (email: string, password: string, options?: LoginOptions) => Promise<boolean>;
+  loginWithGoogle: (callbackUrl?: string) => Promise<void>;
   logout: () => Promise<void>;
   hasRole: (role: Role | Role[]) => boolean;
   hasPermission: (permission: string) => boolean;
-  requireAuth: (redirectTo?: string) => void;
+  requireAuth: (callbackUrl?: string, loginPath?: string) => void;
   requireRole: (role: Role | Role[], redirectTo?: string) => void;
   requirePermission: (permission: string, redirectTo?: string) => void;
+}
+
+function buildLoginTarget(loginPath: string, callbackUrl?: string): string {
+  if (!callbackUrl) return loginPath;
+  const safePath = safeCallbackUrl(callbackUrl, loginPath);
+  if (safePath === loginPath) return loginPath;
+  const separator = loginPath.includes("?") ? "&" : "?";
+  return `${loginPath}${separator}callbackUrl=${encodeURIComponent(safePath)}`;
 }
 
 // Mapeamento de roles para permissões
@@ -117,41 +132,79 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
   MARKETING: ["ANALYTICS_READ", "REPORTS_GENERATE", "CONFIG_READ"],
 };
 
+type SessionUser =
+  | (AuthUser & {
+      rachaId?: string | null;
+      accessToken?: string | null;
+      refreshToken?: string | null;
+    })
+  | null;
+
 export function useAuth(): UseAuthReturn {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const user = session?.user as AuthUser | null;
+  const rawUser = session?.user as SessionUser;
+
+  const user = useMemo<AuthUser | null>(() => {
+    if (!rawUser) return null;
+    const tenantId = rawUser.tenantId ?? rawUser.rachaId ?? null;
+    const accessToken = rawUser.accessToken ?? (session as any)?.accessToken ?? null;
+    const refreshToken = rawUser.refreshToken ?? (session as any)?.refreshToken ?? null;
+
+    return {
+      id: rawUser.id,
+      name: rawUser.name ?? null,
+      email: rawUser.email ?? null,
+      image: rawUser.image ?? null,
+      role: rawUser.role,
+      tenantId,
+      tenantSlug: rawUser.tenantSlug ?? null,
+      accessToken,
+      refreshToken,
+    };
+  }, [rawUser, session]);
+
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated" && !!user;
 
-  const login = useCallback(async (email: string, password: string): Promise<boolean> => {
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
+  const login = useCallback(
+    async (email: string, password: string, options: LoginOptions = {}): Promise<boolean> => {
+      try {
+        const normalizedCallback = safeCallbackUrl(options.callbackUrl, "/admin");
+        const result = await signIn("credentials", {
+          email,
+          password,
+          redirect: false,
+          callbackUrl: normalizedCallback,
+        });
 
-      if (result?.error) {
+        if (!result?.ok || result.error) {
+          if (process.env.NODE_ENV === "development") {
+            console.log("Erro no login:", result?.error);
+          }
+          return false;
+        }
+
+        if (options.autoRedirect !== false && result.url) {
+          router.push(result.url);
+        }
+
+        return true;
+      } catch (error) {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro no login:", result.error);
+          console.log("Erro no login:", error);
         }
         return false;
       }
+    },
+    [router]
+  );
 
-      return true;
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro no login:", error);
-      }
-      return false;
-    }
-  }, []);
-
-  const loginWithGoogle = useCallback(async (): Promise<void> => {
+  const loginWithGoogle = useCallback(async (callbackUrl?: string): Promise<void> => {
     try {
-      await signIn("google", { callbackUrl: "/" });
+      const normalized = safeCallbackUrl(callbackUrl, "/");
+      await signIn("google", { callbackUrl: normalized });
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
         console.log("Erro no login Google:", error);
@@ -190,9 +243,10 @@ export function useAuth(): UseAuthReturn {
   );
 
   const requireAuth = useCallback(
-    (redirectTo: string = "/login") => {
+    (callbackUrl?: string, loginPath: string = "/login") => {
       if (!isAuthenticated && !isLoading) {
-        router.push(redirectTo);
+        const target = buildLoginTarget(loginPath, callbackUrl ?? currentLocation);
+        router.push(target);
       }
     },
     [isAuthenticated, isLoading, router]

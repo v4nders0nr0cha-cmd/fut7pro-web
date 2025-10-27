@@ -1,0 +1,99 @@
+name: e2e-campeoes
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+      - 'fix/**'
+      - 'chore/**'
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+
+jobs:
+  e2e-campeoes:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        ports: [ "5432:5432" ]
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fut7pro
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      NODE_ENV: test
+      PLAYWRIGHT_BASE_URL: http://localhost:3000
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fut7pro?schema=public
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      SLUG: demo-rachao
+      RACHA_PATH: /rachas/demo-rachao
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install deps
+        run: |
+          npm ci
+          npx playwright install --with-deps
+          npm i -D tsx
+
+      - name: Prisma generate + migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+
+      - name: Seed campeões
+        run: |
+          npx tsx scripts/seed-campeoes.ts --slug "$SLUG"
+
+      - name: Smoke HTTP campeões
+        env:
+          BASE_URL: http://localhost:3000
+        run: |
+          nohup npm run dev >/tmp/next.log 2>&1 &
+          for i in {1..60}; do
+            curl -sf "$BASE_URL/api/health/backend" && break
+            sleep 2
+          done || (echo "Next não respondeu a tempo" && tail -n 200 /tmp/next.log && exit 1)
+          npx tsx scripts/smoke-campeoes.ts
+
+      - name: Run E2E Os Campeões
+        env:
+          PLAYWRIGHT_WEB_SERVER: ""
+        run: |
+          npx playwright test -c tests/playwright.times.config.ts tests/e2e/os-campeoes.spec.ts
+
+      - name: Upload traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: playwright-report
+

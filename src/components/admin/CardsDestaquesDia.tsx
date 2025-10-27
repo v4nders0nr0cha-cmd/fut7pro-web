@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Image from "next/image";
 import { Confronto, Time, Jogador, Gol, Assistencia } from "@/types/interfaces";
 
 // Interface específica para Time Campeão
@@ -136,9 +137,11 @@ function CardDestaque({
   return (
     <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
       {foto ? (
-        <img
+        <Image
           src={foto}
           alt={nome}
+          width={80}
+          height={80}
           className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
         />
       ) : (

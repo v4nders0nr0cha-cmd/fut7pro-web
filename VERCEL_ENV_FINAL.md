@@ -126,3 +126,10 @@ curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia
 - ✅ **Diagnóstico**: Headers de fallback
 - ⚠️ **Backend SSL**: Precisa ser corrigido no Railway
 - ✅ **Testes**: Scripts prontos
+
+## Segurança (Produção)
+
+- Defina DISABLE_WEB_DIRECT_DB = true
+  - Bloqueia o uso de Prisma diretamente no web em produção e obriga o consumo de dados via API do backend, conforme a especificação.
+- Padronize NEXT_PUBLIC_API_URL = https://api.fut7pro.com.br
+  - Evita divergências de CORS/cache usando o domínio oficial do backend.

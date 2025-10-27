@@ -1,0 +1,168 @@
+name: E2E
+
+on:
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AUDITORIA_*'
+jobs:
+  e2e-site-bypass:
+    name: E2E (site / publish flow com bypass)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fut7pro
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fut7pro?schema=public
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      SLUG: racha-bairro
+      E2E_ALLOW_NOAUTH: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright (browsers & libs)
+        run: npx playwright install --with-deps
+
+      - name: Criar .env.local (defaults do projeto)
+        run: npm run setup:env
+
+      - name: Prisma generate & push
+        run: |
+          npm run db:generate
+          npm run db:push
+
+      - name: (Opcional) seed
+        run: npm run db:seed || echo "seed skipped"
+
+      - name: Start Next dev (com bypass)
+        run: |
+          npm run dev &
+          echo $! > .next-dev-pid
+
+      - name: Wait for server
+        run: npx --yes wait-on http://127.0.0.1:3000
+
+      - name: Run E2E (publish flow)
+        run: npx playwright test tests/e2e/publicacao-site.spec.ts --project=chromium --reporter=line,html
+
+      - name: Stop Next dev
+        if: always()
+        run: |
+          if [ -f .next-dev-pid ]; then
+            kill "$(cat .next-dev-pid)" || true
+          fi
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-site
+          path: playwright-report
+          retention-days: 7
+
+  e2e-auth:
+    name: E2E (auth sem bypass)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fut7pro
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fut7pro?schema=public
+      PLAYWRIGHT_BASE_URL: http://127.0.0.1:3000
+      SLUG: racha-bairro
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright (browsers & libs)
+        run: npx playwright install --with-deps
+
+      - name: Criar .env.local (defaults do projeto)
+        run: npm run setup:env
+
+      - name: Prisma generate & push
+        run: |
+          npm run db:generate
+          npm run db:push
+
+      - name: (Opcional) seed
+        run: npm run db:seed || echo "seed skipped"
+
+      - name: Start Next dev (sem bypass)
+        run: |
+          npm run dev &
+          echo $! > .next-dev-pid
+
+      - name: Wait for server
+        run: npx --yes wait-on http://127.0.0.1:3000
+
+      - name: Run E2E (auth)
+        run: npx playwright test tests/e2e/publicacao-auth.spec.ts --reporter=line,html
+
+      - name: Stop Next dev
+        if: always()
+        run: |
+          if [ -f .next-dev-pid ]; then
+            kill "$(cat .next-dev-pid)" || true
+          fi
+
+      - name: Upload Playwright HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-auth
+          path: playwright-report
+          retention-days: 7
+

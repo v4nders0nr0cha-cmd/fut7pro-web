@@ -12,7 +12,7 @@ export async function HEAD() {
 }
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
+  const base = (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || "http://127.0.0.1:3333").replace(/\/+$/, "");
   const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
 
   if (!base) {

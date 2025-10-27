@@ -1,37 +1,44 @@
-import NextAuth from "next-auth";
-import { Role } from "@prisma/client";
+import NextAuth, { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface Session {
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
     user: {
       id: string;
-      name?: string | null;
       email?: string | null;
-      image?: string | null;
-      role: Role;
-      tenantId: string;
-      accessToken: string;
-      refreshToken: string;
-    };
+      name?: string | null;
+      role?: string;
+      rachaId?: string | null;
+    } & DefaultSession["user"];
+    error?: "RefreshAccessTokenError";
   }
 
   interface User {
     id: string;
-    name: string;
-    email: string;
-    role: Role;
-    tenantId: string;
-    accessToken: string;
-    refreshToken: string;
+    email?: string | null;
+    name?: string | null;
+    role?: string;
+    rachaId?: string | null;
+    accessToken?: string;
+    refreshToken?: string;
+    expiresIn?: number; // em segundos
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string;
-    role: Role;
-    tenantId: string;
-    accessToken: string;
-    refreshToken: string;
+    user?: {
+      id: string;
+      email?: string | null;
+      name?: string | null;
+      role?: string;
+      rachaId?: string | null;
+    };
+    accessToken?: string;
+    refreshToken?: string;
+    expiresAt?: number; // epoch ms
+    error?: "RefreshAccessTokenError";
   }
 }

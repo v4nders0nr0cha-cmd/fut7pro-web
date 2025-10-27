@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "next-auth.csrf-token",
+      "value": "9bbd8d0f821f3365c8b64c01073945881f880c4fa6e533fd64ab727ede57e257%7Cfe768bb2fae2eb94e9ae34e522fbdbe6be43b08d1eff0ead4690b748fda6e8e6",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "None"
+    },
+    {
+      "name": "next-auth.callback-url",
+      "value": "http%3A%2F%2Flocalhost%3A3000%2Fadmin%2Fdashboard",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "None"
+    }
+  ],
+  "origins": []
+}

@@ -12,6 +12,8 @@ import type {
 } from "@/components/financeiro/types";
 import CardResumo from "@/components/financeiro/CardResumo";
 
+import { Toaster, toast } from "react-hot-toast";
+import { FaInfoCircle } from "react-icons/fa";
 // Cores para status e gráfico
 const STATUS_COLORS: Record<StatusPagamento, string> = {
   Pago: "text-green-400",
@@ -98,25 +100,24 @@ export default function FinanceiroRachaDetalhePage() {
 
   // Funções de ação dos botões (mock)
   function handleExportPDF() {
-    alert("Exportação PDF mockada! (implemente integração backend)");
+    toast("Exportação em desenvolvimento. Contate o suporte para obter o documento.", {
+      icon: "🛠️",
+    });
   }
+
   function handleBaixarFatura() {
-    alert("Download da fatura mockado! (implemente integração backend)");
+    toast("Download de faturas será disponibilizado em breve.", { icon: "📄" });
   }
   function handleMarcarInadimplente() {
-    if (window.confirm("Deseja realmente marcar como inadimplente? (ação mockada)")) {
-      alert("Racha marcado como inadimplente! (mock)");
-      // Aqui você faria update no backend depois
-    }
+    toast("Alterar status financeiro ainda exige intervenção manual da equipe Fut7Pro.", {
+      icon: "⚠️",
+    });
   }
 
   useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setDetalhe(MOCK_DETALHE);
-      setLoading(false);
-    }, 600);
-    // Para integrar: fetch(`/api/financeiro/racha/${slug}`) ...
+    setDetalhe(MOCK_DETALHE);
+    setLoading(false);
+    // TODO: integrar com endpoint real (ex: /api/superadmin/financeiro/[slug])
   }, [slug]);
 
   const pagamentosFiltrados = Array.isArray(detalhe?.pagamentos)

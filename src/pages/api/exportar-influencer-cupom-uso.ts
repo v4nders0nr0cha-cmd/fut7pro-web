@@ -1,8 +1,14 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import type { NextApiRequest, NextApiResponse } from "next";
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 import { Parser } from "json2csv";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res.status(501).json({ error: "web_db_disabled: use API backend para exportar cupom" });
+  }
   const usos = await prisma.influencerCupomUso.findMany({
     include: {
       influencer: true,

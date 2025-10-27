@@ -166,3 +166,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Playwright
+playwright-report/
+test-results/
+
+# Next
+.next/
+out/
+.vercel/
+
+# Vercel
+.vercel/output

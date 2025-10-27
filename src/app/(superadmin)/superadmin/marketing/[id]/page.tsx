@@ -1,6 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -152,7 +153,7 @@ function RegistrarPagamentoModal({
             />
           </label>
           {previewUrl && (
-            <img
+            <Image
               src={previewUrl}
               alt="Prévia comprovante"
               className="mt-2 w-28 rounded border border-zinc-700"
@@ -309,9 +310,11 @@ export default function InfluencerDetalhePage() {
                   <td>
                     {p.comprovante ? (
                       <a href={p.comprovante} target="_blank" rel="noopener noreferrer">
-                        <img
+                        <Image
                           src={p.comprovante}
                           alt="Comprovante"
+                          width={40}
+                          height={40}
                           className="inline-block w-10 h-10 object-cover rounded border border-zinc-700"
                         />
                       </a>

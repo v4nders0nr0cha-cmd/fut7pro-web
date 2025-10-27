@@ -1,10 +1,18 @@
 // src/pages/api/admin/rachas/[slug]/admins/index.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma"; // ajuste o path se seu prisma está em outro local
+import { prisma } from "@/server/prisma"; // ajuste o path se seu prisma está em outro local
+const isProd = process.env.NODE_ENV === "production";
+const isWebDirectDbDisabled =
+  process.env.DISABLE_WEB_DIRECT_DB === "true" || process.env.DISABLE_WEB_DIRECT_DB === "1";
 // import { getSession } from "next-auth/react"; // Descomente se for usar autenticação
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isProd && isWebDirectDbDisabled) {
+    return res
+      .status(501)
+      .json({ error: "web_db_disabled: admin/admins endpoint desabilitado em prod" });
+  }
   const { slug } = req.query;
 
   // Auth opcional (exemplo):
@@ -74,3 +82,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Allow", ["GET", "POST"]);
   res.status(405).json({ error: "Método não permitido" });
 }
+
+
+

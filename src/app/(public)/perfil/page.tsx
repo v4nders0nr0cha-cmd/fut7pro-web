@@ -176,11 +176,31 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
-  const { usuario } = usePerfil();
+  const { usuario, isLoading, error } = usePerfil();
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3 text-neutral-300">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-400" />
+          <span>Carregando perfil...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <div className="bg-red-500/10 border border-red-500/30 px-6 py-4 rounded-lg text-red-300 text-center max-w-md">
+          {error}
+        </div>
+      </div>
+    );
+  }
   const stats =
     filtroStats === "temporada"
       ? (usuario.estatisticas.anual?.[temporadaAtual] ?? usuario.estatisticas.historico)

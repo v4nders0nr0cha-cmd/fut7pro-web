@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/server/prisma";
 import { subDays, isBefore } from "date-fns";
 
 // Correto para seu schema: status, criadoEm, financeiros

@@ -73,6 +73,143 @@ function distribuirPorEstrelaSerpentina(
   return times;
 }
 
+// ===== Sorteio Inteligente (V2 com regras de goleiro e serpentina composta) =====
+export function sortearTimesInteligenteV2(
+  participantes: Participante[],
+  timesSelecionados: Time[],
+  partidasTotais: number
+): TimeSorteado[] {
+  const quantidadeTimes = timesSelecionados.length;
+  const totalSelecionados = participantes.length;
+
+  const times: TimeSorteado[] = timesSelecionados.map((t) => ({
+    id: t.id,
+    nome: t.nome,
+    jogadores: [],
+    mediaRanking: 0,
+    mediaEstrelas: 0,
+    coeficienteTotal: 0,
+  }));
+
+  // 1) Goleiros: 1 por time; completa com fictícios de 3 estrelas se faltar
+  const goleirosReais = participantes.filter((p) => p.posicao === "GOL" && !p.isFicticio);
+  const goleirosOrdenados = [...goleirosReais].sort(
+    (a, b) => getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais)
+  );
+  for (let i = 0; i < quantidadeTimes; i++) {
+    const g = goleirosOrdenados[i];
+    if (g) {
+      times[i]!.jogadores.push(g);
+    } else {
+      const idx = i + 1;
+      const fict: Participante = {
+        id: `fict-gol-${idx}`,
+        nome: `Goleiro Fictício ${idx}`,
+        slug: `goleiro-ficticio-${idx}`,
+        foto: "/images/Perfil-sem-Foto-Fut7.png",
+        posicao: "GOL",
+        rankingPontos: 0,
+        vitorias: 0,
+        gols: 0,
+        assistencias: 0,
+        estrelas: { estrelas: 3, atualizadoEm: new Date().toISOString() },
+        mensalista: false,
+        partidas: 0,
+        isFicticio: true,
+        naoRanqueavel: true,
+      };
+      times[i]!.jogadores.push(fict);
+    }
+  }
+
+  // 2) Demais posições (linha): serpentina (zigue-zague) pela força composta
+  const extrasGoleirosComoLinha = goleirosOrdenados.slice(quantidadeTimes).map((g) => ({
+    ...g,
+    posicao: "ZAG" as const,
+  }));
+  const linhas = participantes
+    .filter((p) => p.posicao !== "GOL")
+    .concat(extrasGoleirosComoLinha);
+
+  const lineSlotsPorTime = Math.max(0, Math.floor((totalSelecionados - quantidadeTimes) / quantidadeTimes));
+  const totalLineSlots = lineSlotsPorTime * quantidadeTimes;
+  // Pools por posição (ordenados pela força composta)
+  const zagPool = linhas.filter((p) => p.posicao === "ZAG").sort((a, b) => getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais));
+  const meiPool = linhas.filter((p) => p.posicao === "MEI").sort((a, b) => getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais));
+  const ataPool = linhas.filter((p) => p.posicao === "ATA").sort((a, b) => getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais));
+
+  const picks: number[] = [];
+  for (let round = 0; round < lineSlotsPorTime; round++) {
+    if (round % 2 === 0) {
+      for (let t = 0; t < quantidadeTimes; t++) picks.push(t);
+    } else {
+      for (let t = quantidadeTimes - 1; t >= 0; t--) picks.push(t);
+    }
+  }
+  // Contadores por equipe
+  const counts = times.map(() => ({ ZAG: 0, MEI: 0, ATA: 0 }));
+  // Atualiza contagem considerando goleiro já inserido
+  times.forEach((t, idx) => {
+    t.jogadores.forEach((j) => {
+      if (j.posicao === "ZAG") counts[idx].ZAG++;
+      if (j.posicao === "MEI") counts[idx].MEI++;
+      if (j.posicao === "ATA") counts[idx].ATA++;
+    });
+  });
+
+  const pop = (pool: Participante[]) => pool.shift();
+  const hasAny = () => zagPool.length + meiPool.length + ataPool.length > 0;
+
+  for (let i = 0; i < totalLineSlots && hasAny(); i++) {
+    const teamIdx = picks[i];
+    const c = counts[teamIdx];
+    // define posição alvo: a com menor contagem neste time (e pool disponível)
+    const options: Array<{ pos: "ZAG" | "MEI" | "ATA"; count: number; avail: number }> = [];
+    if (zagPool.length > 0) options.push({ pos: "ZAG", count: c.ZAG, avail: zagPool.length });
+    if (meiPool.length > 0) options.push({ pos: "MEI", count: c.MEI, avail: meiPool.length });
+    if (ataPool.length > 0) options.push({ pos: "ATA", count: c.ATA, avail: ataPool.length });
+
+    let chosen: Participante | undefined;
+    if (options.length > 0) {
+      const min = Math.min(...options.map((o) => o.count));
+      const candidates = options.filter((o) => o.count === min);
+      // desempate por maior disponibilidade para evitar esgotar uma posição cedo
+      const best = candidates.sort((a, b) => b.avail - a.avail)[0];
+      if (best.pos === "ZAG") chosen = pop(zagPool);
+      else if (best.pos === "MEI") chosen = pop(meiPool);
+      else chosen = pop(ataPool);
+    } else {
+      // fallback: pegar de qualquer pool com jogador
+      chosen = pop(zagPool) ?? pop(meiPool) ?? pop(ataPool);
+    }
+    if (chosen) {
+      times[teamIdx]!.jogadores.push(chosen);
+      if (chosen.posicao === "ZAG") counts[teamIdx].ZAG++;
+      if (chosen.posicao === "MEI") counts[teamIdx].MEI++;
+      if (chosen.posicao === "ATA") counts[teamIdx].ATA++;
+    }
+  }
+
+  // Ordenação e métricas finais
+  times.forEach((time) =>
+    time.jogadores.sort((a, b) => {
+      const ordem = { GOL: 0, ZAG: 1, MEI: 2, ATA: 3 } as const;
+      if (ordem[a.posicao] !== ordem[b.posicao]) return ordem[a.posicao] - ordem[b.posicao];
+      return getCoeficiente(b, partidasTotais) - getCoeficiente(a, partidasTotais);
+    })
+  );
+
+  times.forEach((t) => {
+    const totalRanking = t.jogadores.reduce((acc, j) => acc + (j.rankingPontos || 0), 0);
+    const totalEstrelas = t.jogadores.reduce((acc, j) => acc + (j.estrelas?.estrelas ?? 0), 0);
+    t.mediaRanking = t.jogadores.length ? totalRanking / t.jogadores.length : 0;
+    t.mediaEstrelas = t.jogadores.length ? totalEstrelas / t.jogadores.length : 0;
+    t.coeficienteTotal = t.jogadores.reduce((acc, j) => acc + getCoeficiente(j, partidasTotais), 0);
+  });
+
+  ajusteFinoBalanceamento(times, partidasTotais);
+  return times;
+}
 // ===== Sorteio Inteligente =====
 export function sortearTimesInteligente(
   participantes: Participante[],

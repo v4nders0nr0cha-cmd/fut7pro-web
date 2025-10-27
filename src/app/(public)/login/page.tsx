@@ -1,30 +1,92 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useMemo } from "react";
+import { signIn, getSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { safeCallbackUrl } from "@/lib/url";
+import { NotificationProvider, useNotification } from "@/context/NotificationContext";
+import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
 
-export default function LoginPage() {
+export const dynamic = "force-dynamic";
+
+function LoginContentInner() {
   const { rachaId } = useRacha();
-  // Nome do racha dinâmico pelo mapa, fallback para "Fut7Pro"
   const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { notify } = useNotification();
 
   const [tab, setTab] = useState<"google" | "email">("google");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const router = useRouter();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [isGoogleAuthenticating, setIsGoogleAuthenticating] = useState(false);
+
+  const callbackUrl = useMemo(
+    () => safeCallbackUrl(searchParams?.get("callbackUrl"), "/"),
+    [searchParams]
+  );
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
-    if (res?.ok) router.push("/");
-    else alert("Login inválido");
+    if (isAuthenticating) return;
+
+    setIsAuthenticating(true);
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+        callbackUrl,
+      });
+
+      if (!result?.ok || result.error) {
+        notify({ message: result?.error || "Credenciais inválidas", type: "error" });
+        return;
+      }
+
+      // Se não houver callbackUrl explícito e o usuário for admin, ir para o painel
+      try {
+        const session = await getSession();
+        const role = (session as any)?.user?.role as string | undefined;
+        const isAdmin = role === "ADMIN" || role === "SUPERADMIN" || role === "GERENTE";
+        if (!searchParams?.get("callbackUrl") && isAdmin) {
+          router.push("/admin/dashboard");
+          return;
+        }
+      } catch {}
+
+      const target = safeCallbackUrl(
+        result.url,
+        callbackUrl ?? "/",
+        typeof window !== "undefined" ? window.location.origin : undefined
+      );
+      router.push(target);
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Erro ao autenticar", error);
+      }
+      notify({ message: "Não foi possível realizar o login. Tente novamente.", type: "error" });
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    if (isGoogleAuthenticating) return;
+    setIsGoogleAuthenticating(true);
+    try {
+      await signIn("google", { callbackUrl });
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Erro no login Google", error);
+      }
+      notify({ message: "Não foi possível iniciar o login com Google", type: "error" });
+    } finally {
+      setIsGoogleAuthenticating(false);
+    }
   };
 
   return (
@@ -54,10 +116,11 @@ export default function LoginPage() {
 
         {tab === "google" && (
           <button
-            onClick={() => signIn("google")}
-            className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+            onClick={handleGoogleLogin}
+            disabled={isGoogleAuthenticating}
+            className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Entrar com Google
+            {isGoogleAuthenticating ? "Redirecionando..." : "Entrar com Google"}
           </button>
         )}
 
@@ -81,9 +144,10 @@ export default function LoginPage() {
             />
             <button
               type="submit"
-              className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+              disabled={isAuthenticating}
+              className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Entrar
+              {isAuthenticating ? "Entrando..." : "Entrar"}
             </button>
           </form>
         )}
@@ -96,5 +160,28 @@ export default function LoginPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function LoginContent() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[80vh] items-center justify-center bg-zinc-950 text-white">
+          Carregando...
+        </main>
+      }
+    >
+      <LoginContentInner />
+    </Suspense>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <NotificationProvider>
+      <ToastGlobal />
+      <LoginContent />
+    </NotificationProvider>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import type { FC } from "react";
-import type { Notificacao } from "@/types/notificacao";
+import type { SuperadminNotification } from "@/types/superadmin";
 
 interface ModalNotificacaoPreviewProps {
-  notificacao: Notificacao;
+  notificacao: SuperadminNotification;
   onClose: () => void;
 }
 
@@ -14,21 +14,32 @@ export const ModalNotificacaoPreview: FC<ModalNotificacaoPreviewProps> = ({
 }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
     <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md shadow-xl">
-      <h2 className="text-xl font-bold mb-4 text-yellow-400">Detalhe da Notificação</h2>
-      <div className="mb-4">
-        <div className="mb-2 text-sm text-zinc-400">Mensagem:</div>
-        <div className="mb-2 text-zinc-100">{notificacao.mensagem}</div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Data/Hora:</b> {notificacao.data}
+      <h2 className="text-xl font-bold mb-4 text-yellow-400">Detalhe da notificação</h2>
+      <div className="mb-4 space-y-2 text-zinc-100">
+        <div>
+          <div className="text-xs text-zinc-400 uppercase tracking-wide">Título</div>
+          <div>{notificacao.titulo}</div>
         </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Destino:</b> {notificacao.destino}
+        <div>
+          <div className="text-xs text-zinc-400 uppercase tracking-wide">Mensagem</div>
+          <div className="leading-relaxed">{notificacao.mensagem}</div>
         </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Status:</b> {notificacao.status}
+        <div className="grid grid-cols-2 gap-3 text-xs text-zinc-400">
+          <span>
+            <b>Destino:</b> {notificacao.destino}
+          </span>
+          <span>
+            <b>Status:</b> {notificacao.status}
+          </span>
+          <span>
+            <b>Tipo:</b> {notificacao.tipo}
+          </span>
+          <span>
+            <b>Enviado por:</b> {notificacao.enviadoPor}
+          </span>
         </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Enviado por:</b> {notificacao.enviadoPor}
+        <div className="text-xs text-zinc-400">
+          <b>Data/Hora:</b> {new Date(notificacao.criadoEm).toLocaleString("pt-BR")}
         </div>
       </div>
       <div className="flex justify-end">

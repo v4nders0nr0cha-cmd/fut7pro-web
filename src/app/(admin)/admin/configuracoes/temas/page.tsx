@@ -210,21 +210,21 @@ export default function ConfiguracaoTemasPage() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <p>
-              • <strong>Prévia:</strong> Clique em "Prévia" para ver como o tema ficará antes de
-              aplicar
+              - <strong>Pr�via:</strong> Clique em Pr�via para ver como o tema ficar� antes de
+              aplicar.
             </p>
             <p>
-              • <strong>Aplicar:</strong> Clique em "Aplicar" para usar o tema imediatamente
+              - <strong>Aplicar:</strong> Clique em Aplicar para usar o tema imediatamente.
             </p>
             <p>
-              • <strong>Salvar:</strong> Use o botão "Salvar Tema" para persistir sua escolha
+              - <strong>Salvar:</strong> Use o bot�o Salvar Tema para persistir sua escolha.
             </p>
             <p>
-              • <strong>Restaurar:</strong> Use "Restaurar" para voltar ao último tema salvo
+              - <strong>Restaurar:</strong> Use Restaurar para voltar ao �ltimo tema salvo.
             </p>
             <p>
-              • <strong>Temas de Clubes:</strong> Temas especiais inspirados nos principais clubes
-              brasileiros
+              - <strong>Temas de Clubes:</strong> Temas especiais inspirados nos principais clubes
+              brasileiros.
             </p>
           </div>
         </CardContent>

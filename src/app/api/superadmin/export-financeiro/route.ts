@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // Runtime configuration for Node.js
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
