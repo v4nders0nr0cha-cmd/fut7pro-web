@@ -107,7 +107,8 @@
     "prisma": "^6.9.0",
     "ts-jest": "^29.4.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "web-streams-polyfill": "^3.3.3"
   },
   "overrides": {
     "next": "14.2.32",

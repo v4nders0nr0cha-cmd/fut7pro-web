@@ -8,7 +8,7 @@ export function useTimes(tenantSlug: string | null | undefined) {
   const effectiveSlug = tenantSlug ?? "default";
   const storageKey = `fut7pro_times_${effectiveSlug}`;
 
-  const { data, error, mutate } = useSWR<Time[]>(
+  const { data, error, isLoading, mutate } = useSWR<Time[]>(
     tenantSlug ? `/api/admin/rachas/${tenantSlug}/times` : null,
     fetcher,
     {
@@ -17,7 +17,7 @@ export function useTimes(tenantSlug: string | null | undefined) {
     }
   );
 
-  if (typeof window !== "undefined" && data) {
+  if (typeof window !== "undefined" && Array.isArray(data)) {
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
@@ -80,9 +80,10 @@ export function useTimes(tenantSlug: string | null | undefined) {
   }
 
   return {
-    times: data || [],
-    isLoading: !data && !error,
-    isError: !!error,
+    times: Array.isArray(data) ? data : [],
+    isLoading: Boolean(isLoading),
+    isError: Boolean(error),
+    error,
     addTime,
     updateTime,
     deleteTime,
