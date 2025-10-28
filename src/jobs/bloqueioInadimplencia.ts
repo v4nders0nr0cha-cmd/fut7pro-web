@@ -1,8 +1,13 @@
-import { prisma } from "@/lib/prisma";
 import { subDays, isBefore } from "date-fns";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/lib/prisma";
 
 // Correto para seu schema: status, criadoEm, financeiros
 export async function processarBloqueioRachas() {
+  if (isDirectDbBlocked) {
+    console.warn(PRISMA_DISABLED_MESSAGE);
+    return;
+  }
+
   const hoje = new Date();
 
   // Busca todos os rachas em status de cobrança

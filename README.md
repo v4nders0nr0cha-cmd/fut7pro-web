@@ -231,7 +231,7 @@ npm run test:coverage
 ### Outras Plataformas
 
 - **Netlify**: Suporte completo
-- **Railway**: Deploy fácil
+- **Render**: Deploy do backend (NestJS + Prisma)
 - **DigitalOcean**: App Platform
 - **AWS**: Amplify ou EC2
 

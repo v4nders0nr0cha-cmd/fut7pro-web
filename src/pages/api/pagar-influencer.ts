@@ -6,9 +6,9 @@ export const config = {
     runtime: "nodejs",
   },
 };
-import { prisma } from "@/server/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   // Headers para evitar cache e problemas de prerender
@@ -17,6 +17,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Expires", "0");
 
   if (req.method !== "POST") return res.status(405).end();
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   const session = await getServerSession(req, res, authOptions);
 

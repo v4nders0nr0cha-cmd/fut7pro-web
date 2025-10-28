@@ -2,31 +2,29 @@
 
 ## 📋 Variáveis de Ambiente
 
-| Nome                         | Onde          | Exemplo                                  | Observação                                    |
-| ---------------------------- | ------------- | ---------------------------------------- | --------------------------------------------- |
-| `BACKEND_URL`                | Vercel (Prod) | `https://api.fut7pro.com.br`             | Mantém segurança e SNI corretos               |
-| `JOGOS_DIA_PATH`             | Vercel (Prod) | `/partidas/jogos-do-dia`                 | Ajuste se o backend usar outro caminho        |
-| `NEXT_PUBLIC_USE_JOGOS_MOCK` | Vercel (Prod) | `0` ou `1`                               | `1` força mock na UI, independente do backend |
-| `RAILWAY_BACKEND_URL`        | Vercel (Prod) | `https://fut7pro-backend.up.railway.app` | Fallback para domínio Railway                 |
+| Nome                         | Onde          | Exemplo                      | Observação                                    |
+| ---------------------------- | ------------- | ---------------------------- | --------------------------------------------- |
+| `BACKEND_URL`                | Vercel (Prod) | `https://api.fut7pro.com.br` | Mantém segurança e SNI corretos               |
+| `DISABLE_WEB_DIRECT_DB`      | Vercel (Prod) | `true`                       | Bloqueia Prisma no web em produção            |
+| `JOGOS_DIA_PATH`             | Vercel (Prod) | `/partidas/jogos-do-dia`     | Ajuste se o backend usar outro caminho        |
+| `NEXT_PUBLIC_USE_JOGOS_MOCK` | Vercel (Prod) | `0` ou `1`                   | `1` força mock na UI, independente do backend |
 
 ## 🔄 Fluxo de Fallback (Produção)
 
 1. **UI chama** `GET /api/public/jogos-do-dia-fallback`
-2. **Server tenta backend** → se falhar por TLS/timeout, tenta ssl-fix (domínio do Railway)
-3. **Se ainda falhar**, retorna mock
-4. **Último recurso**: dados estáticos
-5. **Header `x-fallback-source`** indica a trilha usada
+2. **Server tenta backend oficial** (`BACKEND_URL`)
+3. **Se falhar**, responde com dados mock ou estáticos
+4. **Header `x-fallback-source`** indica a trilha usada
 
 ### Trilhas de Fallback:
 
-- `backend` - Dados reais do backend (SSL OK)
-- `ssl-fix` - Dados via domínio Railway (SSL fix)
+- `backend` - Dados reais do backend (Render OK)
 - `mock` - Dados mock estáticos
 - `static` - Dados de emergência
 
 ## 🚀 Como Migrar do Mock para Produção
 
-### 1. Consertar o SSL no Railway
+### 1. Validar SSL na Render
 
 ```bash
 # Verificar certificado (deve NÃO aparecer WRONG_PRINCIPAL)
@@ -116,7 +114,7 @@ curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia
 ### Problema: Backend não responde
 
 **Causa**: Backend offline ou CORS
-**Solução**: Verificar Railway e configurar CORS
+**Solução**: Verificar Render e configurar CORS
 
 ## 📊 Status Atual
 
@@ -124,5 +122,5 @@ curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia
 - ✅ **Mock**: Disponível e testado
 - ✅ **SSL Fix**: Implementado
 - ✅ **Diagnóstico**: Headers de fallback
-- ⚠️ **Backend SSL**: Precisa ser corrigido no Railway
+- ⚠️ **Backend SSL**: Validar certificado no Render
 - ✅ **Testes**: Scripts prontos

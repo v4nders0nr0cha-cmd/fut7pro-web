@@ -6,6 +6,7 @@ import { FaUserPlus, FaSearch, FaEdit, FaTrash, FaExclamationTriangle } from "re
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useAuth } from "@/hooks/useAuth";
 import { rachaConfig } from "@/config/racha.config";
 
 // --- TIPAGEM ---
@@ -87,8 +88,9 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
-  const rachaId = rachaConfig.slug;
-  const { jogadores, addJogador, updateJogador, deleteJogador } = useJogadores(rachaId);
+  const { user } = useAuth();
+  const tenantSlug = user?.tenantSlug ?? rachaConfig.slug;
+  const { jogadores, addJogador, updateJogador, deleteJogador } = useJogadores(tenantSlug);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();

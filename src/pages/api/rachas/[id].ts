@@ -2,11 +2,15 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
-import { prisma } from "@/lib/prisma";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const session = await getSession({ req });
   if (!session) return res.status(401).json({ error: "Não autenticado" });
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   const userId = session.user.id as string;
   const { id } = req.query;

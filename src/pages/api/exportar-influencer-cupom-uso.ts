@@ -1,8 +1,12 @@
-import { prisma } from "@/lib/prisma";
-import type { NextApiRequest, NextApiResponse } from "next";
 import { Parser } from "json2csv";
+import type { NextApiRequest, NextApiResponse } from "next";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
+
   const usos = await prisma.influencerCupomUso.findMany({
     include: {
       influencer: true,

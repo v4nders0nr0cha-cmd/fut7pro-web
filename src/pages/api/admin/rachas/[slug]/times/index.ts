@@ -1,45 +1,59 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { backendUrl, resolveBackendAuth } from "@/server/backend-client";
+
+async function proxyJsonResponse(backendResponse: Response, res: NextApiResponse): Promise<void> {
+  const contentType = backendResponse.headers.get("content-type");
+  const hasBody = contentType && contentType.includes("application/json");
+  const body = hasBody ? await backendResponse.json() : undefined;
+
+  if (!hasBody && backendResponse.status === 204) {
+    res.status(204).end();
+    return;
+  }
+
+  res.status(backendResponse.status).json(body ?? {});
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { slug } = req.query;
+  const slug = typeof req.query.slug === "string" ? req.query.slug : undefined;
 
-  if (!slug) return res.status(400).json({ error: "Slug é obrigatório" });
-
-  // Primeiro, buscar o racha pelo slug
-  const racha = await prisma.racha.findUnique({
-    where: { slug: String(slug) },
-    select: { id: true },
-  });
-
-  if (!racha) return res.status(404).json({ error: "Racha não encontrado" });
-
-  if (req.method === "GET") {
-    const times = await prisma.time.findMany({
-      where: { rachaId: racha.id },
-      orderBy: { nome: "asc" },
-    });
-    return res.status(200).json(times);
+  if (!slug) {
+    res.status(400).json({ error: "Slug � obrigat�rio" });
+    return;
   }
 
-  if (req.method === "POST") {
-    const { nome, slug: timeSlug, escudoUrl, corPrincipal, corSecundaria, jogadores } = req.body;
-    if (!nome || !timeSlug) return res.status(400).json({ error: "Nome e slug são obrigatórios" });
+  try {
+    const { headers } = await resolveBackendAuth(req, res, slug);
+    const baseUrl = backendUrl("/api/times");
 
-    const novo = await prisma.time.create({
-      data: {
-        nome,
-        slug: timeSlug,
-        escudoUrl,
-        corPrincipal,
-        corSecundaria,
-        rachaId: racha.id,
-        jogadores: jogadores ? JSON.stringify(jogadores) : undefined,
-      },
-    });
-    return res.status(201).json(novo);
+    if (req.method === "GET") {
+      const backendResponse = await fetch(baseUrl, {
+        method: "GET",
+        headers,
+      });
+      await proxyJsonResponse(backendResponse, res);
+      return;
+    }
+
+    if (req.method === "POST") {
+      const backendResponse = await fetch(baseUrl, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify(req.body ?? {}),
+      });
+      await proxyJsonResponse(backendResponse, res);
+      return;
+    }
+
+    res.setHeader("Allow", ["GET", "POST"]);
+    res.status(405).json({ error: `M�todo ${req.method} n�o permitido` });
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHENTICATED") {
+      res.status(401).json({ error: "N�o autenticado" });
+      return;
+    }
+
+    const message = error instanceof Error ? error.message : "Erro interno";
+    res.status(500).json({ error: "Falha ao comunicar com o backend", details: message });
   }
-
-  res.setHeader("Allow", ["GET", "POST"]);
-  res.status(405).json({ error: "Método não permitido" });
 }

@@ -1,53 +1,53 @@
 # 🚨 ATIVAÇÃO URGENTE DO MOCK
 
-## ❌ Problema Confirmado
+## ⚠️ Problema Confirmado
 
-```
-ERR_TLS_CERT_ALTNAME_INVALID: Host: api.fut7pro.com.br. is not in the cert's altnames: DNS:*.up.railway.app
-```
+Backend indisponível ou certificado inválido enquanto o app está em produção.
 
-## ✅ SOLUÇÃO IMEDIATA (2 minutos)
+## ✅ Solução Imediata (2 minutos)
 
-### 1. Configurar Mock no Vercel
+### 1. Configurar mock no Vercel
 
-1. Acesse: https://vercel.com/dashboard
+1. Acesse https://vercel.com/dashboard
 2. Projeto: `fut7pro-web`
 3. **Settings** → **Environment Variables**
-4. **Add New**:
+4. **Add New**
    - **Name**: `NEXT_PUBLIC_USE_JOGOS_MOCK`
    - **Value**: `1`
-   - **Environment**: ✅ Production ✅ Preview
-5. **Save**
+   - **Environment**: Production e Preview
+5. Salve a variável
 
-### 2. Redeploy
+### 2. Redeploy imediato
 
-1. **Deployments** → **Current**
+1. Abra **Deployments** → **Current**
 2. Clique em **Redeploy**
 
-### 3. Testar Imediatamente
+### 3. Testar na hora
 
 ```powershell
-# Deve retornar dados mock
 curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
 ```
 
-## 🔧 Soluções Permanentes
+## 🛠️ Soluções permanentes
 
-### Opção 1: Usar Domínio Railway
+### Opção 1: Corrigir certificado SSL na Render
 
-- Alterar `BACKEND_URL` para: `https://fut7pro-backend.up.railway.app`
-- Configurar CORS no backend
+- Render Dashboard → Serviço backend → Settings → Custom Domains
+- Validar que `api.fut7pro.com.br` responde com certificado válido
+- Forçar novo deploy, se necessário, para renovar o certificado
 
-### Opção 2: Corrigir Certificado SSL
+### Opção 2: Revisar configuração do backend
 
-- Railway Dashboard → Projeto → Settings → Domains
-- Adicionar `api.fut7pro.com.br` ao certificado
+- Confirmar `BACKEND_URL=https://api.fut7pro.com.br` em todos os ambientes
+- Garantir CORS liberando `app.fut7pro.com.br` e domínios de preview
+- Executar healthcheck: `curl -I https://api.fut7pro.com.br/health`
 
-### Opção 3: Usar Endpoint SSL Fix
+### Opção 3: Manter mock temporário (somente dev)
 
-- Usar `/api/public/jogos-do-dia-ssl-fix` (já implementado)
+- Utilize `NEXT_PUBLIC_USE_JOGOS_MOCK=1` apenas até o backend estabilizar
+- Remova a variável assim que o SSL estiver resolvido
 
-## 📊 Status Esperado
+## 📊 Status esperado
 
 ```json
 // GET /api/public/jogos-do-dia-mock
@@ -63,10 +63,8 @@ curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
 ]
 ```
 
-## ⚡ Teste Rápido
+## 🧪 Teste rápido
 
 ```powershell
-# Após configurar mock
 curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock | findstr /I "HTTP"
-# Deve mostrar: HTTP/1.1 200 OK
 ```

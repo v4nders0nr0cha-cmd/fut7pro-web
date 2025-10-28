@@ -1,13 +1,33 @@
+import { CACHE_FALLBACK, diagHeaders } from "@/lib/api-headers";
+import { JOGOS_DO_DIA_FALLBACK } from "@/lib/jogos-do-dia-data";
+
 // 1) Mude para Node.js runtime (evita TLS chato do Edge)
 export const runtime = "nodejs";
-// Cache de 1 minuto na CDN
-export const revalidate = 60;
-// Opcional: foque a região mais próxima do seu backend
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
+// Opcional: foque a regiao mais proxima do seu backend
 export const preferredRegion = "gru1";
 
-import { diagHeaders } from "@/lib/api-headers";
+const JSON_CT = "application/json; charset=utf-8";
 
-// 3) HEAD não chama upstream (evita 5xx desnecessário)
+function buildStaticResponse(message: string, context?: unknown) {
+  if (context) {
+    console.warn(message, context);
+  } else {
+    console.warn(message);
+  }
+  return new Response(JSON.stringify(JOGOS_DO_DIA_FALLBACK), {
+    status: 200,
+    headers: {
+      ...diagHeaders("static"),
+      "Content-Type": JSON_CT,
+      "CDN-Cache-Control": CACHE_FALLBACK,
+    },
+  });
+}
+
+// 3) HEAD nao chama upstream (evita 5xx desnecessario)
 export async function HEAD() {
   return new Response(null, {
     status: 200,
@@ -19,46 +39,37 @@ export async function GET() {
   const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
   const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
   if (!base) {
-    // Loga e devolve falha "limpa"
-    console.error("BACKEND_URL ausente");
-    return new Response("missing BACKEND_URL", {
-      status: 500,
-      headers: { "Cache-Control": "no-store" },
-    });
+    return buildStaticResponse("BACKEND_URL ausente");
   }
 
   const upstream = `${base}${path}`;
 
   try {
     const r = await fetch(upstream, {
+      cache: "no-store",
       headers: { accept: "application/json" },
-      // revalidate só opera no App Router com Node runtime
-      next: { revalidate: 60 },
     });
 
     if (!r.ok) {
       const body = await r.text().catch(() => "");
-      console.error("Upstream non-OK", r.status, body.slice(0, 300));
-      // pode repassar o status do upstream se preferir
-      return new Response("upstream_error", {
-        status: 502,
-        headers: { "Cache-Control": "no-store" },
+      return buildStaticResponse("Upstream non-OK", {
+        status: r.status,
+        body: body.slice(0, 300),
       });
     }
 
-    const data = await r.text(); // evita parse duplo; mantém content-type se precisar
+    const data = await r.text(); // evita parse duplo; mantem content-type se precisar
     return new Response(data, {
       status: 200,
       headers: {
         ...diagHeaders("backend"),
-        "Content-Type": r.headers.get("content-type") ?? "application/json; charset=utf-8",
+        "Content-Type": r.headers.get("content-type") ?? JSON_CT,
       },
     });
   } catch (err: any) {
-    console.error("proxy jogos-do-dia fetch failed", { message: err?.message, cause: err?.cause });
-    return new Response("proxy_fetch_failed", {
-      status: 502,
-      headers: { "Cache-Control": "no-store" },
+    return buildStaticResponse("proxy jogos-do-dia fetch failed", {
+      message: err?.message,
+      cause: err?.cause,
     });
   }
 }

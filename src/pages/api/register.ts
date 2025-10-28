@@ -2,11 +2,15 @@
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import bcrypt from "bcryptjs";
-import { prisma } from "@/lib/prisma"; // certifique-se que este arquivo existe: src/lib/prisma.ts
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Método não permitido" });
+  }
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ message: PRISMA_DISABLED_MESSAGE });
   }
 
   const { nome, apelido, email, senha } = req.body;

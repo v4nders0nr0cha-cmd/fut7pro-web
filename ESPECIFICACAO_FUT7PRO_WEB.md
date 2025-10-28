@@ -235,7 +235,7 @@ O `fut7pro-web` só é considerado pronto para produção quando:
 - Guia do dev (módulo): `fut7pro-web/README_DEV_GUIDE.md`
 - Multi-tenant (implementação): `fut7pro-web/IMPLEMENTACAO_MULTI_TENANT.md`
 - Variáveis/ambiente/deploy: `fut7pro-web/ENV_SETUP.md`, `fut7pro-web/ENV_PRODUCTION.md`, `fut7pro-web/VERCEL_ENV_FINAL.md`, `fut7pro-web/VARIAVEIS_VERCEL.md`
-- SSL/Segurança: `fut7pro-web/RAILWAY_SSL_SETUP.md`
+- SSL/Segurança: `fut7pro-web/VERCEL_ENV_FINAL.md`
 
 ---
 

@@ -10,7 +10,7 @@ export const config = {
 };
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth/options";
-import { prisma } from "@/server/prisma";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 // Utilitário para garantir que apenas admin/owner pode editar o racha
 async function canEditRacha(rachaId: string, userId: string) {
@@ -28,6 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Expires", "0");
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   const session = await getServerSession(req, res, authOptions);
   if (!session || !session.user) {

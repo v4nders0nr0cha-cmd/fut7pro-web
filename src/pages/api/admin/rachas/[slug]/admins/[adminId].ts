@@ -1,8 +1,12 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma"; // ajuste o path conforme seu projeto
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma"; // ajuste o path conforme seu projeto
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { adminId } = req.query;
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   if (!adminId) return res.status(400).json({ error: "adminId é obrigatório" });
 

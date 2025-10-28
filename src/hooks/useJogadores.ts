@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { jogadoresApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Jogador } from "@/types/jogador";
 
@@ -13,11 +12,11 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
-export function useJogadores(rachaId: string) {
+export function useJogadores(tenantSlug: string | null | undefined) {
   const apiState = useApiState();
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId ? `/api/jogadores?rachaId=${rachaId}` : null,
+    tenantSlug ? `/api/admin/jogadores?slug=${tenantSlug}` : null,
     fetcher,
     {
       onError: (err) => {
@@ -29,49 +28,62 @@ export function useJogadores(rachaId: string) {
   );
 
   const addJogador = async (jogador: Partial<Jogador>) => {
-    if (!rachaId) return null;
+    if (!tenantSlug) return null;
 
     return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.create({
-        ...jogador,
-        rachaId,
+      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jogador),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Erro ao criar jogador");
       }
 
       await mutate();
-      return response.data;
+      return response.json();
     });
   };
 
   const updateJogador = async (id: string, jogador: Partial<Jogador>) => {
+    if (!tenantSlug) return null;
+
     return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.update(id, {
-        ...jogador,
-        rachaId,
+      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...jogador }),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Erro ao atualizar jogador");
       }
 
       await mutate();
-      return response.data;
+      return response.json();
     });
   };
 
   const deleteJogador = async (id: string) => {
-    return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.delete(id);
+    if (!tenantSlug) return null;
 
-      if (response.error) {
-        throw new Error(response.error);
+    return apiState.handleAsync(async () => {
+      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      if (!response.ok && response.status !== 204) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error ?? "Erro ao excluir jogador");
       }
 
       await mutate();
-      return response.data;
+      return null;
     });
   };
 

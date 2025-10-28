@@ -1,12 +1,16 @@
 // src/pages/api/admin/rachas/[slug]/index.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { slug } = req.query;
   if (!slug || typeof slug !== "string")
     return res.status(400).json({ error: "Slug é obrigatório" });
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   // GET - Detalhes do racha
   if (req.method === "GET") {

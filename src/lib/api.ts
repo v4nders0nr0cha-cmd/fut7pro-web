@@ -35,6 +35,9 @@ class ApiClient {
       if (session?.user?.accessToken) {
         headers["Authorization"] = `Bearer ${session.user.accessToken}`;
       }
+      if (session?.user?.tenantSlug) {
+        headers["x-tenant-slug"] = session.user.tenantSlug;
+      }
 
       return headers;
     } catch (error) {
@@ -128,19 +131,19 @@ export const rachaApi = {
 };
 
 export const jogadoresApi = {
-  getAll: (rachaId: string) => apiClient.get(`/admin/jogadores?rachaId=${rachaId}`),
-  getById: (id: string) => apiClient.get(`/admin/jogadores/${id}`),
-  create: (data: ApiRequestData) => apiClient.post("/admin/jogadores", data),
-  update: (id: string, data: ApiRequestData) => apiClient.put(`/admin/jogadores/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/admin/jogadores/${id}`),
+  getAll: () => apiClient.get("/api/jogadores"),
+  getById: (id: string) => apiClient.get(`/api/jogadores/${id}`),
+  create: (data: ApiRequestData) => apiClient.post("/api/jogadores", data),
+  update: (id: string, data: ApiRequestData) => apiClient.put(`/api/jogadores/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/api/jogadores/${id}`),
 };
 
 export const partidasApi = {
-  getAll: (rachaId: string) => apiClient.get(`/partidas?rachaId=${rachaId}`),
-  getById: (id: string) => apiClient.get(`/partidas/${id}`),
-  create: (data: ApiRequestData) => apiClient.post("/admin/partidas", data),
-  update: (id: string, data: ApiRequestData) => apiClient.put(`/admin/partidas/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/admin/partidas/${id}`),
+  getAll: () => apiClient.get("/api/partidas"),
+  getById: (id: string) => apiClient.get(`/api/partidas/${id}`),
+  create: (data: ApiRequestData) => apiClient.post("/api/partidas", data),
+  update: (id: string, data: ApiRequestData) => apiClient.put(`/api/partidas/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/api/partidas/${id}`),
 };
 
 export const financeiroApi = {
