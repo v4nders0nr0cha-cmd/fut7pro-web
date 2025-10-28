@@ -1,107 +1,224 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
+import { rachaConfig } from "@/config/racha.config";
+
+const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
+const DEFAULT_TENANT_SLUG =
+  process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG ?? rachaConfig.slug ?? "fut7pro";
+
+type Feedback = { type: "success" | "error"; message: string } | null;
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { rachaId } = useRacha();
-  const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
+  const nomeDoRacha = useMemo(
+    () => rachaMap[rachaId]?.nome || rachaConfig.nome || "Fut7Pro",
+    [rachaId]
+  );
 
   const [nome, setNome] = useState("");
   const [apelido, setApelido] = useState("");
   const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const [posicao, setPosicao] = useState<(typeof POSICOES)[number]>("Meia");
+  const [mensagem, setMensagem] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<Feedback>(null);
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setFeedback(null);
 
-    if (nome.length > 10 || apelido.length > 10) {
-      alert("Nome e Apelido devem ter no máximo 10 letras.");
+    if (nome.trim().length < 3) {
+      setFeedback({ type: "error", message: "Informe seu nome completo." });
       return;
     }
 
-    const res = await fetch("/api/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, apelido, email, senha }),
-    });
+    if (apelido.trim().length < 2) {
+      setFeedback({ type: "error", message: "Informe um apelido com pelo menos 2 letras." });
+      return;
+    }
 
-    if (res.ok) {
-      alert("Conta criada com sucesso!");
-      router.push("/login");
-    } else {
-      const erro = await res.text();
-      alert("Erro ao cadastrar: " + erro);
+    const emailTrimmed = email.trim().toLowerCase();
+    if (!emailTrimmed.includes("@")) {
+      setFeedback({ type: "error", message: "Informe um e-mail válido para contato." });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug: DEFAULT_TENANT_SLUG,
+          nome: nome.trim(),
+          apelido: apelido.trim(),
+          email: emailTrimmed,
+          posicao,
+          mensagem: mensagem.trim() || undefined,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const message =
+          data?.message ??
+          data?.error ??
+          "Não foi possível enviar sua solicitação. Tente novamente em instantes.";
+        throw new Error(message);
+      }
+
+      setFeedback({
+        type: "success",
+        message:
+          "Recebemos sua solicitação! Nossa equipe irá analisá-la e você será avisado por e-mail assim que for aprovada.",
+      });
+      setNome("");
+      setApelido("");
+      setEmail("");
+      setMensagem("");
+      setPosicao("Meia");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Falha ao enviar sua solicitação. Tente novamente mais tarde.";
+      setFeedback({ type: "error", message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-8 md:pt-16 pb-10">
-      <div className="bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm">
-        <h1 className="text-xl font-bold mb-4 text-center">Criar Conta</h1>
-        <p className="text-gray-300 text-center mb-6 text-base font-medium leading-snug">
-          Junte-se ao nosso time! Faça seu cadastro para participar dos rankings, das partidas e
-          conquistar seu lugar no Hall da Fama do{" "}
-          <span className="text-yellow-400 font-bold">{nomeDoRacha}</span>. Cadastro exclusivo para
-          atletas, sujeito à aprovação do administrador.
+    <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-10 md:pt-16 pb-12 px-4">
+      <div className="bg-zinc-900/90 border border-zinc-700/60 p-8 rounded-2xl shadow-2xl w-full max-w-lg backdrop-blur-sm">
+        <h1 className="text-2xl md:text-3xl font-black text-center text-yellow-400 mb-4">
+          Solicite sua Vaga no Racha
+        </h1>
+        <p className="text-gray-300 text-center text-base leading-relaxed mb-6">
+          Preencha os dados abaixo para pedir acesso ao{" "}
+          <span className="text-yellow-400 font-semibold">{nomeDoRacha}</span>. O administrador
+          avalia cada pedido e responde o quanto antes. Se houver vagas, você será convidado para
+          participar das próximas partidas!
         </p>
 
-        <form onSubmit={handleRegister} className="space-y-4">
-          <input
-            type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
-            maxLength={10}
-            required
-            placeholder="Nome (máx. 10 letras)"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
-          />
+        {feedback && (
+          <div
+            className={`rounded-lg px-4 py-3 text-sm font-medium mb-6 ${
+              feedback.type === "success"
+                ? "bg-green-900/40 border border-green-500/40 text-green-200"
+                : "bg-red-900/40 border border-red-500/40 text-red-200"
+            }`}
+          >
+            {feedback.message}
+          </div>
+        )}
 
-          <input
-            type="text"
-            value={apelido}
-            onChange={(e) => setApelido(e.target.value)}
-            maxLength={10}
-            required
-            placeholder="Apelido (máx. 10 letras)"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
-          />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="nome" className="sr-only">
+              Nome completo
+            </label>
+            <input
+              id="nome"
+              type="text"
+              value={nome}
+              onChange={(event) => setNome(event.target.value)}
+              maxLength={60}
+              required
+              placeholder="Nome completo"
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
 
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="E-mail"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
-          />
+          <div>
+            <label htmlFor="apelido" className="sr-only">
+              Apelido
+            </label>
+            <input
+              id="apelido"
+              type="text"
+              value={apelido}
+              onChange={(event) => setApelido(event.target.value)}
+              maxLength={40}
+              required
+              placeholder="Apelido preferido"
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
 
-          <input
-            type="password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            required
-            placeholder="Senha"
-            className="w-full p-2 rounded bg-zinc-800 text-white"
-          />
+          <div>
+            <label htmlFor="email" className="sr-only">
+              E-mail
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              maxLength={120}
+              required
+              placeholder="E-mail para contato"
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="posicao" className="text-sm font-semibold text-zinc-300 mb-1 block">
+              Posição preferida
+            </label>
+            <select
+              id="posicao"
+              value={posicao}
+              onChange={(event) => setPosicao(event.target.value as (typeof POSICOES)[number])}
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            >
+              {POSICOES.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="mensagem" className="text-sm font-semibold text-zinc-300 mb-1 block">
+              Conte um pouco sobre você (opcional)
+            </label>
+            <textarea
+              id="mensagem"
+              value={mensagem}
+              onChange={(event) => setMensagem(event.target.value)}
+              rows={4}
+              maxLength={400}
+              placeholder="Posso jogar em mais de uma posição, tenho experiência, etc."
+              className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-y"
+            />
+            <p className="text-xs text-zinc-400 mt-1">
+              Essa mensagem ajuda o administrador a conhecer melhor seu perfil.
+            </p>
+          </div>
 
           <button
             type="submit"
-            className="w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300"
+            disabled={isSubmitting}
+            className="w-full flex justify-center items-center gap-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Cadastrar
+            {isSubmitting ? "Enviando..." : "Enviar solicitação"}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm">
-          Já tem conta?{" "}
-          <a href="/login" className="text-yellow-400 hover:underline">
-            Entrar
-          </a>
-        </div>
+        <p className="text-xs text-zinc-400 mt-6 text-center leading-relaxed">
+          Ao enviar a solicitação você concorda em compartilhar seus dados com o administrador do
+          racha. Caso a vaga seja aprovada, você receberá um e-mail com as instruções para acessar a
+          plataforma e concluir seu cadastro.
+        </p>
       </div>
     </main>
   );

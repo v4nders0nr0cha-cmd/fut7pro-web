@@ -1,7 +1,7 @@
 "use client";
-import { useState } from "react";
 
-// Tipos dos badges por item do menu
+import { useSolicitacoesCount } from "./useSolicitacoes";
+
 type Badges = {
   dashboard: number;
   notificacoes: number;
@@ -10,17 +10,21 @@ type Badges = {
   perfil: number;
 };
 
-// Mock inicial para testar badges no menu admin
-const initialBadges: Badges = {
+const DEFAULT_BADGES: Badges = {
   dashboard: 0,
-  notificacoes: 2,
-  mensagens: 1,
-  solicitacoes: 3,
+  notificacoes: 0,
+  mensagens: 0,
+  solicitacoes: 0,
   perfil: 0,
 };
 
 export function useAdminBadges() {
-  // Futuramente, trocar por fetch, socket ou contexto global
-  const [badges] = useState<Badges>(initialBadges);
+  const { data: solicitacoesCountData } = useSolicitacoesCount("PENDENTE");
+
+  const badges: Badges = {
+    ...DEFAULT_BADGES,
+    solicitacoes: solicitacoesCountData?.count ?? 0,
+  };
+
   return { badges };
 }

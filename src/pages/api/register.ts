@@ -1,49 +1,80 @@
 // src/pages/api/register.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import bcrypt from "bcryptjs";
-import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
+import { backendUrl } from "@/server/backend-client";
+
+function resolveTenantSlug(req: NextApiRequest): string | null {
+  if (typeof req.query.slug === "string" && req.query.slug.trim().length > 0) {
+    return req.query.slug.trim();
+  }
+
+  if (typeof req.body?.slug === "string" && req.body.slug.trim().length > 0) {
+    return req.body.slug.trim();
+  }
+
+  if (process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG) {
+    return process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG.trim();
+  }
+
+  if (process.env.DEFAULT_TENANT_SLUG) {
+    return process.env.DEFAULT_TENANT_SLUG.trim();
+  }
+
+  return null;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Método não permitido" });
+    res.setHeader("Allow", ["POST"]);
+    return res.status(405).json({ message: `Método ${req.method} não permitido.` });
   }
 
-  if (isDirectDbBlocked) {
-    return res.status(501).json({ message: PRISMA_DISABLED_MESSAGE });
+  const slug = resolveTenantSlug(req);
+  if (!slug) {
+    return res.status(400).json({ message: "Slug do racha não informado." });
   }
 
-  const { nome, apelido, email, senha } = req.body;
+  const { nome, apelido, email, posicao, mensagem, fotoUrl } = req.body ?? {};
 
-  if (!nome || !apelido || !email || !senha) {
-    return res.status(400).json({ message: "Campos obrigatórios ausentes." });
+  if (!nome || !email || !posicao) {
+    return res.status(400).json({ message: "Nome, e-mail e posição são obrigatórios." });
   }
 
-  if (nome.length > 10 || apelido.length > 10) {
-    return res.status(400).json({ message: "Nome e Apelido devem ter no máximo 10 letras." });
-  }
+  const payload = {
+    nome: String(nome).trim(),
+    apelido: typeof apelido === "string" && apelido.trim().length > 0 ? apelido.trim() : undefined,
+    email: String(email).trim().toLowerCase(),
+    posicao: String(posicao).trim(),
+    mensagem:
+      typeof mensagem === "string" && mensagem.trim().length > 0 ? mensagem.trim() : undefined,
+    fotoUrl: typeof fotoUrl === "string" && fotoUrl.trim().length > 0 ? fotoUrl.trim() : undefined,
+  };
 
   try {
-    const existing = await prisma.usuario.findUnique({ where: { email } });
+    const backendResponse = await fetch(
+      backendUrl(`/public/${encodeURIComponent(slug)}/athlete-requests`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
 
-    if (existing) {
-      return res.status(409).json({ message: "E-mail já está em uso." });
+    const contentType = backendResponse.headers.get("content-type");
+    const isJson = contentType?.includes("application/json");
+    const body = isJson ? await backendResponse.json().catch(() => ({})) : undefined;
+
+    if (!isJson) {
+      const text = await backendResponse.text();
+      res.status(backendResponse.status).send(text);
+      return;
     }
 
-    const senhaHash = await bcrypt.hash(senha, 10);
-
-    await prisma.usuario.create({
-      data: {
-        nome,
-        apelido,
-        email,
-        senhaHash,
-      },
-    });
-
-    return res.status(200).json({ message: "Usuário registrado com sucesso." });
+    res.status(backendResponse.status).json(body ?? {});
   } catch (error) {
-    console.error("Erro ao registrar:", error);
-    return res.status(500).json({ message: "Erro interno do servidor." });
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    res.status(500).json({ message: "Erro ao registrar solicitação de atleta.", details: message });
   }
 }
