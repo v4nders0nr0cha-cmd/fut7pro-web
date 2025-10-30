@@ -1,5 +1,6 @@
 import { CACHE_FALLBACK, diagHeaders } from "@/lib/api-headers";
 import { JOGOS_DO_DIA_FALLBACK } from "@/lib/jogos-do-dia-data";
+import { getApiBase } from "@/lib/get-api-base";
 
 // 1) Mude para Node.js runtime (evita TLS chato do Edge)
 export const runtime = "nodejs";
@@ -36,12 +37,16 @@ export async function HEAD() {
 }
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
-  const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
-  if (!base) {
-    return buildStaticResponse("BACKEND_URL ausente");
+  let base: string;
+  try {
+    base = getApiBase();
+  } catch (error: any) {
+    return buildStaticResponse("API base ausente", {
+      message: error?.message ?? "NEXT_PUBLIC_API_URL ausente",
+    });
   }
 
+  const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
   const upstream = `${base}${path}`;
 
   try {

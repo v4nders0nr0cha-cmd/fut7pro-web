@@ -1,13 +1,19 @@
+import { getApiBase } from "@/lib/get-api-base";
+
 // Healthcheck do backend para validar conectividade
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
-  if (!base) {
+  let base: string;
+  try {
+    base = getApiBase();
+  } catch (error: any) {
     return new Response(
       JSON.stringify({
         status: "error",
-        message: "BACKEND_URL not configured",
+        message: error?.message ?? "NEXT_PUBLIC_API_URL not configured",
         timestamp: new Date().toISOString(),
       }),
       {
@@ -26,6 +32,7 @@ export async function GET() {
       const response = await fetch(url, {
         method: "HEAD",
         headers: { accept: "application/json" },
+        cache: "no-store",
         // Timeout de 5 segundos
         signal: AbortSignal.timeout(5000),
       });
@@ -47,7 +54,7 @@ export async function GET() {
       }
     } catch (error: any) {
       // Continuar para o proximo endpoint
-      console.log(`Healthcheck failed for ${url}:`, error.message);
+      console.log(`Healthcheck failed for ${url}:`, error?.message);
     }
   }
 
