@@ -9,7 +9,7 @@ import { getApiBase } from "@/lib/get-api-base";
 
 const API_BASE_URL = getApiBase();
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

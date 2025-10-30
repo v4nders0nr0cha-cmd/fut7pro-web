@@ -2,51 +2,86 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
+import { useAuth } from "@/hooks/useAuth";
+import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import type { Patrocinador } from "@/types/patrocinador";
 
-const patrocinadores = [
-  { nome: "Patrocínio 1", logo: "/images/patrocinadores/patrocinador_01.png" },
-  { nome: "Patrocínio 2", logo: "/images/patrocinadores/patrocinador_02.png" },
-  { nome: "Patrocínio 3", logo: "/images/patrocinadores/patrocinador_03.png" },
-  { nome: "Patrocínio 4", logo: "/images/patrocinadores/patrocinador_04.png" },
-  { nome: "Patrocínio 5", logo: "/images/patrocinadores/patrocinador_05.png" },
-  { nome: "Patrocínio 6", logo: "/images/patrocinadores/patrocinador_06.png" },
-  { nome: "Patrocínio 7", logo: "/images/patrocinadores/patrocinador_07.png" },
-  { nome: "Patrocínio 8", logo: "/images/patrocinadores/patrocinador_08.png" },
-  { nome: "Patrocínio 9", logo: "/images/patrocinadores/patrocinador_09.png" },
-  { nome: "Patrocínio 10", logo: "/images/patrocinadores/patrocinador_10.png" },
+const FALLBACK_SPONSORS: Patrocinador[] = [
+  {
+    id: "fallback-fut7pro",
+    name: "Fut7Pro",
+    logoUrl: "https://app.fut7pro.com.br/images/logos/logo_fut7pro.png",
+    link: "https://www.fut7pro.com.br",
+    tier: "PRO",
+    displayOrder: 1,
+    showOnFooter: true,
+    status: "ativo",
+  },
 ];
+
+function resolveSlugFromPath(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const segments = pathname.split("/").filter(Boolean);
+  if (!segments.length) return null;
+  const first = segments[0];
+  const reserved = new Set([
+    "sobre-nos",
+    "contato",
+    "estatisticas",
+    "partidas",
+    "login",
+    "register",
+    "sorteio-inteligente",
+    "como-funciona",
+    "privacy",
+    "termos",
+  ]);
+  if (reserved.has(first)) return null;
+  if (first.length > 40) return null;
+  return first;
+}
 
 export default function Footer() {
   const tema = useTema();
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const { user } = useAuth();
+  const pathname = usePathname();
+  const slugFromPath = useMemo(() => resolveSlugFromPath(pathname), [pathname]);
+
+  const slug = user?.tenantSlug ?? slugFromPath ?? rachaConfig.slug;
+  const { patrocinadores, isLoading } = usePublicSponsors(slug);
+
+  const sponsorsList = patrocinadores.length > 0 ? patrocinadores : FALLBACK_SPONSORS;
 
   useEffect(() => {
+    if (!carouselRef.current) return;
     const scroll = () => {
-      if (carouselRef.current) {
-        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
-        if (scrollLeft + clientWidth >= scrollWidth) {
-          carouselRef.current.scrollLeft = 0;
-        } else {
-          carouselRef.current.scrollLeft += 1;
-        }
+      const el = carouselRef.current;
+      if (!el) return;
+      const { scrollLeft, scrollWidth, clientWidth } = el;
+      if (scrollLeft + clientWidth >= scrollWidth) {
+        el.scrollLeft = 0;
+      } else {
+        el.scrollLeft += 1;
       }
     };
     const interval = setInterval(scroll, 20);
     return () => clearInterval(interval);
-  }, []);
+  }, [sponsorsList.length]);
 
   const handleManualScroll = (direction: "left" | "right") => {
-    if (carouselRef.current) {
-      const scrollAmount = 200;
-      carouselRef.current.scrollBy({
-        left: direction === "left" ? -scrollAmount : scrollAmount,
-        behavior: "smooth",
-      });
-    }
+    const el = carouselRef.current;
+    if (!el) return;
+    const scrollAmount = 200;
+    el.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -58,7 +93,6 @@ export default function Footer() {
           </span>
         </h2>
 
-        {/* Carrossel de Patrocinadores */}
         <div className="relative overflow-hidden group mb-12">
           <button
             onClick={() => handleManualScroll("left")}
@@ -76,13 +110,16 @@ export default function Footer() {
           </button>
           <div
             ref={carouselRef}
-            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
+            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide py-2"
           >
-            {[...patrocinadores, ...patrocinadores].map((patro, index) => (
-              <div key={index} className="min-w-[180px] flex justify-center items-center">
+            {[...sponsorsList, ...sponsorsList].map((sponsor, index) => (
+              <div
+                key={`${sponsor.id}-${index}`}
+                className="min-w-[180px] flex justify-center items-center"
+              >
                 <Image
-                  src={patro.logo}
-                  alt={`Logo do patrocinador ${patro.nome} - sistema de racha ${rachaConfig.nome}`}
+                  src={sponsor.logoUrl}
+                  alt={`Logo do patrocinador ${sponsor.name} - sistema de racha ${rachaConfig.nome}`}
                   width={160}
                   height={96}
                   className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
@@ -90,11 +127,14 @@ export default function Footer() {
               </div>
             ))}
           </div>
+          {isLoading && (
+            <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-xs text-gray-200">
+              Carregando patrocinadores...
+            </div>
+          )}
         </div>
 
-        {/* Grid inferior */}
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] lg:grid-cols-3 gap-10 items-start">
-          {/* Coluna 1 – Campo + Mapa */}
           <div>
             <p className="text-yellow-400 font-bold mb-2">NOSSO CAMPO OFICIAL</p>
             <p className="text-gray-300 mb-3">{tema.endereco || "Endereço não informado"}</p>
@@ -109,7 +149,6 @@ export default function Footer() {
             ></iframe>
           </div>
 
-          {/* Coluna 2 – Siga-nos centralizado */}
           <div className="flex flex-col items-center justify-start gap-2">
             <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
             <div className="flex gap-3">
@@ -131,7 +170,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Coluna 3 – Links rápidos atualizados com todos os 7 tópicos */}
           <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
             <Link href="/sistema-de-ranking" className="hover:underline">
               Sistema de Ranking
@@ -157,7 +195,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Logo e frase final */}
         <div className="mt-10 text-center">
           <Link
             href={rachaConfig.urls.site}
