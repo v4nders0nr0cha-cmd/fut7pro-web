@@ -3,8 +3,9 @@
 
 import type { ApiRequestData } from "@/types/api";
 import { getSession } from "next-auth/react";
+import { getApiBase } from "@/lib/get-api-base";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+const API_BASE_URL = getApiBase();
 
 export interface ApiResponse<T = unknown> {
   data?: T;

@@ -5,8 +5,9 @@ import { compare } from "bcryptjs";
 
 import type { NextAuthOptions, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import { getApiBase } from "@/lib/get-api-base";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = getApiBase();
 
 const authOptions: NextAuthOptions = {
   providers: [

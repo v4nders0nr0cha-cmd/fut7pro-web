@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/server/auth/options";
+import { getApiBase } from "@/lib/get-api-base";
 
 type BackendAuth = {
   headers: Record<string, string>;
@@ -38,8 +39,7 @@ export async function resolveBackendAuth(
 }
 
 export function backendUrl(path: string): string {
-  const base = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "";
-  const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
+  const normalizedBase = getApiBase();
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return `${normalizedBase}${normalizedPath}`;
 }
