@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
 import { rachaConfig } from "@/config/racha.config";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DEFAULT_TENANT_SLUG =
@@ -13,9 +14,14 @@ type Feedback = { type: "success" | "error"; message: string } | null;
 
 export default function RegisterPage() {
   const { rachaId } = useRacha();
+  const { racha: rachaSelecionado } = useRachaPublic(rachaId);
   const nomeDoRacha = useMemo(
-    () => rachaMap[rachaId]?.nome || rachaConfig.nome || "Fut7Pro",
-    [rachaId]
+    () => rachaSelecionado?.nome ?? rachaMap[rachaId]?.nome ?? rachaConfig.nome ?? "Fut7Pro",
+    [rachaId, rachaSelecionado?.nome]
+  );
+  const tenantSlug = useMemo(
+    () => rachaSelecionado?.slug?.trim() || DEFAULT_TENANT_SLUG,
+    [rachaSelecionado?.slug]
   );
 
   const [nome, setNome] = useState("");
@@ -55,7 +61,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          slug: DEFAULT_TENANT_SLUG,
+          slug: tenantSlug,
           nome: nome.trim(),
           apelido: apelido.trim(),
           email: emailTrimmed,

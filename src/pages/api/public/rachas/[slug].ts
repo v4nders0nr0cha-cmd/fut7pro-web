@@ -14,37 +14,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { slug } = req.query;
   if (!slug || typeof slug !== "string") {
-    return res.status(400).json({ error: "Slug é obrigatório" });
+    return res.status(400).json({ error: "Identificador é obrigatório" });
   }
 
   try {
-    const racha = await prisma.racha.findUnique({
+    const cleaned = slug.trim();
+
+    const select = {
+      id: true,
+      nome: true,
+      slug: true,
+      descricao: true,
+      logoUrl: true,
+      tema: true,
+      regras: true,
+      ativo: true,
+      financeiroVisivel: true,
+      criadoEm: true,
+      atualizadoEm: true,
+      ownerId: true,
+    };
+
+    const rachaPorSlug = await prisma.racha.findFirst({
       where: {
-        slug: slug,
+        OR: [{ slug: cleaned }, { id: cleaned }],
         ativo: true,
       },
-      select: {
-        id: true,
-        nome: true,
-        slug: true,
-        descricao: true,
-        logoUrl: true,
-        tema: true,
-        regras: true,
-        ativo: true,
-        financeiroVisivel: true,
-        criadoEm: true,
-        atualizadoEm: true,
-        ownerId: true,
-      },
+      select,
     });
 
-    if (!racha) {
+    if (!rachaPorSlug) {
       return res.status(404).json({ error: "Racha não encontrado" });
     }
 
     return res.status(200).json({
-      ...racha,
+      ...rachaPorSlug,
       admins: [],
       jogadores: [],
     });
