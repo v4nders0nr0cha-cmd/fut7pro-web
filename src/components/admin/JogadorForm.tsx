@@ -1,14 +1,25 @@
 "use client";
+
 import React, { useRef, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
-import type { Jogador, PosicaoJogador } from "@/types/jogador";
+import type { Jogador } from "@/types/jogador";
+import { POSITION_OPTIONS, type PositionValue } from "@/constants/positions";
 
-const POSICOES: { label: string; value: PosicaoJogador }[] = [
-  { label: "Atacante", value: "atacante" },
-  { label: "Meia", value: "meia" },
-  { label: "Zagueiro", value: "zagueiro" },
-  { label: "Goleiro", value: "goleiro" },
-];
+type FormState = Partial<Jogador> & {
+  foto?: string;
+  posicao?: PositionValue;
+  status?: string;
+};
+
+const DEFAULT_FORM: FormState = {
+  id: "",
+  nome: "",
+  apelido: "",
+  foto: "",
+  status: "Ativo",
+  mensalista: false,
+  posicao: "atacante",
+};
 
 export default function JogadorForm({
   jogador,
@@ -19,46 +30,28 @@ export default function JogadorForm({
   onCancel?: () => void;
   onSave?: (jogador: Partial<Jogador>) => void;
 }) {
-  const [form, setForm] = useState<Partial<Jogador>>(
-    jogador || {
-      id: "",
-      nome: "",
-      apelido: "",
-      foto: "",
-      status: "ativo",
-      mensalista: false,
-      posicao: "atacante",
-    }
-  );
+  const [form, setForm] = useState<FormState>(jogador ? normalizeJogador(jogador) : DEFAULT_FORM);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string>(jogador?.foto || "");
+  const [fotoPreview, setFotoPreview] = useState<string>(jogador?.foto ?? jogador?.avatar ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (jogador) {
-      setForm(jogador);
-      setFotoPreview(jogador.foto || "");
+      setForm(normalizeJogador(jogador));
+      setFotoPreview(jogador.foto ?? jogador.avatar ?? "");
     } else {
-      setForm({
-        id: "",
-        nome: "",
-        apelido: "",
-        foto: "",
-        status: "ativo",
-        mensalista: false,
-        posicao: "atacante",
-      });
+      setForm(DEFAULT_FORM);
       setFotoPreview("");
       setFotoFile(null);
     }
   }, [jogador]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value, type } = e.target;
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value, type } = event.target;
     if (type === "checkbox") {
       setForm((prev) => ({
         ...prev,
-        [name]: (e.target as HTMLInputElement).checked,
+        [name]: (event.target as HTMLInputElement).checked,
       }));
     } else {
       setForm((prev) => ({
@@ -68,23 +61,27 @@ export default function JogadorForm({
     }
   }
 
-  function handleFotoChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFotoFile(file);
-      const preview = URL.createObjectURL(file);
-      setFotoPreview(preview);
-      setForm((prev) => ({ ...prev, foto: preview }));
-    }
+  function handleFotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setFotoFile(file);
+    const preview = URL.createObjectURL(file);
+    setFotoPreview(preview);
+    setForm((prev) => ({ ...prev, foto: preview }));
   }
 
   function handleFotoClick() {
     fileInputRef.current?.click();
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (onSave) onSave(form);
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (onSave) {
+      onSave({
+        ...form,
+        posicao: form.posicao ?? "atacante",
+      });
+    }
     setFotoFile(null);
     setFotoPreview("");
     if (onCancel) onCancel();
@@ -126,7 +123,7 @@ export default function JogadorForm({
               value={form.nome || ""}
               onChange={handleChange}
               className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-              maxLength={20}
+              maxLength={60}
               required
             />
           </div>
@@ -137,47 +134,50 @@ export default function JogadorForm({
               value={form.apelido || ""}
               onChange={handleChange}
               className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-              maxLength={15}
+              maxLength={40}
               required
             />
           </div>
         </div>
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
+
+      <div className="flex gap-4 flex-wrap md:flex-nowrap">
+        <div className="flex-1 min-w-[180px]">
           <label className="block font-medium text-yellow-500 mb-1">Status</label>
           <select
             name="status"
-            value={form.status}
+            value={form.status ?? "Ativo"}
             onChange={handleChange}
             className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
           >
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="suspenso">Suspenso</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+            <option value="Suspenso">Suspenso</option>
           </select>
         </div>
-        <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Posição</label>
+
+        <div className="flex-1 min-w-[180px]">
+          <label className="block font-medium text-yellow-500 mb-1">Posicao</label>
           <select
             name="posicao"
-            value={form.posicao}
+            value={form.posicao ?? "atacante"}
             onChange={handleChange}
             className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
           >
-            {POSICOES.map((pos) => (
-              <option key={pos.value} value={pos.value}>
-                {pos.label}
+            {POSITION_OPTIONS.map((posicao) => (
+              <option key={posicao.value} value={posicao.value}>
+                {posicao.label}
               </option>
             ))}
           </select>
         </div>
+
         <div className="flex items-end">
           <label className="flex items-center gap-2 font-medium text-yellow-500 cursor-pointer mb-1">
             <input
               name="mensalista"
               type="checkbox"
-              checked={!!form.mensalista}
+              checked={Boolean(form.mensalista)}
               onChange={handleChange}
               className="accent-yellow-500"
             />
@@ -185,12 +185,13 @@ export default function JogadorForm({
           </label>
         </div>
       </div>
+
       <div className="flex gap-4">
         <button
           type="submit"
           className="bg-yellow-500 text-gray-900 font-bold py-2 rounded hover:bg-yellow-600 transition shadow flex-1"
         >
-          {form.id ? "Salvar Alterações" : "Cadastrar Jogador"}
+          {form.id ? "Salvar alteracoes" : "Cadastrar jogador"}
         </button>
         {form.id && onCancel && (
           <button
@@ -204,4 +205,13 @@ export default function JogadorForm({
       </div>
     </form>
   );
+}
+
+function normalizeJogador(jogador: Jogador): FormState {
+  return {
+    ...jogador,
+    foto: jogador.avatar ?? (jogador as { foto?: string }).foto ?? "",
+    posicao: jogador.posicao ?? "atacante",
+    status: jogador.status ?? "Ativo",
+  };
 }

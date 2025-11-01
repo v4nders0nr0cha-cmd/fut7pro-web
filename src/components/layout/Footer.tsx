@@ -9,6 +9,7 @@ import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { trackSponsorMetric } from "@/lib/track-sponsor-metric";
 import type { Patrocinador } from "@/types/patrocinador";
 
 const FALLBACK_SPONSORS: Patrocinador[] = [
@@ -57,6 +58,7 @@ export default function Footer() {
   const { patrocinadores, isLoading } = usePublicSponsors(slug);
 
   const sponsorsList = patrocinadores.length > 0 ? patrocinadores : FALLBACK_SPONSORS;
+  const impressionSet = useRef(new Set<string>());
 
   useEffect(() => {
     if (!carouselRef.current) return;
@@ -73,6 +75,34 @@ export default function Footer() {
     const interval = setInterval(scroll, 20);
     return () => clearInterval(interval);
   }, [sponsorsList.length]);
+  useEffect(() => {
+    if (!slug) return;
+    sponsorsList.forEach((sponsor, index) => {
+      if (!impressionSet.current.has(sponsor.id)) {
+        trackSponsorMetric({
+          slug,
+          sponsorId: sponsor.id,
+          type: "impression",
+          targetUrl: sponsor.link,
+          source: "footer-carousel",
+          metadata: { position: index + 1 },
+        });
+        impressionSet.current.add(sponsor.id);
+      }
+    });
+  }, [sponsorsList, slug]);
+
+  const handleSponsorClick = (sponsor: Patrocinador, position: number) => {
+    if (!slug) return;
+    trackSponsorMetric({
+      slug,
+      sponsorId: sponsor.id,
+      type: "click",
+      targetUrl: sponsor.link,
+      source: "footer-carousel",
+      metadata: { position },
+    });
+  };
 
   const handleManualScroll = (direction: "left" | "right") => {
     const el = carouselRef.current;
@@ -112,11 +142,8 @@ export default function Footer() {
             ref={carouselRef}
             className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide py-2"
           >
-            {[...sponsorsList, ...sponsorsList].map((sponsor, index) => (
-              <div
-                key={`${sponsor.id}-${index}`}
-                className="min-w-[180px] flex justify-center items-center"
-              >
+            {[...sponsorsList, ...sponsorsList].map((sponsor, index) => {
+              const logo = (
                 <Image
                   src={sponsor.logoUrl}
                   alt={`Logo do patrocinador ${sponsor.name} - sistema de racha ${rachaConfig.nome}`}
@@ -124,8 +151,28 @@ export default function Footer() {
                   height={96}
                   className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
                 />
-              </div>
-            ))}
+              );
+
+              return (
+                <div
+                  key={`${sponsor.id}-${index}`}
+                  className="min-w-[180px] flex justify-center items-center"
+                >
+                  {sponsor.link ? (
+                    <Link
+                      href={sponsor.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleSponsorClick(sponsor, (index % sponsorsList.length) + 1)}
+                    >
+                      {logo}
+                    </Link>
+                  ) : (
+                    logo
+                  )}
+                </div>
+              );
+            })}
           </div>
           {isLoading && (
             <div className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center text-xs text-gray-200">

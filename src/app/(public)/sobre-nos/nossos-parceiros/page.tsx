@@ -3,11 +3,12 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { trackSponsorMetric } from "@/lib/track-sponsor-metric";
 import { rachaConfig } from "@/config/racha.config";
+import { usePublicTenantSlug } from "@/hooks/usePublicTenantSlug";
 import type { Patrocinador } from "@/types/patrocinador";
 
 const seo = {
@@ -34,23 +35,43 @@ const FALLBACK_SPONSORS: Patrocinador[] = [
   },
 ];
 
-function resolveSlug(pathname: string | null): string | null {
-  if (!pathname) return null;
-  const segments = pathname.split("/").filter(Boolean);
-  if (!segments.length) return null;
-  const first = segments[0];
-  if (first === "sobre-nos") return null;
-  return first;
-}
-
 export default function NossosParceiros() {
   const { user } = useAuth();
-  const pathname = usePathname();
-  const slugFromPath = useMemo(() => resolveSlug(pathname), [pathname]);
-  const slug = user?.tenantSlug ?? slugFromPath ?? rachaConfig.slug;
+  const publicSlug = usePublicTenantSlug();
+  const slug = user?.tenantSlug ?? publicSlug ?? rachaConfig.slug;
   const { patrocinadores, isLoading } = usePublicSponsors(slug);
 
   const parceiros = patrocinadores.length > 0 ? patrocinadores : FALLBACK_SPONSORS;
+  const impressionSet = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!slug) return;
+    parceiros.forEach((parceiro, index) => {
+      if (!impressionSet.current.has(parceiro.id)) {
+        trackSponsorMetric({
+          slug,
+          sponsorId: parceiro.id,
+          type: "impression",
+          targetUrl: parceiro.link,
+          source: "partners-page",
+          metadata: { position: index + 1 },
+        });
+        impressionSet.current.add(parceiro.id);
+      }
+    });
+  }, [parceiros, slug]);
+
+  const handleSponsorClick = (parceiro: Patrocinador, position: number) => {
+    if (!slug) return;
+    trackSponsorMetric({
+      slug,
+      sponsorId: parceiro.id,
+      type: "click",
+      targetUrl: parceiro.link,
+      source: "partners-page",
+      metadata: { position },
+    });
+  };
 
   return (
     <>
@@ -83,7 +104,7 @@ export default function NossosParceiros() {
           </p>
 
           <section className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {parceiros.map((parceiro) => (
+            {parceiros.map((parceiro, index) => (
               <div
                 key={parceiro.id}
                 className="flex flex-col items-center bg-neutral-800 rounded-2xl border border-neutral-700 p-5 text-center h-full transition hover:border-yellow-400"
@@ -113,6 +134,7 @@ export default function NossosParceiros() {
                   target="_blank"
                   className="inline-block mt-auto px-3 py-1 rounded-full text-sm font-semibold bg-neutral-900 text-yellow-300 border border-yellow-400 hover:bg-yellow-400 hover:text-neutral-900 transition disabled:opacity-50"
                   rel="noopener noreferrer"
+                  onClick={() => handleSponsorClick(parceiro, index + 1)}
                 >
                   {parceiro.link ? "Visitar" : "Em breve"}
                 </Link>

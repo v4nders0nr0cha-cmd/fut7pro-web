@@ -5,8 +5,7 @@ import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
 import { rachaConfig } from "@/config/racha.config";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
-
-const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
+import { POSITION_OPTIONS, type PositionValue } from "@/constants/positions";
 const DEFAULT_TENANT_SLUG =
   process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG ?? rachaConfig.slug ?? "fut7pro";
 
@@ -27,7 +26,7 @@ export default function RegisterPage() {
   const [nome, setNome] = useState("");
   const [apelido, setApelido] = useState("");
   const [email, setEmail] = useState("");
-  const [posicao, setPosicao] = useState<(typeof POSICOES)[number]>("Meia");
+  const [posicao, setPosicao] = useState<PositionValue>("meia");
   const [mensagem, setMensagem] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<Feedback>(null);
@@ -89,7 +88,7 @@ export default function RegisterPage() {
       setApelido("");
       setEmail("");
       setMensagem("");
-      setPosicao("Meia");
+      setPosicao("meia");
     } catch (err) {
       const message =
         err instanceof Error
@@ -182,12 +181,12 @@ export default function RegisterPage() {
             <select
               id="posicao"
               value={posicao}
-              onChange={(event) => setPosicao(event.target.value as (typeof POSICOES)[number])}
+              onChange={(event) => setPosicao(event.target.value as PositionValue)}
               className="w-full p-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
             >
-              {POSICOES.map((item) => (
-                <option key={item} value={item}>
-                  {item}
+              {POSITION_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>

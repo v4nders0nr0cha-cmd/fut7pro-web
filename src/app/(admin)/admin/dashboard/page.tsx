@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import { useMemo } from "react";
 import BannerNotificacoes from "@/components/admin/BannerNotificacoes";
 import CardTimeCampeaoDoDia from "@/components/admin/CardTimeCampeaoDoDia";
 import CardCicloPlano from "@/components/admin/CardCicloPlano";
@@ -12,17 +13,8 @@ import CardRelatoriosEngajamento from "@/components/admin/CardRelatoriosEngajame
 import { FaRandom, FaUsers, FaMoneyBillWave, FaMedal, FaBirthdayCake } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
-
-// MOCKS — use sempre suas fontes reais depois!
-const jogadoresAssiduos = [
-  { nome: "Bruno Silva", foto: "/images/jogadores/jogador_padrao_01.jpg", jogos: 22 },
-  { nome: "Pedro Alves", foto: "/images/jogadores/jogador_padrao_02.jpg", jogos: 20 },
-  { nome: "César Souza", foto: "/images/jogadores/jogador_padrao_03.jpg", jogos: 19 },
-];
-const aniversariantes = [
-  { nome: "Lucas Reis", foto: "/images/jogadores/jogador_padrao_04.jpg", data: "07/07" },
-  { nome: "Igor Lima", foto: "/images/jogadores/jogador_padrao_05.jpg", data: "10/07" },
-];
+import { useAdminPlayerRankings } from "@/hooks/useAdminPlayerRankings";
+import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 
 const diasRestantes = 5;
 const tipoPlano:
@@ -33,7 +25,57 @@ const tipoPlano:
   | "anual"
   | "anual-marketing" = "trial";
 
+const AVATAR_FALLBACK = "/images/jogadores/jogador_padrao_01.jpg";
+
+const formatShortDate = (value?: string | null) => {
+  if (!value) return "--/--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "--/--";
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+};
+
 export default function AdminDashboard() {
+  const agora = useMemo(() => new Date(), []);
+  const {
+    rankings: rankingAssiduos,
+    isLoading: carregandoRankingAssiduidade,
+    isError: erroRankingAssiduidade,
+    error: mensagemErroRankingAssiduidade,
+  } = useAdminPlayerRankings({
+    type: "geral",
+    limit: 10,
+    period: "month",
+    year: agora.getFullYear(),
+    month: agora.getMonth() + 1,
+  });
+
+  const jogadoresAssiduos = useMemo(
+    () =>
+      [...rankingAssiduos]
+        .map((atleta) => ({
+          id: atleta.id,
+          nome: atleta.nome,
+          foto: atleta.foto?.trim() || AVATAR_FALLBACK,
+          jogos: atleta.jogos ?? 0,
+        }))
+        .sort((a, b) => b.jogos - a.jogos)
+        .slice(0, 3),
+    [rankingAssiduos]
+  );
+
+  const {
+    birthdays: aniversariantes,
+    isLoading: carregandoAniversariantes,
+    isError: erroAniversariantes,
+    error: mensagemErroAniversariantes,
+  } = useAdminBirthdays({
+    rangeDays: 60,
+    limit: 3,
+  });
+
   return (
     <>
       <Head>
@@ -56,7 +98,7 @@ export default function AdminDashboard() {
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3">
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-600 to-yellow-300 text-black text-xs font-bold px-3 py-1 rounded-xl shadow">
-              🏅 PÓS-JOGO
+              ⚡ PÓS-JOGO
             </span>
             <CardTimeCampeaoDoDia
               fotoUrl="/images/times/time_campeao_padrao_01.png"
@@ -67,7 +109,7 @@ export default function AdminDashboard() {
 
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-800 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
-              🕒 PRÉ-JOGO
+              ⚙️ PRÉ-JOGO
             </span>
             <Link
               href="/admin/partidas/times-do-dia"
@@ -87,7 +129,7 @@ export default function AdminDashboard() {
 
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-800 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
-              🕒 PRÉ-JOGO
+              ⚙️ PRÉ-JOGO
             </span>
             <Link
               href="/admin/partidas/sorteio-inteligente"
@@ -141,7 +183,7 @@ export default function AdminDashboard() {
           {/* Próximos Rachas - permanece sem redirecionamento */}
           <CardProximosRachas />
 
-          {/* Mais Assíduos - neutro e profissional */}
+          {/* Mais Assíduos */}
           <Link
             href="/admin/jogadores/ranking-assiduidade"
             className="block hover:scale-[1.025] transition"
@@ -154,25 +196,37 @@ export default function AdminDashboard() {
                 <span className="text-lg font-bold text-gray-100">Mais Assíduos</span>
               </div>
               <div className="flex flex-col gap-2 mb-1">
-                {jogadoresAssiduos.map((j, i) => (
-                  <div key={j.nome} className="flex items-center gap-3">
-                    <Image
-                      src={j.foto}
-                      alt={`Jogador assíduo ${j.nome} - Fut7Pro`}
-                      width={32}
-                      height={32}
-                      className="rounded-full border border-gray-500"
-                    />
-                    <span className="text-gray-100 font-semibold truncate">{j.nome}</span>
-                    <span className="ml-auto text-green-400 font-bold">{j.jogos}j</span>
-                  </div>
-                ))}
+                {carregandoRankingAssiduidade ? (
+                  <span className="text-sm text-gray-400">Carregando ranking de presença...</span>
+                ) : erroRankingAssiduidade ? (
+                  <span className="text-sm text-red-300">
+                    Falha ao carregar ranking: {mensagemErroRankingAssiduidade}
+                  </span>
+                ) : jogadoresAssiduos.length === 0 ? (
+                  <span className="text-sm text-gray-400">
+                    Nenhum atleta com presença registrada neste período.
+                  </span>
+                ) : (
+                  jogadoresAssiduos.map((jogador) => (
+                    <div key={jogador.id ?? jogador.nome} className="flex items-center gap-3">
+                      <Image
+                        src={jogador.foto}
+                        alt={`Jogador assíduo ${jogador.nome} - Fut7Pro`}
+                        width={32}
+                        height={32}
+                        className="rounded-full border border-gray-500 object-cover"
+                      />
+                      <span className="text-gray-100 font-semibold truncate">{jogador.nome}</span>
+                      <span className="ml-auto text-green-400 font-bold">{jogador.jogos}j</span>
+                    </div>
+                  ))
+                )}
               </div>
               <span className="text-xs text-gray-400 mt-2">Ranking por presença</span>
             </div>
           </Link>
 
-          {/* Aniversariantes - neutro, sem rosa */}
+          {/* Aniversariantes */}
           <Link
             href="/admin/jogadores/aniversariantes"
             className="block hover:scale-[1.025] transition"
@@ -185,19 +239,44 @@ export default function AdminDashboard() {
                 <span className="text-lg font-bold text-gray-100">Aniversariantes</span>
               </div>
               <div className="flex flex-col gap-2">
-                {aniversariantes.map((a) => (
-                  <div key={a.nome} className="flex items-center gap-3">
-                    <Image
-                      src={a.foto}
-                      alt={`Aniversariante ${a.nome} - Fut7Pro`}
-                      width={32}
-                      height={32}
-                      className="rounded-full border border-gray-500"
-                    />
-                    <span className="text-gray-100 font-semibold truncate">{a.nome}</span>
-                    <span className="ml-auto text-yellow-300 font-bold">{a.data}</span>
-                  </div>
-                ))}
+                {carregandoAniversariantes ? (
+                  <span className="text-sm text-gray-400">Carregando aniversariantes...</span>
+                ) : erroAniversariantes ? (
+                  <span className="text-sm text-red-300">
+                    Falha ao carregar: {mensagemErroAniversariantes}
+                  </span>
+                ) : aniversariantes.length === 0 ? (
+                  <span className="text-sm text-gray-400">
+                    Nenhum aniversário no intervalo selecionado.
+                  </span>
+                ) : (
+                  aniversariantes.map((aniversariante) => (
+                    <div key={aniversariante.id} className="flex items-center gap-3">
+                      <Image
+                        src={aniversariante.photoUrl?.trim() || AVATAR_FALLBACK}
+                        alt={`Aniversariante ${aniversariante.name} - Fut7Pro`}
+                        width={32}
+                        height={32}
+                        className="rounded-full border border-gray-500 object-cover"
+                      />
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <span className="text-gray-100 font-semibold truncate">
+                          {aniversariante.name}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {aniversariante.daysUntil === 0
+                            ? "Hoje!"
+                            : `em ${aniversariante.daysUntil} dia${
+                                aniversariante.daysUntil === 1 ? "" : "s"
+                              }`}
+                        </span>
+                      </div>
+                      <span className="ml-auto text-yellow-300 font-bold">
+                        {formatShortDate(aniversariante.nextBirthday)}
+                      </span>
+                    </div>
+                  ))
+                )}
               </div>
               <span className="text-xs text-gray-400 mt-2">Deseje parabéns!</span>
             </div>

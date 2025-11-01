@@ -2,6 +2,7 @@
 // Camada de abstração centralizada para APIs
 
 import type { ApiRequestData } from "@/types/api";
+import type { PlayerRankingType } from "@/types/ranking";
 import { getSession } from "next-auth/react";
 import { getApiBase } from "@/lib/get-api-base";
 
@@ -137,6 +138,8 @@ export const jogadoresApi = {
   create: (data: ApiRequestData) => apiClient.post("/api/jogadores", data),
   update: (id: string, data: ApiRequestData) => apiClient.put(`/api/jogadores/${id}`, data),
   delete: (id: string) => apiClient.delete(`/api/jogadores/${id}`),
+  getBirthdays: (params?: Record<string, string>) =>
+    apiClient.get("/api/jogadores/aniversariantes", params),
 };
 
 export const partidasApi = {
@@ -231,21 +234,69 @@ export const notificacoesApi = {
   delete: (id: string) => apiClient.delete(`/notificacoes/${id}`),
 };
 
+type RankingQueryParams = {
+  limit?: number;
+  position?: string;
+  period?: "all" | "year" | "quarter" | "custom";
+  year?: number;
+  quarter?: number;
+  start?: string;
+  end?: string;
+};
+
+function serializeRankingParams(params?: RankingQueryParams) {
+  if (!params) return undefined;
+
+  const query = new URLSearchParams();
+
+  if (params.limit !== undefined) {
+    query.set("limit", String(params.limit));
+  }
+  if (params.position) {
+    query.set("position", params.position);
+  }
+  if (params.period) {
+    query.set("period", params.period);
+  }
+  if (params.year !== undefined) {
+    query.set("year", String(params.year));
+  }
+  if (params.quarter !== undefined) {
+    query.set("quarter", String(params.quarter));
+  }
+  if (params.start) {
+    query.set("start", params.start);
+  }
+  if (params.end) {
+    query.set("end", params.end);
+  }
+
+  const entries = Object.fromEntries(query.entries());
+  return Object.keys(entries).length ? entries : undefined;
+}
+
+function getPlayerRankings(type: PlayerRankingType, params?: RankingQueryParams) {
+  return apiClient.get(`/rankings/${type}`, serializeRankingParams(params));
+}
+
 // API de Rankings
 export const rankingsApi = {
-  getRankingGeral: () => apiClient.get("/rankings/geral"),
-  getRankingArtilheiros: () => apiClient.get("/rankings/artilheiros"),
-  getRankingAssistencias: () => apiClient.get("/rankings/assistencias"),
+  getPlayerRankings,
+  getRankingGeral: (params?: RankingQueryParams) => getPlayerRankings("geral", params),
+  getRankingArtilheiros: (params?: RankingQueryParams) => getPlayerRankings("artilheiros", params),
+  getRankingAssistencias: (params?: RankingQueryParams) =>
+    getPlayerRankings("assistencias", params),
   getRankingTimes: () => apiClient.get("/rankings/times"),
 };
 
 // API de Campeões
 export const campeoesApi = {
-  getAll: () => apiClient.get("/campeoes"),
-  getById: (id: string) => apiClient.get(`/campeoes/${id}`),
-  create: (data: ApiRequestData) => apiClient.post("/campeoes", data),
-  update: (id: string, data: ApiRequestData) => apiClient.put(`/campeoes/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/campeoes/${id}`),
+  getAll: () => apiClient.get("/api/campeoes"),
+  getResumo: (params?: Record<string, string>) => apiClient.get("/api/campeoes/resumo", params),
+  getById: (id: string) => apiClient.get(`/api/campeoes/${id}`),
+  create: (data: ApiRequestData) => apiClient.post("/api/campeoes", data),
+  update: (id: string, data: ApiRequestData) => apiClient.put(`/api/campeoes/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/api/campeoes/${id}`),
 };
 
 // API de Times

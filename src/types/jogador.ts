@@ -14,7 +14,7 @@ export type Jogador = {
 };
 
 // Enum para posição
-export type PosicaoJogador = "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
+export type PosicaoJogador = "goleiro" | "zagueiro" | "meia" | "atacante";
 
 // Enum para status do jogador
 export type StatusJogador = "Ativo" | "Inativo" | "Suspenso";

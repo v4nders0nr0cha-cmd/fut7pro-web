@@ -1,8 +1,9 @@
 "use client";
 import type { LancamentoFinanceiro } from "@/components/financeiro/types";
-import { useState } from "react";
-import { FaFileAlt, FaFileDownload } from "react-icons/fa";
+import { useMemo, useState } from "react";
+import { FaFileAlt, FaFileDownload, FaSpinner } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
+import { useNotification } from "@/context/NotificationContext";
 
 interface Props {
   lancamentos: LancamentoFinanceiro[];
@@ -22,12 +23,76 @@ const tiposMap: Record<string, string> = {
 export default function TabelaLancamentos({ lancamentos }: Props) {
   const [filtro, setFiltro] = useState("");
   const [filtroPeriodo, setFiltroPeriodo] = useState("");
+  const [formato, setFormato] = useState<"xlsx" | "csv" | "pdf">("xlsx");
+  const [exportando, setExportando] = useState(false);
+  const { notify } = useNotification();
 
-  const filtrados = lancamentos.filter((l) => {
-    const tipoOk = !filtro || l.tipo === filtro;
-    const periodoOk = !filtroPeriodo || l.data.startsWith(filtroPeriodo);
-    return tipoOk && periodoOk;
-  });
+  const filtrados = useMemo(
+    () =>
+      lancamentos.filter((l) => {
+        const tipoOk = !filtro || l.tipo === filtro;
+        const periodoOk = !filtroPeriodo || l.data.startsWith(filtroPeriodo);
+        return tipoOk && periodoOk;
+      }),
+    [lancamentos, filtro, filtroPeriodo]
+  );
+
+  const handleExport = async () => {
+    const params = new URLSearchParams();
+    params.set("format", formato);
+
+    if (filtro) {
+      params.set("category", filtro);
+    }
+
+    if (filtroPeriodo) {
+      const [year, month] = filtroPeriodo.split("-");
+      if (year && month) {
+        const start = `${year}-${month}-01`;
+        const endDate = new Date(Number(year), Number(month), 0);
+        const end = endDate.toISOString().split("T")[0];
+        params.set("dateStart", start);
+        params.set("dateEnd", end);
+      }
+    }
+
+    setExportando(true);
+    try {
+      const response = await fetch(
+        `/api/admin/financeiro/export${params.toString() ? `?${params.toString()}` : ""}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({
+          error: "Falha ao exportar dados financeiros.",
+        }));
+        throw new Error(
+          errorData.error ?? errorData.message ?? "Falha ao exportar dados financeiros."
+        );
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const disposition =
+        response.headers.get("Content-Disposition") ?? response.headers.get("content-disposition");
+      link.href = url;
+      link.download = extractFilename(disposition) ?? `financeiro-${Date.now()}.${formato}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      notify({ message: "Exportação financeira iniciada com sucesso!", type: "success" });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível exportar os lançamentos financeiros.";
+      notify({ message, type: "error" });
+    } finally {
+      setExportando(false);
+    }
+  };
 
   return (
     <div className="w-full mt-2">
@@ -58,8 +123,31 @@ export default function TabelaLancamentos({ lancamentos }: Props) {
           onChange={(e) => setFiltroPeriodo(e.target.value)}
           className="p-2 rounded bg-neutral-900 border border-neutral-700 text-sm text-white"
         />
-        <button className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded shadow text-sm font-semibold hover:bg-yellow-500 flex items-center gap-2">
-          <FaFileDownload /> Exportar Excel
+        <select
+          value={formato}
+          onChange={(e) => setFormato(e.target.value as typeof formato)}
+          className="p-2 rounded bg-neutral-900 border border-neutral-700 text-sm text-white"
+        >
+          <option value="xlsx">XLSX</option>
+          <option value="csv">CSV</option>
+          <option value="pdf">PDF</option>
+        </select>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exportando}
+          className="ml-auto px-4 py-2 bg-yellow-400 disabled:bg-yellow-600/60 disabled:cursor-not-allowed text-black rounded shadow text-sm font-semibold hover:bg-yellow-500 flex items-center gap-2 transition"
+        >
+          {exportando ? (
+            <>
+              <FaSpinner className="animate-spin" />
+              Exportando...
+            </>
+          ) : (
+            <>
+              <FaFileDownload /> Exportar {formato.toUpperCase()}
+            </>
+          )}
         </button>
       </div>
       <div className="overflow-x-auto rounded-xl border border-neutral-800">
@@ -117,4 +205,19 @@ export default function TabelaLancamentos({ lancamentos }: Props) {
       </div>
     </div>
   );
+}
+
+function extractFilename(disposition: string | null): string | null {
+  if (!disposition) return null;
+  const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|")?([^";]+)/i);
+  if (!filenameMatch) return null;
+  try {
+    const raw = filenameMatch[1];
+    if (raw.startsWith("UTF-8''")) {
+      return decodeURIComponent(raw.slice(7));
+    }
+    return decodeURIComponent(raw.replace(/"/g, ""));
+  } catch {
+    return null;
+  }
 }

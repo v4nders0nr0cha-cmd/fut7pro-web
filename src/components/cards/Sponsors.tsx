@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { trackSponsorMetric } from "@/lib/track-sponsor-metric";
 import { rachaConfig } from "@/config/racha.config";
 import type { Patrocinador } from "@/types/patrocinador";
 
@@ -22,6 +24,24 @@ export default function Sponsors() {
   const slug = user?.tenantSlug ?? rachaConfig.slug;
   const { patrocinadores } = usePublicSponsors(slug);
   const sponsors = patrocinadores.length > 0 ? patrocinadores : FALLBACK_SPONSORS;
+  const impressionSet = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!slug) return;
+    sponsors.forEach((patro, index) => {
+      if (!impressionSet.current.has(patro.id)) {
+        trackSponsorMetric({
+          slug,
+          sponsorId: patro.id,
+          type: "impression",
+          targetUrl: patro.link,
+          source: "card-sponsors",
+          metadata: { position: index + 1 },
+        });
+        impressionSet.current.add(patro.id);
+      }
+    });
+  }, [slug, sponsors]);
 
   return (
     <section className="bg-[#111] py-8 border-t border-yellow-400 px-4">
