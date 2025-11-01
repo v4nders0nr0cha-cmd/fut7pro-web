@@ -1,188 +1,307 @@
 "use client";
-import { useRef, useState } from "react";
-import type { Patrocinador } from "@/types/financeiro";
-import Image from "next/image";
-import { FaUpload, FaTimes } from "react-icons/fa";
+
+import { useEffect, useMemo, useState } from "react";
+import type { Patrocinador, PatrocinadorPayload, SponsorTier } from "@/types/patrocinador";
+import { FaTimes } from "react-icons/fa";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave: (p: Partial<Patrocinador>) => void;
-  initial?: Partial<Patrocinador>;
+  onSave: (payload: PatrocinadorPayload, id?: string) => Promise<void> | void;
+  initial?: Patrocinador | null;
+  submitting?: boolean;
 }
 
-const statusOptions = [
-  { value: "ativo", label: "Ativo" },
-  { value: "inativo", label: "Inativo" },
-  { value: "encerrado", label: "Encerrado" },
-] as const;
+type FormState = {
+  id?: string;
+  name: string;
+  logoUrl: string;
+  link: string;
+  value: string;
+  periodStart: string;
+  periodEnd: string;
+  tier: SponsorTier;
+  displayOrder: number;
+  showOnFooter: boolean;
+  ramo: string;
+  about: string;
+  coupon: string;
+  benefit: string;
+};
 
-export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
-  const fileLogoRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState<Partial<Patrocinador>>(initial || {});
-  const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
+const EMPTY_FORM: FormState = {
+  name: "",
+  logoUrl: "",
+  link: "",
+  value: "",
+  periodStart: "",
+  periodEnd: "",
+  tier: "BASIC",
+  displayOrder: 1,
+  showOnFooter: true,
+  ramo: "",
+  about: "",
+  coupon: "",
+  benefit: "",
+};
 
-  // Custom scrollbar dark (executa só no client)
-  if (typeof window !== "undefined") {
-    const id = "modal-scrollbar-dark";
-    if (!document.getElementById(id)) {
-      const style = document.createElement("style");
-      style.id = id;
-      style.innerHTML = `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #444;
-          border-radius: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #191919;
-        }
-      `;
-      document.head.appendChild(style);
+const tierOptions: SponsorTier[] = ["BASIC", "PLUS", "PRO"];
+
+export default function ModalPatrocinador({
+  open,
+  onClose,
+  onSave,
+  initial = null,
+  submitting = false,
+}: Props) {
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setForm({
+        id: initial.id,
+        name: initial.name ?? "",
+        logoUrl: initial.logoUrl ?? "",
+        link: initial.link ?? "",
+        value:
+          typeof initial.value === "number" && !Number.isNaN(initial.value)
+            ? String(initial.value)
+            : "",
+        periodStart: initial.periodStart?.slice(0, 10) ?? "",
+        periodEnd: initial.periodEnd?.slice(0, 10) ?? "",
+        tier: initial.tier ?? "BASIC",
+        displayOrder: initial.displayOrder ?? 1,
+        showOnFooter: Boolean(initial.showOnFooter),
+        ramo: initial.ramo ?? "",
+        about: initial.about ?? "",
+        coupon: initial.coupon ?? "",
+        benefit: initial.benefit ?? "",
+      });
+    } else {
+      setForm(EMPTY_FORM);
     }
-  }
+  }, [initial, open]);
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setLogoPreview(url);
-      setForm((f) => ({ ...f, logo: url }));
-    }
-  };
+  const isEdit = useMemo(() => Boolean(form.id), [form.id]);
 
   if (!open) return null;
 
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const valueNumber =
+      form.value.trim().length > 0 ? Number(form.value.replace(",", ".")) : undefined;
+
+    const payload: PatrocinadorPayload = {
+      name: form.name.trim(),
+      logoUrl: form.logoUrl.trim(),
+      link: form.link.trim() || undefined,
+      value:
+        typeof valueNumber === "number" && !Number.isNaN(valueNumber) ? valueNumber : undefined,
+      periodStart: form.periodStart || undefined,
+      periodEnd: form.periodEnd || undefined,
+      tier: form.tier,
+      displayOrder: Number.isNaN(form.displayOrder) ? 1 : form.displayOrder,
+      showOnFooter: form.showOnFooter,
+      ramo: form.ramo.trim() || undefined,
+      about: form.about.trim() || undefined,
+      coupon: form.coupon.trim() || undefined,
+      benefit: form.benefit.trim() || undefined,
+    };
+
+    await onSave(payload, form.id);
+  };
+
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/80 px-2">
-      <div
-        className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full shadow-xl relative overflow-y-auto max-h-screen custom-scrollbar"
-        style={{
-          scrollbarColor: "#444 #191919",
-          scrollbarWidth: "thin",
-        }}
-      >
-        {/* Botão de fechar sempre fixo no topo direito */}
+      <div className="bg-[#1a1a1a] rounded-2xl p-6 max-w-xl w-full shadow-xl relative overflow-y-auto max-h-screen">
         <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-red-400 z-10"
-          style={{ zIndex: 10 }}
+          className="absolute top-2 right-2 text-gray-400 hover:text-red-400"
           onClick={onClose}
           type="button"
           aria-label="Fechar modal"
+          disabled={submitting}
         >
           <FaTimes size={22} />
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-4 pt-3 pr-8">
-          {form.id ? "Editar Patrocinador" : "Novo Patrocinador"}
+
+        <h2 className="text-xl font-bold text-yellow-400 mb-4 pr-8">
+          {isEdit ? "Editar Patrocinador" : "Novo Patrocinador"}
         </h2>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSave(form);
-          }}
-        >
-          <label className="text-sm text-gray-200 font-semibold">Nome *</label>
-          <input
-            type="text"
-            value={form.nome || ""}
-            required
-            maxLength={40}
-            autoFocus
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-          />
-          <label className="text-sm text-gray-200 font-semibold">Valor *</label>
-          <input
-            type="number"
-            value={form.valor || ""}
-            required
-            min={0}
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, valor: parseFloat(e.target.value) }))}
-          />
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Início *</label>
+
+        <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Nome *
               <input
-                type="date"
-                value={form.periodoInicio || ""}
+                type="text"
+                value={form.name}
                 required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoInicio: e.target.value }))}
+                maxLength={80}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               />
-            </div>
-            <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Fim *</label>
-              <input
-                type="date"
-                value={form.periodoFim || ""}
-                required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoFim: e.target.value }))}
-              />
-            </div>
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Tier *
+              <select
+                value={form.tier}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, tier: e.target.value as SponsorTier }))
+                }
+              >
+                {tierOptions.map((tier) => (
+                  <option key={tier} value={tier}>
+                    {tier}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-          <label className="text-sm text-gray-200 font-semibold">Status *</label>
-          <select
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.status || "ativo"}
-            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
-          >
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <label className="text-sm text-gray-200 font-semibold">Logo *</label>
-          <div className="flex items-center gap-3">
+
+          <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+            URL da logo (https://) *
             <input
-              type="file"
-              accept="image/*"
-              ref={fileLogoRef}
-              className="hidden"
-              onChange={handleLogoChange}
+              type="url"
+              value={form.logoUrl}
+              required
+              className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+              onChange={(e) => setForm((prev) => ({ ...prev, logoUrl: e.target.value }))}
             />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+            Link do patrocinador
+            <input
+              type="url"
+              value={form.link}
+              placeholder="https://"
+              className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+              onChange={(e) => setForm((prev) => ({ ...prev, link: e.target.value }))}
+            />
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Valor mensal (R$)
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.value}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, value: e.target.value }))}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Início
+              <input
+                type="date"
+                value={form.periodStart}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, periodStart: e.target.value }))}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Fim
+              <input
+                type="date"
+                value={form.periodEnd}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, periodEnd: e.target.value }))}
+              />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Ramo / segmento
+              <input
+                type="text"
+                value={form.ramo}
+                maxLength={80}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, ramo: e.target.value }))}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+              Cupom / código
+              <input
+                type="text"
+                value={form.coupon}
+                maxLength={40}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) => setForm((prev) => ({ ...prev, coupon: e.target.value }))}
+              />
+            </label>
+          </div>
+
+          <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+            Benefício oferecido
+            <input
+              type="text"
+              value={form.benefit}
+              maxLength={120}
+              className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+              onChange={(e) => setForm((prev) => ({ ...prev, benefit: e.target.value }))}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm text-gray-200 font-semibold">
+            Descrição
+            <textarea
+              value={form.about}
+              maxLength={280}
+              rows={3}
+              className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+              onChange={(e) => setForm((prev) => ({ ...prev, about: e.target.value }))}
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm text-gray-200 font-semibold">
+              <input
+                type="checkbox"
+                checked={form.showOnFooter}
+                onChange={(e) => setForm((prev) => ({ ...prev, showOnFooter: e.target.checked }))}
+                className="h-4 w-4 accent-yellow-400"
+              />
+              Exibir no rodapé e página pública
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-200 font-semibold">
+              Ordem de exibição
+              <input
+                type="number"
+                min={1}
+                max={99}
+                value={form.displayOrder}
+                className="w-20 input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    displayOrder: Number(e.target.value) || 1,
+                  }))
+                }
+              />
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
             <button
               type="button"
-              onClick={() => fileLogoRef.current?.click()}
-              className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+              className="btn-secondary px-5 py-2 rounded-xl border border-gray-600 text-gray-200 hover:bg-gray-700 transition"
+              onClick={onClose}
+              disabled={submitting}
             >
-              <FaUpload /> Selecionar
+              Cancelar
             </button>
-            {logoPreview && (
-              <Image
-                src={logoPreview}
-                alt="Logo patrocinador"
-                width={40}
-                height={40}
-                className="rounded border border-gray-700 bg-[#222]"
-              />
-            )}
-          </div>
-          <label className="text-sm text-gray-200 font-semibold">Descrição/Observações</label>
-          <textarea
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            rows={2}
-            value={form.observacoes || ""}
-            onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
-          />
-          <label className="text-sm text-gray-200 font-semibold">Link (opcional)</label>
-          <input
-            type="url"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.link || ""}
-            onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-          />
-          <div className="flex justify-end mt-4">
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl disabled:opacity-50"
+              disabled={submitting}
             >
-              Salvar
+              {submitting ? "Salvando..." : "Salvar"}
             </button>
           </div>
         </form>

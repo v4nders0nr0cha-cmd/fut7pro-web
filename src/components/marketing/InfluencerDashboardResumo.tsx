@@ -1,8 +1,16 @@
 // src/components/marketing/InfluencerDashboardResumo.tsx
 
-import { prisma } from "@/lib/prisma";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/lib/prisma";
 
 export default async function InfluencerDashboardResumo() {
+  if (isDirectDbBlocked) {
+    return (
+      <div className="rounded-xl border border-yellow-500/40 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+        {PRISMA_DISABLED_MESSAGE}
+      </div>
+    );
+  }
+
   // KPI: Total de usos de cupons
   const totalUsos = await prisma.influencerCupomUso.count();
   // KPI: Total de vendas pagas

@@ -92,10 +92,10 @@ export function useAdmin() {
   };
 
   return {
-    admins: data || [],
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
+    admins: Array.isArray(data) ? data : [],
+    isLoading: Boolean(isLoading) || apiState.isLoading,
+    isError: Boolean(error) || apiState.isError,
+    error: error ?? apiState.error,
     isSuccess: apiState.isSuccess,
     mutate,
     addAdmin,

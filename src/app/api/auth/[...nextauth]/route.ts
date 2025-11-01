@@ -2,14 +2,14 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
 
 import type { NextAuthOptions, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+import { getApiBase } from "@/lib/get-api-base";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = getApiBase();
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -69,6 +69,7 @@ const authOptions: NextAuthOptions = {
             email: userData.email,
             role: userData.role,
             tenantId: userData.tenantId,
+            tenantSlug: userData.tenantSlug ?? null,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           };
@@ -105,6 +106,7 @@ const authOptions: NextAuthOptions = {
             (user as any).refreshToken = data.refreshToken;
             (user as any).role = data.role;
             (user as any).tenantId = data.tenantId;
+            (user as any).tenantSlug = data.tenantSlug ?? null;
           }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
@@ -122,6 +124,7 @@ const authOptions: NextAuthOptions = {
         session.user.tenantId = token.tenantId as string;
         session.user.accessToken = token.accessToken as string;
         session.user.refreshToken = token.refreshToken as string;
+        session.user.tenantSlug = (token.tenantSlug as string | null | undefined) ?? null;
       }
       return session;
     },
@@ -131,6 +134,7 @@ const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = (user as any).role;
         token.tenantId = (user as any).tenantId;
+        token.tenantSlug = (user as any).tenantSlug ?? null;
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
       }

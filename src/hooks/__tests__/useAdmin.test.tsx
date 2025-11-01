@@ -1,52 +1,58 @@
-import { renderHook, act } from "@testing-library/react";
+import { renderHook } from "@testing-library/react";
+import useSWR from "swr";
 import { useAdmin } from "../useAdmin";
-import { Role } from "@/common/enums";
 
-// Mock do SWR
-jest.mock("swr", () => ({
-  __esModule: true,
-  default: jest.fn(),
+jest.mock("swr");
+
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({
+    rachaId: "racha-1",
+    setRachaId: jest.fn(),
+    clearRachaId: jest.fn(),
+    isRachaSelected: true,
+  }),
 }));
 
-// Mock do NextAuth
 jest.mock("next-auth/react", () => ({
-  useSession: jest.fn(),
+  useSession: jest.fn(() => ({
+    data: {
+      user: {
+        id: "admin-1",
+        email: "admin@test.com",
+        name: "Admin User",
+      },
+    },
+    status: "authenticated",
+  })),
+}));
+
+jest.mock("@/hooks/useApiState", () => ({
+  useApiState: () => ({
+    isLoading: false,
+    isError: false,
+    isSuccess: false,
+    error: null,
+    setLoading: jest.fn(),
+    setError: jest.fn(),
+    setSuccess: jest.fn(),
+    reset: jest.fn(),
+    handleAsync: async (fn: () => Promise<unknown>) => fn(),
+  }),
 }));
 
 describe("useAdmin", () => {
-  const mockSession = {
-    data: {
-      user: {
-        id: "user-1",
-        email: "admin@test.com",
-        name: "Admin User",
-        role: Role.GERENTE,
-        tenantId: "tenant-1",
-      },
-      expires: "2024-12-31",
-    },
-    status: "authenticated",
-  };
-
-  const mockRachaData = {
-    id: "racha-1",
-    name: "Test Racha",
-    tenantId: "tenant-1",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    (useSWR as jest.Mock).mockReset();
   });
 
-  it("should return admin data when user is authenticated", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
+  it("retorna lista de administradores quando SWR possui dados", () => {
+    const admins = [
+      { id: "1", usuarioId: "u1", nome: "Admin 1", role: "ADMIN" },
+      { id: "2", usuarioId: "u2", nome: "Admin 2", role: "SUPORTE" },
+    ];
 
-    useSession.mockReturnValue(mockSession);
-    useSWR.mockReturnValue({
-      data: mockRachaData,
+    (useSWR as jest.Mock).mockReturnValue({
+      data: admins,
       error: undefined,
       isLoading: false,
       mutate: jest.fn(),
@@ -54,45 +60,13 @@ describe("useAdmin", () => {
 
     const { result } = renderHook(() => useAdmin());
 
-    expect(result.current.isAdmin).toBe(true);
-    expect(result.current.user).toEqual(mockSession.data.user);
-    expect(result.current.racha).toEqual(mockRachaData);
+    expect(result.current.admins).toEqual(admins);
     expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toBeUndefined();
+    expect(result.current.isError).toBe(false);
   });
 
-  it("should return false for isAdmin when user is not authenticated", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
-
-    useSession.mockReturnValue({
-      data: null,
-      status: "unauthenticated",
-    });
-    useSWR.mockReturnValue({
-      data: undefined,
-      error: undefined,
-      isLoading: false,
-      mutate: jest.fn(),
-    });
-
-    const { result } = renderHook(() => useAdmin());
-
-    expect(result.current.isAdmin).toBe(false);
-    expect(result.current.user).toBeNull();
-    expect(result.current.racha).toBeUndefined();
-    expect(result.current.isLoading).toBe(false);
-  });
-
-  it("should return loading state when session is loading", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
-
-    useSession.mockReturnValue({
-      data: null,
-      status: "loading",
-    });
-    useSWR.mockReturnValue({
+  it("propaga estado de carregamento do SWR", () => {
+    (useSWR as jest.Mock).mockReturnValue({
       data: undefined,
       error: undefined,
       isLoading: true,
@@ -101,18 +75,13 @@ describe("useAdmin", () => {
 
     const { result } = renderHook(() => useAdmin());
 
-    expect(result.current.isAdmin).toBe(false);
     expect(result.current.isLoading).toBe(true);
+    expect(result.current.admins).toEqual([]);
   });
 
-  it("should handle error state", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
-
-    const mockError = new Error("Failed to fetch racha data");
-
-    useSession.mockReturnValue(mockSession);
-    useSWR.mockReturnValue({
+  it("indica erro quando SWR retorna falha", () => {
+    const mockError = new Error("Erro ao buscar admins");
+    (useSWR as jest.Mock).mockReturnValue({
       data: undefined,
       error: mockError,
       isLoading: false,
@@ -121,94 +90,40 @@ describe("useAdmin", () => {
 
     const { result } = renderHook(() => useAdmin());
 
+    expect(result.current.isError).toBe(true);
     expect(result.current.error).toBe(mockError);
-    expect(result.current.isLoading).toBe(false);
   });
 
-  it("should return correct permissions based on user role", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
+  it("filtra administradores por role corretamente", () => {
+    const admins = [
+      { id: "1", usuarioId: "u1", nome: "Admin 1", role: "ADMIN" },
+      { id: "2", usuarioId: "u2", nome: "Admin 2", role: "SUPORTE" },
+      { id: "3", usuarioId: "u3", nome: "Admin 3", role: "ADMIN" },
+    ];
 
-    const gerenteSession = {
-      ...mockSession,
-      data: {
-        ...mockSession.data,
-        user: {
-          ...mockSession.data.user,
-          role: Role.GERENTE,
-        },
-      },
-    };
-
-    useSession.mockReturnValue(gerenteSession);
-    useSWR.mockReturnValue({
-      data: mockRachaData,
+    (useSWR as jest.Mock).mockReturnValue({
+      data: admins,
       error: undefined,
       isLoading: false,
       mutate: jest.fn(),
     });
 
     const { result } = renderHook(() => useAdmin());
-
-    expect(result.current.isAdmin).toBe(true);
-    expect(result.current.user?.role).toBe(Role.GERENTE);
+    expect(result.current.getAdminsPorRole("ADMIN")).toHaveLength(2);
+    expect(result.current.getAdminsPorRole("SUPORTE")).toHaveLength(1);
   });
 
-  it("should handle different user roles correctly", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
-
-    const suporteSession = {
-      ...mockSession,
-      data: {
-        ...mockSession.data,
-        user: {
-          ...mockSession.data.user,
-          role: Role.SUPORTE,
-        },
-      },
-    };
-
-    useSession.mockReturnValue(suporteSession);
-    useSWR.mockReturnValue({
-      data: mockRachaData,
+  it("localiza admin pelo id", () => {
+    const admins = [{ id: "42", usuarioId: "u42", nome: "Admin 42", role: "ADMIN" }];
+    (useSWR as jest.Mock).mockReturnValue({
+      data: admins,
       error: undefined,
       isLoading: false,
       mutate: jest.fn(),
     });
 
     const { result } = renderHook(() => useAdmin());
-
-    expect(result.current.isAdmin).toBe(true);
-    expect(result.current.user?.role).toBe(Role.SUPORTE);
-  });
-
-  it("should return false for isAdmin when user role is ATLETA", () => {
-    const { useSession } = require("next-auth/react");
-    const { default: useSWR } = require("swr");
-
-    const atletaSession = {
-      ...mockSession,
-      data: {
-        ...mockSession.data,
-        user: {
-          ...mockSession.data.user,
-          role: Role.ATLETA,
-        },
-      },
-    };
-
-    useSession.mockReturnValue(atletaSession);
-    useSWR.mockReturnValue({
-      data: undefined,
-      error: undefined,
-      isLoading: false,
-      mutate: jest.fn(),
-    });
-
-    const { result } = renderHook(() => useAdmin());
-
-    expect(result.current.isAdmin).toBe(false);
-    expect(result.current.user?.role).toBe(Role.ATLETA);
+    expect(result.current.getAdminById("42")).toEqual(admins[0]);
+    expect(result.current.getAdminById("x")).toBeUndefined();
   });
 });

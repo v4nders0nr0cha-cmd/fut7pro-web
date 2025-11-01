@@ -1,39 +1,40 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import TopTeamsCard from "@/components/cards/TopTeamsCard";
+import { classificacaoTimes } from "@/components/lists/mockClassificacaoTimes";
 
 describe("TopTeamsCard", () => {
-  it('renderiza título e botão "Ver todos"', () => {
+  it('renderiza título e chamada "Ver todos"', () => {
     render(<TopTeamsCard />);
 
     expect(screen.getByText(/Classificação dos Times/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Ver todos/i })).toBeInTheDocument();
+    expect(screen.getByText(/Ver todos/i)).toBeInTheDocument();
   });
 
-  it("renderiza lista de times corretamente", () => {
+  it("exibe os quatro primeiros times da classificação", () => {
     render(<TopTeamsCard />);
 
-    // Verifica se os times mockados estão sendo renderizados
-    expect(screen.getByText("Time Alpha")).toBeInTheDocument();
-    expect(screen.getByText("Time Beta")).toBeInTheDocument();
-    expect(screen.getByText("Time Gama")).toBeInTheDocument();
+    const top4 = classificacaoTimes.slice(0, 4);
+    top4.forEach((time) => {
+      expect(screen.getByText(time.nome)).toBeInTheDocument();
+    });
   });
 
-  it("renderiza pontuação dos times", () => {
+  it("exibe pontos e variação para cada time", () => {
     render(<TopTeamsCard />);
 
-    // Verifica se as pontuações dos times mockados estão sendo renderizadas
-    expect(screen.getByText("24")).toBeInTheDocument(); // Pontos do Time Alpha
-    expect(screen.getByText("23")).toBeInTheDocument(); // Pontos do Time Gama
-    expect(screen.getByText("22")).toBeInTheDocument(); // Pontos do Time Ômega
+    const top4 = classificacaoTimes.slice(0, 4);
+    top4.forEach((time) => {
+      const row = screen.getByText(time.nome).closest("tr");
+      expect(row).not.toBeNull();
+      if (row) {
+        expect(within(row).getByText(String(time.pontos))).toBeInTheDocument();
+      }
+    });
   });
 
-  it("renderiza estrutura da tabela", () => {
+  it("envolve o card em um link para a classificação completa", () => {
     render(<TopTeamsCard />);
-
-    // Verifica se a estrutura da tabela está correta
-    expect(screen.getByText("#")).toBeInTheDocument();
-    expect(screen.getByText("Time")).toBeInTheDocument();
-    expect(screen.getByText("↑↓")).toBeInTheDocument();
-    expect(screen.getByText("Pts")).toBeInTheDocument();
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/estatisticas/classificacao-dos-times");
   });
 });

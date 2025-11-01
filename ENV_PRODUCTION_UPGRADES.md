@@ -28,12 +28,12 @@
 ```bash
 # Backend URL (para proxy server-side)
 BACKEND_URL=https://api.fut7pro.com.br
+DISABLE_WEB_DIRECT_DB=true
 
 # URLs públicas (já configuradas)
 NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br
 NEXTAUTH_URL=https://app.fut7pro.com.br
 NEXTAUTH_SECRET=your-secret-here
-AUTH_SECRET=your-secret-here
 
 # Google OAuth (já configuradas)
 GOOGLE_CLIENT_ID=your-client-id

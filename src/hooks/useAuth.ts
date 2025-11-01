@@ -12,6 +12,7 @@ export interface AuthUser {
   image?: string | null;
   role: Role;
   tenantId: string;
+  tenantSlug: string | null;
   accessToken: string;
   refreshToken: string;
 }

@@ -1,34 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
-import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import { mockParticipantes } from "./mockParticipantes";
+import {
+  sortearTimesInteligente,
+  gerarTabelaJogos,
+  type JogoConfronto,
+  type Time,
+} from "@/utils/sorteioUtils";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
-import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
+import { useAuth } from "@/hooks/useAuth";
+import { useJogadores } from "@/hooks/useJogadores";
+import { useTimes } from "@/hooks/useTimes";
+import { rachaConfig } from "@/config/racha.config";
 
-const mockTimes: Time[] = [
-  { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
-  { id: "2", nome: "Tigres", logo: "/images/times/time_padrao_02.png" },
-  { id: "3", nome: "Águias", logo: "/images/times/time_padrao_03.png" },
-  { id: "4", nome: "Furacão", logo: "/images/times/time_padrao_04.png" },
-  { id: "5", nome: "Tubarão", logo: "/images/times/time_padrao_05.png" },
-  { id: "6", nome: "Gaviões", logo: "/images/times/time_padrao_06.png" },
-  { id: "7", nome: "Panteras", logo: "/images/times/time_padrao_07.png" },
-  { id: "8", nome: "Corujas", logo: "/images/times/time_padrao_08.png" },
-];
+const FALLBACK_FOTO = "/images/jogadores/jogador_padrao_01.jpg";
 
-// SVG Loader animado de bola pulando (não precisa instalar nada)
 function LoaderBolaFutebol() {
   return (
     <svg width="72" height="72" viewBox="0 0 72 72" className="mb-2" aria-hidden>
       <g>
-        {/* Sombra */}
         <ellipse cx="36" cy="64" rx="20" ry="5" fill="#000" opacity="0.2">
           <animate
             attributeName="rx"
@@ -45,7 +41,6 @@ function LoaderBolaFutebol() {
             repeatCount="indefinite"
           />
         </ellipse>
-        {/* Bola */}
         <circle cx="36" cy="36" r="20" fill="#fff" stroke="#222" strokeWidth="3">
           <animate
             attributeName="cy"
@@ -55,21 +50,15 @@ function LoaderBolaFutebol() {
             repeatCount="indefinite"
           />
         </circle>
-        {/* Hexágono central */}
         <polygon points="36,24 44,28 44,36 36,40 28,36 28,28" fill="#222">
           <animate
             attributeName="points"
-            values="
-                            36,24 44,28 44,36 36,40 28,36 28,28;
-                            36,14 46,20 46,36 36,42 26,36 26,20;
-                            36,24 44,28 44,36 36,40 28,36 28,28
-                        "
+            values="36,24 44,28 44,36 36,40 28,36 28,28;36,14 46,20 46,36 36,42 26,36 26,20;36,24 44,28 44,36 36,40 28,36 28,28"
             keyTimes="0;0.5;1"
             dur="0.7s"
             repeatCount="indefinite"
           />
         </polygon>
-        {/* Detalhes (gomos) */}
         <polyline
           points="36,24 36,40"
           stroke="#fff"
@@ -79,11 +68,7 @@ function LoaderBolaFutebol() {
         >
           <animate
             attributeName="points"
-            values="
-                            36,24 36,40;
-                            36,14 36,42;
-                            36,24 36,40
-                        "
+            values="36,24 36,40;36,14 36,42;36,24 36,40"
             keyTimes="0;0.5;1"
             dur="0.7s"
             repeatCount="indefinite"
@@ -98,11 +83,7 @@ function LoaderBolaFutebol() {
         >
           <animate
             attributeName="points"
-            values="
-                            36,24 44,28;
-                            36,14 46,20;
-                            36,24 44,28
-                        "
+            values="36,24 44,28;36,14 46,20;36,24 44,28"
             keyTimes="0;0.5;1"
             dur="0.7s"
             repeatCount="indefinite"
@@ -117,11 +98,7 @@ function LoaderBolaFutebol() {
         >
           <animate
             attributeName="points"
-            values="
-                            36,24 28,28;
-                            36,14 26,20;
-                            36,24 28,28
-                        "
+            values="36,24 28,28;36,14 26,20;36,24 28,28"
             keyTimes="0;0.5;1"
             dur="0.7s"
             repeatCount="indefinite"
@@ -132,240 +109,322 @@ function LoaderBolaFutebol() {
   );
 }
 
+function normalizarPosicao(posicao?: string | null): "GOL" | "ZAG" | "MEI" | "ATA" {
+  const valor = (posicao ?? "").toLowerCase();
+  if (valor.includes("gol")) return "GOL";
+  if (valor.includes("zag") || valor.includes("def")) return "ZAG";
+  if (valor.includes("mei") || valor.includes("mid")) return "MEI";
+  return "ATA";
+}
+
+function mapJogadorParaParticipante(raw: any, tenantSlug: string): Participante {
+  const rankingPrimario = Array.isArray(raw?.rankings) ? raw.rankings[0] : undefined;
+  const partidas = rankingPrimario?.games ?? rankingPrimario?.jogos ?? raw?.partidas ?? 0;
+  const vitorias = rankingPrimario?.wins ?? rankingPrimario?.vitorias ?? raw?.vitorias ?? 0;
+  const gols = rankingPrimario?.goals ?? rankingPrimario?.gols ?? raw?.gols ?? 0;
+  const assistencias =
+    rankingPrimario?.assists ?? rankingPrimario?.assistencias ?? raw?.assistencias ?? 0;
+
+  return {
+    id: String(raw?.id ?? crypto.randomUUID()),
+    nome: raw?.nome ?? raw?.name ?? "Jogador",
+    slug: raw?.slug ?? raw?.nickname ?? String(raw?.id ?? crypto.randomUUID()),
+    foto: raw?.foto ?? raw?.avatar ?? raw?.photoUrl ?? FALLBACK_FOTO,
+    posicao: normalizarPosicao(raw?.posicao ?? raw?.position),
+    rankingPontos: rankingPrimario?.points ?? rankingPrimario?.pontos ?? raw?.rankingPontos ?? 0,
+    vitorias,
+    gols,
+    assistencias,
+    estrelas: {
+      id: `${tenantSlug}-${raw?.id ?? crypto.randomUUID()}`,
+      rachaId: tenantSlug,
+      jogadorId: String(raw?.id ?? crypto.randomUUID()),
+      estrelas: raw?.estrelas?.estrelas ?? 0,
+      atualizadoEm: raw?.estrelas?.atualizadoEm ?? "",
+      atualizadoPor: raw?.estrelas?.atualizadoPor ?? "",
+    },
+    mensalista: Boolean(raw?.mensalista ?? raw?.monthly ?? raw?.isMensalista),
+    partidas,
+  };
+}
+
+function mapTime(time: Time): Time {
+  return {
+    id: time.id,
+    nome: time.nome,
+    logo: time.logo || "/images/times/time_padrao_01.png",
+  };
+}
+
 export default function SorteioInteligenteAdmin() {
+  const { user } = useAuth();
+  const resolvedTenantSlug = user?.tenantSlug ?? rachaConfig.slug;
+
+  const { jogadores: jogadoresRaw, isLoading: jogadoresLoading } = useJogadores(resolvedTenantSlug);
+  const { times: timesRaw, isLoading: timesLoading } = useTimes(resolvedTenantSlug);
+
+  const participantesDisponiveis = useMemo(
+    () =>
+      (jogadoresRaw ?? []).map((jogador) =>
+        mapJogadorParaParticipante(jogador, resolvedTenantSlug)
+      ),
+    [jogadoresRaw, resolvedTenantSlug]
+  );
+
+  const timesDisponiveis = useMemo(() => (timesRaw ?? []).map(mapTime), [timesRaw]);
+
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
-  const [participantes, setParticipantes] = useState<Participante[]>(
-    mockParticipantes.filter((p) => p.mensalista)
-  );
-  const [times, setTimes] = useState<TimeSorteado[]>([]);
-  const [publicado, setPublicado] = useState(false);
-  const [showTip, setShowTip] = useState(false);
   const [configConfirmada, setConfigConfirmada] = useState(false);
-
-  // Estado dos times selecionados
-  const [timesSelecionados, setTimesSelecionados] = useState<string[]>(
-    mockTimes.slice(0, 4).map((t) => t.id)
-  );
-
-  // Estado para a tabela de jogos
+  const [timesSelecionados, setTimesSelecionados] = useState<string[]>([]);
+  const [participantesSelecionados, setParticipantesSelecionados] = useState<Participante[]>([]);
+  const [timesGerados, setTimesGerados] = useState<TimeSorteado[]>([]);
   const [tabelaJogos, setTabelaJogos] = useState<JogoConfronto[]>([]);
-
-  // Shake no aviso se tentar confirmar sem estar correto
+  const [showTip, setShowTip] = useState(true);
   const [avisoTimesShake, setAvisoTimesShake] = useState(false);
+  const [publicando, setPublicando] = useState(false);
+  const [publicado, setPublicado] = useState(false);
+  const [publicarErro, setPublicarErro] = useState<string | null>(null);
+  const [partidasTotais, setPartidasTotais] = useState(0);
 
-  // Loading do sorteio inteligente
-  const [loadingSorteio, setLoadingSorteio] = useState(false);
+  const maxTimes = config?.numTimes ?? Math.min(timesDisponiveis.length, 4);
 
-  // Quantidade máxima de times do config
-  const maxTimes = config?.numTimes || 2;
+  useEffect(() => {
+    if (timesDisponiveis.length === 0) {
+      setTimesSelecionados([]);
+      return;
+    }
 
-  function handleConfirmarConfig() {
-    if (timesSelecionados.length !== maxTimes) {
+    const limite = Math.max(2, config?.numTimes ?? Math.min(timesDisponiveis.length, 4));
+
+    setTimesSelecionados((prev) => {
+      const disponiveisIds = timesDisponiveis.map((t) => t.id);
+      const filtrados = prev.filter((id) => disponiveisIds.includes(id)).slice(0, limite);
+      if (filtrados.length === limite) return filtrados;
+
+      const adicionais = disponiveisIds
+        .filter((id) => !filtrados.includes(id))
+        .slice(0, limite - filtrados.length);
+      return [...filtrados, ...adicionais];
+    });
+  }, [timesDisponiveis, config?.numTimes]);
+
+  useEffect(() => {
+    setParticipantesSelecionados((prev) => {
+      const disponiveisPorId = new Map(participantesDisponiveis.map((p) => [p.id, p]));
+      return prev
+        .map((p) => {
+          const atualizado = disponiveisPorId.get(p.id);
+          if (!atualizado) return null;
+          return {
+            ...atualizado,
+            estrelas: p.estrelas ?? atualizado.estrelas,
+          };
+        })
+        .filter((p): p is Participante => Boolean(p));
+    });
+  }, [participantesDisponiveis]);
+
+  useEffect(() => {
+    if (!config || participantesSelecionados.length > 0) return;
+    const maxJogadores = config.numTimes * config.jogadoresPorTime;
+    if (!maxJogadores) return;
+
+    const mensalistas = participantesDisponiveis.filter((p) => p.mensalista).slice(0, maxJogadores);
+    if (mensalistas.length) {
+      setParticipantesSelecionados(mensalistas);
+    }
+  }, [config, participantesDisponiveis, participantesSelecionados.length]);
+
+  const handleConfirmarConfig = () => {
+    if (!config) return;
+    if (timesSelecionados.length !== (config?.numTimes ?? 0)) {
       setAvisoTimesShake(true);
       setTimeout(() => setAvisoTimesShake(false), 500);
       return;
     }
     setConfigConfirmada(true);
-  }
+  };
 
-  // NOVO: Função para somar o total de partidas já jogadas pelos participantes
-  function calcularPartidasTotais(participantes: Participante[]): number {
-    // Soma o campo "partidas" de cada participante (fallback para 0 se não existir)
-    return participantes.reduce((acc, p) => acc + (p.partidas || 0), 0);
-  }
+  const handleSortearTimes = () => {
+    if (!config) return;
+    if (participantesSelecionados.length === 0) return;
 
-  async function handleSortearTimes() {
-    if (!config || participantes.length === 0 || timesSelecionados.length < 2) return;
+    const timesSelecionadosInfo = timesDisponiveis.filter((t) => timesSelecionados.includes(t.id));
+    const resultado = sortearTimesInteligente(
+      participantesSelecionados,
+      timesSelecionadosInfo,
+      participantesSelecionados.reduce((acc, p) => acc + (p.partidas ?? 0), 0)
+    );
+    setTimesGerados(resultado);
+    setPartidasTotais(participantesSelecionados.reduce((acc, p) => acc + (p.partidas ?? 0), 0));
 
-    setLoadingSorteio(true);
-
-    // Calcula o total de partidas do racha (pode usar só participantes selecionados do dia)
-    const partidasTotais = calcularPartidasTotais(participantes);
-
-    // Balanceamento "pesado" e delay mínimo de 5s (user experience PRO)
-    const timesParaSorteio = mockTimes.filter((t) => timesSelecionados.includes(t.id));
-    const balanceamentoPromise = new Promise<TimeSorteado[]>((resolve) => {
-      setTimeout(() => {
-        // Agora passa partidasTotais!
-        const timesGerados = sortearTimesInteligente(
-          participantes,
-          timesParaSorteio,
-          partidasTotais
-        );
-        resolve(timesGerados);
-      }, 150); // pequeno delay para simular "thread" JS
+    const tabela = gerarTabelaJogos({
+      times: timesSelecionadosInfo,
+      duracaoRachaMin: config.duracaoRachaMin,
+      duracaoPartidaMin: config.duracaoPartidaMin,
     });
-    const delayMinimo = new Promise((resolve) => setTimeout(resolve, 5000));
-
-    const [timesGerados] = await Promise.all([balanceamentoPromise, delayMinimo]);
-
-    setTimes(timesGerados);
+    setTabelaJogos(tabela);
     setPublicado(false);
+    setPublicarErro(null);
+  };
 
-    // GERA A TABELA DE JOGOS conforme times selecionados
-    if (timesParaSorteio.length >= 2) {
-      const jogos = gerarTabelaJogos({
-        times: timesParaSorteio,
-        duracaoRachaMin: config.duracaoRachaMin,
-        duracaoPartidaMin: config.duracaoPartidaMin,
+  const handlePublicarTimes = async () => {
+    if (publicando || timesGerados.length === 0) return;
+
+    setPublicando(true);
+    setPublicarErro(null);
+    try {
+      const payload = {
+        tenantSlug: resolvedTenantSlug,
+        config,
+        timesSelecionados,
+        timesGerados,
+        participantes: participantesSelecionados.map((p) => ({
+          id: p.id,
+          nome: p.nome,
+          posicao: p.posicao,
+          estrelas: p.estrelas?.estrelas ?? 0,
+        })),
+        tabelaJogos,
+        partidasTotais,
+      };
+
+      const response = await fetch("/api/admin/partidas/sorteio/publicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
-      setTabelaJogos(jogos);
-    } else {
-      setTabelaJogos([]);
-    }
 
-    setLoadingSorteio(false);
-  }
+      if (!response.ok) {
+        const erro = await response.json().catch(() => ({}));
+        throw new Error(erro.error ?? "Falha ao publicar sorteio");
+      }
+
+      setPublicado(true);
+    } catch (error) {
+      setPublicarErro(error instanceof Error ? error.message : "Erro desconhecido");
+    } finally {
+      setPublicando(false);
+    }
+  };
+
+  const carregando = jogadoresLoading || timesLoading;
 
   return (
-    <div className="max-w-4xl mx-auto bg-fundo p-2 md:p-6 rounded-xl shadow-md">
-      {/* LOADING ANIMADO */}
-      {loadingSorteio && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-[#181818] border-2 border-yellow-400 shadow-xl">
-            <LoaderBolaFutebol />
-            <div className="text-yellow-200 text-xl font-bold text-center">
-              Aguarde, o melhor Sistema de Balanceamento do Brasil está equilibrando seus times!
-            </div>
-          </div>
+    <div className="bg-[#1d1d1d] text-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Sorteio Inteligente</h1>
+          <p className="text-gray-300 text-sm md:text-base">
+            Monte times equilibrados usando rankings, posi��es e estrelas personalizadas.
+          </p>
+        </div>
+      </header>
+
+      {carregando && (
+        <div className="flex flex-col items-center justify-center py-8 text-center text-gray-300">
+          <LoaderBolaFutebol />
+          <span className="font-semibold">Carregando dados do racha...</span>
         </div>
       )}
 
-      <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">
-        Sorteio Inteligente – Painel do Admin
-      </h1>
-      <div className="flex flex-col items-center mb-4">
-        <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded transition-all text-sm"
-          onClick={() => setShowTip((v) => !v)}
-        >
-          ANTES DE REALIZAR O SORTEIO CLIQUE AQUI
-        </button>
-        {showTip && (
-          <div className="bg-[#232323] mt-2 p-4 rounded-lg text-sm text-gray-100 w-full shadow-lg max-w-2xl border border-yellow-400 relative">
-            <button
-              className="absolute right-2 top-2 text-yellow-400 text-lg font-bold rounded hover:bg-yellow-400 hover:text-black transition px-2 py-0.5"
-              onClick={() => setShowTip(false)}
-              aria-label="Fechar explicação"
-            >
-              ×
-            </button>
-            <b>Como garantir um sorteio realmente equilibrado?</b>
-            <br />
-            <br />
-            O sistema de sorteio inteligente utiliza rankings, posições e estrelas para criar times
-            balanceados e justos.
-            <br />
-            <br />
-            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros sorteios do sistema (ou no
-            começo de cada ano/temporada), como ainda não há rankings históricos, o balanceamento
-            será feito <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a cada
-            jogador.
-            <br />
-            <br />
-            <b>IMPORTANTE:</b> A partir do momento que o sistema acumula mais jogos, rankings e
-            avaliações começam a ser usados para calibrar o equilíbrio dos times. Leva de 8 a 10
-            rachas para o sistema aprender quem são os melhores, deixando o sorteio cada vez mais
-            justo.
-            <br />
-            <br />
-            <b>Configurações Iniciais:</b> As opções de número de times, tempo de partida e
-            quantidade de jogadores <b>não influenciam no balanceamento</b>. Servem apenas para
-            organizar os jogadores nos times e gerar automaticamente a tabela de confrontos. O
-            algoritmo do sorteio vai sempre priorizar ranking, estrelas e posição.
-            <br />
-            <br />
-            <b>Tabela de Confrontos:</b> A tabela é calculada conforme o tempo total do racha,
-            sempre reservando 15 minutos para organização, trocas de times e imprevistos. Exemplo:
-            Se o racha tem 60 minutos, a tabela será criada para 45 minutos de jogos. O modelo da
-            tabela e o tempo sugerido são <b>opcionais</b> e podem ser ajustados pelo administrador
-            conforme a realidade do grupo.
-            <br />
-            <br />
-            <b>Dica:</b> Ajuste manualmente os times se notar algum desequilíbrio, até que rankings
-            e estrelas estejam bem definidos. Isso garante jogos mais disputados enquanto a
-            plataforma calibra sozinha.
-            <br />
-            <br />
-            <b>Estrelas:</b> Avalie cada jogador considerando não só habilidade, mas também{" "}
-            <b>condicionamento físico</b> e <b>aspectos psicológicos</b>. Não avalie apenas pelo
-            futebol! As estrelas podem (e devem) ser ajustadas sempre que perceber evolução ou queda
-            de desempenho.
-            <br />
-            <br />
-            Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e
-            divertido!
-          </div>
-        )}
-      </div>
-
-      {/* Card de Configurações - Fade ao confirmar */}
-      <div
-        className={
-          configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
-            : "transition-all duration-300"
-        }
-      >
-        <ConfiguracoesRacha onSubmit={setConfig} disabled={configConfirmada} />
-      </div>
-
-      {/* Card Selecionar Times do Dia - Fade ao confirmar */}
-      <div
-        className={
-          configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
-            : "transition-all duration-300"
-        }
-      >
-        <SelecionarTimesDia
-          timesSelecionados={timesSelecionados}
-          onChange={setTimesSelecionados}
-          disabled={configConfirmada}
-          maxTimes={maxTimes}
-          shake={avisoTimesShake}
-        />
-      </div>
-
-      {/* Botão Confirmar/Editar Configuração */}
-      <div className="flex justify-center mt-3 mb-3">
-        {!configConfirmada ? (
-          <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg shadow transition disabled:opacity-60 disabled:pointer-events-none"
-            onClick={handleConfirmarConfig}
-            disabled={!config || timesSelecionados.length !== maxTimes}
-          >
-            Confirmar Configuração
-          </button>
-        ) : (
-          <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded text-lg shadow transition"
-            onClick={() => setConfigConfirmada(false)}
-          >
-            Editar Configuração
-          </button>
-        )}
-      </div>
-
-      {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
-      <ParticipantesRacha
-        config={config}
-        participantes={participantes}
-        setParticipantes={setParticipantes}
-      />
-      <button
-        className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"
-        onClick={handleSortearTimes}
-        disabled={timesSelecionados.length < 2 || !config}
-      >
-        Sortear Times
-      </button>
-      {times.length > 0 && (
+      {!carregando && (
         <>
-          <TimesGerados times={times} />
-          <BotaoPublicarTimes publicado={publicado} onClick={() => setPublicado(true)} />
-          {/* NOVO: Tabela de jogos gerada automaticamente */}
-          <TabelaJogosRacha jogos={tabelaJogos} />
+          {showTip && (
+            <div className="bg-[#262627] border border-yellow-400 rounded-lg p-4 mb-6 relative">
+              <button
+                className="absolute right-2 top-2 text-yellow-400 text-lg font-bold rounded hover:bg-yellow-400 hover:text-black transition px-2 py-0.5"
+                onClick={() => setShowTip(false)}
+                aria-label="Fechar explica��o"
+              >
+                ✕
+              </button>
+              <b>Como garantir um sorteio equilibrado?</b>
+              <p className="text-sm text-gray-200 mt-3 space-y-2">
+                <span>
+                  O sistema considera ranking, posi��o e estrelas. Ajuste manualmente conforme a
+                  realidade do seu racha.
+                </span>
+              </p>
+            </div>
+          )}
+
+          <div
+            className={
+              configConfirmada
+                ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+                : "transition-all duration-300"
+            }
+          >
+            <ConfiguracoesRacha onSubmit={setConfig} disabled={configConfirmada} />
+          </div>
+
+          <div
+            className={
+              configConfirmada
+                ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+                : "transition-all duration-300"
+            }
+          >
+            <SelecionarTimesDia
+              timesDisponiveis={timesDisponiveis}
+              timesSelecionados={timesSelecionados}
+              onChange={setTimesSelecionados}
+              disabled={configConfirmada}
+              maxTimes={maxTimes}
+              shake={avisoTimesShake}
+            />
+          </div>
+
+          <div className="flex justify-center mt-3 mb-3">
+            {!configConfirmada ? (
+              <button
+                className="w-full md:w-auto py-3 px-8 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg shadow transition disabled:opacity-60 disabled:pointer-events-none"
+                onClick={handleConfirmarConfig}
+                disabled={!config || timesSelecionados.length !== (config?.numTimes ?? 0)}
+              >
+                Confirmar Configura��o
+              </button>
+            ) : (
+              <button
+                className="w-full md:w-auto py-3 px-8 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded text-lg shadow transition"
+                onClick={() => setConfigConfirmada(false)}
+              >
+                Editar Configura��o
+              </button>
+            )}
+          </div>
+
+          <ParticipantesRacha
+            tenantSlug={resolvedTenantSlug}
+            config={config}
+            participantes={participantesSelecionados}
+            setParticipantes={setParticipantesSelecionados}
+            todosJogadores={participantesDisponiveis}
+          />
+
+          <button
+            className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"
+            onClick={handleSortearTimes}
+            disabled={timesSelecionados.length < 2 || !config}
+          >
+            Sortear Times
+          </button>
+
+          {timesGerados.length > 0 && (
+            <>
+              <TimesGerados times={timesGerados} />
+              <BotaoPublicarTimes
+                publicado={publicado}
+                onClick={handlePublicarTimes}
+                loading={publicando}
+              />
+              {publicarErro && (
+                <p className="text-sm text-red-400 mt-2 text-center">{publicarErro}</p>
+              )}
+              <TabelaJogosRacha jogos={tabelaJogos} />
+            </>
+          )}
         </>
       )}
     </div>
