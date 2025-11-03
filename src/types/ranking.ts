@@ -39,3 +39,29 @@ export interface PlayerRankingResponse {
     end?: string | null;
   };
 }
+
+export type TeamRankingTrend = "up" | "down" | "same";
+
+export interface TeamRankingEntry {
+  id: string;
+  rankingId: string;
+  nome: string;
+  logo: string | null;
+  cor: string | null;
+  pontos: number;
+  jogos: number;
+  vitorias: number;
+  empates: number;
+  derrotas: number;
+  posicao: number;
+  aproveitamento: number;
+  updatedAt: string | null;
+  variacao?: TeamRankingTrend | null;
+}
+
+export interface TeamRankingResponse {
+  slug: string;
+  results: TeamRankingEntry[];
+  updatedAt: string | null;
+  availableYears: number[];
+}
