@@ -1,50 +1,71 @@
 "use client";
 import { useState } from "react";
-import type { Patrocinador } from "@/types/patrocinador"; // <-- Corrigido!
+import type { Patrocinador, SponsorTier } from "@/types/patrocinador";
 
 type Props = {
-  onSave: (p: Partial<Patrocinador>) => void;
+  onSave: (patrocinador: Partial<Patrocinador>) => void;
   initialData?: Partial<Patrocinador>;
   onCancel?: () => void;
 };
 
+const TIER_OPTIONS: SponsorTier[] = ["BASIC", "PLUS", "PRO"];
+
 export default function PatrocinadorForm({ onSave, initialData = {}, onCancel }: Props) {
-  const [form, setForm] = useState<Partial<Patrocinador>>(initialData);
+  const [form, setForm] = useState<Partial<Patrocinador>>({
+    tier: "BASIC",
+    displayOrder: 1,
+    showOnFooter: false,
+    ...initialData,
+  });
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
-    const { name, value } = e.target;
-    setForm((prev: Partial<Patrocinador>) => ({ ...prev, [name]: value }));
+    const target = event.target;
+    const { name, value } = target;
+
+    setForm((prev) => {
+      if (target instanceof HTMLInputElement) {
+        if (target.type === "checkbox") {
+          return { ...prev, [name]: target.checked };
+        }
+        if (target.type === "number") {
+          const numeric = Number(value);
+          return {
+            ...prev,
+            [name]: Number.isFinite(numeric) ? numeric : prev?.[name as keyof Patrocinador],
+          };
+        }
+      }
+      return { ...prev, [name]: value };
+    });
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     onSave(form);
-    setForm({});
+    setForm((prev) => ({ ...prev, name: "", logoUrl: "", link: "", about: "" }));
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-4 p-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
+      className="flex flex-col gap-4 p-4 bg-card rounded-2xl shadow-md w-full max-w-[420px] mx-auto"
     >
-      <h2 className="text-xl font-bold text-yellow-400 text-center">
-        Adicionar/Editar Patrocinador
-      </h2>
+      <h2 className="text-xl font-bold text-yellow-400 text-center">Adicionar/Editar Patrocinador</h2>
       <input
-        name="nome"
+        name="name"
         placeholder="Nome do patrocinador"
-        value={form.nome ?? ""}
+        value={form.name ?? ""}
         onChange={handleChange}
         required
         className="input"
-        maxLength={32}
+        maxLength={80}
       />
       <input
-        name="logo"
+        name="logoUrl"
         placeholder="URL da logo"
-        value={form.logo ?? ""}
+        value={form.logoUrl ?? ""}
         onChange={handleChange}
         required
         className="input"
@@ -54,35 +75,41 @@ export default function PatrocinadorForm({ onSave, initialData = {}, onCancel }:
         placeholder="Link do patrocinador"
         value={form.link ?? ""}
         onChange={handleChange}
-        required
         className="input"
       />
       <input
         type="number"
-        name="prioridade"
-        placeholder="Prioridade (1 = topo)"
-        value={form.prioridade ?? 1}
+        name="displayOrder"
+        placeholder="Ordem de exibicao (1 = topo)"
+        value={form.displayOrder ?? 1}
         onChange={handleChange}
         className="input"
         min={1}
         max={99}
       />
-      <select
-        name="status"
-        value={form.status ?? "ativo"}
-        onChange={handleChange}
-        className="input"
-      >
-        <option value="ativo">Ativo</option>
-        <option value="inativo">Inativo</option>
+      <select name="tier" value={form.tier ?? "BASIC"} onChange={handleChange} className="input">
+        {TIER_OPTIONS.map((tier) => (
+          <option key={tier} value={tier}>
+            {tier}
+          </option>
+        ))}
       </select>
+      <label className="flex items-center gap-2 text-sm text-gray-200">
+        <input
+          type="checkbox"
+          name="showOnFooter"
+          checked={form.showOnFooter ?? false}
+          onChange={handleChange}
+        />
+        Exibir no rodape publico
+      </label>
       <textarea
-        name="descricao"
-        placeholder="Descrição curta"
-        value={form.descricao ?? ""}
+        name="about"
+        placeholder="Descricao curta"
+        value={form.about ?? ""}
         onChange={handleChange}
         className="input"
-        maxLength={80}
+        maxLength={280}
       />
       <button type="submit" className="btn-primary w-full">
         Salvar

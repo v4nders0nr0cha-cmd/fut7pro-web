@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Confronto, Time, Jogador, Gol, Assistencia } from "@/types/interfaces";
+import type { Confronto, Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para Time Campeão
 interface TimeCampeao {
@@ -174,3 +174,4 @@ function CardDestaque({
     </div>
   );
 }
+

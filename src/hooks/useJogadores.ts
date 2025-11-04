@@ -1,107 +1,90 @@
 "use client";
 
+import { useCallback, useMemo } from "react";
 import useSWR from "swr";
+import { jogadoresApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
-import type { Jogador } from "@/types/jogador";
+import type { Athlete } from "@/types/jogador";
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar jogadores");
-  }
-  return response.json();
-};
+type UseJogadoresKey = readonly ["admin/jogadores", string | null | undefined];
+
+async function fetchJogadores([, slug]: UseJogadoresKey): Promise<Athlete[]> {
+  const params = slug ? { slug } : undefined;
+  const response = await jogadoresApi.list(params);
+
+  const athletes = Array.isArray(response) ? response : [];
+
+  return athletes.map((athlete) => ({
+    ...athlete,
+    mensalista: athlete.mensalista ?? athlete.isMember,
+  }));
+}
 
 export function useJogadores(tenantSlug: string | null | undefined) {
   const apiState = useApiState();
 
-  const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    tenantSlug ? `/api/admin/jogadores?slug=${tenantSlug}` : null,
-    fetcher,
-    {
-      onError: (err) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar jogadores:", err);
-        }
-      },
-    }
+  const swrKey = useMemo<UseJogadoresKey | null>(
+    () => (tenantSlug !== undefined ? ["admin/jogadores", tenantSlug] : null),
+    [tenantSlug]
   );
 
-  const addJogador = async (jogador: Partial<Jogador>) => {
-    if (!tenantSlug) return null;
+  const {
+    data,
+    error,
+    isLoading,
+    isValidating,
+    mutate,
+  } = useSWR<Athlete[]>(swrKey, fetchJogadores, {
+    revalidateOnFocus: true,
+    keepPreviousData: true,
+  });
 
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(jogador),
+  const createJogador = useCallback(
+    async (payload: Partial<Athlete>) => {
+      return apiState.handleAsync(async () => {
+        const created = await jogadoresApi.create(payload);
+        await mutate();
+        return created ?? null;
       });
+    },
+    [apiState, mutate]
+  );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Erro ao criar jogador");
-      }
-
-      await mutate();
-      return response.json();
-    });
-  };
-
-  const updateJogador = async (id: string, jogador: Partial<Jogador>) => {
-    if (!tenantSlug) return null;
-
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...jogador }),
+  const updateJogador = useCallback(
+    async (id: string, payload: Partial<Athlete>) => {
+      return apiState.handleAsync(async () => {
+        const updated = await jogadoresApi.update(id, payload);
+        await mutate();
+        return updated ?? null;
       });
+    },
+    [apiState, mutate]
+  );
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Erro ao atualizar jogador");
-      }
-
-      await mutate();
-      return response.json();
-    });
-  };
-
-  const deleteJogador = async (id: string) => {
-    if (!tenantSlug) return null;
-
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/admin/jogadores?slug=${tenantSlug}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
+  const deleteJogador = useCallback(
+    async (id: string) => {
+      await apiState.handleAsync(async () => {
+        await jogadoresApi.delete(id);
+        await mutate();
+        return null;
       });
-
-      if (!response.ok && response.status !== 204) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error ?? "Erro ao excluir jogador");
-      }
-
-      await mutate();
-      return null;
-    });
-  };
-
-  const getJogadoresPorTime = (timeId: string) => {
-    return (data || []).filter((j) => j.timeId === timeId);
-  };
+    },
+    [apiState, mutate]
+  );
 
   return {
-    jogadores: data || [],
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
-    isSuccess: apiState.isSuccess,
-    addJogador,
+    jogadores: data ?? [],
+    isLoading: (isLoading ?? false) || apiState.isLoading,
+    isValidating: isValidating ?? false,
+    isError: Boolean(error) || apiState.isError,
+    error: error instanceof Error ? error.message : apiState.error,
+    isSuccess: apiState.isSuccess && !error,
+    createJogador,
     updateJogador,
     deleteJogador,
-    getJogadoresPorTime,
     mutate,
     reset: apiState.reset,
   };
 }
+
+

@@ -1,165 +1,97 @@
-// src/app/partidas/detalhes/[id]/page.tsx
 "use client";
+
 import Head from "next/head";
-import { useParams, useRouter } from "next/navigation";
-import { partidasMock } from "@/components/lists/mockPartidas";
-import Image from "next/image";
 import Link from "next/link";
-import type { Partida } from "@/types/partida";
+import Image from "next/image";
+import { usePartidas } from "@/hooks/usePartidas";
 
-// Função para retornar a logo do time baseado no nome
-function getLogoTime(nome: string) {
-  switch (nome.toLowerCase()) {
-    case "azul":
-      return "/images/times/time_padrao_01.png";
-    case "laranja":
-      return "/images/times/time_padrao_02.png";
-    case "verde":
-      return "/images/times/time_padrao_03.png";
-    case "vermelho":
-      return "/images/times/time_padrao_04.png";
-    case "hawks":
-      return "/images/times/time_padrao_01.png";
-    case "panthers":
-      return "/images/times/time_padrao_02.png";
-    case "wolves":
-      return "/images/times/time_padrao_03.png";
-    case "trovão":
-      return "/images/times/time_padrao_04.png";
-    default:
-      return "/images/times/time_padrao_01.png";
-  }
-}
-
-export default function Page() {
-  const params = useParams();
-  const router = useRouter();
-  const id = params?.id as string;
-
-  // Busca a partida pelo ID do mock
-  const partida = partidasMock.find((p) => p.id === id);
-
-  if (!partida) {
-    return (
-      <main className="flex flex-col items-center justify-center min-h-screen text-white">
-        <Head>
-          <title>Partida não encontrada | Fut7Pro</title>
-        </Head>
-        <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida não encontrada</h1>
-        <Link
-          href="/partidas/historico"
-          className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
-        >
-          Voltar ao Histórico
-        </Link>
-      </main>
-    );
-  }
-
-  // MOCK jogadores (ajuste para integrar com dados reais no futuro)
-  const mockJogadoresA = ["Jogador 1", "Jogador 2", "Jogador 3", "Jogador 4", "Jogador 5"];
-  const mockJogadoresB = ["Jogador 6", "Jogador 7", "Jogador 8", "Jogador 9", "Jogador 10"];
+export default function PartidasDetalhesIndex() {
+  const { partidas, isLoading, isError, error } = usePartidas();
 
   return (
     <>
       <Head>
-        <title>Detalhes da Partida | Fut7Pro</title>
+        <title>Partidas | Fut7Pro</title>
         <meta
           name="description"
-          content={`Veja todos os detalhes da partida entre ${partida.timeA} e ${partida.timeB}: placar, jogadores, local, data e destaques.`}
+          content="Consulte as partidas registradas e acesse os detalhes completos de cada confronto."
         />
         <meta
           name="keywords"
-          content="fut7, detalhes da partida, futebol 7, racha, jogadores, placar, destaques"
+          content="fut7, partidas, resultados, detalhes, futebol 7"
         />
       </Head>
       <main className="flex flex-col w-full min-h-screen items-center text-white">
-        <div className="w-full max-w-2xl bg-[#181818] rounded-xl shadow p-6 mt-8 flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
-            <span className="font-bold text-yellow-400 text-lg">
-              {partida.data?.replace(/-/g, "/")}
-            </span>
-            <span className="text-textoSuave text-sm">
-              {partida.local || "Local não informado"}
-            </span>
-            <span
-              className={`px-3 py-1 rounded-xl text-xs w-fit ${partida.finalizada ? "bg-green-700 text-white" : "bg-yellow-700 text-white"}`}
-            >
-              {partida.finalizada ? "Concluído" : "Em andamento"}
-            </span>
-          </div>
-          {/* Placar */}
-          <div className="flex flex-col items-center justify-center gap-1 my-2">
-            <div className="flex items-center gap-6 justify-center">
-              {/* Time B */}
-              <div className="flex flex-col items-center gap-1">
-                <Image
-                  src={getLogoTime(partida.timeB)}
-                  alt={`Logo do time ${partida.timeB} no Fut7Pro`}
-                  width={44}
-                  height={44}
-                  className="rounded"
-                />
-                <span className="font-bold">{partida.timeB}</span>
-              </div>
-              <span className="text-3xl md:text-4xl font-extrabold">
-                {partida.golsTimeA}
-                <span className="mx-2 text-yellow-400 font-bold">x</span>
-                {partida.golsTimeB}
-              </span>
-              {/* Time A */}
-              <div className="flex flex-col items-center gap-1">
-                <Image
-                  src={getLogoTime(partida.timeA)}
-                  alt={`Logo do time ${partida.timeA} no Fut7Pro`}
-                  width={44}
-                  height={44}
-                  className="rounded"
-                />
-                <span className="font-bold">{partida.timeA}</span>
-              </div>
+        <section className="w-full max-w-4xl px-4 py-12">
+          <h1 className="text-3xl font-bold text-yellow-400 mb-4 text-center">
+            Partidas registradas
+          </h1>
+          <p className="text-center text-textoSuave mb-8">
+            Escolha uma partida para visualizar estatisticas completas, presencas e destaques.
+          </p>
+
+          {isLoading && (
+            <div className="bg-zinc-900 rounded-2xl shadow p-6 text-center">
+              <span className="text-yellow-300 font-semibold">Carregando partidas...</span>
             </div>
-          </div>
-          {/* Listas de jogadores */}
-          <div className="flex flex-col md:flex-row md:justify-between gap-4">
-            <div className="w-full md:w-1/2 flex flex-col items-center">
-              <span className="font-bold text-yellow-400 mb-1">Jogadores Time B</span>
-              <ul className="text-sm flex flex-col gap-1">
-                {mockJogadoresB.map((jogador, i) => (
-                  <li key={i} className="text-white">
-                    {jogador}
-                  </li>
-                ))}
-              </ul>
+          )}
+
+          {isError && (
+            <div className="bg-red-900/30 border border-red-700 rounded-2xl shadow p-6 text-center">
+              <p className="text-red-300 font-semibold">
+                Nao foi possivel carregar as partidas: {error ?? "erro desconhecido"}.
+              </p>
             </div>
-            <div className="w-full md:w-1/2 flex flex-col items-center">
-              <span className="font-bold text-yellow-400 mb-1">Jogadores Time A</span>
-              <ul className="text-sm flex flex-col gap-1">
-                {mockJogadoresA.map((jogador, i) => (
-                  <li key={i} className="text-white">
-                    {jogador}
-                  </li>
-                ))}
-              </ul>
+          )}
+
+          {!isLoading && !isError && partidas.length === 0 && (
+            <div className="bg-zinc-900 rounded-2xl shadow p-6 text-center">
+              <p className="text-textoSuave">
+                Ainda nao existem partidas registradas para este racha.
+              </p>
             </div>
+          )}
+
+          <div className="flex flex-col gap-4">
+            {partidas.map((partida) => (
+              <Link
+                key={partida.id}
+                href={`/partidas/detalhes/${partida.id}`}
+                className="flex flex-col md:flex-row md:items-center gap-4 bg-[#181818] rounded-2xl p-4 hover:bg-[#1f1f1f] transition border border-transparent hover:border-yellow-500/40"
+              >
+                <div className="flex items-center gap-3 flex-1">
+                  <Image
+                    src={partida.logoCasa}
+                    alt={`Logo ${partida.timeA}`}
+                    width={40}
+                    height={40}
+                    className="rounded-lg"
+                  />
+                  <div className="text-lg font-semibold">{partida.timeA}</div>
+                  <div className="text-2xl font-bold text-yellow-300">
+                    {partida.golsTimeA ?? "-"} <span className="text-yellow-500">x</span>{" "}
+                    {partida.golsTimeB ?? "-"}
+                  </div>
+                  <div className="text-lg font-semibold">{partida.timeB}</div>
+                  <Image
+                    src={partida.logoFora}
+                    alt={`Logo ${partida.timeB}`}
+                    width={40}
+                    height={40}
+                    className="rounded-lg"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 text-sm text-textoSuave min-w-[160px]">
+                  <span>{new Date(partida.data).toLocaleDateString("pt-BR")}</span>
+                  <span>{partida.local ?? "Local nao informado"}</span>
+                  <span className="text-yellow-300 font-semibold">
+                    {partida.finalizada ? "Concluida" : "Em andamento"}
+                  </span>
+                </div>
+              </Link>
+            ))}
           </div>
-          {/* Área de destaques - pode expandir depois */}
-          <div className="w-full mt-3">
-            <span className="font-bold text-yellow-400">Destaques da Partida</span>
-            <div className="text-sm text-white mt-1">
-              Em breve: artilheiros, assistências, melhores em campo...
-            </div>
-          </div>
-          {/* Botão voltar */}
-          <div className="flex justify-center mt-4">
-            <button
-              onClick={() => router.back()}
-              className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
-            >
-              Voltar
-            </button>
-          </div>
-        </div>
+        </section>
       </main>
     </>
   );

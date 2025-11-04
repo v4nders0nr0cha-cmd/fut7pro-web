@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Confronto, Time, Jogador } from "@/types/interfaces";
+import type { Confronto, Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para evento de gol
 type EventoGol = {
@@ -208,7 +208,7 @@ function AdicionarGolAssist({
             <option value="">Selecione...</option>
             {jogadores.map((j, i) => (
               <option key={i} value={j.nome}>
-                {j.nome} ({j.apelido} / {j.pos})
+                {j.nome} ({j.apelido} / {j.posicao})
               </option>
             ))}
             <option value="faltou">JOGADOR FALTOU, NÃO CONTABILIZAR PARA O SUBSTITUTO</option>
@@ -224,7 +224,7 @@ function AdicionarGolAssist({
             <option value="">Selecione...</option>
             {jogadores.map((j, i) => (
               <option key={i} value={j.nome}>
-                {j.nome} ({j.apelido} / {j.pos})
+                {j.nome} ({j.apelido} / {j.posicao})
               </option>
             ))}
             <option value="faltou">JOGADOR FALTOU, NÃO CONTABILIZAR PARA O SUBSTITUTO</option>

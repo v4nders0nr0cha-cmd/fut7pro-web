@@ -80,8 +80,8 @@ describe("LoadingStates (useAdmin)", () => {
 
   it("exibe estado de sucesso quando existem admins", () => {
     const admins = [
-      { id: "1", nome: "Admin 1", role: "ADMIN" },
-      { id: "2", nome: "Admin 2", role: "SUPORTE" },
+      { id: "1", usuarioId: "user-1", nome: "Admin 1", role: "ADMIN" },
+      { id: "2", usuarioId: "user-2", nome: "Admin 2", role: "SUPORTE" },
     ];
     mockUseAdmin.mockReturnValue({
       admins,

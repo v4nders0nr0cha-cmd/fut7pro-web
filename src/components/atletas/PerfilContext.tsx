@@ -3,7 +3,6 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import { usuarioLogadoMock } from "@/components/lists/mockUsuarioLogado"; // Substitua pelo backend depois
-import { StateData } from "@/types/interfaces";
 
 // Interface para o contexto do perfil
 interface PerfilContextType {

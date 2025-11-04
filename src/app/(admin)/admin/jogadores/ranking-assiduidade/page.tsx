@@ -181,12 +181,6 @@ export default function RankingAssiduidade() {
         params.set("end", range.end);
         break;
       }
-      case "custom":
-        // não utilizado aqui, mas mantemos compatibilidade
-        params.set("period", "custom");
-        if (periodoAplicado?.start) params.set("start", periodoAplicado.start);
-        if (periodoAplicado?.end) params.set("end", periodoAplicado.end);
-        break;
       case "all":
       default:
         params.set("period", "all");
@@ -451,3 +445,4 @@ function extractFilename(disposition: string | null): string | null {
     return null;
   }
 }
+

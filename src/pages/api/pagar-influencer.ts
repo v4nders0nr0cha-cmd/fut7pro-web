@@ -6,8 +6,8 @@ export const config = {
     runtime: "nodejs",
   },
 };
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/server/auth/options";
+import { getServerSession } from "next-auth/next";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
   }
 
-  const session = await getServerSession(req, res, authOptions);
+  const session = (await getServerSession(req, res, authOptions)) as AuthSession | null;
 
   if (!session?.user?.id) return res.status(401).json({ error: "Not authorized" });
 

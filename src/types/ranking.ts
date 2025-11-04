@@ -65,3 +65,6 @@ export interface TeamRankingResponse {
   updatedAt: string | null;
   availableYears: number[];
 }
+
+export type Ranking = PlayerRanking | TeamRankingEntry;
+

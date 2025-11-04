@@ -6,8 +6,9 @@ import {
   buildHeaders,
   proxyBackend,
   ensureTenantId,
-  NOTIFICATIONS_ENDPOINT,
-} from "../utils";
+} from "../../_proxy/helpers";
+
+const NOTIFICATIONS_ENDPOINT = "/notificacoes";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

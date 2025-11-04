@@ -1,29 +1,13 @@
 "use client";
 
 import Image from "next/image";
-
-type JogadorTime = {
-  id: string;
-  nome: string;
-  apelido?: string;
-  foto: string;
-  posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
-  status: "titular" | "substituto" | "ausente";
-};
-
-type TimeDoDia = {
-  nome: string;
-  logo: string;
-  cor: string;
-  ehTimeCampeao?: boolean;
-  jogadores: JogadorTime[];
-};
+import type { DerivedTimeDoDia, DerivedPlayer } from "@/utils/match-adapters";
 
 type Props = {
-  time: TimeDoDia;
+  time: DerivedTimeDoDia;
 };
 
-const posicoesAbrev: Record<JogadorTime["posicao"], string> = {
+const posicoesAbrev: Record<DerivedPlayer["posicao"], string> = {
   Goleiro: "GOL",
   Zagueiro: "ZAG",
   Meia: "MEIA",
@@ -50,10 +34,10 @@ export function CardTimeDoDia({ time }: Props) {
           {time.ehTimeCampeao && (
             <span
               className="ml-3 px-3 py-1 rounded bg-yellow-400 text-neutral-900 text-sm font-semibold align-middle"
-              title="Time Campeão do Dia"
-              aria-label="Time Campeão do Dia"
+              title="Time Campeao do Dia"
+              aria-label="Time Campeao do Dia"
             >
-              CAMPEÃO DO DIA
+              CAMPEAO DO DIA
             </span>
           )}
         </h2>
@@ -87,7 +71,7 @@ export function CardTimeDoDia({ time }: Props) {
                   <span className="text-xs text-neutral-400">({jogador.apelido})</span>
                 )}
                 <span className="text-xs text-neutral-400">
-                  {jogador.status === "ausente" && "Ausente (não pontua)"}
+                  {jogador.status === "ausente" && "Ausente (nao pontua)"}
                   {jogador.status === "substituto" && "Apenas completou o time"}
                 </span>
               </div>

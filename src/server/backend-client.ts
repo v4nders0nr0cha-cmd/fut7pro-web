@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/server/auth/options";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 import { getApiBase } from "@/lib/get-api-base";
 
 type BackendAuth = {
@@ -14,7 +14,7 @@ export async function resolveBackendAuth(
   res: NextApiResponse,
   explicitTenantSlug?: string | null
 ): Promise<BackendAuth> {
-  const session = await getServerSession(req, res, authOptions);
+  const session = (await getServerSession(req, res, authOptions)) as AuthSession | null;
 
   if (!session || !session.user?.accessToken) {
     throw new Error("UNAUTHENTICATED");

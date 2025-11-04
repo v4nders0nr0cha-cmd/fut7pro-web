@@ -7,7 +7,9 @@ import type {
   CreateNotificationInput,
   UpdateNotificationInput,
 } from "@/types/notificacao";
-import type { PlayerRankingType } from "@/types/ranking";
+import type { Athlete } from "@/types/jogador";
+import type { Match } from "@/types/partida";
+import type { PlayerRankingType, PlayerRankingResponse } from "@/types/ranking";
 import { getSession } from "next-auth/react";
 import { getApiBase } from "@/lib/get-api-base";
 
@@ -137,15 +139,7 @@ export const rachaApi = {
   delete: (id: string) => apiClient.delete(`/rachas/${id}`),
 };
 
-export const jogadoresApi = {
-  getAll: () => apiClient.get("/api/jogadores"),
-  getById: (id: string) => apiClient.get(`/api/jogadores/${id}`),
-  create: (data: ApiRequestData) => apiClient.post("/api/jogadores", data),
-  update: (id: string, data: ApiRequestData) => apiClient.put(`/api/jogadores/${id}`, data),
-  delete: (id: string) => apiClient.delete(`/api/jogadores/${id}`),
-  getBirthdays: (params?: Record<string, string>) =>
-    apiClient.get("/api/jogadores/aniversariantes", params),
-};
+/* jogadoresApi redefinido após helpers específicos */
 
 export const partidasApi = {
   getAll: () => apiClient.get("/api/partidas"),
@@ -232,6 +226,9 @@ export const usersApi = {
 
 const NEXT_NOTIFICATIONS_ENDPOINT = "/api/admin/notificacoes";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+const NEXT_JOGADORES_ENDPOINT = "/api/admin/jogadores";
+const NEXT_MATCHES_ENDPOINT = "/api/admin/partidas";
+const NEXT_PUBLIC_MATCHES_ENDPOINT = "/api/public/matches";
 
 async function notificationsFetch<T>(
   input: string,
@@ -274,6 +271,77 @@ async function notificationsFetch<T>(
   return (payload ?? (undefined as unknown)) as T;
 }
 
+async function adminProxyFetch<T>(
+  input: string,
+  init?: RequestInit & { skipJson?: boolean }
+): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("Accept", JSON_CONTENT_TYPE);
+
+  if (init?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", JSON_CONTENT_TYPE);
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const isJson = contentType.includes("application/json");
+  const shouldParse = init?.skipJson ? false : isJson;
+
+  let payload: any = null;
+
+  if (shouldParse && response.status !== 204) {
+    payload = await response.json().catch(() => null);
+  } else if (!shouldParse && !response.ok) {
+    payload = await response.text().catch(() => null);
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      (payload && typeof payload === "object" && "error" in payload && payload.error) ||
+      (typeof payload === "string" && payload.length ? payload : null) ||
+      `HTTP ${response.status}`;
+    throw new Error(String(errorMessage));
+  }
+
+  return (payload ?? (undefined as unknown)) as T;
+}
+
+async function publicMatchesFetch<T>(input: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      Accept: JSON_CONTENT_TYPE,
+      ...(init?.headers ?? {}),
+    },
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const isJson = contentType.includes("application/json");
+
+  if (!response.ok) {
+    const payload = isJson ? await response.json().catch(() => null) : await response.text();
+    const errorMessage =
+      (payload && typeof payload === "object" && "error" in payload && payload.error) ||
+      (typeof payload === "string" && payload.length ? payload : null) ||
+      `HTTP ${response.status}`;
+    throw new Error(String(errorMessage));
+  }
+
+  if (!isJson) {
+    return (undefined as unknown) as T;
+  }
+
+  return (await response.json()) as T;
+}
+
 function buildNotificationsUrl(params?: Record<string, string | number | boolean | undefined>) {
   let url = NEXT_NOTIFICATIONS_ENDPOINT;
   if (params) {
@@ -290,6 +358,142 @@ function buildNotificationsUrl(params?: Record<string, string | number | boolean
   }
   return url;
 }
+
+function buildJogadoresUrl(params?: Record<string, string | number | boolean | undefined>) {
+  let url = NEXT_JOGADORES_ENDPOINT;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    if (query.length > 0) {
+      url = `${url}?${query}`;
+    }
+  }
+  return url;
+}
+
+function buildAdminMatchesUrl(params?: Record<string, string | number | boolean | undefined>) {
+  let url = NEXT_MATCHES_ENDPOINT;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    if (query.length > 0) {
+      url = `${url}?${query}`;
+    }
+  }
+  return url;
+}
+
+function buildPublicMatchesUrl(params?: Record<string, string | number | boolean | undefined>) {
+  let url = NEXT_PUBLIC_MATCHES_ENDPOINT;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    if (query.length > 0) {
+      url = `${url}?${query}`;
+    }
+  }
+  return url;
+}
+
+function buildQueryString(params?: Record<string, string | number | boolean | undefined>) {
+  if (!params) return "";
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.set(key, String(value));
+    }
+  });
+  const query = searchParams.toString();
+  return query.length > 0 ? `?${query}` : "";
+}
+
+export const jogadoresApi = {
+  async list(params?: Record<string, string | number | boolean>) {
+    return adminProxyFetch<Athlete[]>(buildJogadoresUrl(params), {
+      method: "GET",
+    });
+  },
+  async getById(id: string, params?: Record<string, string | number | boolean>) {
+    const query = buildQueryString(params);
+    const url = `${NEXT_JOGADORES_ENDPOINT}/${encodeURIComponent(id)}${query}`;
+    return adminProxyFetch<Athlete>(url, { method: "GET" });
+  },
+  async create(payload: ApiRequestData) {
+    return adminProxyFetch<Athlete>(NEXT_JOGADORES_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async update(id: string, payload: ApiRequestData) {
+    const url = `${NEXT_JOGADORES_ENDPOINT}/${encodeURIComponent(id)}`;
+    return adminProxyFetch<Athlete>(url, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+  async delete(id: string) {
+    const url = `${NEXT_JOGADORES_ENDPOINT}/${encodeURIComponent(id)}`;
+    await adminProxyFetch<void>(url, {
+      method: "DELETE",
+      skipJson: true,
+    });
+  },
+  async getBirthdays(params?: Record<string, string | number | boolean>) {
+    const query = buildQueryString(params);
+    const url = `${NEXT_JOGADORES_ENDPOINT}/aniversariantes${query}`;
+    return adminProxyFetch<Athlete[]>(url, { method: "GET" });
+  },
+};
+
+type PublicMatchesListResponse = {
+  slug: string;
+  total: number;
+  results: Match[];
+};
+
+type PublicMatchResponse = {
+  slug: string;
+  result: Match;
+};
+
+export const adminMatchesApi = {
+  async list(params?: Record<string, string | number | boolean>) {
+    return adminProxyFetch<Match[]>(buildAdminMatchesUrl(params), { method: "GET" });
+  },
+  async getById(id: string, params?: Record<string, string | number | boolean>) {
+    const query = buildQueryString(params);
+    const url = `${NEXT_MATCHES_ENDPOINT}/${encodeURIComponent(id)}${query}`;
+    return adminProxyFetch<Match>(url, { method: "GET" });
+  },
+};
+
+export const publicMatchesApi = {
+  async list(params?: Record<string, string | number | boolean>) {
+    return publicMatchesFetch<PublicMatchesListResponse>(buildPublicMatchesUrl(params), {
+      method: "GET",
+    });
+  },
+  async getById(id: string, params?: Record<string, string | number | boolean>) {
+    const query = buildQueryString(params);
+    const url = `${NEXT_PUBLIC_MATCHES_ENDPOINT}/${encodeURIComponent(id)}${query}`;
+    return publicMatchesFetch<PublicMatchResponse>(url, { method: "GET" });
+  },
+};
 
 // API de Notificações
 export const notificacoesApi = {
@@ -371,7 +575,10 @@ function serializeRankingParams(params?: RankingQueryParams) {
 }
 
 function getPlayerRankings(type: PlayerRankingType, params?: RankingQueryParams) {
-  return apiClient.get(`/rankings/${type}`, serializeRankingParams(params));
+  return apiClient.get<PlayerRankingResponse>(
+    `/rankings/${type}`,
+    serializeRankingParams(params)
+  );
 }
 
 // API de Rankings

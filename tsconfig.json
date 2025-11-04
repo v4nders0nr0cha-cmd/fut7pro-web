@@ -19,7 +19,6 @@
     "esModuleInterop": true,
     "noImplicitAny": false,
     "strictNullChecks": false,
-    "moduleResolution": "node",
     "types": ["node", "next"],
     "baseUrl": ".",
     "paths": {

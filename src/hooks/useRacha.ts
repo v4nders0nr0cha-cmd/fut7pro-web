@@ -14,37 +14,43 @@ async function fetcher(url: string): Promise<Racha> {
 
   const data = await res.json();
 
-  // Validar dados recebidos
   const validation = validateSafe(rachaSchema, data);
-  if (!validation.success) {
-    throw new Error(`Dados inválidos: ${validation.error}`);
+  if (validation.success === false) {
+    const { errors } = validation;
+    throw new Error(`Dados invalidos: ${errors.join(", ")}`);
   }
 
-  return validation.data;
+  const normalized: Racha = {
+    ...validation.data,
+    admins: Array.isArray(validation.data.admins)
+      ? (validation.data.admins as Racha["admins"])
+      : [],
+    jogadores: Array.isArray(validation.data.jogadores)
+      ? (validation.data.jogadores as Racha["jogadores"])
+      : [],
+  } as Racha;
+
+  return normalized;
 }
 
 /**
- * Busca os detalhes de um racha específico.
+ * Busca os detalhes de um racha especifico.
  * @param rachaId string (id ou slug)
  */
 export function useRacha(rachaId: string) {
-  const { data, error, mutate, isLoading } = useSWR(
-    rachaId ? `/api/rachas/${rachaId}` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 30000, // 30 segundos
-      errorRetryCount: 3,
-      errorRetryInterval: 5000, // 5 segundos
-    }
-  );
+  const { data, error, mutate, isLoading } = useSWR(rachaId ? `/api/rachas/${rachaId}` : null, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 30000,
+    errorRetryCount: 3,
+    errorRetryInterval: 5000,
+  });
 
   return {
     racha: data,
     isLoading,
-    isError: error,
-    error: error?.message,
+    isError: Boolean(error),
+    error: error instanceof Error ? error.message : null,
     mutate,
   };
 }

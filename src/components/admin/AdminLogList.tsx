@@ -1,8 +1,8 @@
 "use client";
-import type { AdminLog } from "@/hooks/useAdminLogs";
+import type { LogAdmin } from "@/types/admin";
 
 type Props = {
-  logs: AdminLog[];
+  logs: LogAdmin[];
 };
 
 function formatarData(dt: string) {
@@ -35,3 +35,4 @@ export default function AdminLogList({ logs }: Props) {
     </div>
   );
 }
+

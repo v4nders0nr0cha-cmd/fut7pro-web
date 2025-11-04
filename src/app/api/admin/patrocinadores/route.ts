@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
 import { revalidateTag } from "next/cache";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 import { getApiBase } from "@/lib/get-api-base";
 
 export const runtime = "nodejs";
@@ -17,7 +17,7 @@ type SessionUser = {
 };
 
 async function requireSession() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as AuthSession | null;
   if (!session || !session.user) {
     return null;
   }

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { torneiosMock } from "@/components/lists/mockTorneios";
-import type { Torneio } from "@/components/lists/mockTorneios";
+import type { Torneio } from "@/types/torneio";
 
 export default function GrandesTorneiosPage() {
   return (

@@ -5,10 +5,11 @@ import Image from "next/image";
 import type { Partida } from "@/types/partida";
 
 export default function PartidaCard({ partida }: { partida: Partida }) {
+  const dataFormatada = new Date(partida.data).toLocaleDateString("pt-BR");
+
   return (
     <div className="flex flex-col md:flex-row items-center justify-between bg-secundario rounded-xl shadow p-4 gap-3 hover:shadow-lg transition-all">
       <div className="flex items-center gap-3 w-full">
-        {/* Logo e nome time casa */}
         <div className="flex items-center gap-2 min-w-[90px]">
           <Image
             src={partida.logoCasa}
@@ -19,16 +20,14 @@ export default function PartidaCard({ partida }: { partida: Partida }) {
           />
           <span className="font-bold text-base">{partida.timeCasa}</span>
         </div>
-        {/* Placar */}
         <div className="flex flex-col items-center min-w-[72px]">
           <span className="text-lg font-bold">
-            {partida.golsCasa} <span className="text-yellow-400">x</span> {partida.golsFora}
+            {partida.golsCasa ?? "-"} <span className="text-yellow-400">x</span> {partida.golsFora ?? "-"}
           </span>
           <span className="text-xs text-textoSuave">
-            {partida.data} - {partida.local}
+            {dataFormatada} • {partida.local ?? "Local nao informado"}
           </span>
         </div>
-        {/* Logo e nome time fora */}
         <div className="flex items-center gap-2 min-w-[90px]">
           <Image
             src={partida.logoFora}
@@ -49,7 +48,7 @@ export default function PartidaCard({ partida }: { partida: Partida }) {
         </Link>
         <span
           className={`text-xs px-2 py-1 rounded-lg ${
-            partida.status === "Concluído" ? "bg-green-700 text-white" : "bg-yellow-700 text-white"
+            partida.finalizada ? "bg-green-700 text-white" : "bg-yellow-700 text-white"
           }`}
         >
           {partida.status}

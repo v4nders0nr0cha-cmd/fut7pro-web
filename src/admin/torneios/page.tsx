@@ -4,23 +4,30 @@ import Image from "next/image";
 import { useState } from "react";
 import Head from "next/head";
 import { torneiosMock } from "@/components/lists/mockTorneios";
-import type { Torneio } from "@/components/lists/mockTorneios";
+import type { Torneio } from "@/types/torneio";
+import { useRacha } from "@/context/RachaContext";
 
-const getNovoTorneio = (): Torneio => ({
-  id: "",
-  rachaId: "",
+const gerarIdTemporario = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `torneio-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const getNovoTorneio = (rachaId: string): Torneio => ({
+  id: gerarIdTemporario(),
+  rachaId,
   nome: "",
   ano: new Date().getFullYear(),
   slug: "",
   campeao: "",
   banner: "",
   logo: "",
-  jogadores: [],
+  jogadoresCampeoes: [],
 });
 
 export default function AdminTorneiosPage() {
+  const { rachaId } = useRacha();
   const [torneios, setTorneios] = useState<Torneio[]>(torneiosMock);
-  const [novoTorneio, setNovoTorneio] = useState<Torneio>(getNovoTorneio());
+  const [novoTorneio, setNovoTorneio] = useState<Torneio>(() => getNovoTorneio(rachaId));
   const [modoEdicao, setModoEdicao] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,23 +48,27 @@ export default function AdminTorneiosPage() {
       setTorneios(atualizados);
       setModoEdicao(null);
     } else {
-      setTorneios([...torneios, { ...novoTorneio, ano: Number(novoTorneio.ano) }]);
+      setTorneios([
+        ...torneios,
+        {
+          ...novoTorneio,
+          id: novoTorneio.id || gerarIdTemporario(),
+          rachaId: novoTorneio.rachaId || rachaId,
+          ano: Number(novoTorneio.ano),
+        },
+      ]);
     }
 
-    setNovoTorneio(getNovoTorneio());
+    setNovoTorneio(getNovoTorneio(rachaId));
   };
 
   const handleEditar = (index: number) => {
     const t = torneios[index];
     if (!t) return; // Protege contra índices inválidos
     setNovoTorneio({
-      nome: t.nome,
+      ...t,
       ano: Number(t.ano),
-      slug: t.slug,
-      campeao: t.campeao,
-      banner: t.banner,
-      logo: t.logo,
-      jogadores: t.jogadores ?? [],
+      jogadoresCampeoes: t.jogadoresCampeoes ?? [],
     });
     setModoEdicao(index);
   };
@@ -70,7 +81,7 @@ export default function AdminTorneiosPage() {
       setTorneios(copia);
       if (modoEdicao === index) {
         setModoEdicao(null);
-        setNovoTorneio(getNovoTorneio());
+        setNovoTorneio(getNovoTorneio(rachaId));
       }
     }
   };

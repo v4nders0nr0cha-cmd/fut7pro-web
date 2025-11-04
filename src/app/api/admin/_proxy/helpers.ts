@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth/next";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 
 export const JSON_CT = "application/json; charset=utf-8";
-export const NOTIFICATIONS_ENDPOINT = "/notificacoes";
 
 export type SessionUser = {
   accessToken?: string;
@@ -12,7 +11,7 @@ export type SessionUser = {
 };
 
 export async function requireUser() {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as AuthSession | null;
   if (!session || !session.user) {
     return null;
   }

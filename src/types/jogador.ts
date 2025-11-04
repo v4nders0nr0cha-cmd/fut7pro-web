@@ -1,30 +1,52 @@
-export type Jogador = {
+export type AthletePosition = "goleiro" | "zagueiro" | "meia" | "atacante";
+
+export type AthleteStatus = "Ativo" | "Inativo" | "Suspenso" | string;
+
+export interface Athlete {
   id: string;
-  nome: string;
-  apelido: string;
-  email: string;
-  posicao: PosicaoJogador; // "goleiro", "zagueiro", "meia", "atacante"
-  avatar: string; // Foto do jogador (antes era "foto")
-  status: StatusJogador; // "Ativo", "Inativo", "Suspenso"
-  mensalista: boolean;
-  timeId: string; // Relacionamento com Time
-  rachas?: unknown[]; // Relacionamento com rachas, se necessário
-  createdAt?: string;
-  updatedAt?: string;
-};
+  tenantId: string;
+  name: string;
+  nickname?: string | null;
+  email?: string | null;
+  position: AthletePosition;
+  photoUrl?: string | null;
+  status: AthleteStatus;
+  isMember: boolean;
+  /**
+   * Alias de compatibilidade legado - será removido após refatoração completa
+   */
+  mensalista?: boolean;
+  slug?: string | null;
+  birthDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
 
-// Enum para posição
-export type PosicaoJogador = "goleiro" | "zagueiro" | "meia" | "atacante";
+export interface AthletePresenceSummary {
+  totalMatches: number;
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+}
 
-// Enum para status do jogador
-export type StatusJogador = "Ativo" | "Inativo" | "Suspenso";
+export interface AthleteWithStats extends Athlete {
+  stats?: AthletePresenceSummary;
+}
 
-// Tipagem separada para atletas pendentes
-export type AtletaPendente = {
+export interface AthleteRequest {
   id: string;
-  nome: string;
+  tenantId: string;
+  name: string;
+  nickname?: string | null;
   email: string;
-  apelido: string;
-  posicao: PosicaoJogador;
-  avatar: string;
-};
+  position: AthletePosition;
+  photoUrl?: string | null;
+  message?: string | null;
+  status: "PENDENTE" | "APROVADA" | "REJEITADA";
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string | null;
+  rejectedAt?: string | null;
+  processedById?: string | null;
+}

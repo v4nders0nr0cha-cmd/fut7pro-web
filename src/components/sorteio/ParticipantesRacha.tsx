@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import Image from "next/image";
 import EditorEstrelas from "./EditorEstrelas";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela } from "@/types/sorteio";
@@ -11,7 +12,7 @@ interface Props {
   tenantSlug: string | null | undefined;
   config: ConfiguracaoRacha | null;
   participantes: Participante[];
-  setParticipantes: (p: Participante[]) => void;
+  setParticipantes: Dispatch<SetStateAction<Participante[]>>;
   todosJogadores: Participante[];
 }
 
@@ -86,7 +87,12 @@ function PopoverSelecionarJogador({
               onSelecionar(p.id);
               onClose();
             }}
-            onKeyDown={(e) => e.key === "Enter" && onSelecionar(p.id) && onClose()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onSelecionar(p.id);
+                onClose();
+              }
+            }}
             role="button"
             tabIndex={0}
             aria-label={`Selecionar ${p.nome}`}

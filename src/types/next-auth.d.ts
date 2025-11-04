@@ -1,6 +1,6 @@
 import "next-auth";
 import "next-auth/jwt";
-import type { Role } from "@/hooks/useAuth";
+import type { Role } from "@/common/enums";
 
 declare module "next-auth" {
   interface Session {

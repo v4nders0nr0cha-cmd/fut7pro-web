@@ -1,4 +1,4 @@
-import prisma from "../prisma/client";
+import { prisma } from "@/server/prisma";
 
 // Listar rachas e seus lançamentos financeiros
 export const listarRachasFinanceiro = async () => {

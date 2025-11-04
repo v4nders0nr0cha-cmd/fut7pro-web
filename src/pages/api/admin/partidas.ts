@@ -9,7 +9,7 @@ export const config = {
   },
 };
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/server/auth/options";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma";
 
 // Utilitário para garantir que apenas admin/owner pode editar o racha
@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
   }
 
-  const session = await getServerSession(req, res, authOptions);
+  const session = (await getServerSession(req, res, authOptions)) as AuthSession | null;
   if (!session || !session.user) {
     return res.status(401).json({ error: "Não autenticado" });
   }

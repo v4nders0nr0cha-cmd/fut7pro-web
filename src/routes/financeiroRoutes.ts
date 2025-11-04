@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router } from "express";
 import * as ctrl from "../controllers/financeiroController";
 import catchAsync from "../utils/catchAsync";

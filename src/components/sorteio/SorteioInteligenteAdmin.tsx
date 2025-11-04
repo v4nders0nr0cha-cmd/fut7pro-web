@@ -7,16 +7,15 @@ import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import {
-  sortearTimesInteligente,
-  gerarTabelaJogos,
-  type JogoConfronto,
-  type Time,
-} from "@/utils/sorteioUtils";
+import { sortearTimesInteligente, gerarTabelaJogos, type JogoConfronto } from "@/utils/sorteioUtils";
+import type { Time as RachaTime } from "@/types/time";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
+import type { Athlete } from "@/types/jogador";
+import type { MatchPresence } from "@/types/partida";
 import { useAuth } from "@/hooks/useAuth";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useTimes } from "@/hooks/useTimes";
+import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { rachaConfig } from "@/config/racha.config";
 
 const FALLBACK_FOTO = "/images/jogadores/jogador_padrao_01.jpg";
@@ -117,41 +116,164 @@ function normalizarPosicao(posicao?: string | null): "GOL" | "ZAG" | "MEI" | "AT
   return "ATA";
 }
 
-function mapJogadorParaParticipante(raw: any, tenantSlug: string): Participante {
-  const rankingPrimario = Array.isArray(raw?.rankings) ? raw.rankings[0] : undefined;
-  const partidas = rankingPrimario?.games ?? rankingPrimario?.jogos ?? raw?.partidas ?? 0;
-  const vitorias = rankingPrimario?.wins ?? rankingPrimario?.vitorias ?? raw?.vitorias ?? 0;
-  const gols = rankingPrimario?.goals ?? rankingPrimario?.gols ?? raw?.gols ?? 0;
-  const assistencias =
-    rankingPrimario?.assists ?? rankingPrimario?.assistencias ?? raw?.assistencias ?? 0;
+const gerarIdParticipante = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `athlete-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-  return {
-    id: String(raw?.id ?? crypto.randomUUID()),
-    nome: raw?.nome ?? raw?.name ?? "Jogador",
-    slug: raw?.slug ?? raw?.nickname ?? String(raw?.id ?? crypto.randomUUID()),
-    foto: raw?.foto ?? raw?.avatar ?? raw?.photoUrl ?? FALLBACK_FOTO,
-    posicao: normalizarPosicao(raw?.posicao ?? raw?.position),
-    rankingPontos: rankingPrimario?.points ?? rankingPrimario?.pontos ?? raw?.rankingPontos ?? 0,
+type AthleteWithExtras = Athlete & {
+  rankings?: Array<{
+    points?: number;
+    wins?: number;
+    goals?: number;
+    assists?: number;
+    games?: number;
+  }>;
+  estrelas?: {
+    estrelas?: number;
+    atualizadoEm?: string;
+    atualizadoPor?: string;
+  };
+  stats?: {
+    totalMatches?: number;
+    wins?: number;
+    goals?: number;
+    assists?: number;
+  };
+  [key: string]: unknown;
+};
+
+function createParticipanteFromAthlete(
+  athlete: Athlete | null | undefined,
+  tenantSlug: string,
+  overrides?: Partial<Participante>,
+): Participante {
+  const enriched = (athlete ?? {}) as AthleteWithExtras;
+
+  const rankingPrimario = Array.isArray(enriched.rankings) ? enriched.rankings[0] : undefined;
+
+  const id = overrides?.id ?? enriched.id ?? gerarIdParticipante();
+  const nome = overrides?.nome ?? enriched.name ?? "Atleta";
+  const slug = overrides?.slug ?? enriched.slug ?? enriched.nickname ?? id;
+  const foto = overrides?.foto ?? enriched.photoUrl ?? FALLBACK_FOTO;
+  const posicao =
+    overrides?.posicao ??
+    normalizarPosicao(
+      (enriched.position as string | undefined) ?? (enriched as unknown as { posicao?: string }).posicao,
+    );
+
+  const rankingPontos =
+    overrides?.rankingPontos ??
+    rankingPrimario?.points ??
+    (enriched as unknown as { rankingPontos?: number }).rankingPontos ??
+    0;
+  const vitorias =
+    overrides?.vitorias ??
+    rankingPrimario?.wins ??
+    (enriched as unknown as { vitorias?: number }).vitorias ??
+    0;
+  const gols =
+    overrides?.gols ?? rankingPrimario?.goals ?? (enriched as unknown as { gols?: number }).gols ?? 0;
+  const assistencias =
+    overrides?.assistencias ??
+    rankingPrimario?.assists ??
+    (enriched as unknown as { assistencias?: number }).assistencias ??
+    0;
+  const partidas =
+    overrides?.partidas ??
+    rankingPrimario?.games ??
+    enriched.stats?.totalMatches ??
+    (enriched as unknown as { partidas?: number }).partidas ??
+    0;
+
+  const baseEstrelas = {
+    id: overrides?.estrelas?.id ?? `${tenantSlug}-${id}`,
+    rachaId: overrides?.estrelas?.rachaId ?? tenantSlug,
+    jogadorId: overrides?.estrelas?.jogadorId ?? id,
+    estrelas:
+      overrides?.estrelas?.estrelas ??
+      enriched.estrelas?.estrelas ??
+      (enriched as unknown as { estrelas?: number }).estrelas ??
+      ((enriched as unknown as { stars?: { value?: number } }).stars?.value ?? 0),
+    atualizadoEm:
+      overrides?.estrelas?.atualizadoEm ??
+      enriched.estrelas?.atualizadoEm ??
+      ((enriched as unknown as { stars?: { updatedAt?: string } }).stars?.updatedAt ??
+        new Date().toISOString()),
+    atualizadoPor:
+      overrides?.estrelas?.atualizadoPor ??
+      enriched.estrelas?.atualizadoPor ??
+      ((enriched as unknown as { stars?: { updatedBy?: string } }).stars?.updatedBy ?? ""),
+  };
+
+  let participante: Participante = {
+    id,
+    nome,
+    slug,
+    foto,
+    posicao,
+    rankingPontos,
     vitorias,
     gols,
     assistencias,
-    estrelas: {
-      id: `${tenantSlug}-${raw?.id ?? crypto.randomUUID()}`,
-      rachaId: tenantSlug,
-      jogadorId: String(raw?.id ?? crypto.randomUUID()),
-      estrelas: raw?.estrelas?.estrelas ?? 0,
-      atualizadoEm: raw?.estrelas?.atualizadoEm ?? "",
-      atualizadoPor: raw?.estrelas?.atualizadoPor ?? "",
-    },
-    mensalista: Boolean(raw?.mensalista ?? raw?.monthly ?? raw?.isMensalista),
+    estrelas: baseEstrelas,
+    mensalista:
+      overrides?.mensalista ??
+      Boolean(
+        (enriched as unknown as { mensalista?: boolean }).mensalista ??
+          (enriched as unknown as { isMember?: boolean }).isMember ??
+          enriched.isMember,
+      ),
     partidas,
+  };
+
+  if (overrides) {
+    participante = {
+      ...participante,
+      ...overrides,
+      estrelas: {
+        ...participante.estrelas,
+        ...(overrides.estrelas ?? {}),
+        estrelas:
+          overrides.estrelas?.estrelas ?? participante.estrelas.estrelas,
+        jogadorId: overrides.estrelas?.jogadorId ?? participante.estrelas.jogadorId,
+        rachaId: overrides.estrelas?.rachaId ?? participante.estrelas.rachaId,
+        id: overrides.estrelas?.id ?? participante.estrelas.id,
+      },
+    };
+  }
+
+  return participante;
+}
+
+function mapPresenceToParticipante(presence: MatchPresence, tenantSlug: string): Participante {
+  return createParticipanteFromAthlete(presence.athlete ?? null, tenantSlug, {
+    id: presence.athlete?.id ?? presence.id,
+    gols: presence.goals ?? 0,
+    assistencias: presence.assists ?? 0,
+    partidas: 1,
+  });
+}
+
+function mergeParticipantes(base: Participante, incoming: Participante): Participante {
+  return {
+    ...base,
+    ...incoming,
+    estrelas: {
+      ...base.estrelas,
+      ...incoming.estrelas,
+      estrelas: incoming.estrelas.estrelas ?? base.estrelas.estrelas,
+      jogadorId: incoming.estrelas.jogadorId ?? base.estrelas.jogadorId,
+      rachaId: incoming.estrelas.rachaId ?? base.estrelas.rachaId,
+      id: incoming.estrelas.id ?? base.estrelas.id,
+    },
+    mensalista: base.mensalista || incoming.mensalista,
   };
 }
 
-function mapTime(time: Time): Time {
+function mapTime(time: RachaTime): RachaTime {
   return {
-    id: time.id,
-    nome: time.nome,
+    ...time,
     logo: time.logo || "/images/times/time_padrao_01.png",
   };
 }
@@ -162,14 +284,57 @@ export default function SorteioInteligenteAdmin() {
 
   const { jogadores: jogadoresRaw, isLoading: jogadoresLoading } = useJogadores(resolvedTenantSlug);
   const { times: timesRaw, isLoading: timesLoading } = useTimes(resolvedTenantSlug);
+  const { matches: matchesRaw, isLoading: matchesLoading } = useAdminMatches({
+    slug: resolvedTenantSlug,
+  });
 
-  const participantesDisponiveis = useMemo(
-    () =>
-      (jogadoresRaw ?? []).map((jogador) =>
-        mapJogadorParaParticipante(jogador, resolvedTenantSlug)
-      ),
-    [jogadoresRaw, resolvedTenantSlug]
-  );
+  const matchReferencia = useMemo(() => {
+    if (!matchesRaw || matchesRaw.length === 0) return null;
+    const ordenadas = [...matchesRaw].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const agora = Date.now();
+    return ordenadas.find((match) => new Date(match.date).getTime() >= agora) ?? ordenadas[0];
+  }, [matchesRaw]);
+
+  const { participantesDisponiveis, participantesPadrao } = useMemo(() => {
+    const mapa = new Map<string, Participante>();
+    const selecionados: Participante[] = [];
+    const selecionadosIds = new Set<string>();
+
+    const upsert = (entrada: Participante) => {
+      const existente = mapa.get(entrada.id);
+      if (existente) {
+        const mesclado = mergeParticipantes(existente, entrada);
+        mapa.set(entrada.id, mesclado);
+        return mesclado;
+      }
+      mapa.set(entrada.id, entrada);
+      return entrada;
+    };
+
+    (jogadoresRaw ?? []).forEach((athlete) => {
+      upsert(createParticipanteFromAthlete(athlete, resolvedTenantSlug));
+    });
+
+    matchReferencia?.presences.forEach((presence) => {
+      const participante = mapPresenceToParticipante(presence, resolvedTenantSlug);
+      const final = upsert(participante);
+      if (presence.status !== "AUSENTE" && !selecionadosIds.has(final.id)) {
+        selecionadosIds.add(final.id);
+        selecionados.push(final);
+      }
+    });
+
+    const lista = Array.from(mapa.values()).sort((a, b) =>
+      a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" })
+    );
+
+    return {
+      participantesDisponiveis: lista,
+      participantesPadrao: selecionados,
+    };
+  }, [jogadoresRaw, matchReferencia, resolvedTenantSlug]);
 
   const timesDisponiveis = useMemo(() => (timesRaw ?? []).map(mapTime), [timesRaw]);
 
@@ -208,32 +373,39 @@ export default function SorteioInteligenteAdmin() {
     });
   }, [timesDisponiveis, config?.numTimes]);
 
-  useEffect(() => {
-    setParticipantesSelecionados((prev) => {
-      const disponiveisPorId = new Map(participantesDisponiveis.map((p) => [p.id, p]));
-      return prev
-        .map((p) => {
-          const atualizado = disponiveisPorId.get(p.id);
-          if (!atualizado) return null;
-          return {
-            ...atualizado,
-            estrelas: p.estrelas ?? atualizado.estrelas,
-          };
-        })
-        .filter((p): p is Participante => Boolean(p));
-    });
-  }, [participantesDisponiveis]);
+useEffect(() => {
+  setParticipantesSelecionados((prev) => {
+    const disponiveisPorId = new Map(participantesDisponiveis.map((p) => [p.id, p]));
+    return prev
+      .map((p) => {
+        const atualizado = disponiveisPorId.get(p.id);
+        if (!atualizado) return null;
+        return mergeParticipantes(atualizado, p);
+      })
+      .filter((p): p is Participante => Boolean(p));
+  });
+}, [participantesDisponiveis]);
 
-  useEffect(() => {
-    if (!config || participantesSelecionados.length > 0) return;
-    const maxJogadores = config.numTimes * config.jogadoresPorTime;
-    if (!maxJogadores) return;
+useEffect(() => {
+  if (!config) return;
+  const maxJogadores = config.numTimes * config.jogadoresPorTime;
+  if (!maxJogadores) return;
+
+  setParticipantesSelecionados((prev) => {
+    if (prev.length > 0) return prev;
+
+    if (participantesPadrao.length > 0) {
+      return participantesPadrao.slice(0, maxJogadores);
+    }
 
     const mensalistas = participantesDisponiveis.filter((p) => p.mensalista).slice(0, maxJogadores);
-    if (mensalistas.length) {
-      setParticipantesSelecionados(mensalistas);
+    if (mensalistas.length > 0) {
+      return mensalistas;
     }
-  }, [config, participantesDisponiveis, participantesSelecionados.length]);
+
+    return participantesDisponiveis.slice(0, maxJogadores);
+  });
+}, [config, participantesDisponiveis, participantesPadrao]);
 
   const handleConfirmarConfig = () => {
     if (!config) return;
@@ -308,7 +480,7 @@ export default function SorteioInteligenteAdmin() {
     }
   };
 
-  const carregando = jogadoresLoading || timesLoading;
+  const carregando = jogadoresLoading || timesLoading || matchesLoading;
 
   return (
     <div className="bg-[#1d1d1d] text-white rounded-xl shadow-2xl p-4 sm:p-6 md:p-8">

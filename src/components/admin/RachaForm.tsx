@@ -16,19 +16,22 @@ export default function RachaForm({ racha, onSave, onCancel }: RachaFormProps) {
     setForm(racha || {});
   }, [racha]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const { name, value, type, checked } = e.target;
-    if (type === "checkbox") {
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const target = event.target;
+    const { name, value } = target;
+
+    if (target instanceof HTMLInputElement && target.type === "checkbox") {
       setForm((f) => ({
         ...f,
-        [name]: checked,
+        [name]: target.checked,
       }));
-    } else {
-      setForm((f) => ({
-        ...f,
-        [name]: name === "slug" ? value.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase() : value,
-      }));
+      return;
     }
+
+    setForm((f) => ({
+      ...f,
+      [name]: name === "slug" ? value.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase() : value,
+    }));
   }
 
   function handleSubmit(e: React.FormEvent) {

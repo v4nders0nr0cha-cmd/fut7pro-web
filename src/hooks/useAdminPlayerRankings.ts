@@ -124,7 +124,7 @@ export function useAdminPlayerRankings(params: AdminPlayerRankingParams) {
       })}`
     : null;
 
-  const fetcher = useCallback(async () => {
+  const fetcher = useCallback(async (): Promise<PlayerRankingResponse> => {
     if (!params.type) {
       throw new Error("Tipo de ranking obrigatorio");
     }
@@ -158,3 +158,4 @@ export function useAdminPlayerRankings(params: AdminPlayerRankingParams) {
     timezone: FORTALEZA_TIMEZONE,
   };
 }
+

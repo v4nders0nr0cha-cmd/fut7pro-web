@@ -1,52 +1,46 @@
 // src/types/financeiro.ts
 
-// Tipos de lançamento financeiro
-export type TipoLancamento =
-  | "diaria"
+// Financial movement types (entry or exit)
+export type MovimentoFinanceiro = "entrada" | "saida";
+
+// Default categories used in Fut7Pro (allowing custom backend strings)
+export type CategoriaFinanceiro =
   | "mensalidade"
+  | "diaria"
   | "patrocinio"
   | "evento"
+  | "campo"
+  | "uniforme"
+  | "arbitragem"
   | "outros"
   | "despesa"
   | "despesa_adm"
   | "sistema"
-  | "multa"; // Incluindo 'multa' conforme padrão do sistema
+  | "multa";
 
-// Lançamento financeiro padrão
+// Shared financial entry type for admin and public flows
 export interface LancamentoFinanceiro {
   id: string;
-  data: string; // ISO date (ex: 2025-06-11)
-  tipo: TipoLancamento;
-  descricao: string;
-  valor: number; // positivo = receita, negativo = despesa
-  responsavel: string; // nome/apelido admin
-  comprovanteUrl?: string; // opcional (anexos/imagem local ou base64)
+  rachaId?: string;
+  adminId?: string;
+  tipo: MovimentoFinanceiro;
+  categoria: CategoriaFinanceiro | string;
+  descricao?: string;
+  valor: number; // always positive; direction determined by `tipo`
+  data: string;
+  responsavel?: string;
+  adminNome?: string;
+  adminEmail?: string;
+  comprovanteUrl?: string | null;
+  criadoEm?: string;
+  atualizadoEm?: string;
 }
 
-// Resumo financeiro consolidado
+// Consolidated resume for dashboards
 export interface ResumoFinanceiro {
   saldoAtual: number;
   totalReceitas: number;
   totalDespesas: number;
-  receitasPorMes: Record<string, number>; // ex: {"2025-06": 1500}
-  despesasPorMes: Record<string, number>; // ex: {"2025-06": 800}
-}
-
-// Status dos patrocinadores
-export type StatusPatrocinador = "ativo" | "inativo" | "encerrado";
-
-// Patrocinador completo para o módulo financeiro
-export interface Patrocinador {
-  id: string;
-  nome: string;
-  valor: number;
-  periodoInicio: string; // ISO date ex: "2025-06-01"
-  periodoFim: string; // ISO date ex: "2025-09-30"
-  descricao?: string;
-  logo: string; // caminho local/base64
-  status: StatusPatrocinador;
-  comprovantes: string[]; // anexos de recebimento (imagens local/base64)
-  observacoes?: string;
-  link?: string; // perfil ou site do patrocinador
-  visivel: boolean; // visível no site público?
+  receitasPorMes: Record<string, number>;
+  despesasPorMes: Record<string, number>;
 }

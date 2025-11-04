@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getServerSession } from "next-auth/next";
+import { authOptions, type AuthSession } from "@/server/auth/options";
 import { getApiBase } from "@/lib/get-api-base";
 
 export const runtime = "nodejs";
@@ -33,7 +33,7 @@ function resolveTenantSlug(user: SessionUser, explicit: string | null) {
 }
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
+  const session = (await getServerSession(authOptions)) as AuthSession | null;
   const user = session?.user as SessionUser | undefined;
 
   if (!user || !user.accessToken) {

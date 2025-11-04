@@ -26,6 +26,10 @@ type UseNotificationsOptions = {
   swr?: SWRConfiguration<Notification[]>;
 };
 
+type NotificationsQuery = Record<string, string | number | boolean>;
+
+type NotificationsKey = readonly ["notifications", NotificationsQuery];
+
 type UseNotificationsReturn = {
   notificacoes: Notification[];
   totalCount: number;
@@ -86,14 +90,14 @@ export function useNotifications(arg?: UseNotificationsArg): UseNotificationsRet
     return params;
   }, [filters.limit, filters.search, filters.tenantSlug, filters.type, filters.unreadOnly]);
 
-  const swrKey = useMemo(() => {
+  const swrKey = useMemo<NotificationsKey | null>(() => {
     if (!enabled) return null;
     return ["notifications", query] as const;
   }, [enabled, query]);
 
   const apiState = useApiState();
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<Notification[]>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<Notification[], Error, NotificationsKey | null>(
     swrKey,
     async ([, params]) => notificacoesApi.list(params),
     {
@@ -180,3 +184,8 @@ export function useNotifications(arg?: UseNotificationsArg): UseNotificationsRet
     reset: apiState.reset,
   };
 }
+
+
+
+
+

@@ -14,7 +14,9 @@ export default function DetalheTorneioPage() {
   if (!torneio) return notFound();
 
   // Filtra apenas os atletas campeões deste torneio
-  const campeoes = atletasMock.filter((jogador) => torneio.jogadores.includes(jogador.slug));
+  const campeoes = atletasMock.filter((jogador) =>
+    torneio.jogadoresCampeoes.includes(jogador.slug)
+  );
 
   return (
     <main className="min-h-screen bg-fundo text-white pt-6 pb-20">

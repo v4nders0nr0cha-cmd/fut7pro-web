@@ -1,11 +1,11 @@
 // src/components/admin/TimesDoDiaGrid.tsx
 import Image from "next/image";
-import { Time, Jogador } from "@/types/interfaces";
+import type { Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para jogador com dados adicionais
 interface JogadorCompleto extends Jogador {
   apelido?: string;
-  pos?: string;
+  posicao?: string;
 }
 
 // Interface específica para time com dados adicionais
@@ -47,7 +47,7 @@ export default function TimesDoDiaGrid({ times }: { times: TimeCompleto[] }) {
               <li key={j.nome} className="flex justify-between items-center py-1">
                 <span className="text-white font-semibold">{j.nome}</span>
                 <span className="text-xs text-gray-400">
-                  {j.apelido} / {j.pos}
+                  {j.apelido} / {j.posicao}
                 </span>
               </li>
             ))}
