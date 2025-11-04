@@ -4,14 +4,18 @@ import Image from "next/image";
 import { useState } from "react";
 import Head from "next/head";
 import { torneiosMock } from "@/components/lists/mockTorneios";
-import type { Torneio } from "@/types/torneio";
+import type { Torneio } from "@/components/lists/mockTorneios";
 
 const getNovoTorneio = (): Torneio => ({
+  id: "",
+  rachaId: "",
   nome: "",
   ano: new Date().getFullYear(),
   slug: "",
   campeao: "",
-  imagem: "",
+  banner: "",
+  logo: "",
+  jogadores: [],
 });
 
 export default function AdminTorneiosPage() {
@@ -28,7 +32,7 @@ export default function AdminTorneiosPage() {
   };
 
   const handleSubmit = () => {
-    if (!novoTorneio.nome || !novoTorneio.slug || !novoTorneio.campeao || !novoTorneio.imagem)
+    if (!novoTorneio.nome || !novoTorneio.slug || !novoTorneio.campeao || !novoTorneio.banner)
       return;
 
     if (modoEdicao !== null) {
@@ -51,7 +55,9 @@ export default function AdminTorneiosPage() {
       ano: Number(t.ano),
       slug: t.slug,
       campeao: t.campeao,
-      imagem: t.imagem,
+      banner: t.banner,
+      logo: t.logo,
+      jogadores: t.jogadores ?? [],
     });
     setModoEdicao(index);
   };
@@ -124,10 +130,18 @@ export default function AdminTorneiosPage() {
               autoComplete="off"
             />
             <input
-              name="imagem"
-              value={novoTorneio.imagem}
+              name="banner"
+              value={novoTorneio.banner}
               onChange={handleChange}
-              placeholder="Caminho da Imagem"
+              placeholder="Caminho do banner"
+              className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
+            />
+            <input
+              name="logo"
+              value={novoTorneio.logo}
+              onChange={handleChange}
+              placeholder="Caminho da logo"
               className="p-2 rounded bg-zinc-800 text-white"
               autoComplete="off"
             />
@@ -146,7 +160,7 @@ export default function AdminTorneiosPage() {
           {torneios.map((torneio, idx) => (
             <div key={torneio.slug + idx} className="bg-[#1A1A1A] rounded-xl p-4 shadow-md">
               <Image
-                src={torneio.imagem}
+                src={torneio.banner}
                 alt={`Imagem do torneio ${torneio.nome}`}
                 width={400}
                 height={200}

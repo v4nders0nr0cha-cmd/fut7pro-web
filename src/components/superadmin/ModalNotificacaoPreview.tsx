@@ -1,44 +1,38 @@
 "use client";
 
-import type { FC } from "react";
 import type { Notificacao } from "@/types/notificacao";
 
-interface ModalNotificacaoPreviewProps {
+type ModalNotificacaoPreviewProps = {
   notificacao: Notificacao;
   onClose: () => void;
-}
+};
 
-export const ModalNotificacaoPreview: FC<ModalNotificacaoPreviewProps> = ({
-  notificacao,
-  onClose,
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-    <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md shadow-xl">
-      <h2 className="text-xl font-bold mb-4 text-yellow-400">Detalhe da Notificação</h2>
-      <div className="mb-4">
-        <div className="mb-2 text-sm text-zinc-400">Mensagem:</div>
-        <div className="mb-2 text-zinc-100">{notificacao.mensagem}</div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Data/Hora:</b> {notificacao.data}
+export function ModalNotificacaoPreview({ notificacao, onClose }: ModalNotificacaoPreviewProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="bg-zinc-900 rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h2 className="text-xl font-bold mb-2 text-yellow-400">Pré-visualização</h2>
+        <div className="mb-2 text-zinc-100">{notificacao.message}</div>
+        <div className="text-sm text-zinc-400 space-y-1">
+          <div>
+            <b>Tipo:</b> {notificacao.type}
+          </div>
+          <div>
+            <b>Data/Hora:</b> {new Date(notificacao.createdAt).toLocaleString("pt-BR")}
+          </div>
+          <div>
+            <b>Status:</b> {notificacao.isRead ? "Lida" : "Não lida"}
+          </div>
         </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Destino:</b> {notificacao.destino}
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded bg-zinc-800 text-zinc-100 hover:bg-zinc-700 transition"
+          >
+            Fechar
+          </button>
         </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Status:</b> {notificacao.status}
-        </div>
-        <div className="mb-1 text-xs text-zinc-400">
-          <b>Enviado por:</b> {notificacao.enviadoPor}
-        </div>
-      </div>
-      <div className="flex justify-end">
-        <button
-          onClick={onClose}
-          className="px-4 py-2 rounded bg-yellow-400 text-zinc-900 font-bold hover:bg-yellow-300 transition"
-        >
-          Fechar
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
+}

@@ -117,15 +117,11 @@ export function useAdminPlayerRankings(params: AdminPlayerRankingParams) {
   const query = useMemo(() => buildRankingQuery(params, now), [params, now]);
 
   const key = params.type
-    ? [
-        "admin-player-rankings",
-        params.type,
-        JSON.stringify({
-          limit: params.limit ?? null,
-          position: params.position ?? null,
-          query,
-        }),
-      ]
+    ? `admin-player-rankings:${params.type}:${JSON.stringify({
+        limit: params.limit ?? null,
+        position: params.position ?? null,
+        query,
+      })}`
     : null;
 
   const fetcher = useCallback(async () => {

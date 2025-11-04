@@ -9,6 +9,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { rachaConfig } from "@/config/racha.config";
+import type { NotificationType } from "@/types/notificacao";
 
 type Alertas = {
   jogadores: number;
@@ -27,11 +28,12 @@ type Toast = {
 
 type Notificacao = {
   id: string;
-  titulo: string;
-  mensagem: string;
-  lida: boolean;
-  data: string;
-  tipo: ToastType;
+  title: string;
+  message: string;
+  type: NotificationType;
+  isRead: boolean;
+  createdAt: string;
+  tone?: ToastType;
 };
 
 type NotificationContextType = Alertas & {
@@ -40,7 +42,7 @@ type NotificationContextType = Alertas & {
   removeToast: (id: string) => void;
   notificacoes: Notificacao[];
   marcarNotificacaoComoLida: (id: string) => void;
-  adicionarNotificacao: (not: Omit<Notificacao, "id" | "lida" | "data">) => void;
+  adicionarNotificacao: (not: Omit<Notificacao, "id" | "isRead" | "createdAt">) => void;
 };
 
 const NotificationContext = createContext<NotificationContextType>({
@@ -76,27 +78,30 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([
     {
       id: "1",
-      titulo: `Bem-vindo ao ${rachaConfig.nome}!`,
-      mensagem: "Use o painel para gerenciar seu racha.",
-      lida: false,
-      data: new Date().toISOString(),
-      tipo: "info",
+      title: `Bem-vindo ao ${rachaConfig.nome}!`,
+      message: "Use o painel para gerenciar seu racha.",
+      type: "SISTEMA",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      tone: "info",
     },
     {
       id: "2",
-      titulo: "Nova função disponível",
-      mensagem: "O sorteio inteligente foi atualizado!",
-      lida: false,
-      data: new Date().toISOString(),
-      tipo: "success",
+      title: "Nova funcao disponivel",
+      message: "O sorteio inteligente foi atualizado!",
+      type: "PERSONALIZADA",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      tone: "success",
     },
     {
       id: "3",
-      titulo: "Alerta do SuperAdmin",
-      mensagem: "Este domingo haverá manutenção programada.",
-      lida: false,
-      data: new Date().toISOString(),
-      tipo: "warning",
+      title: "Alerta do SuperAdmin",
+      message: "Este domingo havera manutencao programada.",
+      type: "ALERTA",
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      tone: "warning",
     },
   ]);
 
@@ -140,22 +145,22 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [toasts]);
 
   const marcarNotificacaoComoLida = (id: string) => {
-    setNotificacoes((prev) => prev.map((n) => (n.id === id ? { ...n, lida: true } : n)));
+    setNotificacoes((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
-  const adicionarNotificacao = (not: Omit<Notificacao, "id" | "lida" | "data">) => {
+  const adicionarNotificacao = (not: Omit<Notificacao, "id" | "isRead" | "createdAt">) => {
     setNotificacoes((prev) => [
       {
         ...not,
         id: generateToastId(),
-        lida: false,
-        data: new Date().toISOString(),
+        isRead: false,
+        createdAt: new Date().toISOString(),
       },
       ...prev,
     ]);
   };
 
-  const notificacoesNaoLidas = notificacoes.filter((n) => !n.lida).length;
+  const notificacoesNaoLidas = notificacoes.filter((n) => !n.isRead).length;
 
   return (
     <NotificationContext.Provider

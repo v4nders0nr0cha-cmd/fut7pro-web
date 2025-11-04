@@ -1,6 +1,8 @@
 // src/components/lists/mockTorneios.ts
 
 export interface Torneio {
+  id: string;
+  rachaId: string;
   nome: string;
   slug: string; // slug usado na URL do torneio
   ano: number;
@@ -12,6 +14,8 @@ export interface Torneio {
 
 export const torneiosMock: Torneio[] = [
   {
+    id: "torneio-1",
+    rachaId: "racha-1",
     nome: "Torneio Matador 2025",
     slug: "torneio-matador-2025",
     ano: 2025,
@@ -21,6 +25,8 @@ export const torneiosMock: Torneio[] = [
     jogadores: ["matheus-silva", "lucas-rocha", "paredao"],
   },
   {
+    id: "torneio-2",
+    rachaId: "racha-1",
     nome: "Copa dos Campeões 2025",
     slug: "copa-dos-campeoes-2025",
     ano: 2025,
@@ -30,6 +36,8 @@ export const torneiosMock: Torneio[] = [
     jogadores: ["craque-master", "meia-artista", "zagueiro-mito"],
   },
   {
+    id: "torneio-3",
+    rachaId: "racha-1",
     nome: "Torneio Relâmpago 2024",
     slug: "torneio-relampago-2024",
     ano: 2024,
@@ -39,6 +47,8 @@ export const torneiosMock: Torneio[] = [
     jogadores: ["goleador-king", "armador-x", "defensor-y"],
   },
   {
+    id: "torneio-4",
+    rachaId: "racha-2",
     nome: "Desafio dos Lendários 2023",
     slug: "desafio-dos-lendarios-2023",
     ano: 2023,

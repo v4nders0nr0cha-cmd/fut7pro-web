@@ -3,14 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { torneiosMock } from "@/components/lists/mockTorneios";
-
-interface Torneio {
-  nome: string;
-  slug: string;
-  ano: number;
-  campeao: string;
-  imagem: string;
-}
+import type { Torneio } from "@/components/lists/mockTorneios";
 
 export default function GrandesTorneiosPage() {
   return (
@@ -26,11 +19,11 @@ export default function GrandesTorneiosPage() {
   );
 }
 
-function TorneioCard({ nome, slug, ano, campeao, imagem }: Torneio) {
+function TorneioCard({ nome, slug, ano, campeao, banner, logo }: Torneio) {
   return (
     <div className="bg-[#1A1A1A] rounded-xl p-4 shadow-md hover:shadow-yellow-500 transition-all">
       <Image
-        src={imagem}
+        src={banner}
         alt={`Imagem do torneio ${nome}`}
         width={400}
         height={200}

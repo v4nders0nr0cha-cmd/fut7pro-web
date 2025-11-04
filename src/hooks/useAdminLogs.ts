@@ -12,10 +12,13 @@ export interface AdminLog {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export function useAdminLogs(rachaId: string) {
+export function useAdminLogs(rachaId: string | null | undefined) {
   const { data, error, mutate } = useSWR<AdminLog[]>(
     rachaId ? `/api/admin/rachas/${rachaId}/logs` : null,
-    fetcher
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
   );
 
   async function addLog(log: Partial<AdminLog>) {
@@ -24,13 +27,14 @@ export function useAdminLogs(rachaId: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(log),
     });
-    mutate();
+    await mutate();
   }
 
   return {
     logs: data || [],
     isLoading: !error && !data,
-    isError: !!error,
+    isError: Boolean(error),
+    error: error instanceof Error ? error.message : null,
     addLog,
     mutate,
   };

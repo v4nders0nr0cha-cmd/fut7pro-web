@@ -3,7 +3,7 @@ import type { ConquistasAtleta } from "@/types/estatisticas";
 
 export const atletasMock: Atleta[] = [
   {
-    id: 1,
+    id: "atleta-1",
     nome: "Matheus Silva",
     apelido: "Matheusão",
     slug: "matheus-silva",
@@ -70,7 +70,7 @@ export const atletasMock: Atleta[] = [
     } as ConquistasAtleta,
   },
   {
-    id: 2,
+    id: "atleta-2",
     nome: "Lucas Rocha",
     apelido: null,
     slug: "lucas-rocha",

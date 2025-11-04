@@ -2,6 +2,11 @@
 // Camada de abstração centralizada para APIs
 
 import type { ApiRequestData } from "@/types/api";
+import type {
+  Notification,
+  CreateNotificationInput,
+  UpdateNotificationInput,
+} from "@/types/notificacao";
 import type { PlayerRankingType } from "@/types/ranking";
 import { getSession } from "next-auth/react";
 import { getApiBase } from "@/lib/get-api-base";
@@ -225,13 +230,103 @@ export const usersApi = {
     apiClient.put("/users/password", data),
 };
 
+const NEXT_NOTIFICATIONS_ENDPOINT = "/api/admin/notificacoes";
+const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+
+async function notificationsFetch<T>(
+  input: string,
+  init?: RequestInit & { skipJson?: boolean }
+): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("Accept", JSON_CONTENT_TYPE);
+
+  if (init?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", JSON_CONTENT_TYPE);
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers,
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const contentType = response.headers.get("content-type") ?? "";
+  const isJson = contentType.includes("application/json");
+  const shouldParse = init?.skipJson ? false : isJson;
+
+  let payload: any = null;
+
+  if (shouldParse && response.status !== 204) {
+    payload = await response.json().catch(() => null);
+  } else if (!shouldParse && !response.ok) {
+    payload = await response.text().catch(() => null);
+  }
+
+  if (!response.ok) {
+    const errorMessage =
+      (payload && typeof payload === "object" && "error" in payload && payload.error) ||
+      (typeof payload === "string" && payload.length ? payload : null) ||
+      `HTTP ${response.status}`;
+    throw new Error(String(errorMessage));
+  }
+
+  return (payload ?? (undefined as unknown)) as T;
+}
+
+function buildNotificationsUrl(params?: Record<string, string | number | boolean | undefined>) {
+  let url = NEXT_NOTIFICATIONS_ENDPOINT;
+  if (params) {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.set(key, String(value));
+      }
+    });
+    const query = searchParams.toString();
+    if (query.length > 0) {
+      url = `${url}?${query}`;
+    }
+  }
+  return url;
+}
+
 // API de Notificações
 export const notificacoesApi = {
-  getAll: () => apiClient.get("/notificacoes"),
-  getById: (id: string) => apiClient.get(`/notificacoes/${id}`),
-  markAsRead: (id: string) => apiClient.put(`/notificacoes/${id}/read`),
-  markAllAsRead: () => apiClient.put("/notificacoes/read-all"),
-  delete: (id: string) => apiClient.delete(`/notificacoes/${id}`),
+  async list(params?: Record<string, string | number | boolean>) {
+    return notificationsFetch<Notification[]>(buildNotificationsUrl(params), {
+      method: "GET",
+    });
+  },
+  async create(payload: CreateNotificationInput) {
+    return notificationsFetch<Notification>(NEXT_NOTIFICATIONS_ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+  async update(id: string, payload: UpdateNotificationInput) {
+    const url = `${NEXT_NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(id)}`;
+    return notificationsFetch<Notification>(url, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+  async markAsRead(id: string) {
+    return notificacoesApi.update(id, { isRead: true });
+  },
+  async markAllAsRead() {
+    const url = `${NEXT_NOTIFICATIONS_ENDPOINT}/mark-all`;
+    return notificationsFetch<{ updated: number; failed?: number }>(url, {
+      method: "PATCH",
+    });
+  },
+  async delete(id: string) {
+    const url = `${NEXT_NOTIFICATIONS_ENDPOINT}/${encodeURIComponent(id)}`;
+    await notificationsFetch<void>(url, {
+      method: "DELETE",
+      skipJson: true,
+    });
+  },
 };
 
 type RankingQueryParams = {

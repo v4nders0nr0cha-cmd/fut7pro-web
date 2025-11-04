@@ -3,7 +3,16 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { Role } from "@prisma/client";
+
+export type Role =
+  | "SUPERADMIN"
+  | "ADMIN"
+  | "GERENTE"
+  | "SUPORTE"
+  | "AUDITORIA"
+  | "FINANCEIRO"
+  | "MARKETING"
+  | "ATLETA";
 
 export interface AuthUser {
   id: string;

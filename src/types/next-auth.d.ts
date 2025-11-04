@@ -1,5 +1,6 @@
-import NextAuth from "next-auth";
-import { Role } from "@prisma/client";
+import "next-auth";
+import "next-auth/jwt";
+import type { Role } from "@/hooks/useAuth";
 
 declare module "next-auth" {
   interface Session {
@@ -17,24 +18,21 @@ declare module "next-auth" {
   }
 
   interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: Role;
-    tenantId: string;
-    tenantSlug: string | null;
-    accessToken: string;
-    refreshToken: string;
+    role?: Role;
+    tenantId?: string;
+    tenantSlug?: string | null;
+    accessToken?: string;
+    refreshToken?: string;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string;
-    role: Role;
-    tenantId: string;
-    tenantSlug: string | null;
-    accessToken: string;
-    refreshToken: string;
+    id?: string;
+    role?: Role;
+    tenantId?: string;
+    tenantSlug?: string | null;
+    accessToken?: string;
+    refreshToken?: string;
   }
 }

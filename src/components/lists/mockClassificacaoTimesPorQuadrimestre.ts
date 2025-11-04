@@ -7,7 +7,7 @@ export const classificacaoTimesPorQuadrimestre: Record<
   2025: {
     1: [
       {
-        id: 1,
+        id: "time-falcoes",
         nome: "Time Falcões",
         logo: "/images/times/time_padrao_01.png",
         pontos: 18,
@@ -20,7 +20,7 @@ export const classificacaoTimesPorQuadrimestre: Record<
         saldoGols: 9,
       },
       {
-        id: 2,
+        id: "time-leoes-serra",
         nome: "Leões da Serra",
         logo: "/images/times/time_padrao_02.png",
         pontos: 16,
@@ -39,7 +39,7 @@ export const classificacaoTimesPorQuadrimestre: Record<
   2024: {
     1: [
       {
-        id: 1,
+        id: "time-aguias-urbanas",
         nome: "Águias Urbanas",
         logo: "/images/times/time_padrao_03.png",
         pontos: 12,

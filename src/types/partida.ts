@@ -2,7 +2,10 @@
 
 export type GolOuAssistencia = {
   jogador: string;
-  time: "A" | "B";
+  time: "A" | "B" | string;
+  minuto?: number;
+  tipo?: string;
+  id?: string;
 };
 
 export type Partida = {

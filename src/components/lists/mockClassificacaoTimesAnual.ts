@@ -3,7 +3,7 @@ import type { TimeClassificacao } from "@/types/estatisticas";
 export const classificacaoTimesAnual: Record<number, TimeClassificacao[]> = {
   2025: [
     {
-      id: 1,
+      id: "time-falcoes",
       nome: "Time Falcões",
       logo: "/images/times/time_padrao_01.png",
       pontos: 48,
@@ -16,7 +16,7 @@ export const classificacaoTimesAnual: Record<number, TimeClassificacao[]> = {
       saldoGols: 24,
     },
     {
-      id: 2,
+      id: "time-leoes-serra",
       nome: "Leões da Serra",
       logo: "/images/times/time_padrao_02.png",
       pontos: 45,
@@ -31,7 +31,7 @@ export const classificacaoTimesAnual: Record<number, TimeClassificacao[]> = {
   ],
   2024: [
     {
-      id: 1,
+      id: "time-aguias-urbanas",
       nome: "Águias Urbanas",
       logo: "/images/times/time_padrao_03.png",
       pontos: 39,

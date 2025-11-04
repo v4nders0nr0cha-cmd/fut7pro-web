@@ -65,7 +65,7 @@ export default function GrandesTorneiosAdminPage() {
                 >
                   <div className="relative h-48 sm:h-64 md:h-72 w-full">
                     <Image
-                      src={torneio.imagem || "/images/torneios/placeholder.jpg"}
+                      src={torneio.banner || "/images/torneios/placeholder.jpg"}
                       alt={`Banner do ${torneio.nome}`}
                       fill
                       className="object-cover"
