@@ -15,7 +15,21 @@ export const POSITION_LABEL: Record<PositionValue, string> = POSITION_OPTIONS.re
   {} as Record<PositionValue, string>
 );
 
-export function positionLabel(value?: PositionValue | null) {
-  if (!value) return "";
-  return POSITION_LABEL[value] ?? value;
+export function normalizePositionValue(value?: string | null): PositionValue | null {
+  if (!value) return null;
+  const cleaned = value.trim().toLowerCase();
+
+  if (cleaned.startsWith("gol")) return "goleiro";
+  if (cleaned.startsWith("zag") || cleaned.startsWith("def")) return "zagueiro";
+  if (cleaned.startsWith("mei") || cleaned.startsWith("mid")) return "meia";
+  if (cleaned.startsWith("ata") || cleaned.startsWith("ava") || cleaned.startsWith("for"))
+    return "atacante";
+
+  return null;
+}
+
+export function positionLabel(value?: PositionValue | string | null) {
+  const normalized = normalizePositionValue(value ?? null);
+  if (!normalized) return "";
+  return POSITION_LABEL[normalized] ?? normalized;
 }

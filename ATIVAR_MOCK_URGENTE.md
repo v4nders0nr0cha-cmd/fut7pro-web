@@ -1,70 +1,72 @@
-# 🚨 ATIVAÇÃO URGENTE DO MOCK
+# ⚠️ ATIVAÇÃO URGENTE DO MOCK (Atualizado 2025-11)
 
-## ⚠️ Problema Confirmado
+## 🚨 Problema Confirmado
 
 Backend indisponível ou certificado inválido enquanto o app está em produção.
 
-## ✅ Solução Imediata (2 minutos)
+## ✅ Novo Fluxo
 
-### 1. Configurar mock no Vercel
+- A flag `NEXT_PUBLIC_USE_JOGOS_MOCK` foi **descontinuada**. A UI sempre chama  
+  `GET /api/public/jogos-do-dia`.
+- O proxy tenta o backend oficial e, em caso de falha, devolve fallback estático marcado com  
+  `x-fallback-source: static`.
+- O endpoint `/api/public/jogos-do-dia-fallback` permanece para diagnóstico manual, mas não é utilizado pela UI.
 
-1. Acesse https://vercel.com/dashboard
-2. Projeto: `fut7pro-web`
-3. **Settings** → **Environment Variables**
-4. **Add New**
-   - **Name**: `NEXT_PUBLIC_USE_JOGOS_MOCK`
-   - **Value**: `1`
-   - **Environment**: Production e Preview
-5. Salve a variável
+## ⏱ Ação Imediata
 
-### 2. Redeploy imediato
+1. **Verificar fallback:**
 
-1. Abra **Deployments** → **Current**
-2. Clique em **Redeploy**
+   ```powershell
+   curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
+   ```
 
-### 3. Testar na hora
+   - `HTTP/1.1 200 OK` + `x-fallback-source: static` → contingência ativa.
+   - `x-fallback-source: backend` → backend voltou.
 
-```powershell
-curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-```
+2. **Validar páginas críticas:**
+   - `https://app.fut7pro.com.br/partidas/times-do-dia`
+   - `https://app.fut7pro.com.br/partidas/historico`
 
-## 🛠️ Soluções permanentes
+   Ambas devem carregar com dados estáticos se o backend estiver offline.
+
+## 🧰 Soluções Permanentes
 
 ### Opção 1: Corrigir certificado SSL na Render
 
-- Render Dashboard → Serviço backend → Settings → Custom Domains
-- Validar que `api.fut7pro.com.br` responde com certificado válido
-- Forçar novo deploy, se necessário, para renovar o certificado
+- Render Dashboard → Serviço backend → Settings → Custom Domains.
+- Certificar-se de que `api.fut7pro.com.br` possui certificado válido.
+- Se necessário, forçar novo deploy para reemitir o certificado.
 
 ### Opção 2: Revisar configuração do backend
 
-- Confirmar `BACKEND_URL=https://api.fut7pro.com.br` em todos os ambientes
-- Garantir CORS liberando `app.fut7pro.com.br` e domínios de preview
-- Executar healthcheck: `curl -I https://api.fut7pro.com.br/health`
+- Confirmar `BACKEND_URL=https://api.fut7pro.com.br` em todos os ambientes.
+- Garantir CORS liberando `app.fut7pro.com.br` e domínios de preview da Vercel.
+- Executar healthcheck: `curl -I https://api.fut7pro.com.br/health`.
 
-### Opção 3: Manter mock temporário (somente dev)
+### Opção 3: Ajustar proxy local (somente desenvolvimento)
 
-- Utilize `NEXT_PUBLIC_USE_JOGOS_MOCK=1` apenas até o backend estabilizar
-- Remova a variável assim que o SSL estiver resolvido
+- Ignorar SSL apenas no ambiente local de desenvolvimento.
+- **Nunca** aplicar esse bypass em produção.
 
-## 📊 Status esperado
+## 📈 Exemplo de Resposta em Fallback
 
 ```json
-// GET /api/public/jogos-do-dia-mock
+// GET /api/public/jogos-do-dia com fallback ativo
 [
   {
-    "id": "1",
+    "id": "fallback-1",
     "timeA": "Time A",
     "timeB": "Time B",
-    "golsTimeA": 2,
-    "golsTimeB": 1,
-    "finalizada": true
+    "golsTimeA": 0,
+    "golsTimeB": 0,
+    "finalizada": false,
+    "_fallback": true
   }
 ]
 ```
 
-## 🧪 Teste rápido
+## ✅ Teste Rápido
 
 ```powershell
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock | findstr /I "HTTP"
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
 ```

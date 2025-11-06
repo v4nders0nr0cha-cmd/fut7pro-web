@@ -1,20 +1,18 @@
 "use client";
 import Head from "next/head";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { atletasMock } from "@/components/lists/mockAtletas";
 import Image from "next/image";
+import Link from "next/link";
 import html2canvas from "html2canvas";
 import { FaShareAlt } from "react-icons/fa";
+import { usePublicAthletes } from "@/hooks/usePublicAthletes";
+import type { Atleta } from "@/types/atletas";
+import type { TituloAtleta } from "@/types/estatisticas";
 
-const anoAtual = 2025;
+const anoAtual = new Date().getFullYear();
 
-type TituloAtleta = {
-  descricao: string;
-  ano: string | number;
-};
-
-type Atleta = (typeof atletasMock)[number] & {
+type AtletaComparador = Atleta & {
   conquistas?: {
     titulosGrandesTorneios?: TituloAtleta[];
     titulosAnuais?: TituloAtleta[];
@@ -22,7 +20,7 @@ type Atleta = (typeof atletasMock)[number] & {
   };
 };
 
-function adaptarAtletaParaComparador(atleta: Atleta | undefined, historico: boolean) {
+function adaptarAtletaParaComparador(atleta: AtletaComparador | undefined, historico: boolean) {
   if (!atleta) return undefined;
   const stats = historico ? atleta.estatisticas?.historico : atleta.estatisticas?.anual?.[anoAtual];
 
@@ -166,24 +164,70 @@ export default function TiraTeimaPage() {
   const [historico, setHistorico] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+  const {
+    athletes,
+    isLoading: isLoadingAthletes,
+    isError: isErrorAthletes,
+    error: errorAthletes,
+  } = usePublicAthletes();
 
   useEffect(() => {
-    if (atletaQuery && atletasMock.some((a) => a.slug === atletaQuery)) {
+    if (!athletes.length) return;
+    if (atletaQuery && athletes.some((a) => a.slug === atletaQuery)) {
       setAtletaA(atletaQuery);
     }
-  }, [atletaQuery]);
+  }, [atletaQuery, athletes]);
 
-  const atletasFiltradosA = atletasMock.filter((a) =>
-    a.nome.toLowerCase().includes(buscaA.toLowerCase())
+  const atletasFiltradosA = useMemo(
+    () => athletes.filter((a) => a.nome.toLowerCase().includes(buscaA.trim().toLowerCase())),
+    [athletes, buscaA]
   );
-  const atletasFiltradosB = atletasMock.filter((a) =>
-    a.nome.toLowerCase().includes(buscaB.toLowerCase())
+  const atletasFiltradosB = useMemo(
+    () => athletes.filter((a) => a.nome.toLowerCase().includes(buscaB.trim().toLowerCase())),
+    [athletes, buscaB]
   );
 
-  const atletaSelecionadoA = atletasMock.find((a) => a.slug === atletaA);
-  const atletaSelecionadoB = atletasMock.find((a) => a.slug === atletaB);
+  const atletaSelecionadoA = useMemo(
+    () => athletes.find((a) => a.slug === atletaA) as AtletaComparador | undefined,
+    [athletes, atletaA]
+  );
+  const atletaSelecionadoB = useMemo(
+    () => athletes.find((a) => a.slug === atletaB) as AtletaComparador | undefined,
+    [athletes, atletaB]
+  );
   const atletaObjA = adaptarAtletaParaComparador(atletaSelecionadoA, historico);
   const atletaObjB = adaptarAtletaParaComparador(atletaSelecionadoB, historico);
+
+  if (isLoadingAthletes && athletes.length === 0) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-fundo text-gray-300">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400" />
+        <p className="mt-4 text-sm">Carregando atletas para comparação...</p>
+      </div>
+    );
+  }
+
+  if (isErrorAthletes) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-fundo text-center px-4">
+        <Head>
+          <title>Erro ao carregar atletas | Fut7Pro</title>
+        </Head>
+        <p className="text-red-300 text-lg font-semibold mb-2">
+          Não foi possível carregar os atletas para o tira-teima.
+        </p>
+        <p className="text-gray-400 text-sm mb-6">
+          {errorAthletes ?? "Tente novamente em instantes."}
+        </p>
+        <Link
+          href="/estatisticas"
+          className="inline-block bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded"
+        >
+          Voltar para estatísticas
+        </Link>
+      </div>
+    );
+  }
 
   async function handleShare() {
     if (!shareRef.current) return;

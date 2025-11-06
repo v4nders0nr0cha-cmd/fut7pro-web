@@ -1,48 +1,95 @@
 "use client";
 
-import { useParams, notFound } from "next/navigation";
-import { atletasMock } from "@/components/lists/mockAtletas";
-import type { JogoAtleta } from "@/types/atletas";
 import Head from "next/head";
+import Link from "next/link";
+import { useMemo } from "react";
+import { useParams, notFound } from "next/navigation";
+import type { JogoAtleta } from "@/types/atletas";
+import { usePublicAthlete } from "@/hooks/usePublicAthlete";
 
 export default function HistoricoCompletoPage() {
   const params = useParams();
   const slug = typeof params?.slug === "string" ? params.slug : "";
+  const { athlete, isLoading, isError, error } = usePublicAthlete(slug);
 
-  const atleta = atletasMock.find((a) => a.slug === slug);
-  if (!atleta) return notFound();
+  const agrupadoPorAno = useMemo(() => {
+    if (!athlete) return {} as Record<string, JogoAtleta[]>;
 
-  const historico = atleta.historico;
+    return athlete.historico.reduce<Record<string, JogoAtleta[]>>((acc, jogo) => {
+      const ano = new Date(jogo.data).getFullYear().toString();
+      if (!acc[ano]) acc[ano] = [];
+      acc[ano].push(jogo);
+      return acc;
+    }, {});
+  }, [athlete]);
 
-  const agrupadoPorAno = historico.reduce<Record<string, JogoAtleta[]>>((acc, jogo) => {
-    const ano = new Date(jogo.data).getFullYear().toString();
-    if (!acc[ano]) acc[ano] = [];
-    acc[ano].push(jogo);
-    return acc;
-  }, {});
+  const anosOrdenados = useMemo(
+    () => Object.keys(agrupadoPorAno).sort((a, b) => Number(b) - Number(a)),
+    [agrupadoPorAno]
+  );
 
-  const anosOrdenados = Object.keys(agrupadoPorAno).sort((a, b) => Number(b) - Number(a));
+  if (!slug) {
+    return notFound();
+  }
+
+  if (isLoading) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-fundo text-gray-300">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400" />
+        <p className="mt-4 text-sm">Carregando histórico do atleta...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center bg-fundo text-center px-4">
+        <Head>
+          <title>Erro ao carregar histórico | Fut7Pro</title>
+        </Head>
+        <p className="text-red-300 text-lg font-semibold mb-2">
+          Não foi possível carregar o histórico do atleta.
+        </p>
+        <p className="text-gray-400 text-sm mb-6">{error ?? "Tente novamente em instantes."}</p>
+        <Link
+          href={`/atletas/${slug}`}
+          className="inline-block bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-4 rounded"
+        >
+          Voltar ao perfil do atleta
+        </Link>
+      </div>
+    );
+  }
+
+  if (!athlete) {
+    return notFound();
+  }
 
   return (
     <>
       <Head>
-        <title>Histórico Completo de {atleta.nome} | Fut7Pro</title>
+        <title>Histórico Completo de {athlete.nome} | Fut7Pro</title>
         <meta
           name="description"
-          content={`Veja o histórico completo de partidas, desempenho e pontuação do atleta ${atleta.nome} no Fut7Pro.`}
+          content={`Veja o histórico completo de partidas, desempenho e pontuação do atleta ${athlete.nome} no Fut7Pro.`}
         />
         <meta
           name="keywords"
-          content={`fut7, histórico, partidas, desempenho, ${atleta.nome}, futebol 7, racha`}
+          content={`fut7, histórico, partidas, desempenho, ${athlete.nome}, futebol 7, racha`}
         />
       </Head>
 
       <h1 className="text-3xl font-bold text-yellow-400 mt-8 mb-6 text-center">
-        Histórico completo de {atleta.nome}
+        Histórico completo de {athlete.nome}
       </h1>
 
-      {/* Wrapper externo NUNCA deve ter max-w, mx-auto, px-4 */}
       <div className="w-full">
+        {anosOrdenados.length === 0 && (
+          <p className="text-center text-gray-400">
+            Ainda não há partidas registradas para este atleta.
+          </p>
+        )}
+
         {anosOrdenados.map((ano) => (
           <div key={ano} className="mb-10 w-full">
             <h2 className="text-lg font-semibold text-white mb-2">📅 {ano}</h2>
@@ -61,7 +108,7 @@ export default function HistoricoCompletoPage() {
                 </thead>
                 <tbody>
                   {agrupadoPorAno[ano]?.map((jogo, index) => (
-                    <tr key={index} className="text-center">
+                    <tr key={`${ano}-${index}`} className="text-center">
                       <td className="p-2 border">{jogo.data}</td>
                       <td className="p-2 border">{jogo.time}</td>
                       <td className="p-2 border">{jogo.resultado}</td>
@@ -69,7 +116,9 @@ export default function HistoricoCompletoPage() {
                       <td className="p-2 border">{jogo.campeao ? "🏆" : ""}</td>
                       <td className="p-2 border">{jogo.pontuacao}</td>
                       <td className="p-2 border">
-                        <button className="text-yellow-400 hover:underline">Ver Detalhes</button>
+                        <button className="text-yellow-400 hover:underline" type="button">
+                          Ver Detalhes
+                        </button>
                       </td>
                     </tr>
                   ))}

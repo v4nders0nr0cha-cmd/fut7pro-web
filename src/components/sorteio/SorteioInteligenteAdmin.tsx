@@ -7,7 +7,11 @@ import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import { sortearTimesInteligente, gerarTabelaJogos, type JogoConfronto } from "@/utils/sorteioUtils";
+import {
+  sortearTimesInteligente,
+  gerarTabelaJogos,
+  type JogoConfronto,
+} from "@/utils/sorteioUtils";
 import type { Time as RachaTime } from "@/types/time";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
 import type { Athlete } from "@/types/jogador";
@@ -121,92 +125,58 @@ const gerarIdParticipante = () =>
     ? crypto.randomUUID()
     : `athlete-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-type AthleteWithExtras = Athlete & {
-  rankings?: Array<{
-    points?: number;
-    wins?: number;
-    goals?: number;
-    assists?: number;
-    games?: number;
-  }>;
-  estrelas?: {
-    estrelas?: number;
-    atualizadoEm?: string;
-    atualizadoPor?: string;
-  };
-  stats?: {
-    totalMatches?: number;
-    wins?: number;
-    goals?: number;
-    assists?: number;
-  };
-  [key: string]: unknown;
-};
-
 function createParticipanteFromAthlete(
   athlete: Athlete | null | undefined,
   tenantSlug: string,
-  overrides?: Partial<Participante>,
+  overrides?: Partial<Participante>
 ): Participante {
-  const enriched = (athlete ?? {}) as AthleteWithExtras;
+  const rankingPrimario = athlete?.rankings?.[0];
+  const stats = athlete?.stats;
+  const legacyPosition = athlete?.posicao ?? null;
 
-  const rankingPrimario = Array.isArray(enriched.rankings) ? enriched.rankings[0] : undefined;
-
-  const id = overrides?.id ?? enriched.id ?? gerarIdParticipante();
-  const nome = overrides?.nome ?? enriched.name ?? "Atleta";
-  const slug = overrides?.slug ?? enriched.slug ?? enriched.nickname ?? id;
-  const foto = overrides?.foto ?? enriched.photoUrl ?? FALLBACK_FOTO;
-  const posicao =
-    overrides?.posicao ??
-    normalizarPosicao(
-      (enriched.position as string | undefined) ?? (enriched as unknown as { posicao?: string }).posicao,
-    );
+  const id = overrides?.id ?? athlete?.id ?? gerarIdParticipante();
+  const nome = overrides?.nome ?? athlete?.name ?? "Atleta";
+  const slug = overrides?.slug ?? athlete?.slug ?? athlete?.nickname ?? id;
+  const foto = overrides?.foto ?? athlete?.photoUrl ?? FALLBACK_FOTO;
+  const posicaoBase = athlete?.position ?? legacyPosition ?? null;
+  const posicao = overrides?.posicao ?? normalizarPosicao(posicaoBase);
 
   const rankingPontos =
-    overrides?.rankingPontos ??
-    rankingPrimario?.points ??
-    (enriched as unknown as { rankingPontos?: number }).rankingPontos ??
-    0;
+    overrides?.rankingPontos ?? rankingPrimario?.points ?? athlete?.rankingPontos ?? 0;
   const vitorias =
-    overrides?.vitorias ??
-    rankingPrimario?.wins ??
-    (enriched as unknown as { vitorias?: number }).vitorias ??
-    0;
-  const gols =
-    overrides?.gols ?? rankingPrimario?.goals ?? (enriched as unknown as { gols?: number }).gols ?? 0;
+    overrides?.vitorias ?? rankingPrimario?.wins ?? stats?.wins ?? athlete?.vitorias ?? 0;
+  const gols = overrides?.gols ?? rankingPrimario?.goals ?? stats?.goals ?? athlete?.gols ?? 0;
   const assistencias =
     overrides?.assistencias ??
     rankingPrimario?.assists ??
-    (enriched as unknown as { assistencias?: number }).assistencias ??
+    stats?.assists ??
+    athlete?.assistencias ??
     0;
   const partidas =
-    overrides?.partidas ??
-    rankingPrimario?.games ??
-    enriched.stats?.totalMatches ??
-    (enriched as unknown as { partidas?: number }).partidas ??
-    0;
+    overrides?.partidas ?? rankingPrimario?.games ?? stats?.totalMatches ?? athlete?.partidas ?? 0;
 
-  const baseEstrelas = {
-    id: overrides?.estrelas?.id ?? `${tenantSlug}-${id}`,
-    rachaId: overrides?.estrelas?.rachaId ?? tenantSlug,
-    jogadorId: overrides?.estrelas?.jogadorId ?? id,
-    estrelas:
-      overrides?.estrelas?.estrelas ??
-      enriched.estrelas?.estrelas ??
-      (enriched as unknown as { estrelas?: number }).estrelas ??
-      ((enriched as unknown as { stars?: { value?: number } }).stars?.value ?? 0),
+  const estrelasBackend = athlete?.estrelas;
+  const estrelasLegacy = athlete?.stars;
+  const overrideEstrelas = overrides?.estrelas;
+
+  const baseEstrelas: Participante["estrelas"] = {
+    id: overrideEstrelas?.id ?? estrelasBackend?.id ?? `${tenantSlug}-${id}`,
+    rachaId: overrideEstrelas?.rachaId ?? estrelasBackend?.rachaId ?? tenantSlug,
+    jogadorId: overrideEstrelas?.jogadorId ?? estrelasBackend?.jogadorId ?? id,
+    estrelas: overrideEstrelas?.estrelas ?? estrelasBackend?.estrelas ?? estrelasLegacy?.value ?? 0,
     atualizadoEm:
-      overrides?.estrelas?.atualizadoEm ??
-      enriched.estrelas?.atualizadoEm ??
-      ((enriched as unknown as { stars?: { updatedAt?: string } }).stars?.updatedAt ??
-        new Date().toISOString()),
+      overrideEstrelas?.atualizadoEm ??
+      estrelasBackend?.atualizadoEm ??
+      estrelasLegacy?.updatedAt ??
+      new Date().toISOString(),
     atualizadoPor:
-      overrides?.estrelas?.atualizadoPor ??
-      enriched.estrelas?.atualizadoPor ??
-      ((enriched as unknown as { stars?: { updatedBy?: string } }).stars?.updatedBy ?? ""),
+      overrideEstrelas?.atualizadoPor ??
+      estrelasBackend?.atualizadoPor ??
+      estrelasLegacy?.updatedBy ??
+      "",
   };
 
-  let participante: Participante = {
+  const participante: Participante = {
     id,
     nome,
     slug,
@@ -217,33 +187,26 @@ function createParticipanteFromAthlete(
     gols,
     assistencias,
     estrelas: baseEstrelas,
-    mensalista:
-      overrides?.mensalista ??
-      Boolean(
-        (enriched as unknown as { mensalista?: boolean }).mensalista ??
-          (enriched as unknown as { isMember?: boolean }).isMember ??
-          enriched.isMember,
-      ),
+    mensalista: overrides?.mensalista ?? athlete?.mensalista ?? athlete?.isMember ?? false,
     partidas,
   };
 
-  if (overrides) {
-    participante = {
-      ...participante,
-      ...overrides,
-      estrelas: {
-        ...participante.estrelas,
-        ...(overrides.estrelas ?? {}),
-        estrelas:
-          overrides.estrelas?.estrelas ?? participante.estrelas.estrelas,
-        jogadorId: overrides.estrelas?.jogadorId ?? participante.estrelas.jogadorId,
-        rachaId: overrides.estrelas?.rachaId ?? participante.estrelas.rachaId,
-        id: overrides.estrelas?.id ?? participante.estrelas.id,
-      },
-    };
+  if (!overrides) {
+    return participante;
   }
 
-  return participante;
+  return {
+    ...participante,
+    ...overrides,
+    estrelas: {
+      ...baseEstrelas,
+      ...(overrides.estrelas ?? {}),
+      estrelas: overrides.estrelas?.estrelas ?? baseEstrelas.estrelas,
+      jogadorId: overrides.estrelas?.jogadorId ?? baseEstrelas.jogadorId,
+      rachaId: overrides.estrelas?.rachaId ?? baseEstrelas.rachaId,
+      id: overrides.estrelas?.id ?? baseEstrelas.id,
+    },
+  };
 }
 
 function mapPresenceToParticipante(presence: MatchPresence, tenantSlug: string): Participante {
@@ -373,39 +336,41 @@ export default function SorteioInteligenteAdmin() {
     });
   }, [timesDisponiveis, config?.numTimes]);
 
-useEffect(() => {
-  setParticipantesSelecionados((prev) => {
-    const disponiveisPorId = new Map(participantesDisponiveis.map((p) => [p.id, p]));
-    return prev
-      .map((p) => {
-        const atualizado = disponiveisPorId.get(p.id);
-        if (!atualizado) return null;
-        return mergeParticipantes(atualizado, p);
-      })
-      .filter((p): p is Participante => Boolean(p));
-  });
-}, [participantesDisponiveis]);
+  useEffect(() => {
+    setParticipantesSelecionados((prev) => {
+      const disponiveisPorId = new Map(participantesDisponiveis.map((p) => [p.id, p]));
+      return prev
+        .map((p) => {
+          const atualizado = disponiveisPorId.get(p.id);
+          if (!atualizado) return null;
+          return mergeParticipantes(atualizado, p);
+        })
+        .filter((p): p is Participante => Boolean(p));
+    });
+  }, [participantesDisponiveis]);
 
-useEffect(() => {
-  if (!config) return;
-  const maxJogadores = config.numTimes * config.jogadoresPorTime;
-  if (!maxJogadores) return;
+  useEffect(() => {
+    if (!config) return;
+    const maxJogadores = config.numTimes * config.jogadoresPorTime;
+    if (!maxJogadores) return;
 
-  setParticipantesSelecionados((prev) => {
-    if (prev.length > 0) return prev;
+    setParticipantesSelecionados((prev) => {
+      if (prev.length > 0) return prev;
 
-    if (participantesPadrao.length > 0) {
-      return participantesPadrao.slice(0, maxJogadores);
-    }
+      if (participantesPadrao.length > 0) {
+        return participantesPadrao.slice(0, maxJogadores);
+      }
 
-    const mensalistas = participantesDisponiveis.filter((p) => p.mensalista).slice(0, maxJogadores);
-    if (mensalistas.length > 0) {
-      return mensalistas;
-    }
+      const mensalistas = participantesDisponiveis
+        .filter((p) => p.mensalista)
+        .slice(0, maxJogadores);
+      if (mensalistas.length > 0) {
+        return mensalistas;
+      }
 
-    return participantesDisponiveis.slice(0, maxJogadores);
-  });
-}, [config, participantesDisponiveis, participantesPadrao]);
+      return participantesDisponiveis.slice(0, maxJogadores);
+    });
+  }, [config, participantesDisponiveis, participantesPadrao]);
 
   const handleConfirmarConfig = () => {
     if (!config) return;
