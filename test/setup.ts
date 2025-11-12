@@ -1,7 +1,12 @@
 import "@testing-library/jest-dom";
 import React from "react";
+import { TransformStream as PolyfillTransformStream } from "web-streams-polyfill/ponyfill/es2018";
 
-// Mock do Next.js router
+if (!(globalThis as any).TransformStream) {
+  (globalThis as any).TransformStream = PolyfillTransformStream;
+}
+
+// Mock do Next.js router (Pages Router)
 jest.mock("next/router", () => ({
   useRouter() {
     return {
@@ -25,6 +30,22 @@ jest.mock("next/router", () => ({
   },
 }));
 
+// Mock do Next.js navigation (App Router)
+jest.mock("next/navigation", () => ({
+  useRouter() {
+    return {
+      push: jest.fn(),
+      replace: jest.fn(),
+      prefetch: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
+    };
+  },
+  usePathname: jest.fn(() => "/"),
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 // Mock do Next.js Image
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -34,17 +55,17 @@ jest.mock("next/image", () => ({
   },
 }));
 
-// Mock do SWR
+// Mock do SWR como jest.fn para permitir overrides nos testes
+const mockUseSWR = jest.fn().mockReturnValue({
+  data: undefined,
+  error: undefined,
+  isLoading: false,
+  mutate: jest.fn(),
+});
+
 jest.mock("swr", () => ({
   __esModule: true,
-  default: (key: string, fetcher: any) => {
-    const mockData = {
-      "/api/rachas": { data: [], isLoading: false, error: null },
-      "/api/users": { data: [], isLoading: false, error: null },
-      "/api/partidas": { data: [], isLoading: false, error: null },
-    };
-    return mockData[key] || { data: null, isLoading: true, error: null };
-  },
+  default: mockUseSWR,
 }));
 
 // Mock do window.matchMedia
@@ -76,7 +97,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
   disconnect: jest.fn(),
 }));
 
-// Mock do console para evitar logs nos testes
+// Mock do console para evitar ruído excessivo nos testes
 global.console = {
   ...console,
   log: jest.fn(),

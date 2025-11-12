@@ -1,4 +1,6 @@
-// Inadimplente para ModalInadimplentes
+import type { LancamentoFinanceiro as DomainLancamento, ResumoFinanceiro as DomainResumo } from "@/types/financeiro";
+
+// Outstanding tenant record used by ModalInadimplentes
 export interface Inadimplente {
   id: string;
   racha: string;
@@ -6,10 +8,10 @@ export interface Inadimplente {
   plano: string;
   valor: number;
   vencimento: string;
-  contato: string; // WhatsApp ou email
+  contato: string;
 }
 
-// Tabela de rachas resumida
+// Summary row for superadmin finance table
 export interface RachaDetalheResumido {
   id: string;
   racha: string;
@@ -20,11 +22,9 @@ export interface RachaDetalheResumido {
   vencimento: string;
 }
 
-// ENUMS centralizados para pagamentos
 export type StatusPagamento = "Pago" | "Em aberto" | "Trial" | "Cancelado";
 export type MetodoPagamento = "pix" | "cartao" | "boleto" | "outro";
 
-// TIPO ÚNICO PARA PAGAMENTOS
 export interface PagamentoFinanceiro {
   data: string;
   valor: number;
@@ -34,22 +34,6 @@ export interface PagamentoFinanceiro {
   descricao?: string;
 }
 
-// Resumo financeiro geral (para ResumoFinanceiro)
-export interface ResumoFinanceiro {
-  saldoAtual: number;
-  totalReceitas: number;
-  totalDespesas: number;
-  receitasPorMes: Record<string, number>;
-  despesasPorMes: Record<string, number>;
-}
+export type ResumoFinanceiro = DomainResumo;
 
-// Lançamento financeiro individual (para TabelaLancamentos)
-export interface LancamentoFinanceiro {
-  id: string;
-  data: string; // ISO string
-  tipo: string; // "diaria" | "mensalidade" | "patrocinio" | "evento" | "outros" | "despesa" | "despesa_adm" | "sistema"
-  descricao: string;
-  valor: number;
-  responsavel: string;
-  comprovanteUrl?: string;
-}
+export type LancamentoFinanceiro = DomainLancamento;

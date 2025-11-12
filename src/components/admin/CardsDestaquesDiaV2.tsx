@@ -1,344 +1,318 @@
 "use client";
-import { useState, useMemo } from "react";
 
-// Tipos
-type Jogador = { nome: string; apelido: string; pos: string };
-type Time = { nome: string; jogadores: Jogador[] };
-type EventoGol = { time: "a" | "b"; jogador: string; assistencia: string };
-type ResultadoPartida = { placar: { a: number; b: number }; eventos: EventoGol[] };
-type Confronto = {
-  ida: { a: number; b: number };
-  volta: { a: number; b: number };
-  resultadoIda?: ResultadoPartida | null;
-  resultadoVolta?: ResultadoPartida | null;
+import { useMemo } from "react";
+import type { Match, MatchPresence } from "@/types/partida";
+import type { DerivedTimeDoDia, DerivedPlayer } from "@/utils/match-adapters";
+
+type HighlightCardProps = {
+  titulo: string;
+  nome?: string | null;
+  apelido?: string | null;
+  posicao?: string | null;
+  infoExtra?: string | null;
+  foto?: string | null;
 };
+
 type Props = {
-  confrontos: Confronto[];
-  times: Time[];
+  matches: Match[];
+  times: DerivedTimeDoDia[];
+  championTeamId: string | null;
 };
 
-export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
-  const fotos = [
-    "/images/jogadores/jogador_padrao_01.jpg",
-    "/images/jogadores/jogador_padrao_02.jpg",
-    "/images/jogadores/jogador_padrao_03.jpg",
-    "/images/jogadores/jogador_padrao_04.jpg",
-  ];
+const FALLBACK_PLAYER_PHOTO = "/images/jogadores/jogador_padrao_01.jpg";
+const FALLBACK_TEAM_LOGO = "/images/logos/logo_fut7pro.png";
 
-  const pontosPorTime = useMemo(() => {
-    const pontos: Record<number, number> = {};
-    (confrontos ?? []).forEach((c) => {
-      if (c?.resultadoIda?.placar) {
-        const placar = c.resultadoIda.placar;
-        if (placar.a > placar.b) {
-          pontos[c.ida.a] = (pontos[c.ida.a] ?? 0) + 3;
-          pontos[c.ida.b] = pontos[c.ida.b] ?? 0;
-        } else if (placar.b > placar.a) {
-          pontos[c.ida.b] = (pontos[c.ida.b] ?? 0) + 3;
-          pontos[c.ida.a] = pontos[c.ida.a] ?? 0;
-        } else {
-          pontos[c.ida.a] = (pontos[c.ida.a] ?? 0) + 1;
-          pontos[c.ida.b] = (pontos[c.ida.b] ?? 0) + 1;
-        }
-      }
-      if (c?.resultadoVolta?.placar) {
-        const placar = c.resultadoVolta.placar;
-        if (placar.a > placar.b) {
-          pontos[c.volta.a] = (pontos[c.volta.a] ?? 0) + 3;
-          pontos[c.volta.b] = pontos[c.volta.b] ?? 0;
-        } else if (placar.b > placar.a) {
-          pontos[c.volta.b] = (pontos[c.volta.b] ?? 0) + 3;
-          pontos[c.volta.a] = pontos[c.volta.a] ?? 0;
-        } else {
-          pontos[c.volta.a] = (pontos[c.volta.a] ?? 0) + 1;
-          pontos[c.volta.b] = (pontos[c.volta.b] ?? 0) + 1;
-        }
-      }
-    });
-    return pontos;
-  }, [confrontos]);
+const POSITION_PRIORITY: DerivedPlayer["posicao"][] = ["Atacante", "Meia", "Zagueiro", "Goleiro"];
 
-  const indexTimeCampeao = useMemo(() => {
-    const arr = Object.entries(pontosPorTime ?? {});
-    if (!arr.length) return null;
-    return Number(arr.sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] ?? null);
-  }, [pontosPorTime]);
+function normalizePosition(raw?: string | null): DerivedPlayer["posicao"] {
+  const value = (raw ?? "").toLowerCase();
+  if (value.includes("gol")) return "Goleiro";
+  if (value.includes("zag") || value.includes("def")) return "Zagueiro";
+  if (value.includes("mei") || value.includes("mid")) return "Meia";
+  return "Atacante";
+}
 
-  const timeCampeao =
-    typeof indexTimeCampeao === "number" &&
-    indexTimeCampeao !== null &&
-    Array.isArray(times) &&
-    times[indexTimeCampeao] !== undefined
-      ? times[indexTimeCampeao]
-      : null;
+type PlayerStats = {
+  id: string;
+  nome: string;
+  apelido?: string | null;
+  posicao: DerivedPlayer["posicao"];
+  timeId: string | null;
+  timeNome: string | null;
+  foto: string;
+  gols: number;
+  assistencias: number;
+};
 
-  const eventosDia = useMemo(() => {
-    let eventos: EventoGol[] = [];
-    (confrontos ?? []).forEach((c) => {
-      if (Array.isArray(c?.resultadoIda?.eventos))
-        eventos = eventos.concat(c.resultadoIda!.eventos);
-      if (Array.isArray(c?.resultadoVolta?.eventos))
-        eventos = eventos.concat(c.resultadoVolta!.eventos);
-    });
-    return eventos;
-  }, [confrontos]);
+function createStatsForPresence(
+  presence: MatchPresence,
+  derived: { player: DerivedPlayer; teamId: string; timeNome: string } | undefined,
+): PlayerStats {
+  const athlete = presence.athlete;
+  const baseName = athlete?.name ?? "Atleta";
+  const photo = athlete?.photoUrl ?? presence.team?.logoUrl ?? FALLBACK_PLAYER_PHOTO;
 
-  function getArtilheiroMaestro(dados: EventoGol[] = [], prop: "jogador" | "assistencia") {
-    const cont: Record<string, number> = {};
-    (dados ?? []).forEach((ev) => {
-      if (ev && ev[prop] && ev[prop] !== "faltou")
-        cont[ev[prop] as string] = (cont[ev[prop] as string] ?? 0) + 1;
-    });
-    const ord = Object.entries(cont).sort((a, b) => b[1] - a[1]);
-    return ord.length > 0 ? { nome: ord[0][0], qtd: ord[0][1] } : null;
+  if (derived) {
+    return {
+      id: derived.player.id,
+      nome: derived.player.nome || baseName,
+      apelido: derived.player.apelido ?? athlete?.nickname ?? null,
+      posicao: derived.player.posicao,
+      timeId: derived.teamId,
+      timeNome: derived.timeNome,
+      foto: derived.player.foto || photo,
+      gols: presence.goals ?? 0,
+      assistencias: presence.assists ?? 0,
+    };
   }
 
-  function contarEventosJogadorTimeCampeao(pos: "ATA" | "MEIA") {
-    if (!timeCampeao) return undefined;
-    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter((j) => j.pos === pos);
-    if (!jogadoresFiltrados.length) return undefined;
-    const cont: Record<string, number> = {};
-    (eventosDia ?? []).forEach((ev) => {
-      if (ev && ev.jogador && jogadoresFiltrados.some((j) => j.nome === ev.jogador))
-        cont[ev.jogador] = (cont[ev.jogador] ?? 0) + 1;
-    });
-    const ord = Object.entries(cont).sort((a, b) => b[1] - a[1]);
-    if (!ord.length) return undefined;
-    const encontrado = (timeCampeao.jogadores ?? []).find((j) => j.nome === ord[0][0]);
-    return encontrado ?? undefined;
-  }
-  function contarAssistenciasMeiaTimeCampeao() {
-    if (!timeCampeao) return undefined;
-    const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter((j) => j.pos === "MEIA");
-    if (!jogadoresFiltrados.length) return undefined;
-    const cont: Record<string, number> = {};
-    (eventosDia ?? []).forEach((ev) => {
-      if (ev && ev.assistencia && jogadoresFiltrados.some((j) => j.nome === ev.assistencia))
-        cont[ev.assistencia] = (cont[ev.assistencia] ?? 0) + 1;
-    });
-    const ord = Object.entries(cont).sort((a, b) => b[1] - a[1]);
-    if (!ord.length) return undefined;
-    const encontrado = (timeCampeao.jogadores ?? []).find((j) => j.nome === ord[0][0]);
-    return encontrado ?? undefined;
-  }
+  const teamId = presence.team?.id ?? presence.teamId ?? null;
+  return {
+    id: athlete?.id ?? `${presence.id}`,
+    nome: baseName,
+    apelido: athlete?.nickname ?? null,
+    posicao: normalizePosition(athlete?.position),
+    timeId: teamId,
+    timeNome: presence.team?.name ?? null,
+    foto: photo,
+    gols: presence.goals ?? 0,
+    assistencias: presence.assists ?? 0,
+  };
+}
 
-  const goleiro = (timeCampeao?.jogadores ?? []).find((j) => j.pos === "GOL") || undefined;
-  const zagueiros = (timeCampeao?.jogadores ?? []).filter((j) => j.pos === "ZAG") ?? [];
-  const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
+function HighlightCard({ titulo, nome, apelido, posicao, infoExtra, foto }: HighlightCardProps) {
+  const safePhoto = foto && foto.length > 0 ? foto : FALLBACK_PLAYER_PHOTO;
 
-  const [faltou, setFaltou] = useState<Record<string, boolean>>({});
-
-  const atacante = contarEventosJogadorTimeCampeao("ATA");
-  const meia = contarAssistenciasMeiaTimeCampeao();
-  const artilheiro = getArtilheiroMaestro(eventosDia, "jogador");
-  const maestro = getArtilheiroMaestro(eventosDia, "assistencia");
-
-  const golsAtacante = atacante?.nome
-    ? (eventosDia ?? []).filter((e) => e?.jogador === atacante.nome).length
-    : 0;
-
-  const assistenciasMeia = meia?.nome
-    ? (eventosDia ?? []).filter((e) => e?.assistencia === meia.nome).length
-    : 0;
-
-  function fotoByIndex(i: number) {
-    return fotos[i % fotos.length];
-  }
-
-  const aguardando = (
-    <div className="w-full text-center text-zinc-400 font-semibold py-8">
-      Aguarde: resultados precisam ser lançados para exibir os destaques do dia.
-    </div>
-  );
-
-  function CardDestaque({
-    titulo,
-    nome = "",
-    apelido = "",
-    pos = "",
-    foto = "",
-    infoExtra = "",
-    canFaltou,
-    faltouKey,
-    zagueiroManual,
-    onZagueiroChange,
-    options = [],
-    selected = "",
-  }: any) {
-    if (zagueiroManual) {
-      if (selected && options?.length) {
-        const zagueiro = options.find((j: Jogador) => j.nome === selected);
-        return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-            <img
-              src={fotoByIndex(2)}
-              alt={zagueiro?.nome ?? ""}
-              className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
-            />
-            <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">
-              {titulo}
-            </div>
-            <div className="text-white text-lg font-bold text-center">{zagueiro?.nome ?? ""}</div>
-            <div className="text-yellow-200 text-xs">
-              {zagueiro?.apelido ?? ""} {zagueiro?.pos ? `| ${zagueiro.pos}` : ""}
-            </div>
-            {canFaltou && (
-              <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!faltou?.["Zagueiro"]}
-                  onChange={(e) =>
-                    setFaltou((prev: Record<string, boolean>) => ({
-                      ...prev,
-                      ["Zagueiro"]: e.target.checked,
-                    }))
-                  }
-                />
-                Jogador não compareceu ao racha
-              </label>
-            )}
-            <div className="h-6"></div>
-          </div>
-        );
-      } else {
-        return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-center relative">
-            <div className="text-yellow-400 font-bold text-sm text-center mb-3 uppercase">
-              {titulo}
-            </div>
-            <select
-              className="px-2 py-1 bg-zinc-900 text-yellow-200 rounded w-full"
-              value={selected}
-              onChange={(e) => onZagueiroChange?.(e.target.value)}
-            >
-              <option value="">Selecione zagueiro...</option>
-              {(options ?? []).map((j: Jogador, idx: number) => (
-                <option key={j?.nome ?? idx} value={j?.nome ?? ""}>
-                  {j?.nome ?? ""} {j?.apelido ? `(${j.apelido})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
-      }
-    }
-
-    // Cards comuns
-    return (
-      <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-        {foto ? (
-          <img
-            src={foto}
-            alt={nome || titulo}
-            className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
-          />
-        ) : (
-          <div className="w-20 h-20 rounded-full mb-2 flex items-center justify-center bg-zinc-900 border-4 border-yellow-400" />
-        )}
-        <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">{titulo}</div>
+  return (
+    <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[200px] max-w-xs min-h-[240px] justify-between">
+      <div className="flex flex-col items-center gap-2">
+        <div className="text-yellow-400 font-bold text-sm text-center uppercase tracking-wide">
+          {titulo}
+        </div>
         {nome ? (
           <>
+            <img
+              src={safePhoto}
+              alt={nome}
+              className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400"
+            />
             <div className="text-white text-lg font-bold text-center">{nome}</div>
-            <div className="text-yellow-200 text-xs">
-              {apelido ? apelido : ""} {pos ? `| ${pos}` : ""}
-            </div>
-            {infoExtra && <div className="mt-1 text-yellow-400 text-sm font-bold">{infoExtra}</div>}
-            {canFaltou && (
-              <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!faltou?.[faltouKey]}
-                  onChange={(e) =>
-                    setFaltou((prev: Record<string, boolean>) => ({
-                      ...prev,
-                      [faltouKey]: e.target.checked,
-                    }))
-                  }
-                />
-                Jogador não compareceu ao racha
-              </label>
+            {apelido && (
+              <div className="text-yellow-200 text-xs text-center uppercase">{apelido}</div>
             )}
-            <div className="h-6"></div>
+            {posicao && (
+              <div className="text-xs text-zinc-300 font-semibold uppercase">{posicao}</div>
+            )}
+            {infoExtra && (
+              <div className="mt-1 text-yellow-300 text-sm font-bold text-center">{infoExtra}</div>
+            )}
           </>
         ) : (
-          <div className="text-zinc-400 mt-4 text-center">Aguardando resultado...</div>
+          <>
+            <div className="w-20 h-20 rounded-full bg-zinc-900 border-4 border-zinc-700" />
+            <div className="text-zinc-400 text-sm text-center">Sem destaque registrado</div>
+          </>
         )}
       </div>
+    </div>
+  );
+}
+
+export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: Props) {
+  const derivedMaps = useMemo(() => {
+    const byId = new Map<string, { player: DerivedPlayer; teamId: string; timeNome: string }>();
+    const byName = new Map<string, { player: DerivedPlayer; teamId: string; timeNome: string }>();
+
+    times.forEach((time) => {
+      time.jogadores.forEach((player) => {
+        const record = { player, teamId: time.id, timeNome: time.nome };
+        byId.set(player.id, record);
+        byName.set(player.nome.toLowerCase(), record);
+      });
+    });
+
+    return { byId, byName };
+  }, [times]);
+
+  const statsByPlayer = useMemo(() => {
+    const stats = new Map<string, PlayerStats>();
+
+    matches.forEach((match) => {
+      match.presences.forEach((presence) => {
+        const athleteId = presence.athlete?.id;
+        const lookup =
+          (athleteId && derivedMaps.byId.get(athleteId)) ||
+          (presence.athlete?.name &&
+            derivedMaps.byName.get(presence.athlete.name.toLowerCase())) ||
+          undefined;
+
+        const statsKey = athleteId ?? lookup?.player.id ?? presence.id;
+        const previous = stats.get(statsKey);
+
+        if (previous) {
+          previous.gols += presence.goals ?? 0;
+          previous.assistencias += presence.assists ?? 0;
+          stats.set(statsKey, previous);
+        } else {
+          const computed = createStatsForPresence(presence, lookup);
+          stats.set(statsKey, computed);
+        }
+      });
+    });
+
+    return Array.from(stats.values());
+  }, [matches, derivedMaps.byId, derivedMaps.byName]);
+
+  const championTeam = useMemo(
+    () => (championTeamId ? times.find((time) => time.id === championTeamId) ?? null : null),
+    [times, championTeamId],
+  );
+
+  const atacanteDoDia = useMemo(() => {
+    const atacantes = statsByPlayer.filter((p) => p.posicao === "Atacante");
+    return atacantes.sort((a, b) => b.gols - a.gols || b.assistencias - a.assistencias)[0] ?? null;
+  }, [statsByPlayer]);
+
+  const meiaDoDia = useMemo(() => {
+    const meias = statsByPlayer.filter((p) => p.posicao === "Meia");
+    return meias.sort((a, b) => b.assistencias - a.assistencias || b.gols - a.gols)[0] ?? null;
+  }, [statsByPlayer]);
+
+  const artilheiroGeral = useMemo(
+    () => statsByPlayer.sort((a, b) => b.gols - a.gols || b.assistencias - a.assistencias)[0] ?? null,
+    [statsByPlayer],
+  );
+
+  const maestroGeral = useMemo(
+    () =>
+      statsByPlayer.sort((a, b) => b.assistencias - a.assistencias || b.gols - a.gols)[0] ?? null,
+    [statsByPlayer],
+  );
+
+  const goleiroCampeao = useMemo(() => {
+    if (!championTeam) return null;
+    const candidate = championTeam.jogadores.find((p) => p.posicao === "Goleiro");
+    if (!candidate) return null;
+    const stats = statsByPlayer.find((p) => p.id === candidate.id) ?? null;
+    return (
+      stats ?? {
+        id: candidate.id,
+        nome: candidate.nome,
+        apelido: candidate.apelido ?? null,
+        posicao: candidate.posicao,
+        timeId: championTeam.id,
+        timeNome: championTeam.nome,
+        foto: candidate.foto,
+        gols: 0,
+        assistencias: 0,
+      }
     );
-  }
+  }, [championTeam, statsByPlayer]);
+
+  const zagueiroCampeao = useMemo(() => {
+    if (!championTeam) return null;
+    const defenders = championTeam.jogadores.filter((p) => p.posicao === "Zagueiro");
+    if (defenders.length === 0) return null;
+
+    const best = defenders
+      .map((player) => {
+        const stats = statsByPlayer.find((p) => p.id === player.id);
+        return (
+          stats ?? {
+            id: player.id,
+            nome: player.nome,
+            apelido: player.apelido ?? null,
+            posicao: player.posicao,
+            timeId: championTeam.id,
+            timeNome: championTeam.nome,
+            foto: player.foto,
+            gols: 0,
+            assistencias: 0,
+          }
+        );
+      })
+      .sort((a, b) => POSITION_PRIORITY.indexOf(a.posicao) - POSITION_PRIORITY.indexOf(b.posicao))[0];
+
+    return best ?? null;
+  }, [championTeam, statsByPlayer]);
 
   return (
     <div className="w-full flex flex-col items-center gap-8">
       <div className="flex flex-wrap gap-5 justify-center">
-        <CardDestaque
-          titulo="ATACANTE DO DIA"
-          nome={atacante?.nome ?? ""}
-          apelido={atacante?.apelido ?? ""}
-          pos={atacante?.pos ?? ""}
-          foto={atacante ? fotoByIndex(0) : ""}
-          infoExtra={atacante?.nome ? `${golsAtacante} gols` : ""}
-          canFaltou={true}
-          faltouKey="Atacante"
+        <HighlightCard
+          titulo="Atacante do Dia"
+          nome={atacanteDoDia?.nome}
+          apelido={atacanteDoDia?.apelido}
+          posicao={atacanteDoDia?.posicao}
+          infoExtra={atacanteDoDia ? `${atacanteDoDia.gols} gol(s)` : null}
+          foto={atacanteDoDia?.foto}
         />
-        <CardDestaque
-          titulo="MEIA DO DIA"
-          nome={meia?.nome ?? ""}
-          apelido={meia?.apelido ?? ""}
-          pos={meia?.pos ?? ""}
-          foto={meia ? fotoByIndex(1) : ""}
-          infoExtra={meia?.nome ? `${assistenciasMeia} assistências` : ""}
-          canFaltou={true}
-          faltouKey="Meia"
+        <HighlightCard
+          titulo="Meia do Dia"
+          nome={meiaDoDia?.nome}
+          apelido={meiaDoDia?.apelido}
+          posicao={meiaDoDia?.posicao}
+          infoExtra={meiaDoDia ? `${meiaDoDia.assistencias} assistencia(s)` : null}
+          foto={meiaDoDia?.foto}
         />
-        <CardDestaque
-          titulo="ZAGUEIRO DO DIA"
-          zagueiroManual
-          options={Array.isArray(zagueiros) ? zagueiros : []}
-          selected={zagueiroSelecionado ?? ""}
-          onZagueiroChange={setZagueiroSelecionado}
-          canFaltou={true}
+        <HighlightCard
+          titulo="Zagueiro do Dia"
+          nome={zagueiroCampeao?.nome}
+          apelido={zagueiroCampeao?.apelido}
+          posicao={zagueiroCampeao?.posicao}
+          foto={zagueiroCampeao?.foto}
         />
-        <CardDestaque
-          titulo="GOLEIRO DO DIA"
-          nome={goleiro?.nome ?? ""}
-          apelido={goleiro?.apelido ?? ""}
-          pos={goleiro?.pos ?? ""}
-          foto={goleiro ? fotoByIndex(2) : ""}
-          canFaltou={true}
-          faltouKey="Goleiro"
+        <HighlightCard
+          titulo="Goleiro do Dia"
+          nome={goleiroCampeao?.nome}
+          apelido={goleiroCampeao?.apelido}
+          posicao={goleiroCampeao?.posicao}
+          foto={goleiroCampeao?.foto}
         />
       </div>
       <div className="flex flex-wrap gap-5 justify-center mt-2">
-        <CardDestaque
-          titulo="TIME CAMPEÃO DO DIA"
-          nome={timeCampeao?.nome ?? ""}
-          apelido=""
-          foto={timeCampeao ? "/images/logos/logo_fut7pro.png" : ""}
-          infoExtra={
-            timeCampeao &&
-            typeof indexTimeCampeao === "number" &&
-            indexTimeCampeao !== null &&
-            pontosPorTime?.[indexTimeCampeao!] !== undefined
-              ? `${pontosPorTime[indexTimeCampeao]} pontos`
-              : ""
-          }
+        <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[200px] max-w-xs min-h-[240px] justify-between">
+          <div className="flex flex-col items-center gap-2">
+            <div className="text-yellow-400 font-bold text-sm text-center uppercase tracking-wide">
+              Time Campeao do Dia
+            </div>
+            {championTeam ? (
+              <>
+                <img
+                  src={championTeam.logo || FALLBACK_TEAM_LOGO}
+                  alt={championTeam.nome}
+                  className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400"
+                />
+                <div className="text-white text-lg font-bold text-center">{championTeam.nome}</div>
+                <div className="text-yellow-200 text-xs text-center uppercase">
+                  {championTeam.ehTimeCampeao ? "Destaque confirmado" : "Pontuacao diaria"}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="w-20 h-20 rounded-full bg-zinc-900 border-4 border-zinc-700" />
+                <div className="text-zinc-400 text-sm text-center">Sem campeao definido</div>
+              </>
+            )}
+          </div>
+        </div>
+        <HighlightCard
+          titulo="Artilheiro do Dia"
+          nome={artilheiroGeral?.nome}
+          apelido={artilheiroGeral?.apelido}
+          posicao={artilheiroGeral?.posicao}
+          infoExtra={artilheiroGeral ? `${artilheiroGeral.gols} gol(s)` : null}
+          foto={artilheiroGeral?.foto}
         />
-        <CardDestaque
-          titulo="ARTILHEIRO DO DIA"
-          nome={artilheiro?.nome ?? ""}
-          apelido=""
-          foto={artilheiro ? fotoByIndex(3) : ""}
-          infoExtra={artilheiro?.qtd ? `${artilheiro.qtd} gols` : ""}
-        />
-        <CardDestaque
-          titulo="MAESTRO DO DIA"
-          nome={maestro?.nome ?? ""}
-          apelido=""
-          foto={maestro ? fotoByIndex(2) : ""}
-          infoExtra={maestro?.qtd ? `${maestro.qtd} assistências` : ""}
+        <HighlightCard
+          titulo="Maestro do Dia"
+          nome={maestroGeral?.nome}
+          apelido={maestroGeral?.apelido}
+          posicao={maestroGeral?.posicao}
+          infoExtra={maestroGeral ? `${maestroGeral.assistencias} assistencia(s)` : null}
+          foto={maestroGeral?.foto}
         />
       </div>
-      {(eventosDia?.length ?? 0) === 0 && aguardando}
     </div>
   );
 }

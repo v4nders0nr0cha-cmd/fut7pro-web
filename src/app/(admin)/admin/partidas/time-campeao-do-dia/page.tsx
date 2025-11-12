@@ -1,97 +1,134 @@
 "use client";
-// src/app/admin/partidas/time-campeao-do-dia/page.tsx
+
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import TabelaConfrontos from "@/components/admin/TabelaConfrontos";
-import ModalEditarPartida from "@/components/admin/ModalEditarPartida";
 import BannerUpload from "@/components/admin/BannerUpload";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
-import { mockTimes, mockConfrontos } from "@/mocks/admin/mockDia";
-import type { Confronto } from "@/mocks/admin/mockDia";
+import { useAuth } from "@/hooks/useAuth";
+import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { rachaConfig } from "@/config/racha.config";
+import {
+  buildTimesDoDiaFromMatches,
+  buildConfrontosFromMatches,
+  determineChampionTeam,
+} from "@/utils/match-adapters";
 
-type EditPartidaState = { index: number; tipo: "ida" | "volta" } | null;
+function groupByLatestDate(matches: ReturnType<typeof useAdminMatches>["matches"]) {
+  if (!Array.isArray(matches) || matches.length === 0) return [];
+
+  const grouped = matches.reduce<Record<string, typeof matches>>((acc, match) => {
+    const dateOnly = match.date.slice(0, 10);
+    if (!acc[dateOnly]) acc[dateOnly] = [];
+    acc[dateOnly].push(match);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => (a < b ? 1 : -1));
+  const latest = sortedDates[0];
+  return latest ? grouped[latest] ?? [] : [];
+}
 
 export default function TimeCampeaoDoDiaPage() {
-  const [confrontos, setConfrontos] = useState<Confronto[]>(mockConfrontos.map((c) => ({ ...c })));
-  const [partidaSelecionada, setPartidaSelecionada] = useState<EditPartidaState>(null);
+  const { user } = useAuth();
+  const tenantSlug = user?.tenantSlug && user.tenantSlug.length > 0 ? user.tenantSlug : null;
+  const effectiveSlug = tenantSlug ?? rachaConfig.slug;
+
+  const { matches, isLoading, isError, error } = useAdminMatches({
+    slug: effectiveSlug,
+    params: { limit: 40 },
+  });
+
+  const matchesDoDia = useMemo(() => groupByLatestDate(matches), [matches]);
+  const timesDoDia = useMemo(
+    () => buildTimesDoDiaFromMatches(matchesDoDia),
+    [matchesDoDia],
+  );
+  const confrontos = useMemo(
+    () => buildConfrontosFromMatches(matchesDoDia),
+    [matchesDoDia],
+  );
+  const championTeamId = useMemo(
+    () => determineChampionTeam(matchesDoDia),
+    [matchesDoDia],
+  );
+  const championTeam = useMemo(
+    () => (championTeamId ? timesDoDia.find((time) => time.id === championTeamId) ?? null : null),
+    [timesDoDia, championTeamId],
+  );
+
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
-
-  function handleSalvarResultado(
-    index: number,
-    tipo: "ida" | "volta",
-    placar: { a: number; b: number },
-    eventos: any[]
-  ) {
-    setConfrontos((prev) =>
-      prev.map((c, idx) => {
-        if (idx !== index) return c;
-        if (tipo === "ida") return { ...c, resultadoIda: { placar, eventos } };
-        return { ...c, resultadoVolta: { placar, eventos } };
-      })
-    );
-    setPartidaSelecionada(null);
-  }
 
   return (
     <>
       <Head>
-        <title>Time Campeão do Dia | Painel Admin - Fut7Pro</title>
+        <title>Time Campeao do Dia | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Lance os resultados do dia e selecione os destaques e o time campeão. Controle completo e rápido via painel administrativo Fut7Pro."
+          content="Confira os confrontos, destaques individuais e o time campeao do dia com base nos dados reais do backend Fut7Pro."
         />
         <meta
           name="keywords"
-          content="racha, fut7, time campeão do dia, destaques, painel admin, futebol entre amigos"
+          content="racha, fut7, time campeao do dia, destaques, painel admin, futebol entre amigos"
         />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 text-center drop-shadow">
-          Lançamento de Resultados do Dia
+          Painel de Destaques do Dia
         </h1>
         <p className="text-gray-300 mb-8 text-center text-lg">
-          Clique em uma partida na tabela abaixo para lançar resultados, gols e assistências.
-          <br />
-          Tudo prático, rápido e sem enrolação.
+          Os dados abaixo refletem as partidas registradas no backend para o dia mais recente.
+          Utilize-os para divulgar o campeao do racha e destacar as performances individuais.
         </p>
 
-        <TabelaConfrontos
-          confrontos={confrontos}
-          onSelecionarPartida={(index, tipo) => setPartidaSelecionada({ index, tipo })}
-        />
-
-        {partidaSelecionada && (
-          <ModalEditarPartida
-            index={partidaSelecionada.index}
-            confronto={confrontos[partidaSelecionada.index]}
-            tipo={partidaSelecionada.tipo}
-            times={mockTimes}
-            onClose={() => setPartidaSelecionada(null)}
-            onSalvar={handleSalvarResultado}
-          />
+        {isLoading && (
+          <div className="w-full max-w-4xl bg-zinc-800 rounded-2xl shadow p-6 text-center">
+            <span className="text-yellow-400 font-semibold">Carregando partidas do dia...</span>
+          </div>
         )}
 
-        <div className="w-full flex flex-col items-center mt-10 mb-3">
-          <h2 className="text-2xl font-extrabold text-yellow-400 mb-1">Destaques do Dia</h2>
-          <button
-            className="text-sm underline text-yellow-300 hover:text-yellow-500 mb-2 transition"
-            onClick={() => setShowModalRegras(true)}
-            tabIndex={0}
-          >
-            clique aqui e saiba as regras
-          </button>
-        </div>
+        {isError && (
+          <div className="w-full max-w-4xl bg-red-900/30 border border-red-700 rounded-2xl shadow p-6 text-center">
+            <p className="text-red-300 font-semibold">
+              Nao foi possivel carregar as partidas: {error ?? "erro desconhecido"}.
+            </p>
+            <p className="text-red-200 text-sm mt-2">
+              Verifique se ha confrontos registrados para o tenant selecionado e tente novamente.
+            </p>
+          </div>
+        )}
 
-        {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
+        {!isLoading && !isError && (
+          <>
+            <TabelaConfrontos confrontos={confrontos} />
 
-        <div className="w-full flex flex-col items-center gap-12 mt-4 max-w-5xl">
-          <CardsDestaquesDiaV2 confrontos={confrontos} times={mockTimes} />
+            <div className="w-full flex flex-col items-center mt-10 mb-3">
+              <h2 className="text-2xl font-extrabold text-yellow-400 mb-1">Destaques do Dia</h2>
+              <button
+                className="text-sm underline text-yellow-300 hover:text-yellow-500 mb-2 transition"
+                onClick={() => setShowModalRegras(true)}
+                type="button"
+              >
+                clique aqui e saiba as regras
+              </button>
+            </div>
 
-          <BannerUpload bannerUrl={bannerUrl} setBannerUrl={setBannerUrl} timeCampeao={null} />
-        </div>
+            {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
+
+            <div className="w-full flex flex-col items-center gap-12 mt-4 max-w-5xl">
+              <CardsDestaquesDiaV2
+                matches={matchesDoDia}
+                times={timesDoDia}
+                championTeamId={championTeamId}
+              />
+
+              <BannerUpload bannerUrl={bannerUrl} setBannerUrl={setBannerUrl} timeCampeao={championTeam} />
+            </div>
+          </>
+        )}
       </main>
     </>
   );

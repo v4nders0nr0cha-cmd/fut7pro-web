@@ -1,72 +1,72 @@
-# 🚨 ATIVAÇÃO URGENTE DO MOCK
+# ⚠️ ATIVAÇÃO URGENTE DO MOCK (Atualizado 2025-11)
 
-## ❌ Problema Confirmado
+## 🚨 Problema Confirmado
 
-```
-ERR_TLS_CERT_ALTNAME_INVALID: Host: api.fut7pro.com.br. is not in the cert's altnames: DNS:*.up.railway.app
-```
+Backend indisponível ou certificado inválido enquanto o app está em produção.
 
-## ✅ SOLUÇÃO IMEDIATA (2 minutos)
+## ✅ Novo Fluxo
 
-### 1. Configurar Mock no Vercel
+- A flag `NEXT_PUBLIC_USE_JOGOS_MOCK` foi **descontinuada**. A UI sempre chama  
+  `GET /api/public/jogos-do-dia`.
+- O proxy tenta o backend oficial e, em caso de falha, devolve fallback estático marcado com  
+  `x-fallback-source: static`.
+- O endpoint `/api/public/jogos-do-dia-fallback` permanece para diagnóstico manual, mas não é utilizado pela UI.
 
-1. Acesse: https://vercel.com/dashboard
-2. Projeto: `fut7pro-web`
-3. **Settings** → **Environment Variables**
-4. **Add New**:
-   - **Name**: `NEXT_PUBLIC_USE_JOGOS_MOCK`
-   - **Value**: `1`
-   - **Environment**: ✅ Production ✅ Preview
-5. **Save**
+## ⏱ Ação Imediata
 
-### 2. Redeploy
+1. **Verificar fallback:**
 
-1. **Deployments** → **Current**
-2. Clique em **Redeploy**
+   ```powershell
+   curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
+   ```
 
-### 3. Testar Imediatamente
+   - `HTTP/1.1 200 OK` + `x-fallback-source: static` → contingência ativa.
+   - `x-fallback-source: backend` → backend voltou.
 
-```powershell
-# Deve retornar dados mock
-curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-```
+2. **Validar páginas críticas:**
+   - `https://app.fut7pro.com.br/partidas/times-do-dia`
+   - `https://app.fut7pro.com.br/partidas/historico`
 
-## 🔧 Soluções Permanentes
+   Ambas devem carregar com dados estáticos se o backend estiver offline.
 
-### Opção 1: Usar Domínio Railway
+## 🧰 Soluções Permanentes
 
-- Alterar `BACKEND_URL` para: `https://fut7pro-backend.up.railway.app`
-- Configurar CORS no backend
+### Opção 1: Corrigir certificado SSL na Render
 
-### Opção 2: Corrigir Certificado SSL
+- Render Dashboard → Serviço backend → Settings → Custom Domains.
+- Certificar-se de que `api.fut7pro.com.br` possui certificado válido.
+- Se necessário, forçar novo deploy para reemitir o certificado.
 
-- Railway Dashboard → Projeto → Settings → Domains
-- Adicionar `api.fut7pro.com.br` ao certificado
+### Opção 2: Revisar configuração do backend
 
-### Opção 3: Usar Endpoint SSL Fix
+- Confirmar `BACKEND_URL=https://api.fut7pro.com.br` em todos os ambientes.
+- Garantir CORS liberando `app.fut7pro.com.br` e domínios de preview da Vercel.
+- Executar healthcheck: `curl -I https://api.fut7pro.com.br/health`.
 
-- Usar `/api/public/jogos-do-dia-ssl-fix` (já implementado)
+### Opção 3: Ajustar proxy local (somente desenvolvimento)
 
-## 📊 Status Esperado
+- Ignorar SSL apenas no ambiente local de desenvolvimento.
+- **Nunca** aplicar esse bypass em produção.
+
+## 📈 Exemplo de Resposta em Fallback
 
 ```json
-// GET /api/public/jogos-do-dia-mock
+// GET /api/public/jogos-do-dia com fallback ativo
 [
   {
-    "id": "1",
+    "id": "fallback-1",
     "timeA": "Time A",
     "timeB": "Time B",
-    "golsTimeA": 2,
-    "golsTimeB": 1,
-    "finalizada": true
+    "golsTimeA": 0,
+    "golsTimeB": 0,
+    "finalizada": false,
+    "_fallback": true
   }
 ]
 ```
 
-## ⚡ Teste Rápido
+## ✅ Teste Rápido
 
 ```powershell
-# Após configurar mock
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock | findstr /I "HTTP"
-# Deve mostrar: HTTP/1.1 200 OK
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
 ```

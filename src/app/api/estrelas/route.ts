@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked } from "@/lib/prisma";
 
 const isProd = process.env.NODE_ENV === "production";
+const shouldBlock = isProd || isDirectDbBlocked;
 
 // Utilitário local para obter Prisma somente em desenvolvimento
 async function getDevPrisma() {
@@ -14,11 +16,8 @@ async function getDevPrisma() {
 
 // GET: /api/estrelas?rachaId=xxxx
 export async function GET(req: NextRequest) {
-  if (isProd) {
-    return NextResponse.json(
-      { error: "Endpoint indisponível em produção. Use a API do backend." },
-      { status: 501 }
-    );
+  if (shouldBlock) {
+    return NextResponse.json({ error: PRISMA_DISABLED_MESSAGE }, { status: 501 });
   }
   const { searchParams } = new URL(req.url);
   const rachaId = searchParams.get("rachaId");
@@ -43,11 +42,8 @@ export async function GET(req: NextRequest) {
 // POST: /api/estrelas
 // body: { rachaId: string, jogadorId: string, estrelas: number }
 export async function POST(req: NextRequest) {
-  if (isProd) {
-    return NextResponse.json(
-      { error: "Endpoint indisponível em produção. Use a API do backend." },
-      { status: 501 }
-    );
+  if (shouldBlock) {
+    return NextResponse.json({ error: PRISMA_DISABLED_MESSAGE }, { status: 501 });
   }
   // Validação de permissão: apenas admins podem criar estrelas
   // const session = await getServerSession(authOptions);

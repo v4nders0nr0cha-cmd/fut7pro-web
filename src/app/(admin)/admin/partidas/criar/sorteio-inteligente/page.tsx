@@ -3,13 +3,15 @@
 import Head from "next/head";
 import { FaRandom } from "react-icons/fa";
 import { useTimes } from "@/hooks/useTimes";
+import { useAuth } from "@/hooks/useAuth";
 import { rachaConfig } from "@/config/racha.config";
 import Image from "next/image";
 import { useState } from "react";
 
 export default function SorteioInteligentePage() {
-  const rachaId = rachaConfig.slug;
-  const { times } = useTimes(rachaId);
+  const { user } = useAuth();
+  const tenantSlug = user?.tenantSlug ?? rachaConfig.slug;
+  const { times } = useTimes(tenantSlug);
   const [timesSelecionados, setTimesSelecionados] = useState<string[]>([]);
 
   const toggleTime = (timeId: string) => {

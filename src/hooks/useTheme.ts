@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { configuracoesApi } from "@/lib/api";
+import type { ApiResponse } from "@/lib/api";
 import { getTheme, applyTheme, type ThemeKey } from "@/config/themes";
 import { toast } from "react-hot-toast";
 
@@ -22,8 +23,8 @@ interface ThemeConfig {
   logo?: string;
   description?: string;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface RachaConfig {
@@ -43,8 +44,8 @@ interface RachaConfig {
     allowStatistics: boolean;
     allowRankings: boolean;
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export function useTheme() {
@@ -69,7 +70,7 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = await configuracoesApi.getTemas();
+      const response = (await configuracoesApi.getTemas()) as ApiResponse<ThemeConfig[]>;
       if (response.data) {
         setAvailableThemes(response.data);
       } else if (response.error) {
@@ -90,7 +91,7 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = await configuracoesApi.getRachaConfig();
+      const response = (await configuracoesApi.getRachaConfig()) as ApiResponse<RachaConfig>;
       if (response.data) {
         setRachaConfig(response.data);
         // Aplicar tema do racha se diferente do atual
@@ -115,7 +116,7 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = await configuracoesApi.updateTema(theme);
+      const response = (await configuracoesApi.updateTema(theme)) as ApiResponse<RachaConfig>;
       if (response.data) {
         setCurrentTheme(theme);
         applyTheme(theme);
@@ -144,7 +145,7 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-        const response = await configuracoesApi.updateCores(colors);
+        const response = (await configuracoesApi.updateCores(colors)) as ApiResponse<RachaConfig>;
         if (response.data) {
           setRachaConfig(response.data);
           toast.success("Cores atualizadas com sucesso!");
@@ -179,7 +180,7 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-        const response = await configuracoesApi.updateConfiguracoes(settings);
+        const response = (await configuracoesApi.updateConfiguracoes(settings)) as ApiResponse<RachaConfig>;
         if (response.data) {
           setRachaConfig(response.data);
           toast.success("Configurações atualizadas com sucesso!");
@@ -206,7 +207,7 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = await configuracoesApi.resetConfiguracoes();
+      const response = (await configuracoesApi.resetConfiguracoes()) as ApiResponse<RachaConfig>;
       if (response.data) {
         setRachaConfig(response.data);
         setCurrentTheme("amarelo");
@@ -271,3 +272,5 @@ export function useTheme() {
     getCurrentThemeConfig,
   };
 }
+
+

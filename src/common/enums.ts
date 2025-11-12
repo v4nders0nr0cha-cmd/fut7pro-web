@@ -2,8 +2,12 @@
 export enum Role {
   SUPERADMIN = "SUPERADMIN",
   ADMIN = "ADMIN",
-  ATHLETE = "ATHLETE",
   GERENTE = "GERENTE",
+  SUPORTE = "SUPORTE",
+  AUDITORIA = "AUDITORIA",
+  FINANCEIRO = "FINANCEIRO",
+  MARKETING = "MARKETING",
+  ATLETA = "ATLETA",
 }
 
 export enum Permission {

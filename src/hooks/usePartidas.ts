@@ -1,95 +1,150 @@
-import useSWR from "swr";
-import { useRacha } from "@/context/RachaContext";
-import { partidasApi } from "@/lib/api";
-import { useApiState } from "./useApiState";
-import type { Partida } from "@/types/partida";
+"use client";
 
-const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao buscar partidas");
+import { useMemo } from "react";
+import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { rachaConfig } from "@/config/racha.config";
+import type {
+  Match,
+  MatchPresence,
+  Partida,
+  PartidaAssistencia,
+  PartidaGol,
+} from "@/types/partida";
+
+function resolveTeamSide(match: Match, presence: MatchPresence): "A" | "B" {
+  const presenceTeamId = presence.team?.id ?? presence.teamId ?? null;
+  const teamAId = match.teamA?.id ?? match.teamAId ?? null;
+  const teamBId = match.teamB?.id ?? match.teamBId ?? null;
+
+  if (presenceTeamId) {
+    if (teamAId && presenceTeamId === teamAId) return "A";
+    if (teamBId && presenceTeamId === teamBId) return "B";
   }
-  return response.json();
-};
 
-export function usePartidas() {
-  const { rachaId } = useRacha();
-  const apiState = useApiState();
+  const presenceName = presence.team?.name?.toLowerCase();
+  if (presenceName) {
+    const teamAName = match.teamA?.name?.toLowerCase();
+    const teamBName = match.teamB?.name?.toLowerCase();
+    if (teamAName && teamAName === presenceName) return "A";
+    if (teamBName && teamBName === presenceName) return "B";
+  }
 
-  const { data, error, mutate, isLoading } = useSWR<Partida[]>(
-    rachaId ? `/api/partidas?rachaId=${rachaId}` : null,
-    fetcher,
-    {
-      onError: (err) => {
-        if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar partidas:", err);
-        }
-      },
+  return "A";
+}
+
+function buildEventos(
+  match: Match,
+  presences: MatchPresence[],
+): { gols: PartidaGol[]; assistencias: PartidaAssistencia[] } {
+  const gols: PartidaGol[] = [];
+  const assistencias: PartidaAssistencia[] = [];
+
+  presences.forEach((presence) => {
+    const side = resolveTeamSide(match, presence);
+
+    if (presence.goals > 0) {
+      gols.push({
+        id: `${presence.id}-gols`,
+        jogador: presence.athlete?.name ?? "Atleta",
+        time: side,
+        quantidade: presence.goals,
+      });
     }
-  );
 
-  const addPartida = async (partida: Partial<Partida>) => {
-    if (!rachaId) return null;
-
-    return apiState.handleAsync(async () => {
-      const response = await partidasApi.create({
-        ...partida,
-        rachaId,
+    if (presence.assists > 0) {
+      assistencias.push({
+        id: `${presence.id}-assistencias`,
+        jogador: presence.athlete?.name ?? "Atleta",
+        time: side,
+        quantidade: presence.assists,
       });
+    }
+  });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
+  return { gols, assistencias };
+}
 
-      await mutate();
-      return response.data;
-    });
-  };
-
-  const updatePartida = async (id: string, partida: Partial<Partida>) => {
-    return apiState.handleAsync(async () => {
-      const response = await partidasApi.update(id, {
-        ...partida,
-        rachaId,
-      });
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutate();
-      return response.data;
-    });
-  };
-
-  const deletePartida = async (id: string) => {
-    return apiState.handleAsync(async () => {
-      const response = await partidasApi.delete(id);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
-      await mutate();
-      return response.data;
-    });
-  };
-
-  const getPartidaById = (id: string) => {
-    return data?.find((p) => p.id === id);
-  };
+function resolveTeamInfo(match: Match, side: "A" | "B") {
+  const team = side === "A" ? match.teamA : match.teamB;
+  const fallbackId = side === "A" ? match.teamAId : match.teamBId;
 
   return {
-    partidas: data || [],
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
-    isSuccess: apiState.isSuccess,
+    id: team?.id ?? fallbackId ?? null,
+    nome: team?.name ?? (side === "A" ? "Time A" : "Time B"),
+    logo: team?.logoUrl ?? "/images/times/time_padrao_01.png",
+    gols:
+      match.score?.[side === "A" ? "teamA" : "teamB"] ??
+      (side === "A" ? match.scoreA : match.scoreB) ??
+      null,
+  };
+}
+
+function mapMatchToPartida(match: Match): Partida {
+  const teamA = resolveTeamInfo(match, "A");
+  const teamB = resolveTeamInfo(match, "B");
+  const eventos = buildEventos(match, match.presences);
+
+  const matchDate = new Date(match.date);
+  const now = Date.now();
+  const horario = matchDate.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const golsA = teamA.gols;
+  const golsB = teamB.gols;
+  const finalizada = typeof golsA === "number" && typeof golsB === "number";
+
+  const status: Partida["status"] = finalizada
+    ? "Concluida"
+    : matchDate.getTime() > now
+      ? "Agendada"
+      : "Em andamento";
+
+  return {
+    id: match.id,
+    tenantId: match.tenantId,
+    data: match.date,
+    ano: matchDate.getFullYear(),
+    horario,
+    local: match.location ?? null,
+    status,
+    finalizada,
+    timeAId: teamA.id,
+    timeBId: teamB.id,
+    timeA: teamA.nome,
+    timeB: teamB.nome,
+    timeCasa: teamA.nome,
+    timeFora: teamB.nome,
+    logoCasa: teamA.logo,
+    logoFora: teamB.logo,
+    golsCasa: golsA,
+    golsFora: golsB,
+    golsTimeA: golsA,
+    golsTimeB: golsB,
+    gols: eventos.gols,
+    assistencias: eventos.assistencias,
+    presencas: match.presences,
+    match,
+  };
+}
+
+export function usePartidas() {
+  const { matches, isLoading, isError, error, mutate } = usePublicMatches({
+    slug: rachaConfig.slug,
+    params: { limit: 100 },
+  });
+
+  const partidas = useMemo(() => matches.map(mapMatchToPartida), [matches]);
+
+  const getPartidaById = (id: string) => partidas.find((partida) => partida.id === id);
+
+  return {
+    partidas,
+    isLoading,
+    isError,
+    error,
     mutate,
-    addPartida,
-    updatePartida,
-    deletePartida,
     getPartidaById,
-    reset: apiState.reset,
   };
 }

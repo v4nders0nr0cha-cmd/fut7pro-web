@@ -12,6 +12,9 @@ export interface Admin {
   avatar?: string; // URL do avatar/foto
   ativo?: boolean; // Se está ativo ou não
   criadoEm?: string; // ISO date de criação
+  role?: string; // Role/RBAC vindo do backend (SUPERADMIN, ADMIN, etc.)
+  status?: "ATIVO" | "INATIVO" | "SUSPENSO" | string;
+  ultimoAcesso?: string | null;
 }
 
 /**
@@ -22,9 +25,13 @@ export interface LogAdmin {
   adminId: string; // ID do admin responsável pela ação
   usuarioId: string; // usuarioId do admin (padronizado)
   acao: string; // Ex: "Removeu partida", "Transferiu propriedade"
-  data: string; // ISO date da ação
+  data: string; // ISO date da ação (compatibilidade legada)
+  criadoEm?: string; // ISO date real do backend
   detalhes?: string; // Ex: detalhes sobre a ação (ID removido, e-mail, etc)
   ip?: string; // IP da ação (opcional, para auditoria)
+  recurso?: string; // recurso afetado (opcional)
+  adminNome?: string;
+  adminEmail?: string;
 }
 
 /**

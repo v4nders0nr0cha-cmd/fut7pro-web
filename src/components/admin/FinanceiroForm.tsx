@@ -1,14 +1,14 @@
 "use client";
 import { useState } from "react";
-import type { Financeiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro, CategoriaFinanceiro } from "@/types/financeiro";
 
 type Props = {
-  onSave: (lanc: Partial<Financeiro>) => void;
+  onSave: (lanc: Partial<LancamentoFinanceiro>) => void;
   adminId: string;
   onCancel?: () => void;
 };
 
-const CATEGORIAS = [
+const CATEGORIAS: CategoriaFinanceiro[] = [
   "mensalidade",
   "diaria",
   "patrocinio",
@@ -17,10 +17,14 @@ const CATEGORIAS = [
   "uniforme",
   "arbitragem",
   "outros",
+  "despesa",
+  "despesa_adm",
+  "sistema",
+  "multa",
 ];
 
 export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
-  const [form, setForm] = useState<Partial<Financeiro>>({
+  const [form, setForm] = useState<Partial<LancamentoFinanceiro>>({
     tipo: "entrada",
     categoria: "mensalidade",
     valor: 0,
@@ -52,11 +56,11 @@ export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
         <option value="saida">Saída</option>
       </select>
       <select name="categoria" value={form.categoria} onChange={handleChange} className="input">
-        {CATEGORIAS.map((c) => (
-          <option key={c} value={c}>
-            {c.charAt(0).toUpperCase() + c.slice(1)}
-          </option>
-        ))}
+      {CATEGORIAS.map((categoria) => (
+        <option key={categoria} value={categoria}>
+          {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
+        </option>
+      ))}
       </select>
       <input
         name="valor"

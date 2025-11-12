@@ -3,7 +3,9 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { Role } from "@prisma/client";
+import { Role as RoleEnum } from "@/common/enums";
+
+export type Role = RoleEnum;
 
 export interface AuthUser {
   id: string;
@@ -12,6 +14,7 @@ export interface AuthUser {
   image?: string | null;
   role: Role;
   tenantId: string;
+  tenantSlug: string | null;
   accessToken: string;
   refreshToken: string;
 }
@@ -32,8 +35,8 @@ export interface UseAuthReturn {
 
 // Mapeamento de roles para permissões
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  ATLETA: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
-  ADMIN: [
+  [RoleEnum.ATLETA]: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
+  [RoleEnum.ADMIN]: [
     "USER_READ",
     "USER_CREATE",
     "USER_UPDATE",
@@ -51,7 +54,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "SUPPORT_CREATE",
     "SUPPORT_UPDATE",
   ],
-  SUPERADMIN: [
+  [RoleEnum.SUPERADMIN]: [
     "USER_READ",
     "USER_CREATE",
     "USER_UPDATE",
@@ -83,7 +86,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "SUPPORT_UPDATE",
     "SUPPORT_DELETE",
   ],
-  GERENTE: [
+  [RoleEnum.GERENTE]: [
     "USER_READ",
     "USER_CREATE",
     "USER_UPDATE",
@@ -98,7 +101,7 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "ANALYTICS_READ",
     "REPORTS_GENERATE",
   ],
-  SUPORTE: [
+  [RoleEnum.SUPORTE]: [
     "USER_READ",
     "RACHA_READ",
     "CONFIG_READ",
@@ -106,15 +109,21 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
     "SUPPORT_CREATE",
     "SUPPORT_UPDATE",
   ],
-  AUDITORIA: ["ANALYTICS_READ", "REPORTS_GENERATE", "AUDIT_READ", "AUDIT_CREATE", "AUDIT_EXPORT"],
-  FINANCEIRO: [
+  [RoleEnum.AUDITORIA]: [
+    "ANALYTICS_READ",
+    "REPORTS_GENERATE",
+    "AUDIT_READ",
+    "AUDIT_CREATE",
+    "AUDIT_EXPORT",
+  ],
+  [RoleEnum.FINANCEIRO]: [
     "FINANCE_READ",
     "FINANCE_CREATE",
     "FINANCE_UPDATE",
     "FINANCE_APPROVE",
     "ANALYTICS_READ",
   ],
-  MARKETING: ["ANALYTICS_READ", "REPORTS_GENERATE", "CONFIG_READ"],
+  [RoleEnum.MARKETING]: ["ANALYTICS_READ", "REPORTS_GENERATE", "CONFIG_READ"],
 };
 
 export function useAuth(): UseAuthReturn {

@@ -1,29 +1,42 @@
 import { Router } from "express";
 import { v4 as uuidv4 } from "uuid";
-import type { Notification } from "../types/notification";
+
+interface AdminNotification {
+  id: string;
+  rachaSlug: string;
+  type: string;
+  titulo: string;
+  mensagem: string;
+  data: string;
+  lida: boolean;
+  prioridade: string;
+  remetente?: string;
+  assunto?: string;
+  referenciaId?: string;
+}
 
 const router = Router();
-let notifications: Notification[] = []; // Troque para integração DB no projeto real
+let notifications: AdminNotification[] = [];
 
-// Listar notificações do racha (badge, inbox)
 router.get("/:rachaSlug", (req, res) => {
   const { rachaSlug } = req.params;
-  const rachaNotifs = notifications.filter((n) => n.rachaSlug === rachaSlug);
-  res.json(rachaNotifs);
+  const rachaNotifications = notifications.filter((n) => n.rachaSlug === rachaSlug);
+  res.json(rachaNotifications);
 });
 
-// Marcar como lida
 router.post("/read/:id", (req, res) => {
   const { id } = req.params;
-  notifications = notifications.map((n) => (n.id === id ? { ...n, lida: true } : n));
+  notifications = notifications.map((notification) =>
+    notification.id === id ? { ...notification, lida: true } : notification
+  );
   res.json({ ok: true });
 });
 
-// Criar notificação (chamar ao receber mensagem ou aviso)
 router.post("/", (req, res) => {
   const { rachaSlug, type, titulo, mensagem, prioridade, remetente, assunto, referenciaId } =
     req.body;
-  const notification: Notification = {
+
+  const notification: AdminNotification = {
     id: uuidv4(),
     rachaSlug,
     type,
@@ -36,6 +49,7 @@ router.post("/", (req, res) => {
     assunto,
     referenciaId,
   };
+
   notifications.push(notification);
   res.status(201).json(notification);
 });

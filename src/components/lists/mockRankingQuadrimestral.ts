@@ -2,7 +2,7 @@ import type { RankingAtleta } from "@/types/estatisticas";
 
 export const rankingQuadrimestral: RankingAtleta[] = [
   {
-    id: 1,
+    id: "atleta-1",
     nome: "Matheus Silva",
     slug: "matheus-silva",
     foto: "/images/jogadores/jogador_padrao_01.jpg",
@@ -15,7 +15,7 @@ export const rankingQuadrimestral: RankingAtleta[] = [
     assistencias: 9,
   },
   {
-    id: 2,
+    id: "atleta-2",
     nome: "Lucas Rocha",
     slug: "lucas-rocha",
     foto: "/images/jogadores/jogador_padrao_02.jpg",
@@ -28,7 +28,7 @@ export const rankingQuadrimestral: RankingAtleta[] = [
     assistencias: 7,
   },
   {
-    id: 3,
+    id: "atleta-3",
     nome: "João Pedro",
     slug: "joao-pedro",
     foto: "/images/jogadores/jogador_padrao_03.jpg",
@@ -41,7 +41,7 @@ export const rankingQuadrimestral: RankingAtleta[] = [
     assistencias: 5,
   },
   {
-    id: 4,
+    id: "atleta-4",
     nome: "Carlos Lima",
     slug: "carlos-lima",
     foto: "/images/jogadores/jogador_padrao_04.jpg",
@@ -54,7 +54,7 @@ export const rankingQuadrimestral: RankingAtleta[] = [
     assistencias: 4,
   },
   {
-    id: 5,
+    id: "atleta-5",
     nome: "Rafael Costa",
     slug: "rafael-costa",
     foto: "/images/jogadores/jogador_padrao_05.jpg",

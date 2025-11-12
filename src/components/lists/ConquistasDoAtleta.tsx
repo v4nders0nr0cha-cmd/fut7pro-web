@@ -13,7 +13,9 @@ interface Props {
 
 export default function ConquistasDoAtleta({ slug }: Props) {
   // Busca automática dos títulos de grandes torneios
-  const grandesTorneios = torneiosMock.filter((torneio) => torneio.jogadores.includes(slug));
+  const grandesTorneios = torneiosMock.filter((torneio) =>
+    (torneio as any).jogadoresCampeoes?.includes(slug)
+  );
 
   const conquistasAnuais = [...campeoesAno, ...melhoresPorPosicao].filter(
     (item) => item.slug === slug

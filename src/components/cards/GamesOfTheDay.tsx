@@ -1,9 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import GameCard from "./GameCard";
 import type { Partida } from "@/types/partida";
-import Link from "next/link";
-import { teamLogoMap, logoPadrao } from "@/config/teamLogoMap";
 
 interface GamesOfTheDayProps {
   partidas?: Partida[];
@@ -16,14 +15,8 @@ export default function GamesOfTheDay({
   isLoading = false,
   isError = false,
 }: GamesOfTheDayProps) {
-  const ultimosJogos = partidas
-    .filter(
-      (jogo) =>
-        jogo.timeA &&
-        jogo.timeB &&
-        typeof jogo.golsTimeA !== "undefined" &&
-        typeof jogo.golsTimeB !== "undefined"
-    )
+  const jogosExibidos = partidas
+    .filter((jogo) => jogo.timeA && jogo.timeB)
     .slice(-3)
     .reverse();
 
@@ -39,30 +32,30 @@ export default function GamesOfTheDay({
       <div className="space-y-3">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400"></div>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-yellow-400" />
             <span className="ml-2 text-sm text-gray-400">Carregando...</span>
           </div>
         ) : isError ? (
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
             <p className="text-sm text-red-400 text-center">Erro ao carregar jogos</p>
           </div>
-        ) : ultimosJogos.length > 0 ? (
-          ultimosJogos.map((jogo) => (
+        ) : jogosExibidos.length > 0 ? (
+          jogosExibidos.map((jogo) => (
             <GameCard
               key={jogo.id}
               teamA={{
                 name: jogo.timeA,
-                logo: teamLogoMap[jogo.timeA] || logoPadrao,
+                logo: jogo.logoCasa,
               }}
               teamB={{
                 name: jogo.timeB,
-                logo: teamLogoMap[jogo.timeB] || logoPadrao,
+                logo: jogo.logoFora,
               }}
-              score={`${jogo.golsTimeA} - ${jogo.golsTimeB}`}
+              score={`${jogo.golsTimeA ?? "-"} - ${jogo.golsTimeB ?? "-"}`}
             />
           ))
         ) : (
-          <p className="text-sm text-center text-gray-400">Nenhum jogo disponível</p>
+          <p className="text-sm text-center text-gray-400">Nenhum jogo disponivel</p>
         )}
       </div>
     </div>

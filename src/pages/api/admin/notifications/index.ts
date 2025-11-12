@@ -1,17 +1,27 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { Notification } from "@/types/notification";
 import { v4 as uuidv4 } from "uuid";
 
-// Simulação: banco em memória. Troque por integração real (Prisma, etc)
-const notifications: Notification[] = [];
+interface AdminNotification {
+  id: string;
+  rachaSlug: string;
+  type: string;
+  titulo: string;
+  mensagem: string;
+  data: string;
+  lida: boolean;
+  prioridade: string;
+  remetente?: string;
+  assunto?: string;
+  referenciaId?: string;
+}
 
-// GET: Lista todas as notificações do rachaSlug informado
-// POST: Cria uma nova notificação (qualquer origem do sistema)
+const notifications: AdminNotification[] = [];
+
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "GET") {
     const { rachaSlug } = req.query;
     if (!rachaSlug || typeof rachaSlug !== "string") {
-      return res.status(400).json({ error: "rachaSlug obrigatório" });
+      return res.status(400).json({ error: "rachaSlug obrigatorio" });
     }
     const lista = notifications.filter((n) => n.rachaSlug === rachaSlug);
     return res.status(200).json(lista);
@@ -22,10 +32,10 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       req.body;
 
     if (!rachaSlug || !type || !titulo || !mensagem) {
-      return res.status(400).json({ error: "Campos obrigatórios ausentes" });
+      return res.status(400).json({ error: "Campos obrigatorios ausentes" });
     }
 
-    const notification: Notification = {
+    const notification: AdminNotification = {
       id: uuidv4(),
       rachaSlug,
       type,
@@ -39,7 +49,7 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
       referenciaId,
     };
 
-    notifications.unshift(notification); // para simular novo primeiro
+    notifications.unshift(notification);
     return res.status(201).json(notification);
   }
 

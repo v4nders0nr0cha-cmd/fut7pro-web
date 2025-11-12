@@ -1,5 +1,5 @@
 "use client";
-import type { Financeiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 function formatarData(dt: string) {
   return new Date(dt).toLocaleDateString("pt-BR");
@@ -9,7 +9,7 @@ function formatarValor(v: number, tipo: string) {
 }
 
 type Props = {
-  lancamentos: Financeiro[];
+  lancamentos: LancamentoFinanceiro[];
 };
 
 export default function FinanceiroList({ lancamentos }: Props) {
@@ -23,13 +23,13 @@ export default function FinanceiroList({ lancamentos }: Props) {
           className="flex flex-col sm:flex-row items-center justify-between bg-fundo border rounded-xl p-3 shadow-sm"
         >
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
-            <span className="font-bold text-yellow-400">{l.categoria}</span>
+            <span className="font-bold text-yellow-400">{l.categoria ?? "outros"}</span>
             <span
               className={`ml-2 font-bold ${l.tipo === "saida" ? "text-red-400" : "text-green-400"}`}
             >
               {formatarValor(l.valor, l.tipo)}
             </span>
-            <span className="ml-2 text-xs text-gray-500">{l.adminNome}</span>
+            <span className="ml-2 text-xs text-gray-500">{l.adminNome ?? l.responsavel}</span>
             <span className="ml-2 text-xs text-gray-400">{formatarData(l.data)}</span>
             {l.descricao && <span className="ml-2 text-xs text-gray-500">{l.descricao}</span>}
           </div>

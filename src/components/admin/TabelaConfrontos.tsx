@@ -1,121 +1,94 @@
 "use client";
-import type { Confronto } from "@/mocks/admin/mockDia";
+
+import type { DerivedConfronto } from "@/utils/match-adapters";
 
 type Props = {
-  confrontos: Confronto[];
-  onSelecionarPartida: (index: number, tipo: "ida" | "volta") => void;
+  confrontos: DerivedConfronto[];
+  onSelecionarPartida?: (matchId: string) => void;
 };
 
-const nomesTimes = ["Leões", "Tigres", "Águias", "Furacão"];
-
 export default function TabelaConfrontos({ confrontos, onSelecionarPartida }: Props) {
-  return (
-    <section className="w-full max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-      {/* Ida */}
-      <div className="bg-zinc-800 rounded-2xl shadow-lg p-4">
-        <h2 className="text-center text-yellow-400 font-bold text-xl mb-2">
-          Tabela de Confrontos - Ida
-        </h2>
-        <table className="w-full">
-          <thead>
-            <tr className="text-gray-400 text-sm">
-              <th className="text-left">Rodada</th>
-              <th className="text-center">Resultado</th>
-              <th className="text-center"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {confrontos.map((conf, idx) => (
-              <tr
-                key={idx}
-                className={`transition ${
-                  conf.finalizada ? "bg-green-800/40" : "hover:bg-zinc-700"
-                }`}
-              >
-                <td>{conf.id}</td>
-                <td>
-                  <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
-                    <span className="text-white">{conf.timeA}</span>
-                    {conf.finalizada ? (
-                      <>
-                        <span className="font-extrabold text-yellow-300">{conf.golsTimeA}</span>
-                        <span className="text-yellow-400">×</span>
-                        <span className="font-extrabold text-yellow-300">{conf.golsTimeB}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-yellow-300">--</span>
-                        <span className="text-yellow-400">×</span>
-                        <span className="text-yellow-300">--</span>
-                      </>
-                    )}
-                    <span className="text-white">{conf.timeB}</span>
-                  </div>
-                </td>
-                <td className="text-center">
-                  <button
-                    className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
-                    onClick={() => onSelecionarPartida(idx, "ida")}
-                  >
-                    {conf.finalizada ? "Editar" : "Lançar"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  if (!Array.isArray(confrontos) || confrontos.length === 0) {
+    return (
+      <div className="w-full max-w-4xl mx-auto bg-zinc-900 rounded-2xl shadow p-6 text-center">
+        <p className="text-yellow-300 font-semibold">
+          Nenhuma partida encontrada para o dia selecionado.
+        </p>
+        <p className="text-zinc-400 text-sm mt-1">
+          Registre partidas no backend ou ajuste os filtros para visualizar confrontos.
+        </p>
       </div>
-      {/* Volta */}
-      <div className="bg-zinc-800 rounded-2xl shadow-lg p-4">
-        <h2 className="text-center text-yellow-400 font-bold text-xl mb-2">
-          Tabela de Confrontos - Volta
-        </h2>
+    );
+  }
+
+  const hasAction = typeof onSelecionarPartida === "function";
+
+  return (
+    <section className="w-full max-w-5xl mx-auto">
+      <div className="bg-zinc-800 rounded-2xl shadow-lg overflow-hidden">
+        <header className="flex items-center justify-between px-5 py-3 border-b border-zinc-700">
+          <h2 className="text-yellow-400 font-bold text-xl">Confrontos do Dia</h2>
+          <span className="text-sm text-zinc-300">
+            {confrontos.length} partida{confrontos.length > 1 ? "s" : ""} encontrada
+            {confrontos.length > 1 ? "s" : ""}
+          </span>
+        </header>
         <table className="w-full">
           <thead>
-            <tr className="text-gray-400 text-sm">
-              <th className="text-left">Rodada</th>
-              <th className="text-center">Resultado</th>
-              <th className="text-center"></th>
+            <tr className="text-gray-400 text-sm uppercase tracking-wide bg-zinc-900">
+              <th className="text-left px-4 py-3">#</th>
+              <th className="text-left px-4 py-3">Partida</th>
+              <th className="text-center px-4 py-3">Placar</th>
+              <th className="text-left px-4 py-3">Local</th>
+              <th className="text-left px-4 py-3">Data/Horario</th>
+              {hasAction && <th className="text-center px-4 py-3"></th>}
             </tr>
           </thead>
           <tbody>
-            {confrontos.map((conf, idx) => (
-              <tr
-                key={idx}
-                className={`transition ${
-                  conf.finalizada ? "bg-green-800/40" : "hover:bg-zinc-700"
-                }`}
-              >
-                <td>{conf.id}</td>
-                <td>
-                  <div className="flex justify-center items-center gap-3 font-bold text-lg text-yellow-300">
-                    <span className="text-white">{conf.timeA}</span>
-                    {conf.finalizada ? (
-                      <>
-                        <span className="font-extrabold text-yellow-300">{conf.golsTimeA}</span>
-                        <span className="text-yellow-400">×</span>
-                        <span className="font-extrabold text-yellow-300">{conf.golsTimeB}</span>
-                      </>
+            {confrontos.map((confronto, index) => {
+              const placarA = confronto.placar.a;
+              const placarB = confronto.placar.b;
+              const jogoFinalizado = placarA !== null && placarB !== null;
+
+              return (
+                <tr
+                  key={confronto.id}
+                  className="border-b border-zinc-700/70 hover:bg-zinc-900 transition-colors"
+                >
+                  <td className="px-4 py-3 text-sm text-zinc-400">{index + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="text-white font-semibold">{confronto.timeA.nome}</span>
+                      <span className="text-white font-semibold">{confronto.timeB.nome}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    {jogoFinalizado ? (
+                      <span className="text-yellow-300 font-bold">
+                        {placarA} <span className="text-yellow-500">x</span> {placarB}
+                      </span>
                     ) : (
-                      <>
-                        <span className="text-yellow-300">--</span>
-                        <span className="text-yellow-400">×</span>
-                        <span className="text-yellow-300">--</span>
-                      </>
+                      <span className="text-zinc-500 text-sm">Aguardando</span>
                     )}
-                    <span className="text-white">{conf.timeB}</span>
-                  </div>
-                </td>
-                <td className="text-center">
-                  <button
-                    className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
-                    onClick={() => onSelecionarPartida(idx, "volta")}
-                  >
-                    {conf.finalizada ? "Editar" : "Lançar"}
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-300">
+                    {confronto.local ?? "Local nao informado"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-zinc-300">{confronto.data}</td>
+                  {hasAction && (
+                    <td className="px-4 py-3 text-center">
+                      <button
+                        type="button"
+                        className="px-3 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold shadow"
+                        onClick={() => onSelecionarPartida?.(confronto.id)}
+                      >
+                        {jogoFinalizado ? "Editar" : "Lancar"}
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

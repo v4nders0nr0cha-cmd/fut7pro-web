@@ -139,6 +139,12 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "app.fut7pro.com.br",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "fonts.gstatic.com",
         port: "",
         pathname: "/**",

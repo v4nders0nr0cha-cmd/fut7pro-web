@@ -1,24 +1,34 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import type { MensagemContato } from "@/types/mensagem";
-import type { Notification } from "@/types/notification";
 import { v4 as uuidv4 } from "uuid";
 
-// Simulação de DB em memória (substitua por integração real)
-const mensagens: MensagemContato[] = [];
-const notifications: Notification[] = [];
+interface ContatoNotification {
+  id: string;
+  rachaId: string;
+  type: string;
+  titulo: string;
+  mensagem: string;
+  data: string;
+  lida: boolean;
+  prioridade: string;
+  remetente?: string;
+  assunto?: string;
+  referenciaId?: string;
+}
 
-// POST: recebe mensagem do formulário de contato, salva e gera notificação para admin do racha
+const mensagens: MensagemContato[] = [];
+const notifications: ContatoNotification[] = [];
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "POST") {
-    const { rachaSlug, nome, email, telefone, assunto, mensagem } = req.body;
-    if (!rachaSlug || !nome || !email || !assunto || !mensagem) {
-      return res.status(400).json({ error: "Campos obrigatórios ausentes." });
+    const { rachaId, nome, email, telefone, assunto, mensagem } = req.body;
+    if (!rachaId || !nome || !email || !assunto || !mensagem) {
+      return res.status(400).json({ error: "Campos obrigatorios ausentes." });
     }
 
-    // Salva mensagem no "banco"
     const novaMensagem: MensagemContato = {
       id: uuidv4(),
-      rachaSlug,
+      rachaId,
       nome,
       email,
       telefone,
@@ -29,10 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
     mensagens.unshift(novaMensagem);
 
-    // Cria notificação para o admin do racha
-    const notification: Notification = {
+    const notification: ContatoNotification = {
       id: uuidv4(),
-      rachaSlug,
+      rachaId,
       type: "contato",
       titulo: "Nova mensagem recebida",
       mensagem: `Nova mensagem de ${nome}. Assunto: ${assunto}`,
@@ -48,13 +57,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(201).json({ success: true });
   }
 
-  // GET (opcional): listar mensagens por rachaSlug
   if (req.method === "GET") {
-    const { rachaSlug } = req.query;
-    if (!rachaSlug || typeof rachaSlug !== "string") {
-      return res.status(400).json({ error: "rachaSlug obrigatório" });
+    const { rachaId } = req.query;
+    if (!rachaId || typeof rachaId !== "string") {
+      return res.status(400).json({ error: "rachaSlug obrigatorio" });
     }
-    const lista = mensagens.filter((msg) => msg.rachaSlug === rachaSlug);
+    const lista = mensagens.filter((msg) => msg.rachaId === rachaId);
     return res.status(200).json(lista);
   }
 

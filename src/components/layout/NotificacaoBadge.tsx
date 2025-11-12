@@ -2,15 +2,15 @@
 "use client";
 
 import { FaBell } from "react-icons/fa";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationBadge } from "@/hooks/useNotificationBadge";
 
 interface NotificacaoBadgeProps {
-  rachaSlug: string; // passe o slug do racha atual
-  onClick?: () => void; // exibir notificações, abrir drawer/modal etc
+  tenantSlug?: string;
+  onClick?: () => void;
 }
 
-export default function NotificacaoBadge({ rachaSlug, onClick }: NotificacaoBadgeProps) {
-  const { unreadCount } = useNotifications(rachaSlug);
+export default function NotificacaoBadge({ tenantSlug, onClick }: NotificacaoBadgeProps) {
+  const { total } = useNotificationBadge({ tenantSlug, limit: 20 });
 
   return (
     <button
@@ -20,9 +20,9 @@ export default function NotificacaoBadge({ rachaSlug, onClick }: NotificacaoBadg
       onClick={onClick}
     >
       <FaBell className="text-yellow-400 text-2xl" />
-      {unreadCount > 0 && (
+      {total > 0 && (
         <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-xs text-white rounded-full px-2 py-0.5 shadow font-bold z-10">
-          {unreadCount}
+          {total}
         </span>
       )}
     </button>

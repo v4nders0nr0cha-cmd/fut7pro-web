@@ -13,7 +13,7 @@ export const rachaConfig = {
   },
   urls: {
     site: "https://fut7pro.com",
-    api: "https://api.fut7pro.com",
+    api: "https://api.fut7pro.com.br",
     suporte: "suporte@fut7pro.com",
   },
   seo: {

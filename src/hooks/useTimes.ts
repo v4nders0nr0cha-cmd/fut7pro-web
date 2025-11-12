@@ -2,15 +2,14 @@
 
 import useSWR from "swr";
 import type { Time } from "@/types/time";
-import { rachaConfig } from "@/config/racha.config";
-
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export function useTimes(rachaId: string) {
-  const storageKey = `fut7pro_times_${rachaId}`;
+export function useTimes(tenantSlug: string | null | undefined) {
+  const effectiveSlug = tenantSlug ?? "default";
+  const storageKey = `fut7pro_times_${effectiveSlug}`;
 
-  const { data, error, mutate } = useSWR<Time[]>(
-    rachaId ? `/api/admin/rachas/${rachaId}/times` : null,
+  const { data, error, isLoading, mutate } = useSWR<Time[]>(
+    tenantSlug ? `/api/admin/rachas/${tenantSlug}/times` : null,
     fetcher,
     {
       fallbackData:
@@ -18,11 +17,13 @@ export function useTimes(rachaId: string) {
     }
   );
 
-  if (typeof window !== "undefined" && data) {
+  if (typeof window !== "undefined" && Array.isArray(data)) {
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
   async function addTime(time: Partial<Time>) {
+    if (!tenantSlug) return;
+
     const novoTime: Time = {
       id: crypto.randomUUID(),
       nome: time.nome || "Novo Time",
@@ -30,11 +31,11 @@ export function useTimes(rachaId: string) {
       logo: time.logo || "/images/times/time_padrao_01.png",
       cor: time.cor || "#FFD700",
       corSecundaria: time.corSecundaria || "#FFFFFF",
-      rachaId: rachaId || rachaConfig.slug,
+      rachaId: tenantSlug,
     };
 
     try {
-      await fetch(`/api/admin/rachas/${rachaId}/times`, {
+      await fetch(`/api/admin/rachas/${tenantSlug}/times`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(novoTime),
@@ -47,8 +48,10 @@ export function useTimes(rachaId: string) {
   }
 
   async function updateTime(time: Time) {
+    if (!tenantSlug) return;
+
     try {
-      await fetch(`/api/admin/rachas/${rachaId}/times/${time.id}`, {
+      await fetch(`/api/admin/rachas/${tenantSlug}/times/${time.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(time),
@@ -62,8 +65,10 @@ export function useTimes(rachaId: string) {
   }
 
   async function deleteTime(id: string) {
+    if (!tenantSlug) return;
+
     try {
-      await fetch(`/api/admin/rachas/${rachaId}/times/${id}`, {
+      await fetch(`/api/admin/rachas/${tenantSlug}/times/${id}`, {
         method: "DELETE",
       });
     } catch {
@@ -75,9 +80,10 @@ export function useTimes(rachaId: string) {
   }
 
   return {
-    times: data || [],
-    isLoading: !data && !error,
-    isError: !!error,
+    times: Array.isArray(data) ? data : [],
+    isLoading: Boolean(isLoading),
+    isError: Boolean(error),
+    error,
     addTime,
     updateTime,
     deleteTime,

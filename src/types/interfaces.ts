@@ -50,6 +50,7 @@ export interface Jogador {
   posicao?: string;
   numero?: number;
   foto?: string;
+  apelido?: string;
 }
 
 // Interfaces para Eventos de Partida
@@ -166,3 +167,6 @@ export interface StateData {
 export interface ConfigData {
   [key: string]: unknown;
 }
+
+
+

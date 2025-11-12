@@ -1,36 +1,38 @@
 import useSWR from "swr";
-
-export interface AdminLog {
-  id: string;
-  adminId: string;
-  adminNome?: string;
-  adminEmail?: string;
-  acao: string;
-  detalhes?: string;
-  criadoEm: string;
-}
+import type { LogAdmin } from "@/types/admin";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export function useAdminLogs(rachaId: string) {
-  const { data, error, mutate } = useSWR<AdminLog[]>(
+export function useAdminLogs(rachaId: string | null | undefined) {
+  const { data, error, mutate } = useSWR<LogAdmin[]>(
     rachaId ? `/api/admin/rachas/${rachaId}/logs` : null,
-    fetcher
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
   );
 
-  async function addLog(log: Partial<AdminLog>) {
+  async function addLog(log: Partial<LogAdmin>) {
     await fetch(`/api/admin/rachas/${rachaId}/logs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(log),
     });
-    mutate();
+    await mutate();
   }
 
+  const logs = Array.isArray(data)
+    ? data.map((log) => ({
+        ...log,
+        criadoEm: log.criadoEm ?? log.data ?? "",
+      }))
+    : [];
+
   return {
-    logs: data || [],
+    logs,
     isLoading: !error && !data,
-    isError: !!error,
+    isError: Boolean(error),
+    error: error instanceof Error ? error.message : null,
     addLog,
     mutate,
   };

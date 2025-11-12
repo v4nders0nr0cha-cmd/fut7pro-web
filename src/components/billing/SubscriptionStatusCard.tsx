@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FaCheckCircle, FaExclamationTriangle, FaClock, FaPause, FaTimes } from "react-icons/fa";
-import { Subscription, SubscriptionStatus } from "@/lib/api/billing";
+import type { Subscription, SubscriptionStatus } from "@/lib/api/billing";
 
 interface SubscriptionStatusCardProps {
   subscription: Subscription;

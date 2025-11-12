@@ -58,7 +58,7 @@ curl.exe -k -I https://api.fut7pro.com.br/jogos-do-dia
 
 ### 3. Verificar Logs do Backend
 
-- Railway Dashboard → Logs
+- Render Dashboard → Logs
 - Procurar por erros de rota ou CORS
 
 ## 📊 Status Atual

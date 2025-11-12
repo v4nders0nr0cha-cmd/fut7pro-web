@@ -1,5 +1,6 @@
-import NextAuth from "next-auth";
-import { Role } from "@prisma/client";
+import "next-auth";
+import "next-auth/jwt";
+import type { Role } from "@/common/enums";
 
 declare module "next-auth" {
   interface Session {
@@ -10,28 +11,28 @@ declare module "next-auth" {
       image?: string | null;
       role: Role;
       tenantId: string;
+      tenantSlug: string | null;
       accessToken: string;
       refreshToken: string;
     };
   }
 
   interface User {
-    id: string;
-    name: string;
-    email: string;
-    role: Role;
-    tenantId: string;
-    accessToken: string;
-    refreshToken: string;
+    role?: Role;
+    tenantId?: string;
+    tenantSlug?: string | null;
+    accessToken?: string;
+    refreshToken?: string;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string;
-    role: Role;
-    tenantId: string;
-    accessToken: string;
-    refreshToken: string;
+    id?: string;
+    role?: Role;
+    tenantId?: string;
+    tenantSlug?: string | null;
+    accessToken?: string;
+    refreshToken?: string;
   }
 }

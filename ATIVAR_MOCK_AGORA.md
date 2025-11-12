@@ -1,82 +1,75 @@
-# 🚨 ATIVAR MOCK AGORA - Instruções Rápidas
+# ⚠️ ATIVAR MOCK AGORA - Instruções Rápidas (Atualizado 2025-11)
 
-## ❌ Problema Atual
+## 🚩 Problema Atual
 
-Backend com certificado SSL inválido:
+Backend com certificado SSL inválido ou indisponível:
 
 ```
-ERR_TLS_CERT_ALTNAME_INVALID: Host: api.fut7pro.com.br. is not in the cert's altnames: DNS:*.up.railway.app
+ERR_TLS_CERT_ALTNAME_INVALID: Host: api.fut7pro.com.br. is not in the cert's altnames: DNS:*.onrender.com
 ```
 
-## ✅ Solução Imediata (2 minutos)
+## ✅ Novo Comportamento
 
-### 1. Configurar Mock no Vercel
+- O toggle `NEXT_PUBLIC_USE_JOGOS_MOCK` foi **removido**. A interface pública consome apenas  
+  `GET /api/public/jogos-do-dia`.
+- O proxy server-side tenta o backend oficial. Se falhar, devolve o fallback estático e adiciona o header  
+  `x-fallback-source: static`.
+- O endpoint `/api/public/jogos-do-dia-fallback` permanece disponível apenas para diagnóstico manual.
 
-- Acesse: https://vercel.com/dashboard
-- Projeto: `fut7pro-web`
-- **Settings** → **Environment Variables**
-- **Add New**:
-  - **Name**: `NEXT_PUBLIC_USE_JOGOS_MOCK`
-  - **Value**: `1`
-  - **Environment**: ✅ Production ✅ Preview
+## ⏱ Resposta Imediata (2 minutos)
 
-### 2. Redeploy
+1. **Checar fallback**
 
-- **Deployments** → **Current**
-- Clique em **Redeploy**
+   ```powershell
+   curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
+   ```
 
-### 3. Testar
+   - `HTTP/1.1 200 OK` + `x-fallback-source: static` → UI já está servindo dados de contingência.
+   - `x-fallback-source: backend` → backend voltou à normalidade.
 
-```powershell
-# Deve retornar dados mock
-curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-```
+2. **Validar página pública**
+   - Acessar `https://app.fut7pro.com.br/partidas/times-do-dia`.
+   - Confirmar carregamento sem erros (dados estáticos são exibidos se o backend estiver indisponível).
 
-## 🔧 Soluções Permanentes
+## 🧰 Soluções Permanentes
 
-### Opção 1: Corrigir Certificado SSL
+### Opção 1: Corrigir certificado SSL na Render
 
-- Railway Dashboard → Projeto → Settings → Domains
-- Adicionar `api.fut7pro.com.br` ao certificado
-- Ou usar domínio Railway: `fut7pro-backend.up.railway.app`
+- Render Dashboard → Serviço backend → Settings → Custom Domains.
+- Garantir `api.fut7pro.com.br` com certificado válido.
+- Se necessário, forçar novo deploy para reemitir o certificado.
 
-### Opção 2: Usar Domínio Railway
+### Opção 2: Revisar variáveis e CORS do backend
 
-- Alterar `BACKEND_URL` para: `https://fut7pro-backend.up.railway.app`
-- Configurar CORS no backend para aceitar `app.fut7pro.com.br`
+- Confirmar `BACKEND_URL=https://api.fut7pro.com.br` nos ambientes (Render e Vercel).
+- Garantir origens liberadas: `app.fut7pro.com.br` e domínios de preview da Vercel.
+- Executar healthcheck: `curl -I https://api.fut7pro.com.br/health`.
 
-### Opção 3: Configurar Proxy com SSL Ignorado
+### Opção 3: Ajustar proxy local (uso temporário)
 
-- Modificar proxy para ignorar certificado SSL (não recomendado para produção)
+- Permitir ignorar SSL apenas em desenvolvimento local.
+- **Nunca** aplicar essa configuração em produção.
 
-## 📊 Status Esperado com Mock
+## 📈 O Que Esperar Durante o Fallback
 
 ```json
-// GET /api/public/jogos-do-dia (com mock ativo)
+// GET /api/public/jogos-do-dia (backend indisponível)
 [
   {
-    "id": "1",
+    "id": "fallback-1",
     "timeA": "Time A",
     "timeB": "Time B",
-    "golsTimeA": 2,
-    "golsTimeB": 1,
-    "finalizada": true
-  },
-  {
-    "id": "2",
-    "timeA": "Time C",
-    "timeB": "Time D",
     "golsTimeA": 0,
     "golsTimeB": 0,
-    "finalizada": false
+    "finalizada": false,
+    "_fallback": true
   }
 ]
 ```
 
-## ⚡ Teste Rápido
+## ✅ Teste Rápido
 
 ```powershell
-# Após configurar mock
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "HTTP"
-# Deve mostrar: HTTP/1.1 200 OK
+# Header indica a trilha usada
+curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
 ```

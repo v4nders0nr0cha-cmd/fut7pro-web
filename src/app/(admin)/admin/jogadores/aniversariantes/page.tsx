@@ -3,68 +3,50 @@
 import Head from "next/head";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 
-// MOCK exemplo (substitua pelo seu real ou pelo mockAniversariantes global)
-const mockAniversariantes = [
-  {
-    id: 1,
-    nome: "Carlos Silva",
-    foto: "/images/jogadores/jogador_padrao_01.jpg",
-    dataNascimento: "2025-07-15",
-  },
-  {
-    id: 2,
-    nome: "Lucas Pereira",
-    foto: "/images/jogadores/jogador_padrao_02.jpg",
-    dataNascimento: "2025-07-27",
-  },
+const MESES = [
+  { label: "Janeiro", value: 1 },
+  { label: "Fevereiro", value: 2 },
+  { label: "Março", value: 3 },
+  { label: "Abril", value: 4 },
+  { label: "Maio", value: 5 },
+  { label: "Junho", value: 6 },
+  { label: "Julho", value: 7 },
+  { label: "Agosto", value: 8 },
+  { label: "Setembro", value: 9 },
+  { label: "Outubro", value: 10 },
+  { label: "Novembro", value: 11 },
+  { label: "Dezembro", value: 12 },
 ];
 
-const meses = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+const AVATAR_FALLBACK = "/images/jogadores/jogador_padrao_01.jpg";
 
-function calcularIdade(data: string) {
-  const hoje = new Date();
-  const nasc = new Date(data);
-  let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
-  return idade;
-}
-
-function formatarData(data: string) {
-  const dt = new Date(data);
-  return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
-function isAniversarioHoje(data: string) {
-  const hoje = new Date();
-  const d = new Date(data);
-  return hoje.getDate() === d.getDate() && hoje.getMonth() === d.getMonth();
+function formatDate(value: string | null) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
 }
 
 export default function AniversariantesAdminPage() {
-  const [mesFiltro, setMesFiltro] = useState<number>(new Date().getMonth());
-  const aniversariantesDoMes = useMemo(() => {
-    return mockAniversariantes.filter(
-      (aniv) => new Date(aniv.dataNascimento).getMonth() === mesFiltro
-    );
-  }, [mesFiltro]);
+  const hoje = useMemo(() => new Date(), []);
+  const [mesFiltro, setMesFiltro] = useState<number>(hoje.getMonth() + 1);
+  const [rangeDias, setRangeDias] = useState<number>(45);
 
-  const seoTitle = `Aniversariantes do mês | Painel Admin - Fut7Pro`;
-  const seoDescription = `Veja quem são os aniversariantes do mês do seu racha. O sistema envia parabéns automático no dia do aniversário.`;
+  const { birthdays, isLoading, isError, error } = useAdminBirthdays({
+    month: mesFiltro,
+    rangeDays: rangeDias,
+    limit: 100,
+  });
+
+  const seoTitle = "Aniversariantes | Painel Admin - Fut7Pro";
+  const seoDescription =
+    "Faça o acompanhamento dos aniversariantes do seu racha e envie mensagens personalizadas no dia certo.";
 
   return (
     <>
@@ -73,107 +55,134 @@ export default function AniversariantesAdminPage() {
         <meta name="description" content={seoDescription} />
         <meta
           name="keywords"
-          content="fut7pro, aniversariantes, parabéns, futebol, racha, aniversário, admin, painel, futebol 7"
+          content="fut7pro, aniversariantes, parabéns, futebol 7, painel admin, engajamento"
         />
       </Head>
-      <main className="min-h-screen bg-[#181A1B] text-white pt-20 px-2 md:px-4">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-3">
-            Aniversariantes do Mês
-          </h1>
-          <div className="flex flex-col gap-2 mb-6">
-            <div className="flex flex-wrap justify-center gap-2">
-              {meses.slice(0, 6).map((mes, idx) => (
-                <button
-                  key={mes}
-                  onClick={() => setMesFiltro(idx)}
-                  className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition
-                      ${
-                        mesFiltro === idx
-                          ? "bg-yellow-400 text-black shadow"
-                          : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
-                      }`}
-                >
-                  {mes}
-                </button>
-              ))}
+
+      <main className="min-h-screen bg-[#181A1B] text-white pt-20 px-3 md:px-4">
+        <div className="max-w-4xl mx-auto">
+          <header className="mb-8 text-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">
+              Aniversariantes do Racha
+            </h1>
+            <p className="text-sm text-gray-300 max-w-2xl mx-auto">
+              O painel lista os próximos aniversários considerando o cadastro dos atletas.
+              Personalize o mês e o intervalo de dias para preparar ações de engajamento.
+            </p>
+          </header>
+
+          <section className="bg-[#1F2224] border border-zinc-800 rounded-2xl p-4 md:p-6 mb-6">
+            <h2 className="text-lg font-semibold text-yellow-300 mb-4 text-center md:text-left">
+              Filtros
+            </h2>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex flex-wrap justify-center gap-2 md:justify-start">
+                {MESES.map((mes) => (
+                  <button
+                    key={mes.value}
+                    onClick={() => setMesFiltro(mes.value)}
+                    className={`px-3 py-1.5 rounded-full text-xs md:text-sm font-semibold transition ${
+                      mesFiltro === mes.value
+                        ? "bg-yellow-400 text-black shadow"
+                        : "bg-zinc-800 text-gray-200 hover:bg-yellow-200 hover:text-black"
+                    }`}
+                  >
+                    {mes.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-3">
+                <label htmlFor="rangeDias" className="text-sm text-gray-300 whitespace-nowrap">
+                  Próximos dias:
+                </label>
+                <input
+                  id="rangeDias"
+                  type="range"
+                  min={7}
+                  max={120}
+                  step={1}
+                  value={rangeDias}
+                  onChange={(event) => setRangeDias(Number(event.target.value))}
+                  className="w-48 accent-yellow-400"
+                />
+                <span className="text-sm text-gray-200 w-12 text-right">{rangeDias}d</span>
+              </div>
             </div>
-            <div className="flex flex-wrap justify-center gap-2">
-              {meses.slice(6).map((mes, idx) => (
-                <button
-                  key={mes}
-                  onClick={() => setMesFiltro(idx + 6)}
-                  className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition
-                      ${
-                        mesFiltro === idx + 6
-                          ? "bg-yellow-400 text-black shadow"
-                          : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
-                      }`}
-                >
-                  {mes}
-                </button>
-              ))}
-            </div>
-          </div>
+          </section>
 
           <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {aniversariantesDoMes.length === 0 && (
-              <div className="col-span-full text-center text-gray-400 text-lg py-8">
-                <span>Nenhum aniversariante neste mês ainda! 🎈</span>
+            {isLoading && (
+              <div className="col-span-full text-center text-gray-400 text-base py-10">
+                Carregando aniversariantes...
               </div>
             )}
 
-            {aniversariantesDoMes.map((aniv) => {
-              const ehHoje = isAniversarioHoje(aniv.dataNascimento);
-              const idade = calcularIdade(aniv.dataNascimento);
+            {isError && (
+              <div className="col-span-full text-center text-red-300 text-base py-10">
+                Falha ao carregar aniversariantes: {error}
+              </div>
+            )}
+
+            {!isLoading && !isError && birthdays.length === 0 && (
+              <div className="col-span-full text-center text-gray-400 text-base py-10">
+                Nenhum aniversário cadastrado para este período.
+              </div>
+            )}
+
+            {birthdays.map((birthday) => {
+              const isToday = birthday.daysUntil !== undefined ? birthday.daysUntil === 0 : false;
 
               return (
-                <div
-                  key={aniv.id}
-                  className={`rounded-xl bg-[#232323] shadow-lg p-4 flex flex-col items-center gap-3 border-2 relative
-                      ${
-                        ehHoje
-                          ? "border-orange-400 animate-pulse shadow-orange-300/30"
-                          : "border-zinc-700"
-                      }
-                  `}
+                <article
+                  key={birthday.id}
+                  className={`relative rounded-2xl border-2 p-5 flex flex-col items-center text-center shadow transition
+                    ${
+                      isToday
+                        ? "border-orange-400 bg-[#2f231d] shadow-orange-500/20"
+                        : "border-zinc-700 bg-[#1F2224] hover:border-yellow-400"
+                    }`}
                 >
-                  <div className="absolute top-2 right-2 text-2xl" title="Bolo de aniversário">
-                    🎂
-                  </div>
-                  {ehHoje && (
-                    <div className="absolute top-2 left-2 text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full font-bold animate-bounce">
-                      HOJE!
-                    </div>
+                  {isToday && (
+                    <span className="absolute top-3 left-3 text-xs bg-orange-400 text-black font-bold px-2 py-1 rounded-full">
+                      Hoje!
+                    </span>
                   )}
                   <Image
-                    src={aniv.foto}
-                    alt={`Foto de ${aniv.nome} - aniversariante do racha`}
-                    width={74}
-                    height={74}
-                    className="rounded-full border-2 border-yellow-400 object-cover"
+                    src={birthday.photoUrl?.trim() || AVATAR_FALLBACK}
+                    alt={`Foto de ${birthday.name}`}
+                    width={80}
+                    height={80}
+                    className="rounded-full border-2 border-yellow-400 object-cover mb-3"
                   />
-                  <div className="flex flex-col items-center text-center">
-                    <span className="font-bold text-lg md:text-xl text-yellow-200">
-                      {aniv.nome}
-                    </span>
-                    <span className="text-gray-300 text-sm">
-                      {formatarData(aniv.dataNascimento)} • {idade} anos
-                    </span>
-                  </div>
-                  {ehHoje && (
-                    <div className="w-full mt-2 bg-orange-100 text-orange-700 text-center rounded px-2 py-1 text-xs font-semibold shadow">
-                      Parabéns, {aniv.nome}! 🎉
-                    </div>
+                  <h3 className="text-lg font-bold text-yellow-300">{birthday.name}</h3>
+                  {birthday.nickname && (
+                    <p className="text-sm text-gray-400 mb-1">“{birthday.nickname}”</p>
                   )}
-                </div>
+                  <p className="text-sm text-gray-200 mb-1">
+                    Próximo aniversário em{" "}
+                    <span className="font-semibold text-yellow-200">
+                      {birthday.daysUntil === 0
+                        ? "hoje!"
+                        : `${birthday.daysUntil} dia${birthday.daysUntil === 1 ? "" : "s"}`}
+                    </span>
+                  </p>
+                  <p className="text-xs text-gray-400 mb-4">
+                    {formatDate(birthday.nextBirthday)}
+                    {" • "}
+                    {birthday.ageAtNextBirthday} anos
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Data de nascimento: {formatDate(birthday.birthDate)}
+                  </p>
+                </article>
               );
             })}
           </section>
-          <div className="text-xs text-gray-400 mt-8 text-center">
-            As mensagens de parabéns são enviadas automaticamente para o aniversariante, às 8h do
-            dia, sem exposição de dados pessoais.
-          </div>
+
+          <footer className="mt-10 text-xs text-gray-500 text-center">
+            Os aniversários dependem do preenchimento da data de nascimento no cadastro do atleta.
+            Atualize regularmente para manter esta lista precisa.
+          </footer>
         </div>
       </main>
     </>

@@ -1,7 +1,7 @@
 // src/context/AdminProvider.tsx
 "use client";
-import { createContext, useState, type ReactNode } from "react";
-import type { Racha } from "@/types/racha";
+import { createContext, type ReactNode } from "react";
+import type { Racha } from "@/types/superadmin";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface AdminContextType {
@@ -34,31 +34,27 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     reset,
   } = useSuperAdmin();
 
-  async function addRacha(racha: Partial<Racha>) {
-    return addRachaApi(racha);
+  async function addRacha(racha: Partial<Racha>): Promise<Racha | null> {
+    const result = await addRachaApi(racha);
+    return (result ?? null) as Racha | null;
   }
 
-  async function updateRacha(id: string, racha: Partial<Racha>) {
-    return updateRachaApi(id, racha);
+  async function updateRacha(id: string, racha: Partial<Racha>): Promise<Racha | null> {
+    const result = await updateRachaApi(id, racha);
+    return (result ?? null) as Racha | null;
   }
 
   function editRacha(id: string) {
     window.location.href = `/admin/rachas/${id}`;
   }
 
-  async function deleteRacha(id: string) {
+  async function deleteRacha(id: string): Promise<boolean> {
     const result = await deleteRachaApi(id);
     return result !== null;
   }
 
   function getRachaById(id: string) {
-    const found = rachas.find((r) => r.id === id);
-    if (!found) return undefined;
-    return {
-      ...found,
-      admins: found.admins ?? [],
-      jogadores: found.jogadores ?? [],
-    };
+    return rachas.find((r) => r.id === id);
   }
 
   async function refreshRachas() {

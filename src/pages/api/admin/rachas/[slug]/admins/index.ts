@@ -1,11 +1,15 @@
 // src/pages/api/admin/rachas/[slug]/admins/index.ts
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma"; // ajuste o path se seu prisma está em outro local
+import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked, prisma } from "@/server/prisma"; // ajuste o path se seu prisma está em outro local
 // import { getSession } from "next-auth/react"; // Descomente se for usar autenticação
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { slug } = req.query;
+
+  if (isDirectDbBlocked) {
+    return res.status(501).json({ error: PRISMA_DISABLED_MESSAGE });
+  }
 
   // Auth opcional (exemplo):
   // const session = await getSession({ req });

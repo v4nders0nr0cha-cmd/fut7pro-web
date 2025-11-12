@@ -1,272 +1,270 @@
 "use client";
-// src/app/admin/partidas/historico/page.tsx
+
 import Head from "next/head";
-import { useState, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import CalendarioHistorico from "@/components/partidas/CalendarioHistorico";
-import ModalEditarPartida from "@/components/admin/ModalEditarPartida";
-import { mockConfrontos, mockTimes } from "@/mocks/admin/mockDia";
-import type { Confronto } from "@/mocks/admin/mockDia";
+import { useAuth } from "@/hooks/useAuth";
+import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { rachaConfig } from "@/config/racha.config";
+import type { Match } from "@/types/partida";
 
-// Função para retornar a logo do time baseado no nome
-function getLogoTime(nome: string) {
-  switch (nome.toLowerCase()) {
-    case "leões":
-      return "/images/times/time_padrao_01.png";
-    case "tigres":
-      return "/images/times/time_padrao_02.png";
-    case "águias":
-      return "/images/times/time_padrao_03.png";
-    case "furacão":
-      return "/images/times/time_padrao_04.png";
-    default:
-      return "/images/times/time_padrao_01.png";
+const DEFAULT_TEAM_LOGO = "/images/times/time_padrao_01.png";
+
+type GroupedMatches = Record<
+  string,
+  {
+    key: string;
+    dateLabel: string;
+    locationLabel: string;
+    matches: Match[];
   }
+>;
+
+function formatDateLabel(iso: string) {
+  const date = new Date(iso);
+  return date.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 }
 
-// Agrupamento de partidas por data e local
-type GrupoPartidas = {
-  [key: string]: { idx: number; confronto: Confronto }[];
-};
+function groupMatchesByDateAndLocation(matches: Match[], selected?: Date): GroupedMatches {
+  const filtered = selected
+    ? matches.filter((match) => {
+        const matchDate = new Date(match.date);
+        return matchDate.toDateString() === selected.toDateString();
+      })
+    : matches;
 
-function agruparPorDataELocal(confrontos: Confronto[], times: any[]): GrupoPartidas {
-  const grupos: GrupoPartidas = {};
-  confrontos.forEach((c, idx) => {
-    const data = c.data ?? "Data não informada";
-    const local = c.local ?? "Local não informado";
-    const chave = `${data}||${local}`;
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push({ idx, confronto: c });
-  });
-  return grupos;
+  return filtered.reduce<GroupedMatches>((acc, match) => {
+    const dateKey = match.date.slice(0, 10);
+    const location = match.location ?? "Local nao informado";
+    const compositeKey = `${dateKey}||${location}`;
+
+    if (!acc[compositeKey]) {
+      acc[compositeKey] = {
+        key: compositeKey,
+        dateLabel: formatDateLabel(match.date),
+        locationLabel: location,
+        matches: [],
+      };
+    }
+
+    acc[compositeKey].matches.push(match);
+    return acc;
+  }, {});
+}
+
+function resolveTeam(
+  match: Match,
+  side: "A" | "B",
+): { nome: string; logo: string; gols: number | null } {
+  const teamInfo = side === "A" ? match.teamA : match.teamB;
+  const score =
+    match.score?.[side === "A" ? "teamA" : "teamB"] ??
+    (side === "A" ? match.scoreA : match.scoreB) ??
+    null;
+
+  return {
+    nome: teamInfo?.name ?? (side === "A" ? "Time A" : "Time B"),
+    logo: teamInfo?.logoUrl ?? DEFAULT_TEAM_LOGO,
+    gols: score,
+  };
 }
 
 export default function AdminHistoricoPartidasPage() {
-  const [selected, setSelected] = useState<Date | undefined>(undefined);
-  const [calOpen, setCalOpen] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [confrontos, setConfrontos] = useState<Confronto[]>(mockConfrontos.map((c) => ({ ...c })));
-  const [editPartida, setEditPartida] = useState<null | { idx: number; tipo: "ida" | "volta" }>(
-    null
+  const { user } = useAuth();
+  const tenantSlug = user?.tenantSlug && user.tenantSlug.length > 0 ? user.tenantSlug : null;
+  const effectiveSlug = tenantSlug ?? rachaConfig.slug;
+
+  const { matches, isLoading, isError, error } = useAdminMatches({
+    slug: effectiveSlug,
+    params: { limit: 100 },
+  });
+
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const diasComPartida = useMemo(() => {
+    const uniqueDates = new Set(matches.map((match) => match.date.slice(0, 10)));
+    return Array.from(uniqueDates).map((iso) => new Date(`${iso}T00:00:00`));
+  }, [matches]);
+
+  const groupedMatches = useMemo(
+    () => groupMatchesByDateAndLocation(matches, selectedDate),
+    [matches, selectedDate],
   );
 
-  const diasComPartida: Date[] = Array.from(
-    new Set(confrontos.map((c) => c.data).filter(Boolean))
-  ).map((data) => new Date(data + "T00:00:00"));
-
-  const confrontosFiltrados = selected
-    ? confrontos.filter((c) => new Date(c.data || "").toDateString() === selected.toDateString())
-    : confrontos;
-
-  const grupos = agruparPorDataELocal(confrontosFiltrados, mockTimes);
-
-  function handleSalvarResultado(
-    idx: number,
-    tipo: "ida" | "volta",
-    placar: { a: number; b: number },
-    eventos: any[]
-  ) {
-    setConfrontos((prev) =>
-      prev.map((c, i) =>
-        i !== idx
-          ? c
-          : {
-              ...c,
-              [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: { placar, eventos },
-            }
-      )
-    );
-    setEditPartida(null);
-  }
-
-  function handleExcluir(idx: number, tipo: "ida" | "volta") {
-    if (window.confirm("Tem certeza que deseja excluir esta partida?")) {
-      setConfrontos((prev) =>
-        prev.map((c, i) =>
-          i !== idx
-            ? c
-            : {
-                ...c,
-                [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: undefined,
-              }
-        )
-      );
-    }
-  }
+  const sortedGroups = useMemo(() => {
+    return Object.values(groupedMatches).sort((a, b) => (a.key < b.key ? 1 : -1));
+  }, [groupedMatches]);
 
   return (
     <>
       <Head>
-        <title>Histórico de Partidas | Painel Admin - Fut7Pro</title>
+        <title>Historico de Partidas | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Corrija placares, status, gols e assistências das partidas do seu racha. Painel do Presidente Fut7Pro, seguro e auditável."
+          content="Visualize os confrontos registrados no backend, filtre por data e acompanhe os detalhes de cada partida para auditoria rapida."
         />
         <meta
           name="keywords"
-          content="admin fut7, editar partidas, corrigir placar, editar gols, editar assistências, histórico futebol 7"
+          content="admin fut7, partidas, auditoria, resultados, historico, futebol 7"
         />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto text-white">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
-          Histórico de Partidas (Admin)
+          Historico de Partidas (Admin)
         </h1>
         <p className="text-base md:text-lg mb-6 text-textoSuave text-center">
-          Corrija eventuais erros de placar, gols ou assistências de qualquer partida do histórico.
-          Edição rápida e fácil, igual ao painel de destaques do dia.
+          Selecione um dia para conferir todos os confrontos registrados no backend e facilite a
+          revisao dos resultados do seu racha.
         </p>
 
         <div className="flex justify-end mb-6">
           <button
-            ref={btnRef}
+            ref={buttonRef}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:bg-yellow-500 transition shadow"
-            onClick={() => setCalOpen(!calOpen)}
-            aria-label="Abrir calendário"
+            onClick={() => setCalendarOpen((current) => !current)}
+            aria-label="Filtrar por data"
             type="button"
           >
-            <svg width={20} height={20} fill="none" viewBox="0 0 24 24">
-              <rect
-                x={3}
-                y={5}
-                width={18}
-                height={16}
-                rx={2}
-                fill="#181818"
-                stroke="#222"
-                strokeWidth={1.5}
-              />
-              <path d="M8 3v4M16 3v4" stroke="#FFD600" strokeWidth={2} strokeLinecap="round" />
-              <rect x={7} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-              <rect x={11} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-              <rect x={15} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-            </svg>
-            Selecionar Data
+            <span role="img" aria-hidden>
+              📅
+            </span>
+            {selectedDate
+              ? selectedDate.toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
+              : "Filtrar por data"}
           </button>
         </div>
 
         <CalendarioHistorico
           diasComPartida={diasComPartida}
-          selected={selected}
+          selected={selectedDate}
           onSelect={(date) => {
-            setSelected(date);
-            setCalOpen(false);
+            setSelectedDate(date);
+            setCalendarOpen(false);
           }}
-          open={calOpen}
-          onClose={() => setCalOpen(false)}
-          anchorRef={btnRef}
+          open={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          anchorRef={buttonRef}
         />
 
-        <div className="flex flex-col gap-10">
-          {Object.keys(grupos).length === 0 && (
-            <p className="text-textoSuave text-center">Nenhuma partida encontrada.</p>
-          )}
-          {Object.entries(grupos)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([chave, partidasDia]) => {
-              const [data, local] = chave.split("||");
-              return (
-                <div key={chave} className="bg-[#171717] rounded-xl shadow p-4 w-full">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-3">
-                    <span className="font-bold text-yellow-400 text-lg">
-                      {data?.replace(/-/g, "/")}
-                    </span>
-                    <span className="text-textoSuave text-sm">{local}</span>
-                  </div>
-                  <div className="w-full overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-yellow-400 border-b border-yellow-700">
-                          <th className="py-2 px-2 text-left">#</th>
-                          <th className="py-2 px-2 text-left">Time A</th>
-                          <th className="py-2 px-2 text-center">Placar</th>
-                          <th className="py-2 px-2 text-left">Time B</th>
-                          <th className="py-2 px-2 text-center">Status</th>
-                          <th className="py-2 px-2 text-center">Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {partidasDia.map((partida, idx) => {
-                          const { idx: i, confronto } = partida;
-                          const timeA = confronto.timeA;
-                          const timeB = confronto.timeB;
-                          const logoA = getLogoTime(timeA);
-                          const logoB = getLogoTime(timeB);
-
-                          return (
-                            <tr
-                              key={i}
-                              className="border-b border-[#232323] hover:bg-[#232323] transition"
-                            >
-                              <td className="py-2 px-2 font-bold">{idx + 1}</td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
-                                <span>{timeA}</span>
-                                <Image
-                                  src={logoA}
-                                  alt={timeA}
-                                  width={28}
-                                  height={28}
-                                  className="rounded"
-                                />
-                              </td>
-                              <td className="py-2 px-2 font-extrabold text-xl text-center">
-                                {confronto.golsTimeA ?? 0}{" "}
-                                <span className="text-yellow-400 font-bold">x</span>{" "}
-                                {confronto.golsTimeB ?? 0}
-                              </td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
-                                <span>{timeB}</span>
-                                <Image
-                                  src={logoB}
-                                  alt={timeB}
-                                  width={28}
-                                  height={28}
-                                  className="rounded"
-                                />
-                              </td>
-                              <td className="py-2 px-2 text-center">
-                                <span
-                                  className={`px-3 py-1 rounded-xl text-xs ${confronto.finalizada ? "bg-green-700" : "bg-yellow-700"} text-white`}
-                                >
-                                  {confronto.finalizada ? "Concluído" : "Em andamento"}
-                                </span>
-                              </td>
-                              <td className="py-2 px-2 text-center flex gap-2 justify-center">
-                                <button
-                                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => setEditPartida({ idx: i, tipo: "ida" })}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => handleExcluir(i, "ida")}
-                                >
-                                  Excluir
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-
-        {editPartida && (
-          <ModalEditarPartida
-            index={editPartida.idx}
-            confronto={confrontos[editPartida.idx]}
-            tipo={editPartida.tipo}
-            times={mockTimes}
-            onClose={() => setEditPartida(null)}
-            onSalvar={handleSalvarResultado}
-          />
+        {isLoading && (
+          <div className="bg-zinc-800 rounded-2xl shadow p-6 text-center mt-6">
+            <span className="text-yellow-400 font-semibold">Carregando partidas...</span>
+          </div>
         )}
+
+        {isError && (
+          <div className="bg-red-900/30 border border-red-700 rounded-2xl shadow p-6 text-center mt-6">
+            <p className="text-red-300 font-semibold">
+              Nao foi possivel carregar as partidas: {error ?? "erro desconhecido"}.
+            </p>
+            <p className="text-red-200 text-sm mt-2">
+              Verifique se existe historico registrado para este tenant e tente novamente.
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && sortedGroups.length === 0 && (
+          <div className="bg-zinc-800 rounded-2xl shadow p-6 text-center mt-6">
+            <p className="text-textoSuave">
+              Nenhuma partida encontrada {selectedDate ? "para a data selecionada." : "no historico."}
+            </p>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-8 mt-8">
+          {sortedGroups.map((group) => (
+            <section
+              key={group.key}
+              className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-lg overflow-hidden"
+            >
+              <header className="px-5 py-4 border-b border-zinc-800 bg-zinc-950/70">
+                <h2 className="text-xl font-semibold text-yellow-300">{group.dateLabel}</h2>
+                <p className="text-sm text-zinc-400">{group.locationLabel}</p>
+              </header>
+              <div className="divide-y divide-zinc-800">
+                {group.matches.map((match) => {
+                  const teamA = resolveTeam(match, "A");
+                  const teamB = resolveTeam(match, "B");
+                  const matchDate = new Date(match.date);
+                  const horario = matchDate.toLocaleTimeString("pt-BR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+
+                  return (
+                    <article key={match.id} className="flex flex-col md:flex-row md:items-center gap-4 px-5 py-4">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center gap-2 min-w-[140px]">
+                          <Image
+                            src={teamA.logo}
+                            alt={`Logo ${teamA.nome}`}
+                            width={40}
+                            height={40}
+                            className="rounded-lg"
+                          />
+                          <span className="font-semibold">{teamA.nome}</span>
+                        </div>
+                        <div className="text-2xl font-bold text-yellow-300 min-w-[90px] text-center">
+                          {teamA.gols ?? "-"} <span className="text-yellow-500">x</span>{" "}
+                          {teamB.gols ?? "-"}
+                        </div>
+                        <div className="flex items-center gap-2 min-w-[140px]">
+                          <Image
+                            src={teamB.logo}
+                            alt={`Logo ${teamB.nome}`}
+                            width={40}
+                            height={40}
+                            className="rounded-lg"
+                          />
+                          <span className="font-semibold">{teamB.nome}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1 text-sm text-zinc-400 md:w-[160px]">
+                        <span>
+                          Horario: <strong>{horario}</strong>
+                        </span>
+                        <span>
+                          Presencas registradas: <strong>{match.presences.length}</strong>
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/partidas/${match.id}`}
+                          className="px-3 py-1.5 rounded bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-300 transition"
+                        >
+                          Ver no site
+                        </Link>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 rounded border border-zinc-700 text-sm text-zinc-300 hover:border-yellow-400 transition"
+                          onClick={() => {
+                            alert("Edicao de partidas sera integrada apos exposicao dos endpoints.");
+                          }}
+                        >
+                          Ajustar
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
       </main>
     </>
   );

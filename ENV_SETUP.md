@@ -78,7 +78,6 @@ Em produção, configure as variáveis no seu provedor de hospedagem:
 
 - **Vercel**: Environment Variables no dashboard
 - **Netlify**: Site settings > Environment variables
-- **Railway**: Variables tab
 - **Render**: Environment tab
 
 ## Troubleshooting

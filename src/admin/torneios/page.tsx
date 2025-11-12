@@ -5,18 +5,29 @@ import { useState } from "react";
 import Head from "next/head";
 import { torneiosMock } from "@/components/lists/mockTorneios";
 import type { Torneio } from "@/types/torneio";
+import { useRacha } from "@/context/RachaContext";
 
-const getNovoTorneio = (): Torneio => ({
+const gerarIdTemporario = () =>
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `torneio-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+const getNovoTorneio = (rachaId: string): Torneio => ({
+  id: gerarIdTemporario(),
+  rachaId,
   nome: "",
   ano: new Date().getFullYear(),
   slug: "",
   campeao: "",
-  imagem: "",
+  banner: "",
+  logo: "",
+  jogadoresCampeoes: [],
 });
 
 export default function AdminTorneiosPage() {
+  const { rachaId } = useRacha();
   const [torneios, setTorneios] = useState<Torneio[]>(torneiosMock);
-  const [novoTorneio, setNovoTorneio] = useState<Torneio>(getNovoTorneio());
+  const [novoTorneio, setNovoTorneio] = useState<Torneio>(() => getNovoTorneio(rachaId));
   const [modoEdicao, setModoEdicao] = useState<number | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,7 +39,7 @@ export default function AdminTorneiosPage() {
   };
 
   const handleSubmit = () => {
-    if (!novoTorneio.nome || !novoTorneio.slug || !novoTorneio.campeao || !novoTorneio.imagem)
+    if (!novoTorneio.nome || !novoTorneio.slug || !novoTorneio.campeao || !novoTorneio.banner)
       return;
 
     if (modoEdicao !== null) {
@@ -37,21 +48,27 @@ export default function AdminTorneiosPage() {
       setTorneios(atualizados);
       setModoEdicao(null);
     } else {
-      setTorneios([...torneios, { ...novoTorneio, ano: Number(novoTorneio.ano) }]);
+      setTorneios([
+        ...torneios,
+        {
+          ...novoTorneio,
+          id: novoTorneio.id || gerarIdTemporario(),
+          rachaId: novoTorneio.rachaId || rachaId,
+          ano: Number(novoTorneio.ano),
+        },
+      ]);
     }
 
-    setNovoTorneio(getNovoTorneio());
+    setNovoTorneio(getNovoTorneio(rachaId));
   };
 
   const handleEditar = (index: number) => {
     const t = torneios[index];
     if (!t) return; // Protege contra índices inválidos
     setNovoTorneio({
-      nome: t.nome,
+      ...t,
       ano: Number(t.ano),
-      slug: t.slug,
-      campeao: t.campeao,
-      imagem: t.imagem,
+      jogadoresCampeoes: t.jogadoresCampeoes ?? [],
     });
     setModoEdicao(index);
   };
@@ -64,7 +81,7 @@ export default function AdminTorneiosPage() {
       setTorneios(copia);
       if (modoEdicao === index) {
         setModoEdicao(null);
-        setNovoTorneio(getNovoTorneio());
+        setNovoTorneio(getNovoTorneio(rachaId));
       }
     }
   };
@@ -124,10 +141,18 @@ export default function AdminTorneiosPage() {
               autoComplete="off"
             />
             <input
-              name="imagem"
-              value={novoTorneio.imagem}
+              name="banner"
+              value={novoTorneio.banner}
               onChange={handleChange}
-              placeholder="Caminho da Imagem"
+              placeholder="Caminho do banner"
+              className="p-2 rounded bg-zinc-800 text-white"
+              autoComplete="off"
+            />
+            <input
+              name="logo"
+              value={novoTorneio.logo}
+              onChange={handleChange}
+              placeholder="Caminho da logo"
               className="p-2 rounded bg-zinc-800 text-white"
               autoComplete="off"
             />
@@ -146,7 +171,7 @@ export default function AdminTorneiosPage() {
           {torneios.map((torneio, idx) => (
             <div key={torneio.slug + idx} className="bg-[#1A1A1A] rounded-xl p-4 shadow-md">
               <Image
-                src={torneio.imagem}
+                src={torneio.banner}
                 alt={`Imagem do torneio ${torneio.nome}`}
                 width={400}
                 height={200}

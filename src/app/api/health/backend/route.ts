@@ -1,13 +1,19 @@
+import { getApiBase } from "@/lib/get-api-base";
+
 // Healthcheck do backend para validar conectividade
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
-  if (!base) {
+  let base: string;
+  try {
+    base = getApiBase();
+  } catch (error: any) {
     return new Response(
       JSON.stringify({
         status: "error",
-        message: "BACKEND_URL not configured",
+        message: error?.message ?? "NEXT_PUBLIC_API_URL not configured",
         timestamp: new Date().toISOString(),
       }),
       {
@@ -20,43 +26,35 @@ export async function GET() {
   // Testar diferentes endpoints de healthcheck
   const healthEndpoints = ["/health", "/status", "/api/health", "/api/status", "/"];
 
-  // Testar também domínio Railway se disponível
-  const railwayUrl = process.env.RAILWAY_BACKEND_URL || "https://fut7pro-backend.up.railway.app";
-  const testUrls = [
-    { base, endpoints: healthEndpoints },
-    { base: railwayUrl, endpoints: healthEndpoints },
-  ];
+  for (const endpoint of healthEndpoints) {
+    const url = `${base}${endpoint}`;
+    try {
+      const response = await fetch(url, {
+        method: "HEAD",
+        headers: { accept: "application/json" },
+        cache: "no-store",
+        // Timeout de 5 segundos
+        signal: AbortSignal.timeout(5000),
+      });
 
-  for (const { base: testBase, endpoints } of testUrls) {
-    for (const endpoint of endpoints) {
-      try {
-        const url = `${testBase}${endpoint}`;
-        const response = await fetch(url, {
-          method: "HEAD",
-          headers: { accept: "application/json" },
-          // Timeout de 5 segundos
-          signal: AbortSignal.timeout(5000),
-        });
-
-        if (response.ok) {
-          return new Response(
-            JSON.stringify({
-              status: "ok",
-              backend: testBase,
-              endpoint: endpoint,
-              statusCode: response.status,
-              timestamp: new Date().toISOString(),
-            }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            }
-          );
-        }
-      } catch (error: any) {
-        // Continuar para o próximo endpoint
-        console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error.message);
+      if (response.ok) {
+        return new Response(
+          JSON.stringify({
+            status: "ok",
+            backend: base,
+            endpoint,
+            statusCode: response.status,
+            timestamp: new Date().toISOString(),
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
+    } catch (error: any) {
+      // Continuar para o proximo endpoint
+      console.log(`Healthcheck failed for ${url}:`, error?.message);
     }
   }
 

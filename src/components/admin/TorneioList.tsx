@@ -21,9 +21,9 @@ export default function TorneioList({ torneios, onEdit, onDelete }: Props) {
         >
           <div className="flex items-center gap-3 w-full">
             {/* Banner do Torneio */}
-            {torneio.bannerUrl && (
+            {torneio.banner && (
               <Image
-                src={torneio.bannerUrl}
+                src={torneio.banner}
                 alt={`Banner do Torneio ${torneio.nome}`}
                 width={80}
                 height={40}
@@ -31,9 +31,9 @@ export default function TorneioList({ torneios, onEdit, onDelete }: Props) {
               />
             )}
             {/* Logo do Torneio */}
-            {torneio.logoUrl && (
+            {torneio.logo && (
               <Image
-                src={torneio.logoUrl}
+                src={torneio.logo}
                 alt={`Logo do Torneio ${torneio.nome}`}
                 width={32}
                 height={32}

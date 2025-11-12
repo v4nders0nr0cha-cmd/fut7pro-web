@@ -7,7 +7,7 @@ import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
 import { notFound } from "next/navigation";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
 import TabelaLancamentos from "@/components/financeiro/TabelaLancamentos";
-import type { LancamentoFinanceiro } from "@/hooks/useFinanceiroPublic";
+import type { LancamentoFinanceiro } from "@/components/financeiro/types";
 import { rachaConfig } from "@/config/racha.config";
 
 export default function PrestacaoDeContasPage() {

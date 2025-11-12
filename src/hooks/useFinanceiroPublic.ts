@@ -1,8 +1,22 @@
 // src/hooks/useFinanceiroPublic.ts
 
 import useSWR from "swr";
+import type {
+  ResumoFinanceiro as ResumoFinanceiroUI,
+  LancamentoFinanceiro as LancamentoFinanceiroUI,
+} from "@/components/financeiro/types";
 
-export interface LancamentoFinanceiro {
+interface ApiResumoFinanceiro {
+  totalReceitas: number;
+  totalDespesas: number;
+  saldo: number;
+  totalLancamentos: number;
+  saldoAtual?: number;
+  receitasPorMes?: Record<string, number>;
+  despesasPorMes?: Record<string, number>;
+}
+
+interface ApiLancamentoFinanceiro {
   id: string;
   tipo: string;
   categoria: string;
@@ -10,23 +24,51 @@ export interface LancamentoFinanceiro {
   descricao?: string;
   data: string;
   criadoEm: string;
-  adminNome: string;
-  adminEmail: string;
-}
-
-interface ResumoFinanceiro {
-  totalReceitas: number;
-  totalDespesas: number;
-  saldo: number;
-  totalLancamentos: number;
+  adminNome?: string;
+  adminEmail?: string;
+  responsavel?: string;
+  comprovanteUrl?: string | null;
 }
 
 interface FinanceiroPublicData {
-  resumo: ResumoFinanceiro;
-  lancamentos: LancamentoFinanceiro[];
+  resumo: ApiResumoFinanceiro;
+  lancamentos: ApiLancamentoFinanceiro[];
 }
 
-async function fetcher(url: string): Promise<FinanceiroPublicData> {
+function adaptResumo(resumo: ApiResumoFinanceiro): ResumoFinanceiroUI {
+  return {
+    saldoAtual: resumo.saldoAtual ?? resumo.saldo ?? 0,
+    totalReceitas: resumo.totalReceitas ?? 0,
+    totalDespesas: resumo.totalDespesas ?? 0,
+    receitasPorMes: resumo.receitasPorMes ?? {},
+    despesasPorMes: resumo.despesasPorMes ?? {},
+  };
+}
+
+function adaptLancamento(lancamento: ApiLancamentoFinanceiro): LancamentoFinanceiroUI {
+  const categoria = lancamento.categoria ?? "outros";
+  const tipoLower = lancamento.tipo?.toLowerCase() ?? "";
+  const movimento: LancamentoFinanceiroUI["tipo"] =
+    tipoLower === "saida" || tipoLower.startsWith("despesa") || tipoLower === "sistema"
+      ? "saida"
+      : "entrada";
+
+  return {
+    id: lancamento.id,
+    data: lancamento.data,
+    tipo: movimento,
+    categoria,
+    descricao: lancamento.descricao ?? "",
+    valor: Math.abs(lancamento.valor ?? 0),
+    responsavel:
+      lancamento.responsavel ?? lancamento.adminNome ?? lancamento.adminEmail ?? "Administrador",
+    comprovanteUrl: lancamento.comprovanteUrl ?? undefined,
+    adminNome: lancamento.adminNome,
+    adminEmail: lancamento.adminEmail,
+  };
+}
+
+async function fetcher(url: string): Promise<{ resumo: ResumoFinanceiroUI; lancamentos: LancamentoFinanceiroUI[] }> {
   const res = await fetch(url);
 
   if (!res.ok) {
@@ -34,7 +76,13 @@ async function fetcher(url: string): Promise<FinanceiroPublicData> {
     throw new Error(errorData.message || `HTTP ${res.status}: ${res.statusText}`);
   }
 
-  return res.json();
+  const payload: FinanceiroPublicData = await res.json();
+  return {
+    resumo: adaptResumo(payload.resumo),
+    lancamentos: Array.isArray(payload.lancamentos)
+      ? payload.lancamentos.map(adaptLancamento)
+      : [],
+  };
 }
 
 /**
@@ -55,10 +103,10 @@ export function useFinanceiroPublic(rachaId: string) {
   );
 
   return {
-    resumo: data?.resumo,
-    lancamentos: data?.lancamentos || [],
+    resumo: data?.resumo ?? null,
+    lancamentos: data?.lancamentos ?? [],
     isLoading,
-    isError: error,
+    isError: Boolean(error),
     error: error?.message,
     mutate,
   };

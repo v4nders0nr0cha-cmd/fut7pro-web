@@ -66,16 +66,16 @@ export default function TorneioForm({ onSave, initialData = {}, onCancel }: Prop
         maxLength={32}
       />
       <input
-        name="bannerUrl"
+        name="banner"
         placeholder="Banner do Torneio (URL ou path)"
-        value={form.bannerUrl ?? ""}
+        value={(form as any).banner ?? ""}
         onChange={handleChange}
         className="input"
       />
       <input
-        name="logoUrl"
+        name="logo"
         placeholder="Logo do Torneio (URL ou path)"
-        value={form.logoUrl ?? ""}
+        value={(form as any).logo ?? ""}
         onChange={handleChange}
         className="input"
       />

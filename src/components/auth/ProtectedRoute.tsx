@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
