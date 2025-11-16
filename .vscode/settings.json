@@ -1,0 +1,78 @@
+{
+  "files.associations": {
+    ".env": "dotenv",
+    ".env.*": "dotenv",
+    "*.env": "dotenv",
+    "**/.env": "dotenv",
+    "**/.env.*": "dotenv"
+  },
+  "[dotenv]": {
+    "editor.insertSpaces": true,
+    "editor.tabSize": 2,
+    "editor.renderWhitespace": "boundary",
+    "editor.wordWrap": "off",
+    "editor.formatOnSave": false
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.workingDirectories": [
+    {
+      "mode": "auto"
+    }
+  ],
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma",
+    "editor.formatOnSave": true
+  },
+  "prisma.schemaPath": "prisma/schema.prisma",
+  "prisma.languageServer.enable": true,
+  "prisma.languageServer.askDescription": false,
+  "tailwindCSS.classAttributes": ["class", "className", "ngClass", "clsx", "cva", "tw"],
+  "tailwindCSS.experimental.classRegex": [
+    ["clsx\\(([^)]*)\\)", "['\"`]([^'\"`]*?)['\"`]"],
+    ["cva\\(([^)]*)\\)", "['\"`]([^'\"`]*?)['\"`]"]
+  ],
+  "tailwindCSS.emmetCompletions": true,
+  "rest-client.timeoutinmilliseconds": 20000,
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "contentTypeJson": "application/json",
+      "superAdminEmail": "vanderson_r0cha@hotmail.com",
+      "superAdminPassword": "Du3listbr321####"
+    },
+    "local": {
+      "base_api": "http://localhost:3333",
+      "baseUrl": "http://localhost:3333",
+      "authToken": "",
+      "refreshToken": "",
+      "influencerId": "",
+      "tenantId": "",
+      "sponsorId": ""
+    },
+    "prod": {
+      "base_api": "https://api.fut7pro.com.br",
+      "baseUrl": "https://api.fut7pro.com.br",
+      "authToken": "",
+      "refreshToken": "",
+      "influencerId": "",
+      "tenantId": "",
+      "sponsorId": ""
+    }
+  },
+  "sqltools.useNodeRuntime": true,
+  "sqltools.connections": [
+    {
+      "name": "Neon Prod - Fut7Pro",
+      "driver": "PostgreSQL",
+      "previewLimit": 50,
+      "server": "ep-ancient-haze-ad53r9rh-pooler.c-2.us-east-1.aws.neon.tech",
+      "port": 5432,
+      "database": "neondb",
+      "username": "neondb_owner",
+      "password": "npg_jkG4qhfwnT8W",
+      "ssl": true
+    }
+  ]
+}

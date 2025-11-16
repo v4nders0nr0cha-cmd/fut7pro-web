@@ -44,7 +44,6 @@ export default function JogadorForm({ jogador, onCancel, onSave }: Props) {
     } else {
       setForm(DEFAULT_FORM);
       setPhotoPreview("");
-
     }
   }, [jogador]);
 
@@ -68,7 +67,6 @@ export default function JogadorForm({ jogador, onCancel, onSave }: Props) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-
     const preview = URL.createObjectURL(file);
     setPhotoPreview(preview);
     setForm((prev) => ({ ...prev, photoUrl: preview }));
@@ -90,7 +88,6 @@ export default function JogadorForm({ jogador, onCancel, onSave }: Props) {
       position: form.position,
       status: form.status,
       isMember: form.isMember,
-      mensalista: form.isMember,
       photoUrl: form.photoUrl,
     };
 
@@ -98,7 +95,6 @@ export default function JogadorForm({ jogador, onCancel, onSave }: Props) {
 
     // Reset file preview apenas se estivermos criando um novo jogador
     if (!form.id) {
-
       setPhotoPreview("");
       setForm(DEFAULT_FORM);
     }
@@ -246,7 +242,7 @@ function normalizeAthlete(athlete: Athlete): FormState {
     email: athlete.email ?? "",
     status: (athlete.status as AthleteStatus) ?? "Ativo",
     position: (athlete.position as AthletePosition) ?? "atacante",
-    isMember: athlete.isMember ?? Boolean(athlete.mensalista),
+    isMember: athlete.isMember ?? false,
     photoUrl: athlete.photoUrl ?? null,
   };
 }

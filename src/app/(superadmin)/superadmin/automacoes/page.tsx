@@ -4,19 +4,21 @@ import React from "react";
 import Head from "next/head";
 import { automacoesPadrao } from "@/components/lists/automacoesPadrao";
 import type { AutomacaoNotificacao } from "@/types/automacao";
+import { useNotificationTemplates } from "@/hooks/useNotificationTemplates";
 
 export default function SuperAdminAutomacoesPage() {
+  const { findTemplate } = useNotificationTemplates();
   return (
     <>
       <Head>
-        <title>Automação de Notificações – Fut7Pro SuperAdmin</title>
+        <title>Automações de Notificações - Fut7Pro SuperAdmin</title>
         <meta
           name="description"
           content="Gerencie as notificações automáticas enviadas pelo sistema Fut7Pro. Veja, ative e controle todas as automações críticas para seu SaaS."
         />
         <meta
           name="keywords"
-          content="automação, notificações automáticas, SaaS, Fut7Pro, cobrança, trial, onboarding"
+          content="automações, notificações automáticas, SaaS, Fut7Pro, cobrança, trial, onboarding"
         />
       </Head>
       <div className="px-4 py-6 md:px-10 max-w-5xl mx-auto">
@@ -30,7 +32,8 @@ export default function SuperAdminAutomacoesPage() {
                 <th className="px-4 py-3">Nome</th>
                 <th className="px-2 py-3">Descrição</th>
                 <th className="px-2 py-3">Gatilho</th>
-                <th className="px-2 py-3">Canal</th>
+                <th className="px-2 py-3">Canais</th>
+                <th className="px-2 py-3">Template</th>
                 <th className="px-2 py-3">Obrigatória?</th>
                 <th className="px-2 py-3">Status</th>
               </tr>
@@ -38,7 +41,7 @@ export default function SuperAdminAutomacoesPage() {
             <tbody>
               {automacoesPadrao.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-6 text-zinc-500">
+                  <td colSpan={7} className="text-center py-6 text-zinc-500">
                     Nenhuma automação configurada.
                   </td>
                 </tr>
@@ -57,6 +60,9 @@ export default function SuperAdminAutomacoesPage() {
                           {c}
                         </span>
                       ))}
+                    </td>
+                    <td className="px-2 py-3 text-sm text-zinc-300">
+                      {a.templateId ? (findTemplate(a.templateId)?.name ?? "-") : "-"}
                     </td>
                     <td className="px-2 py-3">
                       {a.obrigatoria ? (

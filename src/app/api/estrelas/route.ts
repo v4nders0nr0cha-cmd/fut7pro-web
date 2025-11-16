@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PRISMA_DISABLED_MESSAGE, isDirectDbBlocked } from "@/lib/prisma";
 
-const isProd = process.env.NODE_ENV === "production";
-const shouldBlock = isProd || isDirectDbBlocked;
+const shouldBlock = isDirectDbBlocked;
 
-// Utilitário local para obter Prisma somente em desenvolvimento
 async function getDevPrisma() {
   const g = globalThis as unknown as { prisma?: any };
   if (!g.prisma) {
@@ -14,17 +12,41 @@ async function getDevPrisma() {
   return g.prisma as any;
 }
 
-// GET: /api/estrelas?rachaId=xxxx
+async function resolveRachaId(
+  prisma: any,
+  rachaId?: string | null,
+  slug?: string | null
+): Promise<string | null> {
+  if (rachaId && rachaId.length > 0) {
+    return rachaId;
+  }
+  if (slug && slug.length > 0) {
+    const racha = await prisma.racha.findFirst({
+      where: { slug },
+      select: { id: true },
+    });
+    return racha?.id ?? null;
+  }
+  return null;
+}
+
 export async function GET(req: NextRequest) {
   if (shouldBlock) {
     return NextResponse.json({ error: PRISMA_DISABLED_MESSAGE }, { status: 501 });
   }
-  const { searchParams } = new URL(req.url);
-  const rachaId = searchParams.get("rachaId");
-  if (!rachaId) {
-    return NextResponse.json({ error: "rachaId obrigatório" }, { status: 400 });
-  }
+
   const prisma = await getDevPrisma();
+  const { searchParams } = new URL(req.url);
+  const rachaId = await resolveRachaId(
+    prisma,
+    searchParams.get("rachaId"),
+    searchParams.get("tenantSlug") ?? searchParams.get("slug")
+  );
+
+  if (!rachaId) {
+    return NextResponse.json({ error: "tenantSlug ou rachaId obrigatorio" }, { status: 400 });
+  }
+
   const estrelas = await prisma.AvaliacaoEstrela.findMany({
     where: { rachaId },
     select: {
@@ -36,31 +58,28 @@ export async function GET(req: NextRequest) {
       atualizadoEm: true,
     },
   });
+
   return NextResponse.json(estrelas);
 }
 
-// POST: /api/estrelas
-// body: { rachaId: string, jogadorId: string, estrelas: number }
 export async function POST(req: NextRequest) {
   if (shouldBlock) {
     return NextResponse.json({ error: PRISMA_DISABLED_MESSAGE }, { status: 501 });
   }
-  // Validação de permissão: apenas admins podem criar estrelas
-  // const session = await getServerSession(authOptions);
-  // if (!session || !session.user || !isAdminOfRacha(session.user, rachaId)) return NextResponse.json({error: "Não autorizado"}, {status: 403});
-
-  const body = await req.json();
-  const { rachaId, jogadorId, estrelas } = body;
-
-  if (!rachaId || !jogadorId || typeof estrelas !== "number") {
-    return NextResponse.json({ error: "Dados obrigatórios faltando" }, { status: 400 });
-  }
-  if (estrelas < 0 || estrelas > 5) {
-    return NextResponse.json({ error: "Estrelas deve ser entre 0 e 5" }, { status: 400 });
-  }
 
   const prisma = await getDevPrisma();
-  // Upsert: se já existe avaliação desse jogador para o racha, atualiza, senão cria nova
+  const body = await req.json();
+  const { rachaId: bodyRachaId, tenantSlug, jogadorId, estrelas } = body ?? {};
+
+  const rachaId = await resolveRachaId(prisma, bodyRachaId, tenantSlug);
+  if (!rachaId || !jogadorId || typeof estrelas !== "number") {
+    return NextResponse.json({ error: "Campos obrigatorios faltando" }, { status: 400 });
+  }
+
+  if (estrelas < 0 || estrelas > 5) {
+    return NextResponse.json({ error: "Estrelas deve estar entre 0 e 5" }, { status: 400 });
+  }
+
   const result = await prisma.AvaliacaoEstrela.upsert({
     where: {
       rachaId_jogadorId: { rachaId, jogadorId },
@@ -68,14 +87,12 @@ export async function POST(req: NextRequest) {
     update: {
       estrelas,
       atualizadoEm: new Date(),
-      // atualizadoPor: session?.user?.id ?? null, // ID do admin logado será implementado
     },
     create: {
       rachaId,
       jogadorId,
       estrelas,
       atualizadoEm: new Date(),
-      // atualizadoPor: session?.user?.id ?? null, // ID do admin logado será implementado
     },
   });
 

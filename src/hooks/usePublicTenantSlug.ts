@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { rachaConfig } from "@/config/racha.config";
+import { DEFAULT_PUBLIC_SLUG } from "@/config/tenant-public";
 
 const RESERVED_SEGMENTS = new Set([
   "sobre-nos",
@@ -14,10 +14,8 @@ const RESERVED_SEGMENTS = new Set([
   "privacy",
   "termos",
   "api",
+  "admin",
 ]);
-
-export const DEFAULT_PUBLIC_SLUG =
-  process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG ?? rachaConfig.slug ?? "fut7pro";
 
 export function resolvePublicSlug(pathname: string | null): string | null {
   if (!pathname) return null;

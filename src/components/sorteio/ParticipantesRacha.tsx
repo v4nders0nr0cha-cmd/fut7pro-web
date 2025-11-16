@@ -7,6 +7,8 @@ import EditorEstrelas from "./EditorEstrelas";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela } from "@/types/sorteio";
 import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
+import { useEstrelas } from "@/hooks/useEstrelas";
+import { toast } from "react-hot-toast";
 
 interface Props {
   tenantSlug: string | null | undefined;
@@ -98,7 +100,7 @@ function PopoverSelecionarJogador({
             aria-label={`Selecionar ${p.nome}`}
           >
             <Image
-              src={p.foto}
+              src={p.photoUrl}
               alt={`Foto de ${p.nome}, posi��o: ${p.posicao}, ${rachaConfig.nome}`}
               width={28}
               height={28}
@@ -127,54 +129,41 @@ export default function ParticipantesRacha({
   setParticipantes,
   todosJogadores,
 }: Props) {
-  const [estrelasGlobais, setEstrelasGlobais] = useState<Record<string, AvaliacaoEstrela>>({});
-  const [loadingEstrelas, setLoadingEstrelas] = useState(false);
+  const {
+    avaliacoes: avaliacoesEstrelas,
+    isLoading: loadingEstrelas,
+    error: erroEstrelas,
+    salvarEstrela,
+  } = useEstrelas(tenantSlug ?? null);
+  const [estrelasLocais, setEstrelasLocais] = useState<Record<string, AvaliacaoEstrela>>({});
   const [popoverIndex, setPopoverIndex] = useState<number | null>(null);
-
-  const storageKey =
-    tenantSlug && tenantSlug.length > 0 ? `fut7pro_sorteio_estrelas_${tenantSlug}` : null;
 
   const maxParticipantes =
     config?.numTimes && config?.jogadoresPorTime ? config.numTimes * config.jogadoresPorTime : 0;
 
+  const avaliacoesPorJogador = useMemo(() => {
+    return avaliacoesEstrelas.reduce(
+      (acc, avaliacao) => {
+        if (avaliacao?.jogadorId) {
+          acc[avaliacao.jogadorId] = avaliacao;
+        }
+        return acc;
+      },
+      {} as Record<string, AvaliacaoEstrela>
+    );
+  }, [avaliacoesEstrelas]);
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    if (!storageKey) {
-      setEstrelasGlobais({});
-      return;
-    }
-
-    setLoadingEstrelas(true);
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      const stored =
-        raw && raw.length > 0
-          ? (JSON.parse(raw) as Record<string, AvaliacaoEstrela>)
-          : ({} as Record<string, AvaliacaoEstrela>);
-
-      setEstrelasGlobais(stored);
-      setParticipantes((prev) =>
-        prev.map((p) => ({
-          ...p,
-          estrelas:
-            stored[p.id] ??
-            buildEstrelaBase(tenantSlug, p.id, {
-              estrelas: stored[p.id]?.estrelas ?? p.estrelas?.estrelas ?? 0,
-              atualizadoEm: stored[p.id]?.atualizadoEm ?? p.estrelas?.atualizadoEm ?? "",
-              atualizadoPor: stored[p.id]?.atualizadoPor ?? p.estrelas?.atualizadoPor ?? "",
-            }),
-        }))
-      );
-    } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Falha ao carregar estrelas locais:", error);
-      }
-      setEstrelasGlobais({});
-    } finally {
-      setLoadingEstrelas(false);
-    }
-  }, [storageKey, setParticipantes, tenantSlug]);
+    setEstrelasLocais(avaliacoesPorJogador);
+    setParticipantes((prev) =>
+      prev.map((p) => ({
+        ...p,
+        estrelas:
+          avaliacoesPorJogador[p.id] ??
+          buildEstrelaBase(tenantSlug, p.id, { estrelas: p.estrelas?.estrelas ?? 0 }),
+      }))
+    );
+  }, [avaliacoesPorJogador, setParticipantes, tenantSlug]);
 
   const atletasDisponiveis = useMemo(() => {
     const selecionadosIds = new Set(participantes.map((p) => p.id));
@@ -183,30 +172,23 @@ export default function ParticipantesRacha({
       .map((j) => ({
         ...j,
         estrelas:
-          estrelasGlobais[j.id] ??
+          estrelasLocais[j.id] ??
           j.estrelas ??
           buildEstrelaBase(tenantSlug, j.id, { estrelas: j.estrelas?.estrelas ?? 0 }),
       }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [todosJogadores, participantes, estrelasGlobais, tenantSlug]);
+  }, [todosJogadores, participantes, estrelasLocais, tenantSlug]);
 
   const vagasRestantes = Math.max(0, maxParticipantes - participantes.length);
 
   const updateEstrela = (jogadorId: string, valor: number) => {
-    const updated = buildEstrelaBase(tenantSlug, jogadorId, {
-      ...estrelasGlobais[jogadorId],
+    const otimista = buildEstrelaBase(tenantSlug, jogadorId, {
+      ...(estrelasLocais[jogadorId] ?? avaliacoesPorJogador[jogadorId]),
       estrelas: valor,
       atualizadoEm: new Date().toISOString(),
     });
 
-    setEstrelasGlobais((prev) => {
-      const merged = { ...prev, [jogadorId]: updated };
-      if (storageKey && typeof window !== "undefined") {
-        window.localStorage.setItem(storageKey, JSON.stringify(merged));
-      }
-      return merged;
-    });
-
+    setEstrelasLocais((prev) => ({ ...prev, [jogadorId]: otimista }));
     setParticipantes((prev) =>
       prev.map((p) =>
         p.id === jogadorId
@@ -215,12 +197,31 @@ export default function ParticipantesRacha({
               estrelas: {
                 ...(p.estrelas ?? buildEstrelaBase(tenantSlug, jogadorId)),
                 estrelas: valor,
-                atualizadoEm: updated.atualizadoEm,
+                atualizadoEm: otimista.atualizadoEm,
               },
             }
           : p
       )
     );
+
+    salvarEstrela(jogadorId, valor).catch((error) => {
+      const message = error instanceof Error ? error.message : "Erro ao salvar estrelas";
+      toast.error(message);
+      setEstrelasLocais((prev) => ({
+        ...prev,
+        [jogadorId]: avaliacoesPorJogador[jogadorId] ?? prev[jogadorId],
+      }));
+      setParticipantes((prev) =>
+        prev.map((p) =>
+          p.id === jogadorId
+            ? {
+                ...p,
+                estrelas: avaliacoesPorJogador[jogadorId] ?? p.estrelas,
+              }
+            : p
+        )
+      );
+    });
   };
 
   const handleSelect = (id: string) => {
@@ -231,7 +232,7 @@ export default function ParticipantesRacha({
       setParticipantes(participantes.filter((p) => p.id !== id));
     } else if (participanteOriginal) {
       if (maxParticipantes && participantes.length >= maxParticipantes) return;
-      const estrela = estrelasGlobais[id] ?? participanteOriginal.estrelas;
+      const estrela = estrelasLocais[id] ?? participanteOriginal.estrelas;
       setParticipantes([
         ...participantes,
         {
@@ -251,7 +252,7 @@ export default function ParticipantesRacha({
     ...p,
     estrelas:
       p.estrelas ??
-      estrelasGlobais[p.id] ??
+      estrelasLocais[p.id] ??
       buildEstrelaBase(tenantSlug, p.id, { estrelas: p.estrelas?.estrelas ?? 0 }),
   }));
 
@@ -266,7 +267,7 @@ export default function ParticipantesRacha({
     onClick: () => void;
     children?: React.ReactNode;
   }) {
-    const estrelaAtual = estrelasGlobais[jogador.id]?.estrelas ?? jogador.estrelas?.estrelas ?? 0;
+    const estrelaAtual = estrelasLocais[jogador.id]?.estrelas ?? jogador.estrelas?.estrelas ?? 0;
 
     return (
       <div
@@ -283,7 +284,7 @@ export default function ParticipantesRacha({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Image
-              src={jogador.foto}
+              src={jogador.photoUrl}
               alt={`Foto de ${jogador.nome}, posi��o: ${jogador.posicao}, ${rachaConfig.nome}`}
               width={40}
               height={40}
@@ -294,7 +295,7 @@ export default function ParticipantesRacha({
             >
               {jogador.nome}
             </span>
-            {jogador.mensalista && (
+            {jogador.isMember && (
               <span className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black rounded text-xs font-semibold">
                 Mensalista
               </span>

@@ -14,10 +14,14 @@ async function fetchJogadores([, slug]: UseJogadoresKey): Promise<Athlete[]> {
 
   const athletes = Array.isArray(response) ? response : [];
 
-  return athletes.map((athlete) => ({
-    ...athlete,
-    mensalista: athlete.mensalista ?? athlete.isMember,
-  }));
+  return athletes.map((athlete) => {
+    const isMember = Boolean(athlete.isMember);
+    return {
+      ...athlete,
+      isMember,
+      mensalista: isMember,
+    };
+  });
 }
 
 export function useJogadores(tenantSlug: string | null | undefined) {
@@ -28,16 +32,14 @@ export function useJogadores(tenantSlug: string | null | undefined) {
     [tenantSlug]
   );
 
-  const {
-    data,
-    error,
-    isLoading,
-    isValidating,
-    mutate,
-  } = useSWR<Athlete[]>(swrKey, fetchJogadores, {
-    revalidateOnFocus: true,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<Athlete[]>(
+    swrKey,
+    fetchJogadores,
+    {
+      revalidateOnFocus: true,
+      keepPreviousData: true,
+    }
+  );
 
   const createJogador = useCallback(
     async (payload: Partial<Athlete>) => {
@@ -86,5 +88,3 @@ export function useJogadores(tenantSlug: string | null | undefined) {
     reset: apiState.reset,
   };
 }
-
-

@@ -58,7 +58,7 @@ export function CardTimeDoDia({ time }: Props) {
                 {posicoesAbrev[jogador.posicao]}
               </span>
               <Image
-                src={jogador.foto}
+                src={jogador.photoUrl}
                 alt={`Foto de ${jogador.nome}`}
                 width={36}
                 height={36}
@@ -67,8 +67,8 @@ export function CardTimeDoDia({ time }: Props) {
               />
               <div className="flex-1 flex flex-col">
                 <span className="font-semibold text-sm">{jogador.nome}</span>
-                {jogador.apelido && (
-                  <span className="text-xs text-neutral-400">({jogador.apelido})</span>
+                {jogador.nickname && (
+                  <span className="text-xs text-neutral-400">({jogador.nickname})</span>
                 )}
                 <span className="text-xs text-neutral-400">
                   {jogador.status === "ausente" && "Ausente (nao pontua)"}

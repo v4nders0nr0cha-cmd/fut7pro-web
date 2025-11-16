@@ -10,13 +10,20 @@ const MAX_NAME_LENGTH = 10;
 
 export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) {
   const { usuario, atualizarPerfil } = usePerfil();
+
+  if (!usuario) {
+    return null;
+  }
+
   const [nome, setNome] = useState(usuario.nome || "");
-  const [apelido, setApelido] = useState(usuario.apelido || "");
+  const [nickname, setNickname] = useState(usuario.nickname || "");
   const [posicao, setPosicao] = useState<PositionValue | "">(toPositionValue(usuario.posicao));
-  const [foto, setFoto] = useState(usuario.foto || "");
+  const [foto, setFoto] = useState(usuario.photoUrl || "");
   const [novaFoto, setNovaFoto] = useState<string | null>(null);
+  const [novaFotoArquivo, setNovaFotoArquivo] = useState<File | null>(null);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
   function handleFotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -31,14 +38,15 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       setErro("");
     };
     reader.readAsDataURL(file);
+    setNovaFotoArquivo(file);
   }
 
-  function handleSalvar() {
-    if (!nome.trim() || !apelido.trim()) {
+  async function handleSalvar() {
+    if (!nome.trim() || !nickname.trim()) {
       setErro("Nome e apelido sao obrigatorios.");
       return;
     }
-    if (nome.length > MAX_NAME_LENGTH || apelido.length > MAX_NAME_LENGTH) {
+    if (nome.length > MAX_NAME_LENGTH || nickname.length > MAX_NAME_LENGTH) {
       setErro(`Maximo ${MAX_NAME_LENGTH} caracteres para nome e apelido.`);
       return;
     }
@@ -48,17 +56,27 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
     }
 
     setErro("");
-    atualizarPerfil({
-      nome,
-      apelido,
-      posicao,
-      foto: novaFoto || foto,
-    });
-    setSucesso(true);
-    setTimeout(() => {
-      setSucesso(false);
-      onClose();
-    }, 1200);
+    setSalvando(true);
+    try {
+      await atualizarPerfil({
+        nome,
+        nickname,
+        posicao,
+        fotoFile: novaFotoArquivo ?? undefined,
+        removerFoto: !novaFotoArquivo && !novaFoto && !foto ? true : undefined,
+      });
+      setSucesso(true);
+      setTimeout(() => {
+        setSucesso(false);
+        onClose();
+      }, 1200);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Falha ao salvar as alterações do perfil.";
+      setErro(message);
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -118,8 +136,8 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             <input
               type="text"
               maxLength={MAX_NAME_LENGTH}
-              value={apelido}
-              onChange={(event) => setApelido(event.target.value)}
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             />
           </label>
@@ -152,10 +170,11 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             Cancelar
           </button>
           <button
-            className="px-4 py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400"
+            className="px-4 py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400 disabled:opacity-60"
             onClick={handleSalvar}
+            disabled={salvando}
           >
-            Salvar
+            {salvando ? "Salvando..." : "Salvar"}
           </button>
         </div>
       </div>

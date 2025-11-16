@@ -60,7 +60,7 @@ function PerfilCard({ atleta }: PerfilCardProps) {
     <div className="bg-[#181818] rounded-2xl shadow-lg px-6 py-8 w-full max-w-xs flex flex-col items-center mx-auto min-h-[430px]">
       <div className="profile-avatar-share mb-2">
         <Image
-          src={atleta.foto}
+          src={atleta.photoUrl}
           alt={atleta.nome}
           width={90}
           height={90}

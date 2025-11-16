@@ -58,7 +58,7 @@ export default function AdminDashboard() {
         .map((atleta) => ({
           id: atleta.id,
           nome: atleta.nome,
-          foto: atleta.foto?.trim() || AVATAR_FALLBACK,
+          photoUrl: atleta.photoUrl?.trim() || AVATAR_FALLBACK,
           jogos: atleta.jogos ?? 0,
         }))
         .sort((a, b) => b.jogos - a.jogos)
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
                   jogadoresAssiduos.map((jogador) => (
                     <div key={jogador.id ?? jogador.nome} className="flex items-center gap-3">
                       <Image
-                        src={jogador.foto}
+                        src={jogador.photoUrl}
                         alt={`Jogador assíduo ${jogador.nome} - Fut7Pro`}
                         width={32}
                         height={32}

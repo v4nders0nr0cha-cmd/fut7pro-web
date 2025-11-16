@@ -1,20 +1,22 @@
 export interface Racha {
   id: string;
   nome: string;
-  status: string;
+  slug: string;
+  subdominio: string;
+  criadoEm?: string;
+  usuarios: number;
+  partidas: number;
+  status?: string;
   plano?: string | null;
   ownerId?: string | null;
-  criadoEm?: string;
   atualizadoEm?: string;
 }
 
 export interface Metricas {
-  totalRachas: number;
-  ativos: number;
-  pendentes: number;
-  faturamentoMensal?: number;
-  totalUsuarios?: number;
-  [key: string]: number | undefined;
+  tenantCount: number;
+  userCount: number;
+  matchCount: number;
+  lastUpdated?: string | null;
 }
 
 export interface Usuario {
@@ -22,7 +24,17 @@ export interface Usuario {
   nome: string;
   email: string;
   role: string;
-  status?: string;
   criadoEm?: string;
-  ultimoAcesso?: string | null;
+  tenant?: {
+    id: string;
+    nome: string;
+  } | null;
+}
+
+export interface SystemStats {
+  apiVersion: string;
+  nodeVersion: string;
+  uptime: number;
+  environment: string;
+  memoryUsage?: Record<string, unknown>;
 }

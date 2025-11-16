@@ -28,15 +28,12 @@ export function usePublicMatches({ slug, params }: UsePublicMatchesOptions) {
   >(
     key,
     async ([, currentSlug, currentParams]) => {
-      const response = await publicMatchesApi.list({
-        slug: currentSlug,
-        ...(currentParams ?? {}),
-      });
+      const response = await publicMatchesApi.list(currentSlug, currentParams ?? undefined);
       return response.results ?? [];
     },
     {
       revalidateOnFocus: false,
-    },
+    }
   );
 
   return {
@@ -67,12 +64,12 @@ export function usePublicMatch({ slug, matchId }: UsePublicMatchOptions) {
   >(
     key,
     async ([, currentSlug, id]) => {
-      const response = await publicMatchesApi.getById(id, { slug: currentSlug });
+      const response = await publicMatchesApi.getById(currentSlug, id);
       return response.result ?? null;
     },
     {
       revalidateOnFocus: false,
-    },
+    }
   );
 
   return {

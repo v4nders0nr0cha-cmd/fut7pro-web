@@ -37,12 +37,25 @@ export type PosicaoAtleta = "Atacante" | "Meia" | "Zagueiro" | "Goleiro";
 export interface Atleta {
   id: string;
   nome: string;
+  /**
+   * Preferir `nickname` para uso em telas; campo legado mantido por compatibilidade.
+   */
   apelido?: string | null;
+  nickname?: string | null;
   slug: string;
+  /**
+   * Utilize `photoUrl` para exibi��o. Campo legado mantido por compatibilidade.
+   */
   foto: string;
+  photoUrl?: string | null;
+  birthDate?: string | null;
   posicao: PosicaoAtleta;
   status: StatusAtleta;
+  /**
+   * Utilize `isMember` como fonte da verdade; `mensalista` � legado.
+   */
   mensalista: boolean;
+  isMember: boolean;
   ultimaPartida?: string;
 
   // Soma vitalícia para assiduidade

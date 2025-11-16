@@ -47,10 +47,14 @@ export interface Time {
 export interface Jogador {
   id: string;
   nome: string;
+  apelido?: string;
+  nickname?: string;
   posicao?: string;
   numero?: number;
   foto?: string;
-  apelido?: string;
+  photoUrl?: string;
+  mensalista?: boolean;
+  isMember?: boolean;
 }
 
 // Interfaces para Eventos de Partida
@@ -167,6 +171,3 @@ export interface StateData {
 export interface ConfigData {
   [key: string]: unknown;
 }
-
-
-

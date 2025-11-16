@@ -7,10 +7,10 @@ import type { DerivedTimeDoDia, DerivedPlayer } from "@/utils/match-adapters";
 type HighlightCardProps = {
   titulo: string;
   nome?: string | null;
-  apelido?: string | null;
+  nickname?: string | null;
   posicao?: string | null;
   infoExtra?: string | null;
-  foto?: string | null;
+  photoUrl?: string | null;
 };
 
 type Props = {
@@ -35,18 +35,18 @@ function normalizePosition(raw?: string | null): DerivedPlayer["posicao"] {
 type PlayerStats = {
   id: string;
   nome: string;
-  apelido?: string | null;
+  nickname?: string | null;
   posicao: DerivedPlayer["posicao"];
   timeId: string | null;
   timeNome: string | null;
-  foto: string;
+  photoUrl: string;
   gols: number;
   assistencias: number;
 };
 
 function createStatsForPresence(
   presence: MatchPresence,
-  derived: { player: DerivedPlayer; teamId: string; timeNome: string } | undefined,
+  derived: { player: DerivedPlayer; teamId: string; timeNome: string } | undefined
 ): PlayerStats {
   const athlete = presence.athlete;
   const baseName = athlete?.name ?? "Atleta";
@@ -56,11 +56,11 @@ function createStatsForPresence(
     return {
       id: derived.player.id,
       nome: derived.player.nome || baseName,
-      apelido: derived.player.apelido ?? athlete?.nickname ?? null,
+      nickname: derived.player.nickname ?? athlete?.nickname ?? null,
       posicao: derived.player.posicao,
       timeId: derived.teamId,
       timeNome: derived.timeNome,
-      foto: derived.player.foto || photo,
+      photoUrl: derived.player.photoUrl || photo,
       gols: presence.goals ?? 0,
       assistencias: presence.assists ?? 0,
     };
@@ -70,18 +70,25 @@ function createStatsForPresence(
   return {
     id: athlete?.id ?? `${presence.id}`,
     nome: baseName,
-    apelido: athlete?.nickname ?? null,
+    nickname: athlete?.nickname ?? null,
     posicao: normalizePosition(athlete?.position),
     timeId: teamId,
     timeNome: presence.team?.name ?? null,
-    foto: photo,
+    photoUrl: photo,
     gols: presence.goals ?? 0,
     assistencias: presence.assists ?? 0,
   };
 }
 
-function HighlightCard({ titulo, nome, apelido, posicao, infoExtra, foto }: HighlightCardProps) {
-  const safePhoto = foto && foto.length > 0 ? foto : FALLBACK_PLAYER_PHOTO;
+function HighlightCard({
+  titulo,
+  nome,
+  nickname,
+  posicao,
+  infoExtra,
+  photoUrl,
+}: HighlightCardProps) {
+  const safePhoto = photoUrl && photoUrl.length > 0 ? photoUrl : FALLBACK_PLAYER_PHOTO;
 
   return (
     <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[200px] max-w-xs min-h-[240px] justify-between">
@@ -97,8 +104,8 @@ function HighlightCard({ titulo, nome, apelido, posicao, infoExtra, foto }: High
               className="w-20 h-20 rounded-full object-cover border-4 border-yellow-400"
             />
             <div className="text-white text-lg font-bold text-center">{nome}</div>
-            {apelido && (
-              <div className="text-yellow-200 text-xs text-center uppercase">{apelido}</div>
+            {nickname && (
+              <div className="text-yellow-200 text-xs text-center uppercase">{nickname}</div>
             )}
             {posicao && (
               <div className="text-xs text-zinc-300 font-semibold uppercase">{posicao}</div>
@@ -142,8 +149,7 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
         const athleteId = presence.athlete?.id;
         const lookup =
           (athleteId && derivedMaps.byId.get(athleteId)) ||
-          (presence.athlete?.name &&
-            derivedMaps.byName.get(presence.athlete.name.toLowerCase())) ||
+          (presence.athlete?.name && derivedMaps.byName.get(presence.athlete.name.toLowerCase())) ||
           undefined;
 
         const statsKey = athleteId ?? lookup?.player.id ?? presence.id;
@@ -164,8 +170,8 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
   }, [matches, derivedMaps.byId, derivedMaps.byName]);
 
   const championTeam = useMemo(
-    () => (championTeamId ? times.find((time) => time.id === championTeamId) ?? null : null),
-    [times, championTeamId],
+    () => (championTeamId ? (times.find((time) => time.id === championTeamId) ?? null) : null),
+    [times, championTeamId]
   );
 
   const atacanteDoDia = useMemo(() => {
@@ -179,14 +185,15 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
   }, [statsByPlayer]);
 
   const artilheiroGeral = useMemo(
-    () => statsByPlayer.sort((a, b) => b.gols - a.gols || b.assistencias - a.assistencias)[0] ?? null,
-    [statsByPlayer],
+    () =>
+      statsByPlayer.sort((a, b) => b.gols - a.gols || b.assistencias - a.assistencias)[0] ?? null,
+    [statsByPlayer]
   );
 
   const maestroGeral = useMemo(
     () =>
       statsByPlayer.sort((a, b) => b.assistencias - a.assistencias || b.gols - a.gols)[0] ?? null,
-    [statsByPlayer],
+    [statsByPlayer]
   );
 
   const goleiroCampeao = useMemo(() => {
@@ -198,11 +205,11 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
       stats ?? {
         id: candidate.id,
         nome: candidate.nome,
-        apelido: candidate.apelido ?? null,
+        nickname: candidate.nickname ?? null,
         posicao: candidate.posicao,
         timeId: championTeam.id,
         timeNome: championTeam.nome,
-        foto: candidate.foto,
+        photoUrl: candidate.photoUrl,
         gols: 0,
         assistencias: 0,
       }
@@ -221,17 +228,19 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
           stats ?? {
             id: player.id,
             nome: player.nome,
-            apelido: player.apelido ?? null,
+            nickname: player.nickname ?? null,
             posicao: player.posicao,
             timeId: championTeam.id,
             timeNome: championTeam.nome,
-            foto: player.foto,
+            photoUrl: player.photoUrl,
             gols: 0,
             assistencias: 0,
           }
         );
       })
-      .sort((a, b) => POSITION_PRIORITY.indexOf(a.posicao) - POSITION_PRIORITY.indexOf(b.posicao))[0];
+      .sort(
+        (a, b) => POSITION_PRIORITY.indexOf(a.posicao) - POSITION_PRIORITY.indexOf(b.posicao)
+      )[0];
 
     return best ?? null;
   }, [championTeam, statsByPlayer]);
@@ -242,32 +251,32 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
         <HighlightCard
           titulo="Atacante do Dia"
           nome={atacanteDoDia?.nome}
-          apelido={atacanteDoDia?.apelido}
+          nickname={atacanteDoDia?.nickname}
           posicao={atacanteDoDia?.posicao}
           infoExtra={atacanteDoDia ? `${atacanteDoDia.gols} gol(s)` : null}
-          foto={atacanteDoDia?.foto}
+          photoUrl={atacanteDoDia?.photoUrl}
         />
         <HighlightCard
           titulo="Meia do Dia"
           nome={meiaDoDia?.nome}
-          apelido={meiaDoDia?.apelido}
+          nickname={meiaDoDia?.nickname}
           posicao={meiaDoDia?.posicao}
           infoExtra={meiaDoDia ? `${meiaDoDia.assistencias} assistencia(s)` : null}
-          foto={meiaDoDia?.foto}
+          photoUrl={meiaDoDia?.photoUrl}
         />
         <HighlightCard
           titulo="Zagueiro do Dia"
           nome={zagueiroCampeao?.nome}
-          apelido={zagueiroCampeao?.apelido}
+          nickname={zagueiroCampeao?.nickname}
           posicao={zagueiroCampeao?.posicao}
-          foto={zagueiroCampeao?.foto}
+          photoUrl={zagueiroCampeao?.photoUrl}
         />
         <HighlightCard
           titulo="Goleiro do Dia"
           nome={goleiroCampeao?.nome}
-          apelido={goleiroCampeao?.apelido}
+          nickname={goleiroCampeao?.nickname}
           posicao={goleiroCampeao?.posicao}
-          foto={goleiroCampeao?.foto}
+          photoUrl={goleiroCampeao?.photoUrl}
         />
       </div>
       <div className="flex flex-wrap gap-5 justify-center mt-2">
@@ -299,18 +308,18 @@ export default function CardsDestaquesDiaV2({ matches, times, championTeamId }: 
         <HighlightCard
           titulo="Artilheiro do Dia"
           nome={artilheiroGeral?.nome}
-          apelido={artilheiroGeral?.apelido}
+          nickname={artilheiroGeral?.nickname}
           posicao={artilheiroGeral?.posicao}
           infoExtra={artilheiroGeral ? `${artilheiroGeral.gols} gol(s)` : null}
-          foto={artilheiroGeral?.foto}
+          photoUrl={artilheiroGeral?.photoUrl}
         />
         <HighlightCard
           titulo="Maestro do Dia"
           nome={maestroGeral?.nome}
-          apelido={maestroGeral?.apelido}
+          nickname={maestroGeral?.nickname}
           posicao={maestroGeral?.posicao}
           infoExtra={maestroGeral ? `${maestroGeral.assistencias} assistencia(s)` : null}
-          foto={maestroGeral?.foto}
+          photoUrl={maestroGeral?.photoUrl}
         />
       </div>
     </div>

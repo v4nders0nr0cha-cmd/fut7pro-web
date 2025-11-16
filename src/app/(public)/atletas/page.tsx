@@ -14,8 +14,8 @@ export default function ListaAtletasPage() {
     const termo = busca.trim().toLowerCase();
 
     const ordenados = [...athletes].sort((a, b) => {
-      if (a.mensalista && !b.mensalista) return -1;
-      if (!a.mensalista && b.mensalista) return 1;
+      if (a.isMember && !b.isMember) return -1;
+      if (!a.isMember && b.isMember) return 1;
       return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
     });
 
@@ -25,7 +25,7 @@ export default function ListaAtletasPage() {
 
     return ordenados.filter((atleta) => {
       const nome = atleta.nome.toLowerCase();
-      const apelido = (atleta.apelido ?? "").toLowerCase();
+      const apelido = (atleta.nickname ?? "").toLowerCase();
       return nome.includes(termo) || apelido.includes(termo);
     });
   }, [athletes, busca]);
@@ -92,16 +92,16 @@ export default function ListaAtletasPage() {
             >
               <div
                 className={`relative p-3 rounded-xl shadow-lg hover:shadow-yellow-400 transition-all text-center text-white bg-zinc-900 ${
-                  atleta.mensalista ? "border-2 border-green-500" : ""
+                  atleta.isMember ? "border-2 border-green-500" : ""
                 }`}
               >
-                {atleta.mensalista && (
+                {atleta.isMember && (
                   <span className="absolute top-1 left-1 text-green-400 text-[10px] font-bold uppercase z-10">
                     MENSALISTA
                   </span>
                 )}
                 <Image
-                  src={atleta.foto}
+                  src={atleta.photoUrl}
                   alt={`Foto do atleta ${atleta.nome} | Perfil do Jogador Fut7Pro`}
                   width={64}
                   height={64}

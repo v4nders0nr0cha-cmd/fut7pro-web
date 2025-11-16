@@ -4,7 +4,22 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
 import { FaTimes, FaUpload, FaUser, FaUserPlus } from "react-icons/fa";
-import type { Jogador, DadosTorneio } from "@/types/torneio";
+type Posicao = "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
+
+type Jogador = {
+  id: string;
+  nome: string;
+  avatar?: string;
+  posicao: Posicao;
+};
+
+type DadosTorneio = {
+  titulo: string;
+  descricao: string;
+  banner: string;
+  logo: string;
+  campeoes: (Jogador | null)[];
+};
 
 // MOCK LOCAL
 const MOCK_JOGADORES: Jogador[] = [

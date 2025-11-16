@@ -3,6 +3,7 @@
 
 import Head from "next/head";
 import { useNotifications } from "@/hooks/useNotifications";
+import { NOTIFICATION_CHANNEL_LABELS } from "@/constants/notification-templates";
 import type { NotificationType } from "@/types/notificacao";
 import {
   FaCheckCircle,
@@ -55,6 +56,7 @@ export default function NotificacoesPage() {
             <div className="text-center text-gray-400 py-12">Nenhuma notificação encontrada.</div>
           ) : (
             notificacoes.map((notificacao) => {
+              const canais = notificacao.metadata?.channels ?? [];
               const Icon = ICONS[notificacao.type] ?? <FaInfoCircle className="text-blue-400" />;
               const isRead = notificacao.isRead;
               return (
@@ -72,6 +74,18 @@ export default function NotificacoesPage() {
                       {notificacao.title}
                     </div>
                     <div className="text-sm text-zinc-100">{notificacao.message}</div>
+                    {canais.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {canais.map((canal) => (
+                          <span
+                            key={canal}
+                            className="px-2 py-0.5 rounded-full bg-zinc-800 text-[10px] uppercase tracking-wide text-zinc-200"
+                          >
+                            {NOTIFICATION_CHANNEL_LABELS[canal]}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500 mt-2">
                       {new Date(notificacao.createdAt).toLocaleString("pt-BR")}
                     </div>

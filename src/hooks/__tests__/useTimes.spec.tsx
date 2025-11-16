@@ -59,6 +59,6 @@ describe("useTimes", () => {
     const { result } = renderHook(() => useTimes("r1"));
 
     expect(result.current.isError).toBe(true);
-    expect(result.current.error).toBe(mockError);
+    expect(result.current.error).toBe(mockError.message);
   });
 });

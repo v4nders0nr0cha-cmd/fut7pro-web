@@ -1,14 +1,75 @@
 "use client";
 
 import useSWR from "swr";
-import { superAdminApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
-import type { Racha, Metricas, Usuario } from "@/types/superadmin";
+import type { Metricas, Racha, SystemStats, Usuario } from "@/types/superadmin";
 
-const fetcher = async (url: string) => {
+const fetchDashboard = async (url: string): Promise<Metricas> => {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error("Erro ao buscar dados de SuperAdmin");
+    throw new Error("Erro ao carregar métricas do SuperAdmin");
+  }
+  const data = await response.json();
+  return {
+    tenantCount: Number(data?.tenantCount ?? 0),
+    userCount: Number(data?.userCount ?? 0),
+    matchCount: Number(data?.matchCount ?? 0),
+    lastUpdated: data?.lastUpdated ?? null,
+  };
+};
+
+const fetchTenants = async (url: string): Promise<Racha[]> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Erro ao carregar rachas do SuperAdmin");
+  }
+  const payload = await response.json();
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+  return payload.map((tenant: any) => ({
+    id: tenant.id,
+    nome: tenant.name ?? "Racha",
+    slug: tenant.slug ?? tenant.id,
+    subdominio: tenant.subdomain ?? "",
+    criadoEm: tenant.createdAt ?? null,
+    usuarios: tenant._count?.users ?? 0,
+    partidas: tenant._count?.matches ?? 0,
+    status: tenant.status ?? tenant.subscriptionStatus ?? undefined,
+    plano: tenant.subscription?.plan ?? tenant.plano ?? null,
+    ownerId: tenant.ownerId ?? tenant.owner?.id ?? null,
+    atualizadoEm: tenant.updatedAt ?? null,
+  }));
+};
+
+const fetchUsuarios = async (url: string): Promise<Usuario[]> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Erro ao carregar usuários");
+  }
+  const payload = await response.json();
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+  return payload.map((user: any) => ({
+    id: user.id,
+    nome: user.name ?? user.email,
+    email: user.email,
+    role: user.role ?? "ADMIN",
+    criadoEm: user.createdAt ?? null,
+    tenant: user.tenant
+      ? {
+          id: user.tenant.id,
+          nome: user.tenant.name,
+        }
+      : null,
+  }));
+};
+
+const fetchSystemStats = async (url: string): Promise<SystemStats> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error("Erro ao carregar estatísticas do sistema");
   }
   return response.json();
 };
@@ -16,117 +77,74 @@ const fetcher = async (url: string) => {
 export function useSuperAdmin() {
   const apiState = useApiState();
 
-  // Rachas
   const {
     data: rachas,
     error: errorRachas,
     isLoading: isLoadingRachas,
     mutate: mutateRachas,
-  } = useSWR<Racha[]>("/api/superadmin/rachas", fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar rachas:", err);
-      }
-    },
-  });
+  } = useSWR<Racha[]>("/api/superadmin/rachas", fetchTenants);
 
-  // Métricas
   const {
     data: metricas,
     error: errorMetricas,
     isLoading: isLoadingMetricas,
     mutate: mutateMetricas,
-  } = useSWR<Metricas>("/api/superadmin/metrics", fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar métricas:", err);
-      }
-    },
-  });
+  } = useSWR<Metricas>("/api/superadmin/metrics", fetchDashboard);
 
-  // Usuários
   const {
     data: usuarios,
     error: errorUsuarios,
     isLoading: isLoadingUsuarios,
     mutate: mutateUsuarios,
-  } = useSWR<Usuario[]>("/api/superadmin/usuarios", fetcher, {
-    onError: (err) => {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar usuários:", err);
-      }
-    },
-  });
+  } = useSWR<Usuario[]>("/api/superadmin/usuarios", fetchUsuarios);
 
-  const isLoading = isLoadingRachas || isLoadingMetricas || isLoadingUsuarios;
-  const isError = !!errorRachas || !!errorMetricas || !!errorUsuarios;
+  const {
+    data: systemStats,
+    error: errorSystem,
+    isLoading: isLoadingSystem,
+    mutate: mutateSystemStats,
+  } = useSWR<SystemStats>("/api/superadmin/system-stats", fetchSystemStats);
 
-  const addRacha = async (racha: Partial<Racha>) => {
-    return apiState.handleAsync(async () => {
-      const response = await superAdminApi.getRachas();
+  const isLoading = isLoadingRachas || isLoadingMetricas || isLoadingUsuarios || isLoadingSystem;
+  const aggregatedError =
+    errorRachas?.message ??
+    errorMetricas?.message ??
+    errorUsuarios?.message ??
+    errorSystem?.message ??
+    apiState.error;
+  const isError = Boolean(aggregatedError);
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
+  const addRacha = async (_?: Partial<Racha>): Promise<Racha | null> =>
+    Promise.reject(
+      new Error("Operações de escrita para o SuperAdmin ainda não foram implementadas.")
+    );
 
-      await mutateRachas();
-      return response.data;
-    });
-  };
+  const updateRacha = async (_?: string, __?: Partial<Racha>): Promise<Racha | null> =>
+    Promise.reject(
+      new Error("Operações de escrita para o SuperAdmin ainda não foram implementadas.")
+    );
 
-  const updateRacha = async (id: string, racha: Partial<Racha>) => {
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/superadmin/rachas/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(racha),
-      });
+  const deleteRacha = async (_?: string): Promise<boolean> =>
+    Promise.reject(
+      new Error("Operações de escrita para o SuperAdmin ainda não foram implementadas.")
+    );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao atualizar racha");
-      }
+  const getRachaById = (id: string) => rachas?.find((r) => r.id === id);
 
-      await mutateRachas();
-      return response.json();
-    });
-  };
-
-  const deleteRacha = async (id: string) => {
-    return apiState.handleAsync(async () => {
-      const response = await fetch(`/api/superadmin/rachas/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao deletar racha");
-      }
-
-      await mutateRachas();
-      return response.json();
-    });
-  };
-
-  const getRachaById = (id: string) => {
-    return rachas?.find((r) => r.id === id);
-  };
-
-  const getRachasPorStatus = (status: string) => {
-    return rachas?.filter((r) => r.status === status) || [];
-  };
+  const getRachasPorStatus = (status: string) => rachas?.filter((r) => r.status === status) || [];
 
   const refreshAll = async () => {
-    await Promise.all([mutateRachas(), mutateMetricas(), mutateUsuarios()]);
+    await Promise.all([mutateRachas(), mutateMetricas(), mutateUsuarios(), mutateSystemStats()]);
   };
 
   return {
     rachas: rachas || [],
     metricas: metricas || null,
     usuarios: usuarios || [],
+    systemStats: systemStats ?? null,
     isLoading,
     isError,
-    error: apiState.error,
+    error: aggregatedError,
     isSuccess: apiState.isSuccess,
     addRacha,
     updateRacha,
@@ -137,6 +155,7 @@ export function useSuperAdmin() {
     mutateRachas,
     mutateMetricas,
     mutateUsuarios,
+    mutateSystemStats,
     reset: apiState.reset,
   };
 }

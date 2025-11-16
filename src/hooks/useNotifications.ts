@@ -18,6 +18,8 @@ type NotificationsFilters = {
   unreadOnly?: boolean;
   search?: string;
   limit?: number;
+  start?: string;
+  end?: string;
 };
 
 type UseNotificationsOptions = {
@@ -87,8 +89,18 @@ export function useNotifications(arg?: UseNotificationsArg): UseNotificationsRet
     if (filters.unreadOnly) params.isRead = false;
     if (filters.search) params.search = filters.search;
     if (typeof filters.limit === "number") params.limit = filters.limit;
+    if (filters.start) params.start = filters.start;
+    if (filters.end) params.end = filters.end;
     return params;
-  }, [filters.limit, filters.search, filters.tenantSlug, filters.type, filters.unreadOnly]);
+  }, [
+    filters.end,
+    filters.limit,
+    filters.search,
+    filters.start,
+    filters.tenantSlug,
+    filters.type,
+    filters.unreadOnly,
+  ]);
 
   const swrKey = useMemo<NotificationsKey | null>(() => {
     if (!enabled) return null;
@@ -97,15 +109,15 @@ export function useNotifications(arg?: UseNotificationsArg): UseNotificationsRet
 
   const apiState = useApiState();
 
-  const { data, error, isLoading, isValidating, mutate } = useSWR<Notification[], Error, NotificationsKey | null>(
-    swrKey,
-    async ([, params]) => notificacoesApi.list(params),
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: true,
-      ...swrConfig,
-    }
-  );
+  const { data, error, isLoading, isValidating, mutate } = useSWR<
+    Notification[],
+    Error,
+    NotificationsKey | null
+  >(swrKey, async ([, params]) => notificacoesApi.list(params), {
+    keepPreviousData: true,
+    revalidateOnFocus: true,
+    ...swrConfig,
+  });
 
   const handleMutation = useCallback(
     async <T>(fn: () => Promise<T>): Promise<T | null> => {
@@ -184,8 +196,3 @@ export function useNotifications(arg?: UseNotificationsArg): UseNotificationsRet
     reset: apiState.reset,
   };
 }
-
-
-
-
-

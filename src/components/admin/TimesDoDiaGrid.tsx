@@ -4,7 +4,7 @@ import type { Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para jogador com dados adicionais
 interface JogadorCompleto extends Jogador {
-  apelido?: string;
+  nickname?: string;
   posicao?: string;
 }
 
@@ -47,7 +47,7 @@ export default function TimesDoDiaGrid({ times }: { times: TimeCompleto[] }) {
               <li key={j.nome} className="flex justify-between items-center py-1">
                 <span className="text-white font-semibold">{j.nome}</span>
                 <span className="text-xs text-gray-400">
-                  {j.apelido} / {j.posicao}
+                  {j.nickname} / {j.posicao}
                 </span>
               </li>
             ))}

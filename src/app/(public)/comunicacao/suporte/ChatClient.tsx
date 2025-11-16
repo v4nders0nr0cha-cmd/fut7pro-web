@@ -1,87 +1,170 @@
-// src/app/comunicacao/suporte/ChatClient.tsx
 "use client";
-import { useState, useRef, useEffect } from "react";
 
-const mockMessages = [
-  {
-    id: 1,
-    autor: "admin",
-    texto: "Bem-vindo ao chat do Fut7Pro! Precisa de ajuda?",
-    data: "2025-07-17 10:01",
-  },
-  {
-    id: 2,
-    autor: "user",
-    texto: "Olá! Tenho uma dúvida sobre o próximo racha.",
-    data: "2025-07-17 10:03",
-  },
-  { id: 3, autor: "admin", texto: "Pode mandar sua dúvida!", data: "2025-07-17 10:05" },
-];
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { usePublicTenantSlug } from "@/hooks/usePublicTenantSlug";
+
+type FormState = {
+  nome: string;
+  email: string;
+  telefone: string;
+  mensagem: string;
+};
 
 export default function ChatClient() {
-  const [messages, setMessages] = useState(mockMessages);
-  const [valor, setValor] = useState("");
-  const endRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const tenantSlug = usePublicTenantSlug();
+  const [form, setForm] = useState<FormState>({
+    nome: user?.name ?? "",
+    email: user?.email ?? "",
+    telefone: "",
+    mensagem: "",
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
+    null
+  );
 
-  function sendMsg(e: React.FormEvent) {
-    e.preventDefault();
-    if (!valor.trim()) return;
-    setMessages((msgs) => [
-      ...msgs,
-      {
-        id: msgs.length + 1,
-        autor: "user",
-        texto: valor,
-        data: new Date().toLocaleString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-      },
-    ]);
-    setValor("");
-  }
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = event.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    setFeedback(null);
+  };
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!form.nome.trim() || !form.email.trim() || !form.mensagem.trim()) {
+      setFeedback({ type: "error", message: "Preencha nome, e-mail e mensagem para enviar." });
+      return;
+    }
+
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      const response = await fetch("/api/contato", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: form.nome.trim(),
+          email: form.email.trim().toLowerCase(),
+          telefone: form.telefone.trim() || undefined,
+          assunto: "suporte",
+          mensagem: form.mensagem.trim(),
+          slug: tenantSlug,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.error ?? "Falha ao enviar mensagem de suporte.");
+      }
+
+      setFeedback({
+        type: "success",
+        message: "Recebemos sua mensagem! A equipe do racha responder� por e-mail.",
+      });
+      setForm((prev) => ({ ...prev, mensagem: "" }));
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "N�o foi poss�vel enviar sua mensagem agora.";
+      setFeedback({ type: "error", message });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-2 bg-zinc-900 rounded-lg p-4 border-l-4 border-yellow-400 min-h-[360px] max-h-[440px] overflow-y-auto mb-4">
-      {messages.map((msg) => (
-        <div
-          key={msg.id}
-          className={`flex flex-col mb-2 ${msg.autor === "admin" ? "items-start" : "items-end"}`}
-        >
-          <span
-            className={`text-xs mb-1 ${msg.autor === "admin" ? "text-yellow-400" : "text-zinc-300"}`}
-          >
-            {msg.autor === "admin" ? "Admin" : "Você"}
-          </span>
-          <span
-            className={`inline-block px-3 py-2 rounded-xl text-sm ${
-              msg.autor === "admin" ? "bg-yellow-800 text-yellow-100" : "bg-zinc-700 text-zinc-100"
+    <div className="flex flex-col gap-4 bg-zinc-900 rounded-2xl p-5 border border-zinc-800 shadow-lg">
+      <section className="bg-zinc-800/80 rounded-xl p-4 border border-yellow-500/30">
+        <h2 className="text-lg font-semibold text-yellow-300 mb-1">Central de Suporte</h2>
+        <p className="text-sm text-zinc-300 leading-relaxed">
+          Precisa falar com os administradores do seu racha? Envie sua d�vida e acompanhe a resposta
+          diretamente pelo e-mail cadastrado. O time costuma responder em at� 1 dia �til.
+        </p>
+      </section>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <label className="text-sm text-zinc-300 flex flex-col gap-1">
+            Nome completo
+            <input
+              name="nome"
+              value={form.nome}
+              onChange={handleChange}
+              maxLength={80}
+              autoComplete="name"
+              className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              required
+            />
+          </label>
+          <label className="text-sm text-zinc-300 flex flex-col gap-1">
+            E-mail para retorno
+            <input
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              maxLength={100}
+              autoComplete="email"
+              className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              required
+            />
+          </label>
+        </div>
+
+        <label className="text-sm text-zinc-300 flex flex-col gap-1">
+          Telefone / WhatsApp (opcional)
+          <input
+            name="telefone"
+            value={form.telefone}
+            onChange={handleChange}
+            maxLength={30}
+            className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            placeholder="(11) 99999-0000"
+          />
+        </label>
+
+        <label className="text-sm text-zinc-300 flex flex-col gap-1">
+          Como podemos ajudar?
+          <textarea
+            name="mensagem"
+            value={form.mensagem}
+            onChange={handleChange}
+            rows={4}
+            maxLength={600}
+            className="rounded-xl bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 resize-y"
+            placeholder="Descreva sua d�vida ou problema com detalhes..."
+            required
+          />
+        </label>
+
+        {feedback && (
+          <div
+            className={`text-sm rounded-lg px-3 py-2 ${
+              feedback.type === "success"
+                ? "bg-green-900/60 border border-green-500/50 text-green-200"
+                : "bg-red-900/60 border border-red-500/50 text-red-200"
             }`}
           >
-            {msg.texto}
-          </span>
-          <span className="text-xs text-zinc-500 mt-0.5">{msg.data}</span>
-        </div>
-      ))}
-      <div ref={endRef} />
-      <form onSubmit={sendMsg} className="flex mt-3 gap-2">
-        <input
-          type="text"
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-          className="flex-1 rounded px-2 py-1 bg-zinc-800 border border-zinc-700 text-zinc-100"
-          maxLength={300}
-          placeholder="Digite sua mensagem..."
-          autoComplete="off"
-        />
+            {feedback.message}
+          </div>
+        )}
+
         <button
           type="submit"
-          className="bg-yellow-400 text-zinc-900 rounded px-4 py-1 font-bold hover:bg-yellow-500 transition"
+          disabled={submitting}
+          className="mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-black font-semibold hover:bg-yellow-300 transition disabled:opacity-60"
         >
-          Enviar
+          {submitting ? "Enviando..." : "Enviar mensagem"}
         </button>
       </form>
+
+      <p className="text-xs text-zinc-500 text-center">
+        Dica: responda os e-mails do Fut7Pro para manter o hist�rico da conversa e agilizar o
+        atendimento.
+      </p>
     </div>
   );
 }

@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import Head from "next/head";
 import { FaEye, FaTrash, FaRedo, FaPlus } from "react-icons/fa";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useNotificationTemplates } from "@/hooks/useNotificationTemplates";
 import { ModalNovaNotificacao } from "@/components/superadmin/ModalNovaNotificacao";
 import { ModalNotificacaoPreview } from "@/components/superadmin/ModalNotificacaoPreview";
-import type { NotificationType, Notificacao } from "@/types/notificacao";
+import type { CreateNotificationInput, NotificationType, Notificacao } from "@/types/notificacao";
+import { NOTIFICATION_CHANNEL_LABELS } from "@/constants/notification-templates";
 
 const TIPOS: NotificationType[] = ["ALERTA", "SISTEMA", "PERSONALIZADA"];
 
@@ -21,6 +23,7 @@ export default function SuperAdminNotificacoesPage() {
     markAllAsRead,
     markAsRead,
   } = useNotifications({ filters: { limit: 200 } });
+  const { findTemplate } = useNotificationTemplates();
 
   const [busca, setBusca] = useState("");
   const [tipo, setTipo] = useState<"todos" | NotificationType>("todos");
@@ -41,11 +44,7 @@ export default function SuperAdminNotificacoesPage() {
     });
   }, [notificacoes, busca, tipo, apenasNaoLidas]);
 
-  const handleNovaNotificacao = async (payload: {
-    title: string;
-    message: string;
-    type: NotificationType;
-  }) => {
+  const handleNovaNotificacao = async (payload: CreateNotificationInput) => {
     await createNotification(payload);
   };
 
@@ -58,6 +57,7 @@ export default function SuperAdminNotificacoesPage() {
       title: notificacao.title,
       message: notificacao.message,
       type: notificacao.type,
+      metadata: notificacao.metadata,
     });
   };
 
@@ -144,6 +144,8 @@ export default function SuperAdminNotificacoesPage() {
               <tr>
                 <th className="px-4 py-3">Título</th>
                 <th className="px-2 py-3">Tipo</th>
+                <th className="px-2 py-3">Canais</th>
+                <th className="px-2 py-3">Template</th>
                 <th className="px-2 py-3">Data/Hora</th>
                 <th className="px-2 py-3">Status</th>
                 <th className="px-2 py-3">Ações</th>
@@ -152,73 +154,96 @@ export default function SuperAdminNotificacoesPage() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-6 text-zinc-500">
+                  <td colSpan={7} className="text-center py-6 text-zinc-500">
                     Carregando notificações...
                   </td>
                 </tr>
               ) : isValidating && notificacoesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-6 text-zinc-500">
+                  <td colSpan={7} className="text-center py-6 text-zinc-500">
                     Atualizando notificações...
                   </td>
                 </tr>
               ) : notificacoesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="text-center py-6 text-zinc-500">
+                  <td colSpan={7} className="text-center py-6 text-zinc-500">
                     Nenhuma notificação encontrada.
                   </td>
                 </tr>
               ) : (
-                notificacoesFiltradas.map((n) => (
-                  <tr key={n.id} className="hover:bg-zinc-800">
-                    <td className="px-4 py-3 max-w-xs truncate">
-                      <button
-                        onClick={() => setNotificacaoPreview(n)}
-                        className="hover:underline text-yellow-400"
-                      >
-                        {n.title}
-                      </button>
-                    </td>
-                    <td className="px-2 py-3">{n.type}</td>
-                    <td className="px-2 py-3">{new Date(n.createdAt).toLocaleString("pt-BR")}</td>
-                    <td className="px-2 py-3">
-                      {n.isRead ? (
-                        <span className="text-green-400 font-semibold">Lida</span>
-                      ) : (
+                notificacoesFiltradas.map((n) => {
+                  const channelList = n.metadata?.channels ?? [];
+                  const templateName = n.metadata?.templateId
+                    ? (findTemplate(n.metadata.templateId)?.name ?? "-")
+                    : "-";
+                  return (
+                    <tr key={n.id} className="hover:bg-zinc-800">
+                      <td className="px-4 py-3 max-w-xs truncate">
                         <button
-                          className="text-yellow-300 hover:underline"
-                          onClick={() => markAsRead(n.id)}
+                          onClick={() => setNotificacaoPreview(n)}
+                          className="hover:underline text-yellow-400"
                         >
-                          Marcar como lida
+                          {n.title}
                         </button>
-                      )}
-                    </td>
-                    <td className="px-2 py-3 flex gap-2">
-                      <button
-                        onClick={() => setNotificacaoPreview(n)}
-                        aria-label="Ver mensagem"
-                        title="Ver mensagem"
-                      >
-                        <FaEye />
-                      </button>
-                      <button
-                        onClick={() => handleReenviar(n)}
-                        aria-label="Reenviar"
-                        title="Reenviar"
-                      >
-                        <FaRedo />
-                      </button>
-                      <button
-                        onClick={() => handleExcluir(n.id)}
-                        aria-label="Excluir"
-                        title="Excluir"
-                        className="text-red-500"
-                      >
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="px-2 py-3">{n.type}</td>
+                      <td className="px-2 py-3">
+                        {channelList.length === 0 ? (
+                          <span className="text-xs text-zinc-500">In-app</span>
+                        ) : (
+                          <div className="flex flex-wrap gap-1">
+                            {channelList.map((channel) => (
+                              <span
+                                key={channel}
+                                className="px-2 py-0.5 rounded-full bg-zinc-700 text-[10px] uppercase tracking-wide text-zinc-200"
+                              >
+                                {NOTIFICATION_CHANNEL_LABELS[channel]}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-2 py-3 text-sm text-zinc-300">{templateName}</td>
+                      <td className="px-2 py-3">{new Date(n.createdAt).toLocaleString("pt-BR")}</td>
+                      <td className="px-2 py-3">
+                        {n.isRead ? (
+                          <span className="text-green-400 font-semibold">Lida</span>
+                        ) : (
+                          <button
+                            className="text-yellow-300 hover:underline"
+                            onClick={() => markAsRead(n.id)}
+                          >
+                            Marcar como lida
+                          </button>
+                        )}
+                      </td>
+                      <td className="px-2 py-3 flex gap-2">
+                        <button
+                          onClick={() => setNotificacaoPreview(n)}
+                          aria-label="Ver mensagem"
+                          title="Ver mensagem"
+                        >
+                          <FaEye />
+                        </button>
+                        <button
+                          onClick={() => handleReenviar(n)}
+                          aria-label="Reenviar"
+                          title="Reenviar"
+                        >
+                          <FaRedo />
+                        </button>
+                        <button
+                          onClick={() => handleExcluir(n.id)}
+                          aria-label="Excluir"
+                          title="Excluir"
+                          className="text-red-500"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

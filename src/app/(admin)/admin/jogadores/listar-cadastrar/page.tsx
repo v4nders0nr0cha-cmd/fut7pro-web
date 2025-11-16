@@ -192,7 +192,7 @@ export default function JogadoresPage() {
                         <div className="text-sm text-gray-300">{posicaoLabel}</div>
                         <div className="text-xs mt-1 flex gap-1 items-center">
                           <StatusBadge status={jogador.status} />
-                          {(jogador.mensalista ?? jogador.isMember) && (
+                          {jogador.isMember && (
                             <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
                               Mensalista
                             </span>

@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
-import { rankingsApi } from "@/lib/api";
 import type { PositionValue } from "@/constants/positions";
 import type { PlayerRankingResponse, PlayerRankingType } from "@/types/ranking";
 
@@ -128,11 +127,42 @@ export function useAdminPlayerRankings(params: AdminPlayerRankingParams) {
     if (!params.type) {
       throw new Error("Tipo de ranking obrigatorio");
     }
-    const response = await rankingsApi.getPlayerRankings(params.type, query);
-    if (response.error || !response.data) {
-      throw new Error(response.error ?? "Falha ao carregar rankings");
+
+    const searchParams = new URLSearchParams();
+    Object.entries(query).forEach(([key, value]) => {
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed.length > 0) {
+          searchParams.set(key, trimmed);
+        }
+        return;
+      }
+
+      searchParams.set(key, String(value));
+    });
+
+    const queryString = searchParams.toString();
+    const url =
+      queryString.length > 0
+        ? `/api/admin/rankings/${params.type}?${queryString}`
+        : `/api/admin/rankings/${params.type}`;
+
+    const response = await fetch(url, { cache: "no-store" });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      const message =
+        (payload && typeof payload.error === "string" && payload.error) ||
+        response.statusText ||
+        "Falha ao carregar rankings";
+      throw new Error(message);
     }
-    return response.data;
+
+    return (await response.json()) as PlayerRankingResponse;
   }, [params.type, query]);
 
   const { data, error, isLoading, mutate, isValidating } = useSWR<PlayerRankingResponse>(
@@ -158,4 +188,3 @@ export function useAdminPlayerRankings(params: AdminPlayerRankingParams) {
     timezone: FORTALEZA_TIMEZONE,
   };
 }
-

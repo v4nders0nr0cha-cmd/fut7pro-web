@@ -384,7 +384,7 @@ export default function RankingAssiduidade() {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
                         <Image
-                          src={j.foto?.trim() || AVATAR_FALLBACK}
+                          src={j.photoUrl?.trim() || AVATAR_FALLBACK}
                           alt={`Foto do jogador ${j.nome}`}
                           width={38}
                           height={38}
@@ -392,8 +392,10 @@ export default function RankingAssiduidade() {
                         />
                         <div className="flex flex-col">
                           <span className="text-white font-semibold leading-tight">{j.nome}</span>
-                          {j.apelido && (
-                            <span className="text-xs text-cyan-200 leading-tight">{j.apelido}</span>
+                          {j.nickname && (
+                            <span className="text-xs text-cyan-200 leading-tight">
+                              {j.nickname}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -445,4 +447,3 @@ function extractFilename(disposition: string | null): string | null {
     return null;
   }
 }
-

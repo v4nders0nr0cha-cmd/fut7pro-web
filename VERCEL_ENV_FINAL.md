@@ -2,11 +2,15 @@
 
 ## 🔐 Variáveis de Ambiente
 
-| Nome                    | Onde          | Exemplo                      | Observação                                   |
-| ----------------------- | ------------- | ---------------------------- | -------------------------------------------- |
-| `BACKEND_URL`           | Vercel (Prod) | `https://api.fut7pro.com.br` | Mantém SNI correto para o proxy              |
-| `DISABLE_WEB_DIRECT_DB` | Vercel (Prod) | `true`                       | Bloqueia Prisma diretamente no Next.js       |
-| `JOGOS_DIA_PATH`        | Vercel (Prod) | `/partidas/jogos-do-dia`     | Ajuste caso o backend exponha outro endpoint |
+| Nome                      | Onde          | Exemplo                         | Observação                                   |
+| ------------------------- | ------------- | ------------------------------- | -------------------------------------------- |
+| `BACKEND_URL`             | Vercel (Prod) | `https://api.fut7pro.com.br`    | Mantém SNI correto para o proxy              |
+| `DISABLE_WEB_DIRECT_DB`   | Vercel (Prod) | `true`                          | Bloqueia Prisma diretamente no Next.js       |
+| `JOGOS_DIA_PATH`          | Vercel (Prod) | `/partidas/jogos-do-dia`        | Ajuste caso o backend exponha outro endpoint |
+| `PUBLIC_REVALIDATE_TOKEN` | Vercel (Prod) | `use-um-token-seguro`           | Autoriza POST `/api/revalidate/public`       |
+| `SUPABASE_URL`            | Vercel (Prod) | `https://<projeto>.supabase.co` | Upload de banner/logo dos torneios           |
+| `SUPABASE_SERVICE_ROLE`   | Vercel (Prod) | `service-role-key`              | Somente server, n�o usar NEXT_PUBLIC         |
+| `SUPABASE_BUCKET_PUBLIC`  | Vercel (Prod) | `public-media`                  | Bucket padr�o para banners/logos             |
 
 ## 🔄 Fluxo de Fallback (Produção)
 
@@ -29,8 +33,10 @@
 2. **Checar variáveis no Vercel**
    - `BACKEND_URL=https://api.fut7pro.com.br`
    - `DISABLE_WEB_DIRECT_DB=true`
+   - `PUBLIC_REVALIDATE_TOKEN=<token-secreto>`
    - Redeploy após ajustes.
 3. **Validar fallback**
+
    ```powershell
    curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "x-fallback-source HTTP"
    ```
@@ -87,6 +93,11 @@ curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback
 
 **Causa**: Backend segue indisponível  
 **Solução**: Validar SSL/CORS e reestabelecer o backend.
+
+### Problema: Revalidate retornando 401
+
+**Causa**: `PUBLIC_REVALIDATE_TOKEN` ausente ou divergente  
+**Solução**: Configurar o token no Vercel e reutilizar o mesmo valor nos disparos autorizados.
 
 ### Problema: Backend não responde
 

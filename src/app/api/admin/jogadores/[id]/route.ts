@@ -8,6 +8,7 @@ import {
   proxyBackend,
   forwardResponse,
 } from "../../_proxy/helpers";
+import { revalidatePlayerPages } from "../revalidate";
 
 const JOGADORES_ENDPOINT = "/api/jogadores";
 
@@ -85,6 +86,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       headers,
       body: JSON.stringify(payload),
     });
+    if (response.ok) {
+      revalidatePlayerPages(tenantSlug);
+    }
     return forwardResponse(response.status, body);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
@@ -117,6 +121,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
       method: "DELETE",
       headers,
     });
+    if (response.ok) {
+      revalidatePlayerPages(tenantSlug);
+    }
     return forwardResponse(response.status, body);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";

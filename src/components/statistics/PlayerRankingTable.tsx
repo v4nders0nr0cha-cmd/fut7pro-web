@@ -75,7 +75,7 @@ export function PlayerRankingTable({
         </thead>
         <tbody>
           {rankings.map((atleta, index) => {
-            const foto = atleta.foto?.trim() || AVATAR_FALLBACK;
+            const foto = atleta.photoUrl?.trim() || AVATAR_FALLBACK;
             const destaque = index === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
             return (
               <tr

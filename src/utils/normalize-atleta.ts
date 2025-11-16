@@ -213,12 +213,17 @@ export function normalizeAtleta(raw: unknown): Atleta | null {
 
   const conquistas = normalizeConquistas(base.conquistas ?? base.achievements ?? {});
 
-  const foto =
-    (base.foto as string) ??
-    (base.photoUrl as string) ??
-    (base.avatarUrl as string) ??
-    (base.pictureUrl as string) ??
-    FALLBACK_FOTO;
+  const rawPhoto =
+    (base.photoUrl as string) ?? (base.avatarUrl as string) ?? (base.pictureUrl as string) ?? null;
+  const foto = typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : FALLBACK_FOTO;
+  const nickname = typeof base.nickname === "string" ? base.nickname : null;
+  const isMember = Boolean(base.isMember ?? base.member ?? false);
+  const birthDate =
+    (base.birthDate as string) ??
+    (base.dataNascimento as string) ??
+    (base.data_nascimento as string) ??
+    (base.birth_date as string) ??
+    null;
 
   const totalJogos =
     toNumber(
@@ -231,12 +236,16 @@ export function normalizeAtleta(raw: unknown): Atleta | null {
   return {
     id: String(id),
     nome,
-    apelido: (base.apelido as string) ?? (base.nickname as string) ?? null,
+    apelido: nickname,
+    nickname,
     slug,
     foto,
+    photoUrl: foto,
+    birthDate,
     posicao: normalizePosicao(base.posicao ?? base.position),
     status: normalizeStatus(base.status),
-    mensalista: Boolean(base.mensalista ?? base.isMember ?? base.member ?? false),
+    mensalista: isMember,
+    isMember,
     ultimaPartida:
       (base.ultimaPartida as string) ??
       (base.lastMatchAt as string) ??

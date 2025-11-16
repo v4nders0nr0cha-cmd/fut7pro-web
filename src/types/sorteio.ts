@@ -21,14 +21,15 @@ export interface Participante {
   id: string; // id do jogador
   nome: string;
   slug: string;
-  foto: string;
+  photoUrl: string;
   posicao: Posicao;
   rankingPontos: number;
   vitorias: number;
   gols: number;
   assistencias: number;
   estrelas: AvaliacaoEstrela; // Um por racha (via API busca o correto)
-  mensalista: boolean;
+  mensalista?: boolean;
+  isMember: boolean;
   partidas?: number;
 }
 

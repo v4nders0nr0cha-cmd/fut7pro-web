@@ -137,7 +137,7 @@ function createParticipanteFromAthlete(
   const id = overrides?.id ?? athlete?.id ?? gerarIdParticipante();
   const nome = overrides?.nome ?? athlete?.name ?? "Atleta";
   const slug = overrides?.slug ?? athlete?.slug ?? athlete?.nickname ?? id;
-  const foto = overrides?.foto ?? athlete?.photoUrl ?? FALLBACK_FOTO;
+  const photoUrl = overrides?.photoUrl ?? athlete?.photoUrl ?? FALLBACK_FOTO;
   const posicaoBase = athlete?.position ?? legacyPosition ?? null;
   const posicao = overrides?.posicao ?? normalizarPosicao(posicaoBase);
 
@@ -176,18 +176,21 @@ function createParticipanteFromAthlete(
       "",
   };
 
+  const isMember = overrides?.isMember ?? athlete?.isMember ?? false;
+
   const participante: Participante = {
     id,
     nome,
     slug,
-    foto,
+    photoUrl,
     posicao,
     rankingPontos,
     vitorias,
     gols,
     assistencias,
     estrelas: baseEstrelas,
-    mensalista: overrides?.mensalista ?? athlete?.mensalista ?? athlete?.isMember ?? false,
+    isMember,
+    mensalista: isMember,
     partidas,
   };
 
@@ -195,17 +198,26 @@ function createParticipanteFromAthlete(
     return participante;
   }
 
+  const mergedEstrelas: Participante["estrelas"] = {
+    ...baseEstrelas,
+    ...(overrides.estrelas ?? {}),
+    estrelas: overrides.estrelas?.estrelas ?? baseEstrelas.estrelas,
+    jogadorId: overrides.estrelas?.jogadorId ?? baseEstrelas.jogadorId,
+    rachaId: overrides.estrelas?.rachaId ?? baseEstrelas.rachaId,
+    id: overrides.estrelas?.id ?? baseEstrelas.id,
+  };
+
+  const overrideMember = overrides.isMember ?? null;
+  const mergedIsMember = overrideMember ?? participante.isMember;
+  const resolvedPhoto = overrides.photoUrl ?? participante.photoUrl;
+
   return {
     ...participante,
     ...overrides,
-    estrelas: {
-      ...baseEstrelas,
-      ...(overrides.estrelas ?? {}),
-      estrelas: overrides.estrelas?.estrelas ?? baseEstrelas.estrelas,
-      jogadorId: overrides.estrelas?.jogadorId ?? baseEstrelas.jogadorId,
-      rachaId: overrides.estrelas?.rachaId ?? baseEstrelas.rachaId,
-      id: overrides.estrelas?.id ?? baseEstrelas.id,
-    },
+    photoUrl: resolvedPhoto,
+    isMember: mergedIsMember,
+    mensalista: mergedIsMember,
+    estrelas: mergedEstrelas,
   };
 }
 
@@ -230,7 +242,9 @@ function mergeParticipantes(base: Participante, incoming: Participante): Partici
       rachaId: incoming.estrelas.rachaId ?? base.estrelas.rachaId,
       id: incoming.estrelas.id ?? base.estrelas.id,
     },
-    mensalista: base.mensalista || incoming.mensalista,
+    photoUrl: incoming.photoUrl ?? base.photoUrl,
+    isMember: incoming.isMember ?? base.isMember,
+    mensalista: incoming.isMember ?? base.isMember,
   };
 }
 
@@ -361,9 +375,7 @@ export default function SorteioInteligenteAdmin() {
         return participantesPadrao.slice(0, maxJogadores);
       }
 
-      const mensalistas = participantesDisponiveis
-        .filter((p) => p.mensalista)
-        .slice(0, maxJogadores);
+      const mensalistas = participantesDisponiveis.filter((p) => p.isMember).slice(0, maxJogadores);
       if (mensalistas.length > 0) {
         return mensalistas;
       }

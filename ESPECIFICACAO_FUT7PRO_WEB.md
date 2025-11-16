@@ -323,6 +323,72 @@ Outras variáveis existentes no repositório devem seguir o mesmo critério: pú
 - Banner de consentimento para Analytics/Pixel com categorias granulares.
 - Páginas de Termos e Privacidade; direito de exclusão/portabilidade documentado.
 
+## Contrato de API - Grandes Torneios
+
+### Contexto
+
+Os fluxos de Grandes Torneios ainda estavam presos em mocks (`mockTorneios`, `MOCK_JOGADORES` etc.). Para ligar painel/admin e site público ao backend multi-tenant precisávamos de um contrato formal. A seguir estão os recursos que o backend Nest deve expor (com os mesmos headers `Authorization` + `x-tenant-slug` já adotados pelo restante do painel).
+
+### Entidade base `Torneio`
+
+| Campo               | Tipo                      | Observações                                                            |
+| ------------------- | ------------------------- | ---------------------------------------------------------------------- |
+| `id`                | `string`                  | UUID                                                                   |
+| `tenantId`          | `string`                  | Herdado do slug do racha                                               |
+| `nome`              | `string`                  | Ex.: “Copa dos Campeões”                                               |
+| `slug`              | `string`                  | Único por tenant (usado nas rotas públicas `/grandes-torneios/[slug]`) |
+| `ano`               | `number`                  | Inteiro (YYYY)                                                         |
+| `descricao`         | `string`                  | Markdown/HTML opcional para cards públicos                             |
+| `status`            | `rascunho` / `publicado`  | Define se aparece no site                                              |
+| `campeao`           | `string`                  | Nome do time campeão                                                   |
+| `bannerUrl`         | `string` (URL)            | Imagem hero                                                            |
+| `logoUrl`           | `string` (URL)            | Escudo/logo do campeão                                                 |
+| `dataInicio`        | `string` (ISO)            | Opcional                                                               |
+| `dataFim`           | `string` (ISO)            | Opcional                                                               |
+| `jogadoresCampeoes` | `TorneioJogadorCampeao[]` | Lista ordenada com slug/id do atleta                                   |
+| `publicadoEm`       | `string` (ISO)            | Automático quando `status=publicado`                                   |
+| `destacarNoSite`    | `boolean`                 | Se verdadeiro, aparece no card principal da página pública             |
+
+**`TorneioJogadorCampeao`**
+
+```ts
+type TorneioJogadorCampeao = {
+  athleteId: string;
+  athleteSlug: string;
+  nome: string;
+  posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
+  fotoUrl?: string | null;
+};
+```
+
+### Endpoints Admin (App Router → backend `/api/admin/torneios`)
+
+| Método   | Rota                                | Observações                                                                                                      |
+| -------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/admin/torneios?slug={tenant}` | Lista paginada (`page`, `limit`, `status`). Ordenar por `createdAt desc`.                                        |
+| `POST`   | `/api/admin/torneios`               | Cria torneio com payload `Torneio` (sem campos calculados). Deve disparar `revalidateTenantPublicPages`.         |
+| `GET`    | `/api/admin/torneios/{id}`          | Detalhes completos + `jogadoresCampeoes`.                                                                        |
+| `PUT`    | `/api/admin/torneios/{id}`          | Atualiza campos editáveis. Se `status` mudar para `publicado`, setar `publicadoEm` e revalidar páginas públicas. |
+| `DELETE` | `/api/admin/torneios/{id}`          | Remove torneio + jogador(es) vinculados.                                                                         |
+| `PATCH`  | `/api/admin/torneios/{id}/destaque` | (Opcional) marcar/desmarcar `destacarNoSite` mantendo apenas 1 destaque por tenant.                              |
+
+### Endpoints Públicos
+
+- `GET /api/public/{slug}/torneios`: retorna `{ slug, total, results: TorneioPublico[] }` contendo apenas torneios `status=publicado`. Cada item deve trazer `nome`, `slug`, `ano`, `bannerUrl`, `logoUrl`, `campeao`, `descricaoResumida` e `destacarNoSite`.
+- `GET /api/public/{slug}/torneios/{torneioSlug}`: retorna o torneio completo + `jogadoresCampeoes` já normalizados (aproveitar o mesmo normalizador usado em `usePublicAthletes`). Caso o torneio não exista ou seja rascunho, retornar 404.
+
+### Revalidação / cache
+
+- Toda operação de `POST|PUT|DELETE` deve chamar `revalidateTenantPublicPages(tenantSlug, { extraPaths: ["/{slug}/grandes-torneios", "/{slug}/grandes-torneios/{torneioSlug}"] })`.
+- As rotas públicas devem seguir o mesmo padrão das demais (`Cache-Control: no-store` → lado do proxy do Next e `diagHeaders("backend")`).
+
+### Futuras extensões
+
+- `metrics` por torneio (número de visualizações e cliques no CTA) podem ser agregados em `/api/admin/torneios/{id}/metrics`.
+- Exportação (`/api/admin/torneios/export`) para gerar PDF/CSV com vencedores e jogadores campeões.
+
+Com esse contrato, o frontend consegue remover os mocks e reaproveitar os hooks existentes (`useTorneios`, páginas públicas e o modal de cadastro no painel `admin/conquistas/grandes-torneios`).
+
 ### Observabilidade
 
 - Sentry (frontend) para erros de UI e falhas em chamadas do web.

@@ -10,6 +10,13 @@ import type {
 import type { Athlete } from "@/types/jogador";
 import type { Match } from "@/types/partida";
 import type { PlayerRankingType, PlayerRankingResponse } from "@/types/ranking";
+import type {
+  TenantConfigResponse,
+  TenantFeatureSettings,
+  ThemeCatalogItem,
+  ThemeCustomColors,
+} from "@/types/configuracoes";
+import type { ThemeKey } from "@/config/themes";
 import { getSession } from "next-auth/react";
 import { getApiBase } from "@/lib/get-api-base";
 
@@ -149,13 +156,6 @@ export const partidasApi = {
   delete: (id: string) => apiClient.delete(`/api/partidas/${id}`),
 };
 
-export const financeiroApi = {
-  getAll: (rachaId: string) => apiClient.get(`/admin/financeiro?rachaId=${rachaId}`),
-  create: (data: ApiRequestData) => apiClient.post("/admin/financeiro", data),
-  getRelatorios: (rachaId: string) =>
-    apiClient.get(`/admin/financeiro/relatorios?rachaId=${rachaId}`),
-};
-
 export const estatisticasApi = {
   getArtilheiros: (rachaId: string) =>
     apiClient.get(`/estatisticas/artilheiros?rachaId=${rachaId}`),
@@ -167,38 +167,26 @@ export const estatisticasApi = {
     apiClient.get(`/estatisticas/classificacao-times?rachaId=${rachaId}`),
 };
 
-export const superAdminApi = {
-  getRachas: () => apiClient.get("/superadmin/rachas"),
-  getMetrics: () => apiClient.get("/superadmin/metrics"),
-  getFinanceiro: () => apiClient.get("/superadmin/financeiro"),
-  getUsuarios: () => apiClient.get("/superadmin/usuarios"),
-};
-
 // API de Configurações e Temas
 export const configuracoesApi = {
   // Temas
-  getTemas: () => apiClient.get("/configuracoes/temas"),
-  getTemaByKey: (key: string) => apiClient.get(`/configuracoes/temas/${key}`),
+  getTemas: () => apiClient.get<ThemeCatalogItem[]>("/configuracoes/temas"),
+  getTemaByKey: (key: ThemeKey) => apiClient.get<ThemeCatalogItem>(`/configuracoes/temas/${key}`),
 
-  // Configurações do Racha
-  getRachaConfig: () => apiClient.get("/configuracoes/racha"),
-  updateTema: (theme: string) => apiClient.put("/configuracoes/racha/tema", { theme }),
-  updateCores: (cores: { primary?: string; secondary?: string; accent?: string }) =>
-    apiClient.put("/configuracoes/racha/cores", cores),
-  updateConfiguracoes: (settings: {
-    allowPlayerRegistration?: boolean;
-    allowMatchCreation?: boolean;
-    allowFinancialManagement?: boolean;
-    allowNotifications?: boolean;
-    allowStatistics?: boolean;
-    allowRankings?: boolean;
-  }) => apiClient.put("/configuracoes/racha/configuracoes", settings),
+  // Configuracoes do Racha
+  getRachaConfig: () => apiClient.get<TenantConfigResponse>("/configuracoes/racha"),
+  updateTema: (theme: ThemeKey) =>
+    apiClient.put<TenantConfigResponse>("/configuracoes/racha/tema", { theme }),
+  updateCores: (cores: ThemeCustomColors) =>
+    apiClient.put<TenantConfigResponse>("/configuracoes/racha/cores", cores),
+  updateConfiguracoes: (settings: Partial<TenantFeatureSettings>) =>
+    apiClient.put<TenantConfigResponse>("/configuracoes/racha/configuracoes", settings),
 
-  // Estatísticas
+  // Estatisticas
   getEstatisticas: () => apiClient.get("/configuracoes/racha/estatisticas"),
 
   // Reset
-  resetConfiguracoes: () => apiClient.post("/configuracoes/racha/reset"),
+  resetConfiguracoes: () => apiClient.post<TenantConfigResponse>("/configuracoes/racha/reset"),
 };
 
 // API de Autenticação
@@ -228,7 +216,7 @@ const NEXT_NOTIFICATIONS_ENDPOINT = "/api/admin/notificacoes";
 const JSON_CONTENT_TYPE = "application/json; charset=utf-8";
 const NEXT_JOGADORES_ENDPOINT = "/api/admin/jogadores";
 const NEXT_MATCHES_ENDPOINT = "/api/admin/partidas";
-const NEXT_PUBLIC_MATCHES_ENDPOINT = "/api/public/matches";
+const NEXT_PUBLIC_MATCHES_ENDPOINT = "/api/public";
 
 async function notificationsFetch<T>(
   input: string,
@@ -336,7 +324,7 @@ async function publicMatchesFetch<T>(input: string, init?: RequestInit): Promise
   }
 
   if (!isJson) {
-    return (undefined as unknown) as T;
+    return undefined as unknown as T;
   }
 
   return (await response.json()) as T;
@@ -393,8 +381,11 @@ function buildAdminMatchesUrl(params?: Record<string, string | number | boolean 
   return url;
 }
 
-function buildPublicMatchesUrl(params?: Record<string, string | number | boolean | undefined>) {
-  let url = NEXT_PUBLIC_MATCHES_ENDPOINT;
+function buildPublicMatchesUrl(
+  slug: string,
+  params?: Record<string, string | number | boolean | undefined>
+) {
+  let url = `${NEXT_PUBLIC_MATCHES_ENDPOINT}/${encodeURIComponent(slug)}/matches`;
   if (params) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -483,14 +474,14 @@ export const adminMatchesApi = {
 };
 
 export const publicMatchesApi = {
-  async list(params?: Record<string, string | number | boolean>) {
-    return publicMatchesFetch<PublicMatchesListResponse>(buildPublicMatchesUrl(params), {
+  async list(slug: string, params?: Record<string, string | number | boolean>) {
+    return publicMatchesFetch<PublicMatchesListResponse>(buildPublicMatchesUrl(slug, params), {
       method: "GET",
     });
   },
-  async getById(id: string, params?: Record<string, string | number | boolean>) {
+  async getById(slug: string, id: string, params?: Record<string, string | number | boolean>) {
     const query = buildQueryString(params);
-    const url = `${NEXT_PUBLIC_MATCHES_ENDPOINT}/${encodeURIComponent(id)}${query}`;
+    const url = `${NEXT_PUBLIC_MATCHES_ENDPOINT}/${encodeURIComponent(slug)}/matches/${encodeURIComponent(id)}${query}`;
     return publicMatchesFetch<PublicMatchResponse>(url, { method: "GET" });
   },
 };
@@ -575,10 +566,7 @@ function serializeRankingParams(params?: RankingQueryParams) {
 }
 
 function getPlayerRankings(type: PlayerRankingType, params?: RankingQueryParams) {
-  return apiClient.get<PlayerRankingResponse>(
-    `/rankings/${type}`,
-    serializeRankingParams(params)
-  );
+  return apiClient.get<PlayerRankingResponse>(`/rankings/${type}`, serializeRankingParams(params));
 }
 
 // API de Rankings

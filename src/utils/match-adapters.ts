@@ -4,8 +4,8 @@ import type { AthletePosition } from "@/types/jogador";
 export type DerivedPlayer = {
   id: string;
   nome: string;
-  apelido?: string | null;
-  foto: string;
+  nickname?: string | null;
+  photoUrl: string;
   posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
   status: "titular" | "substituto" | "ausente";
   gols: number;
@@ -189,8 +189,8 @@ export function buildTimesDoDiaFromMatches(matches: Match[]): DerivedTimeDoDia[]
       teamEntry.jogadores.push({
         id: jogadorId,
         nome: presence.athlete?.name ?? "Atleta",
-        apelido: presence.athlete?.nickname ?? null,
-        foto: pickPlayerPhoto(presence),
+        nickname: presence.athlete?.nickname ?? null,
+        photoUrl: pickPlayerPhoto(presence),
         posicao: normalizePosition(presence.athlete?.position as AthletePosition | string),
         status: normalizeStatus(presence.status),
         gols: presence.goals ?? 0,

@@ -8,6 +8,7 @@ import {
   proxyBackend,
   forwardResponse,
 } from "../_proxy/helpers";
+import { revalidatePlayerPages } from "./revalidate";
 
 const JOGADORES_ENDPOINT = "/api/jogadores";
 
@@ -22,7 +23,11 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParams = req.nextUrl.searchParams;
-  const tenantSlug = resolveTenantSlug(user, searchParams.get("slug"), searchParams.get("tenantSlug"));
+  const tenantSlug = resolveTenantSlug(
+    user,
+    searchParams.get("slug"),
+    searchParams.get("tenantSlug")
+  );
 
   if (!tenantSlug) {
     return jsonResponse({ error: "tenantSlug obrigatório" }, { status: 400 });
@@ -87,6 +92,9 @@ export async function POST(req: NextRequest) {
       headers,
       body: JSON.stringify(payload),
     });
+    if (response.ok) {
+      revalidatePlayerPages(tenantSlug);
+    }
     return forwardResponse(response.status, body);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";

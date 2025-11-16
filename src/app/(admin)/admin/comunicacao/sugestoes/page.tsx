@@ -1,394 +1,260 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
-import {
-  FaSearch,
-  FaRegCheckCircle,
-  FaRegTimesCircle,
-  FaPaperPlane,
-  FaRegCommentDots,
-  FaInbox,
-} from "react-icons/fa";
+import { useMemo, useState } from "react";
+import { FaLightbulb, FaPaperPlane, FaReply, FaSearch } from "react-icons/fa";
+import { DEFAULT_PUBLIC_SLUG } from "@/config/tenant-public";
+import { useAuth } from "@/hooks/useAuth";
+import { useContactMessages } from "@/hooks/useContactMessages";
 
-type StatusSugestao = "Nova" | "Respondida" | "Recusada";
+type StatusFiltro = "todos" | "novo" | "lido" | "respondido";
 
-type Sugestao = {
-  id: number;
-  autor: string;
-  data: string;
-  mensagem: string;
-  resposta?: string;
-  status: StatusSugestao;
-};
+const SUGGESTION_TOPIC = "sugestao";
 
-type SugestaoSistema = {
-  id: number;
-  data: string;
-  mensagem: string;
-  resposta?: string;
-  status: "Aguardando" | "Respondida";
-};
+function formatarData(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Data indispon�vel";
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
-// Mocks separados: Atletas x Admin->Sistema
-const sugestoesAtletas: Sugestao[] = [
-  {
-    id: 1,
-    autor: "Carlos Silva",
-    data: "15/07/2025",
-    mensagem: "Poderiam adicionar mais opções de temas visuais personalizados para cada racha.",
-    status: "Nova",
-  },
-  {
-    id: 2,
-    autor: "Marcos Souza",
-    data: "10/07/2025",
-    mensagem: "O sistema de notificações poderia ter opção de agendar envios.",
-    resposta: "Estamos avaliando essa possibilidade. Obrigado pela sugestão!",
-    status: "Respondida",
-  },
-  {
-    id: 3,
-    autor: "Ana Paula",
-    data: "03/07/2025",
-    mensagem: "Seria legal mostrar aniversariantes do mês na tela inicial.",
-    status: "Nova",
-  },
-];
+export default function SugestoesAdminPage() {
+  const { user } = useAuth();
+  const { mensagens, isLoading, isError, error } = useContactMessages({ limit: 200 });
 
-const sugestoesAdminParaSistema: SugestaoSistema[] = [
-  {
-    id: 1,
-    data: "14/07/2025",
-    mensagem: "Gostaria que o Fut7Pro tivesse integração direta com o WhatsApp.",
-    resposta:
-      "Sua sugestão foi encaminhada para nossa equipe. Assim que houver novidades, avisaremos aqui!",
-    status: "Respondida",
-  },
-  {
-    id: 2,
-    data: "05/07/2025",
-    mensagem: "Sugiro criar relatórios financeiros em formato Excel além do PDF.",
-    status: "Aguardando",
-  },
-];
-
-export default function SugestoesPage() {
-  const [busca, setBusca] = useState("");
-  const [filtroStatus, setFiltroStatus] = useState<StatusSugestao | "Todas">("Todas");
-  const [modalAberto, setModalAberto] = useState(false);
-  const [sugestaoSelecionada, setSugestaoSelecionada] = useState<Sugestao | null>(null);
-  const [resposta, setResposta] = useState("");
-  const [envioAberto, setEnvioAberto] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFiltro>("todos");
   const [novaSugestao, setNovaSugestao] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const [sucessoEnvio, setSucessoEnvio] = useState(false);
+  const [feedbackEnvio, setFeedbackEnvio] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
-  // Filtrar sugestões de atletas
-  const sugestoesAtletasFiltradas = sugestoesAtletas.filter(
-    (s) =>
-      (filtroStatus === "Todas" || s.status === filtroStatus) &&
-      (s.mensagem.toLowerCase().includes(busca.toLowerCase()) ||
-        s.autor.toLowerCase().includes(busca.toLowerCase()))
+  const sugestoes = useMemo(
+    () =>
+      mensagens.filter((mensagem) => mensagem.assunto?.toLowerCase().includes(SUGGESTION_TOPIC)),
+    [mensagens]
   );
 
-  // Filtrar sugestões enviadas ao sistema (admin > equipe Fut7Pro)
-  const sugestoesSistemaFiltradas = sugestoesAdminParaSistema.filter((s) =>
-    s.mensagem.toLowerCase().includes(busca.toLowerCase())
-  );
+  const sugestoesFiltradas = useMemo(() => {
+    const termo = search.trim().toLowerCase();
+    return sugestoes.filter((mensagem) => {
+      const atendeBusca =
+        !termo ||
+        mensagem.nome.toLowerCase().includes(termo) ||
+        mensagem.email.toLowerCase().includes(termo) ||
+        mensagem.mensagem.toLowerCase().includes(termo);
+      const atendeStatus = statusFilter === "todos" || mensagem.status === statusFilter;
+      return atendeBusca && atendeStatus;
+    });
+  }, [sugestoes, search, statusFilter]);
 
-  function abrirModalResposta(s: Sugestao) {
-    setSugestaoSelecionada(s);
-    setResposta(s.resposta ?? "");
-    setModalAberto(true);
-  }
+  const estatisticas = useMemo(() => {
+    const total = sugestoes.length;
+    const novos = sugestoes.filter((s) => s.status === "novo").length;
+    const respondidos = sugestoes.filter((s) => s.status === "respondido").length;
+    return [
+      { label: "Total", value: total },
+      { label: "Novos", value: novos },
+      { label: "Respondidos", value: respondidos },
+    ];
+  }, [sugestoes]);
 
-  function enviarResposta() {
-    setModalAberto(false);
-    setSugestaoSelecionada(null);
-    setResposta("");
-    // Aqui entraria a integração com API de sugestões.
-  }
+  const handleEnviarSugestaoAoFut7Pro = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!novaSugestao.trim()) {
+      setFeedbackEnvio({ type: "error", message: "Descreva a sugest�o antes de enviar." });
+      return;
+    }
 
-  function abrirEnvioSugestao() {
-    setEnvioAberto(true);
-    setNovaSugestao("");
-    setSucessoEnvio(false);
-  }
-
-  async function enviarSugestao() {
     setEnviando(true);
-    setTimeout(() => {
-      setEnviando(false);
-      setSucessoEnvio(true);
+    setFeedbackEnvio(null);
+    try {
+      const response = await fetch("/api/contato", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nome: user?.name ?? "Administrador Fut7Pro",
+          email: user?.email ?? "admin@fut7pro.com",
+          assunto: "sugestao-admin",
+          mensagem: novaSugestao.trim(),
+          slug: DEFAULT_PUBLIC_SLUG,
+        }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result?.error ?? "Falha ao enviar sugest�o para o Fut7Pro.");
+      }
+
+      setFeedbackEnvio({
+        type: "success",
+        message: "Sugest�o enviada para o Fut7Pro! Nossa equipe responder� por e-mail.",
+      });
       setNovaSugestao("");
-    }, 900);
-  }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "N�o conseguimos enviar sua sugest�o agora.";
+      setFeedbackEnvio({ type: "error", message });
+    } finally {
+      setEnviando(false);
+    }
+  };
 
   return (
     <>
       <Head>
-        <title>Sugestões e Feedback | Fut7Pro Admin</title>
+        <title>Sugest�es e Feedback | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Receba sugestões dos jogadores e envie feedback direto à equipe Fut7Pro."
+          content="Acompanhe as sugest�es enviadas pelos atletas e envie feedbacks diretamente para o time do Fut7Pro."
         />
-        <meta name="keywords" content="Fut7, racha, sugestões, feedback, SaaS, admin" />
       </Head>
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
-          <FaRegCommentDots className="text-2xl" /> Sugestões e Feedback
-        </h1>
-        <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow text-sm animate-fadeIn">
-          <b className="text-yellow-300">Canal profissional de sugestões para evoluir o Fut7Pro!</b>
-          <br />
-          Veja sugestões enviadas pelos jogadores do seu racha <b>e</b> acompanhe sugestões que você
-          enviou para a equipe do Fut7Pro.
-          <br />
-          Assim você engaja seu grupo e ainda contribui para evolução do sistema!
+
+      <main className="max-w-6xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-10 flex flex-col gap-8">
+        <div className="flex flex-col gap-3">
+          <h1 className="text-3xl font-bold text-yellow-400 flex items-center gap-2">
+            <FaLightbulb /> Sugest�es e Feedback
+          </h1>
+          <p className="text-sm text-zinc-300 max-w-3xl">
+            Monitoramos as ideias enviadas pelos atletas e guiamos as pr�ximas melhorias do Fut7Pro.
+            Use o painel para responder rapidamente e registre sugest�es para nossa equipe.
+          </p>
         </div>
 
-        {/* Barra superior: busca + filtros + botão de sugestão */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center gap-3">
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar por palavra, autor ou data…"
-            className="flex-1 bg-[#181818] border border-yellow-400 rounded px-4 py-2 text-yellow-300 font-bold outline-none"
-            autoComplete="off"
-          />
+        <div className="flex flex-col md:flex-row gap-3 md:items-stretch">
+          <label className="relative flex-1">
+            <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por nome, e-mail ou mensagem"
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </label>
           <select
-            className="bg-[#181818] border border-yellow-400 rounded px-3 py-2 text-yellow-300 font-bold"
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value as StatusSugestao | "Todas")}
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as StatusFiltro)}
+            className="w-full md:w-48 rounded-xl bg-zinc-900 border border-zinc-800 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           >
-            <option value="Todas">Todas</option>
-            <option value="Nova">Novas</option>
-            <option value="Respondida">Respondidas</option>
-            <option value="Recusada">Recusadas</option>
+            <option value="todos">Todos os status</option>
+            <option value="novo">Novos</option>
+            <option value="lido">Lidos</option>
+            <option value="respondido">Respondidos</option>
           </select>
-          <button
-            onClick={abrirEnvioSugestao}
-            className="bg-yellow-400 hover:bg-yellow-500 text-[#181818] font-bold px-4 py-2 rounded flex items-center gap-2 transition shadow"
-          >
-            <FaPaperPlane /> Enviar sugestão à equipe Fut7Pro
-          </button>
         </div>
 
-        {/* SUGESTÕES DOS ATLETAS */}
-        <div className="mb-12">
-          <div className="font-bold text-lg text-yellow-300 mb-2 mt-6">
-            Sugestões Recebidas dos Atletas
-          </div>
-          {sugestoesAtletasFiltradas.length === 0 && (
-            <div className="text-gray-400 py-12 flex flex-col items-center">
-              <FaInbox className="text-5xl mb-3" />
-              Nenhuma sugestão encontrada para este filtro.
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {estatisticas.map((stat) => (
+            <div key={stat.label} className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
+              <p className="text-xs uppercase tracking-widest text-zinc-500">{stat.label}</p>
+              <p className="text-3xl font-bold text-yellow-300">{stat.value}</p>
             </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {sugestoesAtletasFiltradas.map((s) => (
-              <div
-                key={s.id}
-                className={`bg-[#232323] rounded-lg p-4 shadow border-l-4 ${
-                  s.status === "Respondida"
-                    ? "border-green-500"
-                    : s.status === "Recusada"
-                      ? "border-red-500"
-                      : "border-yellow-400"
-                } animate-fadeIn`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <div className="font-bold text-yellow-300">
-                    {s.autor}
-                    <span className="ml-2 text-xs text-gray-400 font-normal">{s.data}</span>
-                  </div>
-                  <div>
-                    {s.status === "Respondida" && (
-                      <span className="inline-flex items-center px-2 py-1 rounded bg-green-800 text-green-300 text-xs font-bold gap-1">
-                        <FaRegCheckCircle /> Respondida
-                      </span>
-                    )}
-                    {s.status === "Recusada" && (
-                      <span className="inline-flex items-center px-2 py-1 rounded bg-red-800 text-red-300 text-xs font-bold gap-1">
-                        <FaRegTimesCircle /> Recusada
-                      </span>
-                    )}
-                    {s.status === "Nova" && (
-                      <span className="inline-flex items-center px-2 py-1 rounded bg-yellow-800 text-yellow-300 text-xs font-bold gap-1">
-                        <FaInbox /> Nova
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-gray-200 text-sm mb-2">{s.mensagem}</div>
-                {s.resposta && (
-                  <div className="bg-[#181818] text-green-400 text-sm rounded p-2 mb-2">
-                    <b>Resposta:</b> {s.resposta}
-                  </div>
-                )}
-                <div className="flex gap-2 mt-2">
-                  {s.status === "Nova" && (
-                    <>
-                      <button
-                        className="bg-green-700 hover:bg-green-600 text-white font-bold px-3 py-1 rounded text-xs"
-                        onClick={() => abrirModalResposta(s)}
-                      >
-                        Responder
-                      </button>
-                      <button
-                        className="bg-red-700 hover:bg-red-600 text-white font-bold px-3 py-1 rounded text-xs"
-                        onClick={() => alert("Marcar como recusada (conecte API real).")}
-                      >
-                        Recusar
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+          ))}
+        </section>
 
-        {/* SUGESTÕES ENVIADAS AO SISTEMA FUT7PRO */}
-        <div className="mb-12">
-          <div className="font-bold text-lg text-yellow-300 mb-2 mt-6">
-            Sugestões Enviadas para o Fut7Pro (Equipe/SuperAdmin)
-          </div>
-          {sugestoesSistemaFiltradas.length === 0 && (
-            <div className="text-gray-400 py-8 flex flex-col items-center">
-              <FaInbox className="text-5xl mb-3" />
-              Você ainda não enviou nenhuma sugestão para a equipe Fut7Pro.
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {sugestoesSistemaFiltradas.map((s) => (
-              <div
-                key={s.id}
-                className={`bg-[#232323] rounded-lg p-4 shadow border-l-4 ${s.status === "Respondida" ? "border-green-500" : "border-yellow-400"} animate-fadeIn`}
-              >
-                <div className="flex justify-between items-start mb-1">
-                  <div className="font-bold text-yellow-200">
-                    Você
-                    <span className="ml-2 text-xs text-gray-400 font-normal">{s.data}</span>
-                  </div>
-                  <div>
-                    {s.status === "Respondida" && (
-                      <span className="inline-flex items-center px-2 py-1 rounded bg-green-800 text-green-300 text-xs font-bold gap-1">
-                        <FaRegCheckCircle /> Respondida
-                      </span>
-                    )}
-                    {s.status === "Aguardando" && (
-                      <span className="inline-flex items-center px-2 py-1 rounded bg-yellow-800 text-yellow-300 text-xs font-bold gap-1">
-                        <FaInbox /> Aguardando resposta
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="text-gray-200 text-sm mb-2">{s.mensagem}</div>
-                {s.resposta && (
-                  <div className="bg-[#181818] text-green-400 text-sm rounded p-2 mb-2">
-                    <b>Resposta da equipe Fut7Pro:</b> {s.resposta}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Modal de resposta rápida */}
-        {modalAberto && sugestaoSelecionada && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-[#222] rounded-lg max-w-md w-full p-6 shadow-lg border border-yellow-500">
-              <h2 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
-                <FaRegCommentDots /> Responder Sugestão
-              </h2>
-              <div className="text-gray-200 mb-2 text-sm">{sugestaoSelecionada.mensagem}</div>
-              <textarea
-                className="w-full min-h-[90px] p-2 rounded bg-[#181818] text-gray-100 border border-yellow-400 mb-2"
-                value={resposta}
-                onChange={(e) => setResposta(e.target.value)}
-                placeholder="Digite sua resposta aqui..."
-              />
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setModalAberto(false)}
-                  className="bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={enviarResposta}
-                  className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-1 rounded"
-                >
-                  Enviar resposta
-                </button>
-              </div>
-            </div>
+        {isError && (
+          <div className="bg-red-900/40 border border-red-700 rounded-xl text-red-200 px-4 py-3 text-sm">
+            {error ?? "Falha ao carregar as sugest�es. Tente novamente em instantes."}
           </div>
         )}
 
-        {/* Modal de envio de sugestão */}
-        {envioAberto && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
-            <div className="bg-[#232323] rounded-lg max-w-md w-full p-6 shadow-lg border border-yellow-500">
-              <h2 className="font-bold text-yellow-400 mb-2 flex items-center gap-2">
-                <FaPaperPlane /> Enviar Sugestão à Equipe Fut7Pro
-              </h2>
-              <div className="text-gray-200 mb-3 text-sm">
-                Mande uma ideia ou sugestão de melhoria para o Fut7Pro! Seja objetivo, a equipe irá
-                analisar e pode implementar nas próximas versões.
-              </div>
-              {sucessoEnvio ? (
-                <div className="bg-green-900 text-green-300 rounded p-3 text-center">
-                  <b>Sugestão enviada com sucesso!</b>
-                  <br />
-                  Agradecemos sua colaboração, admin!
-                  <button
-                    className="mt-4 bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
-                    onClick={() => setEnvioAberto(false)}
+        <section className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-4 space-y-4">
+            <h2 className="text-xl font-semibold text-yellow-300">Sugest�es dos atletas</h2>
+            {isLoading ? (
+              <p className="text-zinc-400 text-sm">Carregando sugest�es...</p>
+            ) : sugestoesFiltradas.length === 0 ? (
+              <p className="text-zinc-400 text-sm">
+                Nenhuma sugest�o encontrada para o filtro aplicado.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {sugestoesFiltradas.map((sugestao) => (
+                  <li
+                    key={sugestao.id}
+                    className="bg-zinc-800 rounded-xl border border-zinc-700 p-4 space-y-2"
                   >
-                    Fechar
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <textarea
-                    className="w-full min-h-[90px] p-2 rounded bg-[#181818] text-gray-100 border border-yellow-400 mb-2"
-                    value={novaSugestao}
-                    onChange={(e) => setNovaSugestao(e.target.value)}
-                    placeholder="Digite sua sugestão para o Fut7Pro..."
-                  />
-                  <div className="flex justify-end gap-3">
-                    <button
-                      onClick={() => setEnvioAberto(false)}
-                      className="bg-gray-700 text-gray-200 px-4 py-1 rounded hover:bg-gray-600"
-                      disabled={enviando}
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={enviarSugestao}
-                      className="bg-yellow-400 hover:bg-yellow-500 text-[#181818] font-bold px-4 py-1 rounded"
-                      disabled={enviando || novaSugestao.length < 8}
-                    >
-                      {enviando ? "Enviando..." : "Enviar Sugestão"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-sm text-zinc-300">
+                        <span className="font-semibold text-white">{sugestao.nome}</span>
+                        <span>{formatarData(sugestao.dataEnvio)}</span>
+                      </div>
+                      <span className="text-xs text-yellow-400">{sugestao.email}</span>
+                    </div>
+                    <p className="text-sm text-zinc-100 whitespace-pre-wrap">{sugestao.mensagem}</p>
+                    <div className="flex items-center justify-between text-xs text-zinc-400">
+                      <span>Status: {sugestao.status}</span>
+                      <button
+                        className="inline-flex items-center gap-1 text-yellow-300 hover:text-white transition"
+                        onClick={() =>
+                          window.open(
+                            `mailto:${sugestao.email}?subject=Resposta%20-%20Sugestao&body=${encodeURIComponent(
+                              `Ol� ${sugestao.nome},\n\n`
+                            )}`,
+                            "_blank"
+                          )
+                        }
+                      >
+                        <FaReply /> Responder
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
-      </div>
-      <style>{`
-                .animate-fadeIn { animation: fadeIn 0.25s; }
-                @keyframes fadeIn {
-                    from { opacity: 0; transform: translateY(10px); }
-                    to { opacity: 1; transform: none; }
-                }
-            `}</style>
+
+          <div className="bg-zinc-900 rounded-2xl border border-yellow-500/30 p-4 space-y-3 h-fit">
+            <h3 className="text-lg font-semibold text-yellow-300 flex items-center gap-2">
+              <FaPaperPlane /> Envie sugest�es ao Fut7Pro
+            </h3>
+            <p className="text-sm text-zinc-300">
+              Encontrou uma oportunidade para evoluirmos o produto? Conte sua ideia para nossa
+              equipe de produto e receba novidades diretamente no seu e-mail.
+            </p>
+            <form onSubmit={handleEnviarSugestaoAoFut7Pro} className="flex flex-col gap-3">
+              <textarea
+                value={novaSugestao}
+                onChange={(event) => {
+                  setNovaSugestao(event.target.value);
+                  setFeedbackEnvio(null);
+                }}
+                rows={5}
+                maxLength={600}
+                placeholder="Descreva a melhoria, integra��o ou automa��o que ajudaria o seu racha."
+                className="rounded-xl bg-zinc-950 border border-zinc-800 text-white px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                required
+              />
+              {feedbackEnvio && (
+                <div
+                  className={`text-xs rounded-lg px-3 py-2 ${
+                    feedbackEnvio.type === "success"
+                      ? "bg-green-900/40 border border-green-500/40 text-green-200"
+                      : "bg-red-900/40 border border-red-500/40 text-red-200"
+                  }`}
+                >
+                  {feedbackEnvio.message}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={enviando}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-black font-semibold hover:bg-yellow-300 transition disabled:opacity-60"
+              >
+                {enviando ? "Enviando..." : "Enviar para o Fut7Pro"}
+              </button>
+            </form>
+          </div>
+        </section>
+      </main>
     </>
   );
 }

@@ -104,7 +104,7 @@ export default function PerfilAtletaPage() {
         <div className="flex flex-col md:flex-row gap-8 mt-8 mb-10 w-full max-w-2xl md:mx-auto">
           <div className="flex-shrink-0">
             <Image
-              src={athlete.foto}
+              src={athlete.photoUrl}
               alt={`Foto de ${athlete.nome}`}
               width={160}
               height={160}
@@ -113,9 +113,9 @@ export default function PerfilAtletaPage() {
           </div>
           <div className="flex flex-col items-center md:items-start text-center md:text-left flex-1">
             <h2 className="text-4xl font-bold text-yellow-400 mb-1">{athlete.nome}</h2>
-            {athlete.apelido && (
+            {athlete.nickname && (
               <p className="text-yellow-300 mb-1 text-lg">
-                Apelido: <span className="font-semibold">{athlete.apelido}</span>
+                Apelido: <span className="font-semibold">{athlete.nickname}</span>
               </p>
             )}
             <p className="text-base">
@@ -128,7 +128,7 @@ export default function PerfilAtletaPage() {
               Status: <span className="font-semibold">{athlete.status}</span>
             </p>
             <p className="text-base mt-1">
-              {athlete.mensalista ? (
+              {athlete.isMember ? (
                 <span className="text-green-400 font-bold">💳 MENSALISTA ATIVO</span>
               ) : (
                 <span className="text-zinc-400 font-bold">NÃO É MENSALISTA</span>

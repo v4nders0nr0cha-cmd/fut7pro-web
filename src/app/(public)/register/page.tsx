@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useRacha } from "@/context/RachaContext";
-import { rachaMap } from "@/config/rachaMap";
 import { rachaConfig } from "@/config/racha.config";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { POSITION_OPTIONS, type PositionValue } from "@/constants/positions";
@@ -15,8 +14,8 @@ export default function RegisterPage() {
   const { rachaId } = useRacha();
   const { racha: rachaSelecionado } = useRachaPublic(rachaId);
   const nomeDoRacha = useMemo(
-    () => rachaSelecionado?.nome ?? rachaMap[rachaId]?.nome ?? rachaConfig.nome ?? "Fut7Pro",
-    [rachaId, rachaSelecionado?.nome]
+    () => rachaSelecionado?.nome ?? rachaConfig.nome ?? "Fut7Pro",
+    [rachaSelecionado?.nome]
   );
   const tenantSlug = useMemo(
     () => rachaSelecionado?.slug?.trim() || DEFAULT_TENANT_SLUG,
@@ -24,7 +23,7 @@ export default function RegisterPage() {
   );
 
   const [nome, setNome] = useState("");
-  const [apelido, setApelido] = useState("");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [posicao, setPosicao] = useState<PositionValue>("meia");
   const [mensagem, setMensagem] = useState("");
@@ -40,7 +39,7 @@ export default function RegisterPage() {
       return;
     }
 
-    if (apelido.trim().length < 2) {
+    if (nickname.trim().length < 2) {
       setFeedback({ type: "error", message: "Informe um apelido com pelo menos 2 letras." });
       return;
     }
@@ -62,7 +61,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           slug: tenantSlug,
           nome: nome.trim(),
-          apelido: apelido.trim(),
+          nickname: nickname.trim(),
           email: emailTrimmed,
           posicao,
           mensagem: mensagem.trim() || undefined,
@@ -85,7 +84,7 @@ export default function RegisterPage() {
           "Recebemos sua solicitação! Nossa equipe irá analisá-la e você será avisado por e-mail assim que for aprovada.",
       });
       setNome("");
-      setApelido("");
+      setNickname("");
       setEmail("");
       setMensagem("");
       setPosicao("meia");
@@ -149,8 +148,8 @@ export default function RegisterPage() {
             <input
               id="apelido"
               type="text"
-              value={apelido}
-              onChange={(event) => setApelido(event.target.value)}
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
               maxLength={40}
               required
               placeholder="Apelido preferido"

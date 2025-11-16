@@ -18,7 +18,6 @@ export default function PreviewBanner({ fotoBanner, jogadores, data, onPublicar 
       <div className="w-full flex flex-col md:flex-row items-center gap-4">
         <div className="flex-shrink-0 w-56 h-36 rounded-2xl bg-zinc-700 overflow-hidden shadow-lg flex items-center justify-center border-2 border-yellow-400 mb-3 md:mb-0">
           {fotoBanner ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={fotoBanner}
               alt="Banner Time Campeão do Dia"

@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const base = getApiBase();
   const url = new URL(`${base}${NOTIFICATIONS_ENDPOINT}`);
 
-  const allowedParams = ["type", "isRead", "limit", "search"];
+  const allowedParams = ["type", "isRead", "limit", "search", "start", "end"];
   for (const param of allowedParams) {
     const value = searchParams.get(param);
     if (value !== null && value !== "") {

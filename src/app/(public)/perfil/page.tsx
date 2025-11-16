@@ -176,10 +176,28 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
-  const { usuario } = usePerfil();
+  const { usuario, isLoading, error } = usePerfil();
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-fundo text-white">
+        <div className="animate-spin h-12 w-12 rounded-full border-2 border-yellow-400 border-t-transparent" />
+        <p className="mt-4 text-sm text-zinc-400">Carregando perfil...</p>
+      </div>
+    );
+  }
+
+  if (!usuario) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center text-white px-4">
+        <p className="text-xl font-semibold text-red-300 mb-2">Perfil indispon�vel</p>
+        <p className="text-sm text-zinc-400">{error ?? "Tente novamente mais tarde."}</p>
+      </div>
+    );
+  }
 
   const stats =
     filtroStats === "temporada"
@@ -208,7 +226,7 @@ export default function PerfilUsuarioPage() {
         {/* Dados do usuário logado */}
         <div className="flex-1 flex flex-col md:flex-row gap-6 items-center">
           <Image
-            src={usuario.foto}
+            src={usuario.photoUrl}
             alt={`Foto de ${usuario.nome}`}
             width={160}
             height={160}
@@ -217,7 +235,9 @@ export default function PerfilUsuarioPage() {
 
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-bold mb-1">{usuario.nome}</h2>
-            {usuario.apelido && <p className="text-yellow-300 mb-1">Apelido: {usuario.apelido}</p>}
+            {usuario.nickname && (
+              <p className="text-yellow-300 mb-1">Apelido: {usuario.nickname}</p>
+            )}
             <p className="text-sm">Posição: {usuario.posicao}</p>
             <p
               className="text-sm text-zinc-300"
@@ -226,7 +246,7 @@ export default function PerfilUsuarioPage() {
               Status: {usuario.status}
             </p>
             <p className="text-sm mt-1">
-              {usuario.mensalista ? (
+              {usuario.isMember ? (
                 <span className="text-green-400 font-semibold">💰 MENSALISTA ATIVO</span>
               ) : (
                 <span className="text-zinc-400">NÃO É MENSALISTA</span>
@@ -247,11 +267,11 @@ export default function PerfilUsuarioPage() {
         </div>
         {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
         <div className="w-full md:w-auto flex-shrink-0 flex justify-center">
-          {usuario.mensalista ? (
+          {usuario.isMember ? (
             <CartaoMensalistaPremium
               nome={usuario.nome}
               logoRacha="/images/logos/logo_fut7pro.png"
-              ativo={usuario.mensalista}
+              ativo={usuario.isMember}
             />
           ) : !pedidoEnviado ? (
             <CardSolicitarMensalista

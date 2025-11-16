@@ -208,7 +208,7 @@ function AdicionarGolAssist({
             <option value="">Selecione...</option>
             {jogadores.map((j, i) => (
               <option key={i} value={j.nome}>
-                {j.nome} ({j.apelido} / {j.posicao})
+                {j.nome} ({j.nickname} / {j.posicao})
               </option>
             ))}
             <option value="faltou">JOGADOR FALTOU, NÃO CONTABILIZAR PARA O SUBSTITUTO</option>
@@ -224,7 +224,7 @@ function AdicionarGolAssist({
             <option value="">Selecione...</option>
             {jogadores.map((j, i) => (
               <option key={i} value={j.nome}>
-                {j.nome} ({j.apelido} / {j.posicao})
+                {j.nome} ({j.nickname} / {j.posicao})
               </option>
             ))}
             <option value="faltou">JOGADOR FALTOU, NÃO CONTABILIZAR PARA O SUBSTITUTO</option>

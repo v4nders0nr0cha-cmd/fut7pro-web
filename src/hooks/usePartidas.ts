@@ -34,7 +34,7 @@ function resolveTeamSide(match: Match, presence: MatchPresence): "A" | "B" {
 
 function buildEventos(
   match: Match,
-  presences: MatchPresence[],
+  presences: MatchPresence[]
 ): { gols: PartidaGol[]; assistencias: PartidaAssistencia[] } {
   const gols: PartidaGol[] = [];
   const assistencias: PartidaAssistencia[] = [];
@@ -79,7 +79,7 @@ function resolveTeamInfo(match: Match, side: "A" | "B") {
   };
 }
 
-function mapMatchToPartida(match: Match): Partida {
+export function mapMatchToPartida(match: Match): Partida {
   const teamA = resolveTeamInfo(match, "A");
   const teamB = resolveTeamInfo(match, "B");
   const eventos = buildEventos(match, match.presences);

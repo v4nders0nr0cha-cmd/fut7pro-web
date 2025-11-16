@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { revalidateTag } from "next/cache";
 import { authOptions, type AuthSession } from "@/server/auth/options";
 import { getApiBase } from "@/lib/get-api-base";
+import { revalidateTenantPublicPages } from "@/lib/revalidate-public";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +71,9 @@ async function revalidateSponsors(tenantSlug: string | null) {
   try {
     revalidateTag(`sponsors:${tenantSlug}`);
     revalidateTag(`footer:${tenantSlug}`);
+    revalidateTenantPublicPages(tenantSlug, {
+      extraPaths: ["", "/sobre-nos", "/sobre-nos/nossos-parceiros"],
+    });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.warn("Falha ao revalidar tags de patrocinadores:", error);

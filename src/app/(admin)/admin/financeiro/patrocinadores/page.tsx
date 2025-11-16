@@ -9,7 +9,12 @@ import ToggleVisibilidadePublica from "./components/ToggleVisibilidadePublica";
 import { useAuth } from "@/hooks/useAuth";
 import { usePatrocinadores } from "@/hooks/usePatrocinadores";
 import { useSponsorMetrics } from "@/hooks/useSponsorMetrics";
-import type { Patrocinador, SponsorTier, SponsorMetricStatus } from "@/types/patrocinador";
+import type {
+  Patrocinador,
+  SponsorTier,
+  SponsorMetricStatus,
+  SponsorMetricsAlert,
+} from "@/types/patrocinador";
 import { useNotification } from "@/context/NotificationContext";
 import {
   FaBullseye,
@@ -17,6 +22,8 @@ import {
   FaCheckCircle,
   FaDownload,
   FaExclamationTriangle,
+  FaMoneyBillWave,
+  FaPercent,
   FaSpinner,
 } from "react-icons/fa";
 import {
@@ -43,6 +50,15 @@ const percentFormatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
+const currencyFormatter = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  minimumFractionDigits: 2,
+});
+const decimalFormatter = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 const STATUS_META: Record<SponsorMetricStatus, { label: string; color: string; badge: string }> = {
   on_track: { label: "No alvo", color: "text-green-400", badge: "bg-green-500/10" },
@@ -66,6 +82,24 @@ function formatNumber(value: number) {
 function formatPercent(value: number) {
   return percentFormatter.format(Number.isFinite(value) ? value : 0);
 }
+
+function formatCurrency(value: number) {
+  return currencyFormatter.format(Number.isFinite(value) ? value : 0);
+}
+
+function formatDecimal(value: number) {
+  return decimalFormatter.format(Number.isFinite(value) ? value : 0);
+}
+
+const ROI_ALERT_LEVELS = {
+  attention: 1.5,
+  critical: 0.75,
+};
+
+const CPC_ALERT_LEVELS = {
+  attention: 6,
+  critical: 10,
+};
 
 function buildTrendLabel(bucket: string) {
   const date = new Date(bucket);
@@ -146,7 +180,6 @@ export default function PaginaPatrocinadores() {
 
   const topSponsors = useMemo(() => (metrics ? metrics.sponsors.slice(0, 5) : []), [metrics]);
   const tierResumo = metrics?.tiers ?? [];
-  const alerts = metrics?.alerts ?? [];
   const lastUpdated = metrics?.generatedAt
     ? new Date(metrics.generatedAt).toLocaleString("pt-BR")
     : null;
@@ -208,6 +241,72 @@ export default function PaginaPatrocinadores() {
       ]
     : [];
 
+  const sponsorFinancialRows = useMemo(() => {
+    if (!metrics) return [];
+    const patrocinadorMap = new Map(patrocinadores.map((p) => [p.id, p]));
+    return metrics.sponsors
+      .map((sponsor) => {
+        const details = patrocinadorMap.get(sponsor.sponsorId);
+        const investment = details?.value ?? 0;
+        const cpc = investment > 0 && sponsor.clicks > 0 ? investment / sponsor.clicks : null;
+        const roi = investment > 0 && sponsor.clicks > 0 ? sponsor.clicks / investment : null;
+        const cpm =
+          investment > 0 && sponsor.impressions > 0
+            ? (investment / sponsor.impressions) * 1000
+            : null;
+        return {
+          ...sponsor,
+          investment,
+          cpc,
+          roi,
+          cpm,
+          tier: details?.tier ?? sponsor.tier,
+        };
+      })
+      .sort((a, b) => (b.roi ?? 0) - (a.roi ?? 0));
+  }, [metrics, patrocinadores]);
+
+  const derivedAlerts = useMemo<SponsorMetricsAlert[]>(() => {
+    const items: SponsorMetricsAlert[] = [];
+    sponsorFinancialRows.forEach((row) => {
+      if (row.roi !== null && row.roi < ROI_ALERT_LEVELS.attention) {
+        items.push({
+          type: row.roi < ROI_ALERT_LEVELS.critical ? "critical" : "warning",
+          message: `ROI do patrocinador ${row.name} esta em ${formatDecimal(row.roi)} cliques/R$ (abaixo do recomendado).`,
+          sponsorId: row.sponsorId,
+          tier: row.tier,
+        });
+      }
+      if (row.cpc !== null && row.cpc > CPC_ALERT_LEVELS.attention) {
+        items.push({
+          type: row.cpc > CPC_ALERT_LEVELS.critical ? "critical" : "warning",
+          message: `CPC medio de ${row.name} chegou a ${formatCurrency(row.cpc)} (cliques caros).`,
+          sponsorId: row.sponsorId,
+          tier: row.tier,
+        });
+      }
+    });
+    return items;
+  }, [sponsorFinancialRows]);
+
+  const backendAlerts = metrics?.alerts ?? [];
+  const alerts = useMemo(
+    () => [...backendAlerts, ...derivedAlerts],
+    [backendAlerts, derivedAlerts]
+  );
+
+  const monitoradoInvestmentTotal = sponsorFinancialRows.reduce(
+    (acc, row) => acc + row.investment,
+    0
+  );
+  const monitoradoClicks = sponsorFinancialRows.reduce((acc, row) => acc + row.clicks, 0);
+  const monitoradoImpressions = sponsorFinancialRows.reduce((acc, row) => acc + row.impressions, 0);
+  const monitoradoCpc = monitoradoClicks > 0 ? monitoradoInvestmentTotal / monitoradoClicks : null;
+  const monitoradoCpm =
+    monitoradoImpressions > 0 ? (monitoradoInvestmentTotal / monitoradoImpressions) * 1000 : null;
+  const monitoradoRoi =
+    monitoradoInvestmentTotal > 0 ? monitoradoClicks / monitoradoInvestmentTotal : null;
+
   const progressBarClass = (value: number) =>
     value >= 1 ? "bg-green-400" : value >= 0.6 ? "bg-yellow-400" : "bg-red-500";
   const progressTextClass = (value: number) =>
@@ -228,6 +327,11 @@ export default function PaginaPatrocinadores() {
       return true;
     });
   }, [patrocinadores, filtroTier, filtroStatus, somenteFooter]);
+
+  const totalInvestimentoPlanejado = useMemo(
+    () => patrocinadores.reduce((acc, item) => acc + (item.value ?? 0), 0),
+    [patrocinadores]
+  );
 
   const handleNovo = () => {
     if (atingiuLimite || !tenantSlug) return;
@@ -662,12 +766,14 @@ export default function PaginaPatrocinadores() {
                         >
                           <div className="flex items-start gap-2">
                             <FaExclamationTriangle className="mt-1" />
+
                             <div>
                               <p>{alert.message}</p>
+
                               {alert.sponsorId && (
                                 <p className="mt-1 text-xs opacity-75">
                                   ID: {alert.sponsorId}
-                                  {alert.tier ? ` • Tier ${alert.tier}` : ""}
+                                  {alert.tier ? ` · Tier ${alert.tier}` : ""}
                                 </p>
                               )}
                             </div>
@@ -680,6 +786,15 @@ export default function PaginaPatrocinadores() {
                       </div>
                     )}
                   </div>
+
+                  {derivedAlerts.length > 0 && (
+                    <div className="mt-3 rounded-lg border border-dashed border-yellow-600/60 bg-yellow-500/10 p-3 text-xs text-yellow-100">
+                      Follow-up com marketing: use a automacao{" "}
+                      <span className="font-semibold">"ROI critico (Marketing)"</span> no painel
+                      SuperAdmin ou alinhe o time comercial sempre que aparecer um alerta critico de
+                      ROI/CPC.
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -775,6 +890,126 @@ export default function PaginaPatrocinadores() {
                   ) : (
                     <div className="text-sm text-gray-400">
                       Nenhum patrocinador registrou cliques no periodo selecionado.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+                    <FaMoneyBillWave className="text-emerald-400" />
+                    ROI consolidado (cliques x investimento)
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Compara o valor registrado nos contratos com os cliques medidos pelo backend.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">
+                        Investimento monitorado
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {formatCurrency(monitoradoInvestmentTotal)}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {formatCurrency(totalInvestimentoPlanejado)} planejados no total
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">
+                        Custo medio por clique
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {monitoradoCpc ? formatCurrency(monitoradoCpc) : "—"}
+                      </p>
+                      <p className="text-[11px] text-gray-500">Divisao do contrato pelos cliques</p>
+                    </div>
+                    <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">CPM estimado</p>
+                      <p className="text-lg font-semibold text-white">
+                        {monitoradoCpm ? formatCurrency(monitoradoCpm) : "—"}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        Investimento para cada 1.000 views
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-neutral-800 bg-neutral-950/40 p-3">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">
+                        ROI (cliques por R$)
+                      </p>
+                      <p className="text-lg font-semibold text-white">
+                        {monitoradoRoi ? `${formatDecimal(monitoradoRoi)} cliques` : "—"}
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        Aproveitamento medio por cada real investido
+                      </p>
+                    </div>
+                  </div>
+                  {!monitoradoInvestmentTotal && (
+                    <div className="mt-4 rounded-lg border border-dashed border-yellow-600/60 bg-yellow-500/10 p-3 text-xs text-yellow-200">
+                      Registre o valor dos contratos para habilitar o calculo de ROI e custo medio.
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 overflow-x-auto">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-white mb-2">
+                    <FaPercent className="text-purple-300" />
+                    ROI por patrocinador (cliques x contrato)
+                  </h3>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Calculado somando cliques do periodo e os valores cadastrados em cada acordo.
+                  </p>
+                  {sponsorFinancialRows.length > 0 ? (
+                    <table className="w-full text-sm text-left text-gray-200">
+                      <thead className="text-xs uppercase text-gray-400">
+                        <tr className="border-b border-neutral-800">
+                          <th className="py-2 pr-4">Patrocinador</th>
+                          <th className="py-2 pr-4">Investimento</th>
+                          <th className="py-2 pr-4">Cliques</th>
+                          <th className="py-2 pr-4">CPC</th>
+                          <th className="py-2 pr-4">ROI</th>
+                          <th className="py-2 pr-4 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsorFinancialRows.map((row) => {
+                          const meta = STATUS_META[row.status];
+                          return (
+                            <tr
+                              key={`roi-${row.sponsorId}`}
+                              className="border-b border-neutral-800/60"
+                            >
+                              <td className="py-2 pr-4 font-semibold text-white">
+                                {row.name}
+                                <span className="block text-[11px] text-gray-500">
+                                  Tier {row.tier}
+                                </span>
+                              </td>
+                              <td className="py-2 pr-4">{formatCurrency(row.investment)}</td>
+                              <td className="py-2 pr-4">{formatNumber(row.clicks)}</td>
+                              <td className="py-2 pr-4">
+                                {row.cpc ? formatCurrency(row.cpc) : "—"}
+                              </td>
+                              <td className="py-2 pr-4">
+                                {row.roi ? `${formatDecimal(row.roi)} cliques/R$` : "—"}
+                              </td>
+                              <td className="py-2 pr-4 text-center">
+                                <span
+                                  className={`inline-flex items-center justify-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${meta.badge} ${meta.color}`}
+                                >
+                                  {meta.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="text-sm text-gray-400">
+                      Cadastre valores para os patrocinadores ativos para medir o ROI do contrato.
                     </div>
                   )}
                 </div>

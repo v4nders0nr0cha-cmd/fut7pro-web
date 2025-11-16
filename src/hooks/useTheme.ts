@@ -1,68 +1,37 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
 import { configuracoesApi } from "@/lib/api";
-import type { ApiResponse } from "@/lib/api";
 import { getTheme, applyTheme, type ThemeKey } from "@/config/themes";
 import { toast } from "react-hot-toast";
-
-interface ThemeConfig {
-  id: string;
-  name: string;
-  key: string;
-  primary: string;
-  secondary: string;
-  highlight: string;
-  text: string;
-  background: string;
-  surface: string;
-  accent: string;
-  success: string;
-  warning: string;
-  error: string;
-  info: string;
-  gradient?: string;
-  logo?: string;
-  description?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface RachaConfig {
-  id: string;
-  tenantId: string;
-  theme: string;
-  customColors?: {
-    primary?: string;
-    secondary?: string;
-    accent?: string;
-  };
-  settings: {
-    allowPlayerRegistration: boolean;
-    allowMatchCreation: boolean;
-    allowFinancialManagement: boolean;
-    allowNotifications: boolean;
-    allowStatistics: boolean;
-    allowRankings: boolean;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
+import type {
+  TenantConfigResponse,
+  ThemeCatalogItem,
+  ThemeCustomColors,
+} from "@/types/configuracoes";
+import { useThemeContext } from "@/context/ThemeContext";
 
 export function useTheme() {
-  const [currentTheme, setCurrentTheme] = useState<ThemeKey>("amarelo");
-  const [availableThemes, setAvailableThemes] = useState<ThemeConfig[]>([]);
-  const [rachaConfig, setRachaConfig] = useState<RachaConfig | null>(null);
+  const { themeKey: contextThemeKey, setThemeKey: setContextThemeKey } = useThemeContext();
+  const [currentTheme, setCurrentTheme] = useState<ThemeKey>(contextThemeKey);
+  const [availableThemes, setAvailableThemes] = useState<ThemeCatalogItem[]>([]);
+  const [rachaConfig, setRachaConfig] = useState<TenantConfigResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar tema do localStorage na inicialização
   useEffect(() => {
-    const savedTheme = localStorage.getItem("fut7pro-theme") as ThemeKey;
-    if (savedTheme) {
-      setCurrentTheme(savedTheme);
-      applyTheme(savedTheme);
-    }
-  }, []);
+    setCurrentTheme(contextThemeKey);
+  }, [contextThemeKey]);
+
+  const syncThemeFromConfig = useCallback(
+    (config: TenantConfigResponse) => {
+      const resolvedKey = (config.theme ?? "amarelo") as ThemeKey;
+      setCurrentTheme(resolvedKey);
+      setContextThemeKey(resolvedKey, { customColors: config.customColors ?? null });
+      setRachaConfig(config);
+    },
+    [setContextThemeKey]
+  );
 
   // Carregar temas disponíveis da API
   const loadAvailableThemes = useCallback(async () => {
@@ -70,7 +39,7 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = (await configuracoesApi.getTemas()) as ApiResponse<ThemeConfig[]>;
+      const response = await configuracoesApi.getTemas();
       if (response.data) {
         setAvailableThemes(response.data);
       } else if (response.error) {
@@ -91,15 +60,9 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = (await configuracoesApi.getRachaConfig()) as ApiResponse<RachaConfig>;
+      const response = await configuracoesApi.getRachaConfig();
       if (response.data) {
-        setRachaConfig(response.data);
-        // Aplicar tema do racha se diferente do atual
-        if (response.data.theme && response.data.theme !== currentTheme) {
-          setCurrentTheme(response.data.theme as ThemeKey);
-          applyTheme(response.data.theme as ThemeKey);
-          localStorage.setItem("fut7pro-theme", response.data.theme);
-        }
+        syncThemeFromConfig(response.data);
       } else if (response.error) {
         setError(response.error);
       }
@@ -108,46 +71,47 @@ export function useTheme() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentTheme]);
+  }, [syncThemeFromConfig]);
 
   // Aplicar tema
-  const applyThemeToRacha = useCallback(async (theme: ThemeKey) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      const response = (await configuracoesApi.updateTema(theme)) as ApiResponse<RachaConfig>;
-      if (response.data) {
-        setCurrentTheme(theme);
-        applyTheme(theme);
-        localStorage.setItem("fut7pro-theme", theme);
-        setRachaConfig(response.data);
-        toast.success("Tema aplicado com sucesso!");
-        return true;
-      } else if (response.error) {
-        setError(response.error);
-        toast.error("Erro ao aplicar tema");
-        return false;
-      }
-    } catch {
-      setError("Erro ao aplicar tema");
-      toast.error("Erro ao aplicar tema");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // Atualizar cores customizadas
-  const updateCustomColors = useCallback(
-    async (colors: { primary?: string; secondary?: string; accent?: string }) => {
+  const applyThemeToRacha = useCallback(
+    async (theme: ThemeKey) => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const response = (await configuracoesApi.updateCores(colors)) as ApiResponse<RachaConfig>;
+        const response = await configuracoesApi.updateTema(theme);
         if (response.data) {
-          setRachaConfig(response.data);
+          syncThemeFromConfig(response.data);
+          applyTheme(theme);
+          toast.success("Tema aplicado com sucesso!");
+          return true;
+        } else if (response.error) {
+          setError(response.error);
+          toast.error("Erro ao aplicar tema");
+          return false;
+        }
+      } catch {
+        setError("Erro ao aplicar tema");
+        toast.error("Erro ao aplicar tema");
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [syncThemeFromConfig]
+  );
+
+  // Atualizar cores customizadas
+  const updateCustomColors = useCallback(
+    async (colors: ThemeCustomColors) => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await configuracoesApi.updateCores(colors);
+        if (response.data) {
+          syncThemeFromConfig(response.data);
           toast.success("Cores atualizadas com sucesso!");
           return true;
         } else if (response.error) {
@@ -163,26 +127,19 @@ export function useTheme() {
         setIsLoading(false);
       }
     },
-    []
+    [syncThemeFromConfig]
   );
 
   // Atualizar configurações
   const updateSettings = useCallback(
-    async (settings: {
-      allowPlayerRegistration?: boolean;
-      allowMatchCreation?: boolean;
-      allowFinancialManagement?: boolean;
-      allowNotifications?: boolean;
-      allowStatistics?: boolean;
-      allowRankings?: boolean;
-    }) => {
+    async (settings: Partial<TenantConfigResponse["settings"]>) => {
       try {
         setIsLoading(true);
         setError(null);
 
-        const response = (await configuracoesApi.updateConfiguracoes(settings)) as ApiResponse<RachaConfig>;
+        const response = await configuracoesApi.updateConfiguracoes(settings);
         if (response.data) {
-          setRachaConfig(response.data);
+          syncThemeFromConfig(response.data);
           toast.success("Configurações atualizadas com sucesso!");
           return true;
         } else if (response.error) {
@@ -190,7 +147,7 @@ export function useTheme() {
           toast.error("Erro ao atualizar configurações");
           return false;
         }
-      } catch (err) {
+      } catch {
         setError("Erro ao atualizar configurações");
         toast.error("Erro ao atualizar configurações");
         return false;
@@ -198,7 +155,7 @@ export function useTheme() {
         setIsLoading(false);
       }
     },
-    []
+    [syncThemeFromConfig]
   );
 
   // Resetar configurações
@@ -207,12 +164,10 @@ export function useTheme() {
       setIsLoading(true);
       setError(null);
 
-      const response = (await configuracoesApi.resetConfiguracoes()) as ApiResponse<RachaConfig>;
+      const response = await configuracoesApi.resetConfiguracoes();
       if (response.data) {
-        setRachaConfig(response.data);
-        setCurrentTheme("amarelo");
+        syncThemeFromConfig(response.data);
         applyTheme("amarelo");
-        localStorage.setItem("fut7pro-theme", "amarelo");
         toast.success("Configurações resetadas com sucesso!");
         return true;
       } else if (response.error) {
@@ -220,14 +175,14 @@ export function useTheme() {
         toast.error("Erro ao resetar configurações");
         return false;
       }
-    } catch (err) {
+    } catch {
       setError("Erro ao resetar configurações");
       toast.error("Erro ao resetar configurações");
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [syncThemeFromConfig]);
 
   // Prévia de tema (sem salvar)
   const previewTheme = useCallback((theme: ThemeKey) => {
@@ -272,5 +227,3 @@ export function useTheme() {
     getCurrentThemeConfig,
   };
 }
-
-

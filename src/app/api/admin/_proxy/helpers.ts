@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions, type AuthSession } from "@/server/auth/options";
+import { Role } from "@/common/enums";
 
 export const JSON_CT = "application/json; charset=utf-8";
 
 export type SessionUser = {
+  id?: string;
+  role?: Role;
   accessToken?: string;
   tenantSlug?: string | null;
   tenantId?: string | null;

@@ -5,12 +5,16 @@ export interface PlayerRanking {
   rankingId: string;
   nome: string;
   apelido?: string | null;
+  nickname?: string | null;
   slug?: string | null;
   foto?: string | null;
+  photoUrl?: string | null;
   posicao?: string | null;
   posicaoValor?: string | null;
   email?: string | null;
   status?: string | null;
+  mensalista?: boolean | null;
+  isMember?: boolean | null;
   pontos: number;
   gols: number;
   assistencias: number;
@@ -67,4 +71,3 @@ export interface TeamRankingResponse {
 }
 
 export type Ranking = PlayerRanking | TeamRankingEntry;
-
