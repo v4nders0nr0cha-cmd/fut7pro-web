@@ -1,6 +1,6 @@
 export interface MensagemContato {
   id: string;
-  rachaId: string; // ou number, conforme seu banco
+  slug: string; // tenant slug associado
   nome: string;
   email: string;
   telefone?: string;

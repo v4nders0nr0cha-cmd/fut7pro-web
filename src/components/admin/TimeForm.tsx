@@ -11,13 +11,13 @@ type Props = {
 export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) {
   const [form, setForm] = useState<Partial<Time>>(initialData);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     onSave(form);
   }
 
@@ -46,38 +46,37 @@ export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) 
         maxLength={32}
       />
       <input
-        name="escudoUrl"
+        name="logo"
         placeholder="URL do escudo/logo"
-        value={form.escudoUrl ?? ""}
+        value={form.logo ?? ""}
         onChange={handleChange}
         className="input"
       />
       <input
-        name="corPrincipal"
+        name="cor"
         placeholder="Cor principal (#HEX ou nome)"
-        value={form.corPrincipal ?? ""}
+        value={form.cor ?? ""}
         onChange={handleChange}
         className="input"
       />
       <input
         name="corSecundaria"
-        placeholder="Cor secundária (#HEX ou nome)"
+        placeholder="Cor secundaria (#HEX ou nome)"
         value={form.corSecundaria ?? ""}
         onChange={handleChange}
         className="input"
       />
-      {/* Para MVP: jogadores pode ser lista de IDs/nome separados por vírgula */}
       <input
         name="jogadores"
-        placeholder="IDs dos jogadores (separados por vírgula)"
-        value={Array.isArray(form.jogadores) ? form.jogadores.join(",") : (form.jogadores ?? "")}
-        onChange={(e) =>
+        placeholder="IDs dos jogadores (separados por virgula)"
+        value={Array.isArray(form.jogadores) ? form.jogadores.join(",") : ""}
+        onChange={(event) =>
           setForm((prev) => ({
             ...prev,
-            jogadores: e.target.value
+            jogadores: event.target.value
               .split(",")
-              .map((j) => j.trim())
-              .filter((j) => !!j),
+              .map((item) => item.trim())
+              .filter((item) => item.length > 0),
           }))
         }
         className="input"

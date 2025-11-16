@@ -1,18 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import Image from "next/image";
 import EditorEstrelas from "./EditorEstrelas";
-import { mockParticipantes } from "./mockParticipantes";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela } from "@/types/sorteio";
 import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
+import { useEstrelas } from "@/hooks/useEstrelas";
+import { toast } from "react-hot-toast";
 
 interface Props {
-  rachaId: string; // ID do racha atual!
+  tenantSlug: string | null | undefined;
   config: ConfiguracaoRacha | null;
   participantes: Participante[];
-  setParticipantes: (p: Participante[]) => void;
+  setParticipantes: Dispatch<SetStateAction<Participante[]>>;
+  todosJogadores: Participante[];
+}
+
+function buildEstrelaBase(
+  tenantSlug: string | null | undefined,
+  jogadorId: string,
+  overrides?: Partial<AvaliacaoEstrela>
+): AvaliacaoEstrela {
+  return {
+    id: `${tenantSlug ?? "local"}-${jogadorId}`,
+    rachaId: tenantSlug ?? "",
+    jogadorId,
+    estrelas: 0,
+    atualizadoEm: "",
+    atualizadoPor: "",
+    ...overrides,
+  };
 }
 
 function PopoverSelecionarJogador({
@@ -29,12 +48,8 @@ function PopoverSelecionarJogador({
   const [filtro, setFiltro] = useState("");
 
   useEffect(() => {
-    setFiltro(""); // limpa ao abrir
+    setFiltro("");
   }, [open]);
-
-  const filtrados = listaDisponivel.filter((p) =>
-    p.nome.toLowerCase().includes(filtro.toLowerCase())
-  );
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -45,6 +60,11 @@ function PopoverSelecionarJogador({
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, [open, onClose]);
+
+  const filtrados = useMemo(
+    () => listaDisponivel.filter((p) => p.nome.toLowerCase().includes(filtro.trim().toLowerCase())),
+    [listaDisponivel, filtro]
+  );
 
   if (!open) return null;
 
@@ -59,7 +79,7 @@ function PopoverSelecionarJogador({
       />
       <div className="max-h-52 overflow-y-auto space-y-1">
         {filtrados.length === 0 && (
-          <div className="text-xs text-center text-gray-400">Nenhum atleta disponível</div>
+          <div className="text-xs text-center text-gray-400">Nenhum atleta dispon�vel</div>
         )}
         {filtrados.map((p) => (
           <div
@@ -69,14 +89,19 @@ function PopoverSelecionarJogador({
               onSelecionar(p.id);
               onClose();
             }}
-            onKeyDown={(e) => e.key === "Enter" && onSelecionar(p.id) && onClose()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onSelecionar(p.id);
+                onClose();
+              }
+            }}
             role="button"
             tabIndex={0}
             aria-label={`Selecionar ${p.nome}`}
           >
             <Image
-              src={p.foto}
-              alt={`Foto de ${p.nome}, posição: ${p.posicao}, ${rachaConfig.nome}`}
+              src={p.photoUrl}
+              alt={`Foto de ${p.nome}, posi��o: ${p.posicao}, ${rachaConfig.nome}`}
               width={28}
               height={28}
               className="rounded-full"
@@ -98,94 +123,138 @@ function PopoverSelecionarJogador({
 }
 
 export default function ParticipantesRacha({
-  rachaId,
+  tenantSlug,
   config,
   participantes,
   setParticipantes,
+  todosJogadores,
 }: Props) {
-  const [estrelasGlobais, setEstrelasGlobais] = useState<{ [id: string]: AvaliacaoEstrela }>({});
-  const [loadingEstrelas, setLoadingEstrelas] = useState(false);
+  const {
+    avaliacoes: avaliacoesEstrelas,
+    isLoading: loadingEstrelas,
+    error: erroEstrelas,
+    salvarEstrela,
+  } = useEstrelas(tenantSlug ?? null);
+  const [estrelasLocais, setEstrelasLocais] = useState<Record<string, AvaliacaoEstrela>>({});
   const [popoverIndex, setPopoverIndex] = useState<number | null>(null);
 
   const maxParticipantes =
     config?.numTimes && config?.jogadoresPorTime ? config.numTimes * config.jogadoresPorTime : 0;
 
-  // Ao montar: busca avaliações de estrelas do backend
+  const avaliacoesPorJogador = useMemo(() => {
+    return avaliacoesEstrelas.reduce(
+      (acc, avaliacao) => {
+        if (avaliacao?.jogadorId) {
+          acc[avaliacao.jogadorId] = avaliacao;
+        }
+        return acc;
+      },
+      {} as Record<string, AvaliacaoEstrela>
+    );
+  }, [avaliacoesEstrelas]);
+
   useEffect(() => {
-    if (!rachaId) return;
-    setLoadingEstrelas(true);
-    fetch(`/api/estrelas?rachaId=${rachaId}`)
-      .then((res) => res.json())
-      .then((data: AvaliacaoEstrela[]) => {
-        // Monta o objeto para acesso rápido
-        const estrelasMap: { [id: string]: AvaliacaoEstrela } = {};
-        data.forEach((a) => {
-          estrelasMap[a.jogadorId] = a;
-        });
-        setEstrelasGlobais(estrelasMap);
+    setEstrelasLocais(avaliacoesPorJogador);
+    setParticipantes((prev) =>
+      prev.map((p) => ({
+        ...p,
+        estrelas:
+          avaliacoesPorJogador[p.id] ??
+          buildEstrelaBase(tenantSlug, p.id, { estrelas: p.estrelas?.estrelas ?? 0 }),
+      }))
+    );
+  }, [avaliacoesPorJogador, setParticipantes, tenantSlug]);
 
-        // Atualiza lista dos participantes já existentes
-        setParticipantes(
-          participantes.map((p) => ({
-            ...p,
-            estrelas: estrelasMap[p.id] ?? {
-              id: "",
-              rachaId,
-              jogadorId: p.id,
-              estrelas: 0,
-              atualizadoEm: "",
-              atualizadoPor: "",
-            },
-          }))
-        );
-      })
-      .finally(() => setLoadingEstrelas(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps - rachaId é a única dependência necessária
-  }, [rachaId]);
+  const atletasDisponiveis = useMemo(() => {
+    const selecionadosIds = new Set(participantes.map((p) => p.id));
+    return todosJogadores
+      .filter((j) => !selecionadosIds.has(j.id))
+      .map((j) => ({
+        ...j,
+        estrelas:
+          estrelasLocais[j.id] ??
+          j.estrelas ??
+          buildEstrelaBase(tenantSlug, j.id, { estrelas: j.estrelas?.estrelas ?? 0 }),
+      }))
+      .sort((a, b) => a.nome.localeCompare(b.nome));
+  }, [todosJogadores, participantes, estrelasLocais, tenantSlug]);
 
-  // Inicialização automática para mensalistas, se lista estiver vazia e houver config
-  useEffect(() => {
-    if (participantes.length === 0 && config) {
-      const selecionadosIniciais = mockParticipantes.filter((p) => p.mensalista);
-      setParticipantes(selecionadosIniciais);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps - Configuração inicial única
-  }, [config]);
+  const vagasRestantes = Math.max(0, maxParticipantes - participantes.length);
 
-  function handleSelect(id: string) {
+  const updateEstrela = (jogadorId: string, valor: number) => {
+    const otimista = buildEstrelaBase(tenantSlug, jogadorId, {
+      ...(estrelasLocais[jogadorId] ?? avaliacoesPorJogador[jogadorId]),
+      estrelas: valor,
+      atualizadoEm: new Date().toISOString(),
+    });
+
+    setEstrelasLocais((prev) => ({ ...prev, [jogadorId]: otimista }));
+    setParticipantes((prev) =>
+      prev.map((p) =>
+        p.id === jogadorId
+          ? {
+              ...p,
+              estrelas: {
+                ...(p.estrelas ?? buildEstrelaBase(tenantSlug, jogadorId)),
+                estrelas: valor,
+                atualizadoEm: otimista.atualizadoEm,
+              },
+            }
+          : p
+      )
+    );
+
+    salvarEstrela(jogadorId, valor).catch((error) => {
+      const message = error instanceof Error ? error.message : "Erro ao salvar estrelas";
+      toast.error(message);
+      setEstrelasLocais((prev) => ({
+        ...prev,
+        [jogadorId]: avaliacoesPorJogador[jogadorId] ?? prev[jogadorId],
+      }));
+      setParticipantes((prev) =>
+        prev.map((p) =>
+          p.id === jogadorId
+            ? {
+                ...p,
+                estrelas: avaliacoesPorJogador[jogadorId] ?? p.estrelas,
+              }
+            : p
+        )
+      );
+    });
+  };
+
+  const handleSelect = (id: string) => {
     const isSelected = participantes.some((p) => p.id === id);
-    const participanteOriginal = mockParticipantes.find((p) => p.id === id);
+    const participanteOriginal = todosJogadores.find((p) => p.id === id);
 
     if (isSelected) {
       setParticipantes(participantes.filter((p) => p.id !== id));
-    } else {
+    } else if (participanteOriginal) {
       if (maxParticipantes && participantes.length >= maxParticipantes) return;
-      if (participanteOriginal) {
-        setParticipantes([
-          ...participantes,
-          {
-            ...participanteOriginal,
-            estrelas: estrelasGlobais[participanteOriginal.id] ?? {
-              id: "",
-              rachaId,
-              jogadorId: participanteOriginal.id,
-              estrelas: 0,
-              atualizadoEm: "",
-              atualizadoPor: "",
-            },
-          },
-        ]);
-      }
+      const estrela = estrelasLocais[id] ?? participanteOriginal.estrelas;
+      setParticipantes([
+        ...participantes,
+        {
+          ...participanteOriginal,
+          estrelas:
+            estrela ??
+            buildEstrelaBase(tenantSlug, participanteOriginal.id, {
+              estrelas: estrela?.estrelas ?? participanteOriginal.estrelas?.estrelas ?? 0,
+            }),
+        },
+      ]);
     }
     setPopoverIndex(null);
-  }
+  };
 
-  const listSelecionados = participantes;
-  const atletasDisponiveis = mockParticipantes.filter(
-    (p) => !participantes.some((sel) => sel.id === p.id)
-  );
-
-  const vagasRestantes = Math.max(0, maxParticipantes - participantes.length);
+  const listSelecionados = participantes.map((p) => ({
+    ...p,
+    estrelas:
+      p.estrelas ??
+      estrelasLocais[p.id] ??
+      buildEstrelaBase(tenantSlug, p.id, { estrelas: p.estrelas?.estrelas ?? 0 }),
+  }));
 
   function CardJogador({
     jogador,
@@ -198,90 +267,36 @@ export default function ParticipantesRacha({
     onClick: () => void;
     children?: React.ReactNode;
   }) {
-    const estrelaAtual = estrelasGlobais[jogador.id]?.estrelas ?? 0;
-
-    // Atualiza no backend ao clicar
-    const handleUpdateEstrela = async (val: number) => {
-      if (!selecionado) return;
-      // Atualiza otimista no front
-      setEstrelasGlobais((prev) => ({
-        ...prev,
-        [jogador.id]: {
-          ...(prev[jogador.id] || {
-            id: "",
-            rachaId,
-            jogadorId: jogador.id,
-            estrelas: 0,
-            atualizadoEm: "",
-            atualizadoPor: "",
-          }),
-          estrelas: val,
-          atualizadoEm: new Date().toISOString(),
-        },
-      }));
-      setParticipantes(
-        participantes.map((p) =>
-          p.id === jogador.id
-            ? {
-                ...p,
-                estrelas: {
-                  ...(p.estrelas || {
-                    id: "",
-                    rachaId,
-                    jogadorId: jogador.id,
-                    estrelas: 0,
-                    atualizadoEm: "",
-                    atualizadoPor: "",
-                  }),
-                  estrelas: val,
-                  atualizadoEm: new Date().toISOString(),
-                },
-              }
-            : p
-        )
-      );
-
-      // Faz o POST/PUT para a API do backend
-      await fetch(`/api/estrelas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rachaId,
-          jogadorId: jogador.id,
-          estrelas: val,
-        }),
-      });
-    };
+    const estrelaAtual = estrelasLocais[jogador.id]?.estrelas ?? jogador.estrelas?.estrelas ?? 0;
 
     return (
       <div
-        className={`flex flex-col justify-between p-2 rounded-lg border relative min-h-[94px] shadow-sm gap-0.5
-                    ${selecionado ? "bg-yellow-100 border-yellow-400 cursor-pointer" : "bg-zinc-800 border-zinc-700 cursor-pointer hover:border-yellow-500"}
-                `}
-        onClick={(e) => {
-          if ((e.target as HTMLElement).closest(".editor-estrelas")) return;
-          onClick();
-        }}
+        className={`flex flex-col justify-between p-2 rounded-lg border relative min-h-[94px] shadow-sm gap-0.5 ${
+          selecionado
+            ? "bg-yellow-100 border-yellow-400 cursor-pointer"
+            : "bg-zinc-800 border-zinc-700 cursor-pointer hover:border-yellow-500"
+        }`}
+        onClick={onClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onClick()}
       >
-        <div className="flex flex-row items-center justify-between w-full">
-          <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <Image
-              src={jogador.foto}
-              alt={`Foto de ${jogador.nome}, ${jogador.posicao} no ${rachaConfig.nome}`}
-              width={48}
-              height={48}
-              className="rounded-md object-cover"
+              src={jogador.photoUrl}
+              alt={`Foto de ${jogador.nome}, posi��o: ${jogador.posicao}, ${rachaConfig.nome}`}
+              width={40}
+              height={40}
+              className="rounded-full object-cover border border-yellow-300"
             />
             <span
               className={`text-base font-bold truncate ${selecionado ? "text-black" : "text-white"}`}
             >
               {jogador.nome}
             </span>
-            {jogador.mensalista && (
-              <span
-                className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black rounded text-xs font-semibold"
-                style={{ fontSize: "10px", lineHeight: 1.1 }}
-              >
+            {jogador.isMember && (
+              <span className="ml-2 px-1.5 py-0.5 bg-yellow-500 text-black rounded text-xs font-semibold">
                 Mensalista
               </span>
             )}
@@ -297,7 +312,6 @@ export default function ParticipantesRacha({
             )}
           </div>
         </div>
-        {/* Linha de baixo: posição + estrelas */}
         <div className="flex flex-row items-center justify-between w-full mt-1">
           <span
             className={`text-xs font-bold uppercase ${selecionado ? "text-yellow-600" : "text-yellow-400"}`}
@@ -308,7 +322,7 @@ export default function ParticipantesRacha({
           <div className="editor-estrelas flex items-center justify-center w-full min-w-[110px] max-w-[120px] mx-2">
             <EditorEstrelas
               value={estrelaAtual}
-              onChange={handleUpdateEstrela}
+              onChange={(val) => updateEstrela(jogador.id, val)}
               disabled={!selecionado || loadingEstrelas}
             />
           </div>
@@ -322,49 +336,55 @@ export default function ParticipantesRacha({
       <h2 className="text-lg font-bold text-yellow-400 mb-2 text-center">
         Selecione os Participantes do Dia
       </h2>
-      {/* Grid: Selecionados + Vagas Vazias */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 relative z-0">
-        {listSelecionados.map((jogador) => (
-          <CardJogador
-            key={jogador.id}
-            jogador={jogador}
-            selecionado={true}
-            onClick={() => handleSelect(jogador.id)}
-          />
-        ))}
+      {todosJogadores.length === 0 ? (
+        <div className="text-center text-sm text-gray-400 py-6">
+          Nenhum atleta encontrado para este racha. Cadastre jogadores no painel para utiliz�-los no
+          sorteio.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 relative z-0">
+          {listSelecionados.map((jogador) => (
+            <CardJogador
+              key={jogador.id}
+              jogador={jogador}
+              selecionado
+              onClick={() => handleSelect(jogador.id)}
+            />
+          ))}
 
-        {/* Cards de vagas clicáveis */}
-        {Array.from({ length: vagasRestantes }).map((_, idx) => {
-          const isOpen = popoverIndex === idx;
-          return (
-            <div
-              key={`vaga-vazia-${idx}`}
-              className={`flex flex-col items-center justify-center p-2 rounded-lg border border-zinc-700 bg-zinc-900 opacity-80 cursor-pointer relative min-h-[94px] hover:border-yellow-400 group transition ${isOpen ? "z-50" : "z-0"}`}
-              onClick={() => setPopoverIndex(idx)}
-              onKeyDown={(e) => e.key === "Enter" && setPopoverIndex(idx)}
-              role="button"
-              tabIndex={0}
-              aria-label="Adicionar jogador"
-            >
-              <FaUserPlus className="text-gray-500 text-3xl mb-2 group-hover:text-yellow-400 transition" />
-              <span className="text-xs text-gray-400 font-bold text-center">Vaga disponível</span>
-              <PopoverSelecionarJogador
-                open={isOpen}
-                onClose={() => setPopoverIndex(null)}
-                onSelecionar={handleSelect}
-                listaDisponivel={atletasDisponiveis}
-              />
-            </div>
-          );
-        })}
-      </div>
+          {Array.from({ length: vagasRestantes }).map((_, idx) => {
+            const isOpen = popoverIndex === idx;
+            return (
+              <div
+                key={`vaga-vazia-${idx}`}
+                className={`flex flex-col items-center justify-center p-2 rounded-lg border border-zinc-700 bg-zinc-900 opacity-80 cursor-pointer relative min-h-[94px] hover:border-yellow-400 group transition ${
+                  isOpen ? "z-50" : "z-0"
+                }`}
+                onClick={() => setPopoverIndex(idx)}
+                onKeyDown={(e) => e.key === "Enter" && setPopoverIndex(idx)}
+                role="button"
+                tabIndex={0}
+                aria-label="Adicionar jogador"
+              >
+                <FaUserPlus className="text-gray-500 text-3xl mb-2 group-hover:text-yellow-400 transition" />
+                <span className="text-xs text-gray-400 font-bold text-center">Vaga dispon�vel</span>
+                <PopoverSelecionarJogador
+                  open={isOpen}
+                  onClose={() => setPopoverIndex(null)}
+                  onSelecionar={handleSelect}
+                  listaDisponivel={atletasDisponiveis}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
 
-      {/* Rodapé de status */}
       <div className="mt-3 text-center text-xs">
         {maxParticipantes > 0 && (
           <>
             <span>
-              {`Selecionados: `}
+              Selecionados:{" "}
               <b
                 className={
                   participantes.length === maxParticipantes
@@ -375,8 +395,8 @@ export default function ParticipantesRacha({
                 }
               >
                 {participantes.length}
-              </b>
-              {` / ${maxParticipantes} jogadores permitidos`}
+              </b>{" "}
+              / {maxParticipantes} jogadores permitidos
             </span>
             {participantes.length > maxParticipantes && (
               <span className="block text-red-400 mt-1">

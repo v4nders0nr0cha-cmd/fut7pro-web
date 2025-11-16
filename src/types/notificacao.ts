@@ -1,47 +1,91 @@
-export type NotificationType =
-  | "system"
-  | "superadmin"
-  | "mensagem"
-  | "pendencia"
-  | "financeiro"
-  | "alerta"
-  | "novidade"
-  | "contato"
-  | "outros";
+export type NotificationType = "ALERTA" | "SISTEMA" | "PERSONALIZADA";
+
+export type NotificationChannel = "EMAIL" | "PUSH" | "WHATSAPP";
+
+export interface NotificationMetadata {
+  templateId?: string;
+  channels?: NotificationChannel[];
+  email?: {
+    subject?: string;
+    body?: string;
+  };
+  push?: {
+    title?: string;
+    body?: string;
+  };
+  whatsapp?: {
+    message?: string;
+  };
+  tokens?: Record<string, string>;
+  [key: string]: unknown;
+}
 
 export interface Notification {
   id: string;
-  rachaSlug: string;
+  tenantId: string;
+  title: string;
+  message: string;
   type: NotificationType;
-  titulo: string;
-  mensagem: string;
-  data: string;
-  lida: boolean;
-  prioridade?: "normal" | "alta";
-  remetente?: string; // ex: "SuperAdmin", "Usuário", "Sistema"
-  assunto?: string;
-  referenciaId?: string; // id relacionado (ex: id da mensagem)
-  metadata?: Record<string, unknown>; // dados adicionais específicos do tipo
+  isRead: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  metadata?: NotificationMetadata;
 }
 
-// Interface para criação de notificações
-export interface CreateNotificationDto {
-  rachaSlug: string;
+export interface CreateNotificationInput {
+  title: string;
+  message: string;
   type: NotificationType;
-  titulo: string;
-  mensagem: string;
-  prioridade?: "normal" | "alta";
-  remetente?: string;
-  assunto?: string;
-  referenciaId?: string;
-  metadata?: Record<string, unknown>;
+  tenantId?: string;
+  metadata?: NotificationMetadata;
 }
 
-// Interface para atualização de notificações
-export interface UpdateNotificationDto {
-  lida?: boolean;
-  titulo?: string;
-  mensagem?: string;
-  prioridade?: "normal" | "alta";
-  metadata?: Record<string, unknown>;
+export interface UpdateNotificationInput {
+  title?: string;
+  message?: string;
+  type?: NotificationType;
+  isRead?: boolean;
+  metadata?: NotificationMetadata;
+  tenantId?: string;
+}
+
+export type Notificacao = Notification;
+export type NotificacaoTipo = NotificationType;
+
+export interface NotificationAnalyticsTotals {
+  sent: number;
+  read: number;
+  unread: number;
+  manual: number;
+  automations: number;
+  channels: {
+    email: number;
+    push: number;
+    whatsapp: number;
+    badge: number;
+  };
+}
+
+export interface NotificationAnalytics {
+  period: {
+    start: string;
+    end: string;
+    days: number;
+  };
+  totals: NotificationAnalyticsTotals;
+  types: Array<{ type: NotificationType; count: number }>;
+  audiences: Array<{ label: string; count: number }>;
+  trend: Array<{ bucket: string; sent: number; read: number }>;
+  latest: Array<{
+    id: string;
+    title: string;
+    message: string;
+    type: NotificationType;
+    channels: NotificationChannel[] | null;
+    isRead: boolean;
+    createdAt: string;
+    templateId?: string | null;
+    automationId?: string | null;
+  }>;
+  sampleSize: number;
 }

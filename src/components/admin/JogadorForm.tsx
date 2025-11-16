@@ -1,93 +1,107 @@
 "use client";
+
 import React, { useRef, useState, useEffect } from "react";
-import type { ChangeEvent } from "react";
-import type { Jogador, PosicaoJogador } from "@/types/jogador";
+import type { ChangeEvent, FormEvent } from "react";
+import type { Athlete, AthletePosition, AthleteStatus } from "@/types/jogador";
+import { POSITION_OPTIONS } from "@/constants/positions";
 
-const POSICOES: { label: string; value: PosicaoJogador }[] = [
-  { label: "Atacante", value: "atacante" },
-  { label: "Meia", value: "meia" },
-  { label: "Zagueiro", value: "zagueiro" },
-  { label: "Goleiro", value: "goleiro" },
-];
+type FormState = {
+  id?: string;
+  name: string;
+  nickname: string;
+  email?: string;
+  status: AthleteStatus;
+  position: AthletePosition;
+  isMember: boolean;
+  photoUrl?: string | null;
+};
 
-export default function JogadorForm({
-  jogador,
-  onCancel,
-  onSave,
-}: {
-  jogador?: Jogador;
+const DEFAULT_FORM: FormState = {
+  name: "",
+  nickname: "",
+  email: "",
+  status: "Ativo",
+  position: "atacante",
+  isMember: true,
+  photoUrl: null,
+};
+
+type Props = {
+  jogador?: Athlete;
   onCancel?: () => void;
-  onSave?: (jogador: Partial<Jogador>) => void;
-}) {
-  const [form, setForm] = useState<Partial<Jogador>>(
-    jogador || {
-      id: "",
-      nome: "",
-      apelido: "",
-      foto: "",
-      status: "ativo",
-      mensalista: false,
-      posicao: "atacante",
-    }
-  );
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string>(jogador?.foto || "");
+  onSave?: (payload: Partial<Athlete>) => void;
+};
+
+export default function JogadorForm({ jogador, onCancel, onSave }: Props) {
+  const [form, setForm] = useState<FormState>(jogador ? normalizeAthlete(jogador) : DEFAULT_FORM);
+  const [photoPreview, setPhotoPreview] = useState<string>(jogador?.photoUrl ?? "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (jogador) {
-      setForm(jogador);
-      setFotoPreview(jogador.foto || "");
+      setForm(normalizeAthlete(jogador));
+      setPhotoPreview(jogador.photoUrl ?? "");
     } else {
-      setForm({
-        id: "",
-        nome: "",
-        apelido: "",
-        foto: "",
-        status: "ativo",
-        mensalista: false,
-        posicao: "atacante",
-      });
-      setFotoPreview("");
-      setFotoFile(null);
+      setForm(DEFAULT_FORM);
+      setPhotoPreview("");
     }
   }, [jogador]);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    const { name, value, type } = e.target;
+  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value, type } = event.target;
     if (type === "checkbox") {
       setForm((prev) => ({
         ...prev,
-        [name]: (e.target as HTMLInputElement).checked,
+        [name]: (event.target as HTMLInputElement).checked,
       }));
-    } else {
-      setForm((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
+      return;
     }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   }
 
-  function handleFotoChange(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFotoFile(file);
-      const preview = URL.createObjectURL(file);
-      setFotoPreview(preview);
-      setForm((prev) => ({ ...prev, foto: preview }));
-    }
+  function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const preview = URL.createObjectURL(file);
+    setPhotoPreview(preview);
+    setForm((prev) => ({ ...prev, photoUrl: preview }));
   }
 
-  function handleFotoClick() {
+  function handlePhotoClick() {
     fileInputRef.current?.click();
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (onSave) onSave(form);
-    setFotoFile(null);
-    setFotoPreview("");
-    if (onCancel) onCancel();
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!onSave) return;
+
+    const payload: Partial<Athlete> = {
+      id: form.id,
+      name: form.name.trim(),
+      nickname: form.nickname.trim(),
+      email: form.email?.trim() ?? undefined,
+      position: form.position,
+      status: form.status,
+      isMember: form.isMember,
+      photoUrl: form.photoUrl,
+    };
+
+    onSave(payload);
+
+    // Reset file preview apenas se estivermos criando um novo jogador
+    if (!form.id) {
+      setPhotoPreview("");
+      setForm(DEFAULT_FORM);
+    }
+
+    if (onCancel) {
+      onCancel();
+    }
   }
 
   return (
@@ -97,14 +111,14 @@ export default function JogadorForm({
     >
       <div className="flex gap-4">
         <div
-          onClick={handleFotoClick}
+          onClick={handlePhotoClick}
           className="w-20 h-20 bg-[#222] rounded-lg border-2 border-dashed border-yellow-600 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition"
           title="Clique para selecionar uma foto"
         >
-          {fotoPreview ? (
+          {photoPreview ? (
             <img
-              src={fotoPreview}
-              alt="Preview Foto"
+              src={photoPreview}
+              alt="Foto do jogador"
               className="object-cover w-full h-full rounded-lg"
             />
           ) : (
@@ -114,7 +128,7 @@ export default function JogadorForm({
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={handleFotoChange}
+            onChange={handlePhotoChange}
             className="hidden"
           />
         </div>
@@ -122,29 +136,40 @@ export default function JogadorForm({
           <div>
             <label className="block font-medium text-yellow-500 mb-1">Nome</label>
             <input
-              name="nome"
-              value={form.nome || ""}
+              name="name"
+              value={form.name}
               onChange={handleChange}
               className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-              maxLength={20}
+              maxLength={60}
               required
             />
           </div>
           <div>
             <label className="block font-medium text-yellow-500 mb-1">Apelido</label>
             <input
-              name="apelido"
-              value={form.apelido || ""}
+              name="nickname"
+              value={form.nickname}
               onChange={handleChange}
               className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-              maxLength={15}
-              required
+              maxLength={40}
+            />
+          </div>
+          <div>
+            <label className="block font-medium text-yellow-500 mb-1">E-mail</label>
+            <input
+              name="email"
+              value={form.email ?? ""}
+              onChange={handleChange}
+              className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+              maxLength={120}
+              type="email"
             />
           </div>
         </div>
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
+
+      <div className="flex gap-4 flex-wrap md:flex-nowrap">
+        <div className="flex-1 min-w-[180px]">
           <label className="block font-medium text-yellow-500 mb-1">Status</label>
           <select
             name="status"
@@ -152,32 +177,34 @@ export default function JogadorForm({
             onChange={handleChange}
             className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
           >
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="suspenso">Suspenso</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+            <option value="Suspenso">Suspenso</option>
           </select>
         </div>
-        <div className="flex-1">
+
+        <div className="flex-1 min-w-[180px]">
           <label className="block font-medium text-yellow-500 mb-1">Posição</label>
           <select
-            name="posicao"
-            value={form.posicao}
+            name="position"
+            value={form.position}
             onChange={handleChange}
             className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
           >
-            {POSICOES.map((pos) => (
-              <option key={pos.value} value={pos.value}>
-                {pos.label}
+            {POSITION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
+
         <div className="flex items-end">
           <label className="flex items-center gap-2 font-medium text-yellow-500 cursor-pointer mb-1">
             <input
-              name="mensalista"
+              name="isMember"
               type="checkbox"
-              checked={!!form.mensalista}
+              checked={form.isMember}
               onChange={handleChange}
               className="accent-yellow-500"
             />
@@ -185,12 +212,13 @@ export default function JogadorForm({
           </label>
         </div>
       </div>
+
       <div className="flex gap-4">
         <button
           type="submit"
           className="bg-yellow-500 text-gray-900 font-bold py-2 rounded hover:bg-yellow-600 transition shadow flex-1"
         >
-          {form.id ? "Salvar Alterações" : "Cadastrar Jogador"}
+          {form.id ? "Salvar alterações" : "Cadastrar jogador"}
         </button>
         {form.id && onCancel && (
           <button
@@ -204,4 +232,17 @@ export default function JogadorForm({
       </div>
     </form>
   );
+}
+
+function normalizeAthlete(athlete: Athlete): FormState {
+  return {
+    id: athlete.id,
+    name: athlete.name,
+    nickname: athlete.nickname ?? "",
+    email: athlete.email ?? "",
+    status: (athlete.status as AthleteStatus) ?? "Ativo",
+    position: (athlete.position as AthletePosition) ?? "atacante",
+    isMember: athlete.isMember ?? false,
+    photoUrl: athlete.photoUrl ?? null,
+  };
 }

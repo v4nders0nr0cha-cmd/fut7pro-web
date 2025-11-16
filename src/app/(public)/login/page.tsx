@@ -4,12 +4,13 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
-import { rachaMap } from "@/config/rachaMap";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
+import { rachaConfig } from "@/config/racha.config";
 
 export default function LoginPage() {
   const { rachaId } = useRacha();
-  // Nome do racha dinâmico pelo mapa, fallback para "Fut7Pro"
-  const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
+  const { racha } = useRachaPublic(rachaId);
+  const nomeDoRacha = racha?.nome || rachaConfig.nome || "Fut7Pro";
 
   const [tab, setTab] = useState<"google" | "email">("google");
   const [email, setEmail] = useState("");

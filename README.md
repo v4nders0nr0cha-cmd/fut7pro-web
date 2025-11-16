@@ -59,7 +59,7 @@ Edite o arquivo `.env.local` com suas configurações:
 ```env
 # Configurações do Next.js
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_API_URL=http://localhost:3000/api
+NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br
 
 # Configurações de Autenticação
 NEXTAUTH_URL=http://localhost:3000
@@ -231,7 +231,7 @@ npm run test:coverage
 ### Outras Plataformas
 
 - **Netlify**: Suporte completo
-- **Railway**: Deploy fácil
+- **Render**: Deploy do backend (NestJS + Prisma)
 - **DigitalOcean**: App Platform
 - **AWS**: Amplify ou EC2
 

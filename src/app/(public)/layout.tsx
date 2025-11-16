@@ -1,7 +1,6 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "../providers";
-import { ThemeProvider } from "@/context/ThemeContext";
 import LayoutClient from "@/components/layout/LayoutClient";
 import JsonLd from "@/components/seo/JsonLd";
 
@@ -59,11 +58,9 @@ export const metadata = {
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
     <div className={`${inter.className} bg-fundo text-white break-words min-h-screen`}>
-      <ThemeProvider>
-        <Providers>
-          <LayoutClient>{children}</LayoutClient>
-        </Providers>
-      </ThemeProvider>
+      <Providers>
+        <LayoutClient>{children}</LayoutClient>
+      </Providers>
       <JsonLd siteName="Fut7Pro" siteUrl="https://app.fut7pro.com.br" logoUrl="/og-image.jpg" />
     </div>
   );

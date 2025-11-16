@@ -2,14 +2,16 @@
 
 import { useAdminLogs } from "@/hooks/useAdminLogs";
 import { useAdmin } from "@/hooks/useAdmin";
+import { useRacha } from "@/context/RachaContext";
 
 // Forçar renderização no cliente para evitar problemas de template
-export const dynamic = 'force-dynamic';
-import { useState } from "react";
-import { Search, Filter, Download } from "lucide-react";
+export const dynamic = "force-dynamic";
+import { useMemo, useState } from "react";
+import { Search, Download } from "lucide-react";
 
 export default function LogsAdminPage() {
-  const { logs, isLoading, isError, error } = useAdminLogs();
+  const { rachaId } = useRacha();
+  const { logs, isLoading, isError, error } = useAdminLogs(rachaId);
   const { admins } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedAction, setSelectedAction] = useState("");
@@ -37,20 +39,35 @@ export default function LogsAdminPage() {
     );
   }
 
-  const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.adminName.toLowerCase().includes(searchTerm.toLowerCase());
+  const normalizedLogs = useMemo(
+    () =>
+      logs.map((log) => ({
+        ...log,
+        actionLabel: log.acao,
+        description: log.detalhes ?? "",
+        adminLabel: log.adminNome ?? log.adminEmail ?? log.usuarioId,
+        timestamp: log.criadoEm ?? log.data,
+        resource: log.recurso ?? "—",
+      })),
+    [logs],
+  );
 
-    const matchesAction = !selectedAction || log.action === selectedAction;
+  const filteredLogs = normalizedLogs.filter((log) => {
+    const term = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      !term ||
+      log.actionLabel.toLowerCase().includes(term) ||
+      log.description.toLowerCase().includes(term) ||
+      (log.adminLabel ?? "").toLowerCase().includes(term);
+
+    const matchesAction = !selectedAction || log.actionLabel === selectedAction;
     const matchesAdmin = !selectedAdmin || log.adminId === selectedAdmin;
 
     return matchesSearch && matchesAction && matchesAdmin;
   });
 
-  const uniqueActions = Array.from(new Set(logs.map((log) => log.action)));
-  const uniqueAdmins = Array.from(new Set(logs.map((log) => log.adminId)));
+  const uniqueActions = Array.from(new Set(normalizedLogs.map((log) => log.actionLabel)));
+  const uniqueAdmins = Array.from(new Set(normalizedLogs.map((log) => log.adminId)));
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
@@ -138,14 +155,18 @@ export default function LogsAdminPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-yellow-400">{log.action}</span>
-                      <span className="text-xs text-gray-400">por {log.adminName}</span>
+                      <span className="font-semibold text-yellow-400">{log.actionLabel}</span>
+                      <span className="text-xs text-gray-400">por {log.adminLabel}</span>
                     </div>
-                    <p className="text-sm text-gray-300">{log.details}</p>
+                    {log.description && <p className="text-sm text-gray-300">{log.description}</p>}
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-gray-400">{log.timestamp}</span>
+                    <span className="text-xs text-gray-400">
+                      {log.timestamp
+                        ? new Date(log.timestamp).toLocaleString("pt-BR")
+                        : "Sem data"}
+                    </span>
                     <span className="text-xs px-2 py-1 bg-gray-600 rounded">{log.resource}</span>
                   </div>
                 </div>

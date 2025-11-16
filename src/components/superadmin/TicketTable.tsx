@@ -1,34 +1,50 @@
 import React from "react";
 
+type TicketStatus = "novo" | "lido" | "respondido";
+
 type Ticket = {
   id: string;
   assunto: string;
   racha: string;
-  status: "open" | "resolved" | "inprogress" | "waiting";
+  status: TicketStatus;
   onboardingPercent: number;
-  createdAt: string;
-  updatedAt: string;
+  dataEnvio: string;
+  contato: string;
 };
 
-const statusColor: Record<Ticket["status"], string> = {
-  open: "text-yellow-400",
-  resolved: "text-green-400",
-  inprogress: "text-blue-400",
-  waiting: "text-zinc-300",
+const statusColor: Record<TicketStatus, string> = {
+  novo: "text-yellow-400",
+  lido: "text-blue-400",
+  respondido: "text-green-400",
 };
 
-const statusLabel: Record<Ticket["status"], string> = {
-  open: "Aberto",
-  resolved: "Resolvido",
-  inprogress: "Em andamento",
-  waiting: "Aguardando resposta",
+const statusLabel: Record<TicketStatus, string> = {
+  novo: "Novo",
+  lido: "Lido",
+  respondido: "Respondido",
+};
+
+const formatDate = (value: string) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 interface Props {
   tickets: Ticket[];
+  isLoading?: boolean;
+  error?: string | null;
 }
 
-const TicketTable: React.FC<Props> = ({ tickets }) => (
+const TicketTable: React.FC<Props> = ({ tickets, isLoading = false, error = null }) => (
   <div className="w-full overflow-x-auto bg-zinc-900 rounded-xl mt-3 mb-7">
     <table className="min-w-full text-sm">
       <thead>
@@ -37,9 +53,8 @@ const TicketTable: React.FC<Props> = ({ tickets }) => (
           <th className="px-4 py-3 text-left font-semibold">Racha</th>
           <th className="px-4 py-3 text-left font-semibold">Status</th>
           <th className="px-4 py-3 text-left font-semibold">Onboarding</th>
-          <th className="px-4 py-3 text-left font-semibold">Criado em</th>
-          <th className="px-4 py-3 text-left font-semibold">Última Atualização</th>
-          <th className="px-4 py-3 text-left font-semibold">Ações</th>
+          <th className="px-4 py-3 text-left font-semibold">Recebido em</th>
+          <th className="px-4 py-3 text-left font-semibold">Contato</th>
         </tr>
       </thead>
       <tbody>
@@ -61,19 +76,22 @@ const TicketTable: React.FC<Props> = ({ tickets }) => (
                 <span className="text-xs text-zinc-400">{t.onboardingPercent}%</span>
               </div>
             </td>
-            <td className="px-4 py-3">{t.createdAt}</td>
-            <td className="px-4 py-3">{t.updatedAt}</td>
-            <td className="px-4 py-3">
-              <button className="bg-blue-500 text-white rounded px-3 py-1 text-xs hover:bg-blue-600 transition">
-                Ver
-              </button>
-            </td>
+            <td className="px-4 py-3">{formatDate(t.dataEnvio)}</td>
+            <td className="px-4 py-3">{t.contato}</td>
           </tr>
         ))}
-        {tickets.length === 0 && (
+        {!isLoading && tickets.length === 0 && (
           <tr>
-            <td colSpan={7} className="text-center text-zinc-400 py-8">
+            <td colSpan={6} className="text-center text-zinc-400 py-8">
               Nenhum ticket encontrado.
+              {error && <span className="block text-xs text-red-300 mt-1">{error}</span>}
+            </td>
+          </tr>
+        )}
+        {isLoading && (
+          <tr>
+            <td colSpan={6} className="text-center text-zinc-400 py-8">
+              Carregando tickets...
             </td>
           </tr>
         )}

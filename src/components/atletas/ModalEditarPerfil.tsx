@@ -1,57 +1,82 @@
 "use client";
+
 import { useState } from "react";
 import type { ChangeEvent } from "react";
 import Image from "next/image";
+import { POSITION_OPTIONS, type PositionValue } from "@/constants/positions";
 import { usePerfil } from "./PerfilContext";
+
+const MAX_NAME_LENGTH = 10;
 
 export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) {
   const { usuario, atualizarPerfil } = usePerfil();
+
+  if (!usuario) {
+    return null;
+  }
+
   const [nome, setNome] = useState(usuario.nome || "");
-  const [apelido, setApelido] = useState(usuario.apelido || "");
-  const [posicao, setPosicao] = useState(usuario.posicao || "");
-  const [foto, setFoto] = useState(usuario.foto || "");
+  const [nickname, setNickname] = useState(usuario.nickname || "");
+  const [posicao, setPosicao] = useState<PositionValue | "">(toPositionValue(usuario.posicao));
+  const [foto, setFoto] = useState(usuario.photoUrl || "");
   const [novaFoto, setNovaFoto] = useState<string | null>(null);
+  const [novaFotoArquivo, setNovaFotoArquivo] = useState<File | null>(null);
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState(false);
+  const [salvando, setSalvando] = useState(false);
 
-  // Upload e preview da foto
-  const handleFotoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files && e.target.files[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        setErro("Só é permitido imagens!");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setNovaFoto(ev.target?.result as string);
-        setErro("");
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  function handleSalvar() {
-    if (!nome.trim() || !apelido.trim()) {
-      setErro("Nome e Apelido são obrigatórios!");
+  function handleFotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setErro("Envie apenas imagens.");
       return;
     }
-    if (nome.length > 10 || apelido.length > 10) {
-      setErro("Máximo 10 letras para Nome e Apelido.");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setNovaFoto(ev.target?.result as string);
+      setErro("");
+    };
+    reader.readAsDataURL(file);
+    setNovaFotoArquivo(file);
+  }
+
+  async function handleSalvar() {
+    if (!nome.trim() || !nickname.trim()) {
+      setErro("Nome e apelido sao obrigatorios.");
       return;
     }
+    if (nome.length > MAX_NAME_LENGTH || nickname.length > MAX_NAME_LENGTH) {
+      setErro(`Maximo ${MAX_NAME_LENGTH} caracteres para nome e apelido.`);
+      return;
+    }
+    if (!posicao) {
+      setErro("Selecione uma posicao.");
+      return;
+    }
+
     setErro("");
-    atualizarPerfil({
-      nome,
-      apelido,
-      posicao,
-      foto: novaFoto || foto, // Salva a nova foto se enviada
-    });
-    setSucesso(true);
-    setTimeout(() => {
-      setSucesso(false);
-      onClose();
-    }, 1200);
+    setSalvando(true);
+    try {
+      await atualizarPerfil({
+        nome,
+        nickname,
+        posicao,
+        fotoFile: novaFotoArquivo ?? undefined,
+        removerFoto: !novaFotoArquivo && !novaFoto && !foto ? true : undefined,
+      });
+      setSucesso(true);
+      setTimeout(() => {
+        setSucesso(false);
+        onClose();
+      }, 1200);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Falha ao salvar as alterações do perfil.";
+      setErro(message);
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -64,13 +89,12 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
         >
           ×
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-2">Editar Perfil</h2>
+        <h2 className="text-xl font-bold text-yellow-400 mb-2">Editar perfil</h2>
 
-        {/* Avatar/Foto com upload */}
         <div className="flex flex-col items-center mb-2 gap-2">
           <div className="relative">
             <Image
-              src={novaFoto || foto}
+              src={novaFoto || foto || "/images/jogadores/jogador_padrao_01.jpg"}
               alt="Avatar"
               width={80}
               height={80}
@@ -93,42 +117,43 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               />
             </label>
           </div>
-          <span className="text-xs text-yellow-300">Clique no ícone para alterar a foto</span>
+          <span className="text-xs text-yellow-300">Clique no icone para alterar a foto</span>
         </div>
 
         <div className="flex flex-col gap-2">
           <label className="text-sm text-yellow-300">
-            Nome (máx. 10 letras)
+            Nome (max. {MAX_NAME_LENGTH} letras)
             <input
               type="text"
-              maxLength={10}
+              maxLength={MAX_NAME_LENGTH}
               value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              onChange={(event) => setNome(event.target.value)}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             />
           </label>
           <label className="text-sm text-yellow-300">
-            Apelido (máx. 10 letras)
+            Apelido (max. {MAX_NAME_LENGTH} letras)
             <input
               type="text"
-              maxLength={10}
-              value={apelido}
-              onChange={(e) => setApelido(e.target.value)}
+              maxLength={MAX_NAME_LENGTH}
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             />
           </label>
           <label className="text-sm text-yellow-300">
-            Posição
+            Posicao
             <select
               value={posicao}
-              onChange={(e) => setPosicao(e.target.value)}
+              onChange={(event) => setPosicao(event.target.value as PositionValue | "")}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             >
               <option value="">Selecione</option>
-              <option value="Goleiro">Goleiro</option>
-              <option value="Zagueiro">Zagueiro</option>
-              <option value="Meia">Meia</option>
-              <option value="Atacante">Atacante</option>
+              {POSITION_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
             </select>
           </label>
         </div>
@@ -145,13 +170,27 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             Cancelar
           </button>
           <button
-            className="px-4 py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400"
+            className="px-4 py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400 disabled:opacity-60"
             onClick={handleSalvar}
+            disabled={salvando}
           >
-            Salvar
+            {salvando ? "Salvando..." : "Salvar"}
           </button>
         </div>
       </div>
     </div>
   );
+}
+
+function toPositionValue(value: string | null | undefined): PositionValue | "" {
+  const normalized = (value ?? "").toLowerCase().trim();
+  if (
+    normalized === "goleiro" ||
+    normalized === "zagueiro" ||
+    normalized === "meia" ||
+    normalized === "atacante"
+  ) {
+    return normalized;
+  }
+  return "";
 }

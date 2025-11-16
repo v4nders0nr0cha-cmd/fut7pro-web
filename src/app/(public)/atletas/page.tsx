@@ -1,27 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
-import { atletasMock } from "@/components/lists/mockAtletas";
+import { usePublicAthletes } from "@/hooks/usePublicAthletes";
 
 export default function ListaAtletasPage() {
   const [busca, setBusca] = useState("");
+  const { athletes, isLoading, isError, error } = usePublicAthletes();
 
-  // Mantendo ordem: mensalistas antes, tudo ordenado alfabeticamente
-  const mensalistas = atletasMock
-    .filter((a) => a.mensalista)
-    .sort((a, b) => a.nome.localeCompare(b.nome));
+  const atletasFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
 
-  const naoMensalistas = atletasMock
-    .filter((a) => !a.mensalista)
-    .sort((a, b) => a.nome.localeCompare(b.nome));
+    const ordenados = [...athletes].sort((a, b) => {
+      if (a.isMember && !b.isMember) return -1;
+      if (!a.isMember && b.isMember) return 1;
+      return a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" });
+    });
 
-  // Filtro universal
-  const atletasFiltrados = [...mensalistas, ...naoMensalistas].filter((atleta) =>
-    atleta.nome.toLowerCase().includes(busca.toLowerCase())
-  );
+    if (!termo) {
+      return ordenados;
+    }
+
+    return ordenados.filter((atleta) => {
+      const nome = atleta.nome.toLowerCase();
+      const apelido = (atleta.nickname ?? "").toLowerCase();
+      return nome.includes(termo) || apelido.includes(termo);
+    });
+  }, [athletes, busca]);
 
   return (
     <>
@@ -37,32 +44,41 @@ export default function ListaAtletasPage() {
         />
       </Head>
 
-      {/* TÍTULO PRINCIPAL PADRÃO */}
       <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
         Perfis dos Atletas
       </h1>
-      {/* DESCRIÇÃO PADRÃO */}
       <p className="mb-7 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
         Descubra tudo sobre os <strong>atletas do seu racha</strong>! Acesse o{" "}
         <strong>perfil completo de cada jogador</strong> com estatísticas, conquistas, posição em
         campo, histórico de partidas e evolução por temporada. Ideal para comparar desempenho,
         acompanhar crescimento e celebrar os destaques do <strong>futebol 7 entre amigos</strong>!
       </p>
-      {/* Campo de busca */}
+
       <input
         type="text"
         placeholder="Digite o nome do atleta..."
         value={busca}
-        onChange={(e) => setBusca(e.target.value)}
+        onChange={(event) => setBusca(event.target.value)}
         className="w-full p-2 rounded bg-zinc-800 text-white mb-6 outline-none focus:ring-2 focus:ring-yellow-400"
-        maxLength={20}
+        maxLength={40}
         aria-label="Buscar atleta"
       />
 
-      {/* Cards */}
+      {isError && (
+        <div className="w-full text-center text-red-200 bg-red-900/40 border border-red-700/40 px-4 py-3 rounded-lg mb-6">
+          {error ?? "Não foi possível carregar os atletas. Tente novamente em instantes."}
+        </div>
+      )}
+
       <div className="w-full overflow-x-auto scrollbar-dark">
         <div className="grid w-full grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {atletasFiltrados.length === 0 && (
+          {isLoading && atletasFiltrados.length === 0 && (
+            <div className="col-span-full text-center text-gray-400 py-8">
+              Carregando atletas...
+            </div>
+          )}
+
+          {!isLoading && atletasFiltrados.length === 0 && (
             <div className="col-span-full text-center text-gray-400 py-8">
               Nenhum atleta encontrado para o filtro informado.
             </div>
@@ -76,17 +92,16 @@ export default function ListaAtletasPage() {
             >
               <div
                 className={`relative p-3 rounded-xl shadow-lg hover:shadow-yellow-400 transition-all text-center text-white bg-zinc-900 ${
-                  atleta.mensalista ? "border-2 border-green-500" : ""
+                  atleta.isMember ? "border-2 border-green-500" : ""
                 }`}
               >
-                {/* Label MENSALISTA */}
-                {atleta.mensalista && (
+                {atleta.isMember && (
                   <span className="absolute top-1 left-1 text-green-400 text-[10px] font-bold uppercase z-10">
                     MENSALISTA
                   </span>
                 )}
                 <Image
-                  src={atleta.foto}
+                  src={atleta.photoUrl}
                   alt={`Foto do atleta ${atleta.nome} | Perfil do Jogador Fut7Pro`}
                   width={64}
                   height={64}

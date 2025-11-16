@@ -1,35 +1,78 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
-import Image from "next/image";
-import Link from "next/link";
-import { rankingsPorQuadrimestre } from "@/components/lists/mockRankingsPorQuadrimestre";
-import type { NumeroQuadrimestre } from "@/components/lists/mockRankingsPorQuadrimestre";
-import type { RankingAtleta } from "@/types/estatisticas";
+import { FaDownload, FaSpinner } from "react-icons/fa";
+import { PlayerRankingTable } from "@/components/statistics/PlayerRankingTable";
+import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicTenantSlug } from "@/hooks/usePublicTenantSlug";
+import { type RankingExportFormat, useRankingExport } from "@/hooks/useRankingExport";
 
-// Mock de quadrimestres e anos disponíveis
-const quadrimestres: { value: NumeroQuadrimestre; label: string }[] = [
-  { value: 1, label: "1º Quadrimestre (Jan-Abr)" },
-  { value: 2, label: "2º Quadrimestre (Mai-Ago)" },
-  { value: 3, label: "3º Quadrimestre (Set-Dez)" },
+const QUADRIMESTRES = [
+  { value: 1 as const, label: "1º Quadrimestre (Jan-Abr)" },
+  { value: 2 as const, label: "2º Quadrimestre (Mai-Ago)" },
+  { value: 3 as const, label: "3º Quadrimestre (Set-Dez)" },
 ];
 
-const anosDisponiveis = Object.keys(rankingsPorQuadrimestre)
-  .map((x) => Number(x))
-  .sort((a, b) => b - a);
-
-const anoPadrao: number = anosDisponiveis[0] ?? new Date().getFullYear();
-
 export default function RankingQuadrimestralPage() {
-  const [ano, setAno] = useState<number>(anoPadrao);
-  const [quadrimestre, setQuadrimestre] = useState<NumeroQuadrimestre>(1);
+  const slug = usePublicTenantSlug();
+  const [anoSelecionado, setAnoSelecionado] = useState(() => new Date().getFullYear());
+  const [quadrimestre, setQuadrimestre] = useState<(typeof QUADRIMESTRES)[number]["value"]>(1);
   const [search, setSearch] = useState("");
 
-  // Correção do erro: tipos garantidos
-  const ranking: RankingAtleta[] = (rankingsPorQuadrimestre[ano]?.[quadrimestre] || []).filter(
-    (atleta: RankingAtleta) => atleta.nome.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, rankings, isLoading, error } = usePublicPlayerRankings({
+    slug,
+    type: "geral",
+    limit: 200,
+    period: "quarter",
+    year: anoSelecionado,
+    quarter: quadrimestre,
+  });
+
+  const anosDisponiveis = useMemo(() => {
+    const list = data?.availableYears ?? [];
+    return [...list].sort((a, b) => b - a);
+  }, [data?.availableYears]);
+
+  useEffect(() => {
+    if (!anosDisponiveis.length) return;
+    if (!anosDisponiveis.includes(anoSelecionado)) {
+      setAnoSelecionado(anosDisponiveis[0]);
+    }
+  }, [anosDisponiveis, anoSelecionado]);
+
+  const periodoDescricao = useMemo(() => {
+    const inicio = data?.appliedPeriod?.start;
+    const fim = data?.appliedPeriod?.end;
+    if (!inicio || !fim) {
+      return null;
+    }
+    const formatter = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Fortaleza",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const inicioFormatado = formatter.format(new Date(inicio));
+    const fimFormatado = formatter.format(new Date(fim));
+    return `Período considerado: ${inicioFormatado} até ${fimFormatado} (horário de Fortaleza)`;
+  }, [data?.appliedPeriod?.start, data?.appliedPeriod?.end]);
+
+  const { format, setFormat, exporting, feedback, setFeedback, handleExport } = useRankingExport({
+    slug,
+    type: "geral",
+    limit: 200,
+    period: "quarter",
+    year: anoSelecionado,
+    quarter: quadrimestre,
+    filenamePrefix: `ranking-quadrimestral-${anoSelecionado}-q${quadrimestre}`,
+  });
+
+  const filtrados = useMemo(() => {
+    if (!search.trim()) return rankings;
+    const termo = search.trim().toLowerCase();
+    return rankings.filter((atleta) => atleta.nome.toLowerCase().includes(termo));
+  }, [rankings, search]);
 
   return (
     <>
@@ -37,17 +80,17 @@ export default function RankingQuadrimestralPage() {
         <title>Ranking Quadrimestral de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Ranking quadrimestral de pontos dos atletas do racha. Veja o desempenho por quadrimestre, compare e busque atletas. Estatísticas de futebol 7 sempre atualizadas no Fut7Pro."
+          content="Ranking quadrimestral de pontos dos atletas do racha. Veja o desempenho por quadrimestre com dados reais do Fut7Pro."
         />
         <meta
           name="keywords"
-          content="fut7, futebol 7, racha, ranking quadrimestral, ranking de pontos, atletas, estatísticas, sistema de racha, futebol amador, Fut7Pro"
+          content="fut7, futebol 7, racha, ranking quadrimestral, ranking de pontos, atletas, estatísticas, Fut7Pro"
         />
       </Head>
 
       <main className="min-h-screen bg-fundo text-white p-2 sm:p-4 md:p-6">
         <h1 className="sr-only">
-          Ranking Quadrimestral de Pontos do Racha de Futebol 7 – Atletas, Pontuação, Estatísticas
+          Ranking Quadrimestral de Pontos do Racha de Futebol 7 - Atletas, Pontuação, Estatísticas
         </h1>
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
@@ -56,108 +99,105 @@ export default function RankingQuadrimestralPage() {
               Ranking Quadrimestral de Pontos
             </h2>
             <p className="text-sm text-gray-400 max-w-xl mx-auto md:mx-0">
-              Veja o desempenho dos atletas em cada quadrimestre, filtre pelo seu nome e acompanhe
-              sua posição. Use o seletor ao lado para mudar o ano e o quadrimestre da tabela.
+              Veja o desempenho dos atletas em cada quadrimestre com dados oficiais do Fut7Pro.
+              Ajuste o ano, quadrimestre e exporte o ranking em instantes.
             </p>
+            {periodoDescricao && <p className="text-xs text-gray-500 mt-1">{periodoDescricao}</p>}
           </div>
           <div className="flex flex-row gap-2">
-            <select
-              value={ano}
-              onChange={(e) => setAno(Number(e.target.value))}
-              className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-              aria-label="Selecionar ano"
-            >
-              {anosDisponiveis.map((anoOpt) => (
-                <option key={anoOpt} value={anoOpt}>
-                  {anoOpt}
-                </option>
-              ))}
-            </select>
+            {anosDisponiveis.length > 0 && (
+              <select
+                value={anoSelecionado}
+                onChange={(event) => setAnoSelecionado(Number(event.target.value))}
+                className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+                aria-label="Selecionar ano"
+              >
+                {anosDisponiveis.map((ano) => (
+                  <option key={ano} value={ano}>
+                    {ano}
+                  </option>
+                ))}
+              </select>
+            )}
             <select
               value={quadrimestre}
-              onChange={(e) => setQuadrimestre(Number(e.target.value) as NumeroQuadrimestre)}
+              onChange={(event) => setQuadrimestre(Number(event.target.value) as 1 | 2 | 3)}
               className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
               aria-label="Selecionar quadrimestre"
             >
-              {quadrimestres.map((q) => (
-                <option key={q.value} value={q.value}>
-                  {q.label}
+              {QUADRIMESTRES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 max-w-3xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 max-w-4xl mx-auto">
           <input
-            type="text"
+            type="search"
             className="w-full sm:w-64 rounded px-4 py-2 border border-gray-600 bg-zinc-900 text-white placeholder-gray-400"
             placeholder="Buscar atleta por nome..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
             aria-label="Buscar atleta por nome"
           />
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <select
+              value={format}
+              onChange={(event) => {
+                setFormat(event.target.value as RankingExportFormat);
+                setFeedback(null);
+              }}
+              className="bg-zinc-900 border border-gray-600 text-white text-sm px-3 py-2 rounded md:min-w-[140px]"
+            >
+              <option value="xlsx">XLSX</option>
+              <option value="csv">CSV</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => handleExport()}
+              disabled={exporting}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-400 text-black font-semibold rounded hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exporting ? (
+                <>
+                  <FaSpinner className="animate-spin" /> Exportando...
+                </>
+              ) : (
+                <>
+                  <FaDownload /> Exportar {format.toUpperCase()}
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[600px]">
-            <thead className="bg-[#2a2a2a] text-gray-300">
-              <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Atleta</th>
-                <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
-                <th className="p-2 text-right">Jogos</th>
-                <th className="p-2 text-right">Vitórias</th>
-                <th className="p-2 text-right">Empates</th>
-                <th className="p-2 text-right">Derrotas</th>
-                <th className="p-2 text-right">Gols</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ranking.map((atleta: RankingAtleta, idx: number) => {
-                let rowClass = "";
-                if (idx === 0) rowClass = "border-2 border-yellow-400 bg-[#232100]";
-                if (idx === 1) rowClass = "border-2 border-gray-400 bg-[#1e1e1e]";
-                if (idx === 2) rowClass = "border-2 border-orange-600 bg-[#231c00]";
+        {feedback && (
+          <p
+            className={`text-sm text-center mb-4 ${
+              feedback.type === "success" ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {feedback.message}
+          </p>
+        )}
 
-                return (
-                  <tr
-                    key={atleta.id}
-                    className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
-                  >
-                    <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
-                    <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                      <Link href={`/atletas/${atleta.slug}`}>
-                        <Image
-                          src={atleta.foto}
-                          alt={`Foto de ${atleta.nome}`}
-                          width={32}
-                          height={32}
-                          className="rounded-full border border-yellow-400"
-                        />
-                      </Link>
-                      <Link
-                        href={`/atletas/${atleta.slug}`}
-                        className="text-yellow-300 hover:underline font-semibold"
-                        title={`Ver perfil de ${atleta.nome}`}
-                      >
-                        <span className="break-words">{atleta.nome}</span>
-                      </Link>
-                    </td>
-                    <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
-                      {atleta.pontos}
-                    </td>
-                    <td className="text-right p-2">{atleta.jogos}</td>
-                    <td className="text-right p-2">{atleta.vitorias}</td>
-                    <td className="text-right p-2">{atleta.empates}</td>
-                    <td className="text-right p-2">{atleta.derrotas}</td>
-                    <td className="text-right p-2">{atleta.gols}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <section className="px-1 md:px-2">
+          <PlayerRankingTable
+            rankings={filtrados}
+            isLoading={isLoading}
+            error={error ?? null}
+            highlight="pontos"
+            emptyMessage={
+              anosDisponiveis.length === 0
+                ? "Ainda não existem registros quadrimestrais para este racha."
+                : "Nenhum atleta encontrado para o quadrimestre e filtros informados."
+            }
+          />
+        </section>
       </main>
     </>
   );

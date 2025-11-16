@@ -29,7 +29,7 @@ export const db = {
       // Pode filtrar por "params.where" depois se desejar.
       return [
         {
-          id: 1,
+          id: "1",
           nome: "Exemplo",
           whatsapp: "5511912345678",
           email: "exemplo@fut7pro.com",

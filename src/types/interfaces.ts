@@ -47,9 +47,14 @@ export interface Time {
 export interface Jogador {
   id: string;
   nome: string;
+  apelido?: string;
+  nickname?: string;
   posicao?: string;
   numero?: number;
   foto?: string;
+  photoUrl?: string;
+  mensalista?: boolean;
+  isMember?: boolean;
 }
 
 // Interfaces para Eventos de Partida

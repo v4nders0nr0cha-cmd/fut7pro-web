@@ -112,7 +112,7 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
         className="flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 cursor-grab"
       >
         <Image
-          src={jogador.foto}
+          src={jogador.photoUrl}
           alt={jogador.nome}
           width={28}
           height={28}

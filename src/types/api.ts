@@ -15,10 +15,14 @@ export interface JogadorData {
   id: string;
   nome: string;
   apelido?: string;
+  nickname?: string;
   email: string;
   foto: string;
+  photoUrl?: string;
   posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
   status: "ativo" | "inativo" | "suspenso";
+  mensalista?: boolean;
+  isMember?: boolean;
   criadoEm: string;
 }
 

@@ -16,6 +16,9 @@ NEXT_PUBLIC_DEMO_TENANT_ID=demo-tenant
 
 # Environment
 NODE_ENV=development
+
+# Revalidate token (protege /api/revalidate/public)
+PUBLIC_REVALIDATE_TOKEN=local-dev-token
 ```
 
 ## Variáveis Explicadas
@@ -43,6 +46,12 @@ NODE_ENV=development
 - **Descrição**: Ambiente de execução
 - **Valor**: `development` ou `production`
 - **Obrigatório**: Sim
+
+### `PUBLIC_REVALIDATE_TOKEN`
+
+- **Descrição**: Token utilizado para autorizar requisições na rota `/api/revalidate/public`
+- **Valor**: Cadeia de caracteres segura (diferente em cada ambiente)
+- **Obrigatório**: Sim (define quem pode disparar revalidate)
 
 ## Como Configurar
 
@@ -78,7 +87,6 @@ Em produção, configure as variáveis no seu provedor de hospedagem:
 
 - **Vercel**: Environment Variables no dashboard
 - **Netlify**: Site settings > Environment variables
-- **Railway**: Variables tab
 - **Render**: Environment tab
 
 ## Troubleshooting

@@ -22,7 +22,12 @@ export interface JogadorRacha {
   jogadorId: string;
   nome?: string;
   apelido?: string;
+  nickname?: string;
   email?: string;
+  foto?: string | null;
+  photoUrl?: string | null;
+  mensalista?: boolean;
+  isMember?: boolean;
 }
 
 export interface Racha {

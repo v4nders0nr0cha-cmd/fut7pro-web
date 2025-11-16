@@ -10,6 +10,7 @@ import {
   FaBuilding,
   FaCheckCircle,
 } from "react-icons/fa";
+import { rachaConfig } from "@/config/racha.config";
 
 export default function ContatosPage() {
   const [form, setForm] = useState({
@@ -43,7 +44,10 @@ export default function ContatosPage() {
       const res = await fetch("/api/contato", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          slug: rachaConfig.slug,
+        }),
       });
 
       if (!res.ok) throw new Error("Erro ao enviar mensagem, tente novamente.");

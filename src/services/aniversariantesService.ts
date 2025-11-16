@@ -8,13 +8,15 @@ export async function getAniversariantesDoDia(data = new Date()) {
   const mes = data.getMonth() + 1;
   const dia = data.getDate();
 
-  return db.usuario.findMany({
+  const usuarios = await db.usuario.findMany({
     where: {
       ativo: true,
-      dataNascimento: {
-        // Checa se termina com -MM-DD (aniversariante do dia)
-        endsWith: `-${mes.toString().padStart(2, "0")}-${dia.toString().padStart(2, "0")}`,
-      },
     },
   });
+
+  const suffix = `-${mes.toString().padStart(2, "0")}-${dia.toString().padStart(2, "0")}`;
+
+  return usuarios.filter((usuario) =>
+    typeof usuario.dataNascimento === "string" ? usuario.dataNascimento.endsWith(suffix) : false
+  );
 }

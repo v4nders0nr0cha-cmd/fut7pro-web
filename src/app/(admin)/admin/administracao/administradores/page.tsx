@@ -1,6 +1,7 @@
 "use client";
 
 import { useAdmin } from "@/hooks/useAdmin";
+import { useMemo } from "react";
 
 // Forçar renderização no cliente para evitar problemas de template
 export const dynamic = "force-dynamic";
@@ -8,7 +9,7 @@ import { useState } from "react";
 import { Plus, Edit, Trash2, User, Shield, Crown } from "lucide-react";
 
 export default function AdministradoresPage() {
-  const { admins, isLoading, isError, error, addAdmin, updateAdmin, deleteAdmin } = useAdmin();
+  const { admins, isLoading, isError, error } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
 
@@ -34,15 +35,21 @@ export default function AdministradoresPage() {
     );
   }
 
-  const filteredAdmins = admins.filter((admin) => {
-    const matchesSearch =
-      admin.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = !selectedRole || admin.role === selectedRole;
-    return matchesSearch && matchesRole;
-  });
+  const filteredAdmins = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return admins.filter((admin) => {
+      const roleValue = admin.role ?? admin.funcao ?? "";
+      const matchesSearch =
+        !term ||
+        (admin.nome?.toLowerCase().includes(term) ?? false) ||
+        (admin.email?.toLowerCase().includes(term) ?? false);
+      const matchesRole = !selectedRole || roleValue === selectedRole;
+      return matchesSearch && matchesRole;
+    });
+  }, [admins, searchTerm, selectedRole]);
 
-  const getRoleIcon = (role: string) => {
+  const getRoleIcon = (role?: string) => {
+    if (!role) return <User className="w-4 h-4 text-gray-400" />;
     switch (role) {
       case "SUPERADMIN":
         return <Crown className="w-4 h-4 text-yellow-400" />;
@@ -53,7 +60,7 @@ export default function AdministradoresPage() {
     }
   };
 
-  const getRoleColor = (role: string) => {
+  const getRoleColor = (role?: string) => {
     switch (role) {
       case "SUPERADMIN":
         return "bg-yellow-600 text-yellow-100";
@@ -118,57 +125,60 @@ export default function AdministradoresPage() {
               </p>
             </div>
           ) : (
-            filteredAdmins.map((admin) => (
-              <div
-                key={admin.id}
-                className="bg-[#232323] rounded-lg p-4 border border-[#333] hover:border-yellow-400 transition-all"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    {getRoleIcon(admin.role)}
-                    <div>
-                      <h3 className="font-semibold text-white">{admin.nome}</h3>
-                      <p className="text-sm text-gray-400">{admin.email}</p>
+            filteredAdmins.map((admin) => {
+              const roleValue = admin.role ?? admin.funcao ?? "ADMIN";
+              return (
+                <div
+                  key={admin.id}
+                  className="bg-[#232323] rounded-lg p-4 border border-[#333] hover:border-yellow-400 transition-all"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {getRoleIcon(roleValue)}
+                      <div>
+                        <h3 className="font-semibold text-white">{admin.nome ?? "Sem nome"}</h3>
+                        <p className="text-sm text-gray-400">{admin.email ?? "-"}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1">
+                      <button className="p-1 text-gray-400 hover:text-yellow-400 transition">
+                        <Edit size={16} />
+                      </button>
+                      <button className="p-1 text-gray-400 hover:text-red-400 transition">
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
 
-                  <div className="flex gap-1">
-                    <button className="p-1 text-gray-400 hover:text-yellow-400 transition">
-                      <Edit size={16} />
-                    </button>
-                    <button className="p-1 text-gray-400 hover:text-red-400 transition">
-                      <Trash2 size={16} />
-                    </button>
+                  <div className="space-y-2">
+                    <span
+                      className={`inline-block px-2 py-1 rounded text-xs ${getRoleColor(roleValue)}`}
+                    >
+                      {roleValue}
+                    </span>
+
+                    {admin.status && (
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs ${
+                          admin.status === "ATIVO"
+                            ? "bg-green-600 text-green-100"
+                            : "bg-red-600 text-red-100"
+                        }`}
+                      >
+                        {admin.status}
+                      </span>
+                    )}
+
+                    {admin.ultimoAcesso && (
+                      <p className="text-xs text-gray-400">
+                        Último acesso: {new Date(admin.ultimoAcesso).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <span
-                    className={`inline-block px-2 py-1 rounded text-xs ${getRoleColor(admin.role)}`}
-                  >
-                    {admin.role}
-                  </span>
-
-                  {admin.status && (
-                    <span
-                      className={`inline-block px-2 py-1 rounded text-xs ${
-                        admin.status === "ATIVO"
-                          ? "bg-green-600 text-green-100"
-                          : "bg-red-600 text-red-100"
-                      }`}
-                    >
-                      {admin.status}
-                    </span>
-                  )}
-
-                  {admin.ultimoAcesso && (
-                    <p className="text-xs text-gray-400">
-                      Último acesso: {new Date(admin.ultimoAcesso).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

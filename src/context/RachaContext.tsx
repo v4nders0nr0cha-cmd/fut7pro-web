@@ -8,7 +8,8 @@ import {
   type ReactNode,
   useEffect,
 } from "react";
-import { rachaMap } from "@/config/rachaMap";
+import { useSession } from "next-auth/react";
+import { rachaConfig } from "@/config/racha.config";
 
 type RachaContextType = {
   rachaId: string;
@@ -16,6 +17,8 @@ type RachaContextType = {
   clearRachaId: () => void;
   isRachaSelected: boolean;
 };
+
+const DEFAULT_RACHA_SLUG = process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG ?? rachaConfig.slug ?? "";
 
 const RachaContext = createContext<RachaContextType>({
   rachaId: "",
@@ -33,17 +36,41 @@ export function useRacha() {
 }
 
 export function RachaProvider({ children }: { children: ReactNode }) {
-  // Definir rachaId padrão como o primeiro do rachaMap
-  const defaultRachaId = Object.keys(rachaMap)[0] || "";
-  const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
+  const { data: session } = useSession();
+  const [rachaId, setRachaIdState] = useState<string>(DEFAULT_RACHA_SLUG);
+
+  const resolvedDefaultSlug = useMemo(() => {
+    const sessionSlug = session?.user?.tenantSlug?.trim();
+    if (sessionSlug) {
+      return sessionSlug;
+    }
+    return DEFAULT_RACHA_SLUG;
+  }, [session?.user?.tenantSlug]);
+
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
+    const sessionSlug = session.user?.tenantSlug?.trim();
+    if (sessionSlug && sessionSlug !== rachaId) {
+      setRachaIdState(sessionSlug);
+      return;
+    }
+
+    const tenantId = session.user?.tenantId?.trim();
+    if (tenantId && tenantId !== rachaId) {
+      setRachaIdState(tenantId);
+    }
+  }, [session, rachaId]);
 
   const setRachaId = useCallback((id: string) => {
     setRachaIdState(id);
   }, []);
 
   const clearRachaId = useCallback(() => {
-    setRachaIdState(defaultRachaId);
-  }, [defaultRachaId]);
+    setRachaIdState(resolvedDefaultSlug);
+  }, [resolvedDefaultSlug]);
 
   const isRachaSelected = useMemo(() => {
     return rachaId.length > 0;

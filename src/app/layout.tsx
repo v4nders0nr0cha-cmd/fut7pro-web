@@ -2,7 +2,6 @@ import "@/styles/globals.css";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { Providers } from "./providers";
-import { ThemeProvider } from "@/context/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { rachaConfig } from "@/config/racha.config";
 import CookieConsent from "@/components/layout/CookieConsent";
@@ -78,13 +77,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body className={`${inter.className} bg-fundo text-white break-words`}>
         <ErrorBoundary>
-          <ThemeProvider>
-            <Providers>
-              {children}
-              <CookieConsent />
-              <MonitoringBootstrap />
-            </Providers>
-          </ThemeProvider>
+          <Providers>
+            {children}
+            <CookieConsent />
+            <MonitoringBootstrap />
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>
