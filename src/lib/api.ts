@@ -32,8 +32,9 @@ class ApiClient {
         "Content-Type": "application/json",
       };
 
-      if (session?.user?.accessToken) {
-        headers["Authorization"] = `Bearer ${session.user.accessToken}`;
+      const user = session?.user as any;
+      if (user?.accessToken) {
+        headers["Authorization"] = `Bearer ${user.accessToken as string}`;
       }
 
       return headers;
@@ -163,6 +164,7 @@ export const estatisticasApi = {
 
 export const superAdminApi = {
   getRachas: () => apiClient.get("/superadmin/rachas"),
+  addRacha: (data: ApiRequestData) => apiClient.post("/superadmin/rachas", data),
   getMetrics: () => apiClient.get("/superadmin/metrics"),
   getFinanceiro: () => apiClient.get("/superadmin/financeiro"),
   getUsuarios: () => apiClient.get("/superadmin/usuarios"),

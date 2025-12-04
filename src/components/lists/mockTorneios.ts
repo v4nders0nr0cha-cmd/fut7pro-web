@@ -7,6 +7,8 @@ export interface Torneio {
   campeao: string;
   banner: string; // banner/foto do torneio (ex: jogadores ou evento)
   logo: string; // logo do time campeão (antigo "imagem")
+  bannerUrl?: string; // alias compatível com backend
+  logoUrl?: string; // alias compatível com backend
   jogadores: string[]; // slugs dos jogadores campeões
 }
 

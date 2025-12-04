@@ -3,7 +3,7 @@
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
-import { Role } from "@prisma/client";
+import { Role } from "@/common/enums";
 
 export interface AuthUser {
   id: string;
@@ -32,6 +32,7 @@ export interface UseAuthReturn {
 
 // Mapeamento de roles para permissões
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
+  ATHLETE: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
   ATLETA: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
   ADMIN: [
     "USER_READ",

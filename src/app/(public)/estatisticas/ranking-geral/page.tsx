@@ -5,9 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import type { RankingAtleta } from "@/types/estatisticas";
-import { rankingAnuais } from "@/components/lists/mockRankingAnual";
-import { rankingsPorQuadrimestre } from "@/components/lists/mockRankingsPorQuadrimestre";
-import { rankingHistorico } from "@/components/lists/mockRankingHistorico";
+import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+
+const anoAtual = new Date().getFullYear();
 
 const periodos = [
   { label: "1º Quadrimestre", value: "q1" },
@@ -20,21 +20,23 @@ const periodos = [
 export default function RankingGeralPage() {
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState("q1");
-  const anoAtual = 2025;
 
-  let ranking: RankingAtleta[] = [];
-  if (periodo === "anual") {
-    ranking = rankingAnuais[anoAtual] ?? [];
-  } else if (periodo === "historico") {
-    ranking = rankingHistorico;
-  } else {
-    const quadrimestre = Number(periodo.replace("q", "")) as 1 | 2 | 3;
-    ranking = rankingsPorQuadrimestre[anoAtual]?.[quadrimestre] ?? [];
-  }
-
-  const rankingFiltrado = ranking.filter((atleta: RankingAtleta) =>
-    atleta.nome.toLowerCase().includes(search.toLowerCase())
+  const { rankings, isLoading, isError, error } = usePublicPlayerRankings(
+    periodo === "anual"
+      ? { type: "geral", period: "year", year: anoAtual }
+      : periodo === "historico"
+        ? { type: "geral", period: "all" }
+        : {
+            type: "geral",
+            period: "quarter",
+            year: anoAtual,
+            quarter: Number(periodo.replace("q", "")) as 1 | 2 | 3,
+          }
   );
+
+  const rankingFiltrado = (rankings as RankingAtleta[])
+    .filter((atleta) => atleta.nome.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => b.pontos - a.pontos);
 
   return (
     <>
@@ -42,7 +44,7 @@ export default function RankingGeralPage() {
         <title>Ranking Geral de Pontos | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Ranking geral de pontos do futebol 7. Veja quem são os atletas mais bem pontuados em cada quadrimestre, na temporada atual ou em todas as temporadas. Inspire-se para subir na tabela. Estatísticas sempre atualizadas. Fut7Pro – Plataforma para racha, futebol 7 e futebol amador."
+          content="Ranking geral de pontos do futebol 7. Veja quem são os atletas mais bem pontuados em cada quadrimestre, na temporada atual ou em todas as temporadas. Inspire-se para subir na tabela. Estatísticas sempre atualizadas. Fut7Pro - Plataforma para racha, futebol 7 e futebol amador."
         />
         <meta
           name="keywords"
@@ -52,7 +54,7 @@ export default function RankingGeralPage() {
 
       <main className="min-h-screen bg-fundo text-white">
         <h1 className="sr-only">
-          Ranking Geral de Pontos do Futebol 7 – Atletas, Pontuação, Estatísticas, Todas as
+          Ranking Geral de Pontos do Futebol 7 - Atletas, Pontuação, Estatísticas, Todas as
           Temporadas, Temporada Atual
         </h1>
 
@@ -100,60 +102,71 @@ export default function RankingGeralPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[600px]">
-            <thead className="bg-[#2a2a2a] text-gray-300">
-              <tr>
-                <th className="p-2 text-left">#</th>
-                <th className="p-2 text-left">Atleta</th>
-                <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
-                <th className="p-2 text-right">Jogos</th>
-                <th className="p-2 text-right">Vitórias</th>
-                <th className="p-2 text-right">Empates</th>
-                <th className="p-2 text-right">Derrotas</th>
-                <th className="p-2 text-right">Gols</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rankingFiltrado.map((atleta: RankingAtleta, idx: number) => {
-                const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
+          {isLoading && (
+            <div className="text-center text-gray-400 py-8">Carregando ranking geral...</div>
+          )}
+          {isError && !isLoading && (
+            <div className="text-center text-red-400 py-8">
+              Erro ao carregar ranking geral.
+              {error && <div className="text-xs text-red-300 mt-1">{error}</div>}
+            </div>
+          )}
+          {!isLoading && !isError && (
+            <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[600px]">
+              <thead className="bg-[#2a2a2a] text-gray-300">
+                <tr>
+                  <th className="p-2 text-left">#</th>
+                  <th className="p-2 text-left">Atleta</th>
+                  <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
+                  <th className="p-2 text-right">Jogos</th>
+                  <th className="p-2 text-right">Vitórias</th>
+                  <th className="p-2 text-right">Empates</th>
+                  <th className="p-2 text-right">Derrotas</th>
+                  <th className="p-2 text-right">Gols</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankingFiltrado.map((atleta, idx) => {
+                  const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
 
-                return (
-                  <tr
-                    key={atleta.id}
-                    className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
-                  >
-                    <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
-                    <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                      <Link href={`/atletas/${atleta.slug}`}>
-                        <Image
-                          src={atleta.foto}
-                          alt={`Foto de ${atleta.nome}`}
-                          width={32}
-                          height={32}
-                          className="rounded-full border border-yellow-400"
-                        />
-                      </Link>
-                      <Link
-                        href={`/atletas/${atleta.slug}`}
-                        className="text-yellow-300 hover:underline font-semibold"
-                        title={`Ver perfil de ${atleta.nome}`}
-                      >
-                        <span className="break-words">{atleta.nome}</span>
-                      </Link>
-                    </td>
-                    <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
-                      {atleta.pontos}
-                    </td>
-                    <td className="text-right p-2">{atleta.jogos}</td>
-                    <td className="text-right p-2">{atleta.vitorias}</td>
-                    <td className="text-right p-2">{atleta.empates}</td>
-                    <td className="text-right p-2">{atleta.derrotas}</td>
-                    <td className="text-right p-2">{atleta.gols}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr
+                      key={atleta.id}
+                      className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
+                    >
+                      <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
+                      <td className="flex items-center gap-2 p-2 whitespace-nowrap">
+                        <Link href={`/atletas/${atleta.slug}`}>
+                          <Image
+                            src={atleta.foto}
+                            alt={`Foto de ${atleta.nome}`}
+                            width={32}
+                            height={32}
+                            className="rounded-full border border-yellow-400"
+                          />
+                        </Link>
+                        <Link
+                          href={`/atletas/${atleta.slug}`}
+                          className="text-yellow-300 hover:underline font-semibold"
+                          title={`Ver perfil de ${atleta.nome}`}
+                        >
+                          <span className="break-words">{atleta.nome}</span>
+                        </Link>
+                      </td>
+                      <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                        {atleta.pontos}
+                      </td>
+                      <td className="text-right p-2">{atleta.jogos}</td>
+                      <td className="text-right p-2">{atleta.vitorias}</td>
+                      <td className="text-right p-2">{atleta.empates}</td>
+                      <td className="text-right p-2">{atleta.derrotas}</td>
+                      <td className="text-right p-2">{atleta.gols}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </main>
     </>

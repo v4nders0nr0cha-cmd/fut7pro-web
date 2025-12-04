@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import BillingAPI, {
   type Subscription,
   type Plan,
@@ -23,7 +23,7 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const refreshSubscription = async () => {
+  const refreshSubscription = useCallback(async () => {
     if (!tenantId) return;
 
     try {
@@ -39,9 +39,9 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar assinatura");
     }
-  };
+  }, [tenantId]);
 
-  const refreshPlans = async () => {
+  const refreshPlans = useCallback(async () => {
     try {
       setError(null);
       const data = await BillingAPI.getPlans();
@@ -49,9 +49,9 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar planos");
     }
-  };
+  }, []);
 
-  const refreshStatus = async () => {
+  const refreshStatus = useCallback(async () => {
     if (!subscription?.id) return;
 
     try {
@@ -61,7 +61,7 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar status");
     }
-  };
+  }, [subscription?.id]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -71,7 +71,7 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     };
 
     loadData();
-  }, [tenantId]);
+  }, [tenantId, refreshPlans, refreshSubscription]);
 
   return {
     subscription,

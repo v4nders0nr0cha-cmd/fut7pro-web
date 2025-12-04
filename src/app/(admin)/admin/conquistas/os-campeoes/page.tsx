@@ -6,7 +6,6 @@ import CampeaoAnoCard from "@/components/cards/CampeaoAnoCard";
 import QuadrimestreGrid from "@/components/cards/QuadrimestreGrid";
 import { campeoesAno } from "@/components/lists/mockCampeoesAno";
 import { melhoresPorPosicao } from "@/components/lists/mockMelhoresPorPosicao";
-import { quadrimestres } from "@/components/lists/mockQuadrimestres";
 import type { QuadrimestresAno } from "@/types/estatisticas";
 
 // --- MOCK VISUAL (se não houver dados reais no ano) ---
@@ -54,16 +53,9 @@ const melhoresPosicaoDoAno = melhoresPorPosicao
   .filter((p) => p.ano === anoSelecionado)
   .sort((a, b) => ordemPosicoes.indexOf(a.posicao) - ordemPosicoes.indexOf(b.posicao));
 
-const quadrimestresAno: QuadrimestresAno =
-  anoSelecionado &&
-  quadrimestres[anoSelecionado] &&
-  Object.keys(quadrimestres[anoSelecionado]).length > 0
-    ? quadrimestres[anoSelecionado]
-    : mockQuadrimestresAno;
-
 const quadrimestresOrdenados: QuadrimestresAno = {};
-Object.keys(quadrimestresAno).forEach((periodo) => {
-  quadrimestresOrdenados[periodo] = [...(quadrimestresAno[periodo] || [])].sort(
+Object.keys(mockQuadrimestresAno).forEach((periodo) => {
+  quadrimestresOrdenados[periodo] = [...(mockQuadrimestresAno[periodo] || [])].sort(
     (a, b) => prioridadeQuadrimestre.indexOf(a.titulo) - prioridadeQuadrimestre.indexOf(b.titulo)
   );
 });

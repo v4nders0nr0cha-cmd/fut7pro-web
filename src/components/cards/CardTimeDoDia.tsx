@@ -1,23 +1,9 @@
 "use client";
 
 import Image from "next/image";
+import type { TimeDoDia } from "@/types/partida";
 
-type JogadorTime = {
-  id: string;
-  nome: string;
-  apelido?: string;
-  foto: string;
-  posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
-  status: "titular" | "substituto" | "ausente";
-};
-
-type TimeDoDia = {
-  nome: string;
-  logo: string;
-  cor: string;
-  ehTimeCampeao?: boolean;
-  jogadores: JogadorTime[];
-};
+type JogadorTime = TimeDoDia["jogadores"][number];
 
 type Props = {
   time: TimeDoDia;

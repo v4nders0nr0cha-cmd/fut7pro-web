@@ -7,7 +7,8 @@ export type NotificationType =
   | "alerta"
   | "novidade"
   | "contato"
-  | "outros";
+  | "outros"
+  | string;
 
 export interface Notification {
   id: string;
@@ -22,7 +23,16 @@ export interface Notification {
   assunto?: string;
   referenciaId?: string; // id relacionado (ex: id da mensagem)
   metadata?: Record<string, unknown>; // dados adicionais específicos do tipo
+  // aliases legados para compatibilidade com telas antigas
+  tipo?: string; // alias para type/categoria
+  destino?: string;
+  status?: string;
+  enviadoPor?: string;
 }
+
+// Aliases em português para compatibilidade
+export type NotificacaoTipo = NotificationType;
+export type Notificacao = Notification;
 
 // Interface para criação de notificações
 export interface CreateNotificationDto {

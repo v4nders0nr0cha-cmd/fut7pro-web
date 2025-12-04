@@ -3,12 +3,13 @@ import { useState } from "react";
 import type { ChangeEvent } from "react";
 import Image from "next/image";
 import { usePerfil } from "./PerfilContext";
+import type { PosicaoAtleta } from "@/types/atletas";
 
 export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) {
   const { usuario, atualizarPerfil } = usePerfil();
   const [nome, setNome] = useState(usuario.nome || "");
   const [apelido, setApelido] = useState(usuario.apelido || "");
-  const [posicao, setPosicao] = useState(usuario.posicao || "");
+  const [posicao, setPosicao] = useState<PosicaoAtleta | "">(usuario.posicao || "");
   const [foto, setFoto] = useState(usuario.foto || "");
   const [novaFoto, setNovaFoto] = useState<string | null>(null);
   const [erro, setErro] = useState("");
@@ -41,10 +42,12 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       return;
     }
     setErro("");
+    const posicaoSelecionada: PosicaoAtleta = (posicao || usuario.posicao) as PosicaoAtleta;
+
     atualizarPerfil({
       nome,
       apelido,
-      posicao,
+      posicao: posicaoSelecionada,
       foto: novaFoto || foto, // Salva a nova foto se enviada
     });
     setSucesso(true);
@@ -121,7 +124,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             Posição
             <select
               value={posicao}
-              onChange={(e) => setPosicao(e.target.value)}
+              onChange={(e) => setPosicao(e.target.value as PosicaoAtleta | "")}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             >
               <option value="">Selecione</option>

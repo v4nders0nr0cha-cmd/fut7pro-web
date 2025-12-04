@@ -22,6 +22,7 @@ interface ModalNovoAdminProps {
 }
 
 const roleLabels: Record<Role, string> = {
+  ATHLETE: "Athlete",
   ATLETA: "Atleta",
   ADMIN: "Admin",
   SUPERADMIN: "SuperAdmin",
@@ -66,6 +67,7 @@ const permissionLabels: Record<Permission, string> = {
 };
 
 const rolePermissions: Record<Role, Permission[]> = {
+  ATHLETE: [],
   ATLETA: [],
   ADMIN: [
     Permission.RACHA_READ,

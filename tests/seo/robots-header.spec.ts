@@ -1,4 +1,12 @@
-import { test, expect } from "@playwright/test";
+// Polyfill para ambientes de teste sem TransformStream/ReadableStream (executa antes do Playwright)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const webStreams = require("node:stream/web");
+// @ts-ignore
+global.TransformStream = global.TransformStream || webStreams.TransformStream;
+// @ts-ignore
+global.ReadableStream = global.ReadableStream || webStreams.ReadableStream;
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { test, expect } = require("@playwright/test");
 
 test.describe("SEO Headers", () => {
   test("home não deve ter X-Robots-Tag", async ({ request }) => {

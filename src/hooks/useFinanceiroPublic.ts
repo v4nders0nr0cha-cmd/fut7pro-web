@@ -1,29 +1,24 @@
 // src/hooks/useFinanceiroPublic.ts
 
 import useSWR from "swr";
-
-export interface LancamentoFinanceiro {
-  id: string;
-  tipo: string;
-  categoria: string;
-  valor: number;
-  descricao?: string;
-  data: string;
-  criadoEm: string;
-  adminNome: string;
-  adminEmail: string;
-}
-
-interface ResumoFinanceiro {
-  totalReceitas: number;
-  totalDespesas: number;
-  saldo: number;
-  totalLancamentos: number;
-}
+import type { ResumoFinanceiro, LancamentoFinanceiro } from "@/components/financeiro/types";
 
 interface FinanceiroPublicData {
-  resumo: ResumoFinanceiro;
-  lancamentos: LancamentoFinanceiro[];
+  resumo: {
+    saldo?: number;
+    saldoAtual?: number;
+    totalReceitas?: number;
+    totalDespesas?: number;
+    receitasPorMes?: Record<string, number>;
+    despesasPorMes?: Record<string, number>;
+  };
+  lancamentos: Array<
+    LancamentoFinanceiro & {
+      categoria?: string;
+      adminNome?: string;
+      adminEmail?: string;
+    }
+  >;
 }
 
 async function fetcher(url: string): Promise<FinanceiroPublicData> {
@@ -54,12 +49,35 @@ export function useFinanceiroPublic(rachaId: string) {
     }
   );
 
+  const resumo: ResumoFinanceiro | undefined = data
+    ? {
+        saldoAtual: data.resumo.saldoAtual ?? data.resumo.saldo ?? 0,
+        totalReceitas: data.resumo.totalReceitas ?? 0,
+        totalDespesas: data.resumo.totalDespesas ?? 0,
+        receitasPorMes: data.resumo.receitasPorMes ?? {},
+        despesasPorMes: data.resumo.despesasPorMes ?? {},
+      }
+    : undefined;
+
+  const lancamentos: LancamentoFinanceiro[] = (data?.lancamentos || []).map((l) => ({
+    id: l.id,
+    data: l.data,
+    tipo: l.tipo,
+    descricao: l.descricao,
+    valor: l.valor,
+    responsavel: l.responsavel ?? l.adminNome ?? "N/D",
+    comprovanteUrl: l.comprovanteUrl,
+  }));
+
   return {
-    resumo: data?.resumo,
-    lancamentos: data?.lancamentos || [],
+    resumo,
+    lancamentos,
     isLoading,
     isError: error,
     error: error?.message,
     mutate,
   };
 }
+
+// Reexporta o tipo usado na pÃ¡gina pÃºblica
+export type { LancamentoFinanceiro };

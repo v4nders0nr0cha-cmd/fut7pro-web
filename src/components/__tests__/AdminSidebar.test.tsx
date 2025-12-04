@@ -2,28 +2,30 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import AdminSidebar from "../admin/AdminSidebar";
 import { Role } from "@/common/enums";
 
+const routerMock = jest.fn().mockReturnValue({
+  route: "/admin",
+  pathname: "/admin",
+  query: {},
+  asPath: "/admin",
+  push: jest.fn(),
+  pop: jest.fn(),
+  reload: jest.fn(),
+  back: jest.fn(),
+  prefetch: jest.fn().mockResolvedValue(undefined),
+  beforePopState: jest.fn(),
+  events: {
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  },
+  isFallback: false,
+});
+
 // Mock do Next.js router
 jest.mock("next/router", () => ({
-  useRouter() {
-    return {
-      route: "/admin",
-      pathname: "/admin",
-      query: {},
-      asPath: "/admin",
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn().mockResolvedValue(undefined),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-      isFallback: false,
-    };
-  },
+  useRouter: routerMock,
+  withRouter: (comp: any) => comp,
+  Router: {},
 }));
 
 // Mock do NextAuth
@@ -57,6 +59,24 @@ describe("AdminSidebar", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    routerMock.mockReturnValue({
+      route: "/admin",
+      pathname: "/admin",
+      query: {},
+      asPath: "/admin",
+      push: jest.fn(),
+      pop: jest.fn(),
+      reload: jest.fn(),
+      back: jest.fn(),
+      prefetch: jest.fn().mockResolvedValue(undefined),
+      beforePopState: jest.fn(),
+      events: {
+        on: jest.fn(),
+        off: jest.fn(),
+        emit: jest.fn(),
+      },
+      isFallback: false,
+    });
   });
 
   it("should render sidebar with user information", () => {
@@ -190,9 +210,8 @@ describe("AdminSidebar", () => {
     useSession.mockReturnValue(mockSession);
 
     // Mock do router para simular rota ativa
-    const { useRouter } = require("next/router");
-    useRouter.mockReturnValue({
-      ...useRouter(),
+    routerMock.mockReturnValue({
+      ...routerMock(),
       pathname: "/admin/jogadores",
     });
 
@@ -212,7 +231,7 @@ describe("AdminSidebar", () => {
     fireEvent.click(mobileMenuButton);
 
     // Verificar se o menu mobile está visível
-    const sidebar = screen.getByRole("navigation");
+    const sidebar = screen.getAllByRole("navigation")[0];
     expect(sidebar).toHaveClass("translate-x-0");
   });
 
@@ -246,7 +265,7 @@ describe("AdminSidebar", () => {
 
     render(<AdminSidebar racha={mockRacha} />);
 
-    const sidebar = screen.getByRole("navigation");
+    const sidebar = screen.getAllByRole("navigation")[0];
     expect(sidebar).toBeInTheDocument();
 
     const menuButton = screen.getByLabelText("Toggle menu");

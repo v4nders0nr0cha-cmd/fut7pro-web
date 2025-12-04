@@ -1,5 +1,5 @@
 "use client";
-import type { AdminLog } from "@/hooks/useAdminLogs";
+import type { AdminLog } from "@/types/admin";
 
 type Props = {
   logs: AdminLog[];

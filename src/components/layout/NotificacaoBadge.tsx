@@ -1,16 +1,15 @@
-// src/components/layout/NotificacaoBadge.tsx
 "use client";
 
 import { FaBell } from "react-icons/fa";
 import { useNotifications } from "@/hooks/useNotifications";
 
 interface NotificacaoBadgeProps {
-  rachaSlug: string; // passe o slug do racha atual
-  onClick?: () => void; // exibir notificações, abrir drawer/modal etc
+  rachaSlug?: string;
+  onClick?: () => void;
 }
 
-export default function NotificacaoBadge({ rachaSlug, onClick }: NotificacaoBadgeProps) {
-  const { unreadCount } = useNotifications(rachaSlug);
+export default function NotificacaoBadge({ onClick }: NotificacaoBadgeProps) {
+  const { unreadCount } = useNotifications();
 
   return (
     <button

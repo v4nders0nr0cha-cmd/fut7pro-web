@@ -43,7 +43,8 @@ export async function GET() {
       });
     }
   } catch (e) {
-    console.log("Railway backend failed, using static data:", e?.message);
+    const message = e instanceof Error ? e.message : String(e);
+    console.log("Railway backend failed, using static data:", message);
   }
 
   // Fallback para dados estáticos

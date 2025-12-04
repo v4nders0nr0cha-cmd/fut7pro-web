@@ -71,7 +71,8 @@ export function useTheme() {
 
       const response = await configuracoesApi.getTemas();
       if (response.data) {
-        setAvailableThemes(response.data);
+        const data = response.data as ThemeConfig[];
+        setAvailableThemes(data || []);
       } else if (response.error) {
         setError(response.error);
         toast.error("Erro ao carregar temas");
@@ -92,12 +93,13 @@ export function useTheme() {
 
       const response = await configuracoesApi.getRachaConfig();
       if (response.data) {
-        setRachaConfig(response.data);
+        const data = response.data as RachaConfig;
+        setRachaConfig(data);
         // Aplicar tema do racha se diferente do atual
-        if (response.data.theme && response.data.theme !== currentTheme) {
-          setCurrentTheme(response.data.theme as ThemeKey);
-          applyTheme(response.data.theme as ThemeKey);
-          localStorage.setItem("fut7pro-theme", response.data.theme);
+        if ((data as any)?.theme && (data as any).theme !== currentTheme) {
+          setCurrentTheme((data as any).theme as ThemeKey);
+          applyTheme((data as any).theme as ThemeKey);
+          localStorage.setItem("fut7pro-theme", (data as any).theme);
         }
       } else if (response.error) {
         setError(response.error);
@@ -120,7 +122,7 @@ export function useTheme() {
         setCurrentTheme(theme);
         applyTheme(theme);
         localStorage.setItem("fut7pro-theme", theme);
-        setRachaConfig(response.data);
+        setRachaConfig(response.data as RachaConfig);
         toast.success("Tema aplicado com sucesso!");
         return true;
       } else if (response.error) {
@@ -144,9 +146,9 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-        const response = await configuracoesApi.updateCores(colors);
-        if (response.data) {
-          setRachaConfig(response.data);
+      const response = await configuracoesApi.updateCores(colors);
+      if (response.data) {
+        setRachaConfig(response.data as RachaConfig);
           toast.success("Cores atualizadas com sucesso!");
           return true;
         } else if (response.error) {
@@ -179,9 +181,9 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-        const response = await configuracoesApi.updateConfiguracoes(settings);
-        if (response.data) {
-          setRachaConfig(response.data);
+      const response = await configuracoesApi.updateConfiguracoes(settings);
+      if (response.data) {
+        setRachaConfig(response.data as RachaConfig);
           toast.success("Configurações atualizadas com sucesso!");
           return true;
         } else if (response.error) {
@@ -208,7 +210,7 @@ export function useTheme() {
 
       const response = await configuracoesApi.resetConfiguracoes();
       if (response.data) {
-        setRachaConfig(response.data);
+        setRachaConfig(response.data as RachaConfig);
         setCurrentTheme("amarelo");
         applyTheme("amarelo");
         localStorage.setItem("fut7pro-theme", "amarelo");

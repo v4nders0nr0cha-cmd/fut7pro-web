@@ -3,6 +3,8 @@
 import { useCampeoes } from "@/hooks/useCampeoes";
 import { usePartidas } from "@/hooks/usePartidas";
 import { Trophy, Star, Award } from "lucide-react";
+import type { Campeao } from "@/types/campeao";
+import type { Partida } from "@/types/partida";
 
 export default function CampeoesPage() {
   const {
@@ -21,6 +23,7 @@ export default function CampeoesPage() {
   const isLoading = isLoadingCampeoes || isLoadingPartidas;
   const isError = isErrorCampeoes || isErrorPartidas;
   const error = errorCampeoes || errorPartidas;
+  const errorMessage = error ? String(error) : "Erro ao carregar campeões.";
 
   if (isLoading) {
     return (
@@ -38,7 +41,7 @@ export default function CampeoesPage() {
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
           <h1 className="text-2xl font-bold text-red-400 mb-2">Erro ao carregar campeões</h1>
-          <p className="text-red-300">{error}</p>
+          <p className="text-red-300">{errorMessage}</p>
         </div>
       </div>
     );
@@ -59,45 +62,62 @@ export default function CampeoesPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {campeoes.map((campeao) => (
-            <div
-              key={campeao.id}
-              className="bg-[#1A1A1A] rounded-2xl p-6 text-white hover:shadow-lg transition-all"
-            >
-              <div className="flex items-center justify-center mb-4">
-                <Trophy className="w-12 h-12 text-yellow-400" />
-              </div>
+          {campeoes.map((raw) => {
+            const campeao = raw as Campeao;
+            const nomeCampeao = campeao.nome || campeao.campeao;
+            const dataFormatada = campeao.data
+              ? new Date(campeao.data).toLocaleDateString("pt-BR")
+              : null;
+            const rawDescricao =
+              campeao.descricao || campeao.descricaoCurta || campeao.metadata?.descricao;
+            const descricao = typeof rawDescricao === "string" ? rawDescricao : "";
+            const jogadores = Array.isArray(campeao.jogadores) ? campeao.jogadores : [];
 
-              <h3 className="text-xl font-bold text-center mb-2">{campeao.nome}</h3>
+            return (
+              <div
+                key={campeao.id}
+                className="bg-[#1A1A1A] rounded-2xl p-6 text-white hover:shadow-lg transition-all"
+              >
+                <div className="flex items-center justify-center mb-4">
+                  <Trophy className="w-12 h-12 text-yellow-400" />
+                </div>
 
-              <div className="space-y-2 text-sm">
-                <p>
-                  <span className="font-semibold">Categoria:</span> {campeao.categoria}
-                </p>
-                <p>
-                  <span className="font-semibold">Data:</span> {campeao.data}
-                </p>
-                {campeao.descricao && (
+                <h3 className="text-xl font-bold text-center mb-2">{nomeCampeao}</h3>
+
+                <div className="space-y-2 text-sm">
                   <p>
-                    <span className="font-semibold">Descrição:</span> {campeao.descricao}
+                    <span className="font-semibold">Categoria:</span> {campeao.categoria}
                   </p>
+                  {dataFormatada && (
+                    <p>
+                      <span className="font-semibold">Data:</span> {dataFormatada}
+                    </p>
+                  )}
+                  {descricao && (
+                    <p>
+                      <span className="font-semibold">Descrição:</span> {descricao}
+                    </p>
+                  )}
+                </div>
+
+                {jogadores.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-yellow-400 mb-2">Jogadores:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {jogadores.map((jogador: any, index: number) => (
+                        <span
+                          key={jogador.id ?? jogador.slug ?? index}
+                          className="bg-[#232323] px-2 py-1 rounded text-xs"
+                        >
+                          {typeof jogador === "string" ? jogador : jogador.nome}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
-
-              {campeao.jogadores && campeao.jogadores.length > 0 && (
-                <div className="mt-4">
-                  <h4 className="font-semibold text-yellow-400 mb-2">Jogadores:</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {campeao.jogadores.map((jogador, index) => (
-                      <span key={index} className="bg-[#232323] px-2 py-1 rounded text-xs">
-                        {jogador}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -105,28 +125,35 @@ export default function CampeoesPage() {
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-yellow-400 mb-6 text-center">Últimas Partidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {partidas.slice(0, 6).map((partida) => (
-              <div key={partida.id} className="bg-[#1A1A1A] rounded-xl p-4 text-white">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-textoSuave">{partida.data}</span>
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      partida.finalizada ? "bg-green-600" : "bg-yellow-600"
-                    }`}
-                  >
-                    {partida.finalizada ? "Concluída" : "Em andamento"}
-                  </span>
-                </div>
+            {partidas.slice(0, 6).map((raw) => {
+              const partida = raw as Partida;
+              const dataFormatada = partida.data
+                ? new Date(partida.data).toLocaleDateString("pt-BR")
+                : "";
 
-                <div className="flex items-center justify-center space-x-4 text-lg font-bold">
-                  <span>{partida.timeA}</span>
-                  <span className="text-yellow-400">
-                    {partida.golsTimeA} x {partida.golsTimeB}
-                  </span>
-                  <span>{partida.timeB}</span>
+              return (
+                <div key={partida.id} className="bg-[#1A1A1A] rounded-xl p-4 text-white">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm text-textoSuave">{dataFormatada}</span>
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        partida.finalizada ? "bg-green-600" : "bg-yellow-600"
+                      }`}
+                    >
+                      {partida.finalizada ? "Concluída" : "Em andamento"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-center space-x-4 text-lg font-bold">
+                    <span>{partida.timeA}</span>
+                    <span className="text-yellow-400">
+                      {partida.golsTimeA} x {partida.golsTimeB}
+                    </span>
+                    <span>{partida.timeB}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}

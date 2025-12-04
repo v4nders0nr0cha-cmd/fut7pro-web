@@ -79,11 +79,17 @@ export function useNotifications() {
   };
 
   const getNotificacoesPorTipo = (tipo: string) => {
-    return data?.filter((n) => n.tipo === tipo) || [];
+    return (
+      data?.filter((n) => {
+        const currentType = (n as any).tipo ?? n.type;
+        return currentType === tipo;
+      }) || []
+    );
   };
 
   return {
     notificacoes: data || [],
+    unreadCount: getNotificacoesNaoLidas().length,
     isLoading: isLoading || apiState.isLoading,
     isError: !!error || apiState.isError,
     error: apiState.error,

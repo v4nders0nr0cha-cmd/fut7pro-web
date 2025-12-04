@@ -1,5 +1,5 @@
 "use client";
-import type { Financeiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 function formatarData(dt: string) {
   return new Date(dt).toLocaleDateString("pt-BR");
@@ -9,7 +9,7 @@ function formatarValor(v: number, tipo: string) {
 }
 
 type Props = {
-  lancamentos: Financeiro[];
+  lancamentos: LancamentoFinanceiro[];
 };
 
 export default function FinanceiroList({ lancamentos }: Props) {

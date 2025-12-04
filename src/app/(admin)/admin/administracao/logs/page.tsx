@@ -38,18 +38,24 @@ export default function LogsAdminPage() {
   }
 
   const filteredLogs = logs.filter((log) => {
-    const matchesSearch =
-      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.details.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.adminName.toLowerCase().includes(searchTerm.toLowerCase());
+    const action = (log.action ?? log.acao ?? "").toLowerCase();
+    const details = (log.details ?? log.detalhes ?? "").toLowerCase();
+    const adminName = (log.adminName ?? log.adminNome ?? "").toLowerCase();
 
-    const matchesAction = !selectedAction || log.action === selectedAction;
+    const matchesSearch =
+      action.includes(searchTerm.toLowerCase()) ||
+      details.includes(searchTerm.toLowerCase()) ||
+      adminName.includes(searchTerm.toLowerCase());
+
+    const matchesAction = !selectedAction || action === selectedAction.toLowerCase();
     const matchesAdmin = !selectedAdmin || log.adminId === selectedAdmin;
 
     return matchesSearch && matchesAction && matchesAdmin;
   });
 
-  const uniqueActions = Array.from(new Set(logs.map((log) => log.action)));
+  const uniqueActions = Array.from(
+    new Set(logs.map((log) => (log.action ?? log.acao ?? "").toLowerCase()).filter(Boolean))
+  );
   const uniqueAdmins = Array.from(new Set(logs.map((log) => log.adminId)));
 
   return (
@@ -138,15 +144,23 @@ export default function LogsAdminPage() {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-yellow-400">{log.action}</span>
-                      <span className="text-xs text-gray-400">por {log.adminName}</span>
+                      <span className="font-semibold text-yellow-400">
+                        {log.action ?? log.acao ?? "Ação"}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        por {log.adminName ?? log.adminNome ?? "Admin"}
+                      </span>
                     </div>
-                    <p className="text-sm text-gray-300">{log.details}</p>
+                    <p className="text-sm text-gray-300">{log.details ?? log.detalhes}</p>
                   </div>
 
                   <div className="flex flex-col items-end gap-1">
-                    <span className="text-xs text-gray-400">{log.timestamp}</span>
-                    <span className="text-xs px-2 py-1 bg-gray-600 rounded">{log.resource}</span>
+                    <span className="text-xs text-gray-400">
+                      {log.timestamp ?? log.criadoEm ?? "—"}
+                    </span>
+                    <span className="text-xs px-2 py-1 bg-gray-600 rounded">
+                      {log.resource ?? "Registro"}
+                    </span>
                   </div>
                 </div>
               </div>

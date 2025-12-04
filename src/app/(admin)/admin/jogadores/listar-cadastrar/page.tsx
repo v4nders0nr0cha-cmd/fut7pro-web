@@ -7,18 +7,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
 import { rachaConfig } from "@/config/racha.config";
-
-// --- TIPAGEM ---
-interface Jogador {
-  id: string;
-  nome: string;
-  apelido: string;
-  email: string;
-  posicao: "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
-  status: "Ativo" | "Inativo" | "Suspenso";
-  mensalista: boolean;
-  avatar: string;
-}
+import type { Jogador } from "@/types/jogador";
 
 // --- MODAL EXCLUSÃO ---
 function ModalExcluirJogador({
@@ -88,7 +77,7 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const rachaId = rachaConfig.slug;
-  const { jogadores, addJogador, updateJogador, deleteJogador } = useJogadores(rachaId);
+  const { jogadores, isLoading, isError, error, deleteJogador } = useJogadores(rachaId);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
@@ -104,7 +93,7 @@ export default function Page() {
     visible: (i: number) => ({
       opacity: 1,
       y: 0,
-      transition: { delay: i * 0.06, type: "spring", stiffness: 60, damping: 18 },
+      transition: { delay: i * 0.06 },
     }),
     exit: { opacity: 0, y: 14, transition: { duration: 0.2 } },
   };
@@ -123,7 +112,7 @@ export default function Page() {
         {/* DESCRIÇÃO ADMIN */}
         <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4 mb-6 text-sm text-gray-300">
           <p className="mb-2">
-            <strong className="text-yellow-400">📌 Importante:</strong> Todos os atletas do seu
+            <strong className="text-yellow-400">⚠️ Importante:</strong> Todos os atletas do seu
             racha podem se cadastrar diretamente pelo <strong>site público</strong>.
           </p>
           <p className="mb-2">
@@ -165,63 +154,73 @@ export default function Page() {
           <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
             Jogadores cadastrados ({jogadoresFiltrados.length})
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            <AnimatePresence>
-              {jogadoresFiltrados.map((j, i) => (
-                <motion.div
-                  key={j.id}
-                  custom={i}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  variants={cardVariants}
-                  layout
-                  className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
-                >
-                  <div className="flex items-center">
-                    <Image
-                      src={j.avatar}
-                      alt={j.nome}
-                      width={48}
-                      height={48}
-                      className="rounded-full object-cover"
-                    />
-                    <div className="pl-4 flex-1">
-                      <div className="font-bold text-white">
-                        {j.nome} <span className="text-gray-400">({j.apelido})</span>
-                      </div>
-                      <div className="text-sm text-gray-300">{j.posicao}</div>
-                      <div className="text-xs mt-1 flex gap-1 items-center">
-                        <StatusBadge status={j.status} />
-                        {j.mensalista && (
-                          <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
-                            Mensalista
-                          </span>
-                        )}
+
+          {isLoading ? (
+            <div className="text-center text-gray-400 py-8">Carregando jogadores...</div>
+          ) : isError ? (
+            <div className="text-center text-red-400 py-8">
+              Ocorreu um erro ao carregar os jogadores.
+              {error && <div className="text-xs text-red-300 mt-2">{error}</div>}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <AnimatePresence>
+                {jogadoresFiltrados.map((j, i) => (
+                  <motion.div
+                    key={j.id}
+                    custom={i}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    variants={cardVariants}
+                    layout
+                    className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
+                  >
+                    <div className="flex items-center">
+                      <Image
+                        src={j.avatar || "/images/jogadores/jogador_padrao_01.jpg"}
+                        alt={j.nome}
+                        width={48}
+                        height={48}
+                        className="rounded-full object-cover"
+                      />
+                      <div className="pl-4 flex-1">
+                        <div className="font-bold text-white">
+                          {j.nome} <span className="text-gray-400">({j.apelido})</span>
+                        </div>
+                        <div className="text-sm text-gray-300">{j.posicao}</div>
+                        <div className="text-xs mt-1 flex gap-1 items-center">
+                          <StatusBadge status={j.status} />
+                          {j.mensalista && (
+                            <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
+                              Mensalista
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
-                    <button
-                      className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                      onClick={() => alert("Função de edição em desenvolvimento.")}
-                    >
-                      <FaEdit /> Editar
-                    </button>
-                    <button
-                      className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                      onClick={() => {
-                        setExcluirJogador(j);
-                        setShowModalExcluir(true);
-                      }}
-                    >
-                      <FaTrash /> Excluir
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
+                    <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                      <button
+                        className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                        onClick={() => alert("Função de edição em desenvolvimento.")}
+                      >
+                        <FaEdit /> Editar
+                      </button>
+                      <button
+                        className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                        onClick={() => {
+                          setExcluirJogador(j);
+                          setShowModalExcluir(true);
+                        }}
+                      >
+                        <FaTrash /> Excluir
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </div>
 

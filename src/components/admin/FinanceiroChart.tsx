@@ -1,8 +1,8 @@
 "use client";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import type { Financeiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
-type Props = { lancamentos: Financeiro[] };
+type Props = { lancamentos: LancamentoFinanceiro[] };
 
 export default function FinanceiroChart({ lancamentos }: Props) {
   // Agrupa lançamentos por mês/ano

@@ -69,7 +69,12 @@ function PopoverSelecionarJogador({
               onSelecionar(p.id);
               onClose();
             }}
-            onKeyDown={(e) => e.key === "Enter" && onSelecionar(p.id) && onClose()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                onSelecionar(p.id);
+                onClose();
+              }
+            }}
             role="button"
             tabIndex={0}
             aria-label={`Selecionar ${p.nome}`}
@@ -140,7 +145,7 @@ export default function ParticipantesRacha({
         );
       })
       .finally(() => setLoadingEstrelas(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps - rachaId é a única dependência necessária
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rachaId]);
 
   // Inicialização automática para mensalistas, se lista estiver vazia e houver config
@@ -149,7 +154,7 @@ export default function ParticipantesRacha({
       const selecionadosIniciais = mockParticipantes.filter((p) => p.mensalista);
       setParticipantes(selecionadosIniciais);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps - Configuração inicial única
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
 
   function handleSelect(id: string) {

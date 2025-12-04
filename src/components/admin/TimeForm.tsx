@@ -46,16 +46,16 @@ export default function TimeForm({ onSave, initialData = {}, onCancel }: Props) 
         maxLength={32}
       />
       <input
-        name="escudoUrl"
+        name="logo"
         placeholder="URL do escudo/logo"
-        value={form.escudoUrl ?? ""}
+        value={(form as any).escudoUrl ?? form.logo ?? ""}
         onChange={handleChange}
         className="input"
       />
       <input
-        name="corPrincipal"
+        name="cor"
         placeholder="Cor principal (#HEX ou nome)"
-        value={form.corPrincipal ?? ""}
+        value={(form as any).corPrincipal ?? form.cor ?? ""}
         onChange={handleChange}
         className="input"
       />

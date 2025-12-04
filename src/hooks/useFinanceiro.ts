@@ -4,9 +4,9 @@ import useSWR from "swr";
 import { useRacha } from "@/context/RachaContext";
 import { financeiroApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
-import type { Lancamento } from "@/types/financeiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
-const fetcher = async (url: string): Promise<Lancamento[]> => {
+const fetcher = async (url: string): Promise<LancamentoFinanceiro[]> => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error("Erro ao buscar dados financeiros");
@@ -18,7 +18,7 @@ export function useFinanceiro() {
   const { rachaId } = useRacha();
   const apiState = useApiState();
 
-  const { data, error, isLoading, mutate } = useSWR<Lancamento[]>(
+  const { data, error, isLoading, mutate } = useSWR<LancamentoFinanceiro[]>(
     rachaId ? `/api/admin/financeiro?rachaId=${rachaId}` : null,
     fetcher,
     {
@@ -30,7 +30,7 @@ export function useFinanceiro() {
     }
   );
 
-  const addLancamento = async (lancamento: Partial<Lancamento>) => {
+  const addLancamento = async (lancamento: Partial<LancamentoFinanceiro>) => {
     if (!rachaId) return null;
 
     return apiState.handleAsync(async () => {

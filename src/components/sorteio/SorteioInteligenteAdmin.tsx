@@ -11,6 +11,7 @@ import TabelaJogosRacha from "./TabelaJogosRacha";
 import { mockParticipantes } from "./mockParticipantes";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
+import { useRacha } from "@/context/RachaContext";
 
 const mockTimes: Time[] = [
   { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
@@ -133,6 +134,7 @@ function LoaderBolaFutebol() {
 }
 
 export default function SorteioInteligenteAdmin() {
+  const { rachaId } = useRacha();
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
   const [participantes, setParticipantes] = useState<Participante[]>(
     mockParticipantes.filter((p) => p.mensalista)
@@ -349,6 +351,7 @@ export default function SorteioInteligenteAdmin() {
 
       {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
       <ParticipantesRacha
+        rachaId={rachaId}
         config={config}
         participantes={participantes}
         setParticipantes={setParticipantes}

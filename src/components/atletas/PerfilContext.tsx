@@ -2,13 +2,13 @@
 
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
-import { usuarioLogadoMock } from "@/components/lists/mockUsuarioLogado"; // Substitua pelo backend depois
-import { StateData } from "@/types/interfaces";
+import { usuarioLogadoMock } from "@/components/lists/mockUsuarioLogado"; // TODO: trocar por backend real
+import type { Atleta } from "@/types/atletas";
 
 // Interface para o contexto do perfil
 interface PerfilContextType {
-  usuario: typeof usuarioLogadoMock;
-  atualizarPerfil: (dados: Partial<typeof usuarioLogadoMock>) => void;
+  usuario: Atleta;
+  atualizarPerfil: (dados: Partial<Atleta>) => void;
 }
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
@@ -22,16 +22,14 @@ export function usePerfil() {
 }
 
 export function PerfilProvider({ children }: { children: ReactNode }) {
-  // No futuro: buscar de API pelo usuário autenticado
-  const [usuario, setUsuario] = useState(usuarioLogadoMock);
+  // TODO: buscar de API pelo usuario autenticado
+  const [usuario, setUsuario] = useState<Atleta>(usuarioLogadoMock as unknown as Atleta);
 
-  function atualizarPerfil(dados: Partial<typeof usuarioLogadoMock>) {
+  function atualizarPerfil(dados: Partial<Atleta>) {
     setUsuario((prev) => ({
       ...prev,
       ...dados,
-      // Atualiza também campos aninhados, se quiser
     }));
-    // Aqui já pode salvar em localStorage/sessionStorage para persistir
   }
 
   return (

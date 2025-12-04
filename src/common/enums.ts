@@ -4,6 +4,11 @@ export enum Role {
   ADMIN = "ADMIN",
   ATHLETE = "ATHLETE",
   GERENTE = "GERENTE",
+  ATLETA = "ATLETA", // alias usado nos testes legados
+  SUPORTE = "SUPORTE",
+  FINANCEIRO = "FINANCEIRO",
+  MARKETING = "MARKETING",
+  AUDITORIA = "AUDITORIA",
 }
 
 export enum Permission {

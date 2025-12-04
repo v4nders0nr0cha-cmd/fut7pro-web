@@ -61,21 +61,20 @@ export function useSuperAdmin() {
   const isLoading = isLoadingRachas || isLoadingMetricas || isLoadingUsuarios;
   const isError = !!errorRachas || !!errorMetricas || !!errorUsuarios;
 
-  const addRacha = async (racha: Partial<Racha>) => {
-    return apiState.handleAsync(async () => {
-      const response = await superAdminApi.getRachas();
+  const addRacha = async (racha: Partial<Racha>) =>
+    apiState.handleAsync<Racha>(async () => {
+      const response = await superAdminApi.addRacha?.(racha);
 
-      if (response.error) {
-        throw new Error(response.error);
+      if (response && "error" in response && response.error) {
+        throw new Error(response.error as string);
       }
 
       await mutateRachas();
-      return response.data;
+      return (response as any)?.data ?? (response as any);
     });
-  };
 
-  const updateRacha = async (id: string, racha: Partial<Racha>) => {
-    return apiState.handleAsync(async () => {
+  const updateRacha = async (id: string, racha: Partial<Racha>) =>
+    apiState.handleAsync<Racha>(async () => {
       const response = await fetch(`/api/superadmin/rachas/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -88,12 +87,12 @@ export function useSuperAdmin() {
       }
 
       await mutateRachas();
-      return response.json();
+      const data = (await response.json()) as Racha;
+      return data;
     });
-  };
 
-  const deleteRacha = async (id: string) => {
-    return apiState.handleAsync(async () => {
+  const deleteRacha = async (id: string) =>
+    apiState.handleAsync<boolean>(async () => {
       const response = await fetch(`/api/superadmin/rachas/${id}`, {
         method: "DELETE",
       });
@@ -104,9 +103,8 @@ export function useSuperAdmin() {
       }
 
       await mutateRachas();
-      return response.json();
+      return true;
     });
-  };
 
   const getRachaById = (id: string) => {
     return rachas?.find((r) => r.id === id);

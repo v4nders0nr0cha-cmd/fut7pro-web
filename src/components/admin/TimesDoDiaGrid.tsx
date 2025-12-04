@@ -1,6 +1,6 @@
 // src/components/admin/TimesDoDiaGrid.tsx
 import Image from "next/image";
-import { Time, Jogador } from "@/types/interfaces";
+import type { Time, Jogador } from "@/types/interfaces";
 
 // Interface específica para jogador com dados adicionais
 interface JogadorCompleto extends Jogador {

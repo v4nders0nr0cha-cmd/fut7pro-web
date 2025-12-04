@@ -5,6 +5,7 @@ export type Jogador = {
   email: string;
   posicao: PosicaoJogador; // "goleiro", "zagueiro", "meia", "atacante"
   avatar: string; // Foto do jogador (antes era "foto")
+  foto?: string; // alias legado
   status: StatusJogador; // "Ativo", "Inativo", "Suspenso"
   mensalista: boolean;
   timeId: string; // Relacionamento com Time
@@ -14,10 +15,10 @@ export type Jogador = {
 };
 
 // Enum para posição
-export type PosicaoJogador = "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
+export type PosicaoJogador = "Goleiro" | "Zagueiro" | "Meia" | "Atacante" | "goleiro" | "zagueiro" | "meia" | "atacante";
 
 // Enum para status do jogador
-export type StatusJogador = "Ativo" | "Inativo" | "Suspenso";
+export type StatusJogador = "Ativo" | "Inativo" | "Suspenso" | "ativo" | "inativo" | "suspenso";
 
 // Tipagem separada para atletas pendentes
 export type AtletaPendente = {

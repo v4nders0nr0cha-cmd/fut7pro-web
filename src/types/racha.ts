@@ -33,11 +33,11 @@ export interface Racha {
   logoUrl?: string;
   tema?: string;
   regras?: string;
-  ownerId: string;
-  admins: Admin[];
-  jogadores: JogadorRacha[];
-  criadoEm: string;
-  atualizadoEm: string;
-  ativo: boolean;
-  financeiroVisivel?: boolean; // <-- CAMPO INCLUÍDO PARA SUPORTE AO FINANCEIRO
+  ownerId?: string;
+  admins?: Admin[];
+  jogadores?: JogadorRacha[];
+  criadoEm?: string;
+  atualizadoEm?: string;
+  ativo?: boolean;
+  financeiroVisivel?: boolean; // suporte ao financeiro
 }

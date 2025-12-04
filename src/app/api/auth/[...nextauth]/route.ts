@@ -1,15 +1,24 @@
-import NextAuth from "next-auth";
+import NextAuth from "next-auth/next";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { compare } from "bcryptjs";
-import { prisma } from "@/lib/prisma";
-
-import type { NextAuthOptions, Session, User } from "next-auth";
 import type { JWT } from "next-auth/jwt";
+
+type NextAuthOptionsLike = {
+  providers: any[];
+  callbacks?: {
+    signIn?: (...args: any[]) => any;
+    session?: (...args: any[]) => any;
+    jwt?: (...args: any[]) => any;
+  };
+  pages?: { signIn?: string; error?: string };
+  session?: { strategy?: "jwt"; maxAge?: number };
+  jwt?: { maxAge?: number };
+  secret?: string;
+};
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-const authOptions: NextAuthOptions = {
+const authOptions: NextAuthOptionsLike = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -69,6 +78,7 @@ const authOptions: NextAuthOptions = {
             email: userData.email,
             role: userData.role,
             tenantId: userData.tenantId,
+            tenantSlug: userData.tenantSlug ?? null,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
           };
@@ -83,7 +93,7 @@ const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       // Para login Google, criar usuário no backend se não existir
       if (user?.email && account?.provider === "google") {
         try {
@@ -105,6 +115,7 @@ const authOptions: NextAuthOptions = {
             (user as any).refreshToken = data.refreshToken;
             (user as any).role = data.role;
             (user as any).tenantId = data.tenantId;
+            (user as any).tenantSlug = data.tenantSlug ?? null;
           }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
@@ -115,22 +126,24 @@ const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async session({ session, token }: { session: Session; token: JWT }) {
-      if (token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.tenantId = token.tenantId as string;
-        session.user.accessToken = token.accessToken as string;
-        session.user.refreshToken = token.refreshToken as string;
+    async session({ session, token }) {
+      if (token && session.user) {
+        (session.user as any).id = token.id as string;
+        (session.user as any).role = token.role as any;
+        (session.user as any).tenantId = token.tenantId as string;
+        (session.user as any).tenantSlug = (token as any).tenantSlug ?? null;
+        (session.user as any).accessToken = token.accessToken as string;
+        (session.user as any).refreshToken = token.refreshToken as string;
       }
       return session;
     },
 
-    async jwt({ token, user }: { token: JWT; user?: User }) {
+    async jwt({ token, user }: { token: JWT; user?: any }) {
       if (user) {
         token.id = user.id;
         token.role = (user as any).role;
         token.tenantId = (user as any).tenantId;
+        (token as any).tenantSlug = (user as any).tenantSlug ?? null;
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
       }
@@ -187,6 +200,6 @@ const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions as any);
 
 export { handler as GET, handler as POST };

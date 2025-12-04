@@ -13,11 +13,11 @@ const temporadaAtual = 2025;
 
 export default function PerfilAtletaPage() {
   const { slug } = useParams() as { slug: string };
+  // Agora só existem os filtros "temporada" e "historico"
+  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const atleta = atletasMock.find((a) => a.slug === slug);
   if (!atleta) return notFound();
 
-  // Agora só existem os filtros "temporada" e "historico"
-  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const stats =
     filtroStats === "temporada"
       ? (atleta.estatisticas.anual?.[temporadaAtual] ?? atleta.estatisticas.historico)

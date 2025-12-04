@@ -1,272 +1,92 @@
 "use client";
 // src/app/admin/partidas/historico/page.tsx
+
 import Head from "next/head";
-import { useState, useRef } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import CalendarioHistorico from "@/components/partidas/CalendarioHistorico";
-import ModalEditarPartida from "@/components/admin/ModalEditarPartida";
-import { mockConfrontos, mockTimes } from "@/mocks/admin/mockDia";
-import type { Confronto } from "@/mocks/admin/mockDia";
-
-// Função para retornar a logo do time baseado no nome
-function getLogoTime(nome: string) {
-  switch (nome.toLowerCase()) {
-    case "leões":
-      return "/images/times/time_padrao_01.png";
-    case "tigres":
-      return "/images/times/time_padrao_02.png";
-    case "águias":
-      return "/images/times/time_padrao_03.png";
-    case "furacão":
-      return "/images/times/time_padrao_04.png";
-    default:
-      return "/images/times/time_padrao_01.png";
-  }
-}
-
-// Agrupamento de partidas por data e local
-type GrupoPartidas = {
-  [key: string]: { idx: number; confronto: Confronto }[];
-};
-
-function agruparPorDataELocal(confrontos: Confronto[], times: any[]): GrupoPartidas {
-  const grupos: GrupoPartidas = {};
-  confrontos.forEach((c, idx) => {
-    const data = c.data ?? "Data não informada";
-    const local = c.local ?? "Local não informado";
-    const chave = `${data}||${local}`;
-    if (!grupos[chave]) grupos[chave] = [];
-    grupos[chave].push({ idx, confronto: c });
-  });
-  return grupos;
-}
+import { useState } from "react";
+import { usePartidas } from "@/hooks/usePartidas";
+import PartidaList from "@/components/admin/PartidaList";
+import PartidaForm from "@/components/admin/PartidaForm";
+import type { Partida } from "@/types/partida";
 
 export default function AdminHistoricoPartidasPage() {
-  const [selected, setSelected] = useState<Date | undefined>(undefined);
-  const [calOpen, setCalOpen] = useState(false);
-  const btnRef = useRef<HTMLButtonElement>(null);
-  const [confrontos, setConfrontos] = useState<Confronto[]>(mockConfrontos.map((c) => ({ ...c })));
-  const [editPartida, setEditPartida] = useState<null | { idx: number; tipo: "ida" | "volta" }>(
-    null
-  );
+  const { partidas, isLoading, isError, error, addPartida, updatePartida, deletePartida } =
+    usePartidas();
 
-  const diasComPartida: Date[] = Array.from(
-    new Set(confrontos.map((c) => c.data).filter(Boolean))
-  ).map((data) => new Date(data + "T00:00:00"));
+  const [partidaEditando, setPartidaEditando] = useState<Partida | null>(null);
 
-  const confrontosFiltrados = selected
-    ? confrontos.filter((c) => new Date(c.data || "").toDateString() === selected.toDateString())
-    : confrontos;
-
-  const grupos = agruparPorDataELocal(confrontosFiltrados, mockTimes);
-
-  function handleSalvarResultado(
-    idx: number,
-    tipo: "ida" | "volta",
-    placar: { a: number; b: number },
-    eventos: any[]
-  ) {
-    setConfrontos((prev) =>
-      prev.map((c, i) =>
-        i !== idx
-          ? c
-          : {
-              ...c,
-              [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: { placar, eventos },
-            }
-      )
-    );
-    setEditPartida(null);
+  async function handleSalvar(dados: Partial<Partida>) {
+    if (partidaEditando?.id) {
+      await updatePartida(partidaEditando.id, dados);
+    } else {
+      await addPartida(dados);
+    }
+    setPartidaEditando(null);
   }
 
-  function handleExcluir(idx: number, tipo: "ida" | "volta") {
+  function handleEditar(partida: Partida) {
+    setPartidaEditando(partida);
+  }
+
+  async function handleExcluir(id: string) {
     if (window.confirm("Tem certeza que deseja excluir esta partida?")) {
-      setConfrontos((prev) =>
-        prev.map((c, i) =>
-          i !== idx
-            ? c
-            : {
-                ...c,
-                [tipo === "ida" ? "resultadoIda" : "resultadoVolta"]: undefined,
-              }
-        )
-      );
+      await deletePartida(id);
     }
   }
 
   return (
     <>
       <Head>
-        <title>Histórico de Partidas | Painel Admin - Fut7Pro</title>
+        <title>Hist�rico de Partidas | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Corrija placares, status, gols e assistências das partidas do seu racha. Painel do Presidente Fut7Pro, seguro e auditável."
+          content="Corrija placares, status, gols e assist�ncias das partidas do seu racha. Painel do Presidente Fut7Pro, seguro e audit�vel."
         />
         <meta
           name="keywords"
-          content="admin fut7, editar partidas, corrigir placar, editar gols, editar assistências, histórico futebol 7"
+          content="admin fut7, editar partidas, corrigir placar, editar gols, editar assist�ncias, hist�rico futebol 7"
         />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto text-white">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
-          Histórico de Partidas (Admin)
+          Hist�rico de Partidas (Admin)
         </h1>
         <p className="text-base md:text-lg mb-6 text-textoSuave text-center">
-          Corrija eventuais erros de placar, gols ou assistências de qualquer partida do histórico.
-          Edição rápida e fácil, igual ao painel de destaques do dia.
+          Corrija eventuais erros de placar, gols ou assist�ncias de qualquer partida do hist�rico.
+          Edi��o r�pida e f�cil, baseada nas partidas reais cadastradas no sistema.
         </p>
 
-        <div className="flex justify-end mb-6">
-          <button
-            ref={btnRef}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-yellow-400 text-black font-semibold hover:bg-yellow-500 transition shadow"
-            onClick={() => setCalOpen(!calOpen)}
-            aria-label="Abrir calendário"
-            type="button"
-          >
-            <svg width={20} height={20} fill="none" viewBox="0 0 24 24">
-              <rect
-                x={3}
-                y={5}
-                width={18}
-                height={16}
-                rx={2}
-                fill="#181818"
-                stroke="#222"
-                strokeWidth={1.5}
-              />
-              <path d="M8 3v4M16 3v4" stroke="#FFD600" strokeWidth={2} strokeLinecap="round" />
-              <rect x={7} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-              <rect x={11} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-              <rect x={15} y={9} width={2} height={2} rx={1} fill="#FFD600" />
-            </svg>
-            Selecionar Data
-          </button>
-        </div>
+        <section className="mb-8 flex flex-col items-center">
+          <h2 className="text-xl font-semibold text-yellow-300 mb-3">
+            {partidaEditando ? "Editar partida" : "Selecionar partida para edi��o"}
+          </h2>
+          <div className="w-full flex justify-center">
+            <PartidaForm
+              partida={partidaEditando ?? undefined}
+              onSave={handleSalvar}
+              onCancel={() => setPartidaEditando(null)}
+            />
+          </div>
+        </section>
 
-        <CalendarioHistorico
-          diasComPartida={diasComPartida}
-          selected={selected}
-          onSelect={(date) => {
-            setSelected(date);
-            setCalOpen(false);
-          }}
-          open={calOpen}
-          onClose={() => setCalOpen(false)}
-          anchorRef={btnRef}
-        />
-
-        <div className="flex flex-col gap-10">
-          {Object.keys(grupos).length === 0 && (
-            <p className="text-textoSuave text-center">Nenhuma partida encontrada.</p>
+        <section>
+          <h2 className="text-lg font-semibold text-yellow-300 mb-3">Hist�rico de partidas</h2>
+          {isLoading ? (
+            <div className="text-center text-gray-400 py-8">Carregando partidas...</div>
+          ) : isError ? (
+            <div className="text-center text-red-400 py-8">
+              Ocorreu um erro ao carregar as partidas.
+              {error && <div className="text-xs text-red-300 mt-2">{error}</div>}
+            </div>
+          ) : partidas.length === 0 ? (
+            <div className="text-center text-gray-400 py-8">
+              Nenhuma partida cadastrada ainda. Use o formul�rio acima para adicionar partidas
+              retroativas ou corrigir rodadas antigas.
+            </div>
+          ) : (
+            <PartidaList partidas={partidas} onEdit={handleEditar} onDelete={handleExcluir} />
           )}
-          {Object.entries(grupos)
-            .sort((a, b) => b[0].localeCompare(a[0]))
-            .map(([chave, partidasDia]) => {
-              const [data, local] = chave.split("||");
-              return (
-                <div key={chave} className="bg-[#171717] rounded-xl shadow p-4 w-full">
-                  <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-3">
-                    <span className="font-bold text-yellow-400 text-lg">
-                      {data?.replace(/-/g, "/")}
-                    </span>
-                    <span className="text-textoSuave text-sm">{local}</span>
-                  </div>
-                  <div className="w-full overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-yellow-400 border-b border-yellow-700">
-                          <th className="py-2 px-2 text-left">#</th>
-                          <th className="py-2 px-2 text-left">Time A</th>
-                          <th className="py-2 px-2 text-center">Placar</th>
-                          <th className="py-2 px-2 text-left">Time B</th>
-                          <th className="py-2 px-2 text-center">Status</th>
-                          <th className="py-2 px-2 text-center">Ação</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {partidasDia.map((partida, idx) => {
-                          const { idx: i, confronto } = partida;
-                          const timeA = confronto.timeA;
-                          const timeB = confronto.timeB;
-                          const logoA = getLogoTime(timeA);
-                          const logoB = getLogoTime(timeB);
-
-                          return (
-                            <tr
-                              key={i}
-                              className="border-b border-[#232323] hover:bg-[#232323] transition"
-                            >
-                              <td className="py-2 px-2 font-bold">{idx + 1}</td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
-                                <span>{timeA}</span>
-                                <Image
-                                  src={logoA}
-                                  alt={timeA}
-                                  width={28}
-                                  height={28}
-                                  className="rounded"
-                                />
-                              </td>
-                              <td className="py-2 px-2 font-extrabold text-xl text-center">
-                                {confronto.golsTimeA ?? 0}{" "}
-                                <span className="text-yellow-400 font-bold">x</span>{" "}
-                                {confronto.golsTimeB ?? 0}
-                              </td>
-                              <td className="py-2 px-2 flex items-center gap-2 font-semibold">
-                                <span>{timeB}</span>
-                                <Image
-                                  src={logoB}
-                                  alt={timeB}
-                                  width={28}
-                                  height={28}
-                                  className="rounded"
-                                />
-                              </td>
-                              <td className="py-2 px-2 text-center">
-                                <span
-                                  className={`px-3 py-1 rounded-xl text-xs ${confronto.finalizada ? "bg-green-700" : "bg-yellow-700"} text-white`}
-                                >
-                                  {confronto.finalizada ? "Concluído" : "Em andamento"}
-                                </span>
-                              </td>
-                              <td className="py-2 px-2 text-center flex gap-2 justify-center">
-                                <button
-                                  className="bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => setEditPartida({ idx: i, tipo: "ida" })}
-                                >
-                                  Editar
-                                </button>
-                                <button
-                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
-                                  onClick={() => handleExcluir(i, "ida")}
-                                >
-                                  Excluir
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-
-        {editPartida && (
-          <ModalEditarPartida
-            index={editPartida.idx}
-            confronto={confrontos[editPartida.idx]}
-            tipo={editPartida.tipo}
-            times={mockTimes}
-            onClose={() => setEditPartida(null)}
-            onSalvar={handleSalvarResultado}
-          />
-        )}
+        </section>
       </main>
     </>
   );

@@ -35,9 +35,10 @@ export default function AdministradoresPage() {
   }
 
   const filteredAdmins = admins.filter((admin) => {
+    const adminNome = admin.nome?.toLowerCase() ?? "";
+    const adminEmail = admin.email?.toLowerCase() ?? "";
     const matchesSearch =
-      admin.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      admin.email.toLowerCase().includes(searchTerm.toLowerCase());
+      adminNome.includes(searchTerm.toLowerCase()) || adminEmail.includes(searchTerm.toLowerCase());
     const matchesRole = !selectedRole || admin.role === selectedRole;
     return matchesSearch && matchesRole;
   });

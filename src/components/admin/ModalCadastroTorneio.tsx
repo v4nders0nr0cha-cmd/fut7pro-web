@@ -46,6 +46,14 @@ const MOCK_JOGADORES: Jogador[] = [
   },
 ];
 
+const slugify = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -143,12 +151,57 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (!titulo || !descricao || !banner || !logo || campeoes.filter(Boolean).length === 0) {
-      setErro("Preencha todos os campos obrigatórios e adicione pelo menos um campeão.");
+      setErro("Preencha todos os campos obrigat�rios e adicione pelo menos um campe�o.");
+
       return;
     }
+
+    const jogadoresMapeados = campeoes
+
+      .filter((jogador): jogador is Jogador => Boolean(jogador))
+
+      .map((jogador) => ({
+        athleteId: jogador.id,
+
+        athleteSlug: jogador.slug ?? slugify(jogador.nome),
+
+        nome: jogador.nome,
+
+        posicao: jogador.posicao,
+
+        fotoUrl: jogador.avatar,
+      }));
+
+    const payload: DadosTorneio = {
+      nome: titulo.trim(),
+
+      slug: slugify(titulo),
+
+      ano: new Date().getFullYear(),
+
+      descricao,
+
+      descricaoResumida: descricao.slice(0, 180),
+
+      campeao: jogadoresMapeados[0]?.nome,
+
+      status: "rascunho",
+
+      destacarNoSite: false,
+
+      bannerBase64: banner,
+
+      logoBase64: logo,
+
+      jogadoresCampeoes: jogadoresMapeados,
+    };
+
     setErro("");
-    onSave?.({ titulo, descricao, banner, logo, campeoes });
+
+    onSave?.(payload);
+
     onClose();
   }
 

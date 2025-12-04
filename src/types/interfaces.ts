@@ -47,6 +47,7 @@ export interface Time {
 export interface Jogador {
   id: string;
   nome: string;
+  apelido?: string;
   posicao?: string;
   numero?: number;
   foto?: string;

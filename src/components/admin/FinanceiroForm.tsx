@@ -1,9 +1,9 @@
 "use client";
 import { useState } from "react";
-import type { Financeiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 type Props = {
-  onSave: (lanc: Partial<Financeiro>) => void;
+  onSave: (lanc: Partial<LancamentoFinanceiro>) => void;
   adminId: string;
   onCancel?: () => void;
 };
@@ -20,7 +20,7 @@ const CATEGORIAS = [
 ];
 
 export default function FinanceiroForm({ onSave, adminId, onCancel }: Props) {
-  const [form, setForm] = useState<Partial<Financeiro>>({
+  const [form, setForm] = useState<Partial<LancamentoFinanceiro>>({
     tipo: "entrada",
     categoria: "mensalidade",
     valor: 0,

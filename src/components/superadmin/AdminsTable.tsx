@@ -26,6 +26,7 @@ interface AdminsTableProps {
 }
 
 const roleLabels: Record<Role, string> = {
+  ATHLETE: "Athlete",
   ATLETA: "Atleta",
   ADMIN: "Admin",
   SUPERADMIN: "SuperAdmin",

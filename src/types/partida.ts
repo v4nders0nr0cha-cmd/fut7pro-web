@@ -61,6 +61,7 @@ export type TimeDoDia = {
   nome: string;
   logo: string;
   cor: string;
+  ehTimeCampeao?: boolean;
   jogadores: JogadorDoDia[];
 };
 

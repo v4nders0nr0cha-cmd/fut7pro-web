@@ -15,9 +15,12 @@ async function fetcher(url: string): Promise<Racha> {
   const data = await res.json();
 
   // Validar dados recebidos
-  const validation = validateSafe(rachaSchema, data);
+  const validation = validateSafe(rachaSchema, data) as
+    | { success: true; data: Racha }
+    | { success: false; errors: string[] };
   if (!validation.success) {
-    throw new Error(`Dados inválidos: ${validation.errors.join(", ")}`);
+    const errors = (validation as { errors: string[] }).errors;
+    throw new Error(`Dados inválidos: ${errors.join(", ")}`);
   }
 
   return validation.data;

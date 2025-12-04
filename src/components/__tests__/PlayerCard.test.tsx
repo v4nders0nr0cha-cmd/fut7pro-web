@@ -7,7 +7,8 @@ jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: any) => {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img {...props} />;
+    const { alt, ...rest } = props;
+    return <img alt={alt || ""} {...rest} />;
   },
 }));
 
@@ -43,10 +44,10 @@ describe("PlayerCard", () => {
 
     expect(screen.getByText("João Silva")).toBeInTheDocument();
     expect(screen.getByText("Atacante")).toBeInTheDocument();
-    expect(screen.getByText("15")).toBeInTheDocument(); // Gols
-    expect(screen.getByText("8")).toBeInTheDocument(); // Assistências
-    expect(screen.getByText("25")).toBeInTheDocument(); // Partidas
-    expect(screen.getByText("20")).toBeInTheDocument(); // Presenças
+    expect(screen.getByTitle("Gols")).toHaveTextContent("15");
+    expect(screen.getByTitle("Assistências")).toHaveTextContent("8");
+    expect(screen.getByTitle("Partidas")).toHaveTextContent("25");
+    expect(screen.getByTitle("Presenças")).toHaveTextContent("20");
   });
 
   it("should display player image with alt text", () => {
@@ -137,10 +138,10 @@ describe("PlayerCard", () => {
 
     render(<PlayerCard player={playerWithZeroStats} racha={mockRacha} />);
 
-    expect(screen.getByText("0")).toBeInTheDocument(); // Gols
-    expect(screen.getByText("0")).toBeInTheDocument(); // Assistências
-    expect(screen.getByText("0")).toBeInTheDocument(); // Partidas
-    expect(screen.getByText("0")).toBeInTheDocument(); // Presenças
+    expect(screen.getByTitle("Gols")).toHaveTextContent("0");
+    expect(screen.getByTitle("Assistências")).toHaveTextContent("0");
+    expect(screen.getByTitle("Partidas")).toHaveTextContent("0");
+    expect(screen.getByTitle("Presenças")).toHaveTextContent("0");
   });
 
   it("should be accessible with proper ARIA labels", () => {

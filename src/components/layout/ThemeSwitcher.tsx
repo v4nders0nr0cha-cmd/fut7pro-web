@@ -1,6 +1,7 @@
 "use client";
 import { useTheme } from "@/context/ThemeContext";
 import { themes } from "@/config/themes";
+import type { ThemeKey } from "@/config/themes";
 
 export default function ThemeSwitcher() {
   const { themeKey, setThemeKey } = useTheme();
@@ -17,7 +18,7 @@ export default function ThemeSwitcher() {
             borderColor: th.primary,
             outline: themeKey === key ? "2px solid #fff" : undefined,
           }}
-          onClick={() => setThemeKey(key as string)}
+          onClick={() => setThemeKey(key as ThemeKey)}
         >
           {th.name}
         </button>

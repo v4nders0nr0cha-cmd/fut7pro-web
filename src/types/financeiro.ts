@@ -1,6 +1,6 @@
 // src/types/financeiro.ts
 
-// Tipos de lançamento financeiro
+// Tipos de lancamento financeiro
 export type TipoLancamento =
   | "diaria"
   | "mensalidade"
@@ -10,9 +10,11 @@ export type TipoLancamento =
   | "despesa"
   | "despesa_adm"
   | "sistema"
-  | "multa"; // Incluindo 'multa' conforme padrão do sistema
+  | "entrada"
+  | "saida"
+  | "multa"; // Incluindo 'multa' conforme padrao do sistema
 
-// Lançamento financeiro padrão
+// Lancamento financeiro padrao
 export interface LancamentoFinanceiro {
   id: string;
   data: string; // ISO date (ex: 2025-06-11)
@@ -20,7 +22,13 @@ export interface LancamentoFinanceiro {
   descricao: string;
   valor: number; // positivo = receita, negativo = despesa
   responsavel: string; // nome/apelido admin
-  comprovanteUrl?: string; // opcional (anexos/imagem local ou base64)
+  adminId?: string;
+  rachaId?: string;
+  tenantId?: string;
+  comprovanteUrl?: string; // opcional (anexos/imagem local/base64)
+  categoria?: string;
+  adminNome?: string;
+  adminEmail?: string;
 }
 
 // Resumo financeiro consolidado
@@ -35,7 +43,7 @@ export interface ResumoFinanceiro {
 // Status dos patrocinadores
 export type StatusPatrocinador = "ativo" | "inativo" | "encerrado";
 
-// Patrocinador completo para o módulo financeiro
+// Patrocinador completo para o modulo financeiro
 export interface Patrocinador {
   id: string;
   nome: string;
@@ -48,5 +56,5 @@ export interface Patrocinador {
   comprovantes: string[]; // anexos de recebimento (imagens local/base64)
   observacoes?: string;
   link?: string; // perfil ou site do patrocinador
-  visivel: boolean; // visível no site público?
+  visivel: boolean; // visivel no site publico?
 }

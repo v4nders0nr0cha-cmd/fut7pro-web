@@ -1,28 +1,37 @@
 import "@testing-library/jest-dom";
 import React from "react";
 
-// Mock do Next.js router
-jest.mock("next/router", () => ({
-  useRouter() {
-    return {
-      route: "/",
-      pathname: "/",
-      query: {},
-      asPath: "/",
-      push: jest.fn(),
-      pop: jest.fn(),
-      reload: jest.fn(),
-      back: jest.fn(),
-      prefetch: jest.fn().mockResolvedValue(undefined),
-      beforePopState: jest.fn(),
-      events: {
-        on: jest.fn(),
-        off: jest.fn(),
-        emit: jest.fn(),
-      },
-      isFallback: false,
-    };
+const useRouterMock = jest.fn().mockReturnValue({
+  route: "/",
+  pathname: "/",
+  query: {},
+  asPath: "/",
+  push: jest.fn(),
+  pop: jest.fn(),
+  reload: jest.fn(),
+  back: jest.fn(),
+  prefetch: jest.fn().mockResolvedValue(undefined),
+  beforePopState: jest.fn(),
+  events: {
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
   },
+  isFallback: false,
+});
+
+// Mock do Next.js router (Pages) e navigation (App Router)
+jest.mock("next/router", () => ({
+  useRouter: useRouterMock,
+  withRouter: (comp: any) => comp,
+  Router: {},
+}));
+
+jest.mock("next/navigation", () => ({
+  useRouter: useRouterMock,
+  usePathname: jest.fn(() => "/"),
+  useSearchParams: jest.fn(() => ({ get: () => null })),
+  redirect: jest.fn(),
 }));
 
 // Mock do Next.js Image
@@ -35,16 +44,20 @@ jest.mock("next/image", () => ({
 }));
 
 // Mock do SWR
+const swrMock = jest.fn((key: string) => {
+  const mockData = {
+    "/api/rachas": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
+    "/api/users": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
+    "/api/partidas": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
+    "/api/times": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
+  };
+  if (mockData[key]) return mockData[key];
+  return { data: undefined, isLoading: false, error: undefined, mutate: jest.fn() };
+});
+
 jest.mock("swr", () => ({
   __esModule: true,
-  default: (key: string, fetcher: any) => {
-    const mockData = {
-      "/api/rachas": { data: [], isLoading: false, error: null },
-      "/api/users": { data: [], isLoading: false, error: null },
-      "/api/partidas": { data: [], isLoading: false, error: null },
-    };
-    return mockData[key] || { data: null, isLoading: true, error: null };
-  },
+  default: swrMock,
 }));
 
 // Mock do window.matchMedia

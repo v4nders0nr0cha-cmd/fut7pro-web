@@ -17,8 +17,10 @@ export default function RachaForm({ racha, onSave, onCancel }: RachaFormProps) {
   }, [racha]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
-    const { name, value, type, checked } = e.target;
+    const target = e.target;
+    const { name, value, type } = target;
     if (type === "checkbox") {
+      const checked = (target as HTMLInputElement).checked;
       setForm((f) => ({
         ...f,
         [name]: checked,
