@@ -1,26 +1,45 @@
+export type PosicaoJogador =
+  | "Goleiro"
+  | "Zagueiro"
+  | "Meia"
+  | "Atacante"
+  | "goleiro"
+  | "zagueiro"
+  | "meia"
+  | "atacante";
+
+export type StatusJogador = "Ativo" | "Inativo" | "Suspenso" | "ativo" | "inativo" | "suspenso";
+
 export type Jogador = {
   id: string;
   nome: string;
   apelido: string;
   email: string;
-  posicao: PosicaoJogador; // "goleiro", "zagueiro", "meia", "atacante"
-  avatar: string; // Foto do jogador (antes era "foto")
-  foto?: string; // alias legado
-  status: StatusJogador; // "Ativo", "Inativo", "Suspenso"
+  dataNascimento?: string;
+  birthDate?: string;
+  nascimento?: string;
+  posicao: PosicaoJogador;
+  avatar: string;
+  foto?: string;
+  photoUrl?: string | null;
+  status: StatusJogador;
   mensalista: boolean;
-  timeId: string; // Relacionamento com Time
-  rachas?: unknown[]; // Relacionamento com rachas, se necessário
+  isMember?: boolean;
+  timeId: string;
+  rachaId?: string;
+  tenantSlug?: string;
+  slug?: string;
+  nickname?: string;
+  gols?: number;
+  assistencias?: number;
+  partidas?: number;
+  presencas?: number;
+  rankingPontos?: number;
+  rachas?: unknown[];
   createdAt?: string;
   updatedAt?: string;
 };
 
-// Enum para posição
-export type PosicaoJogador = "Goleiro" | "Zagueiro" | "Meia" | "Atacante" | "goleiro" | "zagueiro" | "meia" | "atacante";
-
-// Enum para status do jogador
-export type StatusJogador = "Ativo" | "Inativo" | "Suspenso" | "ativo" | "inativo" | "suspenso";
-
-// Tipagem separada para atletas pendentes
 export type AtletaPendente = {
   id: string;
   nome: string;

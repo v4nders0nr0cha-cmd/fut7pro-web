@@ -2,41 +2,36 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-
-const mockTimes = [
-  { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
-  { id: "2", nome: "Tigres", logo: "/images/times/time_padrao_02.png" },
-  { id: "3", nome: "Águias", logo: "/images/times/time_padrao_03.png" },
-  { id: "4", nome: "Furacão", logo: "/images/times/time_padrao_04.png" },
-  { id: "5", nome: "Tubarão", logo: "/images/times/time_padrao_05.png" },
-  { id: "6", nome: "Gaviões", logo: "/images/times/time_padrao_06.png" },
-  { id: "7", nome: "Panteras", logo: "/images/times/time_padrao_07.png" },
-  { id: "8", nome: "Corujas", logo: "/images/times/time_padrao_08.png" },
-];
+import type { Time } from "@/types/time";
 
 interface Props {
+  timesDisponiveis: Time[];
   timesSelecionados: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
   maxTimes?: number;
   shake?: boolean; // NOVO: prop do pai para animar o aviso!
+  loading?: boolean;
 }
 
 export default function SelecionarTimesDia({
+  timesDisponiveis,
   timesSelecionados,
   onChange,
   disabled = false,
   maxTimes = 4,
   shake = false,
+  loading = false,
 }: Props) {
   const [verMais, setVerMais] = useState(false);
 
-  const timesPrincipais = mockTimes.slice(0, 4);
-  const timesExtras = mockTimes.slice(4);
+  const timesPrincipais = timesDisponiveis.slice(0, 4);
+  const timesExtras = timesDisponiveis.slice(4);
+  const hasTimes = timesDisponiveis.length > 0;
 
   // Bloqueia acima do limite, libera só para desmarcar
   function toggleTime(id: string) {
-    if (disabled) return;
+    if (disableAll || !hasTimes) return;
     const jaSelecionado = timesSelecionados.includes(id);
     if (jaSelecionado) {
       onChange(timesSelecionados.filter((tid) => tid !== id));
@@ -47,13 +42,24 @@ export default function SelecionarTimesDia({
     }
   }
 
-  const limiteExato = timesSelecionados.length === maxTimes;
-  const limiteAtingido = timesSelecionados.length >= maxTimes;
+  const limiteAlvo = Math.min(maxTimes, timesDisponiveis.length || maxTimes);
+  const limiteExato = limiteAlvo > 0 ? timesSelecionados.length === limiteAlvo : false;
+  const limiteAtingido = limiteAlvo > 0 ? timesSelecionados.length >= limiteAlvo : true;
+  const faltamTimes = !loading && timesDisponiveis.length < maxTimes;
+  const disableAll = disabled || loading;
 
   // Mensagem de aviso dinâmico
-  const avisoTimes = !limiteExato
-    ? `Selecione exatamente ${maxTimes} time${maxTimes > 1 ? "s" : ""} para o racha.`
-    : `Pronto! Você selecionou todos os times necessários.`;
+  const avisoTimes = loading
+    ? "Carregando times do racha..."
+    : !hasTimes
+      ? "Cadastre os times do racha para habilitar o sorteio."
+      : !limiteExato
+        ? `Selecione exatamente ${limiteAlvo} time${limiteAlvo > 1 ? "s" : ""} para o racha.`
+        : faltamTimes
+          ? `Pronto! Voce selecionou os ${timesDisponiveis.length} time${
+              timesDisponiveis.length === 1 ? "" : "s"
+            } disponiveis.`
+          : `Pronto! Voce selecionou todos os times necessarios.`;
 
   // Estado interno para shake, sincroniza quando o pai muda a prop "shake"
   const [avisoShake, setAvisoShake] = useState(false);
@@ -66,7 +72,7 @@ export default function SelecionarTimesDia({
     }
   }, [shake]);
 
-  const fadeClasses = disabled
+  const fadeClasses = disableAll
     ? "opacity-60 blur-[2px] pointer-events-none select-none transition-all duration-300"
     : "transition-all duration-300";
 
@@ -78,7 +84,7 @@ export default function SelecionarTimesDia({
       <div className="flex flex-wrap gap-4 justify-center">
         {timesPrincipais.map((time) => {
           const checked = timesSelecionados.includes(time.id);
-          const podeMarcar = checked || !limiteAtingido;
+          const podeMarcar = checked || (!limiteAtingido && !disableAll);
           return (
             <button
               type="button"
@@ -92,8 +98,8 @@ export default function SelecionarTimesDia({
                                       : "bg-zinc-800 border-zinc-700 text-white opacity-80 hover:opacity-100"
                                 }`}
               onClick={() => podeMarcar && toggleTime(time.id)}
-              disabled={disabled || !podeMarcar}
-              tabIndex={disabled ? -1 : 0}
+              disabled={disableAll || !podeMarcar}
+              tabIndex={disableAll ? -1 : 0}
             >
               <Image src={time.logo} alt={`Logo do ${time.nome}`} width={32} height={32} />
               {time.nome}
@@ -105,16 +111,22 @@ export default function SelecionarTimesDia({
           <button
             type="button"
             className="px-3 py-2 rounded-lg border border-yellow-400 bg-zinc-800 text-yellow-400 font-bold"
-            onClick={() => !disabled && setVerMais(true)}
-            disabled={disabled}
-            tabIndex={disabled ? -1 : 0}
+            onClick={() => !disableAll && setVerMais(true)}
+            disabled={disableAll}
+            tabIndex={disableAll ? -1 : 0}
           >
             Ver mais times
           </button>
         )}
       </div>
+      {!loading && !hasTimes && (
+        <p className="text-sm text-center text-gray-400 mt-2">
+          Nenhum time cadastrado. Use &quot;Criar Times&quot; para adicionar e habilitar o sorteio.
+        </p>
+      )}
+      {loading && <p className="text-sm text-center text-gray-400 mt-2">Carregando times...</p>}
       {/* Modal de times extras */}
-      {verMais && !disabled && (
+      {verMais && !disableAll && (
         <div className="fixed top-0 left-0 w-full h-full z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-[#202020] rounded-xl p-6 shadow-2xl min-w-[320px] max-w-[90vw]">
             <div className="flex justify-between items-center mb-4">
@@ -129,7 +141,7 @@ export default function SelecionarTimesDia({
             <div className="flex flex-wrap gap-3 mb-2">
               {timesExtras.map((time) => {
                 const checked = timesSelecionados.includes(time.id);
-                const podeMarcar = checked || !limiteAtingido;
+                const podeMarcar = checked || (!limiteAtingido && !disableAll);
                 return (
                   <button
                     type="button"
@@ -143,7 +155,7 @@ export default function SelecionarTimesDia({
                                                   : "bg-zinc-800 border-zinc-700 text-white opacity-80 hover:opacity-100"
                                             }`}
                     onClick={() => podeMarcar && toggleTime(time.id)}
-                    disabled={disabled || !podeMarcar}
+                    disabled={disableAll || !podeMarcar}
                   >
                     <Image src={time.logo} alt={`Logo do ${time.nome}`} width={28} height={28} />
                     {time.nome}

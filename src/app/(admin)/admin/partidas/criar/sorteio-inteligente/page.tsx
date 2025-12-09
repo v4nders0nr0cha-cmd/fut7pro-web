@@ -6,10 +6,12 @@ import { useTimes } from "@/hooks/useTimes";
 import { rachaConfig } from "@/config/racha.config";
 import Image from "next/image";
 import { useState } from "react";
+import { useRacha } from "@/context/RachaContext";
 
 export default function SorteioInteligentePage() {
-  const rachaId = rachaConfig.slug;
-  const { times } = useTimes(rachaId);
+  const { tenantSlug } = useRacha();
+  const resolvedSlug = tenantSlug || rachaConfig.slug;
+  const { times, isLoading } = useTimes(resolvedSlug);
   const [timesSelecionados, setTimesSelecionados] = useState<string[]>([]);
 
   const toggleTime = (timeId: string) => {
@@ -48,7 +50,9 @@ export default function SorteioInteligentePage() {
         {/* Seleção de Times */}
         <div className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl p-6 mb-8 shadow-lg">
           <h2 className="text-lg font-semibold text-yellow-400 mb-4">Selecione os Times do Dia</h2>
-          {times.length === 0 ? (
+          {isLoading ? (
+            <p className="text-gray-400">Carregando times do racha...</p>
+          ) : times.length === 0 ? (
             <p className="text-gray-400">
               Nenhum time cadastrado. Vá até <strong>"Criar Times"</strong> para adicionar seus
               times antes do sorteio.
@@ -98,7 +102,7 @@ export default function SorteioInteligentePage() {
                 console.log("Sorteio iniciado com times:", timesSelecionados);
               }
             }}
-            disabled={timesSelecionados.length < 2}
+            disabled={isLoading || timesSelecionados.length < 2}
             type="button"
           >
             Iniciar Sorteio Inteligente

@@ -1,6 +1,12 @@
-import type { Mensalista } from "../mocks/mockMensalistas";
+export type MensalistaResumo = {
+  id: string;
+  nome: string;
+  status: "Em dia" | "Inadimplente" | "A receber";
+  valor: number;
+  ultimoPagamento: string | null;
+};
 
-type Props = { mensalistas: Mensalista[] };
+type Props = { mensalistas: MensalistaResumo[] };
 
 export default function TabelaMensalistas({ mensalistas }: Props) {
   return (

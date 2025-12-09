@@ -17,7 +17,9 @@ describe("useAdmin", () => {
   beforeEach(() => {
     mockedUseRacha.mockReturnValue({
       rachaId: "racha-1",
+      tenantSlug: "demo",
       setRachaId: jest.fn(),
+      setTenantSlug: jest.fn(),
       clearRachaId: jest.fn(),
       isRachaSelected: true,
     });

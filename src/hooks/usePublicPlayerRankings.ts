@@ -63,4 +63,3 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
     error: error instanceof Error ? error.message : null,
   };
 }
-

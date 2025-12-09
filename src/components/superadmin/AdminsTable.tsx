@@ -4,19 +4,21 @@ import { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaEye, FaKey, FaBan, FaCheck, FaUserShield } from "react-icons/fa";
 import { Role, Permission } from "@/common/enums";
 
-interface Admin {
+export interface Admin {
   id: string;
   name: string;
   email: string;
   role: Role;
   superadmin: boolean;
   active: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   permissions: Permission[];
 }
 
 interface AdminsTableProps {
+  admins?: Admin[];
+  isLoading?: boolean;
   onEdit?: (admin: Admin) => void;
   onDelete?: (admin: Admin) => void;
   onView?: (admin: Admin) => void;
@@ -71,6 +73,8 @@ const permissionLabels: Record<Permission, string> = {
 };
 
 export default function AdminsTable({
+  admins = [],
+  isLoading = false,
   onEdit,
   onDelete,
   onView,
@@ -78,64 +82,15 @@ export default function AdminsTable({
   onRevokeAccess,
   onActivate,
 }: AdminsTableProps) {
-  const [admins, setAdmins] = useState<Admin[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [adminsState, setAdminsState] = useState<Admin[]>(admins);
+  const [loading, setLoading] = useState<boolean>(isLoading);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [showPermissions, setShowPermissions] = useState<string | null>(null);
 
-  // Mock data - substituir por API real
   useEffect(() => {
-    const mockAdmins: Admin[] = [
-      {
-        id: "1",
-        name: "Vanderson Rocha",
-        email: "vanderson_r0cha@hotmail.com",
-        role: Role.SUPERADMIN,
-        superadmin: true,
-        active: true,
-        createdAt: new Date("2025-01-01"),
-        updatedAt: new Date("2025-01-01"),
-        permissions: Object.values(Permission),
-      },
-      {
-        id: "2",
-        name: "João Silva",
-        email: "joao@example.com",
-        role: Role.GERENTE,
-        superadmin: false,
-        active: true,
-        createdAt: new Date("2025-01-15"),
-        updatedAt: new Date("2025-01-15"),
-        permissions: [
-          Permission.RACHA_READ,
-          Permission.RACHA_UPDATE,
-          Permission.USER_READ,
-          Permission.FINANCE_READ,
-          Permission.ANALYTICS_READ,
-        ],
-      },
-      {
-        id: "3",
-        name: "Maria Santos",
-        email: "maria@example.com",
-        role: Role.SUPORTE,
-        superadmin: false,
-        active: true,
-        createdAt: new Date("2025-01-20"),
-        updatedAt: new Date("2025-01-20"),
-        permissions: [
-          Permission.USER_READ,
-          Permission.USER_UPDATE,
-          Permission.SUPPORT_READ,
-          Permission.SUPPORT_CREATE,
-          Permission.SUPPORT_UPDATE,
-        ],
-      },
-    ];
-
-    setAdmins(mockAdmins);
-    setLoading(false);
-  }, []);
+    setAdminsState(admins);
+    setLoading(isLoading);
+  }, [admins, isLoading]);
 
   const handleAction = (action: string, admin: Admin) => {
     switch (action) {
@@ -160,7 +115,7 @@ export default function AdminsTable({
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Intl.DateTimeFormat("pt-BR", {
       day: "2-digit",
       month: "2-digit",
@@ -194,7 +149,7 @@ export default function AdminsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
-            {admins.map((admin) => (
+            {adminsState.map((admin) => (
               <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

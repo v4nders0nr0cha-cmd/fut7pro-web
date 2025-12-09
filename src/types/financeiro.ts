@@ -1,6 +1,5 @@
 // src/types/financeiro.ts
 
-// Tipos de lancamento financeiro
 export type TipoLancamento =
   | "diaria"
   | "mensalidade"
@@ -12,49 +11,60 @@ export type TipoLancamento =
   | "sistema"
   | "entrada"
   | "saida"
-  | "multa"; // Incluindo 'multa' conforme padrao do sistema
+  | "multa";
 
-// Lancamento financeiro padrao
 export interface LancamentoFinanceiro {
   id: string;
-  data: string; // ISO date (ex: 2025-06-11)
+  data: string;
   tipo: TipoLancamento;
   descricao: string;
-  valor: number; // positivo = receita, negativo = despesa
-  responsavel: string; // nome/apelido admin
+  valor: number;
+  responsavel: string;
   adminId?: string;
   rachaId?: string;
   tenantId?: string;
-  comprovanteUrl?: string; // opcional (anexos/imagem local/base64)
+  tenantSlug?: string;
+  comprovanteUrl?: string;
   categoria?: string;
   adminNome?: string;
   adminEmail?: string;
+  metodoPagamento?: string;
+  competencia?: string;
+  observacoes?: string;
+  recorrente?: boolean;
+  anexos?: string[];
+  visivel?: boolean;
+  publico?: boolean;
+  status?: string;
+  referenciaSlug?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-// Resumo financeiro consolidado
 export interface ResumoFinanceiro {
   saldoAtual: number;
   totalReceitas: number;
   totalDespesas: number;
-  receitasPorMes: Record<string, number>; // ex: {"2025-06": 1500}
-  despesasPorMes: Record<string, number>; // ex: {"2025-06": 800}
+  receitasPorMes: Record<string, number>;
+  despesasPorMes: Record<string, number>;
+  saldoAnterior?: number;
+  periodoInicio?: string;
+  periodoFim?: string;
 }
 
-// Status dos patrocinadores
 export type StatusPatrocinador = "ativo" | "inativo" | "encerrado";
 
-// Patrocinador completo para o modulo financeiro
 export interface Patrocinador {
   id: string;
   nome: string;
   valor: number;
-  periodoInicio: string; // ISO date ex: "2025-06-01"
-  periodoFim: string; // ISO date ex: "2025-09-30"
+  periodoInicio: string;
+  periodoFim: string;
   descricao?: string;
-  logo: string; // caminho local/base64
+  logo: string;
   status: StatusPatrocinador;
-  comprovantes: string[]; // anexos de recebimento (imagens local/base64)
+  comprovantes: string[];
   observacoes?: string;
-  link?: string; // perfil ou site do patrocinador
-  visivel: boolean; // visivel no site publico?
+  link?: string;
+  visivel: boolean;
 }

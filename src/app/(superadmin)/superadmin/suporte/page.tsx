@@ -1,12 +1,12 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import useSWR from "swr";
+import { useMemo, useState } from "react";
 import HeaderSuporte from "@/components/superadmin/HeaderSuporte";
 import TicketTable from "@/components/superadmin/TicketTable";
 import CardOnboardingPendentes from "@/components/superadmin/CardOnboardingPendentes";
 import FaqQuickLinks from "@/components/superadmin/FaqQuickLinks";
-import { mockTickets, mockOnboardings } from "@/components/lists/mockSuporte";
 
 const SEO = {
   title: "Central de Suporte e Onboarding | Fut7Pro SuperAdmin",
@@ -16,18 +16,55 @@ const SEO = {
     "suporte, helpdesk, onboarding, fut7, plataforma futebol, SaaS, tickets, racha, administração",
 };
 
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) return [];
+  return res.json();
+};
+
+type Ticket = {
+  id: string;
+  assunto: string;
+  racha: string;
+  status: "open" | "resolved" | "inprogress" | "waiting";
+  onboardingPercent: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Onboarding = {
+  racha: string;
+  status: "completo" | "parcial" | "incompleto";
+  percent: number;
+  etapasConcluidas: number;
+  etapasTotais: number;
+};
+
 export default function SuporteSuperAdminPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "open" | "inprogress" | "resolved" | "waiting"
   >("all");
 
-  const tickets = mockTickets.filter(
-    (t) =>
-      (search === "" ||
-        t.assunto.toLowerCase().includes(search.toLowerCase()) ||
-        t.racha.toLowerCase().includes(search.toLowerCase())) &&
-      (statusFilter === "all" || t.status === statusFilter)
+  const { data: ticketsApi = [], isLoading: loadingTickets } = useSWR<Ticket[]>(
+    "/api/superadmin/tickets",
+    fetcher
+  );
+  const { data: onboardingsApi = [] } = useSWR<Onboarding[]>(
+    "/api/superadmin/onboardings",
+    fetcher
+  );
+
+  const tickets = useMemo(
+    () =>
+      ticketsApi.filter(
+        (t) =>
+          (search === "" ||
+            t.assunto.toLowerCase().includes(search.toLowerCase()) ||
+            t.racha.toLowerCase().includes(search.toLowerCase())) &&
+          (statusFilter === "all" || t.status === statusFilter)
+      ),
+    [ticketsApi, search, statusFilter]
   );
 
   return (
@@ -43,10 +80,16 @@ export default function SuporteSuperAdminPage() {
           title="Central de Suporte & Onboarding"
           description="Gerencie todos os tickets, onboarding e suporte dos clientes Fut7Pro em um só lugar."
           stats={[
-            { label: "Abertos", value: 4 },
-            { label: "Em Andamento", value: 2 },
-            { label: "Resolvidos", value: 17 },
-            { label: "Média Resposta", value: "1h 45min" },
+            { label: "Abertos", value: ticketsApi.filter((t) => t.status === "open").length },
+            {
+              label: "Em Andamento",
+              value: ticketsApi.filter((t) => t.status === "inprogress").length,
+            },
+            {
+              label: "Resolvidos",
+              value: ticketsApi.filter((t) => t.status === "resolved").length,
+            },
+            { label: "Média Resposta", value: "–" },
           ]}
         />
 
@@ -75,8 +118,12 @@ export default function SuporteSuperAdminPage() {
           </button>
         </div>
 
-        <CardOnboardingPendentes onboardings={mockOnboardings} />
-        <TicketTable tickets={tickets} />
+        <CardOnboardingPendentes onboardings={onboardingsApi} />
+        {loadingTickets ? (
+          <div className="text-center text-gray-400 py-6">Carregando tickets...</div>
+        ) : (
+          <TicketTable tickets={tickets} />
+        )}
         <FaqQuickLinks />
       </section>
     </>

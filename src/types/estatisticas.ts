@@ -21,6 +21,8 @@ export interface RankingAtleta {
   nome: string;
   slug: string;
   foto: string;
+  posicao?: string;
+  position?: string;
   pontos: number;
   jogos: number;
   vitorias: number;

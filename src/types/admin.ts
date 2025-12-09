@@ -1,38 +1,46 @@
 // src/types/admin.ts
 
-/**
- * Administrador do racha (painel local)
- */
 export interface Admin {
   id: string;
-  usuarioId: string; // ID do usuário principal (obrigatório, padronizado)
-  nome?: string; // Nome completo do admin
-  email?: string; // E-mail do admin
-  role?: string; // Papel/role do admin (ex.: ADMIN, SUPERADMIN, GERENTE)
-  status?: "ATIVO" | "INATIVO" | "PENDENTE"; // Status padronizado
-  funcao?: string; // Cargo: Presidente, Vice, Diretor de Futebol, etc.
-  avatar?: string; // URL do avatar/foto
-  ativo?: boolean; // Se está ativo ou não
-  ultimoAcesso?: string; // ISO do último login/acesso
-  criadoEm?: string; // ISO date de criação
+  usuarioId: string;
+  nome?: string;
+  email?: string;
+  role?: string;
+  roles?: string[];
+  tenantId?: string;
+  tenantSlug?: string;
+  slug?: string;
+  telefone?: string;
+  status?: "ATIVO" | "INATIVO" | "PENDENTE";
+  funcao?: string;
+  avatar?: string;
+  ativo?: boolean;
+  ultimoAcesso?: string;
+  criadoEm?: string;
+  atualizadoEm?: string;
+  deletadoEm?: string;
+  permissoes?: string[];
+  preferredLanguage?: string;
+  plano?: string;
+  planoStatus?: string;
+  planoExpiraEm?: string;
+  trialExpiraEm?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-/**
- * Log de ação administrativa (auditoria)
- */
 export interface LogAdmin {
   id: string;
-  adminId: string; // ID do admin responsável pela ação
-  usuarioId: string; // usuarioId do admin (padronizado)
-  acao: string; // Ex: "Removeu partida", "Transferiu propriedade"
-  data: string; // ISO date da ação
-  detalhes?: string; // Ex: detalhes sobre a ação (ID removido, e-mail, etc)
-  ip?: string; // IP da ação (opcional, para auditoria)
-  recurso?: string; // Recurso afetado (ex.: partidas, rankings)
-  criadoEm?: string; // Alias para data
-  adminNome?: string; // Nome do admin para exibição
+  adminId: string;
+  usuarioId: string;
+  acao: string;
+  data: string;
+  detalhes?: string;
+  ip?: string;
+  recurso?: string;
+  criadoEm?: string;
+  adminNome?: string;
   adminEmail?: string;
-  // aliases usados em telas legadas
   action?: string;
   details?: string;
   adminName?: string;
@@ -40,19 +48,12 @@ export interface LogAdmin {
   resource?: string;
 }
 
-// Alias usado pelos hooks
 export type AdminLog = LogAdmin;
 
-/**
- * Cargos disponíveis (para facilitar enum ou select)
- */
 export type CargoAdmin = "Presidente" | "Vice" | "Diretor de Futebol" | "Diretor Financeiro";
 
-/**
- * Estrutura de permissão por cargo (para controle dinâmico de acesso)
- */
 export interface PermissaoAdmin {
-  funcao: CargoAdmin; // Cargo: Presidente, Vice, etc.
+  funcao: CargoAdmin;
   podeAcessar: {
     administradores: boolean;
     permissoes: boolean;
@@ -68,5 +69,5 @@ export interface PermissaoAdmin {
     campeoes: boolean;
     atletas: boolean;
   };
-  prazoExclusaoDias: number | null; // null = sem limite, número = limite em dias para exclusão
+  prazoExclusaoDias: number | null;
 }

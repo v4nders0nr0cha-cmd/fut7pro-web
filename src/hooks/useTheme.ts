@@ -146,9 +146,9 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-      const response = await configuracoesApi.updateCores(colors);
-      if (response.data) {
-        setRachaConfig(response.data as RachaConfig);
+        const response = await configuracoesApi.updateCores(colors);
+        if (response.data) {
+          setRachaConfig(response.data as RachaConfig);
           toast.success("Cores atualizadas com sucesso!");
           return true;
         } else if (response.error) {
@@ -181,9 +181,9 @@ export function useTheme() {
         setIsLoading(true);
         setError(null);
 
-      const response = await configuracoesApi.updateConfiguracoes(settings);
-      if (response.data) {
-        setRachaConfig(response.data as RachaConfig);
+        const response = await configuracoesApi.updateConfiguracoes(settings);
+        if (response.data) {
+          setRachaConfig(response.data as RachaConfig);
           toast.success("Configurações atualizadas com sucesso!");
           return true;
         } else if (response.error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
@@ -8,21 +8,12 @@ import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
 import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import { mockParticipantes } from "./mockParticipantes";
 import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
-
-const mockTimes: Time[] = [
-  { id: "1", nome: "Leões", logo: "/images/times/time_padrao_01.png" },
-  { id: "2", nome: "Tigres", logo: "/images/times/time_padrao_02.png" },
-  { id: "3", nome: "Águias", logo: "/images/times/time_padrao_03.png" },
-  { id: "4", nome: "Furacão", logo: "/images/times/time_padrao_04.png" },
-  { id: "5", nome: "Tubarão", logo: "/images/times/time_padrao_05.png" },
-  { id: "6", nome: "Gaviões", logo: "/images/times/time_padrao_06.png" },
-  { id: "7", nome: "Panteras", logo: "/images/times/time_padrao_07.png" },
-  { id: "8", nome: "Corujas", logo: "/images/times/time_padrao_08.png" },
-];
+import { useTimes } from "@/hooks/useTimes";
+import { rachaConfig } from "@/config/racha.config";
+import { logoPadrao } from "@/config/teamLogoMap";
 
 // SVG Loader animado de bola pulando (não precisa instalar nada)
 function LoaderBolaFutebol() {
@@ -134,20 +125,19 @@ function LoaderBolaFutebol() {
 }
 
 export default function SorteioInteligenteAdmin() {
-  const { rachaId } = useRacha();
+  const { rachaId, tenantSlug } = useRacha();
+  const resolvedSlug = tenantSlug || rachaId || rachaConfig.slug;
+  const { times: timesDisponiveis, isLoading: loadingTimes } = useTimes(resolvedSlug);
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
-  const [participantes, setParticipantes] = useState<Participante[]>(
-    mockParticipantes.filter((p) => p.mensalista)
-  );
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [times, setTimes] = useState<TimeSorteado[]>([]);
   const [publicado, setPublicado] = useState(false);
+  const [publicando, setPublicando] = useState(false);
   const [showTip, setShowTip] = useState(false);
   const [configConfirmada, setConfigConfirmada] = useState(false);
 
   // Estado dos times selecionados
-  const [timesSelecionados, setTimesSelecionados] = useState<string[]>(
-    mockTimes.slice(0, 4).map((t) => t.id)
-  );
+  const [timesSelecionados, setTimesSelecionados] = useState<string[]>([]);
 
   // Estado para a tabela de jogos
   const [tabelaJogos, setTabelaJogos] = useState<JogoConfronto[]>([]);
@@ -161,8 +151,40 @@ export default function SorteioInteligenteAdmin() {
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
 
+  useEffect(() => {
+    if (!timesDisponiveis || timesDisponiveis.length === 0) {
+      if (timesSelecionados.length) {
+        setTimesSelecionados([]);
+      }
+      return;
+    }
+
+    const disponiveisIds = new Set(timesDisponiveis.map((t) => t.id));
+    const filtrados = timesSelecionados.filter((id) => disponiveisIds.has(id));
+    const limite = Math.min(maxTimes, timesDisponiveis.length);
+
+    const faltando = limite - filtrados.length;
+    const extras =
+      faltando > 0
+        ? timesDisponiveis
+            .map((t) => t.id)
+            .filter((id) => !filtrados.includes(id))
+            .slice(0, faltando)
+        : [];
+
+    const proximos = faltando > 0 ? [...filtrados, ...extras] : filtrados.slice(0, limite);
+    const mudou =
+      proximos.length !== timesSelecionados.length ||
+      proximos.some((id, idx) => id !== timesSelecionados[idx]);
+
+    if (mudou) {
+      setTimesSelecionados(proximos);
+    }
+  }, [timesDisponiveis, maxTimes, timesSelecionados]);
+
   function handleConfirmarConfig() {
-    if (timesSelecionados.length !== maxTimes) {
+    const limiteConfirmacao = Math.min(maxTimes, timesDisponiveis.length || maxTimes);
+    if (timesSelecionados.length !== limiteConfirmacao) {
       setAvisoTimesShake(true);
       setTimeout(() => setAvisoTimesShake(false), 500);
       return;
@@ -176,8 +198,22 @@ export default function SorteioInteligenteAdmin() {
     return participantes.reduce((acc, p) => acc + (p.partidas || 0), 0);
   }
 
+  const normalizarTime = (time: any): Time => ({
+    id: time.id,
+    nome: time.nome || (time as any).name || "Time",
+    logo: time.logo || (time as any).logoUrl || logoPadrao,
+  });
+
   async function handleSortearTimes() {
     if (!config || participantes.length === 0 || timesSelecionados.length < 2) return;
+
+    const timesParaSorteio = timesDisponiveis.filter((t) => timesSelecionados.includes(t.id));
+    if (timesParaSorteio.length < 2) return;
+    const timesNormalizados = timesParaSorteio.map((time) => ({
+      id: time.id,
+      nome: time.nome || (time as any).name || "Time",
+      logo: time.logo || (time as any).logoUrl || logoPadrao,
+    }));
 
     setLoadingSorteio(true);
 
@@ -185,13 +221,12 @@ export default function SorteioInteligenteAdmin() {
     const partidasTotais = calcularPartidasTotais(participantes);
 
     // Balanceamento "pesado" e delay mínimo de 5s (user experience PRO)
-    const timesParaSorteio = mockTimes.filter((t) => timesSelecionados.includes(t.id));
     const balanceamentoPromise = new Promise<TimeSorteado[]>((resolve) => {
       setTimeout(() => {
         // Agora passa partidasTotais!
         const timesGerados = sortearTimesInteligente(
           participantes,
-          timesParaSorteio,
+          timesNormalizados,
           partidasTotais
         );
         resolve(timesGerados);
@@ -205,9 +240,9 @@ export default function SorteioInteligenteAdmin() {
     setPublicado(false);
 
     // GERA A TABELA DE JOGOS conforme times selecionados
-    if (timesParaSorteio.length >= 2) {
+    if (timesNormalizados.length >= 2) {
       const jogos = gerarTabelaJogos({
-        times: timesParaSorteio,
+        times: timesNormalizados,
         duracaoRachaMin: config.duracaoRachaMin,
         duracaoPartidaMin: config.duracaoPartidaMin,
       });
@@ -217,6 +252,36 @@ export default function SorteioInteligenteAdmin() {
     }
 
     setLoadingSorteio(false);
+  }
+
+  async function handlePublicarTimes() {
+    if (!config || times.length === 0 || !resolvedSlug) return;
+
+    setPublicando(true);
+    try {
+      const res = await fetch("/api/sorteio/publicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantSlug: resolvedSlug,
+          rachaId,
+          configuracao: config,
+          participantes,
+          times,
+          tabelaJogos,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      setPublicado(true);
+    } catch (error) {
+      console.error("Falha ao publicar sorteio", error);
+    } finally {
+      setPublicando(false);
+    }
   }
 
   return (
@@ -321,6 +386,8 @@ export default function SorteioInteligenteAdmin() {
         }
       >
         <SelecionarTimesDia
+          timesDisponiveis={timesDisponiveis}
+          loading={loadingTimes}
           timesSelecionados={timesSelecionados}
           onChange={setTimesSelecionados}
           disabled={configConfirmada}
@@ -359,14 +426,20 @@ export default function SorteioInteligenteAdmin() {
       <button
         className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"
         onClick={handleSortearTimes}
-        disabled={timesSelecionados.length < 2 || !config}
+        disabled={
+          loadingTimes || !config || timesSelecionados.length < 2 || timesDisponiveis.length < 2
+        }
       >
         Sortear Times
       </button>
       {times.length > 0 && (
         <>
           <TimesGerados times={times} />
-          <BotaoPublicarTimes publicado={publicado} onClick={() => setPublicado(true)} />
+          <BotaoPublicarTimes
+            publicado={publicado}
+            loading={publicando}
+            onClick={handlePublicarTimes}
+          />
           {/* NOVO: Tabela de jogos gerada automaticamente */}
           <TabelaJogosRacha jogos={tabelaJogos} />
         </>

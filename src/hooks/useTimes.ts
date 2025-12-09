@@ -4,79 +4,123 @@ import useSWR from "swr";
 import type { Time } from "@/types/time";
 import { rachaConfig } from "@/config/racha.config";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
+const DEFAULT_COR = "#FFD700";
 
-export function useTimes(rachaId: string) {
-  const storageKey = `fut7pro_times_${rachaId}`;
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("Erro ao buscar times");
+  }
+  return res.json();
+};
 
-  const { data, error, mutate } = useSWR<Time[]>(
-    rachaId ? `/api/admin/rachas/${rachaId}/times` : null,
-    fetcher,
-    {
-      fallbackData:
-        typeof window !== "undefined" ? JSON.parse(localStorage.getItem(storageKey) || "[]") : [],
-    }
+function slugify(value: string) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
+
+function normalizeTime(raw: any): Time {
+  const nome = raw?.nome || raw?.name || raw?.title || "Time";
+  const slug = raw?.slug || slugify(nome) || raw?.id || "time";
+  const logo = raw?.logo || raw?.logoUrl || DEFAULT_LOGO;
+  const cor = raw?.cor || raw?.color || DEFAULT_COR;
+
+  return {
+    id: raw?.id || slug,
+    nome,
+    name: raw?.name,
+    slug,
+    logo,
+    logoUrl: raw?.logoUrl ?? raw?.logo,
+    cor,
+    color: raw?.color,
+    corSecundaria: raw?.corSecundaria || raw?.secondaryColor,
+    rachaId: raw?.rachaId || raw?.tenantId || "",
+    tenantId: raw?.tenantId,
+    tenantSlug: raw?.tenantSlug,
+    jogadores: raw?.jogadores || raw?.players,
+    criadoEm: raw?.criadoEm || raw?.createdAt,
+    atualizadoEm: raw?.atualizadoEm || raw?.updatedAt,
+    createdAt: raw?.createdAt,
+    updatedAt: raw?.updatedAt,
+  };
+}
+
+export function useTimes(tenantSlug?: string) {
+  const slug = tenantSlug || rachaConfig.slug;
+  const search = slug ? `?slug=${encodeURIComponent(slug)}` : "";
+  const key = slug ? `/api/times${search}` : null;
+
+  const { data, error, mutate, isLoading } = useSWR<Time[]>(
+    key,
+    async (url: string) => {
+      const payload = await fetcher(url);
+      const list = Array.isArray(payload?.results) ? payload.results : payload;
+      return Array.isArray(list) ? list.map(normalizeTime) : [];
+    },
+    { revalidateOnFocus: false }
   );
 
-  if (typeof window !== "undefined" && data) {
-    localStorage.setItem(storageKey, JSON.stringify(data));
-  }
-
   async function addTime(time: Partial<Time>) {
-    const novoTime: Time = {
-      id: crypto.randomUUID(),
-      nome: time.nome || "Novo Time",
-      slug: (time.slug || time.nome || "novo-time").toLowerCase().replace(/\s+/g, "-"),
-      logo: time.logo || "/images/times/time_padrao_01.png",
-      cor: time.cor || "#FFD700",
-      corSecundaria: time.corSecundaria || "#FFFFFF",
-      rachaId: rachaId || rachaConfig.slug,
+    const payload = {
+      name: time.nome || time.name || "Novo Time",
+      color: time.cor || time.color || DEFAULT_COR,
+      logoUrl: time.logo || time.logoUrl || DEFAULT_LOGO,
     };
 
-    try {
-      await fetch(`/api/admin/rachas/${rachaId}/times`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(novoTime),
-      });
-    } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      localStorage.setItem(storageKey, JSON.stringify([...localTimes, novoTime]));
+    const res = await fetch(`/api/times${search}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error("Falha ao criar time");
     }
-    mutate();
+
+    await mutate();
   }
 
   async function updateTime(time: Time) {
-    try {
-      await fetch(`/api/admin/rachas/${rachaId}/times/${time.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(time),
-      });
-    } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const atualizados = localTimes.map((t) => (t.id === time.id ? time : t));
-      localStorage.setItem(storageKey, JSON.stringify(atualizados));
+    const payload = {
+      name: time.nome || time.name || "Time",
+      color: time.cor || time.color || DEFAULT_COR,
+      logoUrl: time.logo || time.logoUrl || DEFAULT_LOGO,
+    };
+
+    const res = await fetch(`/api/times/${time.id}${search}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      throw new Error("Falha ao atualizar time");
     }
-    mutate();
+
+    await mutate();
   }
 
   async function deleteTime(id: string) {
-    try {
-      await fetch(`/api/admin/rachas/${rachaId}/times/${id}`, {
-        method: "DELETE",
-      });
-    } catch {
-      const localTimes: Time[] = JSON.parse(localStorage.getItem(storageKey) || "[]");
-      const atualizados = localTimes.filter((t) => t.id !== id);
-      localStorage.setItem(storageKey, JSON.stringify(atualizados));
+    const res = await fetch(`/api/times/${id}${search}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      throw new Error("Falha ao remover time");
     }
-    mutate();
+
+    await mutate();
   }
 
   return {
     times: data || [],
-    isLoading: !data && !error,
+    isLoading: isLoading || (!data && !error),
     isError: !!error,
     addTime,
     updateTime,

@@ -2,7 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import AdminSidebar from "../admin/AdminSidebar";
 import { Role } from "@/common/enums";
 
-const routerMock = jest.fn().mockReturnValue({
+const defaultRouterState = {
   route: "/admin",
   pathname: "/admin",
   query: {},
@@ -19,11 +19,13 @@ const routerMock = jest.fn().mockReturnValue({
     emit: jest.fn(),
   },
   isFallback: false,
-});
+};
+
+const routerMock: jest.Mock<typeof defaultRouterState, any[]> = jest.fn(() => defaultRouterState);
 
 // Mock do Next.js router
 jest.mock("next/router", () => ({
-  useRouter: routerMock,
+  useRouter: (...args: any[]) => routerMock(...args),
   withRouter: (comp: any) => comp,
   Router: {},
 }));

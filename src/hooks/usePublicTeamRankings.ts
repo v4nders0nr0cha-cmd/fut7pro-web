@@ -63,4 +63,3 @@ export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}
     error: error instanceof Error ? error.message : null,
   };
 }
-

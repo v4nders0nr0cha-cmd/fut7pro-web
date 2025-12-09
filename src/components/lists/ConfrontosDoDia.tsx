@@ -6,7 +6,7 @@ interface ConfrontosDoDiaProps {
 
 export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProps) {
   if (confrontos.length === 0) {
-    return <div className="text-gray-400 text-sm">Nenhum confronto disponível</div>;
+    return <div className="text-gray-400 text-sm">Nenhum confronto disponivel</div>;
   }
 
   return (

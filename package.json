@@ -12,7 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "node -e \"process.exit(process.env.CI?0:1)\" || husky install",
-    "test": "jest --passWithNoTests",
+    "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:ci": "jest --ci --coverage --watchAll=false",

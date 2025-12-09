@@ -1,17 +1,19 @@
 // src/components/superadmin/AdminsResumoCard.tsx
 "use client";
 import type { FC } from "react";
-import type { AdminRacha } from "./mockAdmins";
+
+type AdminResumo = { status?: string };
 
 interface Props {
-  admins: AdminRacha[];
+  admins: AdminResumo[];
 }
 
 const AdminsResumoCard: FC<Props> = ({ admins }) => {
+  const normalizar = (status?: string) => (status || "").toLowerCase();
   const total = admins.length;
-  const ativos = admins.filter((a) => a.status === "ativo").length;
-  const trial = admins.filter((a) => a.status === "trial").length;
-  const bloqueados = admins.filter((a) => a.status === "bloqueado").length;
+  const ativos = admins.filter((a) => normalizar(a.status) === "ativo").length;
+  const trial = admins.filter((a) => normalizar(a.status) === "trial").length;
+  const bloqueados = admins.filter((a) => normalizar(a.status) === "bloqueado").length;
   return (
     <div className="flex flex-wrap gap-4 mb-6">
       <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">

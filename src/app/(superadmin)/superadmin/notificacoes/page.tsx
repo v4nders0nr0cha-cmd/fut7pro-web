@@ -3,9 +3,9 @@
 import React, { useState } from "react";
 import Head from "next/head";
 import { FaEye, FaCopy, FaTrash, FaRedo, FaPlus } from "react-icons/fa";
-import { mockNotificacoes } from "@/components/lists/mockNotificacoes";
 import { ModalNovaNotificacao } from "@/components/superadmin/ModalNovaNotificacao";
 import { ModalNotificacaoPreview } from "@/components/superadmin/ModalNotificacaoPreview";
+import { useNotifications } from "@/hooks/useNotifications";
 import type { Notificacao, NotificacaoTipo } from "@/types/notificacao";
 
 const tiposNotificacao: NotificacaoTipo[] = [
@@ -33,20 +33,23 @@ export default function SuperAdminNotificacoesPage() {
   const [modalAberto, setModalAberto] = useState<boolean>(false);
   const [notificacaoPreview, setNotificacaoPreview] = useState<Notificacao | null>(null);
 
-  const notificacoesFiltradas = mockNotificacoes.filter((n: Notificacao) => {
+  const { notificacoes, isLoading } = useNotifications();
+
+  const notificacoesFiltradas = (notificacoes || []).filter((n: Notificacao) => {
     const buscaLower = busca.toLowerCase();
+    const mensagem = n.mensagem || n.titulo || "";
     return (
-      (busca === "" || n.mensagem.toLowerCase().includes(buscaLower)) &&
+      (busca === "" || mensagem.toLowerCase().includes(buscaLower)) &&
       (status === "todos" || n.status === status) &&
       (destino === "todos" || n.destino === destino) &&
-      (tipo === "todos" || n.tipo === tipo)
+      (tipo === "todos" || n.tipo === tipo || n.type === tipo)
     );
   });
 
   return (
     <>
       <Head>
-        <title>Notificações e Mensagens em Massa – Fut7Pro SuperAdmin</title>
+        <title>Notificações e Mensagens em Massa - Fut7Pro SuperAdmin</title>
         <meta
           name="description"
           content="Controle e envie notificações para todos os administradores dos rachas cadastrados no Fut7Pro. Ferramenta profissional de comunicação em massa para SaaS."
@@ -70,7 +73,6 @@ export default function SuperAdminNotificacoesPage() {
           </button>
         </div>
 
-        {/* Filtros */}
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <input
             className="w-full md:w-1/3 px-3 py-2 rounded bg-zinc-800 text-zinc-100 border border-zinc-700 focus:outline-none"
@@ -116,7 +118,6 @@ export default function SuperAdminNotificacoesPage() {
           </select>
         </div>
 
-        {/* Lista de Notificações */}
         <div className="overflow-x-auto rounded-xl shadow-lg bg-zinc-900">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-zinc-800">
@@ -131,7 +132,14 @@ export default function SuperAdminNotificacoesPage() {
               </tr>
             </thead>
             <tbody>
-              {notificacoesFiltradas.length === 0 ? (
+              {isLoading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-6 text-zinc-500">
+                    Carregando notificações...
+                  </td>
+                </tr>
+              )}
+              {!isLoading && notificacoesFiltradas.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-6 text-zinc-500">
                     Nenhuma notificação encontrada.
@@ -139,18 +147,18 @@ export default function SuperAdminNotificacoesPage() {
                 </tr>
               ) : (
                 notificacoesFiltradas.map((n: Notificacao, i: number) => (
-                  <tr key={n.id} className="hover:bg-zinc-800">
+                  <tr key={n.id || i} className="hover:bg-zinc-800">
                     <td className="px-4 py-3 max-w-xs truncate">
                       <button
                         onClick={() => setNotificacaoPreview(n)}
                         className="hover:underline text-yellow-400"
                       >
-                        {n.mensagem}
+                        {n.mensagem || n.titulo}
                       </button>
                     </td>
-                    <td className="px-2 py-3">{n.tipo}</td>
-                    <td className="px-2 py-3">{n.data}</td>
-                    <td className="px-2 py-3">{n.destino}</td>
+                    <td className="px-2 py-3">{n.tipo || n.type || "—"}</td>
+                    <td className="px-2 py-3">{n.data || "—"}</td>
+                    <td className="px-2 py-3">{n.destino || "—"}</td>
                     <td
                       className={`px-2 py-3 font-bold ${
                         n.status === "enviado"
@@ -160,9 +168,9 @@ export default function SuperAdminNotificacoesPage() {
                             : "text-yellow-300"
                       }`}
                     >
-                      {n.status.charAt(0).toUpperCase() + n.status.slice(1)}
+                      {n.status ? n.status.charAt(0).toUpperCase() + n.status.slice(1) : "—"}
                     </td>
-                    <td className="px-2 py-3">{n.enviadoPor}</td>
+                    <td className="px-2 py-3">{n.enviadoPor || "Sistema"}</td>
                     <td className="px-2 py-3 flex gap-2">
                       <button
                         onClick={() => setNotificacaoPreview(n)}
@@ -188,7 +196,6 @@ export default function SuperAdminNotificacoesPage() {
           </table>
         </div>
 
-        {/* Modal de Preview/Nova Notificação */}
         {modalAberto && <ModalNovaNotificacao onClose={() => setModalAberto(false)} />}
         {notificacaoPreview && (
           <ModalNotificacaoPreview

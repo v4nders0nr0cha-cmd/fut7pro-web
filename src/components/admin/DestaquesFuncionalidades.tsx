@@ -3,8 +3,14 @@
 import Link from "next/link";
 import { FaRandom, FaUsers, FaTrophy } from "react-icons/fa";
 import Image from "next/image";
+import { useRacha } from "@/context/RachaContext";
 
 export default function DestaquesFuncionalidades() {
+  const { tenantSlug } = useRacha();
+  const publicTimesPath = tenantSlug
+    ? `/${tenantSlug}/partidas/times-do-dia`
+    : "/partidas/times-do-dia";
+
   return (
     <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3 mt-2">
       {/* Sorteio Inteligente */}
@@ -25,7 +31,7 @@ export default function DestaquesFuncionalidades() {
 
       {/* Times do Dia */}
       <Link
-        href="/partidas/times-do-dia"
+        href={publicTimesPath}
         className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#00d3d4] cursor-pointer group"
         aria-label="Times do Dia"
       >

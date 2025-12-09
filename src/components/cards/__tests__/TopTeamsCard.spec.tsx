@@ -91,4 +91,3 @@ describe("TopTeamsCard", () => {
     expect(screen.getByText("Pts")).toBeInTheDocument();
   });
 });
-

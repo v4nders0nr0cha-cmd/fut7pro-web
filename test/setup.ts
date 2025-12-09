@@ -51,8 +51,11 @@ const swrMock = jest.fn((key: string) => {
     "/api/partidas": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
     "/api/times": { data: [], isLoading: false, error: undefined, mutate: jest.fn() },
   };
+  if (key && key.startsWith("/api/admin/rachas/") && key.endsWith("/times")) {
+    return { data: [], isLoading: false, error: undefined, mutate: jest.fn() };
+  }
   if (mockData[key]) return mockData[key];
-  return { data: undefined, isLoading: false, error: undefined, mutate: jest.fn() };
+  return { data: [], isLoading: false, error: undefined, mutate: jest.fn() };
 });
 
 jest.mock("swr", () => ({

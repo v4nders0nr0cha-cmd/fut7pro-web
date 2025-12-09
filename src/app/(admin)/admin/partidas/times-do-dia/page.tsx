@@ -3,8 +3,10 @@
 
 import Head from "next/head";
 import TimesDoDiaClient from "@/components/TimesDoDiaClient";
+import { useRacha } from "@/context/RachaContext";
 
 export default function TimesDoDiaPage() {
+  const { tenantSlug } = useRacha();
   return (
     <>
       <Head>
@@ -30,7 +32,7 @@ export default function TimesDoDiaPage() {
             Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
             jogos estão logo abaixo.
           </p>
-          <TimesDoDiaClient />
+          <TimesDoDiaClient slug={tenantSlug || undefined} />
         </div>
       </main>
     </>

@@ -55,7 +55,7 @@ describe("SWR Mock", () => {
     const useSWR = require("swr").default;
     const result = useSWR("test-key");
 
-    expect(result.data).toBeUndefined();
+    expect(result.data).toEqual([]);
     expect(result.error).toBeUndefined();
     expect(result.isLoading).toBe(false);
     expect(typeof result.mutate).toBe("function");

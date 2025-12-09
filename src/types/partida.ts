@@ -70,3 +70,51 @@ export type DestaqueDoDia = {
   jogadorId: string;
   timeId: string;
 };
+
+export type PublicMatchTeam = {
+  id: string | null;
+  name: string;
+  logoUrl: string | null;
+  color: string | null;
+};
+
+export type PublicMatchPresence = {
+  id: string;
+  matchId: string;
+  tenantId: string | null;
+  athleteId: string;
+  teamId: string | null;
+  status: "TITULAR" | "SUBSTITUTO" | "AUSENTE";
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+  createdAt: string;
+  updatedAt: string;
+  athlete: {
+    id: string;
+    name: string;
+    nickname: string | null;
+    position: string | null;
+    photoUrl: string | null;
+  } | null;
+  team: PublicMatchTeam | null;
+};
+
+export type PublicMatch = {
+  id: string;
+  date: string;
+  location: string | null;
+  scoreA: number | null;
+  scoreB: number | null;
+  score: { teamA: number; teamB: number };
+  teamA: PublicMatchTeam;
+  teamB: PublicMatchTeam;
+  presences: PublicMatchPresence[];
+};
+
+export type PublicMatchesResponse = {
+  slug: string;
+  total: number;
+  results: PublicMatch[];
+};

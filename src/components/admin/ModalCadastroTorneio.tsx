@@ -1,50 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Cropper from "react-easy-crop";
-import { FaTimes, FaUpload, FaUser, FaUserPlus } from "react-icons/fa";
-import type { Jogador, DadosTorneio } from "@/types/torneio";
+import { FaTimes, FaUpload, FaUser, FaTrash } from "react-icons/fa";
+import type { DadosTorneio, Posicao, Torneio } from "@/types/torneio";
+import type { Jogador } from "@/types/jogador";
+import { rachaConfig } from "@/config/racha.config";
 
-// MOCK LOCAL
-const MOCK_JOGADORES: Jogador[] = [
-  {
-    id: "1",
-    nome: "Carlos Silva",
-    posicao: "Goleiro",
-    avatar: "/images/jogadores/jogador_padrao_01.jpg",
-  },
-  {
-    id: "2",
-    nome: "Lucas Souza",
-    posicao: "Zagueiro",
-    avatar: "/images/jogadores/jogador_padrao_02.jpg",
-  },
-  {
-    id: "3",
-    nome: "Renan Costa",
-    posicao: "Meia",
-    avatar: "/images/jogadores/jogador_padrao_03.jpg",
-  },
-  {
-    id: "4",
-    nome: "João Alpha",
-    posicao: "Atacante",
-    avatar: "/images/jogadores/jogador_padrao_04.jpg",
-  },
-  {
-    id: "5",
-    nome: "Bruno Beta",
-    posicao: "Zagueiro",
-    avatar: "/images/jogadores/jogador_padrao_05.jpg",
-  },
-  {
-    id: "6",
-    nome: "Thiago Lima",
-    posicao: "Meia",
-    avatar: "/images/jogadores/jogador_padrao_06.jpg",
-  },
-];
+type JogadorSelecionavel = Pick<Jogador, "id" | "nome" | "avatar" | "posicao" | "slug"> &
+  Partial<Jogador>;
+import { useJogadores } from "@/hooks/useJogadores";
+import { useRacha } from "@/context/RachaContext";
 
 const slugify = (text: string) =>
   text
@@ -57,17 +24,24 @@ const slugify = (text: string) =>
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave?: (dados: DadosTorneio) => void;
+  onSave?: (dados: DadosTorneio) => Promise<void> | void;
+  onDelete?: (id: string) => Promise<void> | void;
+  torneio?: Torneio | null;
 }
 
-export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
+export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, torneio }: Props) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [banner, setBanner] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [qtdVagas, setQtdVagas] = useState(7);
-  const [campeoes, setCampeoes] = useState<(Jogador | null)[]>(Array(7).fill(null));
+  const [campeoes, setCampeoes] = useState<(JogadorSelecionavel | null)[]>(Array(7).fill(null));
   const [erro, setErro] = useState("");
+  const [salvando, setSalvando] = useState(false);
+  const [premioTotal, setPremioTotal] = useState<number | null>(null);
+  const [premioMvp, setPremioMvp] = useState<string>("");
 
   const [cropping, setCropping] = useState(false);
   const [cropSrc, setCropSrc] = useState("");
@@ -78,6 +52,42 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
   const [vagaEmSelecao, setVagaEmSelecao] = useState<number | null>(null);
   const inputBannerRef = useRef<HTMLInputElement>(null);
   const inputLogoRef = useRef<HTMLInputElement>(null);
+  const { rachaId } = useRacha();
+  const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
+  const isEdicao = Boolean(torneio);
+
+  const jogadoresDisponiveis: JogadorSelecionavel[] = useMemo(() => {
+    const mapPosicao = (posicao?: string): Posicao => {
+      const value = String(posicao || "").toLowerCase();
+      if (value.startsWith("gol")) return "Goleiro";
+      if (value.startsWith("zag")) return "Zagueiro";
+      if (value.startsWith("ata")) return "Atacante";
+      return "Meia";
+    };
+
+    return (jogadores || []).map((j) => ({
+      id: j.id,
+      nome: j.nome || j.apelido || "Jogador",
+      avatar: j.avatar || j.foto || "/images/jogadores/default.png",
+      posicao: mapPosicao(j.posicao),
+      slug: (j as any).slug ?? slugify(j.nome || j.apelido || j.id),
+    }));
+  }, [jogadores]);
+
+  async function uploadArquivo(file: Blob, tipo: "banner" | "logo") {
+    const formData = new FormData();
+    formData.append("file", file, `${tipo}-${Date.now()}.jpg`);
+    formData.append("type", tipo);
+    formData.append("slug", rachaConfig.slug || "");
+
+    const res = await fetch("/api/admin/torneios/upload", {
+      method: "POST",
+      body: formData,
+    });
+    if (!res.ok) throw new Error("Falha no upload");
+    const data = await res.json();
+    return data?.url || data?.path || data?.publicUrl || null;
+  }
 
   function handleQtdVagasChange(v: number) {
     setQtdVagas(v);
@@ -122,7 +132,18 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
     if (!croppedAreaPixels || !cropSrc) return;
     const croppedImage = await getCroppedImg(cropSrc, croppedAreaPixels);
     setBanner(croppedImage);
-    setCropping(false);
+    try {
+      const blob = await (await fetch(croppedImage)).blob();
+      const uploaded = await uploadArquivo(blob, "banner");
+      if (uploaded) {
+        setBannerUrl(uploaded);
+      }
+    } catch (err) {
+      // fallback para base64
+      console.warn("Upload do banner falhou, usando base64", err);
+    } finally {
+      setCropping(false);
+    }
   }
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -131,9 +152,13 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
     const reader = new FileReader();
     reader.onloadend = () => setLogo(reader.result as string);
     reader.readAsDataURL(file);
+
+    uploadArquivo(file, "logo")
+      .then((uploaded) => uploaded && setLogoUrl(uploaded))
+      .catch((err) => console.warn("Upload da logo falhou, usando base64", err));
   }
 
-  function handleSelectJogador(vaga: number, jogador: Jogador) {
+  function handleSelectJogador(vaga: number, jogador: JogadorSelecionavel) {
     setCampeoes((prev) => {
       const atual = [...prev];
       atual[vaga] = jogador;
@@ -149,63 +174,95 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
     });
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!titulo || !descricao || !banner || !logo || campeoes.filter(Boolean).length === 0) {
-      setErro("Preencha todos os campos obrigat�rios e adicione pelo menos um campe�o.");
-
+      setErro("Preencha todos os campos obrigatorios e adicione pelo menos um campeao.");
       return;
     }
 
     const jogadoresMapeados = campeoes
-
       .filter((jogador): jogador is Jogador => Boolean(jogador))
-
       .map((jogador) => ({
         athleteId: jogador.id,
-
         athleteSlug: jogador.slug ?? slugify(jogador.nome),
-
         nome: jogador.nome,
-
         posicao: jogador.posicao,
-
         fotoUrl: jogador.avatar,
       }));
 
     const payload: DadosTorneio = {
       nome: titulo.trim(),
-
-      slug: slugify(titulo),
-
-      ano: new Date().getFullYear(),
-
+      slug: torneio?.slug ?? slugify(titulo),
+      ano: torneio?.ano ?? new Date().getFullYear(),
       descricao,
-
       descricaoResumida: descricao.slice(0, 180),
-
       campeao: jogadoresMapeados[0]?.nome,
-
-      status: "rascunho",
-
-      destacarNoSite: false,
-
-      bannerBase64: banner,
-
-      logoBase64: logo,
-
-      jogadoresCampeoes: jogadoresMapeados,
+      status: torneio?.status ?? "rascunho",
+      destacarNoSite: torneio?.destacarNoSite ?? false,
+      bannerBase64: bannerUrl ?? banner ?? torneio?.banner ?? torneio?.bannerUrl,
+      logoBase64: logoUrl ?? logo ?? torneio?.logo ?? torneio?.logoUrl,
+      jogadoresCampeoes: jogadoresMapeados.length
+        ? jogadoresMapeados
+        : ((torneio?.jogadoresCampeoes as any) ?? []),
+      premioTotal: premioTotal ?? torneio?.premioTotal,
+      premioMvp: premioMvp || torneio?.mvp,
+      // campos extras para update
+      ...(torneio?.id ? { id: torneio.id, rachaId: torneio.rachaId } : {}),
     };
 
     setErro("");
 
-    onSave?.(payload);
-
-    onClose();
+    try {
+      setSalvando(true);
+      await onSave?.(payload);
+      onClose();
+    } finally {
+      setSalvando(false);
+    }
   }
 
   const idsSelecionados = campeoes.filter(Boolean).map((j) => j!.id);
+
+  // Preenche estado em modo edicao
+  useEffect(() => {
+    if (!torneio || !open) return;
+    setTitulo(torneio.nome || "");
+    setDescricao(torneio.descricao || "");
+    setQtdVagas(torneio.jogadoresCampeoes?.length || 7);
+    setPremioTotal(torneio.premioTotal ?? null);
+    setPremioMvp(torneio.mvp ?? "");
+    setCampeoes(
+      (torneio.jogadoresCampeoes || []).map((j: any) => ({
+        id: j.athleteId || j.id || j.athleteSlug || "",
+        nome: j.nome || "",
+        avatar: j.fotoUrl || j.avatar || "/images/jogadores/default.png",
+        posicao: (j.posicao as Posicao) || "Meia",
+        slug: j.athleteSlug || j.slug,
+      }))
+    );
+    setBanner(torneio.banner || torneio.bannerUrl || null);
+    setLogo(torneio.logo || torneio.logoUrl || null);
+    setBannerUrl(torneio.bannerUrl || torneio.banner || null);
+    setLogoUrl(torneio.logoUrl || torneio.logo || null);
+  }, [torneio, open]);
+
+  // Reseta campos ao abrir para criar novo
+  useEffect(() => {
+    if (!open || torneio) return;
+    setTitulo("");
+    setDescricao("");
+    setQtdVagas(7);
+    setPremioTotal(null);
+    setPremioMvp("");
+    setCampeoes(Array(7).fill(null));
+    setBanner(null);
+    setLogo(null);
+    setBannerUrl(null);
+    setLogoUrl(null);
+    setErro("");
+  }, [open, torneio]);
 
   if (!open) return null;
   return (
@@ -225,9 +282,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
           </button>
         </div>
 
-        {/* Título */}
+        {/* Titulo */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Título do Campeonato *</label>
+          <label className="text-gray-300 font-medium text-sm">Titulo do Campeonato *</label>
           <input
             type="text"
             className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
@@ -239,9 +296,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
           />
         </div>
 
-        {/* Descrição */}
+        {/* Descricao */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Descrição do Campeonato *</label>
+          <label className="text-gray-300 font-medium text-sm">Descricao do Campeonato *</label>
           <textarea
             className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400 resize-none"
             value={descricao}
@@ -249,7 +306,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
             required
             rows={3}
             maxLength={200}
-            placeholder="Ex: Edição especial realizada em 2025 com os melhores jogadores do racha."
+            placeholder="Ex: Edicao especial realizada em 2025 com os melhores jogadores do racha."
           />
         </div>
 
@@ -288,7 +345,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Logo */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Logo do Time Campeão *</label>
+          <label className="text-gray-300 font-medium text-sm">Logo do Time Campeao *</label>
           <div className="flex gap-3 items-center">
             <button
               type="button"
@@ -319,7 +376,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {/* Vagas */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Quantidade de Campeões *</label>
+          <label className="text-gray-300 font-medium text-sm">Quantidade de Campeoes *</label>
           <input
             type="number"
             min={1}
@@ -330,7 +387,36 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
           />
         </div>
 
-        {/* Campeões */}
+        {/* Premiacoes */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="text-gray-300 font-medium text-sm">Premia‡Æo Total (R$)</label>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+              value={premioTotal ?? ""}
+              onChange={(e) =>
+                setPremioTotal(e.target.value === "" ? null : Number(e.target.value))
+              }
+              placeholder="Ex: 500.00"
+            />
+          </div>
+          <div>
+            <label className="text-gray-300 font-medium text-sm">Premia‡Æo MVP</label>
+            <input
+              type="text"
+              className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+              value={premioMvp}
+              onChange={(e) => setPremioMvp(e.target.value)}
+              maxLength={60}
+              placeholder="Ex: Trof‚u + Voucher"
+            />
+          </div>
+        </div>
+
+        {/* Campeoes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {campeoes.map((jogador, idx) => (
             <div
@@ -373,8 +459,22 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
 
         {erro && <div className="text-red-400 font-bold text-sm mt-4 text-center">{erro}</div>}
 
-        {/* Ações */}
+        {/* Acoes */}
         <div className="flex justify-end gap-2 mt-6">
+          {isEdicao && torneio?.id && onDelete && (
+            <button
+              type="button"
+              className="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-500"
+              onClick={async () => {
+                const ok = confirm("Deseja excluir este torneio de forma definitiva?");
+                if (!ok) return;
+                await onDelete(torneio.id);
+                onClose();
+              }}
+            >
+              <FaTrash className="inline mr-1" /> Excluir
+            </button>
+          )}
           <button
             type="button"
             className="bg-gray-700 text-white px-4 py-2 rounded font-semibold hover:bg-gray-600"
@@ -384,18 +484,71 @@ export default function ModalCadastroTorneio({ open, onClose, onSave }: Props) {
           </button>
           <button
             type="submit"
-            className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded font-bold"
+            className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded font-bold disabled:opacity-60 disabled:pointer-events-none"
+            disabled={salvando}
           >
-            Salvar Torneio
+            {salvando ? "Salvando..." : "Salvar Torneio"}
           </button>
         </div>
+
+        {/* Selecionar campeao */}
+        {vagaEmSelecao !== null && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+            <div className="bg-[#1c1e22] rounded-xl p-5 shadow-2xl max-w-md w-full">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-bold text-yellow-400">Selecione o campeao</h3>
+                <button
+                  type="button"
+                  className="text-gray-300 hover:text-yellow-400"
+                  onClick={() => setVagaEmSelecao(null)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              {loadingJogadores && (
+                <div className="text-sm text-gray-300">Carregando jogadores...</div>
+              )}
+              {!loadingJogadores && (
+                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                  {jogadoresDisponiveis
+                    .filter((j) => !idsSelecionados.includes(j.id))
+                    .map((jogador) => (
+                      <button
+                        key={jogador.id}
+                        type="button"
+                        className="w-full flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-left"
+                        onClick={() => {
+                          handleSelectJogador(vagaEmSelecao, jogador);
+                          setVagaEmSelecao(null);
+                        }}
+                      >
+                        <Image
+                          src={jogador.avatar ?? "/images/jogadores/jogador_padrao_01.jpg"}
+                          alt={`Avatar de ${jogador.nome}`}
+                          width={32}
+                          height={32}
+                          className="rounded-full border border-yellow-300"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-white">{jogador.nome}</p>
+                          <span className="text-xs text-yellow-400">{jogador.posicao}</span>
+                        </div>
+                      </button>
+                    ))}
+                  {jogadoresDisponiveis.filter((j) => !idsSelecionados.includes(j.id)).length ===
+                    0 && <p className="text-xs text-gray-300">Nenhum jogador disponivel.</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Modal de crop */}
         {cropping && (
           <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
             <div className="bg-[#1c1e22] rounded-xl p-6 shadow-2xl max-w-3xl w-full">
               <h3 className="text-lg text-yellow-400 font-bold mb-2">
-                Ajuste o Banner (proporção 3:1)
+                Ajuste o Banner (proporcao 3:1)
               </h3>
               <div className="relative w-full h-48 sm:h-64 bg-black rounded overflow-hidden">
                 <Cropper

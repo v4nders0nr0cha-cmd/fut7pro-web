@@ -1,25 +1,23 @@
 "use client";
-import {
-  createContext,
-  useContext,
-  useState,
-  useMemo,
-  useCallback,
-  type ReactNode,
-  useEffect,
-} from "react";
+
+import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from "react";
 import { rachaMap } from "@/config/rachaMap";
+import { rachaConfig } from "@/config/racha.config";
 
 type RachaContextType = {
   rachaId: string;
+  tenantSlug: string;
   setRachaId: (id: string) => void;
+  setTenantSlug: (slug: string) => void;
   clearRachaId: () => void;
   isRachaSelected: boolean;
 };
 
 const RachaContext = createContext<RachaContextType>({
   rachaId: "",
+  tenantSlug: "",
   setRachaId: () => {},
+  setTenantSlug: () => {},
   clearRachaId: () => {},
   isRachaSelected: false,
 });
@@ -33,30 +31,38 @@ export function useRacha() {
 }
 
 export function RachaProvider({ children }: { children: ReactNode }) {
-  // Definir rachaId padrão como o primeiro do rachaMap
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
+  const defaultSlug = rachaConfig.slug || defaultRachaId;
   const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
+  const [tenantSlug, setTenantSlugState] = useState<string>(defaultSlug);
 
   const setRachaId = useCallback((id: string) => {
     setRachaIdState(id);
   }, []);
 
+  const setTenantSlug = useCallback((slug: string) => {
+    setTenantSlugState(slug);
+  }, []);
+
   const clearRachaId = useCallback(() => {
     setRachaIdState(defaultRachaId);
-  }, [defaultRachaId]);
+    setTenantSlugState(defaultSlug);
+  }, [defaultRachaId, defaultSlug]);
 
   const isRachaSelected = useMemo(() => {
-    return rachaId.length > 0;
-  }, [rachaId]);
+    return (tenantSlug || rachaId).length > 0;
+  }, [rachaId, tenantSlug]);
 
   const value = useMemo(
     () => ({
       rachaId,
+      tenantSlug,
       setRachaId,
+      setTenantSlug,
       clearRachaId,
       isRachaSelected,
     }),
-    [rachaId, setRachaId, clearRachaId, isRachaSelected]
+    [rachaId, tenantSlug, setRachaId, setTenantSlug, clearRachaId, isRachaSelected]
   );
 
   return <RachaContext.Provider value={value}>{children}</RachaContext.Provider>;

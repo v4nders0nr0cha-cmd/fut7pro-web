@@ -1,5 +1,13 @@
 "use client";
-import type { Confronto } from "@/mocks/admin/mockDia";
+
+export interface Confronto {
+  id: string | number;
+  timeA: string;
+  timeB: string;
+  golsTimeA?: number;
+  golsTimeB?: number;
+  finalizada?: boolean;
+}
 
 type Props = {
   confrontos: Confronto[];

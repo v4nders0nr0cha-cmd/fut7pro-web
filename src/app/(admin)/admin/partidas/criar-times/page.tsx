@@ -7,10 +7,12 @@ import { FaPlus, FaTrash, FaEdit, FaLightbulb } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTimes } from "@/hooks/useTimes";
 import { rachaConfig } from "@/config/racha.config";
+import { useRacha } from "@/context/RachaContext";
 
 export default function CriarTimesPage() {
-  const rachaId = rachaConfig.slug;
-  const { times, addTime, updateTime, deleteTime } = useTimes(rachaId);
+  const { tenantSlug } = useRacha();
+  const currentSlug = tenantSlug || rachaConfig.slug;
+  const { times, addTime, updateTime, deleteTime, isLoading } = useTimes(currentSlug);
 
   const [nome, setNome] = useState("");
   const [cor, setCor] = useState("#FFD700");
@@ -38,7 +40,7 @@ export default function CriarTimesPage() {
         cor,
         logo: logo || "/images/times/time_padrao_01.png",
         slug: nome.toLowerCase().replace(/\s+/g, "-"),
-        rachaId,
+        rachaId: currentSlug,
       });
     }
 

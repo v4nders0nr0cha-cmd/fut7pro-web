@@ -42,7 +42,15 @@ function getStatusStyle(status?: PlayerStatus) {
   return "bg-green-500 text-white";
 }
 
-export default function PlayerCard({ player, racha, href, title, name, value, image }: PlayerCardProps) {
+export default function PlayerCard({
+  player,
+  racha,
+  href,
+  title,
+  name,
+  value,
+  image,
+}: PlayerCardProps) {
   const normalizedPlayer =
     player ||
     ({
@@ -66,8 +74,7 @@ export default function PlayerCard({ player, racha, href, title, name, value, im
   const imagePath = foto && foto.length > 0 ? foto : "/images/jogadores/default.png";
   const safeName = playerName || name || "Jogador";
 
-  const attendancePercent =
-    partidas > 0 ? `${Math.round((presencas / partidas) * 100)}%` : "0%";
+  const attendancePercent = partidas > 0 ? `${Math.round((presencas / partidas) * 100)}%` : "0%";
 
   const content = (
     <article
@@ -89,7 +96,9 @@ export default function PlayerCard({ player, racha, href, title, name, value, im
           <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">
             {posicao || "Jogador"}
           </p>
-          <p className="text-base font-semibold text-white leading-tight break-words">{playerName}</p>
+          <p className="text-base font-semibold text-white leading-tight break-words">
+            {playerName}
+          </p>
           <div className="flex gap-2 mt-1 text-xs text-gray-300">
             <span className="px-2 py-0.5 rounded-full bg-gray-800" title="Gols">
               {gols}

@@ -5,10 +5,24 @@ import { useState } from "react";
 import AdminsResumoCard from "@/components/superadmin/AdminsResumoCard";
 import AdminsTable from "@/components/superadmin/AdminsTable";
 import ModalNovoAdmin from "@/components/superadmin/ModalNovoAdmin";
-import { mockAdmins } from "@/components/superadmin/mockAdmins";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { Role, Permission } from "@/common/enums";
 
 export default function SuperAdminAdminsPage() {
   const [open, setOpen] = useState(false);
+  const { usuarios, isLoading, rachas } = useSuperAdmin();
+
+  const adminsParaTabela = (usuarios || []).map((usuario) => ({
+    id: usuario.id,
+    name: usuario.nome || usuario.name || "Administrador",
+    email: usuario.email || "sem-email",
+    role: (usuario.role as Role) || Role.ADMIN,
+    superadmin: usuario.role === Role.SUPERADMIN,
+    active: true,
+    createdAt: usuario.criadoEm || new Date(),
+    updatedAt: usuario.atualizadoEm || new Date(),
+    permissions: Object.values(Permission),
+  }));
 
   // SEO (Next.js 14+ usa metadata, mas manter Head para retrocompatibilidade)
   return (
@@ -34,8 +48,8 @@ export default function SuperAdminAdminsPage() {
             + Novo Presidente
           </button>
         </div>
-        <AdminsResumoCard admins={mockAdmins} />
-        <AdminsTable />
+        <AdminsResumoCard admins={rachas || []} />
+        <AdminsTable admins={adminsParaTabela} isLoading={isLoading} />
         <ModalNovoAdmin open={open} onClose={() => setOpen(false)} onSave={() => {}} />
       </div>
     </>
