@@ -2,14 +2,19 @@
 
 ## 📋 Variáveis de Ambiente
 
-| Nome                         | Onde          | Exemplo                                  | Observação                                    |
-| ---------------------------- | ------------- | ---------------------------------------- | --------------------------------------------- |
-| `BACKEND_URL`                | Vercel (Prod) | `https://api.fut7pro.com.br`             | Mantém segurança e SNI corretos               |
-| `JOGOS_DIA_PATH`             | Vercel (Prod) | `/partidas/jogos-do-dia`                 | Ajuste se o backend usar outro caminho        |
-| `NEXT_PUBLIC_USE_JOGOS_MOCK` | Vercel (Prod) | `0` ou `1`                               | `1` força mock na UI, independente do backend |
-| `RAILWAY_BACKEND_URL`        | Vercel (Prod) | `https://fut7pro-backend.up.railway.app` | Fallback para domínio Railway                 |
+| Nome                         | Onde          | Exemplo                                  | Observacao                                |
+| ---------------------------- | ------------- | ---------------------------------------- | ----------------------------------------- |
+| `BACKEND_URL`                | Vercel (Prod) | `https://api.fut7pro.com.br`             | Mantem seguranca e SNI corretos           |
+| `NEXT_PUBLIC_APP_URL`        | Vercel (Prod) | `https://app.fut7pro.com.br`             | Dominio publico canonical usado pelo Next |
+| `PUBLIC_REVALIDATE_TOKEN`    | Vercel (Prod) | `defina-um-token-forte`                  | Protege `/api/revalidate/public`          |
+| `APP_URL`                    | Vercel (Prod) | `https://app.fut7pro.com.br`             | Host base usado pelo helper de revalidate |
+| `JOGOS_DIA_PATH`             | Vercel (Prod) | `/partidas/jogos-do-dia`                 | Ajuste se o backend usar outro caminho    |
+| `NEXT_PUBLIC_USE_JOGOS_MOCK` | Vercel (Prod) | `removido`                               | Descontinuado (fallback de mock retirado) |
+| `RAILWAY_BACKEND_URL`        | Vercel (Prod) | `https://fut7pro-backend.up.railway.app` | Fallback para dominio Railway             |
 
-## 🔄 Fluxo de Fallback (Produção)
+> Nota: o fallback de jogos do dia via mock foi removido; mantenha `NEXT_PUBLIC_USE_JOGOS_MOCK` desativado e use somente os endpoints reais do backend.
+
+## Fluxo de Fallback (Producao) - legado
 
 1. **UI chama** `GET /api/public/jogos-do-dia-fallback`
 2. **Server tenta backend** → se falhar por TLS/timeout, tenta ssl-fix (domínio do Railway)

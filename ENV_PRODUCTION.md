@@ -9,7 +9,13 @@ Configure as seguintes variáveis no painel do Vercel (Settings → Environment 
 ```
 NEXTAUTH_URL=https://app.fut7pro.com.br
 NEXTAUTH_SECRET=your_nextauth_secret_here_64_chars_minimum
-AUTH_SECRET=your_auth_secret_here_64_chars_minimum
+```
+
+### Revalidate (Vercel)
+
+```
+PUBLIC_REVALIDATE_TOKEN=defina_um_token_forte_aqui
+APP_URL=https://app.fut7pro.com.br
 ```
 
 ### Google OAuth
@@ -22,8 +28,10 @@ GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 ### API Configuration
 
 ```
+NEXT_PUBLIC_APP_URL=https://app.fut7pro.com.br
 NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br
-NEXT_PUBLIC_API_BASE_URL=https://api.fut7pro.com.br
+BACKEND_URL=https://api.fut7pro.com.br
+API_URL=https://api.fut7pro.com.br
 ```
 
 ### Environment
