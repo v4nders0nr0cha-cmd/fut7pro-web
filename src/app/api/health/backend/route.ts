@@ -1,4 +1,4 @@
-// Healthcheck do backend para validar conectividade
+// Healthcheck do backend para validar conectividade (com timeouts curtos para não travar build)
 export const runtime = "nodejs";
 
 export async function GET() {
@@ -17,15 +17,18 @@ export async function GET() {
     );
   }
 
-  // Testar diferentes endpoints de healthcheck
-  const healthEndpoints = ["/health", "/status", "/api/health", "/api/status", "/"];
+  // Endpoints enxutos para evitar loop longo em build
+  const healthEndpoints = ["/health", "/api/health"];
 
-  // Testar também domínio Railway se disponível
+  // Testar domínio principal e fallback Railway, se existir
   const railwayUrl = process.env.RAILWAY_BACKEND_URL || "https://fut7pro-backend.up.railway.app";
   const testUrls = [
     { base, endpoints: healthEndpoints },
     { base: railwayUrl, endpoints: healthEndpoints },
   ];
+
+  // Em ambiente Vercel (build/edge) tempo menor; local um pouco maior
+  const timeoutMs = process.env.VERCEL ? 1500 : 4000;
 
   for (const { base: testBase, endpoints } of testUrls) {
     for (const endpoint of endpoints) {
@@ -34,8 +37,7 @@ export async function GET() {
         const response = await fetch(url, {
           method: "HEAD",
           headers: { accept: "application/json" },
-          // Timeout de 5 segundos
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(timeoutMs),
         });
 
         if (response.ok) {
@@ -43,7 +45,7 @@ export async function GET() {
             JSON.stringify({
               status: "ok",
               backend: testBase,
-              endpoint: endpoint,
+              endpoint,
               statusCode: response.status,
               timestamp: new Date().toISOString(),
             }),
@@ -54,7 +56,7 @@ export async function GET() {
           );
         }
       } catch (error: any) {
-        // Continuar para o próximo endpoint
+        // Continua para o próximo endpoint sem travar
         console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error.message);
       }
     }
