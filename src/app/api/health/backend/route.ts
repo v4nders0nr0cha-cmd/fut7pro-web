@@ -2,6 +2,22 @@
 export const runtime = "nodejs";
 
 export async function GET() {
+  // Durante o build da Vercel, evitamos chamadas externas para n�o travar a gera��o est�tica
+  if (process.env.NEXT_PHASE === "phase-production-build") {
+    return new Response(
+      JSON.stringify({
+        status: "ok",
+        backend: "skipped (build)",
+        endpoint: "/health",
+        timestamp: new Date().toISOString(),
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+
   const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
   if (!base) {
     return new Response(
