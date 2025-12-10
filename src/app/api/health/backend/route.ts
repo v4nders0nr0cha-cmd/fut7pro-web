@@ -1,8 +1,8 @@
-// Healthcheck do backend para validar conectividade (com timeouts curtos para não travar build)
+﻿// Healthcheck do backend para validar conectividade (com timeouts curtos para nÃ£o travar build)
 export const runtime = "nodejs";
 
 export async function GET() {
-  // Durante o build da Vercel, evitamos chamadas externas para n�o travar a gera��o est�tica
+  // Durante o build da Vercel, evitamos chamadas externas para nï¿½o travar a geraï¿½ï¿½o estï¿½tica
   if (process.env.NEXT_PHASE === "phase-production-build") {
     return new Response(
       JSON.stringify({
@@ -33,10 +33,10 @@ export async function GET() {
     );
   }
 
-  // Endpoints enxutos para evitar loop longo em build
-  const healthEndpoints = ["/health", "/api/health"];
+  // Endpoints leves para evitar loop longo em build (prioriza ping/liveness)
+  const healthEndpoints = ["/health/ping", "/health/liveness", "/health", "/api/health"];
 
-  // Testar domínio principal e fallback Railway, se existir
+  // Testar domÃ­nio principal e fallback Railway, se existir
   const railwayUrl = process.env.RAILWAY_BACKEND_URL || "https://fut7pro-backend.up.railway.app";
   const testUrls = [
     { base, endpoints: healthEndpoints },
@@ -44,7 +44,7 @@ export async function GET() {
   ];
 
   // Em ambiente Vercel (build/edge) tempo menor; local um pouco maior
-  const timeoutMs = process.env.VERCEL ? 1500 : 4000;
+  const timeoutMs = process.env.VERCEL ? 2000 : 4000;
 
   for (const { base: testBase, endpoints } of testUrls) {
     for (const endpoint of endpoints) {
@@ -72,8 +72,8 @@ export async function GET() {
           );
         }
       } catch (error: any) {
-        // Continua para o próximo endpoint sem travar
-        console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error.message);
+        // Continua para o prÃ³ximo endpoint sem travar
+        console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error?.message || error);
       }
     }
   }
