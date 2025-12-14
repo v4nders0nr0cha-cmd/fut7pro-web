@@ -19,6 +19,7 @@ import {
   FaLifeRing,
 } from "react-icons/fa";
 import Image from "next/image";
+import { useBranding } from "@/hooks/useBranding";
 
 const menu = [
   { label: "Dashboard", href: "/superadmin/dashboard", icon: FaTachometerAlt },
@@ -39,13 +40,16 @@ const menu = [
 
 export default function Sidebar() {
   const pathname = usePathname() || "";
+  const { nome, logo } = useBranding({ scope: "superadmin" });
+  const brandName = nome || "Fut7Pro";
+  const brandLogo = logo || "/images/logos/logo_fut7pro.png";
 
   return (
     <aside className="hidden lg:flex flex-col bg-[#141414] border-r border-zinc-800 w-[250px] min-h-screen px-0 pt-0">
       <div className="flex items-center justify-start gap-2 px-6 py-6">
         <Image
-          src="/images/logos/logo_fut7pro.png"
-          alt="Logo Fut7Pro"
+          src={brandLogo}
+          alt={`Logo ${brandName}`}
           width={44}
           height={44}
           className="rounded-full bg-black"
@@ -76,7 +80,9 @@ export default function Sidebar() {
         })}
       </nav>
       <div className="flex flex-col items-center py-5">
-        <span className="text-xs text-zinc-600">© {new Date().getFullYear()} Fut7Pro</span>
+        <span className="text-xs text-zinc-600">
+          © {new Date().getFullYear()} {brandName}
+        </span>
       </div>
     </aside>
   );

@@ -2,19 +2,12 @@
 
 import Head from "next/head";
 import useSWR from "swr";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import HeaderSuporte from "@/components/superadmin/HeaderSuporte";
 import TicketTable from "@/components/superadmin/TicketTable";
 import CardOnboardingPendentes from "@/components/superadmin/CardOnboardingPendentes";
 import FaqQuickLinks from "@/components/superadmin/FaqQuickLinks";
-
-const SEO = {
-  title: "Central de Suporte e Onboarding | Fut7Pro SuperAdmin",
-  description:
-    "Gerencie tickets, onboarding e suporte SaaS dos rachas Fut7Pro. Painel completo de helpdesk, FAQ e acompanhamento do onboarding dos clientes.",
-  keywords:
-    "suporte, helpdesk, onboarding, fut7, plataforma futebol, SaaS, tickets, racha, administração",
-};
+import { useBranding } from "@/hooks/useBranding";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -41,6 +34,9 @@ type Onboarding = {
 };
 
 export default function SuporteSuperAdminPage() {
+  const { nome: brandingName } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandText = useCallback((text: string) => text.replace(/fut7pro/gi, () => brand), [brand]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<
     "all" | "open" | "inprogress" | "resolved" | "waiting"
@@ -49,6 +45,18 @@ export default function SuporteSuperAdminPage() {
   const { data: ticketsApi = [], isLoading: loadingTickets } = useSWR<Ticket[]>(
     "/api/superadmin/tickets",
     fetcher
+  );
+  const seo = useMemo(
+    () => ({
+      title: brandText("Central de Suporte e Onboarding | Fut7Pro SuperAdmin"),
+      description: brandText(
+        "Gerencie tickets, onboarding e suporte SaaS dos rachas Fut7Pro. Painel completo de helpdesk, FAQ e acompanhamento do onboarding dos clientes."
+      ),
+      keywords: brandText(
+        "suporte, helpdesk, onboarding, fut7, plataforma futebol, SaaS, tickets, racha, administração"
+      ),
+    }),
+    [brandText]
   );
   const { data: onboardingsApi = [] } = useSWR<Onboarding[]>(
     "/api/superadmin/onboardings",
@@ -70,15 +78,17 @@ export default function SuporteSuperAdminPage() {
   return (
     <>
       <Head>
-        <title>{SEO.title}</title>
-        <meta name="description" content={SEO.description} />
-        <meta name="keywords" content={SEO.keywords} />
+        <title>{seo.title}</title>
+        <meta name="description" content={seo.description} />
+        <meta name="keywords" content={seo.keywords} />
       </Head>
 
       <section className="w-full min-h-screen bg-dark pt-6 px-2 md:px-8 pb-8">
         <HeaderSuporte
           title="Central de Suporte & Onboarding"
-          description="Gerencie todos os tickets, onboarding e suporte dos clientes Fut7Pro em um só lugar."
+          description={brandText(
+            "Gerencie todos os tickets, onboarding e suporte dos clientes Fut7Pro em um só lugar."
+          )}
           stats={[
             { label: "Abertos", value: ticketsApi.filter((t) => t.status === "open").length },
             {

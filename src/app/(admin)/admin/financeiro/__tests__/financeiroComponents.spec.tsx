@@ -1,8 +1,8 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import ModalLancamento from "@/app/(admin)/admin/financeiro/prestacao-de-contas/components/ModalLancamento";
 import TabelaLancamentos from "@/app/(admin)/admin/financeiro/prestacao-de-contas/components/TabelaLancamentos";
 import ToggleVisibilidadePublica from "@/app/(admin)/admin/financeiro/prestacao-de-contas/components/ToggleVisibilidadePublica";
-import type { Lancamento } from "@/app/(admin)/admin/financeiro/prestacao-de-contas/mocks/mockLancamentosFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 describe("ModalLancamento", () => {
   it("valida obrigatorios antes de salvar e dispara callbacks ao preencher", async () => {
@@ -33,9 +33,9 @@ describe("ModalLancamento", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Adicionar/i }));
 
-    expect(onSave).toHaveBeenCalledTimes(1);
-    expect(onClose).toHaveBeenCalledTimes(1);
-    const payload = onSave.mock.calls[0][0] as Lancamento;
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(onClose).toHaveBeenCalledTimes(1));
+    const payload = onSave.mock.calls[0][0] as LancamentoFinanceiro;
     expect(payload.valor).toBe(150);
     expect(payload.categoria).toBe("Campo");
     expect(payload.id).toBeTruthy();
@@ -43,14 +43,15 @@ describe("ModalLancamento", () => {
 
   it("mantem dados iniciais no modo edicao e exibe comprovante", () => {
     const onSave = jest.fn();
-    const initial: Lancamento = {
+    const initial: LancamentoFinanceiro = {
       id: "abc123",
       data: "2025-02-01",
-      tipo: "Despesa",
+      tipo: "saida",
       categoria: "Material",
       descricao: "Bolas novas",
-      valor: 75,
-      comprovante: "/images/comprovantes/comprovante_05.png",
+      valor: -75,
+      comprovanteUrl: "/images/comprovantes/comprovante_05.png",
+      responsavel: "Admin",
     };
 
     const { container } = render(
@@ -63,26 +64,27 @@ describe("ModalLancamento", () => {
       target: { value: "Bolas oficiais" },
     });
     fireEvent.change(container.querySelector('select[name="tipo"]')!, {
-      target: { value: "Receita" },
+      target: { value: "entrada" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
 
-    const payload = onSave.mock.calls[0][0] as Lancamento;
+    const payload = onSave.mock.calls[0][0] as LancamentoFinanceiro;
     expect(payload.id).toBe("abc123");
     expect(payload.descricao).toBe("Bolas oficiais");
-    expect(payload.tipo).toBe("Receita");
+    expect(payload.tipo).toBe("entrada");
   });
 });
 
 describe("TabelaLancamentos", () => {
-  const baseLancamento: Lancamento = {
+  const baseLancamento: LancamentoFinanceiro = {
     id: "l-0",
     data: "2025-01-01",
-    tipo: "Receita",
+    tipo: "entrada",
     categoria: "Campo",
     descricao: "Mensalidade",
     valor: 100,
-    comprovante: "/images/comprovantes/comp.png",
+    comprovanteUrl: "/images/comprovantes/comp.png",
+    responsavel: "Admin",
   };
 
   it("renderiza estado vazio", () => {
@@ -91,7 +93,7 @@ describe("TabelaLancamentos", () => {
   });
 
   it("permite editar e alternar entre ver mais e ver menos", () => {
-    const lancamentos: Lancamento[] = Array.from({ length: 7 }).map((_, idx) => ({
+    const lancamentos: LancamentoFinanceiro[] = Array.from({ length: 7 }).map((_, idx) => ({
       ...baseLancamento,
       id: `l-${idx}`,
       descricao: `Item ${idx + 1}`,

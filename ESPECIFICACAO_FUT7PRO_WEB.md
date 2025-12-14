@@ -87,6 +87,38 @@
 - Revalidate disponível para invalidar páginas públicas por tenant.
 - Módulo Grandes Torneios ligado ao backend (admin + público) e upload via Supabase.
 
+Sua varredura para localizar mocks e resíduos no projeto (arquivos de mock, strings contendo "mock", dados estáticos em páginas públicas, componentes de personalização que só usam useState com valores fixos) e outras possíveis falhas que impedem o C:\Projetos\fut7pro-web (app) de ficar pronto para venda deve seguir esta ordem:
+
+Primeiro diretório a analisar (site público dos rachas)
+
+Caminho: C:\Projetos\fut7pro-web\src\app\(public)
+
+Aqui ficam todas as páginas e subpáginas públicas do site de cada racha.
+
+Segundo diretório a analisar (painel admin dos rachas)
+
+Caminho: C:\Projetos\fut7pro-web\src\app\(admin)
+
+Este é o painel administrativo usado pelos administradores de cada racha.
+
+Terceiro diretório a analisar (painel superadmin do dono do Fut7Pro)
+
+Caminho: C:\Projetos\fut7pro-web\src\app\(superadmin)
+
+Este é o painel administrativo do dono do sistema Fut7Pro, que recebe e consolida os dados dos paineis administrativos dos rachas.
+
+Em cada um desses diretórios, você deve:
+
+Encontrar arquivos de mock e pastas com nomes como mock, mocks, fixtures ou semelhantes.
+
+Encontrar qualquer uso de strings contendo "mock" em código, comentários ou textos.
+
+Identificar dados estáticos “hardcoded” usados como se fossem respostas de API (arrays/objetos grandes diretamente nas páginas e componentes).
+
+Identificar componentes que deveriam consumir o backend mas atualmente só usam useState com valores fixos para simular dados dinâmicos.
+
+Objetivo: mapear tudo o que ainda está mockado ou estático nessas áreas e que precisa ser substituído por integração real com o backend multi-tenant, para deixar o app fut7pro-web totalmente dinâmico e pronto para venda como produto SaaS.
+
 Recursos do cd C:\Projetos\fut7pro-web
 Além de tudo já explicado no arquivo "README_DEV_GUIDE.md" tem que observar com bastante atenção este arquivo aqui, pois esta é a estrutura de como deve ficar o cd C:\Projetos\fut7pro-web (app.fut7pro.com.br), Todas estas ferramentas e estrutura o Fut7Pro tem que oferecer para o cliente poder gerenciar seu racha de futebol 7. E o sistema só pode ser considerado pronto para produção quando tudo isso estiver implementado para uso e interligado o painel admin(painel do presidente do racha) com o site público.
 

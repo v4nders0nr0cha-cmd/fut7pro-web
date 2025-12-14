@@ -15,7 +15,6 @@ import {
 import Image from "next/image";
 import { useTema } from "@/hooks/useTema";
 import { usePathname } from "next/navigation";
-import { rachaConfig } from "@/config/racha.config";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -58,7 +57,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
         <div className="flex flex-col items-center gap-2 mb-10 mt-4">
           <Image
             src={logo}
-            alt={`Logo ${rachaConfig.nome}`}
+            alt={`Logo ${nome}`}
             width={64}
             height={64}
             className="object-contain"

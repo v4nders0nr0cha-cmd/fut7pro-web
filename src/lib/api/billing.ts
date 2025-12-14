@@ -1,7 +1,6 @@
-// API para integração com Mercado Pago
-import config from "@/config/env";
+// API para integraçao com Mercado Pago via proxys do App Router
 
-const API_BASE_URL = config.apiUrl;
+const API_BASE_URL = "/api/admin/billing";
 
 export interface Plan {
   key: string;
@@ -54,25 +53,26 @@ export class BillingAPI {
     });
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const message = await response.text();
+      throw new Error(message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     return response.json();
   }
 
-  // Buscar todos os planos disponíveis
+  // Buscar todos os planos disponiveis
   static async getPlans(): Promise<{ plans: Plan[] }> {
-    return this.request<{ plans: Plan[] }>("/billing/plans");
+    return this.request<{ plans: Plan[] }>("/plans");
   }
 
   // Buscar assinatura por tenant
   static async getSubscriptionByTenant(tenantId: string): Promise<Subscription> {
-    return this.request<Subscription>(`/billing/subscription/tenant/${tenantId}`);
+    return this.request<Subscription>(`/subscription/tenant/${tenantId}`);
   }
 
   // Buscar status da assinatura
   static async getSubscriptionStatus(subscriptionId: string): Promise<SubscriptionStatus> {
-    return this.request<SubscriptionStatus>(`/billing/subscription/${subscriptionId}/status`);
+    return this.request<SubscriptionStatus>(`/subscription/${subscriptionId}/status`);
   }
 
   // Criar nova assinatura
@@ -82,7 +82,7 @@ export class BillingAPI {
     payerEmail: string;
     couponCode?: string;
   }): Promise<{ subscriptionId: string; checkoutUrl: string }> {
-    return this.request<{ subscriptionId: string; checkoutUrl: string }>("/billing/subscription", {
+    return this.request<{ subscriptionId: string; checkoutUrl: string }>("/subscription", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -90,14 +90,14 @@ export class BillingAPI {
 
   // Ativar assinatura
   static async activateSubscription(subscriptionId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`/billing/subscription/${subscriptionId}/activate`, {
+    return this.request<{ success: boolean }>(`/subscription/${subscriptionId}/activate`, {
       method: "POST",
     });
   }
 
   // Cancelar assinatura
   static async cancelSubscription(subscriptionId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`/billing/subscription/${subscriptionId}/cancel`, {
+    return this.request<{ success: boolean }>(`/subscription/${subscriptionId}/cancel`, {
       method: "POST",
     });
   }
@@ -126,7 +126,7 @@ export class BillingAPI {
         ticketUrl: string;
       };
       invoiceId: string;
-    }>("/billing/subscription/enterprise-monthly/start", {
+    }>("/subscription/enterprise-monthly/start", {
       method: "POST",
       body: JSON.stringify(data),
     });
@@ -144,7 +144,7 @@ export class BillingAPI {
       discountPct?: number;
       extraTrialDays?: number;
       allowedPlans?: string[];
-    }>(`/billing/coupon/${code}`);
+    }>(`/coupon/${code}`);
   }
 }
 

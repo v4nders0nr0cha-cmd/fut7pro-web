@@ -1,29 +1,39 @@
 "use client";
-import { useState, useEffect } from "react";
-import type { Lancamento } from "../mocks/mockLancamentosFinanceiro";
+import { useEffect, useState } from "react";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSave?: (data: Lancamento) => void;
-  initialData?: Lancamento | null;
+  onSave?: (data: LancamentoFinanceiro) => void | Promise<void>;
+  initialData?: LancamentoFinanceiro | null;
+  serverError?: string | null;
+  isSaving?: boolean;
 };
 
-const categoriasMock = ["Campo", "Material", "Diárias", "Multa", "Premiação", "Evento", "Outros"];
+const categoriasMock = ["Campo", "Material", "Diarias", "Multa", "Premiacao", "Evento", "Outros"];
 
-export default function ModalLancamento({ open, onClose, onSave, initialData }: Props) {
+export default function ModalLancamento({
+  open,
+  onClose,
+  onSave,
+  initialData,
+  serverError,
+  isSaving,
+}: Props) {
   const isEdit = !!initialData;
-  const [form, setForm] = useState<Lancamento>({
+  const [form, setForm] = useState<LancamentoFinanceiro>({
     id: initialData?.id || "",
     data: initialData?.data || new Date().toISOString().slice(0, 10),
-    tipo: initialData?.tipo || "Receita",
+    tipo: initialData?.tipo || "entrada",
     categoria: initialData?.categoria || "",
     descricao: initialData?.descricao || "",
     valor: initialData?.valor || 0,
-    comprovante: initialData?.comprovante || "",
+    comprovanteUrl: initialData?.comprovanteUrl || "",
+    responsavel: initialData?.responsavel || "Admin",
   });
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(initialData?.comprovante || null);
+  const [preview, setPreview] = useState<string | null>(initialData?.comprovanteUrl || null);
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
@@ -36,17 +46,22 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
 
   useEffect(() => {
     if (initialData) {
-      setForm(initialData);
-      setPreview(initialData.comprovante || null);
+      setForm({
+        ...initialData,
+        tipo: initialData.tipo || "entrada",
+        responsavel: initialData.responsavel || "Admin",
+      });
+      setPreview(initialData.comprovanteUrl || null);
     } else {
       setForm({
         id: "",
         data: new Date().toISOString().slice(0, 10),
-        tipo: "Receita",
+        tipo: "entrada",
         categoria: "",
         descricao: "",
         valor: 0,
-        comprovante: "",
+        comprovanteUrl: "",
+        responsavel: "Admin",
       });
       setPreview(null);
     }
@@ -54,11 +69,16 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
     setError("");
   }, [open, initialData]);
 
+  useEffect(() => {
+    if (serverError) {
+      setError(serverError);
+    }
+  }, [serverError]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = e.target;
-    // Campo valor: remove zeros à esquerda
     if (name === "valor") {
-      let valLimpo = value.replace(/^0+(?=\d)/, "");
+      const valLimpo = value.replace(/^0+(?=\d)/, "");
       setForm((f) => ({
         ...f,
         valor: valLimpo === "" ? 0 : Number(valLimpo),
@@ -72,30 +92,39 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
   }
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    setFile(file || null);
+    const novoArquivo = e.target.files?.[0];
+    setFile(novoArquivo || null);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.data || !form.categoria || !form.descricao || !form.valor || isNaN(form.valor)) {
-      setError("Preencha todos os campos obrigatórios.");
+      setError("Preencha todos os campos obrigatorios.");
       return;
     }
     if (form.valor === 0) {
-      setError("O valor não pode ser zero.");
+      setError("O valor nao pode ser zero.");
       return;
     }
-    let comprovanteFinal = form.comprovante;
+    let comprovanteFinal = form.comprovanteUrl;
     if (file && preview) comprovanteFinal = preview;
-    if (onSave) {
-      onSave({
-        ...form,
-        id: form.id || Math.random().toString(36).substring(2, 9),
-        comprovante: comprovanteFinal,
-      });
+
+    try {
+      if (onSave) {
+        await onSave({
+          ...form,
+          id: form.id || Math.random().toString(36).substring(2, 9),
+          comprovanteUrl: comprovanteFinal,
+          responsavel: form.responsavel || "Admin",
+          tipo: form.tipo === "saida" ? "saida" : "entrada",
+          valor: form.tipo === "saida" ? -Math.abs(form.valor) : Math.abs(form.valor),
+        });
+      }
+      onClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Nao foi possivel salvar.";
+      setError(message);
     }
-    onClose();
   }
 
   if (!open) return null;
@@ -109,7 +138,7 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
         autoComplete="off"
       >
         <h2 className="text-xl font-bold mb-2 text-yellow-500">
-          {isEdit ? "Editar Lançamento" : "Novo Lançamento"}
+          {isEdit ? "Editar Lancamento" : "Novo Lancamento"}
         </h2>
         <button
           type="button"
@@ -117,7 +146,7 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
           onClick={onClose}
           aria-label="Fechar"
         >
-          ×
+          x
         </button>
         <div className="grid grid-cols-2 gap-2 mb-2">
           <div>
@@ -140,8 +169,8 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
               className="w-full bg-neutral-800 rounded px-2 py-1 text-sm text-white outline-yellow-500 border border-neutral-700"
               required
             >
-              <option value="Receita">Receita</option>
-              <option value="Despesa">Despesa</option>
+              <option value="entrada">Receita</option>
+              <option value="saida">Despesa</option>
             </select>
           </div>
         </div>
@@ -163,7 +192,7 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
           </select>
         </div>
         <div className="mb-2">
-          <label className="text-xs text-gray-300 font-bold mb-1 block">Descrição *</label>
+          <label className="text-xs text-gray-300 font-bold mb-1 block">Descricao *</label>
           <input
             name="descricao"
             type="text"
@@ -208,9 +237,10 @@ export default function ModalLancamento({ open, onClose, onSave, initialData }: 
         {error && <div className="mb-2 text-red-400 text-xs">{error}</div>}
         <button
           type="submit"
-          className="w-full mt-2 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-sm transition"
+          className="w-full mt-2 py-2 rounded bg-yellow-500 hover:bg-yellow-600 text-black font-bold text-sm transition disabled:opacity-60"
+          disabled={isSaving}
         >
-          {isEdit ? "Salvar Alterações" : "Adicionar Lançamento"}
+          {isEdit ? "Salvar Alteracoes" : "Adicionar Lancamento"}
         </button>
       </form>
     </div>

@@ -1,12 +1,9 @@
-// src/components/superadmin/SuperAdminSidebar.tsx
-
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { rachaConfig } from "@/config/racha.config";
+import { useBranding } from "@/hooks/useBranding";
 
-// Tipagem explícita:
 type MenuItem = { href: string; label: string };
 
 const menus: MenuItem[] = [
@@ -25,14 +22,18 @@ const menus: MenuItem[] = [
 ];
 
 export default function SuperAdminSidebar() {
+  const { nome } = useBranding({ scope: "superadmin" });
+  const brandName = nome || "Fut7Pro";
   const pathname = usePathname() ?? "";
+
   return (
     <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col py-8 px-4 min-h-screen">
       <div className="text-2xl font-extrabold mb-10 text-yellow-400 text-center drop-shadow">
-        Fut7Pro
+        {brandName}
         <br />
-        <span className="text-xl font-bold text-yellow-400">{rachaConfig.nome}</span>
+        <span className="text-sm font-semibold text-yellow-200">Painel SuperAdmin</span>
       </div>
+
       <nav className="flex-1 flex flex-col gap-2">
         {menus.map((m) => (
           <Link
@@ -48,8 +49,9 @@ export default function SuperAdminSidebar() {
           </Link>
         ))}
       </nav>
+
       <div className="mt-8 text-xs text-gray-400 text-center opacity-80">
-        © 2025 {rachaConfig.nome} SaaS
+        © 2025 {brandName} SaaS
       </div>
     </aside>
   );

@@ -4,19 +4,27 @@ import React from "react";
 import Head from "next/head";
 import { automacoesPadrao } from "@/components/lists/automacoesPadrao";
 import type { AutomacaoNotificacao } from "@/types/automacao";
+import { useBranding } from "@/hooks/useBranding";
 
 export default function SuperAdminAutomacoesPage() {
+  const { nome: brandingName } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
   return (
     <>
       <Head>
-        <title>Automação de Notificações – Fut7Pro SuperAdmin</title>
+        <title>{brandText("Automação de Notificações – Fut7Pro SuperAdmin")}</title>
         <meta
           name="description"
-          content="Gerencie as notificações automáticas enviadas pelo sistema Fut7Pro. Veja, ative e controle todas as automações críticas para seu SaaS."
+          content={brandText(
+            "Gerencie as notificações automáticas enviadas pelo sistema Fut7Pro. Veja, ative e controle todas as automações críticas para seu SaaS."
+          )}
         />
         <meta
           name="keywords"
-          content="automação, notificações automáticas, SaaS, Fut7Pro, cobrança, trial, onboarding"
+          content={brandText(
+            "automação, notificações automáticas, SaaS, Fut7Pro, cobrança, trial, onboarding"
+          )}
         />
       </Head>
       <div className="px-4 py-6 md:px-10 max-w-5xl mx-auto">

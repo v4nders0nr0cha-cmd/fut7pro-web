@@ -2,7 +2,8 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import useSWR from "swr";
+import { useMemo, useState } from "react";
 import { FaDownload, FaSearch } from "react-icons/fa";
 import {
   PieChart,
@@ -22,132 +23,130 @@ import KPI from "@/components/financeiro/KPI";
 import CardPlano from "@/components/financeiro/CardPlano";
 import TabelaRachas from "@/components/financeiro/TabelaRachas";
 import ModalInadimplentes from "@/components/financeiro/ModalInadimplentes";
-import type { Inadimplente, RachaDetalheResumido } from "@/components/financeiro/types";
+import type {
+  Inadimplente,
+  RachaDetalheResumido,
+  StatusPagamento,
+} from "@/components/financeiro/types";
+import { useBranding } from "@/hooks/useBranding";
 
-const PLANS = [
-  { key: "mensal_essencial", name: "Mensal Essencial", price: 150, freq: "mês" },
-  { key: "mensal_marketing", name: "Mensal + Marketing", price: 180, freq: "mês" },
-  { key: "anual_essencial", name: "Anual Essencial", price: 1500, freq: "ano" },
-  { key: "anual_marketing", name: "Anual + Marketing", price: 1800, freq: "ano" },
-];
-
-const PLAN_COLORS = ["#32d657", "#4c6fff", "#ffbe30", "#ff7043"];
-
-const MOCK_FINANCEIRO = {
-  receitaTotal: 10860,
-  mrr: 1380,
-  arr: 10800,
-  ticketMedio: 209.2,
-  churn: 2.1,
-  ativos: 12,
-  inadimplentes: 2,
-  porPlano: [
-    { key: "mensal_essencial", ativos: 5, receita: 750, inadimplentes: 1, vencimentos: 2 },
-    { key: "mensal_marketing", ativos: 2, receita: 360, inadimplentes: 0, vencimentos: 0 },
-    { key: "anual_essencial", ativos: 4, receita: 6000, inadimplentes: 1, vencimentos: 1 },
-    { key: "anual_marketing", ativos: 1, receita: 1800, inadimplentes: 0, vencimentos: 0 },
-  ],
+type SuperAdminFinanceiro = {
+  resumo: {
+    receitaTotal: number;
+    mrr: number;
+    arr: number;
+    ticketMedio: number;
+    churn: number;
+    ativos: number;
+    inadimplentes: number;
+  };
+  porPlano: Array<{
+    key: string;
+    nome: string;
+    tipo: string;
+    ativos: number;
+    receita: number;
+    inadimplentes: number;
+    vencimentos: number;
+  }>;
+  graficoReceita: Array<{ mes: string; receita: number }>;
+  rachas: Array<{
+    id: string;
+    nome: string;
+    presidente: string;
+    plano: string;
+    status: string;
+    valor: number;
+    vencimento: string | null;
+    contato?: string | null;
+  }>;
+  inadimplentes: Array<{
+    id: string;
+    nome: string;
+    presidente: string;
+    plano: string;
+    status: string;
+    valor: number;
+    vencimento: string | null;
+    contato?: string | null;
+  }>;
 };
 
-const MOCK_GRAFICO_RECEITA = [
-  { mes: "Jan", receita: 1700 },
-  { mes: "Fev", receita: 1550 },
-  { mes: "Mar", receita: 1720 },
-  { mes: "Abr", receita: 1810 },
-  { mes: "Mai", receita: 2400 },
-  { mes: "Jun", receita: 1680 },
-  { mes: "Jul", receita: 2500 },
-];
+const PLAN_COLORS = ["#32d657", "#4c6fff", "#ffbe30", "#ff7043"];
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((res) => res.json());
 
-const MOCK_GRAFICO_PLANOS = PLANS.map((plan, i) => ({
-  name: plan.name,
-  value: MOCK_FINANCEIRO.porPlano[i]?.ativos ?? 0,
-}));
+function mapStatus(status?: string): StatusPagamento {
+  const normalized = (status || "").toLowerCase();
+  if (normalized.includes("trial")) return "Trial";
+  if (normalized.includes("past") || normalized.includes("due") || normalized.includes("overdue")) {
+    return "Em aberto";
+  }
+  if (normalized.includes("cancel")) return "Cancelado";
+  if (
+    normalized.includes("inactive") ||
+    normalized.includes("paused") ||
+    normalized.includes("expired")
+  ) {
+    return "Cancelado";
+  }
+  return "Pago";
+}
 
-const MOCK_RACHAS: RachaDetalheResumido[] = [
-  {
-    id: "1",
-    racha: "Vila União",
-    presidente: "João Silva",
-    plano: "Mensal Essencial",
-    status: "Pago",
-    valor: 150,
-    vencimento: "12/07/2025",
-  },
-  {
-    id: "2",
-    racha: "Galáticos",
-    presidente: "Pedro Souza",
-    plano: "Mensal + Marketing",
-    status: "Em aberto",
-    valor: 180,
-    vencimento: "18/07/2025",
-  },
-  {
-    id: "3",
-    racha: "Real Matismo",
-    presidente: "Paulo Lima",
-    plano: "Anual Essencial",
-    status: "Pago",
-    valor: 1500,
-    vencimento: "31/07/2025",
-  },
-  {
-    id: "4",
-    racha: "Racha Show",
-    presidente: "Carlos Mendes",
-    plano: "Anual + Marketing",
-    status: "Pago",
-    valor: 1800,
-    vencimento: "02/08/2025",
-  },
-  {
-    id: "5",
-    racha: "Os Bons de Bola",
-    presidente: "Rafael Silva",
-    plano: "Mensal Essencial",
-    status: "Em aberto",
-    valor: 150,
-    vencimento: "09/07/2025",
-  },
-];
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toLocaleDateString("pt-BR");
+}
 
-const MOCK_INADIMPLENTES: Inadimplente[] = [
-  {
-    id: "2",
-    racha: "Galáticos",
-    presidente: "Pedro Souza",
-    plano: "Mensal + Marketing",
-    valor: 180,
-    vencimento: "18/07/2025",
-    contato: "5511999998888",
-  },
-  {
-    id: "5",
-    racha: "Os Bons de Bola",
-    presidente: "Rafael Silva",
-    plano: "Mensal Essencial",
-    valor: 150,
-    vencimento: "09/07/2025",
-    contato: "rafael@email.com",
-  },
-];
-
-type Status = "Pago" | "Em aberto" | "Trial" | "Cancelado";
+function formatCsv(rows: string[][]) {
+  return rows.map((r) => r.map((c) => `"${(c ?? "").replace(/"/g, '""')}"`).join(";")).join("\n");
+}
 
 export default function FinanceiroPage() {
+  const { nome: brandingName } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
+  const brandLabel = brandText("Fut7Pro");
   const [periodo, setPeriodo] = useState("30d");
-  const [status, setStatus] = useState<Status | "all">("all");
+  const [status, setStatus] = useState<StatusPagamento | "all">("all");
   const [plano, setPlano] = useState("all");
   const [search, setSearch] = useState("");
   const [modalInadimplentes, setModalInadimplentes] = useState(false);
 
-  const filteredRachas = MOCK_RACHAS.filter((row) => {
+  const { data } = useSWR<SuperAdminFinanceiro>("/api/superadmin/financeiro", fetcher);
+
+  const plans = data?.porPlano ?? [];
+
+  const rachas: RachaDetalheResumido[] = useMemo(() => {
+    return (data?.rachas ?? []).map((row) => ({
+      id: row.id,
+      racha: row.nome,
+      presidente: row.presidente,
+      plano: row.plano,
+      status: mapStatus(row.status),
+      valor: row.valor,
+      vencimento: formatDate(row.vencimento),
+    }));
+  }, [data?.rachas]);
+
+  const inadimplentes: Inadimplente[] = useMemo(() => {
+    return (data?.inadimplentes ?? []).map((row) => ({
+      id: row.id,
+      racha: row.nome,
+      presidente: row.presidente,
+      plano: row.plano,
+      valor: row.valor,
+      vencimento: formatDate(row.vencimento),
+      contato: row.contato ?? "",
+    }));
+  }, [data?.inadimplentes]);
+
+  const filteredRachas = rachas.filter((row) => {
     if (status !== "all" && row.status !== status) return false;
     if (plano !== "all") {
-      const planObj = PLANS.find((p) => p.key === plano);
+      const planObj = plans.find((p) => p.key === plano);
       if (!planObj) return false;
-      if (row.plano !== planObj.name) return false;
+      if (row.plano !== planObj.nome) return false;
     }
     return (
       row.racha.toLowerCase().includes(search.toLowerCase()) ||
@@ -156,26 +155,49 @@ export default function FinanceiroPage() {
   });
 
   function exportCSV() {
-    alert("Exportação CSV mockada! (implemente backend)");
+    const rows = [
+      ["Racha", "Presidente", "Plano", "Status", "Valor (R$)", "Vencimento"],
+      ...filteredRachas.map((r) => [
+        r.racha,
+        r.presidente,
+        r.plano,
+        r.status,
+        r.valor.toFixed(2).replace(".", ","),
+        r.vencimento,
+      ]),
+    ];
+    const blob = new Blob([formatCsv(rows)], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "financeiro-superadmin.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   }
-  function exportPDF() {
-    alert("Exportação PDF mockada! (implemente backend)");
-  }
-  function exportXLSX() {
-    alert("Exportação XLSX mockada! (implemente backend)");
+
+  function exportJSON() {
+    const blob = new Blob([JSON.stringify(filteredRachas, null, 2)], {
+      type: "application/json;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "financeiro-superadmin.json";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   return (
     <>
       <Head>
-        <title>Painel Financeiro SaaS - Fut7Pro</title>
+        <title>{`Painel Financeiro SaaS - ${brandLabel}`}</title>
         <meta
           name="description"
-          content="Controle financeiro SaaS do Fut7Pro: receitas, assinaturas, planos, inadimplência, gráficos e exportação. Gestão inteligente e moderna de rachas de futebol 7."
+          content={`Controle financeiro SaaS do ${brandLabel}: receitas, assinaturas, planos, inadimplencia, graficos e exportacao. Gestao inteligente e moderna de rachas de futebol 7.`}
         />
         <meta
           name="keywords"
-          content="financeiro, SaaS, fut7, dashboard, assinatura, racha, plataforma futebol, gestão financeira, planos, mensal, anual, marketing"
+          content={`financeiro, SaaS, fut7, dashboard, assinatura, racha, plataforma futebol, gestao financeira, planos, mensal, anual, marketing, ${brandLabel}`}
         />
       </Head>
 
@@ -183,7 +205,7 @@ export default function FinanceiroPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
           Painel Financeiro dos Rachas
         </h1>
-        {/* Exportação e filtros */}
+        {/* Exportacao e filtros */}
         <div className="flex flex-wrap gap-2 mb-6">
           <button
             onClick={exportCSV}
@@ -192,16 +214,10 @@ export default function FinanceiroPage() {
             <FaDownload /> Exportar CSV
           </button>
           <button
-            onClick={exportPDF}
+            onClick={exportJSON}
             className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded font-semibold flex items-center gap-2 transition"
           >
-            <FaDownload /> Exportar PDF
-          </button>
-          <button
-            onClick={exportXLSX}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-2 rounded font-semibold flex items-center gap-2 transition"
-          >
-            <FaDownload /> Exportar XLSX
+            <FaDownload /> Exportar JSON
           </button>
           {/* Filtros */}
           <select
@@ -209,13 +225,13 @@ export default function FinanceiroPage() {
             onChange={(e) => setPeriodo(e.target.value)}
             className="bg-zinc-800 text-white rounded px-2 py-1 ml-2"
           >
-            <option value="7d">Últimos 7 dias</option>
-            <option value="30d">Últimos 30 dias</option>
+            <option value="7d">Ultimos 7 dias</option>
+            <option value="30d">Ultimos 30 dias</option>
             <option value="ano">Ano atual</option>
           </select>
           <select
             value={status}
-            onChange={(e) => setStatus(e.target.value as Status | "all")}
+            onChange={(e) => setStatus(e.target.value as StatusPagamento | "all")}
             className="bg-zinc-800 text-white rounded px-2 py-1"
           >
             <option value="all">Todos Status</option>
@@ -230,9 +246,9 @@ export default function FinanceiroPage() {
             className="bg-zinc-800 text-white rounded px-2 py-1"
           >
             <option value="all">Todos Planos</option>
-            {PLANS.map((plan) => (
+            {plans.map((plan) => (
               <option key={plan.key} value={plan.key}>
-                {plan.name}
+                {plan.nome}
               </option>
             ))}
           </select>
@@ -251,13 +267,13 @@ export default function FinanceiroPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <KPI
             title="Receita Total (R$)"
-            value={MOCK_FINANCEIRO.receitaTotal.toLocaleString("pt-BR", {
+            value={(data?.resumo?.receitaTotal ?? 0).toLocaleString("pt-BR", {
               style: "currency",
               currency: "BRL",
             })}
             color="green"
           />
-          <KPI title="Rachas Ativos Pagos" value={MOCK_FINANCEIRO.ativos} color="yellow" />
+          <KPI title="Rachas Ativos Pagos" value={data?.resumo?.ativos ?? 0} color="yellow" />
           <KPI
             title="Inadimplentes"
             value={
@@ -266,7 +282,7 @@ export default function FinanceiroPage() {
                 title="Clique para ver detalhes dos inadimplentes"
                 onClick={() => setModalInadimplentes(true)}
               >
-                {MOCK_FINANCEIRO.inadimplentes}
+                {data?.resumo?.inadimplentes ?? 0}
               </span>
             }
             color="red"
@@ -274,24 +290,24 @@ export default function FinanceiroPage() {
           />
           <KPI
             title="Churn Rate (%)"
-            value={MOCK_FINANCEIRO.churn + "%"}
+            value={(data?.resumo?.churn ?? 0) + "%"}
             color="blue"
-            tooltip="Percentual de cancelamentos recentes em relação ao total de rachas ativos."
+            tooltip="Percentual de cancelamentos recentes em relacao ao total de rachas ativos."
           />
         </div>
 
         {/* Cards por plano */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          {MOCK_FINANCEIRO.porPlano.map((plan, idx) => (
+          {plans.map((plan, idx) => (
             <CardPlano
               key={plan.key}
-              nome={PLANS[idx]?.name ?? "Plano"}
-              tipo={PLANS[idx]?.freq === "mês" ? "Mensal" : "Anual"}
+              nome={plan.nome}
+              tipo={plan.tipo.toLowerCase().includes("anual") ? "Anual" : "Mensal"}
               ativos={plan.ativos}
               receita={plan.receita}
               inadimplentes={plan.inadimplentes}
               vencimentos={plan.vencimentos}
-              cor={PLAN_COLORS[idx] ?? "#32d657"} // Fallback padrão
+              cor={PLAN_COLORS[idx] ?? "#32d657"}
               onClickInadimplentes={
                 plan.inadimplentes > 0 ? () => setModalInadimplentes(true) : undefined
               }
@@ -299,12 +315,12 @@ export default function FinanceiroPage() {
           ))}
         </div>
 
-        {/* Gráficos */}
+        {/* Graficos */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
           <div className="bg-zinc-800 rounded-2xl shadow p-4 flex flex-col">
-            <h2 className="text-white font-semibold mb-2 text-base">Evolução da Receita (R$)</h2>
+            <h2 className="text-white font-semibold mb-2 text-base">Evolucao da Receita (R$)</h2>
             <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={MOCK_GRAFICO_RECEITA}>
+              <LineChart data={data?.graficoReceita ?? []}>
                 <CartesianGrid stroke="#444" />
                 <XAxis dataKey="mes" tick={{ fill: "#fff" }} />
                 <YAxis tick={{ fill: "#fff" }} />
@@ -325,7 +341,10 @@ export default function FinanceiroPage() {
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie
-                  data={MOCK_GRAFICO_PLANOS}
+                  data={plans.map((p) => ({
+                    name: p.nome,
+                    value: p.ativos,
+                  }))}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -333,7 +352,7 @@ export default function FinanceiroPage() {
                   dataKey="value"
                   label
                 >
-                  {MOCK_GRAFICO_PLANOS.map((entry, idx) => (
+                  {plans.map((entry, idx) => (
                     <Cell key={`cell-${idx}`} fill={PLAN_COLORS[idx % PLAN_COLORS.length]} />
                   ))}
                 </Pie>
@@ -341,13 +360,13 @@ export default function FinanceiroPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="flex justify-center mt-2 gap-3 flex-wrap">
-              {PLANS.map((plan, idx) => (
+              {plans.map((plan, idx) => (
                 <div key={plan.key} className="flex items-center gap-1 text-sm">
                   <span
                     className="inline-block w-3 h-3 rounded-full"
                     style={{ backgroundColor: PLAN_COLORS[idx] }}
                   ></span>
-                  <span className="text-white">{plan.name}</span>
+                  <span className="text-white">{plan.nome}</span>
                 </div>
               ))}
             </div>
@@ -364,7 +383,7 @@ export default function FinanceiroPage() {
         <ModalInadimplentes
           open={modalInadimplentes}
           onClose={() => setModalInadimplentes(false)}
-          inadimplentes={MOCK_INADIMPLENTES}
+          inadimplentes={inadimplentes}
         />
       </main>
     </>

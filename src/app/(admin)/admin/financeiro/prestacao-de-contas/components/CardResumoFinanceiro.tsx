@@ -1,11 +1,15 @@
-import type { Lancamento } from "../mocks/mockLancamentosFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 
-type Props = { lancamentos: Lancamento[] };
+type Props = { lancamentos: LancamentoFinanceiro[] };
 
 export default function CardResumoFinanceiro({ lancamentos }: Props) {
-  const saldoAtual = lancamentos.reduce((acc, l) => acc + l.valor, 0);
-  const receitas = lancamentos.filter((l) => l.valor > 0).reduce((acc, l) => acc + l.valor, 0);
-  const despesas = lancamentos.filter((l) => l.valor < 0).reduce((acc, l) => acc + l.valor, 0);
+  const saldoAtual = lancamentos.reduce((acc, l) => acc + (l.valor ?? 0), 0);
+  const receitas = lancamentos
+    .filter((l) => (l.valor ?? 0) > 0)
+    .reduce((acc, l) => acc + (l.valor ?? 0), 0);
+  const despesas = lancamentos
+    .filter((l) => (l.valor ?? 0) < 0)
+    .reduce((acc, l) => acc + (l.valor ?? 0), 0);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

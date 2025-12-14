@@ -60,6 +60,11 @@ export function buildSorteioPaths(slug?: string | null) {
   return [`/${slug}/partidas`, `/${slug}/partidas/times-do-dia`];
 }
 
+export function buildEstatutoPaths(slug?: string | null) {
+  if (!slug) return ["/sobre-nos/estatuto"];
+  return [`/${slug}/sobre-nos/estatuto`, "/sobre-nos/estatuto"];
+}
+
 export async function triggerPublicRevalidate(slug?: string | null, paths: string[] = []) {
   if (!slug) return;
 

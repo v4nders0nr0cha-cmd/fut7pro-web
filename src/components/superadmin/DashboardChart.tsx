@@ -11,19 +11,21 @@ import {
   CartesianGrid,
 } from "recharts";
 
-const data = [
-  { month: "Fev", receita: 3200 },
-  { month: "Mar", receita: 4100 },
-  { month: "Abr", receita: 5300 },
-  { month: "Mai", receita: 6300 },
-  { month: "Jun", receita: 6900 },
-  { month: "Jul", receita: 7430 },
+type ChartPoint = { month: string; receita: number };
+
+const DEFAULT_DATA: ChartPoint[] = [
+  { month: "Jan", receita: 0 },
+  { month: "Fev", receita: 0 },
+  { month: "Mar", receita: 0 },
+  { month: "Abr", receita: 0 },
+  { month: "Mai", receita: 0 },
+  { month: "Jun", receita: 0 },
 ];
 
-export default function DashboardChart() {
+export default function DashboardChart({ data = DEFAULT_DATA }: { data?: ChartPoint[] }) {
   return (
     <ResponsiveContainer width="100%" height={250}>
-      <LineChart data={data}>
+      <LineChart data={data?.length ? data : DEFAULT_DATA}>
         <CartesianGrid strokeDasharray="3 3" stroke="#222" />
         <XAxis dataKey="month" stroke="#fff" />
         <YAxis stroke="#fff" />

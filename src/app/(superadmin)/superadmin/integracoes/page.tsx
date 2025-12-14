@@ -2,7 +2,9 @@
 
 import Head from "next/head";
 import { useState } from "react";
+import useSWR from "swr";
 import { FaTrash, FaInfoCircle, FaTimes } from "react-icons/fa";
+import { useBranding } from "@/hooks/useBranding";
 
 // 1. TIPAGEM DOS CAMPOS
 type CampoIntegracao = { name: string; label: string; type: string; placeholder: string };
@@ -19,11 +21,17 @@ type IntegracaoCard = {
   descricao: string;
   logo: string;
   status: StatusIntegracao;
+  categoria?: string;
+  slug?: string;
+  campos?: CampoIntegracao[];
+  instrucoes?: string;
 };
 type CategoriaIntegracao = {
   nome: string;
   integrações: IntegracaoCard[];
 };
+
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((res) => res.json());
 
 // 2. CAMPOS DE CONFIGURAÇÃO PARA CADA INTEGRAÇÃO
 const camposIntegracoes: Record<string, CamposIntegracao> = {
@@ -541,8 +549,22 @@ const categoriasIntegracoes: CategoriaIntegracao[] = [
 
 // 4. COMPONENTE PRINCIPAL
 export default function IntegracoesSuperAdminPage() {
+  const { brandText } = useBranding({ scope: "superadmin" });
+  const { data: integracoesApi } = useSWR<IntegracaoCard[]>("/api/superadmin/integracoes", fetcher);
   const [modal, setModal] = useState<{ id: string; nome: string } | null>(null);
   const [campos, setCampos] = useState<{ [key: string]: string }>({});
+
+  const categorias =
+    integracoesApi && integracoesApi.length
+      ? Object.values(
+          integracoesApi.reduce((acc: Record<string, CategoriaIntegracao>, integ) => {
+            const categoria = integ.categoria || "Integrações";
+            if (!acc[categoria]) acc[categoria] = { nome: categoria, integrações: [] };
+            acc[categoria].integrações.push({ ...integ, id: integ.slug || integ.id });
+            return acc;
+          }, {})
+        )
+      : categoriasIntegracoes;
 
   function handleAbrirModal(integ: IntegracaoCard) {
     setModal({ id: integ.id, nome: integ.nome });
@@ -555,24 +577,41 @@ export default function IntegracoesSuperAdminPage() {
   function handleCampoChange(name: string, value: string) {
     setCampos((prev) => ({ ...prev, [name]: value }));
   }
-  function handleSalvar() {
-    // Grava no localStorage (mock, troca para API quando quiser)
-    window.localStorage.setItem(`integracao_${modal?.id}`, JSON.stringify(campos));
-    alert(`Configuração salva para ${modal?.nome}:\n${JSON.stringify(campos, null, 2)}`);
+  async function handleSalvar() {
+    if (!modal) return;
+    if (integracoesApi?.length) {
+      const res = await fetch(`/api/superadmin/integracoes/${modal.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(campos),
+      });
+      if (!res.ok) {
+        alert("Falha ao salvar integração");
+        return;
+      }
+      alert(`Configuração salva para ${brandText(modal?.nome || "")}.`);
+    } else {
+      window.localStorage.setItem(`integracao_${modal?.id}`, JSON.stringify(campos));
+      alert(
+        `Configuração salva para ${brandText(modal?.nome || "")}:\n${JSON.stringify(campos, null, 2)}`
+      );
+    }
     handleFecharModal();
   }
 
   return (
     <>
       <Head>
-        <title>Integrações • SuperAdmin | Fut7Pro</title>
+        <title>{brandText("Integrações • SuperAdmin | Fut7Pro")}</title>
         <meta
           name="description"
-          content="Painel de integrações do site Fut7Pro – SuperAdmin SaaS"
+          content={brandText("Painel de integrações do site Fut7Pro – SuperAdmin SaaS")}
         />
         <meta
           name="keywords"
-          content="fut7, integrações, api, google, facebook, analytics, ebit, ssl, pagamentos, saas, webhook, reviews, reputação"
+          content={brandText(
+            "fut7, integrações, api, google, facebook, analytics, ebit, ssl, pagamentos, saas, webhook, reviews, reputação"
+          )}
         />
       </Head>
       <main className="min-h-screen bg-fundo px-2 py-6 flex flex-col items-center">
@@ -580,121 +619,140 @@ export default function IntegracoesSuperAdminPage() {
           Integrações
         </h1>
         <div className="w-full max-w-7xl space-y-12">
-          {categoriasIntegracoes.map((categoria) => (
+          {categorias.map((categoria) => (
             <section key={categoria.nome} className="mb-4">
               <h2 className="text-lg font-semibold mb-4 text-white">{categoria.nome}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {categoria.integrações.map((integ) => (
-                  <div
-                    key={integ.id}
-                    className="relative flex flex-col items-center bg-zinc-900 rounded-xl p-4 shadow group transition hover:ring-2 hover:ring-amarelo"
-                  >
-                    <span
-                      className={`absolute top-3 right-3 px-2 py-0.5 rounded text-xs font-bold 
-                      ${integ.status === "instalado" ? "bg-green-700 text-green-100" : "bg-zinc-700 text-zinc-200"}`}
+                {categoria.integrações.map((integ) => {
+                  const nome = brandText(integ.nome);
+                  const descricao = brandText(integ.descricao || "");
+                  return (
+                    <div
+                      key={integ.id}
+                      className="relative flex flex-col items-center bg-zinc-900 rounded-xl p-4 shadow group transition hover:ring-2 hover:ring-amarelo"
                     >
-                      {integ.status === "instalado" ? "Instalado" : "Disponível"}
-                    </span>
-                    <img
-                      src={integ.logo}
-                      alt={`Logo ${integ.nome}`}
-                      className="w-24 h-16 object-contain mx-auto mb-3 rounded bg-white"
-                    />
-                    <div className="font-bold text-base text-white text-center mb-1">
-                      {integ.nome}
-                    </div>
-                    <div className="flex items-center gap-1 text-zinc-300 text-sm text-center mb-3">
-                      {integ.descricao}
-                      <FaInfoCircle
-                        title="Saiba mais sobre esta integração"
-                        className="ml-1 text-amarelo"
+                      <span
+                        className={`absolute top-3 right-3 px-2 py-0.5 rounded text-xs font-bold 
+                      ${integ.status === "instalado" ? "bg-green-700 text-green-100" : "bg-zinc-700 text-zinc-200"}`}
+                      >
+                        {integ.status === "instalado" ? "Instalado" : "Disponível"}
+                      </span>
+                      <img
+                        src={integ.logo}
+                        alt={`Logo ${nome}`}
+                        className="w-24 h-16 object-contain mx-auto mb-3 rounded bg-white"
                       />
+                      <div className="font-bold text-base text-white text-center mb-1">{nome}</div>
+                      <div className="flex items-center gap-1 text-zinc-300 text-sm text-center mb-3">
+                        {descricao}
+                        <FaInfoCircle
+                          title="Saiba mais sobre esta integração"
+                          className="ml-1 text-amarelo"
+                        />
+                      </div>
+                      <div className="flex gap-2 w-full">
+                        <button
+                          className="flex-1 px-2 py-2 rounded-xl bg-cyan-600 text-white font-semibold hover:bg-cyan-700 transition text-sm"
+                          onClick={() => handleAbrirModal(integ)}
+                        >
+                          Configurar
+                        </button>
+                        <button
+                          className="p-2 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-red-700/20 transition"
+                          title="Remover integração"
+                          onClick={() => alert("Remover integração futura!")}
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2 w-full">
-                      <button
-                        className="flex-1 px-2 py-2 rounded-xl bg-cyan-600 text-white font-semibold hover:bg-cyan-700 transition text-sm"
-                        onClick={() => handleAbrirModal(integ)}
-                      >
-                        Configurar
-                      </button>
-                      <button
-                        className="p-2 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-red-700/20 transition"
-                        title="Remover integração"
-                        onClick={() => alert("Remover integração futura!")}
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ))}
         </div>
 
         {/* MODAL DE CONFIGURAÇÃO */}
-        {modal && camposIntegracoes[modal.id] && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-2">
-            <div className="relative w-full max-w-lg bg-zinc-900 rounded-2xl shadow-2xl p-6">
-              <button
-                className="absolute top-2 right-2 text-zinc-400 hover:text-red-500"
-                onClick={handleFecharModal}
-              >
-                <FaTimes size={24} />
-              </button>
-              <div className="mb-2 text-xl font-bold text-amarelo">
-                {camposIntegracoes[modal.id]!.titulo}
+        {modal &&
+          (camposIntegracoes[modal.id] ||
+            integracoesApi?.find((i) => (i.slug || i.id) === modal.id)?.campos) && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center px-2">
+              <div className="relative w-full max-w-lg bg-zinc-900 rounded-2xl shadow-2xl p-6">
+                <button
+                  className="absolute top-2 right-2 text-zinc-400 hover:text-red-500"
+                  onClick={handleFecharModal}
+                >
+                  <FaTimes size={24} />
+                </button>
+                {(() => {
+                  const integ = integracoesApi?.find((i) => (i.slug || i.id) === modal.id);
+                  const camposDef = integ?.campos || camposIntegracoes[modal.id]?.campos || [];
+                  const titulo = brandText(
+                    integ?.nome ?? camposIntegracoes[modal.id]?.titulo ?? modal.nome
+                  );
+                  const descricao = brandText(
+                    integ?.descricao ?? camposIntegracoes[modal.id]?.descricao ?? ""
+                  );
+                  const instrucoes = brandText(
+                    integ?.instrucoes ?? camposIntegracoes[modal.id]?.instrucoes ?? ""
+                  );
+                  return (
+                    <>
+                      <div className="mb-2 text-xl font-bold text-amarelo">{titulo}</div>
+                      <div className="mb-1 text-zinc-100">{descricao}</div>
+                      <div
+                        className="mb-2 text-zinc-400 text-sm"
+                        dangerouslySetInnerHTML={{ __html: instrucoes }}
+                      />
+                      <form
+                        className="space-y-4 mt-4"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          handleSalvar();
+                        }}
+                      >
+                        {camposDef.map((campo: CampoIntegracao) => (
+                          <div key={campo.name} className="flex flex-col">
+                            <label className="text-sm text-zinc-200 font-semibold mb-1">
+                              {campo.label}
+                            </label>
+                            <input
+                              className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-amarelo"
+                              type={campo.type}
+                              name={campo.name}
+                              value={campos[campo.name] || ""}
+                              onChange={(e) => handleCampoChange(campo.name, e.target.value)}
+                              placeholder={brandText(campo.placeholder || "")}
+                              autoComplete="off"
+                            />
+                          </div>
+                        ))}
+                        <div className="flex justify-end gap-2 mt-6">
+                          <button
+                            type="button"
+                            className="px-5 py-2 rounded-xl bg-zinc-700 text-white hover:bg-zinc-600 font-semibold"
+                            onClick={handleFecharModal}
+                          >
+                            Fechar
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-5 py-2 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 font-bold"
+                          >
+                            Salvar
+                          </button>
+                        </div>
+                      </form>
+                    </>
+                  );
+                })()}
               </div>
-              <div className="mb-1 text-zinc-100">{camposIntegracoes[modal.id]!.descricao}</div>
-              <div
-                className="mb-2 text-zinc-400 text-sm"
-                dangerouslySetInnerHTML={{ __html: camposIntegracoes[modal.id]!.instrucoes }}
-              />
-              <form
-                className="space-y-4 mt-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSalvar();
-                }}
-              >
-                {camposIntegracoes[modal.id]!.campos.map((campo: CampoIntegracao) => (
-                  <div key={campo.name} className="flex flex-col">
-                    <label className="text-sm text-zinc-200 font-semibold mb-1">
-                      {campo.label}
-                    </label>
-                    <input
-                      className="rounded-lg bg-zinc-800 border border-zinc-700 px-3 py-2 text-white focus:outline-amarelo"
-                      type={campo.type}
-                      name={campo.name}
-                      value={campos[campo.name] || ""}
-                      onChange={(e) => handleCampoChange(campo.name, e.target.value)}
-                      placeholder={campo.placeholder}
-                      autoComplete="off"
-                    />
-                  </div>
-                ))}
-                <div className="flex justify-end gap-2 mt-6">
-                  <button
-                    type="button"
-                    className="px-5 py-2 rounded-xl bg-zinc-700 text-white hover:bg-zinc-600 font-semibold"
-                    onClick={handleFecharModal}
-                  >
-                    Fechar
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-cyan-600 text-white hover:bg-cyan-700 font-bold"
-                  >
-                    Salvar
-                  </button>
-                </div>
-              </form>
             </div>
-          </div>
-        )}
+          )}
 
         <div className="text-center mt-10 text-zinc-400 text-xs">
-          Painel exclusivo para gestão das integrações estratégicas do SaaS Fut7Pro.
+          {brandText("Painel exclusivo para gestão das integrações estratégicas do SaaS Fut7Pro.")}
         </div>
       </main>
     </>

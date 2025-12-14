@@ -3,16 +3,13 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
 import { PieChart, Pie, Cell, Tooltip as PieTooltip, ResponsiveContainer } from "recharts";
-import type {
-  PagamentoFinanceiro,
-  StatusPagamento,
-  MetodoPagamento,
-} from "@/components/financeiro/types";
+import type { StatusPagamento, MetodoPagamento } from "@/components/financeiro/types";
 import CardResumo from "@/components/financeiro/CardResumo";
+import { useBranding } from "@/hooks/useBranding";
 
-// Cores para status e gráfico
 const STATUS_COLORS: Record<StatusPagamento, string> = {
   Pago: "text-green-400",
   "Em aberto": "text-red-400",
@@ -20,65 +17,148 @@ const STATUS_COLORS: Record<StatusPagamento, string> = {
   Cancelado: "text-zinc-500",
 };
 const GRAFICO_COLORS = ["#32d657", "#ffbe30", "#ff7043", "#4c6fff"];
-
-// Interface de detalhe do racha
-interface RachaDetalhe {
-  id: string;
-  nome: string;
-  presidente: string;
-  plano: string;
-  status: StatusPagamento;
-  criadoEm: string;
-  totalPago: number;
-  inadimplente: boolean;
-  pagamentos: PagamentoFinanceiro[];
-  proximoVencimento?: string;
-  valorProximo?: number;
-  recorrencia?: string;
-}
-
-// Mock para demonstração (troque por fetch real!)
-const MOCK_DETALHE: RachaDetalhe = {
-  id: "1",
-  nome: "Real Matismo",
-  presidente: "Paulo Lima",
-  plano: "Anual Essencial",
-  status: "Pago",
-  criadoEm: "2024-01-10",
-  totalPago: 4500,
-  inadimplente: false,
-  pagamentos: [
-    {
-      data: "2024-01-12",
-      valor: 1500,
-      status: "Pago",
-      referencia: "ANU-2024-001",
-      metodo: "pix",
-      descricao: "Renovação anual do sistema",
-    },
-    {
-      data: "2023-01-12",
-      valor: 1500,
-      status: "Pago",
-      referencia: "ANU-2023-001",
-      metodo: "cartao",
-      descricao: "Renovação anual",
-    },
-    {
-      data: "2022-01-12",
-      valor: 1500,
-      status: "Em aberto",
-      referencia: "ANU-2022-001",
-      metodo: "boleto",
-      descricao: "Fatura anual não paga",
-    },
-  ],
-  proximoVencimento: "2025-01-12",
-  valorProximo: 1500,
-  recorrencia: "Anual",
+const PLAN_LABELS: Record<string, { label: string; interval: "mensal" | "anual" }> = {
+  monthly_essential: { label: "Mensal Essencial", interval: "mensal" },
+  monthly_marketing: { label: "Mensal + Marketing", interval: "mensal" },
+  monthly_enterprise: { label: "Mensal Enterprise", interval: "mensal" },
+  yearly_essential: { label: "Anual Essencial", interval: "anual" },
+  yearly_marketing: { label: "Anual + Marketing", interval: "anual" },
+  yearly_enterprise: { label: "Anual Enterprise", interval: "anual" },
+  mensal_essencial: { label: "Mensal Essencial", interval: "mensal" },
+  mensal_marketing: { label: "Mensal + Marketing", interval: "mensal" },
+  mensal_enterprise: { label: "Mensal Enterprise", interval: "mensal" },
+  anual_essencial: { label: "Anual Essencial", interval: "anual" },
+  anual_marketing: { label: "Anual + Marketing", interval: "anual" },
+  anual_enterprise: { label: "Anual Enterprise", interval: "anual" },
 };
 
+type TenantAdmin = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  createdAt?: string | null;
+};
+type Invoice = {
+  id: string;
+  amount: number;
+  status?: string | null;
+  paidAt?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  createdAt: string;
+  mpPaymentId?: string | null;
+  metadata?: Record<string, any> | null;
+};
+type Subscription = {
+  status?: string | null;
+  planKey?: string | null;
+  amount?: number | null;
+  interval?: string | null;
+  currentPeriodEnd?: string | null;
+  invoices?: Invoice[];
+};
+type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+  subscription?: Subscription | null;
+  admins?: TenantAdmin[] | null;
+  _count?: { users?: number; matches?: number };
+};
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+
+  if (!res.ok) {
+    throw new Error(text || `Request failed with status ${res.status}`);
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text as any;
+  }
+};
+
+function mapStatus(status?: string | null): StatusPagamento {
+  const normalized = (status || "").toLowerCase();
+  if (!status) return "Em aberto";
+  if (normalized.includes("trial")) return "Trial";
+  if (normalized.includes("past") || normalized.includes("due") || normalized.includes("paused")) {
+    return "Em aberto";
+  }
+  if (normalized.includes("cancel") || normalized.includes("expired")) {
+    return "Cancelado";
+  }
+  if (
+    normalized.includes("active") ||
+    normalized.includes("paid") ||
+    normalized.includes("approved") ||
+    normalized.includes("authoriz")
+  ) {
+    return "Pago";
+  }
+  return "Em aberto";
+}
+
+function centsToBrl(cents?: number | null) {
+  if (!cents) return 0;
+  return Number((cents / 100).toFixed(2));
+}
+
+function formatCurrency(value?: number | null) {
+  return (value ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "--";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("pt-BR");
+}
+
+function resolvePlan(planKey?: string | null) {
+  const key = (planKey || "").toLowerCase().replace(/-/g, "_");
+  if (PLAN_LABELS[key]) {
+    return PLAN_LABELS[key];
+  }
+
+  const isYearly = key.includes("year") || key.includes("anual");
+  const isMarketing = key.includes("marketing");
+  const isEnterprise = key.includes("enterprise");
+  const interval = isYearly ? "anual" : "mensal";
+  const labelPrefix = isYearly ? "Anual" : "Mensal";
+
+  if (isEnterprise) return { label: `${labelPrefix} Enterprise`, interval };
+  if (isMarketing) return { label: `${labelPrefix} + Marketing`, interval };
+  if (key) return { label: `${labelPrefix} Essencial`, interval };
+
+  return { label: "Plano n/d", interval: "mensal" as const };
+}
+
+function resolveMetodo(metadata?: Record<string, any> | null): MetodoPagamento {
+  const method =
+    typeof metadata?.metodo === "string"
+      ? metadata.metodo
+      : typeof metadata?.method === "string"
+        ? metadata.method
+        : typeof metadata?.payment_method === "string"
+          ? metadata.payment_method
+          : typeof metadata?.paymentMethod === "string"
+            ? metadata.paymentMethod
+            : "";
+  const normalized = method.toLowerCase();
+  if (normalized.includes("pix")) return "pix";
+  if (normalized.includes("card") || normalized.includes("cart")) return "cartao";
+  if (normalized.includes("boleto")) return "boleto";
+  return "outro";
+}
+
 export default function FinanceiroRachaDetalhePage() {
+  const { brandText } = useBranding({ scope: "superadmin" });
+  const brandLabel = brandText("Fut7Pro");
   const params = useParams();
   const slug =
     typeof params?.slug === "string"
@@ -87,55 +167,62 @@ export default function FinanceiroRachaDetalhePage() {
         ? params?.slug[0]
         : "";
 
-  const [detalhe, setDetalhe] = useState<RachaDetalhe | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: tenant,
+    error,
+    isLoading,
+  } = useSWR<Tenant>(slug ? `/api/superadmin/tenants/${slug}` : null, fetcher);
 
-  const [statusPagamento, setStatusPagamento] = useState<StatusPagamento | "all">("all");
-  const [metodoPagamento, setMetodoPagamento] = useState<MetodoPagamento | "all">("all");
+  const subscription = tenant?.subscription;
+  const statusPagamento = mapStatus(subscription?.status);
+  const planInfo = resolvePlan(subscription?.planKey);
+  const valorPlanoMensal =
+    subscription?.interval === "year" || planInfo.interval === "anual"
+      ? centsToBrl((subscription?.amount ?? 0) / 12)
+      : centsToBrl(subscription?.amount ?? 0);
 
-  const [modalPagamento, setModalPagamento] = useState<PagamentoFinanceiro | null>(null);
-  const [modalNovo, setModalNovo] = useState(false);
+  const pagamentos = useMemo(() => {
+    const invoices = subscription?.invoices ?? [];
+    const mapped = invoices.map((inv) => ({
+      data: formatDate(inv.paidAt ?? inv.periodStart ?? inv.createdAt),
+      valor: centsToBrl(inv.amount),
+      status: mapStatus(inv.status),
+      referencia: inv.mpPaymentId ?? inv.id,
+      metodo: resolveMetodo(inv.metadata),
+      descricao:
+        (typeof inv.metadata?.descricao === "string" && inv.metadata.descricao) ||
+        (typeof inv.metadata?.description === "string" && inv.metadata.description) ||
+        "",
+      raw: inv,
+    }));
 
-  // Funções de ação dos botões (mock)
-  function handleExportPDF() {
-    alert("Exportação PDF mockada! (implemente integração backend)");
-  }
-  function handleBaixarFatura() {
-    alert("Download da fatura mockado! (implemente integração backend)");
-  }
-  function handleMarcarInadimplente() {
-    if (window.confirm("Deseja realmente marcar como inadimplente? (ação mockada)")) {
-      alert("Racha marcado como inadimplente! (mock)");
-      // Aqui você faria update no backend depois
-    }
-  }
+    return mapped.sort((a, b) => {
+      const da = new Date(a.raw.paidAt ?? a.raw.createdAt).getTime();
+      const db = new Date(b.raw.paidAt ?? b.raw.createdAt).getTime();
+      return db - da;
+    });
+  }, [subscription?.invoices]);
 
-  useEffect(() => {
-    setLoading(true);
-    setTimeout(() => {
-      setDetalhe(MOCK_DETALHE);
-      setLoading(false);
-    }, 600);
-    // Para integrar: fetch(`/api/financeiro/racha/${slug}`) ...
-  }, [slug]);
+  const [modalPagamento, setModalPagamento] = useState<(typeof pagamentos)[number] | null>(null);
 
-  const pagamentosFiltrados = Array.isArray(detalhe?.pagamentos)
-    ? detalhe.pagamentos.filter(
-        (p) =>
-          (statusPagamento === "all" || p.status === statusPagamento) &&
-          (metodoPagamento === "all" || p.metodo === metodoPagamento)
-      )
-    : [];
+  const totalPago = pagamentos
+    .filter((p) => p.status === "Pago")
+    .reduce((acc, cur) => acc + (cur.valor ?? 0), 0);
+
+  const invoiceCount = subscription?.invoices?.length ?? 0;
+  const hasSubscription = Boolean(subscription);
 
   const graficoStatus = (() => {
-    if (!detalhe?.pagamentos) return [];
+    if (!pagamentos.length) return [];
     const count: Record<StatusPagamento, number> = {
       Pago: 0,
       "Em aberto": 0,
       Trial: 0,
       Cancelado: 0,
     };
-    detalhe.pagamentos.forEach((p) => (count[p.status] = (count[p.status] ?? 0) + 1));
+    pagamentos.forEach((p) => {
+      count[p.status] = (count[p.status] ?? 0) + 1;
+    });
     return (Object.keys(count) as StatusPagamento[])
       .map((k, i) => ({
         name: k,
@@ -145,83 +232,109 @@ export default function FinanceiroRachaDetalhePage() {
       .filter((item) => item.value > 0);
   })();
 
-  function adicionarPagamentoMock(pag: PagamentoFinanceiro) {
-    if (!detalhe) return;
-    setDetalhe({
-      ...detalhe,
-      pagamentos: [pag, ...detalhe.pagamentos],
-      totalPago: (detalhe.totalPago ?? 0) + (pag.status === "Pago" ? pag.valor : 0),
-    });
-    setModalNovo(false);
+  if (!slug) {
+    return <div className="text-red-400 p-8">Slug do racha invalido.</div>;
   }
 
-  if (loading) return <div className="text-white p-8">Carregando detalhes...</div>;
-  if (!detalhe) return <div className="text-red-400 p-8">Erro ao carregar dados do racha.</div>;
+  if (error) {
+    return (
+      <div className="text-red-400 p-8">
+        Erro ao carregar detalhes financeiros: {error.message || "erro desconhecido"}.
+      </div>
+    );
+  }
+
+  if (isLoading) return <div className="text-white p-8">Carregando detalhes...</div>;
+  if (!tenant) return <div className="text-red-400 p-8">Racha nao encontrado.</div>;
+
+  const tituloPagina = `${tenant.name} - ${brandText("Detalhes Financeiros")}`;
 
   return (
     <>
       <Head>
-        <title>{detalhe.nome} - Detalhes Financeiros | Fut7Pro</title>
+        <title>{tituloPagina}</title>
         <meta
           name="description"
-          content={`Detalhes financeiros e histórico de pagamentos do racha ${detalhe.nome} na plataforma Fut7Pro.`}
+          content={`Detalhes financeiros e historico de pagamentos do racha ${tenant.name} na plataforma ${brandLabel}.`}
         />
         <meta
           name="keywords"
-          content={`racha, financeiro, detalhe, pagamentos, fut7pro, ${detalhe.nome}`}
+          content={`racha, financeiro, detalhe, pagamentos, ${brandLabel}, ${tenant.name}`}
         />
       </Head>
       <main className="bg-zinc-900 min-h-screen px-2 sm:px-4 md:px-8 pt-6 pb-12">
         <div className="max-w-3xl mx-auto">
           <nav className="mb-4">
             <Link href="/superadmin/financeiro" className="text-blue-400 hover:underline">
-              ← Voltar ao Financeiro
+              {"<- Voltar ao Financeiro"}
             </Link>
           </nav>
 
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{detalhe.nome ?? "--"}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">{tenant.name}</h1>
           <div className="flex flex-wrap gap-3 mb-4">
-            <span className="bg-zinc-800 text-white px-3 py-1 rounded">
-              {detalhe.plano ?? "--"}
-            </span>
+            <span className="bg-zinc-800 text-white px-3 py-1 rounded">{planInfo.label}</span>
+            {subscription?.planKey && (
+              <span className="bg-zinc-800 text-white px-3 py-1 rounded">
+                Chave: {subscription.planKey}
+              </span>
+            )}
             <span
-              className={`font-bold px-3 py-1 rounded ${STATUS_COLORS[detalhe.status] ?? "text-white"} bg-zinc-800`}
+              className={`font-bold px-3 py-1 rounded ${STATUS_COLORS[statusPagamento] ?? "text-white"} bg-zinc-800`}
             >
-              {detalhe.status}
+              {statusPagamento}
             </span>
             <span className="bg-zinc-800 text-white px-3 py-1 rounded">
-              Presidente: <b>{detalhe.presidente ?? "--"}</b>
+              Presidente: <b>{tenant.admins?.[0]?.name ?? tenant.admins?.[0]?.email ?? "--"}</b>
             </span>
             <span className="bg-zinc-800 text-white px-3 py-1 rounded">
-              Criado em: {typeof detalhe.criadoEm === "string" ? detalhe.criadoEm : "--"}
+              ID: {tenant.id.slice(0, 8)}...
             </span>
           </div>
+
+          {!hasSubscription && (
+            <div className="mb-4 rounded-xl border border-yellow-500 bg-yellow-500/10 px-4 py-3 text-yellow-200">
+              Nenhuma assinatura foi retornada para este racha. Verifique se o backend esta
+              registrando subscription/planKey e invoices antes de liberar o acesso.
+            </div>
+          )}
+
+          {hasSubscription && invoiceCount === 0 && (
+            <div className="mb-4 rounded-xl border border-yellow-500 bg-yellow-500/10 px-4 py-3 text-yellow-200">
+              Nenhuma fatura retornada pelo backend para este racha. Confirme invoices e status no
+              painel SuperAdmin ou na API antes de marcar como pago/inadimplente.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <CardResumo
               titulo="Total Pago"
-              valor={`R$ ${(detalhe.totalPago ?? 0).toLocaleString("pt-BR")}`}
+              valor={formatCurrency(totalPago)}
               corTexto="text-green-400"
             />
             <CardResumo
-              titulo="Inadimplente"
-              valor={detalhe.inadimplente ? "Sim" : "Não"}
-              corTexto={detalhe.inadimplente ? "text-red-400" : "text-green-400"}
+              titulo="Status"
+              valor={statusPagamento}
+              corTexto={STATUS_COLORS[statusPagamento] ?? "text-white"}
             />
             <CardResumo
-              titulo="Próx. Vencimento"
-              valor={detalhe.proximoVencimento ?? "--"}
+              titulo="Prox. Vencimento"
+              valor={formatDate(subscription?.currentPeriodEnd)}
               corTexto="text-blue-400"
             />
             <CardResumo
-              titulo="Valor Próxima"
-              valor={`R$ ${(detalhe.valorProximo ?? 0).toLocaleString("pt-BR")}`}
+              titulo="Valor Proxima"
+              valor={formatCurrency(valorPlanoMensal)}
               corTexto="text-yellow-400"
+            />
+            <CardResumo
+              titulo="Faturas"
+              valor={pagamentos.length.toString()}
+              corTexto="text-purple-300"
             />
           </div>
 
           <div className="bg-zinc-800 rounded-2xl shadow p-4 mb-8 flex flex-col items-center">
-            <h3 className="text-white font-semibold mb-2 text-base">Distribuição dos Pagamentos</h3>
+            <h3 className="text-white font-semibold mb-2 text-base">Distribuicao dos Pagamentos</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -253,47 +366,31 @@ export default function FinanceiroRachaDetalhePage() {
             </div>
           </div>
 
-          <div className="flex mb-3">
+          <div className="flex flex-wrap gap-3 mb-8">
             <button
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold transition"
-              onClick={() => setModalNovo(true)}
+              className="bg-yellow-500/60 cursor-not-allowed text-black px-4 py-2 rounded font-semibold"
+              title="Exportacao disponivel via painel financeiro principal"
+              disabled
             >
-              + Novo Lançamento
+              Exportar PDF (via painel)
+            </button>
+            <button
+              className="bg-zinc-700 cursor-not-allowed text-white px-4 py-2 rounded font-semibold"
+              disabled
+              title="Baixar fatura ainda nao disponivel nesta tela"
+            >
+              Baixar Fatura
+            </button>
+            <button
+              className="bg-zinc-700 cursor-not-allowed text-white px-4 py-2 rounded font-semibold"
+              disabled
+              title="Marcacao de inadimplencia controlada pelo backend"
+            >
+              Marcar como Inadimplente
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-2 items-end">
-            <label className="text-zinc-300 text-xs font-semibold">
-              Status:&nbsp;
-              <select
-                value={statusPagamento}
-                onChange={(e) => setStatusPagamento(e.target.value as StatusPagamento | "all")}
-                className="bg-zinc-800 text-white rounded px-2 py-1"
-              >
-                <option value="all">Todos</option>
-                <option value="Pago">Pago</option>
-                <option value="Em aberto">Em aberto</option>
-                <option value="Trial">Trial</option>
-                <option value="Cancelado">Cancelado</option>
-              </select>
-            </label>
-            <label className="text-zinc-300 text-xs font-semibold">
-              Método:&nbsp;
-              <select
-                value={metodoPagamento}
-                onChange={(e) => setMetodoPagamento(e.target.value as MetodoPagamento | "all")}
-                className="bg-zinc-800 text-white rounded px-2 py-1"
-              >
-                <option value="all">Todos</option>
-                <option value="pix">Pix</option>
-                <option value="cartao">Cartão</option>
-                <option value="boleto">Boleto</option>
-                <option value="outro">Outro</option>
-              </select>
-            </label>
-          </div>
-
-          <h2 className="text-xl font-bold text-white mb-3">Histórico de Pagamentos</h2>
+          <h2 className="text-xl font-bold text-white mb-3">Historico de Pagamentos</h2>
           <div className="bg-zinc-800 rounded-2xl shadow p-4 overflow-x-auto mb-8">
             <table className="min-w-full text-sm text-white">
               <thead>
@@ -301,25 +398,21 @@ export default function FinanceiroRachaDetalhePage() {
                   <th className="px-3 py-2">Data</th>
                   <th className="px-3 py-2">Valor</th>
                   <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Referência</th>
-                  <th className="px-3 py-2">Método</th>
+                  <th className="px-3 py-2">Referencia</th>
+                  <th className="px-3 py-2">Metodo</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>
               <tbody>
-                {pagamentosFiltrados.length > 0 ? (
-                  pagamentosFiltrados.map((pag, idx) => (
+                {pagamentos.length > 0 ? (
+                  pagamentos.map((pag, idx) => (
                     <tr key={idx} className="border-b border-zinc-700">
-                      <td className="px-3 py-2">
-                        {typeof pag.data === "string" ? pag.data : "--"}
-                      </td>
-                      <td className="px-3 py-2">
-                        R$ {(typeof pag.valor === "number" ? pag.valor : 0).toLocaleString("pt-BR")}
-                      </td>
+                      <td className="px-3 py-2">{pag.data}</td>
+                      <td className="px-3 py-2">{formatCurrency(pag.valor)}</td>
                       <td
                         className={`px-3 py-2 font-semibold ${STATUS_COLORS[pag.status] ?? "text-white"}`}
                       >
-                        {pag.status ?? "--"}
+                        {pag.status}
                       </td>
                       <td className="px-3 py-2">{pag.referencia ?? "--"}</td>
                       <td className="px-3 py-2">{pag.metodo ?? "--"}</td>
@@ -344,36 +437,13 @@ export default function FinanceiroRachaDetalhePage() {
             </table>
           </div>
 
-          {/* Ações rápidas */}
-          <div className="flex flex-wrap gap-3 mb-8">
-            <button
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-semibold transition"
-              onClick={handleExportPDF}
-            >
-              Exportar PDF
-            </button>
-            <button
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded font-semibold transition"
-              onClick={handleBaixarFatura}
-            >
-              Baixar Fatura
-            </button>
-            <button
-              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded font-semibold transition"
-              onClick={handleMarcarInadimplente}
-            >
-              Marcar como Inadimplente
-            </button>
-          </div>
-
-          {/* MODAL DE DETALHE DO PAGAMENTO */}
           {modalPagamento && (
             <Modal onClose={() => setModalPagamento(null)}>
               <div className="w-full max-w-md bg-zinc-900 rounded-2xl p-6 mx-auto">
                 <h3 className="text-lg font-bold text-white mb-3">Detalhes do Pagamento</h3>
                 <div className="mb-2 text-white">
                   <b>Status:</b>{" "}
-                  <span className={STATUS_COLORS[modalPagamento.status]}>
+                  <span className={STATUS_COLORS[modalPagamento.status] ?? "text-white"}>
                     {modalPagamento.status}
                   </span>
                 </div>
@@ -381,20 +451,16 @@ export default function FinanceiroRachaDetalhePage() {
                   <b>Data:</b> {modalPagamento.data ?? "--"}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Valor:</b> R${" "}
-                  {(typeof modalPagamento.valor === "number"
-                    ? modalPagamento.valor
-                    : 0
-                  ).toLocaleString("pt-BR")}
+                  <b>Valor:</b> {formatCurrency(modalPagamento.valor)}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Método:</b> {modalPagamento.metodo}
+                  <b>Metodo:</b> {modalPagamento.metodo}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Referência:</b> {modalPagamento.referencia ?? "--"}
+                  <b>Referencia:</b> {modalPagamento.referencia ?? "--"}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Descrição:</b> {modalPagamento.descricao ?? "--"}
+                  <b>Descricao:</b> {modalPagamento.descricao || "--"}
                 </div>
                 <button
                   onClick={() => setModalPagamento(null)}
@@ -405,148 +471,17 @@ export default function FinanceiroRachaDetalhePage() {
               </div>
             </Modal>
           )}
-
-          {/* MODAL DE NOVO PAGAMENTO */}
-          {modalNovo && (
-            <Modal onClose={() => setModalNovo(false)}>
-              <NovoPagamentoForm
-                onSalvar={adicionarPagamentoMock}
-                onCancel={() => setModalNovo(false)}
-              />
-            </Modal>
-          )}
         </div>
       </main>
     </>
   );
 }
 
-// Modal genérico (acessível, dark, seguro)
 function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/70">
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg">{children}</div>
     </div>
-  );
-}
-
-// Formulário de novo pagamento
-function NovoPagamentoForm({
-  onSalvar,
-  onCancel,
-}: {
-  onSalvar: (p: PagamentoFinanceiro) => void;
-  onCancel: () => void;
-}) {
-  const [data, setData] = useState("");
-  const [valor, setValor] = useState("");
-  const [status, setStatus] = useState<StatusPagamento>("Pago");
-  const [referencia, setReferencia] = useState("");
-  const [metodo, setMetodo] = useState<MetodoPagamento>("pix");
-  const [descricao, setDescricao] = useState("");
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const valorNum = Number(valor);
-    if (!data || !valorNum || !referencia) return alert("Preencha todos os campos obrigatórios!");
-    onSalvar({
-      data,
-      valor: valorNum,
-      status,
-      referencia,
-      metodo,
-      descricao,
-    });
-  }
-
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className="w-full bg-zinc-900 rounded-2xl p-6 flex flex-col gap-3"
-    >
-      <h3 className="text-lg font-bold text-white mb-2">Novo Lançamento</h3>
-      <label className="text-white text-sm">
-        Data*
-        <input
-          type="date"
-          value={data}
-          onChange={(e) => setData(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-          required
-        />
-      </label>
-      <label className="text-white text-sm">
-        Valor* (R$)
-        <input
-          type="number"
-          value={valor}
-          min={1}
-          onChange={(e) => setValor(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-          required
-        />
-      </label>
-      <label className="text-white text-sm">
-        Status*
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value as StatusPagamento)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-        >
-          <option value="Pago">Pago</option>
-          <option value="Em aberto">Em aberto</option>
-          <option value="Trial">Trial</option>
-          <option value="Cancelado">Cancelado</option>
-        </select>
-      </label>
-      <label className="text-white text-sm">
-        Referência*
-        <input
-          type="text"
-          value={referencia}
-          onChange={(e) => setReferencia(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-          required
-        />
-      </label>
-      <label className="text-white text-sm">
-        Método*
-        <select
-          value={metodo}
-          onChange={(e) => setMetodo(e.target.value as MetodoPagamento)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-        >
-          <option value="pix">Pix</option>
-          <option value="cartao">Cartão</option>
-          <option value="boleto">Boleto</option>
-          <option value="outro">Outro</option>
-        </select>
-      </label>
-      <label className="text-white text-sm">
-        Descrição
-        <input
-          type="text"
-          value={descricao}
-          onChange={(e) => setDescricao(e.target.value)}
-          className="w-full mt-1 rounded px-2 py-1 bg-zinc-800 text-white"
-        />
-      </label>
-      <div className="flex gap-3 mt-2">
-        <button
-          type="submit"
-          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded font-semibold flex-1"
-        >
-          Salvar
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="bg-zinc-700 hover:bg-zinc-600 text-white px-4 py-2 rounded font-semibold flex-1"
-        >
-          Cancelar
-        </button>
-      </div>
-    </form>
   );
 }

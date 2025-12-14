@@ -2,6 +2,7 @@
 "use client";
 import Head from "next/head";
 import { useState } from "react";
+import { useBranding } from "@/hooks/useBranding";
 import AdminsResumoCard from "@/components/superadmin/AdminsResumoCard";
 import AdminsTable from "@/components/superadmin/AdminsTable";
 import ModalNovoAdmin from "@/components/superadmin/ModalNovoAdmin";
@@ -9,6 +10,9 @@ import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Role, Permission } from "@/common/enums";
 
 export default function SuperAdminAdminsPage() {
+  const { nome: brandingName } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
   const [open, setOpen] = useState(false);
   const { usuarios, isLoading, rachas } = useSuperAdmin();
 
@@ -28,14 +32,18 @@ export default function SuperAdminAdminsPage() {
   return (
     <>
       <Head>
-        <title>Painel SuperAdmin – Admins e Presidentes de Racha | Fut7Pro</title>
+        <title>{brandText("Painel SuperAdmin – Admins e Presidentes de Racha | Fut7Pro")}</title>
         <meta
           name="description"
-          content="Gerencie todos os presidentes e rachas da sua plataforma SaaS Fut7Pro em um painel seguro, escalável e eficiente."
+          content={brandText(
+            "Gerencie todos os presidentes e rachas da sua plataforma SaaS Fut7Pro em um painel seguro, escalável e eficiente."
+          )}
         />
         <meta
           name="keywords"
-          content="Fut7Pro, SaaS, futebol, presidentes, racha, administração, plataforma esportiva, gestão de clientes"
+          content={brandText(
+            "Fut7Pro, SaaS, futebol, presidentes, racha, administração, plataforma esportiva, gestão de clientes"
+          )}
         />
       </Head>
       <div className="px-4 pt-4 max-w-7xl mx-auto w-full">

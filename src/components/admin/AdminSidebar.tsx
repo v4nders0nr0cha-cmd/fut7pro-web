@@ -21,7 +21,7 @@ import {
 } from "react-icons/fa";
 
 import { Role } from "@/common/enums";
-import { rachaConfig } from "@/config/racha.config";
+import { useBranding } from "@/hooks/useBranding";
 
 interface AdminSidebarProps {
   racha?: {
@@ -107,6 +107,7 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
   const { data: session } = useSession();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const { nome, logo } = useBranding({ scope: "admin" });
 
   const user = session?.user as (typeof session)["user"] & { role?: Role };
   const userRole = (user?.role as Role | undefined) ?? Role.GERENTE;
@@ -160,14 +161,14 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
       >
         <div className="flex flex-col items-center gap-2 mb-8">
           <Image
-            src={user?.image || rachaConfig.logo}
-            alt={user?.name || rachaConfig.nome}
+            src={user?.image || logo}
+            alt={user?.name || nome}
             width={80}
             height={80}
             className="object-contain rounded-full"
           />
           <span className="text-lg font-semibold text-yellow-400 text-center truncate max-w-[180px]">
-            {racha?.name ?? rachaConfig.nome ?? "Seu Racha"}
+            {racha?.name ?? nome ?? "Seu Racha"}
           </span>
           {user && (
             <div className="text-center text-sm text-white">
@@ -191,7 +192,7 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
         </button>
 
         <div className="mt-4 text-xs text-center text-[#8d95a9] px-2 opacity-80 select-none">
-          © {new Date().getFullYear()} {rachaConfig.nome}
+          © {new Date().getFullYear()} {nome}
         </div>
       </aside>
     </>

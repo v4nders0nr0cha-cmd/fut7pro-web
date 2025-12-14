@@ -2,143 +2,161 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { rachaConfig } from "@/config/racha.config";
+import { useTema } from "@/hooks/useTema";
+import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import type { RankingAtleta } from "@/types/estatisticas";
+
+const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 
 export default function Sidebar() {
+  const { logo, nome } = useTema();
+  const currentYear = new Date().getFullYear();
+  const { rankings: topGeral } = usePublicPlayerRankings({
+    type: "geral",
+    period: "year",
+    year: currentYear,
+    limit: 5,
+  });
+  const { rankings: topGols } = usePublicPlayerRankings({
+    type: "artilheiros",
+    period: "year",
+    year: currentYear,
+    limit: 1,
+  });
+  const { rankings: topAssist } = usePublicPlayerRankings({
+    type: "assistencias",
+    period: "year",
+    year: currentYear,
+    limit: 1,
+  });
+
+  const artilheiro = topGols?.[0];
+  const maestro = topAssist?.[0];
+  const melhorDoAno = topGeral?.[0];
+  const goleiro = resolveGoleiro(topGeral);
+
+  const maioresPontuadores = topGeral?.slice(0, 5);
+
+  const artilheiroData = {
+    name: artilheiro?.nome ?? "Artilheiro em atualização",
+    value: artilheiro ? `${artilheiro.gols ?? artilheiro.pontos ?? 0} gols` : "Em processamento",
+    href: artilheiro?.slug ? `/atletas/${artilheiro.slug}` : "/estatisticas/atacantes",
+    image: safeImage(artilheiro?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
+  };
+
+  const maestroData = {
+    name: maestro?.nome ?? "Maestro em atualização",
+    value: maestro ? `${maestro.assistencias ?? 0} assistências` : "Em processamento",
+    href: maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/meias",
+    image: safeImage(maestro?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
+  };
+
+  const melhorDoAnoData = {
+    name: melhorDoAno?.nome ?? "Ranking em atualização",
+    value: melhorDoAno ? `${melhorDoAno.pontos ?? 0} pontos` : "Em processamento",
+    href: melhorDoAno?.slug ? `/atletas/${melhorDoAno.slug}` : "/estatisticas",
+    image: safeImage(melhorDoAno?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
+  };
+
+  const goleiroData = {
+    name: goleiro?.nome ?? melhorDoAnoData.name,
+    value: goleiro ? `${goleiro.pontos ?? 0} pontos` : melhorDoAnoData.value,
+    href: goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/goleiros",
+    image: safeImage(goleiro?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
+  };
+
   return (
     <aside className="w-full h-full bg-[#111] text-white px-1 py-3">
-      {/* Logo e nome do racha */}
       <div className="flex flex-col items-center gap-2 mb-6">
-        <Image
-          src={rachaConfig.logo}
-          alt={`Logo do ${rachaConfig.nome} - sistema de futebol 7`}
-          width={80}
-          height={80}
-          className="object-contain"
-        />
-        <span className="text-xl font-bold text-yellow-400">{rachaConfig.nome}</span>
-      </div>
-
-      {/* Artilheiro do Dia */}
-      <div className="mb-6 bg-[#1A1A1A] rounded-xl p-3 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
-        <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">Artilheiro do Dia</p>
-        <div className="flex items-center gap-3">
+        {logo && (
           <Image
-            src="/images/jogadores/jogador_padrao_01.jpg"
-            alt="Foto do Jogador XPTO"
-            width={48}
-            height={48}
-            className="rounded-md object-cover"
+            src={logo}
+            alt={`Logo do ${nome} - sistema de futebol 7`}
+            width={80}
+            height={80}
+            className="object-contain"
           />
-          <div>
-            <p className="font-semibold text-sm">Jogador XPTO</p>
-            <p className="text-yellow-400 text-xs">3 gols</p>
-          </div>
-        </div>
+        )}
+        <span className="text-xl font-bold text-yellow-400">{nome}</span>
       </div>
 
-      {/* Maestro do Dia */}
-      <div className="mb-6 bg-[#1A1A1A] rounded-xl p-3 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
-        <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">Maestro do Dia</p>
-        <div className="flex items-center gap-3">
-          <Image
-            src="/images/jogadores/jogador_padrao_03.jpg"
-            alt="Foto do Maestro do Dia"
-            width={48}
-            height={48}
-            className="rounded-md object-cover"
-          />
-          <div>
-            <p className="font-semibold text-sm">Camisa 10</p>
-            <p className="text-yellow-400 text-xs">4 assistências</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Artilheiro do Ano */}
       <SidebarPlayerCard
-        title="Artilheiro do Ano"
-        name="Craque Alpha"
-        value="22 gols"
-        href="/estatisticas/atacantes"
-        image="/images/jogadores/jogador_padrao_02.jpg"
+        title="Artilheiro do Dia"
+        name={artilheiroData.name}
+        value={artilheiroData.value}
+        href={artilheiroData.href}
+        image={artilheiroData.image}
         icon="/images/icons/bola-de-ouro.png"
       />
 
-      {/* Maestro do Ano */}
       <SidebarPlayerCard
-        title="Maestro do Ano"
-        name="Camisa 10"
-        value="31 assistências"
-        href="/estatisticas/meias"
-        image="/images/jogadores/jogador_padrao_07.jpg"
+        title="Maestro do Dia"
+        name={maestroData.name}
+        value={maestroData.value}
+        href={maestroData.href}
+        image={maestroData.image}
         icon="/images/icons/chuteira-de-ouro.png"
       />
 
-      {/* Melhor do Ano (agora acima dos Pontuadores) */}
       <SidebarPlayerCard
-        title="Melhor do Ano"
-        name="Mario"
-        value="45 pontos"
-        href="/estatisticas"
-        image="/images/jogadores/jogador_padrao_05.jpg"
-        icon="🏆"
+        title="Artilheiro do Ano"
+        name={artilheiroData.name}
+        value={artilheiroData.value}
+        href="/estatisticas/atacantes"
+        image={artilheiroData.image}
+        icon="/images/icons/bola-de-ouro.png"
       />
 
-      {/* Maiores Pontuadores */}
+      <SidebarPlayerCard
+        title="Meia do Ano"
+        name={maestroData.name}
+        value={maestroData.value}
+        href="/estatisticas/meias"
+        image={maestroData.image}
+        icon="/images/icons/chuteira-de-ouro.png"
+      />
+
+      <SidebarPlayerCard
+        title="Goleiro do Ano"
+        name={goleiroData.name}
+        value={goleiroData.value}
+        href="/estatisticas/goleiros"
+        image={goleiroData.image}
+        icon="/images/icons/luva-de-ouro.png"
+      />
+
+      <SidebarPlayerCard
+        title="Melhor do Ano"
+        name={melhorDoAnoData.name}
+        value={melhorDoAnoData.value}
+        href={melhorDoAnoData.href}
+        image={melhorDoAnoData.image}
+        icon="/images/icons/trofeu-de-ouro.png"
+      />
+
       <SidebarRankingCard
         title="Maiores Pontuadores"
         label="PONTOS"
-        items={[
-          { name: "Mario", value: 45 },
-          { name: "Zico", value: 39 },
-          { name: "Camisa 10", value: 32 },
-          { name: "Ribamar", value: 28 },
-          { name: "Fumaça", value: 26 },
-        ]}
-      />
-
-      {/* Atacante do Ano */}
-      <SidebarPlayerCard
-        title="Atacante do Ano"
-        name="Craque Alpha"
-        value="22 gols"
-        href="/estatisticas/atacantes"
-        image="/images/jogadores/jogador_padrao_06.jpg"
-        icon="🏆"
-      />
-      {/* Meia do Ano */}
-      <SidebarPlayerCard
-        title="Meia do Ano"
-        name="Camisa 10"
-        value="18 assistências"
-        href="/estatisticas/meias"
-        image="/images/jogadores/jogador_padrao_07.jpg"
-        icon="🏆"
-      />
-      {/* Zagueiro do Ano (agora exibe pontos) */}
-      <SidebarPlayerCard
-        title="Zagueiro do Ano"
-        name="Murão"
-        value="37 pontos"
-        href="/estatisticas/zagueiros"
-        image="/images/jogadores/jogador_padrao_08.jpg"
-        icon="🏆"
-      />
-      {/* Goleiro do Ano (agora exibe pontos) */}
-      <SidebarPlayerCard
-        title="Goleiro do Ano"
-        name="Muralha"
-        value="42 pontos"
-        href="/estatisticas/goleiros"
-        image="/images/jogadores/jogador_padrao_09.jpg"
-        icon="/images/icons/luva-de-ouro.png"
+        items={
+          maioresPontuadores && maioresPontuadores.length > 0
+            ? maioresPontuadores.map((p) => ({
+                name: p.nome,
+                value: p.pontos ?? 0,
+                href: p.slug ? `/atletas/${p.slug}` : undefined,
+              }))
+            : [
+                { name: "Jogador 1", value: 0 },
+                { name: "Jogador 2", value: 0 },
+                { name: "Jogador 3", value: 0 },
+                { name: "Jogador 4", value: 0 },
+                { name: "Jogador 5", value: 0 },
+              ]
+        }
       />
     </aside>
   );
 }
 
-// Componente de card de jogador no sidebar
 function SidebarPlayerCard({
   title,
   name,
@@ -159,16 +177,12 @@ function SidebarPlayerCard({
       href={href}
       className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer"
     >
-      {/* Selo Temporário */}
-      <span className="absolute top-2 right-3 text-xs text-gray-300">🕓 Temporário</span>
-
-      {/* Ícone grande abaixo do selo */}
       {icon && (
-        <div className="absolute top-7 right-3">
-          {typeof icon === "string" && icon.startsWith("/") ? (
+        <div className="absolute top-2 right-3">
+          {icon.startsWith("/") ? (
             <Image
               src={icon}
-              alt="Ícone do prêmio"
+              alt={`Ícone ${title}`}
               width={28}
               height={28}
               className="object-contain"
@@ -197,7 +211,6 @@ function SidebarPlayerCard({
   );
 }
 
-// Componente de ranking no sidebar
 function SidebarRankingCard({
   title,
   label,
@@ -205,7 +218,7 @@ function SidebarRankingCard({
 }: {
   title: string;
   label: string;
-  items: { name: string; value: number }[];
+  items: { name: string; value: number; href?: string }[];
 }) {
   return (
     <div className="bg-[#1A1A1A] rounded-xl p-3 mb-4">
@@ -214,13 +227,53 @@ function SidebarRankingCard({
         <span className="text-[10px] uppercase text-gray-400">{label}</span>
       </div>
       <ul className="space-y-1 text-sm text-white">
-        {items.map((item, index) => (
-          <li key={index} className="flex justify-between">
-            <span>{item.name}</span>
-            <span className="text-yellow-400 font-semibold">{item.value}</span>
-          </li>
-        ))}
+        {items.map((item, index) => {
+          const content = (
+            <>
+              <span>{item.name}</span>
+              <span className="text-yellow-400 font-semibold">{item.value}</span>
+            </>
+          );
+
+          return (
+            <li key={index} className="flex justify-between">
+              {item.href ? (
+                <Link
+                  href={item.href}
+                  className="flex justify-between w-full hover:text-yellow-300"
+                >
+                  {content}
+                </Link>
+              ) : (
+                content
+              )}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
+}
+
+function safeImage(src?: string, fallback: string = DEFAULT_IMAGE) {
+  return src && src.trim() ? src : fallback;
+}
+
+function resolveGoleiro(rankings?: RankingAtleta[]) {
+  if (!rankings) return undefined;
+  const goalieTags = [
+    "GOL",
+    "GOLEIRO",
+    "GOLEIRA",
+    "GK",
+    "GL",
+    "GOALKEEPER",
+    "GOALIE",
+    "KEEPER",
+    "GOALKEEP",
+  ];
+  return rankings.find((p) => {
+    const pos = (p.posicao || p.position || "").toUpperCase().replace(/[^A-Z]/g, "");
+    return goalieTags.some((tag) => pos === tag || pos.startsWith(tag));
+  });
 }

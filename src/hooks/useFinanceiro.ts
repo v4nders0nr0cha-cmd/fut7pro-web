@@ -48,6 +48,39 @@ export function useFinanceiro() {
     });
   };
 
+  const updateLancamento = async (id: string, lancamento: Partial<LancamentoFinanceiro>) => {
+    if (!rachaId || !id) return null;
+
+    return apiState.handleAsync(async () => {
+      const response = await financeiroApi.update(id, {
+        ...lancamento,
+        rachaId,
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutate();
+      return response.data;
+    });
+  };
+
+  const deleteLancamento = async (id: string) => {
+    if (!id) return null;
+
+    return apiState.handleAsync(async () => {
+      const response = await financeiroApi.delete(id);
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      await mutate();
+      return response.data;
+    });
+  };
+
   const getRelatorios = async () => {
     if (!rachaId) return null;
 
@@ -89,6 +122,8 @@ export function useFinanceiro() {
     isSuccess: apiState.isSuccess,
     mutate,
     addLancamento,
+    updateLancamento,
+    deleteLancamento,
     getRelatorios,
     getLancamentoById,
     getLancamentosPorTipo,

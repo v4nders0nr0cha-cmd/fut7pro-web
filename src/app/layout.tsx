@@ -1,72 +1,97 @@
 import "@/styles/globals.css";
+import "@/styles/globals.css";
 import { Inter } from "next/font/google";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Script from "next/script";
 import { Providers } from "./providers";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { rachaConfig } from "@/config/racha.config";
 import CookieConsent from "@/components/layout/CookieConsent";
 import MonitoringBootstrap from "@/components/layout/MonitoringBootstrap";
-import Script from "next/script";
+import { getApiBase } from "@/lib/get-api-base";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: {
-    default: rachaConfig.seo.title,
-    template: `%s | ${rachaConfig.nome}`,
-  },
-  description: rachaConfig.seo.description,
-  keywords: rachaConfig.seo.keywords,
-  authors: [{ name: `${rachaConfig.nome} Team` }],
-  creator: rachaConfig.nome,
-  publisher: rachaConfig.nome,
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: rachaConfig.seo.title,
-    description: rachaConfig.seo.description,
-    url: "/",
-    siteName: rachaConfig.nome,
-    images: [
-      {
-        url: rachaConfig.logo,
-        width: 1200,
-        height: 630,
-        alt: `${rachaConfig.nome} Logo`,
-      },
-    ],
-    locale: "pt_BR",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: rachaConfig.seo.title,
-    description: rachaConfig.seo.description,
-    images: [rachaConfig.logo],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+async function fetchBrandingMetadata() {
+  const base = getApiBase();
+  const slug = rachaConfig.slug;
+  try {
+    const res = await fetch(`${base}/public/${slug}/about`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.data as any;
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await fetchBrandingMetadata();
+  const nome = branding?.nome || rachaConfig.nome;
+  const logo = branding?.logoUrl || rachaConfig.logo;
+  const description = rachaConfig.seo.description;
+  const titleDefault = branding?.nome ? `${branding.nome} | Fut7Pro` : rachaConfig.seo.title;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+  return {
+    title: {
+      default: titleDefault,
+      template: `%s | ${nome}`,
+    },
+    description,
+    keywords: rachaConfig.seo.keywords,
+    authors: [{ name: `${nome} Team` }],
+    creator: nome,
+    publisher: nome,
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL(baseUrl),
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title: titleDefault,
+      description,
+      url: "/",
+      siteName: nome,
+      images: [
+        {
+          url: logo,
+          width: 1200,
+          height: 630,
+          alt: `${nome} Logo`,
+        },
+      ],
+      locale: "pt_BR",
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: titleDefault,
+      description,
+      images: [logo],
+    },
+    robots: {
       index: true,
       follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-video-preview": -1,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
     },
-  },
-  verification: {
-    google: "your-google-verification-code",
-  },
-};
+    verification: {
+      google: "your-google-verification-code",
+    },
+  };
+}
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;

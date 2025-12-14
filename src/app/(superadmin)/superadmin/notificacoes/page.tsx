@@ -7,6 +7,7 @@ import { ModalNovaNotificacao } from "@/components/superadmin/ModalNovaNotificac
 import { ModalNotificacaoPreview } from "@/components/superadmin/ModalNotificacaoPreview";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notificacao, NotificacaoTipo } from "@/types/notificacao";
+import { useBranding } from "@/hooks/useBranding";
 
 const tiposNotificacao: NotificacaoTipo[] = [
   "Cobrança/Financeiro",
@@ -26,6 +27,7 @@ const tiposNotificacao: NotificacaoTipo[] = [
 ];
 
 export default function SuperAdminNotificacoesPage() {
+  const { brandText } = useBranding({ scope: "superadmin" });
   const [busca, setBusca] = useState<string>("");
   const [status, setStatus] = useState<string>("todos");
   const [destino, setDestino] = useState<string>("todos");
@@ -49,14 +51,18 @@ export default function SuperAdminNotificacoesPage() {
   return (
     <>
       <Head>
-        <title>Notificações e Mensagens em Massa - Fut7Pro SuperAdmin</title>
+        <title>{brandText("Notificações e Mensagens em Massa - Fut7Pro SuperAdmin")}</title>
         <meta
           name="description"
-          content="Controle e envie notificações para todos os administradores dos rachas cadastrados no Fut7Pro. Ferramenta profissional de comunicação em massa para SaaS."
+          content={brandText(
+            "Controle e envie notificações para todos os administradores dos rachas cadastrados no Fut7Pro. Ferramenta profissional de comunicação em massa para SaaS."
+          )}
         />
         <meta
           name="keywords"
-          content="notificações, mensagens em massa, SaaS, comunicação, admins, Fut7Pro"
+          content={brandText(
+            "notificações, mensagens em massa, SaaS, comunicação, admins, Fut7Pro"
+          )}
         />
       </Head>
       <div className="px-4 py-6 md:px-10 max-w-6xl mx-auto">

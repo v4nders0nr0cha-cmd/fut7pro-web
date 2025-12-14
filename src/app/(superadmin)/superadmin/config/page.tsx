@@ -1,7 +1,8 @@
 "use client";
 
 import Head from "next/head";
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 import {
   FaSave,
   FaLink,
@@ -15,47 +16,51 @@ import {
 } from "react-icons/fa";
 import { z } from "zod";
 import toast, { Toaster } from "react-hot-toast";
+import { useBranding } from "@/hooks/useBranding";
 
 const configSchema = z.object({
   empresa: z.string().min(2, "Nome muito curto").max(40, "Máx 40 letras"),
-  logo: z.string().url("URL inválida").optional(),
+  logoUrl: z.string().url("URL inválida").optional(),
   suporteEmail: z.string().email("E-mail inválido"),
-  dominio: z.string().regex(/^[\w.-]+\.[a-z]{2,}$/, "Domínio inválido"),
-  plano: z.enum(["Enterprise", "Pro", "Essencial"]),
+  dominioPrincipal: z.string().regex(/^[\w.-]+\.[a-z]{2,}$/, "Domínio inválido"),
+  planoAtual: z.string().min(2, "Informe o plano"),
   vencimento: z.string().min(1, "Defina o vencimento"),
-  webhook: z.string().url("URL do webhook inválida").or(z.literal("")),
+  webhookUrl: z.string().url("URL do webhook inválida").or(z.literal("")),
   apiKey: z.string().min(8, "API Key muito curta").or(z.literal("")),
   alertas: z.object({
     financeiro: z.boolean(),
     usuarioNovo: z.boolean(),
     incidentes: z.boolean(),
   }),
-  backup: z.boolean(),
+  backupAtivo: z.boolean(),
 });
 
-const MOCK_CONFIG = {
-  empresa: "Fut7Pro Tecnologia SaaS",
-  logo: "/images/logos/logo_fut7pro.png",
-  suporteEmail: "suporte@fut7pro.com.br",
-  dominio: "fut7pro.com.br",
-  plano: "Enterprise",
-  vencimento: "2025-12-31",
-  webhook: "",
+type SuperAdminConfig = z.infer<typeof configSchema> & {
+  logs?: Array<{ createdAt: string; acao?: string; usuario?: string }>;
+  alertaFinanceiro?: boolean;
+  alertaUsuarioNovo?: boolean;
+  alertaIncidentes?: boolean;
+};
+
+const DEFAULT_CONFIG: SuperAdminConfig = {
+  empresa: "",
+  logoUrl: "/images/logos/logo_fut7pro.png",
+  suporteEmail: "",
+  dominioPrincipal: "",
+  planoAtual: "Enterprise",
+  vencimento: "",
+  webhookUrl: "",
   apiKey: "",
   alertas: {
     financeiro: true,
     usuarioNovo: true,
     incidentes: true,
   },
-  backup: false,
+  backupAtivo: false,
+  logs: [],
 };
 
-const LOGS = [
-  { data: "02/07/2025 03:23", acao: "Logo da empresa alterada", usuario: "SuperAdmin" },
-  { data: "30/06/2025 17:10", acao: "Chave API atualizada", usuario: "SuperAdmin" },
-  { data: "28/06/2025 14:45", acao: "Configuração de alertas salva", usuario: "SuperAdmin" },
-  { data: "20/06/2025 09:05", acao: "Backup completo exportado", usuario: "SuperAdmin" },
-];
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((res) => res.json());
 
 // Modal simples (evite libs pesadas)
 function ConfirmModal({
@@ -97,18 +102,54 @@ function ConfirmModal({
 }
 
 export default function ConfigPage() {
-  const [form, setForm] = useState(MOCK_CONFIG);
+  const { nome: brandingName, logo: brandingLogo } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandLogo = brandingLogo || DEFAULT_CONFIG.logoUrl;
+  const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
+  const defaultConfig = useMemo<SuperAdminConfig>(
+    () => ({
+      ...DEFAULT_CONFIG,
+      empresa: brand,
+      logoUrl: brandLogo,
+    }),
+    [brand, brandLogo]
+  );
+
+  const { data } = useSWR<SuperAdminConfig>("/api/superadmin/config", fetcher);
+  const [form, setForm] = useState<SuperAdminConfig>(defaultConfig);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showModal, setShowModal] = useState<null | "salvar" | "backup">(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (data) {
+      setForm({
+        ...defaultConfig,
+        ...data,
+        alertas: {
+          financeiro:
+            data.alertas?.financeiro ?? data.alertaFinanceiro ?? defaultConfig.alertas.financeiro,
+          usuarioNovo:
+            data.alertas?.usuarioNovo ??
+            data.alertaUsuarioNovo ??
+            defaultConfig.alertas.usuarioNovo,
+          incidentes:
+            data.alertas?.incidentes ?? data.alertaIncidentes ?? defaultConfig.alertas.incidentes,
+        },
+        backupAtivo: data.backupAtivo ?? defaultConfig.backupAtivo,
+      });
+    } else {
+      setForm(defaultConfig);
+    }
+  }, [data, defaultConfig]);
 
   // Preview de logo
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
-      setForm((prev) => ({ ...prev, logo: url }));
-      toast.success("Logo atualizada (apenas preview, não enviada para o servidor)");
+      setForm((prev) => ({ ...prev, logoUrl: url }));
+      toast.success("Logo atualizada (preview)");
     }
   }
 
@@ -164,33 +205,74 @@ export default function ConfigPage() {
     setShowModal("salvar");
   }
 
-  function onConfirmSave() {
+  async function onConfirmSave() {
     setShowModal(null);
-    toast.success("Configurações salvas com sucesso! (mock)");
-    // Aqui vai a chamada real da API futuramente.
+    try {
+      const payload = {
+        empresa: form.empresa,
+        logoUrl: form.logoUrl,
+        suporteEmail: form.suporteEmail,
+        dominioPrincipal: form.dominioPrincipal,
+        planoAtual: form.planoAtual,
+        vencimento: form.vencimento,
+        webhookUrl: form.webhookUrl,
+        apiKey: form.apiKey,
+        alertaFinanceiro: form.alertas.financeiro,
+        alertaUsuarioNovo: form.alertas.usuarioNovo,
+        alertaIncidentes: form.alertas.incidentes,
+        backupAtivo: form.backupAtivo,
+      };
+
+      const res = await fetch("/api/superadmin/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Falha ao salvar configurações");
+      }
+
+      toast.success("Configurações salvas com sucesso.");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao salvar configurações");
+    }
   }
 
   function onBackup() {
     setShowModal("backup");
   }
 
-  function onConfirmBackup() {
+  async function onConfirmBackup() {
     setShowModal(null);
-    toast.success("Backup exportado com sucesso! (mock)");
-    // Aqui vai a chamada real da API futuramente.
+    try {
+      const res = await fetch("/api/admin/relatorios/diagnostics", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Falha ao iniciar diagnóstico/backup");
+      }
+      toast.success("Diagnóstico disparado com sucesso. Monitore os relatórios.");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao disparar diagnóstico");
+    }
   }
 
   return (
     <>
       <Head>
-        <title>Configurações Gerais – Fut7Pro SuperAdmin</title>
+        <title>{`Configurações Gerais – ${brand} SuperAdmin`}</title>
         <meta
           name="description"
-          content="Configure identidade visual, plano SaaS, integrações, alertas, segurança e backup global do Fut7Pro. Plataforma multi-tenant líder em futebol 7."
+          content={brandText(
+            "Configure identidade visual, plano SaaS, integrações, alertas, segurança e backup global do Fut7Pro. Plataforma multi-tenant líder em futebol 7."
+          )}
         />
         <meta
           name="keywords"
-          content="Configurações Fut7Pro, SaaS, plataforma futebol 7, integrações, backup, branding, alerta, multi-tenant"
+          content={brandText(
+            "Configurações Fut7Pro, SaaS, plataforma futebol 7, integrações, backup, branding, alerta, multi-tenant"
+          )}
         />
       </Head>
       <Toaster />
@@ -214,8 +296,9 @@ export default function ConfigPage() {
         <section>
           <h1 className="text-2xl font-bold text-white mb-3">Configurações Gerais do Sistema</h1>
           <p className="text-gray-300 max-w-xl">
-            Gerencie as informações globais do Fut7Pro SaaS. Todos os campos são obrigatórios para
-            garantir o funcionamento e a identidade da sua plataforma.
+            {brandText(
+              "Gerencie as informações globais do Fut7Pro SaaS. Todos os campos são obrigatórios para garantir o funcionamento e a identidade da sua plataforma."
+            )}
           </p>
         </section>
         <form onSubmit={handleSubmit} className="flex flex-col gap-8">
@@ -243,16 +326,16 @@ export default function ConfigPage() {
                 <span className="text-sm text-gray-200">Logo do sistema</span>
                 <div className="flex items-center gap-4 flex-wrap">
                   <img
-                    src={form.logo}
-                    alt="Logo Fut7Pro"
+                    src={form.logoUrl}
+                    alt={`Logo ${brand}`}
                     className="w-16 h-16 rounded-lg bg-zinc-900 border border-zinc-700"
                   />
                   <input
                     type="text"
-                    name="logo"
-                    value={form.logo}
+                    name="logoUrl"
+                    value={form.logoUrl}
                     onChange={handleChange}
-                    className={`input-saaspadrao ${errors.logo ? "border-red-500" : ""}`}
+                    className={`input-saaspadrao ${errors.logoUrl ? "border-red-500" : ""}`}
                     placeholder="URL da logo"
                   />
                   <button
@@ -270,7 +353,7 @@ export default function ConfigPage() {
                     onChange={handleLogoChange}
                   />
                 </div>
-                {errors.logo && <span className="text-xs text-red-400">{errors.logo}</span>}
+                {errors.logoUrl && <span className="text-xs text-red-400">{errors.logoUrl}</span>}
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="flex flex-col gap-1">
@@ -292,14 +375,16 @@ export default function ConfigPage() {
                   <span className="text-sm text-gray-200">Domínio principal</span>
                   <input
                     type="text"
-                    name="dominio"
-                    value={form.dominio}
+                    name="dominioPrincipal"
+                    value={form.dominioPrincipal}
                     onChange={handleChange}
-                    className={`input-saaspadrao ${errors.dominio ? "border-red-500" : ""}`}
+                    className={`input-saaspadrao ${errors.dominioPrincipal ? "border-red-500" : ""}`}
                     required
                     autoComplete="off"
                   />
-                  {errors.dominio && <span className="text-xs text-red-400">{errors.dominio}</span>}
+                  {errors.dominioPrincipal && (
+                    <span className="text-xs text-red-400">{errors.dominioPrincipal}</span>
+                  )}
                 </label>
               </div>
             </div>
@@ -314,17 +399,19 @@ export default function ConfigPage() {
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Plano SaaS</span>
                 <select
-                  name="plano"
-                  value={form.plano}
+                  name="planoAtual"
+                  value={form.planoAtual}
                   onChange={handleChange}
-                  className={`input-saaspadrao ${errors.plano ? "border-red-500" : ""}`}
+                  className={`input-saaspadrao ${errors.planoAtual ? "border-red-500" : ""}`}
                   required
                 >
                   <option value="Enterprise">Enterprise</option>
                   <option value="Pro">Pro</option>
                   <option value="Essencial">Essencial</option>
                 </select>
-                {errors.plano && <span className="text-xs text-red-400">{errors.plano}</span>}
+                {errors.planoAtual && (
+                  <span className="text-xs text-red-400">{errors.planoAtual}</span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Vencimento da licença</span>
@@ -353,13 +440,15 @@ export default function ConfigPage() {
                 <span className="text-sm text-gray-200">Webhook principal (endpoint)</span>
                 <input
                   type="url"
-                  name="webhook"
-                  value={form.webhook}
+                  name="webhookUrl"
+                  value={form.webhookUrl}
                   onChange={handleChange}
-                  className={`input-saaspadrao ${errors.webhook ? "border-red-500" : ""}`}
+                  className={`input-saaspadrao ${errors.webhookUrl ? "border-red-500" : ""}`}
                   placeholder="https://suaapi.com/webhook"
                 />
-                {errors.webhook && <span className="text-xs text-red-400">{errors.webhook}</span>}
+                {errors.webhookUrl && (
+                  <span className="text-xs text-red-400">{errors.webhookUrl}</span>
+                )}
               </label>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-gray-200">Chave de API (global)</span>
@@ -421,8 +510,8 @@ export default function ConfigPage() {
                 <label className="flex gap-2 items-center">
                   <input
                     type="checkbox"
-                    name="backup"
-                    checked={form.backup}
+                    name="backupAtivo"
+                    checked={form.backupAtivo}
                     onChange={handleChange}
                     className="accent-yellow-500 w-4 h-4"
                   />
@@ -462,11 +551,15 @@ export default function ConfigPage() {
             <FaHistory /> Logs Recentes
           </h3>
           <ul className="text-gray-300 text-sm space-y-2">
-            {LOGS.map((log, i) => (
+            {(form.logs ?? []).map((log, i) => (
               <li key={i} className="flex flex-col md:flex-row md:items-center gap-2">
-                <span className="font-mono text-gray-400 min-w-[125px]">{log.data}</span>
-                <span className="font-bold text-white">{log.acao}</span>
-                <span className="ml-auto text-xs text-gray-500">{log.usuario}</span>
+                <span className="font-mono text-gray-400 min-w-[125px]">
+                  {log.createdAt ? new Date(log.createdAt).toLocaleString("pt-BR") : "-"}
+                </span>
+                <span className="font-bold text-white">
+                  {log.acao ?? "Configuração atualizada"}
+                </span>
+                <span className="ml-auto text-xs text-gray-500">{log.usuario ?? "SuperAdmin"}</span>
               </li>
             ))}
           </ul>

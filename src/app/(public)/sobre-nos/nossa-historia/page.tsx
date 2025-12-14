@@ -217,6 +217,9 @@ export default function NossaHistoriaPage() {
                   <div className={`font-bold mb-2 ${campo.cor}`}>
                     {campo.nome} <span className={campo.tag}>({campo.tipo})</span>
                   </div>
+                  {campo.endereco && (
+                    <div className="text-neutral-300 text-xs mb-2">Endereço: {campo.endereco}</div>
+                  )}
                   <iframe
                     src={campo.mapa}
                     width="100%"

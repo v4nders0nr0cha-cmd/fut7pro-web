@@ -13,13 +13,14 @@ import {
 } from "react-icons/fa";
 import { format, parse } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
+import { useBranding } from "@/hooks/useBranding";
 
 // --- MOCKS E TIPAGENS ---
 const MOCKS_RACHAS = [
   {
     id: "1",
-    nome: "Racha Vila União",
-    presidente: "João Silva",
+    nome: "Racha Vila Uniao",
+    presidente: "Joao Silva",
     plano: "Mensal",
     status: "ATIVO",
     atletas: 23,
@@ -29,13 +30,13 @@ const MOCKS_RACHAS = [
     historico: [
       { acao: "Criado", data: "2025-06-10 11:11" },
       { acao: "Primeiro login", data: "2025-06-10 12:01" },
-      { acao: "Última exportação", data: "2025-07-01 14:43" },
+      { acao: "Ultima exportacao", data: "2025-07-01 14:43" },
     ],
     ultimoLogBloqueio: null,
   },
   {
     id: "2",
-    nome: "Racha Galáticos",
+    nome: "Racha Galaticos",
     presidente: "Pedro Souza",
     plano: "Trial",
     status: "BLOQUEADO",
@@ -70,7 +71,7 @@ const MOCKS_RACHAS = [
       { acao: "Bloqueado", data: "2025-07-01 09:00" },
     ],
     ultimoLogBloqueio: {
-      motivo: "Pagamento mensalidade não efetuado",
+      motivo: "Pagamento mensalidade nao efetuado",
       data: "2025-07-01 09:00",
     },
   },
@@ -84,20 +85,24 @@ const STATUS_BADGES = {
 };
 const STATUS_LABELS = {
   ATIVO: "Racha ativo e operando normalmente.",
-  TRIAL: "Período de teste, com limitação de recursos.",
+  TRIAL: "Periodo de teste, com limitacao de recursos.",
   INADIMPLENTE: "Pagamento em atraso, risco de bloqueio.",
-  BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
+  BLOQUEADO: "Acesso bloqueado por inadimplencia ou infracao.",
 };
 
 // --- COMPONENTE PRINCIPAL ---
 export default function RachasCadastradosPage() {
+  const { nome: brandingName } = useBranding({ scope: "superadmin" });
+  const brand = brandingName || "Fut7Pro";
+  const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
+  const brandLabel = brandText("Fut7Pro");
   const [search, setSearch] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
   const [modalRacha, setModalRacha] = useState<any>(null);
   const [impersonate, setImpersonate] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Busca/filtro avançado (já filtrando por enum UPPERCASE)
+  // Busca/filtro avancado (ja filtrando por enum UPPERCASE)
   const rachasFiltrados = useMemo(() => {
     return MOCKS_RACHAS.filter((r) => {
       const busca = search.toLowerCase();
@@ -132,7 +137,7 @@ export default function RachasCadastradosPage() {
     setImpersonate(racha);
   }
 
-  // Mapeia status para exibição
+  // Mapeia status para exibicao
   function statusLabel(status: string) {
     if (status === "ATIVO") return "Ativo";
     if (status === "TRIAL") return "Trial";
@@ -144,14 +149,14 @@ export default function RachasCadastradosPage() {
   return (
     <>
       <Head>
-        <title>Gestão de Rachas – Painel SuperAdmin | Fut7Pro</title>
+        <title>{`Gestao de Rachas - Painel SuperAdmin | ${brandLabel}`}</title>
         <meta
           name="description"
-          content="Administre todos os rachas SaaS na plataforma Fut7Pro: veja status, planos, atletas, bloqueie, exporte, filtre e otimize sua gestão multi-tenant."
+          content={`Administre todos os rachas SaaS na plataforma ${brandLabel}: veja status, planos, atletas, bloqueie, exporte, filtre e otimize sua gestao multi-tenant.`}
         />
         <meta
           name="keywords"
-          content="fut7pro, gestão de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha"
+          content={`gestao de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha, ${brandLabel}`}
         />
       </Head>
       <div className="w-full min-h-screen p-0 m-0">
@@ -191,13 +196,13 @@ export default function RachasCadastradosPage() {
           </select>
           <button
             className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow hover:scale-105 duration-150"
-            onClick={() => alert("Função de exportação será ativada")}
+            onClick={() => alert("Funcao de exportacao sera ativada")}
           >
             <FaDownload /> Exportar .CSV
           </button>
         </div>
 
-        {/* AÇÕES EM MASSA */}
+        {/* ACOES EM MASSA */}
         <div className="flex flex-wrap gap-2 mb-2">
           <button
             className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700"
@@ -239,7 +244,7 @@ export default function RachasCadastradosPage() {
                 <th className="p-3 text-left">Status</th>
                 <th className="p-3 text-center">Atletas</th>
                 <th className="p-3 text-center">Criado em</th>
-                <th className="p-3 text-center">Ações</th>
+                <th className="p-3 text-center">Acoes</th>
                 <th className="p-3 text-center">Bloqueio</th>
               </tr>
             </thead>
@@ -272,7 +277,7 @@ export default function RachasCadastradosPage() {
                     <button
                       className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
                       onClick={() => setModalRacha(r)}
-                      title="Detalhes e Ações"
+                      title="Detalhes e Acoes"
                     >
                       <FaInfoCircle /> Detalhes
                     </button>
@@ -330,11 +335,11 @@ export default function RachasCadastradosPage() {
               <div className="flex flex-col items-center">
                 <FaUserShield className="text-green-400 text-3xl mb-2" />
                 <h3 className="text-xl font-bold mb-1">
-                  Você está “agindo como presidente” deste racha
+                  Voce esta "agindo como presidente" deste racha
                 </h3>
                 <span className="text-sm text-zinc-400 mb-4">
                   <b>{impersonate.nome}</b> (Presidente: {impersonate.presidente})<br />
-                  Todo acesso, edição ou exclusão será registrado em log de auditoria, visível para
+                  Todo acesso, edicao ou exclusao sera registrado em log de auditoria, visivel para
                   a equipe da plataforma.
                 </span>
                 <button

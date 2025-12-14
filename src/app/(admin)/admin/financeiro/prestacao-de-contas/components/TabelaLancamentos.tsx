@@ -1,9 +1,9 @@
-import type { Lancamento } from "../mocks/mockLancamentosFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 import { useState } from "react";
 
 type Props = {
-  lancamentos: Lancamento[];
-  onEdit?: (item: Lancamento) => void;
+  lancamentos: LancamentoFinanceiro[];
+  onEdit?: (item: LancamentoFinanceiro) => void;
 };
 
 export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
@@ -34,43 +34,53 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
               </td>
             </tr>
           )}
-          {exibir.map((l) => (
-            <tr key={l.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
-              <td className="px-2 py-1 font-mono">{l.data.split("-").reverse().join("/")}</td>
-              <td
-                className={`px-2 py-1 ${l.tipo === "Receita" ? "text-green-400" : "text-red-400"}`}
-              >
-                {l.tipo}
-              </td>
-              <td className="px-2 py-1">{l.categoria}</td>
-              <td className="px-2 py-1">{l.descricao}</td>
-              <td
-                className={`px-2 py-1 font-bold ${l.valor >= 0 ? "text-green-300" : "text-red-300"}`}
-              >
-                R$ {l.valor.toFixed(2)}
-              </td>
-              <td className="px-2 py-1">
-                {l.comprovante ? (
-                  <img
-                    src={l.comprovante}
-                    alt="Comprovante financeiro do racha Fut7Pro"
-                    className="w-8 h-8 rounded shadow object-contain"
-                  />
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
-              </td>
-              <td className="px-2 py-1">
-                <button
-                  className="text-xs text-yellow-400 hover:underline"
-                  onClick={() => onEdit && onEdit(l)}
-                  type="button"
+          {exibir.map((l) => {
+            const tipo =
+              l.tipo && l.tipo.toLowerCase().includes("desp")
+                ? "Despesa"
+                : l.valor < 0
+                  ? "Despesa"
+                  : "Receita";
+            const valor = l.valor ?? 0;
+
+            return (
+              <tr key={l.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
+                <td className="px-2 py-1 font-mono">{l.data?.split("-").reverse().join("/")}</td>
+                <td
+                  className={`px-2 py-1 ${tipo === "Receita" ? "text-green-400" : "text-red-400"}`}
                 >
-                  Editar
-                </button>
-              </td>
-            </tr>
-          ))}
+                  {tipo}
+                </td>
+                <td className="px-2 py-1">{l.categoria || "-"}</td>
+                <td className="px-2 py-1">{l.descricao}</td>
+                <td
+                  className={`px-2 py-1 font-bold ${valor >= 0 ? "text-green-300" : "text-red-300"}`}
+                >
+                  R$ {valor.toFixed(2)}
+                </td>
+                <td className="px-2 py-1">
+                  {l.comprovanteUrl ? (
+                    <img
+                      src={l.comprovanteUrl}
+                      alt="Comprovante financeiro do racha Fut7Pro"
+                      className="w-8 h-8 rounded shadow object-contain"
+                    />
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )}
+                </td>
+                <td className="px-2 py-1">
+                  <button
+                    className="text-xs text-yellow-400 hover:underline"
+                    onClick={() => onEdit && onEdit(l)}
+                    type="button"
+                  >
+                    Editar
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       {lancamentos.length > limit && (

@@ -147,6 +147,8 @@ export const partidasApi = {
 export const financeiroApi = {
   getAll: (rachaId: string) => apiClient.get(`/admin/financeiro?rachaId=${rachaId}`),
   create: (data: ApiRequestData) => apiClient.post("/admin/financeiro", data),
+  update: (id: string, data: ApiRequestData) => apiClient.put(`/admin/financeiro/${id}`, data),
+  delete: (id: string) => apiClient.delete(`/admin/financeiro/${id}`),
   getRelatorios: (rachaId: string) =>
     apiClient.get(`/admin/financeiro/relatorios?rachaId=${rachaId}`),
 };

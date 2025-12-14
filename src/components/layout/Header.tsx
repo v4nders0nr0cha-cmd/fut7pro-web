@@ -10,7 +10,6 @@ import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useNotificationBadge } from "@/hooks/useNotificationBadge";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -37,11 +36,11 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         <Link
           href="/"
           className="flex items-center gap-3 hover:opacity-90 transition-all"
-          aria-label={`Página inicial ${rachaConfig.nome}`}
+          aria-label={`Página inicial ${nome}`}
         >
           <Image
             src={logo}
-            alt={`Logo ${rachaConfig.nome} - sistema de futebol`}
+            alt={`Logo ${nome} - sistema de futebol`}
             width={44}
             height={44}
             className="object-contain rounded"

@@ -3,10 +3,13 @@
 import Head from "next/head";
 import { useState } from "react";
 import { FaSearch, FaBook, FaVideo, FaFire, FaRegQuestionCircle, FaYoutube } from "react-icons/fa";
+import { useAboutPublic } from "@/hooks/useAbout";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
 
 type ArtigoAjuda = {
-  id: number;
-  categoria: string;
+  id?: number | string;
+  categoria?: string;
   titulo: string;
   conteudo: string;
   destaque?: boolean;
@@ -260,22 +263,7 @@ const videosMock = [
   {
     id: 1,
     titulo: "Tour pelo Painel Fut7Pro",
-    url: "https://www.youtube.com/embed/6mR8Z-gmK1g", // Mock
-  },
-  {
-    id: 2,
-    titulo: "Como cadastrar uma partida rapidamente",
-    url: "https://www.youtube.com/embed/vYF6XJtsb9w", // Mock
-  },
-  {
-    id: 3,
-    titulo: "Como cadastrar mensalidade e cobrança",
-    url: "https://www.youtube.com/embed/2Vv-BfVoq4g", // Mock
-  },
-  {
-    id: 4,
-    titulo: "Dicas para organizar sorteios inteligentes",
-    url: "https://www.youtube.com/embed/jNQXAC9IVRw", // Mock
+    url: "https://www.youtube.com/embed/6mR8Z-gmK1g",
   },
 ];
 
@@ -294,18 +282,26 @@ const categorias = [
 ];
 
 export default function CentralAjudaPage() {
+  const { tenantSlug } = useRacha();
+  const slug = tenantSlug || rachaConfig.slug;
+  const { about } = useAboutPublic(slug);
   const [busca, setBusca] = useState("");
+  const artigosOrigem =
+    (about as any)?.ajudaArtigos && Array.isArray((about as any).ajudaArtigos)
+      ? ((about as any).ajudaArtigos as ArtigoAjuda[])
+      : artigosMock;
   // Busca filtra só Tópicos em Destaque + Artigos e Tutoriais
-  const artigosFiltrados = artigosMock.filter(
+  const artigosFiltrados = artigosOrigem.filter(
     (a) =>
       a.titulo.toLowerCase().includes(busca.toLowerCase()) ||
       a.conteudo.toLowerCase().includes(busca.toLowerCase())
   );
-
   const artigosDestaqueFiltrados = artigosFiltrados.filter((a) => a.destaque);
   const artigosPorCategoriaFiltrados = (cat: string) =>
     artigosFiltrados.filter((a) => a.categoria === cat);
-
+  const categoriasDinamicas = Array.from(
+    new Set([...artigosOrigem.map((a) => a.categoria).filter(Boolean), ...categorias])
+  );
   return (
     <>
       <Head>
@@ -359,9 +355,9 @@ export default function CentralAjudaPage() {
             <span className="text-lg font-bold text-yellow-400">Vídeos Rápidos</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {videosMock.map((video) => (
+            {(about?.videos ?? videosMock).map((video, idx) => (
               <div
-                key={video.id}
+                key={(video as any).id ?? idx}
                 className="bg-[#232323] rounded-lg p-3 shadow flex flex-col items-center"
               >
                 <iframe
@@ -427,7 +423,7 @@ export default function CentralAjudaPage() {
             <FaRegQuestionCircle className="text-yellow-400" />
             <span className="text-lg font-bold text-yellow-400">Artigos e Tutoriais</span>
           </div>
-          {categorias.map((cat) => (
+          {categoriasDinamicas.map((cat) => (
             <div key={cat} className="mb-5">
               <div className="font-bold text-gray-200 mb-2 mt-4">{cat}</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

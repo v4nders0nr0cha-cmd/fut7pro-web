@@ -1,11 +1,13 @@
 // src/app/superadmin/login/page.tsx
 "use client";
 import { useState } from "react";
-import { rachaConfig } from "@/config/racha.config";
+import { useBranding } from "@/hooks/useBranding";
 
 export default function SuperAdminLogin() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const { nome } = useBranding({ scope: "superadmin" });
+  const brandName = nome || "Fut7Pro";
 
   // Autenticação de SuperAdmin será implementada com NextAuth e validação de roles
   function handleLogin(e: React.FormEvent) {
@@ -23,7 +25,7 @@ export default function SuperAdminLogin() {
         autoComplete="off"
       >
         <h1 className="text-xl font-bold mb-6 text-center text-white">
-          Painel SuperAdmin {rachaConfig.nome}
+          Painel SuperAdmin {brandName}
         </h1>
         <input
           type="email"

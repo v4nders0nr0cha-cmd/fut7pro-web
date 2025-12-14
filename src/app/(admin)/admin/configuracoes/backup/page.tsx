@@ -2,6 +2,7 @@
 
 import Head from "next/head";
 import { useRef, useState } from "react";
+import useSWR from "swr";
 import {
   FaCloudDownloadAlt,
   FaCloudUploadAlt,
@@ -12,16 +13,47 @@ import {
 } from "react-icons/fa";
 
 type BackupStatus = "ok" | "pendente" | "erro";
+type BackupRecord = {
+  id?: string;
+  createdAt?: string;
+  status?: string;
+  location?: string;
+  message?: string;
+};
+type BackupHistoryResponse = { history?: BackupRecord[]; data?: BackupRecord[] } | BackupRecord[];
+
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((r) => r.json());
 
 export default function BackupPage() {
   const [status, setStatus] = useState<BackupStatus>("ok");
   const [file, setFile] = useState<File | null>(null);
   const [mensagem, setMensagem] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    data: historicoResposta,
+    isLoading: loadingHistorico,
+    mutate: reloadHistorico,
+  } = useSWR<BackupHistoryResponse>("/api/admin/relatorios/diagnostics", fetcher);
 
-  const handleBackup = () => {
-    setMensagem("Backup gerado e pronto para download!");
-    setTimeout(() => setMensagem(""), 3000);
+  const historico: BackupRecord[] = Array.isArray(historicoResposta)
+    ? historicoResposta
+    : historicoResposta?.history || historicoResposta?.data || [];
+
+  const handleBackup = async () => {
+    setMensagem("Gerando diagnóstico e snapshot do racha...");
+    try {
+      const res = await fetch("/api/admin/relatorios/diagnostics", { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.message || "Falha ao gerar diagnóstico");
+      }
+      setMensagem("Backup/diagnóstico disparado com sucesso. Acompanhe em Relatórios > Auditoria.");
+      reloadHistorico();
+    } catch (err: any) {
+      setMensagem(err?.message || "Erro ao disparar diagnóstico/backup.");
+    } finally {
+      setTimeout(() => setMensagem(""), 5000);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,9 +67,8 @@ export default function BackupPage() {
       setMensagem("Selecione um arquivo de backup válido (.zip ou .json).");
       return;
     }
-    setMensagem("Backup restaurado com sucesso! Os dados serão atualizados em breve.");
-    setTimeout(() => setMensagem(""), 3500);
-    setFile(null);
+    setMensagem("Restaurar backup ainda requer fluxo manual com o suporte. Em breve no painel.");
+    setTimeout(() => setMensagem(""), 4500);
   };
 
   return (
@@ -115,11 +146,32 @@ export default function BackupPage() {
               <span className="font-bold text-yellow-300 text-lg">Histórico de Backups</span>
             </div>
             <div className="text-gray-200 text-sm">
-              Consulte todos os backups feitos manualmente, datas e quem fez. (Em breve)
+              Consulte todos os backups feitos, datas e status retornados pela API.
             </div>
-            <span className="text-xs bg-yellow-800 text-yellow-200 px-2 py-1 rounded w-fit mt-2">
-              Em breve
-            </span>
+            <div className="mt-2 space-y-2 text-xs text-gray-300">
+              {loadingHistorico && <div>Carregando histórico...</div>}
+              {!loadingHistorico && historico.length === 0 && (
+                <div className="text-gray-400">Nenhum registro retornado ainda.</div>
+              )}
+              {historico.map((item, idx) => (
+                <div
+                  key={item.id ?? idx}
+                  className="border border-yellow-800 rounded-lg px-3 py-2 bg-[#1b1b1b] flex flex-col gap-1"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-gray-400">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : "-"}
+                    </span>
+                    <span className="text-yellow-300 font-semibold uppercase text-[11px]">
+                      {item.status ?? "executado"}
+                    </span>
+                  </div>
+                  <span className="text-gray-200">
+                    {item.message || item.location || "Backup disparado via painel."}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className="bg-[#232323] rounded-lg p-5 shadow border-l-4 border-yellow-700 flex flex-col gap-2 animate-fadeIn">
             <div className="flex items-center gap-2">
@@ -136,7 +188,7 @@ export default function BackupPage() {
           </div>
         </div>
 
-        {/* Mensagem mock de status */}
+        {/* Mensagem de status */}
         {mensagem && (
           <div className="bg-[#222] border border-yellow-700 rounded-lg p-3 text-yellow-200 font-semibold text-center mb-8 animate-fadeIn">
             {mensagem}

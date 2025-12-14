@@ -1,142 +1,147 @@
 "use client";
 import { useState } from "react";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
 
-// Tipagem para sugestão individual
-type Sugestao = {
-  id: number;
+type SugestaoLocal = {
+  id: string;
   mensagem: string;
   data: string;
-  status: "Aguardando" | "Respondida" | "Recusada";
-  resposta?: string;
+  status: "Enviada";
 };
 
-// Sugestões do atleta logado (mock - depois troca para API)
-const MOCK_SUGESTOES: Sugestao[] = [
-  {
-    id: 1,
-    mensagem: "O campo poderia ter placar digital.",
-    data: "12/07/2025",
-    status: "Aguardando",
-  },
-  {
-    id: 2,
-    mensagem: "Adicionar ranking de assistências no perfil.",
-    data: "08/07/2025",
-    status: "Respondida",
-    resposta: "Obrigado! Essa funcionalidade já está em desenvolvimento.",
-  },
-  {
-    id: 3,
-    mensagem: "Criar aviso automático para aniversariantes.",
-    data: "01/07/2025",
-    status: "Recusada",
-  },
-];
+function formatDate(value?: string | number | Date) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("pt-BR");
+}
 
 export default function SugestoesPage() {
-  const [sugestoes, setSugestoes] = useState<Sugestao[]>(MOCK_SUGESTOES);
-  const [nova, setNova] = useState("");
+  const { tenantSlug } = useRacha();
+  const slug = tenantSlug || rachaConfig.slug;
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [mensagem, setMensagem] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [sugestoes, setSugestoes] = useState<SugestaoLocal[]>([]);
 
-  function enviarSugestao() {
-    if (nova.trim().length < 6) {
-      setFeedback("Digite uma sugestão mais detalhada.");
+  const enviarSugestao = async () => {
+    setErro(null);
+    setFeedback("");
+    if (mensagem.trim().length < 6 || !nome.trim() || !email.trim()) {
+      setErro("Preencha nome, email e uma sugestao com pelo menos 6 caracteres.");
       return;
     }
+
     setEnviando(true);
-    setTimeout(() => {
-      setSugestoes([
-        {
-          id: Math.max(0, ...sugestoes.map((s) => s.id)) + 1,
-          mensagem: nova,
-          data: new Date().toLocaleDateString(),
-          status: "Aguardando",
-        },
-        ...sugestoes,
-      ]);
-      setNova("");
-      setFeedback("Sugestão enviada! Em breve será analisada pelo admin.");
+    try {
+      const body = {
+        name: nome.trim(),
+        email: email.trim(),
+        subject: "Sugestao",
+        message: mensagem.trim(),
+        slug,
+      };
+
+      const res = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.message || data?.error || "Falha ao enviar sugestao.");
+      }
+
+      const novaSugestao: SugestaoLocal = {
+        id: typeof data?.id === "string" ? data.id : `local-${Date.now()}`,
+        mensagem: typeof data?.message === "string" ? data.message : body.message,
+        data: formatDate(data?.createdAt),
+        status: "Enviada",
+      };
+
+      setSugestoes([novaSugestao, ...sugestoes]);
+      setMensagem("");
+      setFeedback("Sugestao enviada! O administrador recebera no painel.");
+    } catch (error: any) {
+      setErro(error?.message || "Erro ao enviar sugestao.");
+    } finally {
       setEnviando(false);
-    }, 900);
-  }
+    }
+  };
 
   return (
     <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-xl mx-auto w-full px-4">
-      <h1 className="text-xl font-bold text-zinc-100 mb-4">Sugestões & Feedback</h1>
+      <h1 className="text-xl font-bold text-zinc-100 mb-4">Sugestoes & Feedback</h1>
 
       <div className="mb-6 bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
         <p className="text-yellow-300 font-bold mb-1">
-          Envie suas ideias e sugestões ao administrador do racha!
+          Envie suas ideias e sugestoes ao administrador do racha!
         </p>
         <p className="text-zinc-300 text-sm">
-          Seu feedback ajuda a melhorar o sistema e o funcionamento do racha. Escreva sua sugestão
-          abaixo:
+          Seu feedback ajuda a melhorar o sistema e o funcionamento do racha. Preencha seus dados e
+          envie sua sugestao.
         </p>
       </div>
 
-      <div className="mb-8">
+      <div className="mb-8 space-y-2">
+        <input
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 outline-none"
+          placeholder="Seu nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          maxLength={60}
+          disabled={enviando}
+        />
+        <input
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 outline-none"
+          placeholder="Seu email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          maxLength={80}
+          disabled={enviando}
+          type="email"
+        />
         <textarea
-          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 mb-2 min-h-[60px] outline-none"
-          placeholder="Digite sua sugestão ou ideia (mínimo 6 caracteres)..."
-          value={nova}
-          onChange={(e) => {
-            setNova(e.target.value);
-            setFeedback("");
-          }}
-          maxLength={250}
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 min-h-[80px] outline-none"
+          placeholder="Digite sua sugestao ou ideia (minimo 6 caracteres)..."
+          value={mensagem}
+          onChange={(e) => setMensagem(e.target.value)}
+          maxLength={500}
           disabled={enviando}
         />
         <button
           className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded shadow disabled:bg-gray-500 transition"
           onClick={enviarSugestao}
-          disabled={enviando || nova.trim().length < 6}
+          disabled={enviando}
         >
-          {enviando ? "Enviando..." : "Enviar Sugestão"}
+          {enviando ? "Enviando..." : "Enviar Sugestao"}
         </button>
         {feedback && <div className="mt-2 text-sm text-green-400">{feedback}</div>}
+        {erro && <div className="mt-2 text-sm text-red-400">{erro}</div>}
+        <div className="text-xs text-zinc-400">
+          Enviaremos a resposta para o email informado. Sua mensagem fica registrada no painel
+          admin.
+        </div>
       </div>
 
-      <h2 className="text-lg font-bold text-yellow-300 mb-3">Minhas Sugestões Enviadas</h2>
+      <h2 className="text-lg font-bold text-yellow-300 mb-3">Sugestoes enviadas nesta sessao</h2>
       <ul className="space-y-5">
         {sugestoes.length === 0 && (
-          <li className="text-zinc-400">Você ainda não enviou nenhuma sugestão.</li>
+          <li className="text-zinc-400">Nenhuma sugestao enviada ainda.</li>
         )}
         {sugestoes.map((s) => (
-          <li
-            key={s.id}
-            className={`bg-zinc-800 rounded-lg p-4 border-l-4
-            ${
-              s.status === "Respondida"
-                ? "border-green-600"
-                : s.status === "Aguardando"
-                  ? "border-yellow-400"
-                  : "border-red-400"
-            }`}
-          >
+          <li key={s.id} className="bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
             <div className="flex justify-between items-center mb-1">
               <span className="font-bold text-yellow-200">{s.data}</span>
-              <span
-                className={`px-2 py-0.5 rounded text-xs font-bold
-                ${
-                  s.status === "Respondida"
-                    ? "bg-green-800 text-green-300"
-                    : s.status === "Aguardando"
-                      ? "bg-yellow-800 text-yellow-300"
-                      : "bg-red-800 text-red-300"
-                }`}
-              >
-                {s.status === "Aguardando" && "Aguardando"}
-                {s.status === "Respondida" && "Respondida"}
-                {s.status === "Recusada" && "Recusada"}
+              <span className="px-2 py-0.5 rounded text-xs font-bold bg-yellow-800 text-yellow-300">
+                {s.status}
               </span>
             </div>
             <div className="text-gray-200 mb-1">{s.mensagem}</div>
-            {s.status === "Respondida" && s.resposta && (
-              <div className="bg-zinc-900 text-green-400 text-sm rounded p-2">
-                <b>Resposta do admin:</b> {s.resposta}
-              </div>
-            )}
           </li>
         ))}
       </ul>
