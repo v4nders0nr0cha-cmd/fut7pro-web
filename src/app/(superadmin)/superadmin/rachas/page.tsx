@@ -1,7 +1,8 @@
 "use client";
 
 import Head from "next/head";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
 import {
   FaSearch,
   FaDownload,
@@ -11,71 +12,41 @@ import {
   FaHistory,
   FaArrowRight,
 } from "react-icons/fa";
-import { format, parse } from "date-fns";
+import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
 import { useBranding } from "@/hooks/useBranding";
 
-// --- MOCKS E TIPAGENS ---
-const MOCKS_RACHAS = [
-  {
-    id: "1",
-    nome: "Racha Vila Uniao",
-    presidente: "Joao Silva",
-    plano: "Mensal",
-    status: "ATIVO",
-    atletas: 23,
-    criadoEm: "2025-06-10",
-    ultimoAcesso: "2025-07-01 19:00",
-    bloqueado: false,
-    historico: [
-      { acao: "Criado", data: "2025-06-10 11:11" },
-      { acao: "Primeiro login", data: "2025-06-10 12:01" },
-      { acao: "Ultima exportacao", data: "2025-07-01 14:43" },
-    ],
-    ultimoLogBloqueio: null,
-  },
-  {
-    id: "2",
-    nome: "Racha Galaticos",
-    presidente: "Pedro Souza",
-    plano: "Trial",
-    status: "BLOQUEADO",
-    atletas: 18,
-    criadoEm: "2025-06-05",
-    ultimoAcesso: "2025-06-30 21:10",
-    bloqueado: true,
-    historico: [
-      { acao: "Criado", data: "2025-06-05 10:00" },
-      { acao: "Primeiro login", data: "2025-06-05 10:05" },
-      { acao: "Bloqueado", data: "2025-06-15 08:00" },
-    ],
-    ultimoLogBloqueio: {
-      motivo: "Trial expirou sem pagamento",
-      data: "2025-06-15 08:00",
-    },
-  },
-  {
-    id: "3",
-    nome: "Racha Real Matismo",
-    presidente: "Paulo Lima",
-    plano: "Mensal",
-    status: "INADIMPLENTE",
-    atletas: 27,
-    criadoEm: "2025-06-02",
-    ultimoAcesso: "2025-07-01 15:44",
-    bloqueado: true,
-    historico: [
-      { acao: "Criado", data: "2025-06-02 08:00" },
-      { acao: "Primeiro login", data: "2025-06-02 09:30" },
-      { acao: "Status alterado para Inadimplente", data: "2025-06-30 19:00" },
-      { acao: "Bloqueado", data: "2025-07-01 09:00" },
-    ],
-    ultimoLogBloqueio: {
-      motivo: "Pagamento mensalidade nao efetuado",
-      data: "2025-07-01 09:00",
-    },
-  },
-];
+type Tenant = {
+  id: string;
+  name?: string;
+  slug?: string;
+  status?: string | null;
+  planKey?: string | null;
+  plan?: string | null;
+  playersCount?: number | null;
+  athletes?: number | null;
+  adminsCount?: number | null;
+  ownerName?: string | null;
+  ownerEmail?: string | null;
+  createdAt?: string | null;
+  blocked?: boolean | null;
+  trialEndsAt?: string | null;
+  lastLoginAt?: string | null;
+  updatedAt?: string | null;
+};
+
+type TenantsResponse = { results?: Tenant[] };
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: "no-store" });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || `Request failed ${res.status}`);
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text as any;
+  }
+};
 
 const STATUS_BADGES = {
   ATIVO: "bg-green-700 text-green-200",
@@ -83,6 +54,7 @@ const STATUS_BADGES = {
   INADIMPLENTE: "bg-red-700 text-red-200",
   BLOQUEADO: "bg-gray-600 text-gray-200",
 };
+
 const STATUS_LABELS = {
   ATIVO: "Racha ativo e operando normalmente.",
   TRIAL: "Periodo de teste, com limitacao de recursos.",
@@ -90,7 +62,36 @@ const STATUS_LABELS = {
   BLOQUEADO: "Acesso bloqueado por inadimplencia ou infracao.",
 };
 
-// --- COMPONENTE PRINCIPAL ---
+function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
+  const value = (raw || "").toUpperCase();
+  if (blocked) return "BLOQUEADO";
+  if (value.includes("INAD")) return "INADIMPLENTE";
+  if (value.includes("TRIAL")) return "TRIAL";
+  if (value.includes("BLOCK")) return "BLOQUEADO";
+  if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
+  return value || "ATIVO";
+}
+
+function normalizePlan(planKey?: string | null, plan?: string | null) {
+  const key = (planKey || plan || "").toLowerCase();
+  if (!key) return "Plano n/d";
+  if (key.includes("marketing")) {
+    return key.includes("year") || key.includes("anual") ? "Anual + Marketing" : "Mensal + Marketing";
+  }
+  if (key.includes("enterprise")) {
+    return key.includes("year") || key.includes("anual") ? "Anual Enterprise" : "Mensal Enterprise";
+  }
+  if (key.includes("year") || key.includes("anual")) return "Anual Essencial";
+  return "Mensal Essencial";
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "--";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return format(d, "dd/MM/yyyy");
+}
+
 export default function RachasCadastradosPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -102,30 +103,65 @@ export default function RachasCadastradosPage() {
   const [impersonate, setImpersonate] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Busca/filtro avancado (ja filtrando por enum UPPERCASE)
+  const { data, isLoading, error } = useSWR<TenantsResponse | Tenant[]>(
+    "/api/superadmin/tenants",
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
+  const tenants: Tenant[] = useMemo(() => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray((data as TenantsResponse).results)) return (data as TenantsResponse).results!;
+    return [];
+  }, [data]);
+
+  const rachas = useMemo(
+    () =>
+      tenants.map((t) => {
+        const status = normalizeStatus(t.status, t.blocked);
+        return {
+          id: t.id,
+          nome: t.name || t.slug || "Racha sem nome",
+          presidente: t.ownerName || t.ownerEmail || "--",
+          plano: normalizePlan(t.planKey, t.plan),
+          status,
+          atletas:
+            t.playersCount ??
+            t.athletes ??
+            t.adminsCount ??
+            (t as any)?._count?.players ??
+            0,
+          criadoEm: t.createdAt || "",
+          bloqueado: status === "BLOQUEADO",
+          historico: [
+            { acao: "Criado", data: t.createdAt || "" },
+            { acao: "Ultima atualizacao", data: t.updatedAt || "" },
+          ].filter((h) => h.data),
+          ultimoLogBloqueio: t.blocked ? { motivo: "Bloqueado no backend", data: t.updatedAt } : null,
+        };
+      }),
+    [tenants]
+  );
+
   const rachasFiltrados = useMemo(() => {
-    return MOCKS_RACHAS.filter((r) => {
-      const busca = search.toLowerCase();
+    const busca = search.toLowerCase();
+    return rachas.filter((r) => {
       const matchNome = r.nome.toLowerCase().includes(busca);
       const matchPresidente = r.presidente.toLowerCase().includes(busca);
-      // Se vier filtro visual, transforma para enum
       const filtro = filtroStatus.toUpperCase();
-      const matchStatus = filtro
-        ? r.status === filtro || (filtro === "BLOQUEADO" && r.bloqueado)
-        : true;
+      const matchStatus = filtro ? r.status === filtro : true;
       return (matchNome || matchPresidente) && matchStatus;
     });
-  }, [search, filtroStatus]);
+  }, [rachas, search, filtroStatus]);
 
-  // Contadores (tudo por enum UPPERCASE)
-  const total = MOCKS_RACHAS.length;
-  const ativos = MOCKS_RACHAS.filter((r) => r.status === "ATIVO").length;
-  const trials = MOCKS_RACHAS.filter((r) => r.status === "TRIAL").length;
-  const inadimplentes = MOCKS_RACHAS.filter((r) => r.status === "INADIMPLENTE").length;
-  const bloqueados = MOCKS_RACHAS.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
-  const novosHoje = MOCKS_RACHAS.filter(
-    (r) => r.criadoEm === format(new Date(), "yyyy-MM-dd")
-  ).length;
+  const total = rachas.length;
+  const ativos = rachas.filter((r) => r.status === "ATIVO").length;
+  const trials = rachas.filter((r) => r.status === "TRIAL").length;
+  const inadimplentes = rachas.filter((r) => r.status === "INADIMPLENTE").length;
+  const bloqueados = rachas.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
+  const hoje = format(new Date(), "yyyy-MM-dd");
+  const novosHoje = rachas.filter((r) => (r.criadoEm || "").startsWith(hoje)).length;
 
   function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
     setSelectedIds(e.target.checked ? rachasFiltrados.map((r) => r.id) : []);
@@ -133,11 +169,6 @@ export default function RachasCadastradosPage() {
   function handleSelecionar(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
-  function handleImpersonate(racha: any) {
-    setImpersonate(racha);
-  }
-
-  // Mapeia status para exibicao
   function statusLabel(status: string) {
     if (status === "ATIVO") return "Ativo";
     if (status === "TRIAL") return "Trial";
@@ -160,6 +191,12 @@ export default function RachasCadastradosPage() {
         />
       </Head>
       <div className="w-full min-h-screen p-0 m-0">
+        {error && (
+          <div className="mb-4 rounded border border-red-500 bg-red-900/40 px-4 py-2 text-sm text-red-100">
+            Falha ao carregar rachas. Verifique a API /superadmin/tenants.
+          </div>
+        )}
+
         {/* RESUMO NO TOPO */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-2 w-full mb-6">
           <ResumoCard title="Total" value={total} />
@@ -195,8 +232,9 @@ export default function RachasCadastradosPage() {
             <option value="Bloqueado">Bloqueados</option>
           </select>
           <button
-            className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow hover:scale-105 duration-150"
-            onClick={() => alert("Funcao de exportacao sera ativada")}
+            className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow opacity-60 cursor-not-allowed"
+            disabled
+            title="Export em desenvolvimento (aguarda endpoint oficial)"
           >
             <FaDownload /> Exportar .CSV
           </button>
@@ -205,19 +243,19 @@ export default function RachasCadastradosPage() {
         {/* ACOES EM MASSA */}
         <div className="flex flex-wrap gap-2 mb-2">
           <button
-            className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700"
+            className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={selectedIds.length === 0}
           >
             Acessar como Admin
           </button>
           <button
-            className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700"
+            className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={selectedIds.length === 0}
           >
             Bloquear
           </button>
           <button
-            className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800"
+            className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={selectedIds.length === 0}
           >
             Enviar Aviso
@@ -249,64 +287,72 @@ export default function RachasCadastradosPage() {
               </tr>
             </thead>
             <tbody>
-              {rachasFiltrados.map((r) => (
-                <tr key={r.id} className="hover:bg-zinc-800 duration-100">
-                  <td className="p-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.includes(r.id)}
-                      onChange={() => handleSelecionar(r.id)}
-                    />
-                  </td>
-                  <td className="p-3 font-semibold">{r.nome}</td>
-                  <td className="p-3">{r.presidente}</td>
-                  <td className="p-3">{r.plano}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-bold cursor-pointer ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
-                      title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
-                    >
-                      {statusLabel(r.status)}
-                    </span>
-                  </td>
-                  <td className="p-3 text-center">{r.atletas}</td>
-                  <td className="p-3 text-center">
-                    {format(parse(r.criadoEm, "yyyy-MM-dd", new Date()), "dd/MM/yyyy")}
-                  </td>
-                  <td className="p-3 text-center flex gap-2">
-                    <button
-                      className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
-                      onClick={() => setModalRacha(r)}
-                      title="Detalhes e Acoes"
-                    >
-                      <FaInfoCircle /> Detalhes
-                    </button>
-                    <button
-                      className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1"
-                      onClick={() => handleImpersonate(r)}
-                      title="Acessar Painel Admin como Presidente"
-                    >
-                      <FaUserShield /> Login como Admin
-                    </button>
-                    <button
-                      className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1"
-                      title="Bloquear Racha"
-                    >
-                      <FaLock /> Bloquear
-                    </button>
-                  </td>
-                  <td className="p-3 text-center">
-                    {r.status === "BLOQUEADO" || r.bloqueado ? (
-                      <span className="flex items-center gap-1 text-red-400 font-bold">
-                        <FaLock /> Bloqueado
-                      </span>
-                    ) : (
-                      <span className="text-green-400 font-bold">Liberado</span>
-                    )}
+              {isLoading && (
+                <tr>
+                  <td colSpan={9} className="p-6 text-center text-zinc-400">
+                    Carregando rachas...
                   </td>
                 </tr>
-              ))}
-              {rachasFiltrados.length === 0 && (
+              )}
+              {!isLoading &&
+                rachasFiltrados.map((r) => (
+                  <tr key={r.id} className="hover:bg-zinc-800 duration-100">
+                    <td className="p-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedIds.includes(r.id)}
+                        onChange={() => handleSelecionar(r.id)}
+                      />
+                    </td>
+                    <td className="p-3 font-semibold">{r.nome}</td>
+                    <td className="p-3">{r.presidente}</td>
+                    <td className="p-3">{r.plano}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-bold cursor-default ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
+                        title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
+                      >
+                        {statusLabel(r.status)}
+                      </span>
+                    </td>
+                    <td className="p-3 text-center">{r.atletas ?? 0}</td>
+                    <td className="p-3 text-center">{r.criadoEm ? formatDate(r.criadoEm) : "--"}</td>
+                    <td className="p-3 text-center flex gap-2">
+                      <button
+                        className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
+                        onClick={() => setModalRacha(r)}
+                        title="Detalhes e Acoes"
+                      >
+                        <FaInfoCircle /> Detalhes
+                      </button>
+                      <button
+                        className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onClick={() => setImpersonate(r)}
+                        title="Acessar Painel Admin como Presidente"
+                        disabled
+                      >
+                        <FaUserShield /> Login como Admin
+                      </button>
+                      <button
+                        className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Bloquear Racha"
+                        disabled
+                      >
+                        <FaLock /> Bloquear
+                      </button>
+                    </td>
+                    <td className="p-3 text-center">
+                      {r.status === "BLOQUEADO" || r.bloqueado ? (
+                        <span className="flex items-center gap-1 text-red-400 font-bold">
+                          <FaLock /> Bloqueado
+                        </span>
+                      ) : (
+                        <span className="text-green-400 font-bold">Liberado</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              {!isLoading && rachasFiltrados.length === 0 && (
                 <tr>
                   <td colSpan={9} className="p-6 text-center text-zinc-400">
                     Nenhum racha encontrado.
@@ -339,16 +385,13 @@ export default function RachasCadastradosPage() {
                 </h3>
                 <span className="text-sm text-zinc-400 mb-4">
                   <b>{impersonate.nome}</b> (Presidente: {impersonate.presidente})<br />
-                  Todo acesso, edicao ou exclusao sera registrado em log de auditoria, visivel para
-                  a equipe da plataforma.
+                  Acoes de impersonate serao habilitadas assim que o backend expuser o endpoint.
                 </span>
                 <button
                   className="bg-blue-700 text-white px-5 py-2 rounded hover:bg-blue-900 mb-2 flex items-center gap-2"
                   onClick={() => {
                     setImpersonate(null);
-                    alert(
-                      "Redirecionar para painel Admin real deste racha (/admin?impersonate=rachaId)"
-                    );
+                    alert("Impersonate sera habilitado com endpoint real.");
                   }}
                 >
                   <FaArrowRight /> Entrar no Painel Administrativo do Presidente
@@ -357,7 +400,7 @@ export default function RachasCadastradosPage() {
                   className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-900"
                   onClick={() => setImpersonate(null)}
                 >
-                  Cancelar
+                  Fechar
                 </button>
               </div>
             </div>
@@ -368,7 +411,6 @@ export default function RachasCadastradosPage() {
   );
 }
 
-// Card de resumo
 function ResumoCard({ title, value, badge }: { title: string; value: number; badge?: string }) {
   return (
     <div
