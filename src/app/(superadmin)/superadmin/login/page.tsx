@@ -1,20 +1,43 @@
-// src/app/superadmin/login/page.tsx
 "use client";
+
 import { useState } from "react";
+import { signIn, getSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useBranding } from "@/hooks/useBranding";
 
 export default function SuperAdminLogin() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [erro, setErro] = useState("");
+  const router = useRouter();
   const { nome } = useBranding({ scope: "superadmin" });
   const brandName = nome || "Fut7Pro";
 
-  // Autenticação de SuperAdmin será implementada com NextAuth e validação de roles
-  function handleLogin(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    // Validar login e redirecionar
-    alert("Login de SuperAdmin simulado!");
-    window.location.href = "/superadmin/dashboard";
+    setErro("");
+
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password: senha,
+      callbackUrl: "/superadmin/dashboard",
+    });
+
+    if (!res?.ok) {
+      setErro("E-mail ou senha inválidos.");
+      return;
+    }
+
+    // Confirma role de superadmin antes de redirecionar
+    const session = await getSession();
+    const role = (session?.user as any)?.role;
+    if (role !== "superadmin" && role !== "SUPERADMIN") {
+      setErro("Acesso restrito ao SuperAdmin.");
+      return;
+    }
+
+    router.push("/superadmin/dashboard");
   }
 
   return (
@@ -27,6 +50,11 @@ export default function SuperAdminLogin() {
         <h1 className="text-xl font-bold mb-6 text-center text-white">
           Painel SuperAdmin {brandName}
         </h1>
+
+        {erro && (
+          <div className="bg-red-600 text-white text-sm rounded p-2 mb-4 text-center">{erro}</div>
+        )}
+
         <input
           type="email"
           placeholder="E-mail"
