@@ -76,7 +76,9 @@ function normalizePlan(planKey?: string | null, plan?: string | null) {
   const key = (planKey || plan || "").toLowerCase();
   if (!key) return "Plano n/d";
   if (key.includes("marketing")) {
-    return key.includes("year") || key.includes("anual") ? "Anual + Marketing" : "Mensal + Marketing";
+    return key.includes("year") || key.includes("anual")
+      ? "Anual + Marketing"
+      : "Mensal + Marketing";
   }
   if (key.includes("enterprise")) {
     return key.includes("year") || key.includes("anual") ? "Anual Enterprise" : "Mensal Enterprise";
@@ -127,18 +129,16 @@ export default function RachasCadastradosPage() {
           plano: normalizePlan(t.planKey, t.plan),
           status,
           atletas:
-            t.playersCount ??
-            t.athletes ??
-            t.adminsCount ??
-            (t as any)?._count?.players ??
-            0,
+            t.playersCount ?? t.athletes ?? t.adminsCount ?? (t as any)?._count?.players ?? 0,
           criadoEm: t.createdAt || "",
           bloqueado: status === "BLOQUEADO",
           historico: [
             { acao: "Criado", data: t.createdAt || "" },
             { acao: "Ultima atualizacao", data: t.updatedAt || "" },
           ].filter((h) => h.data),
-          ultimoLogBloqueio: t.blocked ? { motivo: "Bloqueado no backend", data: t.updatedAt } : null,
+          ultimoLogBloqueio: t.blocked
+            ? { motivo: "Bloqueado no backend", data: t.updatedAt }
+            : null,
         };
       }),
     [tenants]
@@ -316,7 +316,9 @@ export default function RachasCadastradosPage() {
                       </span>
                     </td>
                     <td className="p-3 text-center">{r.atletas ?? 0}</td>
-                    <td className="p-3 text-center">{r.criadoEm ? formatDate(r.criadoEm) : "--"}</td>
+                    <td className="p-3 text-center">
+                      {r.criadoEm ? formatDate(r.criadoEm) : "--"}
+                    </td>
                     <td className="p-3 text-center flex gap-2">
                       <button
                         className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
