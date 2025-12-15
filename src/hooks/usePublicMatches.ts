@@ -23,19 +23,32 @@ function buildKey(slug?: string, scope?: Scope, limit?: number, date?: string) {
   return `/api/public/${slug}/matches${suffix ? `?${suffix}` : ""}`;
 }
 
-export function usePublicMatches(options: { slug?: string; scope?: Scope; limit?: number } = {}) {
+export function usePublicMatches(
+  options: { slug?: string; scope?: Scope; limit?: number; enabled?: boolean } = {}
+) {
+  const enabled = options.enabled ?? true;
   const slug = options.slug || rachaConfig.slug;
-  const key = buildKey(slug, options.scope ?? "recent", options.limit ?? 12);
+  const key = enabled ? buildKey(slug, options.scope ?? "recent", options.limit ?? 12) : null;
 
-  const { data, error, isLoading, mutate } = useSWR<PublicMatchesResponse>(key, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, mutate } = useSWR<PublicMatchesResponse>(
+    key,
+    fetcher,
+    enabled
+      ? {
+          revalidateOnFocus: false,
+        }
+      : {
+          revalidateOnFocus: false,
+          revalidateIfStale: false,
+          revalidateOnReconnect: false,
+        }
+  );
 
   return {
-    matches: data?.results ?? [],
-    total: data?.total ?? 0,
+    matches: enabled ? (data?.results ?? []) : [],
+    total: enabled ? (data?.total ?? 0) : 0,
     slug: data?.slug ?? slug,
-    isLoading,
+    isLoading: enabled ? isLoading : false,
     isError: Boolean(error),
     error,
     mutate,

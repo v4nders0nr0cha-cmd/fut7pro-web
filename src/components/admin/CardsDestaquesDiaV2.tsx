@@ -1,89 +1,82 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useRacha } from "@/context/RachaContext";
+import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { rachaConfig } from "@/config/racha.config";
+import {
+  buildDestaquesDoDia,
+  getEventosDoDia,
+  getPontosPorTime,
+  getTimeCampeao,
+  type ConfrontoV2,
+  type TimeDestaque,
+  type EventoGolV2,
+} from "@/utils/destaquesDoDia";
+import type { PublicMatch } from "@/types/partida";
 
-// Tipos
-type Jogador = { nome: string; apelido: string; pos: string };
-type Time = { nome: string; jogadores: Jogador[] };
-type EventoGol = { time: "a" | "b"; jogador: string; assistencia: string };
-type ResultadoPartida = { placar: { a: number; b: number }; eventos: EventoGol[] };
-type Confronto = {
-  ida: { a: number; b: number };
-  volta: { a: number; b: number };
-  resultadoIda?: ResultadoPartida | null;
-  resultadoVolta?: ResultadoPartida | null;
-};
 type Props = {
-  confrontos: Confronto[];
-  times: Time[];
+  confrontos?: ConfrontoV2[];
+  times?: TimeDestaque[];
+  matches?: PublicMatch[];
+  slug?: string;
+  isLoading?: boolean;
 };
 
-export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
-  const fotos = [
-    "/images/jogadores/jogador_padrao_01.jpg",
-    "/images/jogadores/jogador_padrao_02.jpg",
-    "/images/jogadores/jogador_padrao_03.jpg",
-    "/images/jogadores/jogador_padrao_04.jpg",
-  ];
+type Jogador = { nome: string; apelido: string; pos: string };
 
-  const pontosPorTime = useMemo(() => {
-    const pontos: Record<number, number> = {};
-    (confrontos ?? []).forEach((c) => {
-      if (c?.resultadoIda?.placar) {
-        const placar = c.resultadoIda.placar;
-        if (placar.a > placar.b) {
-          pontos[c.ida.a] = (pontos[c.ida.a] ?? 0) + 3;
-          pontos[c.ida.b] = pontos[c.ida.b] ?? 0;
-        } else if (placar.b > placar.a) {
-          pontos[c.ida.b] = (pontos[c.ida.b] ?? 0) + 3;
-          pontos[c.ida.a] = pontos[c.ida.a] ?? 0;
-        } else {
-          pontos[c.ida.a] = (pontos[c.ida.a] ?? 0) + 1;
-          pontos[c.ida.b] = (pontos[c.ida.b] ?? 0) + 1;
-        }
-      }
-      if (c?.resultadoVolta?.placar) {
-        const placar = c.resultadoVolta.placar;
-        if (placar.a > placar.b) {
-          pontos[c.volta.a] = (pontos[c.volta.a] ?? 0) + 3;
-          pontos[c.volta.b] = pontos[c.volta.b] ?? 0;
-        } else if (placar.b > placar.a) {
-          pontos[c.volta.b] = (pontos[c.volta.b] ?? 0) + 3;
-          pontos[c.volta.a] = pontos[c.volta.a] ?? 0;
-        } else {
-          pontos[c.volta.a] = (pontos[c.volta.a] ?? 0) + 1;
-          pontos[c.volta.b] = (pontos[c.volta.b] ?? 0) + 1;
-        }
-      }
-    });
-    return pontos;
-  }, [confrontos]);
+export default function CardsDestaquesDiaV2({
+  confrontos,
+  times,
+  matches,
+  slug,
+  isLoading,
+}: Props) {
+  const { tenantSlug } = useRacha();
+  const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
+  const [faltou, setFaltou] = useState<Record<string, boolean>>({});
 
-  const indexTimeCampeao = useMemo(() => {
-    const arr = Object.entries(pontosPorTime ?? {});
-    if (!arr.length) return null;
-    return Number(arr.sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] ?? null);
-  }, [pontosPorTime]);
+  const slugFinal = slug || tenantSlug || rachaConfig.slug;
+  const shouldFetchMatches = !matches && (!confrontos || confrontos.length === 0);
 
-  const timeCampeao =
-    typeof indexTimeCampeao === "number" &&
-    indexTimeCampeao !== null &&
-    Array.isArray(times) &&
-    times[indexTimeCampeao] !== undefined
-      ? times[indexTimeCampeao]
-      : null;
+  const {
+    matches: fetchedMatches,
+    isLoading: loadingMatches,
+    isError: erroMatches,
+  } = usePublicMatches({
+    slug: slugFinal,
+    scope: "recent",
+    limit: 6,
+    enabled: shouldFetchMatches,
+  });
 
-  const eventosDia = useMemo(() => {
-    let eventos: EventoGol[] = [];
-    (confrontos ?? []).forEach((c) => {
-      if (Array.isArray(c?.resultadoIda?.eventos))
-        eventos = eventos.concat(c.resultadoIda!.eventos);
-      if (Array.isArray(c?.resultadoVolta?.eventos))
-        eventos = eventos.concat(c.resultadoVolta!.eventos);
-    });
-    return eventos;
-  }, [confrontos]);
+  const fonteMatches = matches ?? fetchedMatches;
 
-  function getArtilheiroMaestro(dados: EventoGol[] = [], prop: "jogador" | "assistencia") {
+  const {
+    confrontos: baseConfrontos,
+    times: baseTimes,
+    dataReferencia,
+  } = useMemo(
+    () =>
+      fonteMatches?.length
+        ? buildDestaquesDoDia(fonteMatches)
+        : {
+            confrontos: confrontos ?? [],
+            times: times ?? [],
+            dataReferencia: null as string | null,
+          },
+    [fonteMatches, confrontos, times]
+  );
+
+  const pontosPorTime = useMemo(() => getPontosPorTime(baseConfrontos), [baseConfrontos]);
+  const campeaoInfo = useMemo(
+    () => getTimeCampeao(baseConfrontos, baseTimes),
+    [baseConfrontos, baseTimes]
+  );
+  const timeCampeao = campeaoInfo?.time ?? null;
+
+  const eventosDia = useMemo(() => getEventosDoDia(baseConfrontos), [baseConfrontos]);
+
+  function getArtilheiroMaestro(dados: EventoGolV2[] = [], prop: "jogador" | "assistencia") {
     const cont: Record<string, number> = {};
     (dados ?? []).forEach((ev) => {
       if (ev && ev[prop] && ev[prop] !== "faltou")
@@ -107,6 +100,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     const encontrado = (timeCampeao.jogadores ?? []).find((j) => j.nome === ord[0][0]);
     return encontrado ?? undefined;
   }
+
   function contarAssistenciasMeiaTimeCampeao() {
     if (!timeCampeao) return undefined;
     const jogadoresFiltrados = (timeCampeao.jogadores ?? []).filter((j) => j.pos === "MEIA");
@@ -122,11 +116,10 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     return encontrado ?? undefined;
   }
 
-  const goleiro = (timeCampeao?.jogadores ?? []).find((j) => j.pos === "GOL") || undefined;
+  const goleiro =
+    (timeCampeao?.jogadores ?? []).find((j) => j.pos === "GOL") ||
+    (baseTimes[0]?.jogadores ?? []).find((j) => j.pos === "GOL");
   const zagueiros = (timeCampeao?.jogadores ?? []).filter((j) => j.pos === "ZAG") ?? [];
-  const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
-
-  const [faltou, setFaltou] = useState<Record<string, boolean>>({});
 
   const atacante = contarEventosJogadorTimeCampeao("ATA");
   const meia = contarAssistenciasMeiaTimeCampeao();
@@ -142,12 +135,23 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     : 0;
 
   function fotoByIndex(i: number) {
+    const fotos = [
+      "/images/jogadores/jogador_padrao_01.jpg",
+      "/images/jogadores/jogador_padrao_02.jpg",
+      "/images/jogadores/jogador_padrao_03.jpg",
+      "/images/jogadores/jogador_padrao_04.jpg",
+    ];
     return fotos[i % fotos.length];
   }
 
+  const loading = isLoading || (shouldFetchMatches && loadingMatches);
+  const semDados = !loading && baseConfrontos.length === 0;
+
   const aguardando = (
     <div className="w-full text-center text-zinc-400 font-semibold py-8">
-      Aguarde: resultados precisam ser lançados para exibir os destaques do dia.
+      {erroMatches
+        ? "Nao foi possivel carregar os resultados do dia."
+        : "Aguarde: resultados precisam ser lancados para exibir os destaques do dia."}
     </div>
   );
 
@@ -194,36 +198,34 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
                     }))
                   }
                 />
-                Jogador não compareceu ao racha
+                Jogador nao compareceu ao racha
               </label>
             )}
             <div className="h-6"></div>
           </div>
         );
-      } else {
-        return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-center relative">
-            <div className="text-yellow-400 font-bold text-sm text-center mb-3 uppercase">
-              {titulo}
-            </div>
-            <select
-              className="px-2 py-1 bg-zinc-900 text-yellow-200 rounded w-full"
-              value={selected}
-              onChange={(e) => onZagueiroChange?.(e.target.value)}
-            >
-              <option value="">Selecione zagueiro...</option>
-              {(options ?? []).map((j: Jogador, idx: number) => (
-                <option key={j?.nome ?? idx} value={j?.nome ?? ""}>
-                  {j?.nome ?? ""} {j?.apelido ? `(${j.apelido})` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-        );
       }
+      return (
+        <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-center relative">
+          <div className="text-yellow-400 font-bold text-sm text-center mb-3 uppercase">
+            {titulo}
+          </div>
+          <select
+            className="px-2 py-1 bg-zinc-900 text-yellow-200 rounded w-full"
+            value={selected}
+            onChange={(e) => onZagueiroChange?.(e.target.value)}
+          >
+            <option value="">Selecione zagueiro...</option>
+            {(options ?? []).map((j: Jogador, idx: number) => (
+              <option key={j?.nome ?? idx} value={j?.nome ?? ""}>
+                {j?.nome ?? ""} {j?.apelido ? `(${j.apelido})` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
     }
 
-    // Cards comuns
     return (
       <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
         {foto ? (
@@ -255,7 +257,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
                     }))
                   }
                 />
-                Jogador não compareceu ao racha
+                Jogador nao compareceu ao racha
               </label>
             )}
             <div className="h-6"></div>
@@ -267,8 +269,25 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="w-full flex flex-col items-center gap-4 py-8 text-gray-300">
+        Carregando destaques do dia...
+      </div>
+    );
+  }
+
+  if (semDados) {
+    return aguardando;
+  }
+
   return (
     <div className="w-full flex flex-col items-center gap-8">
+      {dataReferencia && (
+        <span className="text-xs uppercase tracking-wide text-yellow-400">
+          Referencia: {new Date(dataReferencia).toLocaleDateString("pt-BR")}
+        </span>
+      )}
       <div className="flex flex-wrap gap-5 justify-center">
         <CardDestaque
           titulo="ATACANTE DO DIA"
@@ -286,7 +305,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
           apelido={meia?.apelido ?? ""}
           pos={meia?.pos ?? ""}
           foto={meia ? fotoByIndex(1) : ""}
-          infoExtra={meia?.nome ? `${assistenciasMeia} assistências` : ""}
+          infoExtra={meia?.nome ? `${assistenciasMeia} assistencias` : ""}
           canFaltou={true}
           faltouKey="Meia"
         />
@@ -310,17 +329,16 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
       </div>
       <div className="flex flex-wrap gap-5 justify-center mt-2">
         <CardDestaque
-          titulo="TIME CAMPEÃO DO DIA"
+          titulo="TIME CAMPEAO DO DIA"
           nome={timeCampeao?.nome ?? ""}
           apelido=""
-          foto={timeCampeao ? "/images/logos/logo_fut7pro.png" : ""}
+          foto={timeCampeao?.logoUrl || "/images/logos/logo_fut7pro.png"}
           infoExtra={
-            timeCampeao &&
-            typeof indexTimeCampeao === "number" &&
-            indexTimeCampeao !== null &&
-            pontosPorTime?.[indexTimeCampeao!] !== undefined
-              ? `${pontosPorTime[indexTimeCampeao]} pontos`
-              : ""
+            timeCampeao && campeaoInfo?.pontos !== undefined
+              ? `${campeaoInfo.pontos} pontos`
+              : pontosPorTime && Object.keys(pontosPorTime).length
+                ? `${Math.max(...Object.values(pontosPorTime))} pontos`
+                : ""
           }
         />
         <CardDestaque
@@ -335,7 +353,7 @@ export default function CardsDestaquesDiaV2({ confrontos, times }: Props) {
           nome={maestro?.nome ?? ""}
           apelido=""
           foto={maestro ? fotoByIndex(2) : ""}
-          infoExtra={maestro?.qtd ? `${maestro.qtd} assistências` : ""}
+          infoExtra={maestro?.qtd ? `${maestro.qtd} assistencias` : ""}
         />
       </div>
       {(eventosDia?.length ?? 0) === 0 && aguardando}

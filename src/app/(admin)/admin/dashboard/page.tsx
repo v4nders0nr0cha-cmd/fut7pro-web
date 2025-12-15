@@ -21,6 +21,7 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useJogadores } from "@/hooks/useJogadores";
 import useSubscription from "@/hooks/useSubscription";
 import { rachaConfig } from "@/config/racha.config";
+import FinanceiroChart from "@/components/admin/FinanceiroChart";
 import type { PublicMatch } from "@/types/partida";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
@@ -108,7 +109,11 @@ export default function AdminDashboard() {
     limit: 3,
   });
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
-  const { subscription, loading: loadingSubscription } = useSubscription(tenantId);
+  const {
+    subscription,
+    subscriptionStatus,
+    loading: loadingSubscription,
+  } = useSubscription(tenantId);
 
   const resumoFinanceiro = useMemo(() => {
     if (!lancamentos?.length) return null;
@@ -194,25 +199,6 @@ export default function AdminDashboard() {
       .filter(Boolean) as { id: string; nome: string; data: Date; foto: string }[];
     return proximos.sort((a, b) => a.data.getTime() - b.data.getTime()).slice(0, 3);
   }, [jogadores]);
-
-  const planoTipo = useMemo(() => {
-    if (loadingSubscription) return "trial" as const;
-    if (!subscription) return "trial" as const;
-    if (subscription.status === "trialing") return "trial" as const;
-    const key = subscription.planKey || "";
-    if (key.includes("marketing") && key.includes("year")) return "anual-marketing" as const;
-    if (key.includes("marketing") && key.includes("month")) return "mensal-marketing" as const;
-    if (key.includes("year")) return "anual" as const;
-    if (key.includes("free") || key.includes("gratuito")) return "gratuito" as const;
-    return "mensal" as const;
-  }, [loadingSubscription, subscription]);
-
-  const diasRestantesPlano = useMemo(() => {
-    const alvo = subscription?.trialEnd || subscription?.currentPeriodEnd;
-    if (!alvo) return 0;
-    const diff = new Date(alvo).getTime() - Date.now();
-    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-  }, [subscription?.currentPeriodEnd, subscription?.trialEnd]);
 
   return (
     <>
@@ -309,9 +295,23 @@ export default function AdminDashboard() {
 
         <CardRelatoriosEngajamento />
 
+        <FinanceiroChart
+          lancamentos={lancamentos}
+          isLoading={loadingFinanceiro || loadingSubscription}
+          emptyMessage="Cadastre lancamentos para visualizar o desempenho financeiro."
+        />
+
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          <CardCicloPlano diasRestantes={diasRestantesPlano} tipoPlano={planoTipo} />
-          <CardPlanoAtual tipoPlano={planoTipo} />
+          <CardCicloPlano
+            subscription={subscription}
+            status={subscriptionStatus}
+            loading={loadingSubscription}
+          />
+          <CardPlanoAtual
+            subscription={subscription}
+            status={subscriptionStatus}
+            loading={loadingSubscription}
+          />
         </div>
 
         <section className="w-full grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3">
