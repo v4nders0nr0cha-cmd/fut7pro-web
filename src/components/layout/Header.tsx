@@ -59,7 +59,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             if (item.label === "Mensagens" && badgeMensagem > 0) badgeValue = badgeMensagem;
             if (item.label === "Sugestões" && badgeSugestoes > 0) badgeValue = badgeSugestoes;
 
-            // Novo: se não logado, bloqueia navegação e manda para login
+            // Se não logado, permite navegação mas redireciona para login
             const handleClick = (e: React.MouseEvent) => {
               if (!isLoggedIn) {
                 e.preventDefault();
