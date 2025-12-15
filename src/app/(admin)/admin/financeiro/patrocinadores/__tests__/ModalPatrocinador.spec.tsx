@@ -4,7 +4,7 @@ import ModalPatrocinador from "@/app/(admin)/admin/financeiro/patrocinadores/com
 // Mock next/image para o ambiente de teste
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt={props.alt || ""} {...props} />,
 }));
 
 const baseProps = {

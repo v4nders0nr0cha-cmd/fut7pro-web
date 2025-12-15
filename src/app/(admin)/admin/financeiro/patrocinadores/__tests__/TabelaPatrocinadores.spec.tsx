@@ -4,7 +4,7 @@ import type { Patrocinador } from "@/types/financeiro";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt={props.alt || ""} {...props} />,
 }));
 
 const patrocinadores: Patrocinador[] = [
@@ -19,6 +19,7 @@ const patrocinadores: Patrocinador[] = [
     visivel: true,
     descricao: "Desc 1",
     link: "https://p1.com",
+    comprovantes: [],
   },
   {
     id: "p2",
@@ -29,6 +30,7 @@ const patrocinadores: Patrocinador[] = [
     status: "encerrado",
     logo: "/logo2.png",
     visivel: false,
+    comprovantes: [],
   },
 ];
 

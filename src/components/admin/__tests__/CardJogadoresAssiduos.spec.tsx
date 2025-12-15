@@ -3,7 +3,7 @@ import CardJogadoresAssiduos from "@/components/admin/CardJogadoresAssiduos";
 
 jest.mock("next/image", () => ({
   __esModule: true,
-  default: (props: any) => <img {...props} />,
+  default: (props: any) => <img alt={props.alt || ""} {...props} />,
 }));
 
 describe("CardJogadoresAssiduos", () => {
