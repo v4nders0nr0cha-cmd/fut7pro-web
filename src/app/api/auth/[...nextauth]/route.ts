@@ -17,6 +17,10 @@ type NextAuthOptionsLike = {
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
+const REFRESH_PATH = process.env.AUTH_REFRESH_PATH || "/auth/refresh";
+const ME_PATH = process.env.AUTH_ME_PATH || "/auth/me";
+const GOOGLE_PATH = "/auth/google";
 
 const authOptions: NextAuthOptionsLike = {
   providers: [
@@ -35,7 +39,7 @@ const authOptions: NextAuthOptionsLike = {
 
         try {
           // Autenticação via backend JWT
-          const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+          const response = await fetch(`${API_BASE_URL}${LOGIN_PATH}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -60,7 +64,7 @@ const authOptions: NextAuthOptionsLike = {
           }
 
           // Buscar informações do usuário no backend
-          const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          const userResponse = await fetch(`${API_BASE_URL}${ME_PATH}`, {
             headers: {
               Authorization: `Bearer ${data.accessToken}`,
             },
@@ -97,7 +101,7 @@ const authOptions: NextAuthOptionsLike = {
       // Para login Google, criar usuário no backend se não existir
       if (user?.email && account?.provider === "google") {
         try {
-          const response = await fetch(`${API_BASE_URL}/api/auth/google`, {
+          const response = await fetch(`${API_BASE_URL}${GOOGLE_PATH}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -156,7 +160,7 @@ const authOptions: NextAuthOptionsLike = {
         if (tokenExp && tokenExp < now + 300) {
           // 5 minutos antes de expirar
           try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+            const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
