@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
     const res = await signIn("credentials", {
       redirect: false,
       email,
-      senha: senha,
+      password: senha,
     });
     if (res?.ok) router.push("/admin/dashboard");
     else setErro("E-mail ou senha inválidos.");
