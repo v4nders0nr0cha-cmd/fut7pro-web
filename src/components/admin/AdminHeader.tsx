@@ -3,33 +3,42 @@
 
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
+import { useAboutAdmin } from "@/hooks/useAbout";
 
 export default function AdminHeader() {
   const { nome, logo } = useBranding({ scope: "admin" });
+  const { about: aboutAdmin } = useAboutAdmin();
+
+  const brandingNome = aboutAdmin?.nome || nome;
+  const brandingLogo = aboutAdmin?.logoUrl || logo;
+  const presidenteNome = aboutAdmin?.presidente?.nome || "Presidente";
+  const presidenteAvatar =
+    aboutAdmin?.presidente?.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg";
+
   return (
     <header className="w-full bg-[#23272F] shadow px-6 py-4 flex items-center justify-between z-40 backdrop-blur-sm">
       <div className="flex items-center gap-3">
         <Image
-          src={logo}
-          alt={`Logo do Racha ${nome} - sistema de futebol 7`}
+          src={brandingLogo}
+          alt={`Logo do racha ${brandingNome} - sistema de futebol 7`}
           width={44}
           height={44}
           className="object-contain rounded"
           priority
         />
         <span className="font-bold text-lg text-white truncate max-w-[200px] md:max-w-none">
-          Painel do Presidente - {nome}
+          Painel do Presidente - {brandingNome}
         </span>
       </div>
       <div className="flex items-center gap-4">
         <button className="px-3 py-1 rounded-lg bg-[#2D3342] text-white hover:bg-[#363c48] text-sm font-semibold transition">
-          Configurações
+          Configuracoes
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-white text-sm hidden sm:inline">Olá, Presidente</span>
+          <span className="text-white text-sm hidden sm:inline">Ola, {presidenteNome}</span>
           <Image
-            src="/images/jogadores/jogador_padrao_01.jpg"
-            alt={`Avatar do presidente do racha - ${nome}`}
+            src={presidenteAvatar}
+            alt={`Avatar do presidente do racha - ${brandingNome}`}
             width={32}
             height={32}
             className="rounded-full border-2 border-yellow-400"

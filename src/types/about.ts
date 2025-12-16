@@ -27,6 +27,14 @@ export type AboutData = {
     pontos: number;
     posicao: string;
   }[];
+  localizacao?: { cidade?: string; estado?: string };
+  presidente?: {
+    nome?: string;
+    apelido?: string;
+    posicao?: string;
+    avatarUrl?: string;
+    email?: string;
+  };
   diretoria?: { nome: string; cargo: string; foto?: string }[];
 };
 

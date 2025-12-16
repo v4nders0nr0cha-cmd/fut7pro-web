@@ -22,6 +22,7 @@ import {
 
 import { Role } from "@/common/enums";
 import { useBranding } from "@/hooks/useBranding";
+import { useAboutAdmin } from "@/hooks/useAbout";
 
 interface AdminSidebarProps {
   racha?: {
@@ -55,7 +56,7 @@ const menu: MenuItem[] = [
   { label: "Jogadores", icon: FaUsers, href: "/admin/jogadores", roles: allRoles },
   { label: "Partidas", icon: FaCalendarAlt, href: "/admin/partidas", roles: allRoles },
   {
-    label: "Ranking & Estatísticas",
+    label: "Ranking & Estatisticas",
     icon: FaChartBar,
     href: "/admin/estatisticas",
     roles: allRoles,
@@ -108,10 +109,17 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const { nome, logo } = useBranding({ scope: "admin" });
+  const { about: aboutAdmin } = useAboutAdmin();
 
   const user = session?.user as (typeof session)["user"] & { role?: Role };
   const userRole = (user?.role as Role | undefined) ?? Role.GERENTE;
   const pathname = router?.pathname ?? "";
+  const brandingNome = aboutAdmin?.nome || racha?.name || nome || "Seu Racha";
+  const logoSrc = aboutAdmin?.logoUrl || logo;
+  const presidente = aboutAdmin?.presidente;
+  const displayName = presidente?.nome || user?.name || "Presidente";
+  const displayEmail = presidente?.email || user?.email || "";
+  const avatarSrc = presidente?.avatarUrl || user?.image || logoSrc;
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: "/login" });
@@ -161,19 +169,19 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
       >
         <div className="flex flex-col items-center gap-2 mb-8">
           <Image
-            src={user?.image || logo}
-            alt={user?.name || nome}
+            src={avatarSrc}
+            alt={displayName}
             width={80}
             height={80}
             className="object-contain rounded-full"
           />
           <span className="text-lg font-semibold text-yellow-400 text-center truncate max-w-[180px]">
-            {racha?.name ?? nome ?? "Seu Racha"}
+            {brandingNome}
           </span>
-          {user && (
+          {(displayName || displayEmail) && (
             <div className="text-center text-sm text-white">
-              <p>{user.name}</p>
-              <p className="text-xs text-gray-400">{user.email}</p>
+              {displayName && <p>{displayName}</p>}
+              {displayEmail && <p className="text-xs text-gray-400">{displayEmail}</p>}
             </div>
           )}
         </div>
@@ -192,7 +200,7 @@ export default function AdminSidebar({ racha }: AdminSidebarProps) {
         </button>
 
         <div className="mt-4 text-xs text-center text-[#8d95a9] px-2 opacity-80 select-none">
-          © {new Date().getFullYear()} {nome}
+          (c) {new Date().getFullYear()} {brandingNome}
         </div>
       </aside>
     </>

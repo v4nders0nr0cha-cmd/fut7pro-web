@@ -4,11 +4,11 @@ import Head from "next/head";
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { FaUpload, FaCheckCircle } from "react-icons/fa";
-import Cropper from "react-easy-crop";
 import { toast } from "react-hot-toast";
 import { useAboutAdmin } from "@/hooks/useAbout";
 import { rachaConfig } from "@/config/racha.config";
 import type { AboutData } from "@/types/about";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 const LOGO_PADRAO = rachaConfig.logo || "/images/logos/logo_fut7pro.png";
 
@@ -21,15 +21,9 @@ export default function LogoDoRachaPage() {
   const { about, update, isLoading } = useAboutAdmin();
   const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrao Fut7Pro" });
   const [nomeRacha, setNomeRacha] = useState(rachaConfig.nome || "Fut7Pro");
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [cropModalOpen, setCropModalOpen] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [cropImage, setCropImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Cropper states (mock)
-  const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     if (about) {
@@ -44,32 +38,16 @@ export default function LogoDoRachaPage() {
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setSelectedFile(file);
-    setCropModalOpen(true);
-  }
-
-  const toBase64 = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error("Falha ao ler imagem"));
-      reader.readAsDataURL(file);
-    });
-
-  async function handleCropSave(e?: React.MouseEvent<HTMLButtonElement>) {
-    if (e) e.preventDefault();
-    if (!selectedFile) return;
-    setUploading(true);
-    try {
-      const base64 = await toBase64(selectedFile);
-      setLogo({ url: base64, nome: selectedFile.name });
-      setCropModalOpen(false);
-      setSelectedFile(null);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao processar a imagem");
-    } finally {
-      setUploading(false);
+    if (!file.type.startsWith("image/") || file.size > 1_000_000) {
+      toast.error("Envie uma imagem PNG ou JPG de ate 1MB.");
+      return;
     }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(String(reader.result));
+    };
+    reader.onerror = () => toast.error("Falha ao ler imagem");
+    reader.readAsDataURL(file);
   }
 
   function handleNomeChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -95,7 +73,7 @@ export default function LogoDoRachaPage() {
     }
   }
 
-  const disableActions = uploading || saving || isLoading;
+  const disableActions = saving || isLoading;
 
   return (
     <>
@@ -188,41 +166,18 @@ export default function LogoDoRachaPage() {
         </div>
 
         {/* Modal de Cropper */}
-        {cropModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
-            <div className="bg-[#23272e] p-6 rounded-2xl shadow-2xl max-w-lg w-full flex flex-col items-center">
-              <h2 className="text-lg font-bold text-white mb-3">Ajustar Logo</h2>
-              <div className="relative w-64 h-64 bg-gray-900 rounded-lg overflow-hidden mb-4">
-                <Cropper
-                  image={selectedFile ? URL.createObjectURL(selectedFile) : ""}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
-                  showGrid={false}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  className="px-4 py-2 bg-[#FFD600] text-black font-bold rounded shadow hover:scale-105 transition"
-                  onClick={handleCropSave}
-                  disabled={uploading}
-                >
-                  {uploading ? "Salvando..." : "Salvar"}
-                </button>
-                <button
-                  className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 transition"
-                  onClick={() => setCropModalOpen(false)}
-                  disabled={uploading}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ImageCropperModal
+          open={!!cropImage}
+          imageSrc={cropImage || ""}
+          aspect={1}
+          shape="round"
+          title="Ajustar logo"
+          onCancel={() => setCropImage(null)}
+          onApply={(cropped) => {
+            setLogo({ url: cropped, nome: "Logo ajustada" });
+            setCropImage(null);
+          }}
+        />
       </div>
     </>
   );

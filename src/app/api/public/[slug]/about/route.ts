@@ -1,20 +1,30 @@
-import { NextRequest } from "next/server";
-import { proxyBackend } from "@/app/api/_proxy/helpers";
 import { getApiBase } from "@/lib/get-api-base";
 
-export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+function normalize(body: any) {
+  if (body && typeof body === "object" && "data" in body) return body;
+  return { data: body ?? null };
+}
+
+export async function GET(_req: Request, { params }: { params: { slug: string } }) {
   const base = getApiBase();
-  const url = `${base}/public/${params.slug}/about`;
-  const { response, body } = await proxyBackend(url, {
-    method: "GET",
-    headers: { accept: "application/json" },
+  const slug = params.slug;
+
+  const res = await fetch(`${base}/public/${encodeURIComponent(slug)}/about`, {
+    cache: "no-store",
   });
 
-  return new Response(JSON.stringify(body), {
-    status: response.status,
+  const bodyText = await res.text();
+  let body: any = null;
+  try {
+    body = bodyText ? JSON.parse(bodyText) : null;
+  } catch {
+    body = bodyText;
+  }
+
+  return new Response(JSON.stringify(normalize(body)), {
+    status: res.status,
     headers: { "Content-Type": "application/json" },
   });
 }

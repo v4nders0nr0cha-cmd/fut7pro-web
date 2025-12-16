@@ -16,6 +16,11 @@ type RegisterPayload = {
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
+const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
+
+const normalizeBase = (url: string) => url.replace(/\/+$/, "");
+const resolvePath = (base: string, path: string) =>
+  `${normalizeBase(base)}${path.startsWith("/") ? path : `/${path}`}`;
 
 function jsonResponse(message: string, status: number) {
   return new Response(JSON.stringify({ message }), {
@@ -33,7 +38,7 @@ function safeJsonParse(text: string) {
 }
 
 async function createTenant(baseUrl: string, data: RegisterPayload) {
-  return fetch(`${baseUrl}/rachas`, {
+  return fetch(resolvePath(baseUrl, "/rachas"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -47,7 +52,7 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
 }
 
 async function createAdmin(baseUrl: string, data: RegisterPayload) {
-  return fetch(`${baseUrl}/auth/register-admin`, {
+  return fetch(resolvePath(baseUrl, "/auth/register-admin"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -59,10 +64,25 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
   });
 }
 
-async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken?: string) {
+async function loginForToken(baseUrl: string, data: RegisterPayload) {
+  const loginUrl = resolvePath(baseUrl, LOGIN_PATH);
+  const res = await fetch(loginUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: data.adminEmail.trim().toLowerCase(),
+      password: data.adminSenha,
+    }),
+  });
+  if (!res.ok) return null;
+  const json = await res.json().catch(() => null);
+  return (json as any)?.accessToken || null;
+}
+
+async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken?: string | null) {
   if (!accessToken) return;
 
-  // Guardar logo/avatar apenas se não forem muito grandes (1MB base64 ~ limita)
+  // Guardar logo/avatar apenas se forem leves (limitado a ~1MB em base64)
   const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_000_000;
   const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_000_000;
   if (logoTooLarge || avatarTooLarge) return;
@@ -83,37 +103,41 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
     },
   };
 
-  await fetch(`${baseUrl}/admin/about`, {
+  await fetch(resolvePath(baseUrl, "/admin/about"), {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
       "x-tenant-slug": data.rachaSlug.trim(),
     },
-    body: JSON.stringify(aboutPayload),
+    body: JSON.stringify({ data: aboutPayload }),
   });
 }
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
-  const baseUrl = getApiBase();
+  const baseUrl = normalizeBase(getApiBase());
   let payload: RegisterPayload;
 
   try {
     payload = (await req.json()) as RegisterPayload;
   } catch {
-    return jsonResponse("Payload inválido", 400);
+    return jsonResponse("Payload invalido", 400);
   }
 
   if (!payload.adminNome?.trim())
     return jsonResponse("Informe o primeiro nome do administrador.", 400);
-  if (!payload.adminPosicao) return jsonResponse("Selecione a posição do administrador.", 400);
+  if (payload.adminNome.trim().split(" ").length > 1)
+    return jsonResponse("Use apenas o primeiro nome (sem sobrenome).", 400);
+  if (!payload.adminPosicao) return jsonResponse("Selecione a posicao do administrador.", 400);
   if (!payload.adminEmail?.trim()) return jsonResponse("Informe o e-mail.", 400);
   if (!payload.adminSenha || payload.adminSenha.length < 6)
     return jsonResponse("A senha deve ter ao menos 6 caracteres.", 400);
   if (!payload.rachaNome?.trim() || payload.rachaNome.trim().length < 3)
     return jsonResponse("O nome do racha deve ter ao menos 3 caracteres.", 400);
   if (!payload.rachaSlug?.trim() || !SLUG_REGEX.test(payload.rachaSlug.trim()))
-    return jsonResponse("Slug inválido: use minúsculas, números e hífens (3-50).", 400);
+    return jsonResponse("Slug invalido: use minusculas, numeros e hifens (3-50).", 400);
   if (!payload.cidade?.trim()) return jsonResponse("Informe a cidade.", 400);
   if (!payload.estado?.trim()) return jsonResponse("Selecione o estado.", 400);
 
@@ -136,8 +160,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 3) Salva nome/logo/localização via /admin/about usando token retornado
-  await primeBranding(baseUrl, payload, adminJson?.accessToken);
+  // 3) Faz login se necessario para obter token e salva nome/logo/localizacao via /admin/about
+  const tokenFromRegister = adminJson?.accessToken || null;
+  const token = tokenFromRegister || (await loginForToken(baseUrl, payload));
+  await primeBranding(baseUrl, payload, token);
 
   return new Response(
     JSON.stringify({

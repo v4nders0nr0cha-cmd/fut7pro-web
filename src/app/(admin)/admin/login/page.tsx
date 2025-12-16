@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
       password: senha,
     });
     if (res?.ok) router.push("/admin/dashboard");
-    else setErro("E-mail ou senha inválidos.");
+    else setErro("E-mail ou senha invalidos.");
   };
 
   return (
@@ -62,8 +62,8 @@ export default function AdminLoginPage() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          Ainda não cadastrou seu racha?{" "}
-          <a href="/admin/register" className="text-yellow-400 hover:underline">
+          Ainda nao cadastrou seu racha?{" "}
+          <a href="/cadastrar-racha" className="text-yellow-400 hover:underline">
             Cadastre-se
           </a>
         </div>

@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const ESTADOS_BR = [
@@ -57,6 +58,8 @@ export default function CadastroRachaPage() {
   const [erro, setErro] = useState<string>("");
   const [sucesso, setSucesso] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [cropImage, setCropImage] = useState<string>();
+  const [cropTarget, setCropTarget] = useState<UploadTarget | null>(null);
 
   const slugSugerido = useMemo(() => {
     if (!rachaNome) return "";
@@ -91,13 +94,13 @@ export default function CadastroRachaPage() {
     const isImage = file.type.startsWith("image/");
     const isTooBig = file.size > 1_000_000;
     if (!isImage || isTooBig) {
-      setErro("Envie uma imagem (PNG ou JPG) de até 1MB.");
+      setErro("Envie uma imagem (PNG ou JPG) de ate 1MB.");
       return;
     }
     try {
       const base64 = await toBase64(file);
-      if (target === "logo") setRachaLogo(base64);
-      if (target === "avatar") setAdminAvatar(base64);
+      setCropImage(base64);
+      setCropTarget(target);
       setErro("");
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro ao processar a imagem");
@@ -108,14 +111,14 @@ export default function CadastroRachaPage() {
     if (!adminNome.trim()) return "Informe apenas o primeiro nome do administrador.";
     if (adminNome.trim().split(" ").length > 1)
       return "Use apenas o primeiro nome (sem sobrenome).";
-    if (!adminPosicao) return "Selecione a posição do administrador.";
+    if (!adminPosicao) return "Selecione a posicao do administrador.";
     if (!adminEmail.trim()) return "Informe o e-mail.";
     if (!adminSenha || adminSenha.length < 6) return "A senha deve ter ao menos 6 caracteres.";
-    if (adminSenha !== adminConfirmSenha) return "As senhas não conferem.";
+    if (adminSenha !== adminConfirmSenha) return "As senhas nao conferem.";
     if (!rachaNome.trim() || rachaNome.trim().length < 3)
       return "O nome do racha deve ter ao menos 3 caracteres.";
     if (!rachaSlug.trim() || !/^[a-z0-9-]{3,50}$/.test(rachaSlug.trim()))
-      return "Slug inválido: use minúsculas, números e hífens (3-50).";
+      return "Slug invalido: use minusculas, numeros e hifens (3-50).";
     if (!cidade.trim()) return "Informe a cidade.";
     if (!estado.trim()) return "Selecione o estado.";
     return null;
@@ -159,7 +162,7 @@ export default function CadastroRachaPage() {
         return;
       }
 
-      setSucesso("Cadastro realizado! Agora faça login para acessar o painel.");
+      setSucesso("Cadastro realizado! Agora faca login para acessar o painel.");
       setTimeout(() => router.push("/admin/login"), 1200);
     } catch (err) {
       setErro(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
@@ -176,10 +179,10 @@ export default function CadastroRachaPage() {
         </div>
         <h1 className="text-3xl font-bold text-white mb-3 leading-tight">Cadastre seu racha</h1>
         <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed">
-          Crie seu racha e complete seu perfil: você já entra como presidente. A partir daí o
-          Fut7Pro liga tudo no painel e no site do racha — sorteio inteligente, rankings e
-          estatísticas, conquistas e notificações, gestão financeira e patrocinadores — com
-          segurança e estrutura profissional multi-admin.
+          Crie seu racha e complete seu perfil: voce ja entra como presidente. A partir daqui o
+          Fut7Pro liga tudo no painel e no site do racha - sorteio inteligente, rankings e
+          estatisticas, conquistas e notificacoes, gestao financeira e patrocinadores - com
+          seguranca e estrutura profissional multi-admin.
         </p>
         <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
           <div className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
@@ -187,15 +190,15 @@ export default function CadastroRachaPage() {
             <div>Multi-tenant com slug</div>
           </div>
           <div className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
-            <div className="text-yellow-300 font-semibold text-lg">Logo dinâmica</div>
+            <div className="text-yellow-300 font-semibold text-lg">Logo dinamica</div>
             <div>Aplicada no painel e no site</div>
           </div>
           <div className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
             <div className="text-yellow-300 font-semibold text-lg">Perfil pronto</div>
-            <div>Presidente com posição e apelido</div>
+            <div>Presidente com posicao e apelido</div>
           </div>
           <div className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
-            <div className="text-yellow-300 font-semibold text-lg">Slug público</div>
+            <div className="text-yellow-300 font-semibold text-lg">Slug publico</div>
             <div>https://app.fut7pro.com.br/&lt;slug&gt;</div>
           </div>
         </div>
@@ -206,7 +209,7 @@ export default function CadastroRachaPage() {
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-white">Dados do administrador</h2>
             <p className="text-sm text-gray-400">
-              Use apenas o primeiro nome para não quebrar os cards. Apelido é opcional.
+              Use apenas o primeiro nome para nao quebrar os cards. Apelido e opcional.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
@@ -249,7 +252,7 @@ export default function CadastroRachaPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 type="password"
-                placeholder="Senha (mín. 6 caracteres) *"
+                placeholder="Senha (min. 6 caracteres) *"
                 value={adminSenha}
                 onChange={(e) => setAdminSenha(e.target.value)}
                 className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -282,7 +285,7 @@ export default function CadastroRachaPage() {
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-white">Dados do racha</h2>
             <p className="text-sm text-gray-400">
-              Nome, cidade/estado e slug são obrigatórios. O slug define o link público.
+              Nome, cidade/estado e slug sao obrigatorios. O slug define o link publico.
             </p>
             <input
               type="text"
@@ -306,7 +309,7 @@ export default function CadastroRachaPage() {
                 autoCapitalize="none"
               />
               <div className="text-xs text-gray-500 self-center">
-                Link público: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                Link publico: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -362,13 +365,30 @@ export default function CadastroRachaPage() {
             {isLoading ? "Cadastrando..." : "Cadastrar racha e presidente"}
           </button>
           <div className="text-center text-sm text-gray-300">
-            Já tem painel?{" "}
+            Ja tem painel?{" "}
             <a href="/admin/login" className="text-yellow-300 underline hover:text-yellow-200">
               Entrar
             </a>
           </div>
         </form>
       </section>
+      <ImageCropperModal
+        open={!!cropImage && !!cropTarget}
+        imageSrc={cropImage || ""}
+        aspect={1}
+        shape={cropTarget === "avatar" ? "round" : "rect"}
+        title={cropTarget === "logo" ? "Ajustar logo do racha" : "Ajustar foto do presidente"}
+        onCancel={() => {
+          setCropImage(undefined);
+          setCropTarget(null);
+        }}
+        onApply={(cropped) => {
+          if (cropTarget === "logo") setRachaLogo(cropped);
+          if (cropTarget === "avatar") setAdminAvatar(cropped);
+          setCropImage(undefined);
+          setCropTarget(null);
+        }}
+      />
     </main>
   );
 }
