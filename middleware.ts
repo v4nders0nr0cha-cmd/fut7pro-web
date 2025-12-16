@@ -10,6 +10,11 @@ export default withAuth(
     // @ts-ignore
     const token = req.nextauth.token as any; // Token tipado por NextAuth
 
+    // Liberar páginas públicas de autenticação/cadastro do admin
+    if (pathname.startsWith("/admin/login") || pathname.startsWith("/admin/register")) {
+      return NextResponse.next();
+    }
+
     // Bloquear acesso à área /superadmin para quem não for SUPERADMIN
     if (pathname.startsWith("/superadmin")) {
       if (!token || token.role !== "SUPERADMIN") {
@@ -22,7 +27,14 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token, // Permite acesso autenticado normalmente
+      authorized: ({ token, req }) => {
+        const path = req.nextUrl.pathname;
+        // Admin login/register são públicos
+        if (path.startsWith("/admin/login") || path.startsWith("/admin/register")) {
+          return true;
+        }
+        return !!token; // Demais rotas exigem token
+      },
     },
   }
 );
