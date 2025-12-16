@@ -176,9 +176,10 @@ export default function CadastroRachaPage() {
         </div>
         <h1 className="text-3xl font-bold text-white mb-3 leading-tight">Cadastre seu racha</h1>
         <p className="text-gray-300 mb-6 text-sm md:text-base leading-relaxed">
-          Crie o racha, defina o slug de acesso e cadastre o presidente. Esses dados já ficam
-          vinculados ao painel e ao site público. Logo e nome serão aplicados no painel e no site do
-          racha.
+          Crie seu racha e complete seu perfil: você já entra como presidente. A partir daí o
+          Fut7Pro liga tudo no painel e no site do racha — sorteio inteligente, rankings e
+          estatísticas, conquistas e notificações, gestão financeira e patrocinadores — com
+          segurança e estrutura profissional multi-admin.
         </p>
         <div className="grid grid-cols-2 gap-3 text-sm text-gray-300">
           <div className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
