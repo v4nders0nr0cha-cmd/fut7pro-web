@@ -10,7 +10,7 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function AdminRegisterLayout({ children }: { children: ReactNode }) {
+export default function CadastroRachaLayout({ children }: { children: ReactNode }) {
   return (
     <div
       className={`${inter.className} min-h-screen bg-gradient-to-br from-[#0f1014] via-[#13151b] to-[#0b0c10] text-white flex items-center justify-center px-4 py-10`}

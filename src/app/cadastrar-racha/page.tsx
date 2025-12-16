@@ -37,7 +37,7 @@ const ESTADOS_BR = [
 
 type UploadTarget = "logo" | "avatar";
 
-export default function AdminRegisterPage() {
+export default function CadastroRachaPage() {
   const router = useRouter();
 
   const [adminNome, setAdminNome] = useState("");
