@@ -180,9 +180,7 @@ const authOptions: NextAuthOptionsLike = {
 
       // Refresh token se necessário
       if (token.accessToken && token.refreshToken) {
-        const tokenExp =
-          (token as any).accessTokenExp ??
-          decodeExp(token.accessToken as string);
+        const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 
         if (tokenExp && tokenExp < now + 300) {
