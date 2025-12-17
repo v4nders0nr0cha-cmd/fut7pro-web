@@ -22,6 +22,18 @@ const REFRESH_PATH = process.env.AUTH_REFRESH_PATH || "/auth/refresh";
 const ME_PATH = process.env.AUTH_ME_PATH || "/auth/me";
 const GOOGLE_PATH = "/auth/google";
 
+function decodeExp(token?: string | null): number | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
+    return typeof payload.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 const authOptions: NextAuthOptionsLike = {
   providers: [
     GoogleProvider({
@@ -150,6 +162,7 @@ const authOptions: NextAuthOptionsLike = {
         (session.user as any).tenantSlug = (token as any).tenantSlug ?? null;
         (session.user as any).accessToken = token.accessToken as string;
         (session.user as any).refreshToken = token.refreshToken as string;
+        (session.user as any).accessTokenExp = (token as any).accessTokenExp ?? null;
       }
       return session;
     },
@@ -162,11 +175,14 @@ const authOptions: NextAuthOptionsLike = {
         (token as any).tenantSlug = (user as any).tenantSlug ?? null;
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
+        (token as any).accessTokenExp = decodeExp(token.accessToken as string);
       }
 
       // Refresh token se necessário
       if (token.accessToken && token.refreshToken) {
-        const tokenExp = (token as any).exp;
+        const tokenExp =
+          (token as any).accessTokenExp ??
+          decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 
         if (tokenExp && tokenExp < now + 300) {
@@ -186,6 +202,7 @@ const authOptions: NextAuthOptionsLike = {
               const data = await response.json();
               token.accessToken = data.accessToken;
               token.refreshToken = data.refreshToken;
+              (token as any).accessTokenExp = decodeExp(token.accessToken as string);
             }
           } catch (error) {
             if (process.env.NODE_ENV === "development") {
