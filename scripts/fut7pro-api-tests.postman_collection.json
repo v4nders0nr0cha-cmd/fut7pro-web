@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fut7Pro API Tests",
-    "description": "Testes para endpoints de jogos do dia e fallback",
+    "description": "Testes dos endpoints reais (sem mock) para jogos e health",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -33,45 +33,33 @@
       }
     },
     {
-      "name": "App Fallback",
+      "name": "Public Matches Today",
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback",
+          "raw": "https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=today",
           "protocol": "https",
           "host": ["app", "fut7pro", "com", "br"],
-          "path": ["api", "public", "jogos-do-dia-fallback"]
+          "path": ["api", "public", "fut7pro", "matches"],
+          "query": [{ "key": "scope", "value": "today" }]
         },
-        "description": "Endpoint de fallback com diagnóstico"
+        "description": "Partidas públicas do dia (dados reais)"
       }
     },
     {
-      "name": "App Mock",
+      "name": "Public Matches Upcoming",
       "request": {
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock",
+          "raw": "https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=upcoming",
           "protocol": "https",
           "host": ["app", "fut7pro", "com", "br"],
-          "path": ["api", "public", "jogos-do-dia-mock"]
+          "path": ["api", "public", "fut7pro", "matches"],
+          "query": [{ "key": "scope", "value": "upcoming" }]
         },
-        "description": "Mock direto para sanity check"
-      }
-    },
-    {
-      "name": "App Proxy Direto",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "https://app.fut7pro.com.br/api/public/jogos-do-dia",
-          "protocol": "https",
-          "host": ["app", "fut7pro", "com", "br"],
-          "path": ["api", "public", "jogos-do-dia"]
-        },
-        "description": "Proxy principal (vai 200 quando SSL ok)"
+        "description": "Próximas partidas (dados reais)"
       }
     },
     {

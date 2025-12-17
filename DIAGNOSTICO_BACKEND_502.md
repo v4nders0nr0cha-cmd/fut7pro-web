@@ -1,86 +1,38 @@
-# 🔍 Diagnóstico: Erro 502 no Proxy
+# Diagnóstico de 502 no proxy (sem mock)
 
-## ❌ Problema Identificado
+O fluxo de jogos usa apenas o backend real. Use estes passos para identificar 502/SSL e corrigir rapidamente.
 
-**Backend não está respondendo corretamente:**
+## Passo a passo
 
-```bash
-curl.exe -k -I https://api.fut7pro.com.br/partidas/jogos-do-dia
-HTTP/1.1 404 Not Found
-```
+1. **Health do backend**
+   ```powershell
+   curl.exe -sI https://api.fut7pro.com.br/health | findstr /I "HTTP"
+   ```
+2. **Partidas públicas (rota oficial)**
+   ```powershell
+   $slug = "fut7pro" # ajuste para o racha em validação
+   curl.exe -s "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
+   ```
 
-## 🔧 Correções Implementadas
+   - Esperado: 200 + JSON de partidas.
+   - Scopes: `today`, `upcoming`, `recent`.
+3. **Se o domínio custom retornar 502/SSL**
+   - Temporariamente use `https://fut7pro-backend.onrender.com` em `BACKEND_URL`/`NEXT_PUBLIC_API_URL`.
+   - Redeploy no Vercel, depois revalide:
+     ```powershell
+     curl.exe -X POST https://app.fut7pro.com.br/api/revalidate/public `
+       -H "Content-Type: application/json" `
+       -d "{""slug"":""$slug"",""token"":""$env:PUBLIC_REVALIDATE_TOKEN""}"
+     ```
 
-### 1. Runtime Migration
+## O que verificar no backend
 
-- ✅ **Antes**: Edge Runtime (incompatível com TLS do backend)
-- ✅ **Agora**: Node.js Runtime (compatível)
+- Rota `GET /public/{slug}/matches` operando (200/JSON).
+- SSL válido para `api.fut7pro.com.br` ou uso do host de fallback Render.
+- CORS liberado para `app.fut7pro.com.br`.
 
-### 2. HEAD Request Otimizado
+## Observações
 
-- ✅ **Antes**: HEAD chamava upstream (causava 5xx)
-- ✅ **Agora**: HEAD retorna 200 sem chamar backend
-
-### 3. Logs Melhorados
-
-- ✅ Console.error para debugging
-- ✅ Detalhes de erro upstream
-
-## 🧪 Teste com Mock
-
-**Endpoint temporário para validar proxy:**
-
-```bash
-# Teste o mock (deve funcionar)
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-```
-
-## 🔍 Próximos Passos
-
-### 1. Verificar Backend
-
-O backend `https://api.fut7pro.com.br` precisa:
-
-- ✅ Endpoint `/partidas/jogos-do-dia` funcionando
-- ✅ Certificado SSL válido
-- ✅ CORS configurado (se necessário)
-
-### 2. Testar Endpoints Possíveis
-
-```bash
-# Testar diferentes caminhos
-curl.exe -k -I https://api.fut7pro.com.br/partidas/jogos-do-dia
-curl.exe -k -I https://api.fut7pro.com.br/api/partidas/jogos-do-dia
-curl.exe -k -I https://api.fut7pro.com.br/v1/partidas/jogos-do-dia
-curl.exe -k -I https://api.fut7pro.com.br/jogos-do-dia
-```
-
-### 3. Verificar Logs do Backend
-
-- Railway Dashboard → Logs
-- Procurar por erros de rota ou CORS
-
-## 📊 Status Atual
-
-- ✅ **Proxy corrigido** (Node.js runtime)
-- ✅ **HEAD funcionando** (200 OK)
-- ❌ **Backend 404** (endpoint não existe)
-- ✅ **Mock funcionando** (para testes)
-
-## 🎯 Solução
-
-**Opção 1: Corrigir Backend**
-
-- Implementar endpoint `/partidas/jogos-do-dia`
-- Configurar CORS se necessário
-
-**Opção 2: Usar Mock Temporário**
-
-- Usar `/api/public/jogos-do-dia-mock` até backend estar pronto
-- Atualizar frontend para usar mock
-
-**Opção 3: Endpoint Alternativo**
-
-- Usar endpoint existente no backend
-- Ajustar path no proxy
+- Rota `/api/public/jogos-do-dia-mock` foi removida.
+- Não habilitar `NEXT_PUBLIC_USE_JOGOS_MOCK` (flag descontinuada).
+- Use o header `x-fallback-source` nas respostas públicas para validar a origem (backend real vs fallback).

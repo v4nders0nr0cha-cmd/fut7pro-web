@@ -1,61 +1,36 @@
-# 🚨 CONFIGURAR BACKEND_URL AGORA
+# ⚠️ CONFIGURAR BACKEND_URL AGORA (rota slugada)
 
-## ❌ Problema Atual
+## Problema
 
-```
-HTTP/1.1 502 Bad Gateway
-{"error":"Fetch failed"}
-```
+`BACKEND_URL` ausente gera 502/500 nas rotas públicas de partidas.
 
-## ✅ Solução Rápida (2 minutos)
+## Passo a passo (2 minutos)
 
-### 1. Acesse Vercel Dashboard
+1. **Vercel Dashboard**
+   - Projeto: `fut7pro-web`
+   - Settings → Environment Variables → Add New
+     - Name: `BACKEND_URL`
+     - Value: `https://api.fut7pro.com.br`
+     - Environment: Production (e Preview, se desejar)
 
-- URL: https://vercel.com/dashboard
-- Projeto: `fut7pro-web`
+2. **Redeploy**
+   - Deployments → Current → Redeploy
 
-### 2. Adicionar Environment Variable
+3. **Testar rota pública (slug do racha)**
+   ```powershell
+   curl.exe -sI https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=today | findstr /I "HTTP Cache-Control"
+   ```
 
-- **Settings** → **Environment Variables**
-- **Add New**:
-  - **Name**: `BACKEND_URL`
-  - **Value**: `https://api.fut7pro.com.br`
-  - **Environment**: ✅ Production ✅ Preview
+## Se ainda falhar
 
-### 3. Redeploy
+- Confirme a variável em Settings (valor correto).
+- Teste o backend direto:
+  ```powershell
+  curl.exe -sI https://api.fut7pro.com.br/public/fut7pro/matches?scope=today
+  ```
+- Verifique logs em Functions (Vercel).
 
-- **Deployments** → **Current**
-- Clique em **Redeploy** (ou aguarde próximo push)
-
-### 4. Testar
-
-```powershell
-# Deve retornar 200 + Cache-Control
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "HTTP Cache-Control"
-```
-
-## 🔧 Se Ainda Der Erro
-
-### Verificar se BACKEND_URL está definida:
-
-1. **Settings** → **Environment Variables**
-2. Deve aparecer: `BACKEND_URL = https://api.fut7pro.com.br`
-
-### Verificar se backend está respondendo:
-
-```powershell
-# Testar backend diretamente
-curl.exe -sI https://api.fut7pro.com.br/partidas/jogos-do-dia
-```
-
-### Verificar logs:
-
-1. **Functions** → **View Function Logs**
-2. Procurar por erros de `BACKEND_URL`
-
-## 📊 Resultado Esperado
-
-### HEAD Request:
+## Resultado esperado
 
 ```
 HTTP/1.1 200 OK
@@ -63,7 +38,7 @@ Cache-Control: s-maxage=60, stale-while-revalidate=300
 Content-Type: application/json
 ```
 
-### GET Request:
+Corpo (exemplo):
 
 ```json
 [
@@ -78,10 +53,10 @@ Content-Type: application/json
 ]
 ```
 
-## ⚡ Teste Rápido
+## Teste rápido
 
 ```powershell
-# Execute este comando após configurar
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia | findstr /I "HTTP"
-# Deve mostrar: HTTP/1.1 200 OK
+curl.exe -sI https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=today | findstr /I "HTTP x-fallback-source"
 ```
+
+Esperado: `HTTP/1.1 200 OK` e `x-fallback-source: backend`.

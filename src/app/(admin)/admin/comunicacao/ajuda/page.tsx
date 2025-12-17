@@ -348,7 +348,7 @@ export default function CentralAjudaPage() {
           </span>
         </div>
 
-        {/* Vídeos rápidos (mock) */}
+        {/* Vídeos rápidos (fallback quando a API não retornar) */}
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-2">
             <FaVideo className="text-yellow-400" />

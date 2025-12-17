@@ -1,6 +1,6 @@
 $ErrorActionPreference = "SilentlyContinue"
 
-function Hit($name, $url, $headers = @{}) {
+function Hit($name, $url) {
   Write-Host "`n### $name" -ForegroundColor Cyan
   try {
     $res = curl.exe -sI $url
@@ -22,40 +22,35 @@ function Hit($name, $url, $headers = @{}) {
   }
 }
 
-# 0) Certificado do backend (passa quando NÃO aparece WRONG_PRINCIPAL)
+# 0) Certificado do backend (passa quando NÇO aparece WRONG_PRINCIPAL)
 Write-Host "== Certificado do backend ==" -ForegroundColor Yellow
 curl.exe -sIv https://api.fut7pro.com.br | Select-String -Pattern "subject:|issuer:|altname|WRONG_PRINCIPAL|HTTP"
 
-# 1) Healthcheck do backend (deve virar 200 quando o serviço estiver de pé)
+# 1) Healthcheck do backend (deve virar 200 quando o servi‡o estiver de p‚)
 Hit "Backend /health" "https://api.fut7pro.com.br/health"
 
-# 2) Fallback do app (sempre responde; x-fallback-source ajuda a ver a rota)
-Hit "App fallback" "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback"
+# 2) Rotas p£blicas reais por slug
+$slug = "fut7pro"
+Hit "App matches (today)" "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
+Hit "App matches (upcoming)" "https://app.fut7pro.com.br/api/public/$slug/matches?scope=upcoming"
 
-# 2.1) Verificar header de diagnóstico
-Write-Host "`n### Verificação de Headers de Diagnóstico" -ForegroundColor Yellow
-$fallbackHeaders = curl.exe -sI "https://app.fut7pro.com.br/api/public/jogos-do-dia-fallback"
-$fallbackSource = ($fallbackHeaders | Select-String -Pattern "x-fallback-source").Line
-$httpStatus = ($fallbackHeaders | Select-String -Pattern "^HTTP").Line
-$cacheControl = ($fallbackHeaders | Select-String -Pattern "Cache-Control").Line
-$vercelCache = ($fallbackHeaders | Select-String -Pattern "X-Vercel-Cache").Line
+# 2.1) Verificar header de diagn¢stico
+Write-Host "`n### Verifica‡Æo de Headers de Diagn¢stico" -ForegroundColor Yellow
+$matchesHeaders = curl.exe -sI "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
+$fallbackSource = ($matchesHeaders | Select-String -Pattern "x-fallback-source").Line
+$httpStatus = ($matchesHeaders | Select-String -Pattern "^HTTP").Line
+$cacheControl = ($matchesHeaders | Select-String -Pattern "Cache-Control").Line
+$vercelCache = ($matchesHeaders | Select-String -Pattern "X-Vercel-Cache").Line
 
 Write-Host "Status: $httpStatus"
 Write-Host "Fallback Source: $fallbackSource"
 Write-Host "Cache Control: $cacheControl"
 Write-Host "Vercel Cache: $vercelCache"
 
-# 3) Mock direto (para sanity check)
-Hit "App mock" "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock"
-
-# 4) Proxy principal (vai 200 quando SSL ok)
-Hit "App proxy direto" "https://app.fut7pro.com.br/api/public/jogos-do-dia"
-
-# 5) Healthcheck do app
+# 3) Healthcheck do app
 Hit "App healthcheck" "https://app.fut7pro.com.br/api/health/backend"
 
 Write-Host "`n=== RESUMO ===" -ForegroundColor Green
-Write-Host "✅ Fallback sempre funciona"
-Write-Host "✅ Mock sempre funciona" 
-Write-Host "⚠️  Backend SSL precisa ser corrigido"
-Write-Host "📊 Use x-fallback-source para ver qual trilha está ativa"
+Write-Host "? Rotas p£blicas devolvem jogos reais (scope=today/upcoming)"
+Write-Host "??  Backend SSL precisa estar correto ou usar host de contingˆncia"
+Write-Host "?? Use x-fallback-source para confirmar origem backend"

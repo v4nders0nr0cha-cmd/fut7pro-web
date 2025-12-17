@@ -1,8 +1,10 @@
-# Script de teste para validar endpoints e configurações
+# Script de teste para validar endpoints e configurações sem mock
 # Execute no PowerShell: .\scripts\test-endpoint.ps1
 
-Write-Host "🧪 Testando endpoints e configurações" -ForegroundColor Yellow
+Write-Host "🔎 Testando endpoints e configurações" -ForegroundColor Yellow
 Write-Host ""
+
+$slug = "fut7pro" # ajuste para o racha que deseja validar
 
 # Teste healthcheck do backend
 Write-Host "0. Testando healthcheck do backend..." -ForegroundColor Cyan
@@ -20,25 +22,27 @@ try {
 
 Write-Host ""
 
-# Teste HEAD request
+# Teste HEAD request (rota oficial de partidas públicas)
 Write-Host "1. Testando HEAD request..." -ForegroundColor Cyan
 try {
-    $headResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/jogos-do-dia" -Method HEAD -UseBasicParsing
+    $headResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today" -Method HEAD -UseBasicParsing
     Write-Host "✅ HEAD Status: $($headResponse.StatusCode)" -ForegroundColor Green
     Write-Host "   Cache-Control: $($headResponse.Headers['Cache-Control'])" -ForegroundColor Gray
+    Write-Host "   x-fallback-source: $($headResponse.Headers['x-fallback-source'])" -ForegroundColor Gray
 } catch {
     Write-Host "❌ HEAD Error: $($_.Exception.Message)" -ForegroundColor Red
 }
 
 Write-Host ""
 
-# Teste GET request
+# Teste GET request (dados reais)
 Write-Host "2. Testando GET request..." -ForegroundColor Cyan
 try {
-    $getResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/jogos-do-dia" -UseBasicParsing
+    $getResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today" -UseBasicParsing
     Write-Host "✅ GET Status: $($getResponse.StatusCode)" -ForegroundColor Green
     Write-Host "   Cache-Control: $($getResponse.Headers['Cache-Control'])" -ForegroundColor Gray
     Write-Host "   Content-Type: $($getResponse.Headers['Content-Type'])" -ForegroundColor Gray
+    Write-Host "   x-fallback-source: $($getResponse.Headers['x-fallback-source'])" -ForegroundColor Gray
     
     # Tentar parsear JSON
     try {
@@ -54,28 +58,8 @@ try {
 
 Write-Host ""
 
-# Teste mock
-Write-Host "3. Testando mock..." -ForegroundColor Cyan
-try {
-    $mockResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/api/public/jogos-do-dia-mock" -UseBasicParsing
-    Write-Host "✅ Mock Status: $($mockResponse.StatusCode)" -ForegroundColor Green
-    Write-Host "   Cache-Control: $($mockResponse.Headers['Cache-Control'])" -ForegroundColor Gray
-    
-    # Tentar parsear JSON
-    try {
-        $mockData = $mockResponse.Content | ConvertFrom-Json
-        Write-Host "✅ Mock JSON válido - $($mockData.Count) itens" -ForegroundColor Green
-    } catch {
-        Write-Host "⚠️  Mock não é JSON válido" -ForegroundColor Yellow
-    }
-} catch {
-    Write-Host "❌ Mock Error: $($_.Exception.Message)" -ForegroundColor Red
-}
-
-Write-Host ""
-
 # Teste de cache bust
-Write-Host "4. Testando cache bust..." -ForegroundColor Cyan
+Write-Host "3. Testando cache bust..." -ForegroundColor Cyan
 $cacheBust = Get-Random
 try {
     $bustResponse = Invoke-WebRequest -Uri "https://app.fut7pro.com.br/?cb=$cacheBust" -Method HEAD -UseBasicParsing
@@ -91,4 +75,4 @@ try {
 }
 
 Write-Host ""
-Write-Host "🏁 Teste concluído!" -ForegroundColor Yellow
+Write-Host "✅ Teste concluído!" -ForegroundColor Yellow

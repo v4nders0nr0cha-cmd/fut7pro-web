@@ -1,72 +1,35 @@
-# 🚨 ATIVAÇÃO URGENTE DO MOCK
+# Plano emergencial sem mock (API real)
 
-## ❌ Problema Confirmado
+O mock de jogos foi removido. Em incidentes, siga os passos abaixo para manter o app operacional usando apenas o backend real.
 
-```
-ERR_TLS_CERT_ALTNAME_INVALID: Host: api.fut7pro.com.br. is not in the cert's altnames: DNS:*.up.railway.app
-```
+## Checklist rápido
 
-## ✅ SOLUÇÃO IMEDIATA (2 minutos)
+1. **Health do backend**
+   ```powershell
+   curl.exe -sI https://api.fut7pro.com.br/health | findstr /I "HTTP"
+   ```
+2. **Partidas públicas (escopo do dia)**
+   ```powershell
+   $slug = "fut7pro" # ajuste para o racha em validação
+   curl.exe -s "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
+   ```
+3. **Se o domínio custom retornar 502/SSL**
+   - Troque temporariamente `BACKEND_URL`/`NEXT_PUBLIC_API_URL` para `https://fut7pro-backend.onrender.com`.
+   - Redeploy no Vercel após ajustar as variáveis.
+   - Revalide páginas públicas: `POST /api/revalidate/public` com `slug` e `PUBLIC_REVALIDATE_TOKEN`.
 
-### 1. Configurar Mock no Vercel
+## Importante
 
-1. Acesse: https://vercel.com/dashboard
-2. Projeto: `fut7pro-web`
-3. **Settings** → **Environment Variables**
-4. **Add New**:
-   - **Name**: `NEXT_PUBLIC_USE_JOGOS_MOCK`
-   - **Value**: `1`
-   - **Environment**: ✅ Production ✅ Preview
-5. **Save**
+- Não use `NEXT_PUBLIC_USE_JOGOS_MOCK` (descontinuado).
+- Não há rota `/api/public/jogos-do-dia-mock`. Use sempre `/api/public/{slug}/matches` com `scope`.
 
-### 2. Redeploy
+## Comandos úteis
 
-1. **Deployments** → **Current**
-2. Clique em **Redeploy**
-
-### 3. Testar Imediatamente
-
-```powershell
-# Deve retornar dados mock
-curl.exe -s https://app.fut7pro.com.br/api/public/jogos-do-dia-mock
-```
-
-## 🔧 Soluções Permanentes
-
-### Opção 1: Usar Domínio Railway
-
-- Alterar `BACKEND_URL` para: `https://fut7pro-backend.up.railway.app`
-- Configurar CORS no backend
-
-### Opção 2: Corrigir Certificado SSL
-
-- Railway Dashboard → Projeto → Settings → Domains
-- Adicionar `api.fut7pro.com.br` ao certificado
-
-### Opção 3: Usar Endpoint SSL Fix
-
-- Usar `/api/public/jogos-do-dia-ssl-fix` (já implementado)
-
-## 📊 Status Esperado
-
-```json
-// GET /api/public/jogos-do-dia-mock
-[
-  {
-    "id": "1",
-    "timeA": "Time A",
-    "timeB": "Time B",
-    "golsTimeA": 2,
-    "golsTimeB": 1,
-    "finalizada": true
-  }
-]
-```
-
-## ⚡ Teste Rápido
-
-```powershell
-# Após configurar mock
-curl.exe -sI https://app.fut7pro.com.br/api/public/jogos-do-dia-mock | findstr /I "HTTP"
-# Deve mostrar: HTTP/1.1 200 OK
-```
+- Ver fallback ativo (headers de diagnóstico):
+  ```powershell
+  curl.exe -sI https://app.fut7pro.com.br/api/public/$slug/matches?scope=today | findstr /I "x-fallback-source HTTP"
+  ```
+- Health do app:
+  ```powershell
+  curl.exe -sI https://app.fut7pro.com.br/api/health/backend | findstr /I "HTTP"
+  ```

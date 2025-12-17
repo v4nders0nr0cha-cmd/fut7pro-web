@@ -17,9 +17,9 @@
 
 ### 3. Proxy Server-Side
 
-- ✅ API route `/api/public/jogos-do-dia`
-- ✅ Hook `useJogosDoDia` criado
-- ✅ Integrado na página principal
+- ✅ API route slugada `/api/public/{slug}/matches?scope=*`
+- ✅ Hook `usePublicMatches`/`useJogosDoDia` criado
+- ✅ Integrado nas páginas públicas
 
 ## 🔧 Variáveis de Ambiente Necessárias
 
@@ -66,8 +66,8 @@ NODE_ENV=production
 ## 📊 Testes
 
 ```bash
-# Testar proxy server-side
-curl https://app.fut7pro.com.br/api/public/jogos-do-dia
+# Testar proxy server-side (ajuste slug/scope)
+curl https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=today
 
 # Testar dados estruturados
 curl https://app.fut7pro.com.br | grep -A 20 "application/ld+json"
@@ -95,8 +95,8 @@ curl -I https://app.fut7pro.com.br
 # Admin (com X-Robots-Tag)
 curl -I https://app.fut7pro.com.br/admin/login
 
-# Proxy funcionando
-curl -I https://app.fut7pro.com.br/api/public/jogos-do-dia
+# Proxy funcionando (slug + scope)
+curl -I https://app.fut7pro.com.br/api/public/fut7pro/matches?scope=today
 ```
 
 ### URLs importantes:
@@ -104,4 +104,4 @@ curl -I https://app.fut7pro.com.br/api/public/jogos-do-dia
 - Home: https://app.fut7pro.com.br
 - Robots: https://app.fut7pro.com.br/robots.txt
 - Sitemap: https://app.fut7pro.com.br/sitemap.xml
-- Proxy: https://app.fut7pro.com.br/api/public/jogos-do-dia
+- Proxy: https://app.fut7pro.com.br/api/public/{slug}/matches?scope=today|upcoming|recent

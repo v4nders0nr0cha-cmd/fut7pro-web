@@ -89,7 +89,7 @@ const SERVICOS = [
   },
 ];
 
-// Histórico mockado para demo
+// Histórico de fallback para demo
 const HISTORICO = [
   {
     data: "15/06/2025",
