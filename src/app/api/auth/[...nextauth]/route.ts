@@ -34,7 +34,7 @@ function decodeExp(token?: string | null): number | null {
   }
 }
 
-const authOptions: NextAuthOptionsLike = {
+export const authOptions: NextAuthOptionsLike = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 type UserLike = {
   id: string;
@@ -11,7 +12,7 @@ type UserLike = {
 };
 
 export async function requireUser(): Promise<UserLike | null> {
-  const session = await getServerSession?.();
+  const session = await getServerSession?.(authOptions as any);
   return (session as any)?.user ?? null;
 }
 
