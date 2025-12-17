@@ -76,15 +76,27 @@ const authOptions: NextAuthOptionsLike = {
 
           const userData = await userResponse.json();
 
+          // tenta extrair slug/tenant de diferentes formatos que o backend possa devolver
+          const resolvedTenantSlug =
+            userData?.tenantSlug ||
+            userData?.slug ||
+            userData?.tenant?.slug ||
+            userData?.racha?.slug ||
+            null;
+          const resolvedTenantId = userData?.tenantId || userData?.tenant?.id || null;
+          const resolvedImage =
+            userData?.image || userData?.avatar || userData?.avatarUrl || userData?.foto || null;
+
           return {
             id: userData.id,
             name: userData.name,
             email: userData.email,
             role: userData.role,
-            tenantId: userData.tenantId,
-            tenantSlug: userData.tenantSlug ?? null,
+            tenantId: resolvedTenantId,
+            tenantSlug: resolvedTenantSlug,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
+            image: resolvedImage,
           };
         } catch (error) {
           if (process.env.NODE_ENV === "development") {

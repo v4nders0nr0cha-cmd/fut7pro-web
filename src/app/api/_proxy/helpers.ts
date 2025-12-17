@@ -16,7 +16,7 @@ export async function requireUser(): Promise<UserLike | null> {
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
-  return slug || user.tenantSlug || user.tenantId;
+  return slug || user.tenantSlug || (user as any).slug || user.tenantId || null;
 }
 
 export function buildHeaders(
