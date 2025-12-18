@@ -78,10 +78,14 @@ export const authOptions: NextAuthOptionsLike = {
           });
 
           if (!response.ok) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Erro na autenticação:", response.status, response.statusText);
+            let message = "Erro na autenticacao";
+            try {
+              const body = await response.json();
+              message = (body as any)?.message || message;
+            } catch {
+              // ignore parse errors
             }
-            return null;
+            throw new Error(message);
           }
 
           const data = await response.json();
