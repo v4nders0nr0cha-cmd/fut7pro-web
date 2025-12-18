@@ -16,10 +16,25 @@ type NextAuthOptionsLike = {
   secret?: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
-const REFRESH_PATH = process.env.AUTH_REFRESH_PATH || "/auth/refresh";
-const ME_PATH = process.env.AUTH_ME_PATH || "/auth/me";
+const API_BASE_URL =
+  process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+const normalizeAuthPath = (value: string | undefined | null, fallback: string) => {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  // garante prefixo /auth/ e evita typos (ex.: /auth/Tme)
+  if (!trimmed.startsWith("/auth/")) return fallback;
+  const parts = trimmed.split("/");
+  const last = parts[parts.length - 1].toLowerCase();
+  if (["login", "refresh", "me"].includes(last)) {
+    return `/auth/${last}`;
+  }
+  return fallback;
+};
+
+const LOGIN_PATH = normalizeAuthPath(process.env.AUTH_LOGIN_PATH, "/auth/login");
+const REFRESH_PATH = normalizeAuthPath(process.env.AUTH_REFRESH_PATH, "/auth/refresh");
+const ME_PATH = normalizeAuthPath(process.env.AUTH_ME_PATH, "/auth/me");
 const GOOGLE_PATH = "/auth/google";
 
 function decodeExp(token?: string | null): number | null {

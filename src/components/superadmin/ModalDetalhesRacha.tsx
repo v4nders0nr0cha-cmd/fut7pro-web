@@ -5,18 +5,18 @@ import { format } from "date-fns";
 
 interface RachaDetalhes {
   nome: string;
-  owner?: { nome: string };
-  plano?: { nome: string };
+  presidente?: string | null;
+  plano?: string | null;
   status: string;
-  ativo: boolean;
-  criadoEm: string;
+  ativo?: boolean;
+  criadoEm?: string | null;
   ultimoLogBloqueio?: {
-    detalhes: string;
-    criadoEm: string;
-  };
-  logs?: Array<{
+    detalhes?: string | null;
+    criadoEm?: string | null;
+  } | null;
+  historico?: Array<{
     acao: string;
-    criadoEm: string;
+    criadoEm?: string | null;
   }>;
 }
 
@@ -26,6 +26,19 @@ interface ModalDetalhesRachaProps {
 }
 
 export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRachaProps) {
+  const statusClass =
+    racha.status === "BLOQUEADO"
+      ? "bg-red-900 text-red-200"
+      : racha.status === "TRIAL"
+        ? "bg-yellow-900 text-yellow-200"
+        : racha.status === "INADIMPLENTE"
+          ? "bg-red-800 text-red-200"
+          : "bg-green-900 text-green-200";
+
+  const plano = racha.plano || (racha.status === "TRIAL" ? "Trial (30 dias)" : "Plano n/d");
+  const criadoEm = racha.criadoEm ? format(new Date(racha.criadoEm), "dd/MM/yyyy") : "--";
+  const ativo = racha.ativo ?? (racha.status === "ATIVO" || racha.status === "TRIAL");
+
   return (
     <div
       className="fixed inset-0 z-30 flex items-center justify-center bg-black bg-opacity-60"
@@ -40,24 +53,22 @@ export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRach
         </h3>
         <div className="flex flex-col gap-1 mb-2 text-zinc-200">
           <span>
-            <b>Presidente:</b> {racha.owner?.nome || "N/A"}
+            <b>Presidente:</b> {racha.presidente || "N/A"}
           </span>
           <span>
-            <b>Plano:</b> {racha.plano?.nome || "N/A"}
+            <b>Plano:</b> {plano}
           </span>
           <span>
             <b>Status:</b>{" "}
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-bold ${racha.status === "BLOQUEADO" ? "bg-red-900 text-red-200" : "bg-green-900 text-green-200"}`}
-            >
+            <span className={`px-2 py-1 rounded-full text-xs font-bold ${statusClass}`}>
               {racha.status}
             </span>
           </span>
           <span>
-            <b>Ativo:</b> {racha.ativo ? "Sim" : "Não"}
+            <b>Ativo:</b> {ativo ? "Sim" : "Nao"}
           </span>
           <span>
-            <b>Criado em:</b> {format(new Date(racha.criadoEm), "dd/MM/yyyy")}
+            <b>Criado em:</b> {criadoEm}
           </span>
         </div>
         {racha.status === "BLOQUEADO" && (
@@ -76,7 +87,7 @@ export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRach
             </span>
             <button
               className="mt-2 bg-green-700 text-white px-4 py-1 rounded hover:bg-green-800"
-              onClick={() => alert("Função de desbloquear manualmente (ação auditada)")}
+              onClick={() => alert("Funcao de desbloquear depende do endpoint do backend.")}
             >
               Desbloquear manualmente
             </button>
@@ -84,14 +95,14 @@ export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRach
         )}
         <div className="mb-3 mt-2">
           <h4 className="font-bold text-zinc-300 mb-1 flex items-center gap-1">
-            <FaHistory /> Histórico resumido:
+            <FaHistory /> Historico resumido:
           </h4>
           <ul className="text-xs text-zinc-400 space-y-1">
-            {racha.logs?.map((h, i: number) => (
+            {racha.historico?.map((h, i: number) => (
               <li key={i}>
                 • {h.acao}{" "}
                 <span className="text-zinc-600">
-                  ({format(new Date(h.criadoEm), "dd/MM/yyyy HH:mm")})
+                  {h.criadoEm ? `(${format(new Date(h.criadoEm), "dd/MM/yyyy HH:mm")})` : ""}
                 </span>
               </li>
             ))}

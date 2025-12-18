@@ -26,6 +26,16 @@ type Tenant = {
   playersCount?: number | null;
   athletes?: number | null;
   adminsCount?: number | null;
+  admins?: Array<{ name?: string | null; email?: string | null; createdAt?: string | null }>;
+  subscription?: {
+    status?: string | null;
+    planKey?: string | null;
+    plan?: string | null;
+    amount?: number | null;
+    interval?: string | null;
+    trialStart?: string | null;
+    trialEnd?: string | null;
+  } | null;
   ownerName?: string | null;
   ownerEmail?: string | null;
   createdAt?: string | null;
@@ -67,13 +77,19 @@ function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
   if (blocked) return "BLOQUEADO";
   if (value.includes("INAD")) return "INADIMPLENTE";
   if (value.includes("TRIAL")) return "TRIAL";
+  if (value.includes("TRIALING")) return "TRIAL";
+  if (value.includes("PAUSE")) return "BLOQUEADO";
+  if (value.includes("EXPIRE")) return "INADIMPLENTE";
   if (value.includes("BLOCK")) return "BLOQUEADO";
   if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
   return value || "ATIVO";
 }
 
-function normalizePlan(planKey?: string | null, plan?: string | null) {
-  const key = (planKey || plan || "").toLowerCase();
+function resolvePlanLabel(planKey?: string | null, status?: string | null) {
+  const key = (planKey || "").toLowerCase();
+  if (status && status.toUpperCase() === "TRIAL") {
+    return "Trial (30 dias)";
+  }
   if (!key) return "Plano n/d";
   if (key.includes("marketing")) {
     return key.includes("year") || key.includes("anual")
@@ -104,8 +120,9 @@ export default function RachasCadastradosPage() {
   const [modalRacha, setModalRacha] = useState<any>(null);
   const [impersonate, setImpersonate] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useSWR<TenantsResponse | Tenant[]>(
+  const { data, isLoading, error, mutate } = useSWR<TenantsResponse | Tenant[]>(
     "/api/superadmin/tenants",
     fetcher,
     { revalidateOnFocus: false }
@@ -121,23 +138,31 @@ export default function RachasCadastradosPage() {
   const rachas = useMemo(
     () =>
       tenants.map((t) => {
-        const status = normalizeStatus(t.status, t.blocked);
+        const subscription = t.subscription as any;
+        const status = normalizeStatus(subscription?.status ?? t.status, t.blocked);
+        const planLabel = resolvePlanLabel(
+          subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
+          status
+        );
+        const admin = t.ownerName || t.ownerEmail || t.admins?.[0]?.name || t.admins?.[0]?.email;
+
         return {
           id: t.id,
           nome: t.name || t.slug || "Racha sem nome",
-          presidente: t.ownerName || t.ownerEmail || "--",
-          plano: normalizePlan(t.planKey, t.plan),
+          presidente: admin || "--",
+          plano: planLabel,
           status,
+          ativo: status === "ATIVO" || status === "TRIAL",
           atletas:
             t.playersCount ?? t.athletes ?? t.adminsCount ?? (t as any)?._count?.players ?? 0,
           criadoEm: t.createdAt || "",
           bloqueado: status === "BLOQUEADO",
           historico: [
-            { acao: "Criado", data: t.createdAt || "" },
-            { acao: "Ultima atualizacao", data: t.updatedAt || "" },
-          ].filter((h) => h.data),
+            { acao: "Criado", criadoEm: t.createdAt || "" },
+            { acao: "Ultima atualizacao", criadoEm: t.updatedAt || "" },
+          ].filter((h) => h.criadoEm),
           ultimoLogBloqueio: t.blocked
-            ? { motivo: "Bloqueado no backend", data: t.updatedAt }
+            ? { detalhes: "Bloqueado no backend", criadoEm: t.updatedAt }
             : null,
         };
       }),
@@ -148,7 +173,7 @@ export default function RachasCadastradosPage() {
     const busca = search.toLowerCase();
     return rachas.filter((r) => {
       const matchNome = r.nome.toLowerCase().includes(busca);
-      const matchPresidente = r.presidente.toLowerCase().includes(busca);
+      const matchPresidente = (r.presidente || "").toLowerCase().includes(busca);
       const filtro = filtroStatus.toUpperCase();
       const matchStatus = filtro ? r.status === filtro : true;
       return (matchNome || matchPresidente) && matchStatus;
@@ -175,6 +200,43 @@ export default function RachasCadastradosPage() {
     if (status === "INADIMPLENTE") return "Inadimplente";
     if (status === "BLOQUEADO") return "Bloqueado";
     return status;
+  }
+
+  function handleBlock(selected: string[]) {
+    if (!selected.length) return;
+    setPendingAction("Bloquear");
+    Promise.all(
+      selected.map((id) =>
+        fetch(`/api/superadmin/tenants/${id}/block`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason: "Bloqueado manualmente pelo superadmin" }),
+        })
+      )
+    )
+      .then(() => mutate())
+      .catch(() => alert("Falha ao bloquear racha(s)."))
+      .finally(() => setPendingAction(null));
+  }
+
+  function handleAviso(selected: string[]) {
+    if (!selected.length) return;
+    setPendingAction("Aviso");
+    Promise.all(
+      selected.map((id) =>
+        fetch(`/api/superadmin/tenants/${id}/notify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "Aviso do Superadmin",
+            message: "Contato iniciado pelo superadmin. Favor checar o painel.",
+          }),
+        })
+      )
+    )
+      .then(() => mutate())
+      .catch(() => alert("Falha ao enviar aviso."))
+      .finally(() => setPendingAction(null));
   }
 
   return (
@@ -250,13 +312,15 @@ export default function RachasCadastradosPage() {
           </button>
           <button
             className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 || Boolean(pendingAction)}
+            onClick={() => selectedIds.length && handleBlock(selectedIds)}
           >
             Bloquear
           </button>
           <button
             className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedIds.length === 0}
+            disabled={selectedIds.length === 0 || Boolean(pendingAction)}
+            onClick={() => selectedIds.length && handleAviso(selectedIds)}
           >
             Enviar Aviso
           </button>
@@ -338,7 +402,8 @@ export default function RachasCadastradosPage() {
                       <button
                         className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Bloquear Racha"
-                        disabled
+                        disabled={Boolean(pendingAction)}
+                        onClick={() => handleBlock([r.id])}
                       >
                         <FaLock /> Bloquear
                       </button>
