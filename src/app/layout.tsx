@@ -3,7 +3,6 @@ import "@/styles/globals.css";
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import Script from "next/script";
 import { Providers } from "./providers";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -11,6 +10,7 @@ import { rachaConfig } from "@/config/racha.config";
 import CookieConsent from "@/components/layout/CookieConsent";
 import MonitoringBootstrap from "@/components/layout/MonitoringBootstrap";
 import { getApiBase } from "@/lib/get-api-base";
+import { GaScripts } from "@/components/layout/GaScripts";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -103,24 +103,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
-        {gaId ? (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-              strategy="afterInteractive"
-            />
-            <Script id="gtag-init" strategy="afterInteractive">
-              {`
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '${gaId}', { anonymize_ip: true });
-              `}
-            </Script>
-          </>
-        ) : null}
       </head>
       <body className={`${inter.className} bg-fundo text-white break-words`}>
+        <GaScripts gaId={gaId} />
         <ErrorBoundary>
           <ThemeProvider>
             <Providers>
