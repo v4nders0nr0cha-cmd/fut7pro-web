@@ -10,6 +10,9 @@ export default function AdminLoginPage() {
   const [erro, setErro] = useState("");
   const [blockedMessage, setBlockedMessage] = useState("");
   const router = useRouter();
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
+  const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,14 +28,28 @@ export default function AdminLoginPage() {
       return;
     }
 
-    const errorMessage = res?.error || "";
-    const blocked = errorMessage.toLowerCase().includes("bloque");
+    // Fallback: consultar mensagem do backend diretamente para diferenciar bloqueio vs credenciais
+    try {
+      const resp = await fetch(`${apiBase}${loginPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: senha }),
+      });
+      const body = await resp.json().catch(() => ({}) as any);
+      const message = (body as any)?.message?.toString?.() ?? "";
+      const blocked =
+        message.toLowerCase().includes("bloque") ||
+        message.toLowerCase().includes("blocked") ||
+        message.toLowerCase().includes("paused");
 
-    if (blocked) {
-      setBlockedMessage(
-        "Acesso ao Painel Administrativo Bloqueado\n\nEste racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível acessar o painel administrativo.\n\nPara solicitar o desbloqueio e receber mais informações, entre em contato com a nossa equipe pelo e-mail: social@fut7pro.com.br.\n\nSe possível, informe no e-mail: nome do racha, slug do racha e o e-mail do administrador."
-      );
-      return;
+      if (blocked) {
+        setBlockedMessage(
+          "Acesso ao Painel Administrativo Bloqueado\n\nEste racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível acessar o painel administrativo.\n\nPara solicitar o desbloqueio e receber mais informações, entre em contato com a nossa equipe pelo e-mail: social@fut7pro.com.br.\n\nSe possível, informe no e-mail: nome do racha, slug do racha e o e-mail do administrador."
+        );
+        return;
+      }
+    } catch {
+      // ignore
     }
 
     setErro("E-mail ou senha invalidos.");
