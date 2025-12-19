@@ -1,65 +1,121 @@
-export const metadata = {
-  title: "Comunicados | Fut7Pro",
-  description: "Veja comunicados e avisos fixos publicados pela administração do seu racha.",
-  keywords: "fut7, comunicados, avisos, racha, SaaS",
+"use client";
+
+import Head from "next/head";
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { Notificacao } from "@/types/notificacao";
+
+const isComunicado = (notif: Notificacao) => {
+  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const templateId = (notif.templateId || (meta.templateId as string | undefined) || "")
+    .toString()
+    .toLowerCase();
+  const category = (meta.category || meta.categoria || "").toString().toLowerCase();
+
+  if (rawType.includes("comunicado")) return true;
+  if (templateId.includes("official-communication") || templateId.includes("system-release"))
+    return true;
+  if (category.includes("comunic")) return true;
+  return false;
 };
 
-type Comunicado = {
-  id: number;
-  titulo: string;
-  mensagem: string;
-  data: string;
-  autor: string;
-  ativo: boolean;
+const resolveAuthor = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  return (
+    (notif.remetente as string) ||
+    (meta.nomeResponsavel as string) ||
+    (meta.autor as string) ||
+    "Administracao"
+  );
 };
-
-const comunicadosMock: Comunicado[] = [
-  {
-    id: 1,
-    titulo: "Pagamento da Mensalidade",
-    mensagem: "Lembrete: O vencimento da mensalidade é dia 10. Não deixe de regularizar!",
-    data: "2025-07-10T10:00:00Z",
-    autor: "Presidente",
-    ativo: true,
-  },
-  {
-    id: 2,
-    titulo: "Novo Horário de Jogo",
-    mensagem: "Atenção: O racha desta semana será às 19h. Fique atento ao novo horário!",
-    data: "2025-07-08T15:30:00Z",
-    autor: "Diretor de Futebol",
-    ativo: true,
-  },
-];
 
 export default function ComunicadosPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { notificacoes, isLoading, isError, error } = useNotifications({
+    enabled: isAuthenticated,
+  });
+
+  const comunicados = useMemo(() => notificacoes.filter(isComunicado), [notificacoes]);
+
+  if (authLoading) {
+    return (
+      <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
+        <div className="text-center text-gray-400">Carregando...</div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
+        <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
+          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Comunicados Oficiais</h1>
+          <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu racha.</p>
+          <button
+            type="button"
+            onClick={() => router.push("/login")}
+            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+          >
+            Fazer login
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
-    <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto">
-      <h1 className="text-xl font-bold text-zinc-100 mb-4">Comunicados Oficiais</h1>
-      <ul className="space-y-4">
-        {comunicadosMock.filter((c) => c.ativo).length === 0 && (
-          <li className="text-zinc-400">Nenhum comunicado ativo.</li>
-        )}
-        {comunicadosMock
-          .filter((c) => c.ativo)
-          .map((com) => (
-            <li
-              key={com.id}
-              className="bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 border-yellow-400"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold text-yellow-300">{com.titulo}</span>
-                <span className="text-xs text-gray-400">
-                  {new Date(com.data).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="mt-1">{com.mensagem}</div>
-              <div className="text-xs text-gray-400 mt-2">
-                Publicado por <span className="font-semibold">{com.autor}</span>
-              </div>
+    <>
+      <Head>
+        <title>Comunicados | Fut7Pro</title>
+        <meta
+          name="description"
+          content="Veja comunicados e avisos oficiais publicados pela administracao do seu racha."
+        />
+      </Head>
+      <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
+        <h1 className="text-xl font-bold text-zinc-100 mb-4">Comunicados Oficiais</h1>
+        <ul className="space-y-4">
+          {isLoading ? (
+            <li className="text-zinc-400 text-center">Carregando...</li>
+          ) : isError ? (
+            <li className="text-red-400 text-center">
+              Falha ao carregar comunicados.
+              {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
             </li>
-          ))}
-      </ul>
-    </div>
+          ) : comunicados.length === 0 ? (
+            <li className="text-zinc-400 text-center">Nenhum comunicado ativo.</li>
+          ) : (
+            comunicados.map((comunicado) => {
+              const dataLabel = comunicado.data
+                ? new Date(comunicado.data).toLocaleDateString("pt-BR")
+                : "";
+              const title = comunicado.titulo || comunicado.title || "Comunicado";
+              const message = comunicado.mensagem || comunicado.message || "";
+              const author = resolveAuthor(comunicado);
+
+              return (
+                <li
+                  key={comunicado.id}
+                  className="bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 border-yellow-400"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-lg font-bold text-yellow-300">{title}</span>
+                    <span className="text-xs text-gray-400">{dataLabel}</span>
+                  </div>
+                  <div className="mt-1">{message}</div>
+                  <div className="text-xs text-gray-400 mt-2">
+                    Publicado por <span className="font-semibold">{author}</span>
+                  </div>
+                </li>
+              );
+            })
+          )}
+        </ul>
+      </main>
+    </>
   );
 }

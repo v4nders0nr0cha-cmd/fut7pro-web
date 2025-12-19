@@ -8,12 +8,23 @@ export type NotificationType =
   | "novidade"
   | "contato"
   | "outros"
+  | "ALERTA"
+  | "SISTEMA"
+  | "PERSONALIZADA"
   | string;
 
 export interface Notification {
   id: string;
+  title?: string;
+  message?: string;
   rachaSlug: string;
   type: NotificationType;
+  channels?: string[];
+  isRead?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  templateId?: string | null;
+  automationId?: string | null;
   titulo: string;
   mensagem: string;
   data: string;
@@ -40,11 +51,17 @@ export interface CreateNotificationDto {
   type: NotificationType;
   titulo: string;
   mensagem: string;
+  title?: string;
+  message?: string;
+  channels?: string[];
+  templateId?: string;
+  automationId?: string;
   prioridade?: "normal" | "alta";
   remetente?: string;
   assunto?: string;
   referenciaId?: string;
   metadata?: Record<string, unknown>;
+  isRead?: boolean;
 }
 
 // Interface para atualização de notificações
@@ -52,6 +69,9 @@ export interface UpdateNotificationDto {
   lida?: boolean;
   titulo?: string;
   mensagem?: string;
+  isRead?: boolean;
+  title?: string;
+  message?: string;
   prioridade?: "normal" | "alta";
   metadata?: Record<string, unknown>;
 }

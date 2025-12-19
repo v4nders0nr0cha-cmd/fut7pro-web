@@ -1,27 +1,40 @@
 "use client";
 
 import Head from "next/head";
+import Link from "next/link";
 import SorteioInteligenteAdmin from "@/components/sorteio/SorteioInteligenteAdmin";
-
-// MOCK de admin. Troque pelo seu método real depois!
-function useIsAdmin() {
-  // Exemplo: se já usa algum contexto, substitua aqui.
-  // Exemplo next-auth: return session?.user?.role === "admin";
-  // Mock: sempre true só para teste.
-  return true;
-}
+import { useAuth } from "@/hooks/useAuth";
 
 export default function SorteioInteligentePage() {
-  const isAdmin = useIsAdmin();
+  const { hasPermission, isAuthenticated, isLoading } = useAuth();
+  const isAdmin = isAuthenticated && hasPermission("RACHA_UPDATE");
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center">
+        <div className="bg-[#23272F] px-8 py-12 rounded-2xl shadow-lg">
+          <h2 className="text-2xl font-bold text-yellow-400 mb-4">Carregando...</h2>
+        </div>
+      </main>
+    );
+  }
 
   if (!isAdmin) {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center">
         <div className="bg-[#23272F] px-8 py-12 rounded-2xl shadow-lg">
           <h2 className="text-2xl font-bold text-yellow-400 mb-4">Acesso Restrito</h2>
-          <p className="text-gray-200 mb-2">
+          <p className="text-gray-200 mb-4">
             Apenas administradores podem acessar esta funcionalidade.
           </p>
+          {!isAuthenticated && (
+            <Link
+              href="/login"
+              className="inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            >
+              Fazer login
+            </Link>
+          )}
         </div>
       </main>
     );
@@ -30,14 +43,14 @@ export default function SorteioInteligentePage() {
   return (
     <>
       <Head>
-        <title>Sorteio Inteligente | Painel de Administração | Fut7Pro</title>
+        <title>Sorteio Inteligente | Painel de Administracao | Fut7Pro</title>
         <meta
           name="description"
-          content="Monte times equilibrados no seu racha de futebol 7 com sorteio inteligente, ranking, posição e estrelas. Balanceamento automático/manual exclusivo para administradores do Fut7Pro."
+          content="Monte times equilibrados no seu racha de futebol 7 com sorteio inteligente, ranking, posicao e estrelas."
         />
         <meta
           name="keywords"
-          content="sorteio de times, fut7, futebol 7, racha, balanceamento, sistema de racha, times equilibrados, administrar racha, painel admin fut7pro"
+          content="sorteio de times, fut7, futebol 7, racha, balanceamento, sistema de racha, times equilibrados"
         />
         <meta name="robots" content="index, follow" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />

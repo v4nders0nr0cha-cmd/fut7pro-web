@@ -5,107 +5,96 @@ import { Fragment, useState } from "react";
 import Image from "next/image";
 import { X, Info } from "lucide-react";
 
-// Mock dos destaques do dia (TIME CAMPEÃO)
-const destaquesDia = [
-  {
-    title: "Atacante do Dia",
-    name: "Jogador XPTO",
-    value: "3 gols",
-    image: "/images/jogadores/jogador_padrao_01.jpg",
-    href: "/estatisticas/atacantes",
-  },
-  {
-    title: "Meia do Dia",
-    name: "Jogador Genérico",
-    value: "2 assistências",
-    image: "/images/jogadores/jogador_padrao_02.jpg",
-    href: "/estatisticas/meias",
-  },
-  {
-    title: "Zagueiro do Dia",
-    name: "Jogador Modelo",
-    value: "",
-    image: "/images/jogadores/jogador_padrao_03.jpg",
-    href: "/estatisticas/zagueiros",
-  },
-  {
-    title: "Goleiro do Dia",
-    name: "Jogador Fictício",
-    value: "",
-    image: "/images/jogadores/jogador_padrao_04.jpg",
-    href: "/estatisticas/goleiros",
-  },
-];
+type DestaqueItem = {
+  title: string;
+  name: string;
+  value?: string;
+  image?: string;
+};
 
-// Artilheiro e Maestro do Dia (TODOS DO RACHA)
-const artilheiroMaestro = [
-  {
-    title: "Artilheiro do Dia",
-    name: "Jogador XPTO",
-    value: "3 gols",
-    image: "/images/jogadores/jogador_padrao_01.jpg",
-    href: "/estatisticas/atacantes",
-  },
-  {
-    title: "Maestro do Dia",
-    name: "Camisa 10",
-    value: "4 assistências",
-    image: "/images/jogadores/jogador_padrao_03.jpg",
-    href: "/estatisticas/meias",
-  },
-];
+const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 
 // Componente institucional do box de regras
 function BoxRegras() {
   return (
     <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-3 mt-2 text-[15px] text-zinc-900 font-normal flex flex-col gap-2 shadow-sm">
-      <div className="font-bold text-yellow-700 mb-2">Como são escolhidos os destaques do dia?</div>
+      <div className="font-bold text-yellow-700 mb-2">Como sao escolhidos os destaques do dia?</div>
       <ul className="list-disc pl-5 mb-1">
         <li>
           <span className="font-semibold text-zinc-900">Atacante do Dia:</span> Entre os atacantes
-          do <b>time campeão</b>, aquele que fez mais gols.
+          do <b>time campeao</b>, aquele que fez mais gols.
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Meia do Dia:</span> Entre os meias do{" "}
-          <b>time campeão</b>, quem deu mais assistências.
+          <b>time campeao</b>, quem deu mais assistencias.
         </li>
         <li>
-          <span className="font-semibold text-zinc-900">Zagueiro do Dia:</span> Eleito por votação
-          dos próprios jogadores do racha (sem estatísticas exatas).
+          <span className="font-semibold text-zinc-900">Zagueiro do Dia:</span> Eleito por votacao
+          dos proprios jogadores do racha (sem estatisticas exatas).
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Goleiro do Dia:</span> O goleiro do{" "}
-          <b>time campeão</b> do dia (não computa defesas).
+          <b>time campeao</b> do dia (nao computa defesas).
         </li>
       </ul>
       <div className="h-2" />
       <ul className="list-disc pl-5 mb-2">
         <li>
           <span className="font-semibold text-zinc-900">Artilheiro do Dia:</span> Jogador de
-          qualquer time/posição com mais gols na rodada.
+          qualquer time/posicao com mais gols na rodada.
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Maestro do Dia:</span> Jogador de qualquer
-          time/posição com mais assistências no dia.
+          time/posicao com mais assistencias no dia.
         </li>
       </ul>
       <div className="text-[14px] text-zinc-800 font-medium mt-1">
-        <span className="text-yellow-600 font-bold">Obs:</span> Esses critérios valorizam quem
-        ajudou o time a ser campeão, mesmo que não seja o maior artilheiro ou assistente geral do
+        <span className="text-yellow-600 font-bold">Obs:</span> Esses criterios valorizam quem
+        ajudou o time a ser campeao, mesmo que nao seja o maior artilheiro ou assistente geral do
         racha.
       </div>
     </div>
   );
 }
 
+type GamesOfTheDayMobileModalProps = {
+  open: boolean;
+  onClose: () => void;
+  destaques?: DestaqueItem[];
+  artilheiroMaestro?: DestaqueItem[];
+  isLoading?: boolean;
+};
+
 export default function GamesOfTheDayMobileModal({
   open,
   onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+  destaques = [],
+  artilheiroMaestro = [],
+  isLoading = false,
+}: GamesOfTheDayMobileModalProps) {
   const [showInfo, setShowInfo] = useState(false);
+  const hasDestaques = destaques.length > 0;
+  const hasArtilheiroMaestro = artilheiroMaestro.length > 0;
+
+  const renderCard = (item: DestaqueItem) => (
+    <div
+      key={item.title}
+      className="flex items-center bg-neutral-900 rounded-xl px-3 py-2 gap-3 shadow-md"
+    >
+      <Image
+        src={item.image || DEFAULT_IMAGE}
+        alt={item.name || item.title}
+        width={52}
+        height={52}
+        className="rounded-md object-cover border-2 border-yellow-400"
+      />
+      <div>
+        <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">{item.title}</p>
+        <p className="font-semibold text-[15px] text-white">{item.name}</p>
+        {item.value && <p className="text-yellow-300 text-sm">{item.value}</p>}
+      </div>
+    </div>
+  );
 
   return (
     <Transition.Root show={open} as={Fragment}>
@@ -135,7 +124,7 @@ export default function GamesOfTheDayMobileModal({
             leaveTo="opacity-0 translate-y-8"
           >
             <Dialog.Panel className="relative w-full max-w-md mx-auto bg-[#191919] rounded-2xl shadow-xl px-3 pb-4 pt-7">
-              {/* Botão Fechar */}
+              {/* Botao Fechar */}
               <button
                 onClick={onClose}
                 className="absolute right-4 top-4 bg-black/70 rounded-full p-1.5 z-20"
@@ -144,7 +133,7 @@ export default function GamesOfTheDayMobileModal({
                 <X size={26} className="text-white" />
               </button>
 
-              {/* Título fixo */}
+              {/* Titulo fixo */}
               <Dialog.Title
                 as="h2"
                 className="text-xl font-bold text-yellow-400 mb-5 text-center pt-1 pb-2"
@@ -153,62 +142,31 @@ export default function GamesOfTheDayMobileModal({
                 Todos os Destaques do Dia
               </Dialog.Title>
 
-              {/* Cards principais (time campeão) */}
-              <div className="flex flex-col gap-3">
-                {destaquesDia.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center bg-neutral-900 rounded-xl px-3 py-2 gap-3 shadow-md"
-                  >
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      width={52}
-                      height={52}
-                      className="rounded-md object-cover border-2 border-yellow-400"
-                    />
-                    <div>
-                      <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">
-                        {item.title}
-                      </p>
-                      <p className="font-semibold text-[15px] text-white">{item.name}</p>
-                      {item.value && <p className="text-yellow-300 text-sm">{item.value}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {isLoading && (
+                <div className="text-center text-zinc-400 py-6">Carregando destaques...</div>
+              )}
 
-              {/* Separador visual */}
-              <div className="flex justify-center my-2">
-                <div className="h-1 w-24 rounded-full bg-yellow-400 opacity-70" />
-              </div>
+              {!isLoading && !hasDestaques && !hasArtilheiroMaestro && (
+                <div className="text-center text-zinc-400 py-6">
+                  Nenhum destaque publicado ainda.
+                </div>
+              )}
 
-              {/* Cards Artilheiro/Maestro */}
-              <div className="flex flex-col gap-3 mb-2">
-                {artilheiroMaestro.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex items-center bg-neutral-900 rounded-xl px-3 py-2 gap-3 shadow-md"
-                  >
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      width={52}
-                      height={52}
-                      className="rounded-md object-cover border-2 border-yellow-400"
-                    />
-                    <div>
-                      <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">
-                        {item.title}
-                      </p>
-                      <p className="font-semibold text-[15px] text-white">{item.name}</p>
-                      <p className="text-yellow-300 text-sm">{item.value}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {!isLoading && hasDestaques && (
+                <div className="flex flex-col gap-3">{destaques.map(renderCard)}</div>
+              )}
 
-              {/* Botão de regras */}
+              {hasDestaques && hasArtilheiroMaestro && (
+                <div className="flex justify-center my-2">
+                  <div className="h-1 w-24 rounded-full bg-yellow-400 opacity-70" />
+                </div>
+              )}
+
+              {!isLoading && hasArtilheiroMaestro && (
+                <div className="flex flex-col gap-3 mb-2">{artilheiroMaestro.map(renderCard)}</div>
+              )}
+
+              {/* Botao de regras */}
               <div className="flex justify-center my-2">
                 <button
                   onClick={() => setShowInfo((v) => !v)}

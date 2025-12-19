@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 
 // Tipagem explícita para retorno do hook (amplia para todos os badges)
 type ComunicacaoBadge = {
@@ -9,10 +10,8 @@ type ComunicacaoBadge = {
 };
 
 export function useComunicacao(): ComunicacaoBadge {
-  // Mock de badges – Substitua por integração real depois
-  const [badge] = useState<number>(2); // exemplo: notificações pendentes
-  const [badgeMensagem] = useState<number>(1); // exemplo: nova mensagem do admin
-  const [badgeSugestoes] = useState<number>(0); // exemplo: sugestão respondida
+  const { isAuthenticated } = useAuth();
+  const { unreadCount } = useNotifications({ enabled: isAuthenticated });
 
-  return { badge, badgeMensagem, badgeSugestoes };
+  return { badge: unreadCount, badgeMensagem: 0, badgeSugestoes: 0 };
 }

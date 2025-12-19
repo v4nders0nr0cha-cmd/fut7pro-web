@@ -1,118 +1,164 @@
 "use client";
-import { useState } from "react";
-import { FaPoll } from "react-icons/fa";
 
-type Opcao = { texto: string; votos: number };
-type Enquete = {
-  id: number;
-  titulo: string;
-  descricao: string;
-  opcoes: Opcao[];
-  status: "Aberta" | "Fechada";
-  totalVotos: number;
-  respondida: boolean;
+import Head from "next/head";
+import { useMemo } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { FaPoll } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { Notificacao } from "@/types/notificacao";
+
+const isEnquete = (notif: Notificacao) => {
+  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  if (rawType.includes("enquete") || rawType.includes("poll")) return true;
+  if ("opcoes" in meta || "options" in meta || "pollOptions" in meta) return true;
+  if ((meta.kind as string | undefined)?.toLowerCase() === "enquete") return true;
+  return false;
 };
 
-const MOCK_ENQUETE: Enquete = {
-  id: 2,
-  titulo: "Qual melhor horário para o próximo racha?",
-  descricao: "Participe! Ajude a escolher o melhor horário para todos.",
-  opcoes: [
-    { texto: "19:00", votos: 10 },
-    { texto: "20:00", votos: 17 },
-    { texto: "21:00", votos: 4 },
-  ],
-  status: "Aberta",
-  totalVotos: 31,
-  respondida: false,
+const matchesId = (notif: Notificacao, id: string) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const values = [
+    notif.id,
+    notif.referenciaId,
+    meta.enqueteId as string | number | undefined,
+    meta.pollId as string | number | undefined,
+  ].filter(Boolean);
+  return values.some((value) => String(value) === id);
+};
+
+const resolveStatus = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const status = (meta.status || meta.situacao || "").toString().toLowerCase();
+  if (status === "fechada" || status === "encerrada" || status === "closed") return "Fechada";
+  if (status === "aberta" || status === "open") return "Aberta";
+  return "Aberta";
 };
 
 export default function EnquetePage() {
-  const [enquete, setEnquete] = useState(MOCK_ENQUETE);
-  const [resposta, setResposta] = useState<number | null>(null);
+  const params = useParams();
+  const router = useRouter();
+  const enqueteId = Array.isArray(params?.id) ? params?.id[0] : (params?.id as string | undefined);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { notificacoes, isLoading, isError, error } = useNotifications({
+    enabled: isAuthenticated,
+  });
 
-  function votar() {
-    if (resposta === null) return;
-    setEnquete((prev) => ({
-      ...prev,
-      opcoes: prev.opcoes.map((op, idx) =>
-        idx === resposta ? { ...op, votos: op.votos + 1 } : op
-      ),
-      totalVotos: prev.totalVotos + 1,
-      respondida: true,
-    }));
+  const enquete = useMemo(() => {
+    if (!enqueteId) return undefined;
+    return notificacoes.find((notif) => isEnquete(notif) && matchesId(notif, enqueteId));
+  }, [notificacoes, enqueteId]);
+
+  if (authLoading) {
+    return (
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <div className="text-center text-gray-400">Carregando...</div>
+      </main>
+    );
   }
 
-  return (
-    <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
-      <h1 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
-        <FaPoll /> {enquete.titulo}
-      </h1>
-      <div className="mb-4 text-gray-200">{enquete.descricao}</div>
-      <div className="mb-6">
-        {enquete.status === "Fechada" || enquete.respondida ? (
-          <>
-            <div className="text-green-400 font-bold mb-2">
-              {enquete.status === "Fechada" ? "Enquete encerrada." : "Seu voto foi computado!"}
-            </div>
-            <div>
-              {enquete.opcoes.map((op, idx) => {
-                const percent = enquete.totalVotos
-                  ? Math.round((op.votos / enquete.totalVotos) * 100)
-                  : 0;
-                return (
-                  <div key={idx} className="mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-300 font-medium min-w-[64px]">{op.texto}</span>
-                      <div className="flex-1 bg-zinc-700 rounded-full h-3 mx-2 relative">
-                        <div
-                          className="bg-yellow-400 h-3 rounded-full transition-all"
-                          style={{ width: `${percent}%` }}
-                        />
-                        <span className="absolute left-1/2 -translate-x-1/2 text-xs text-black font-bold">
-                          {percent}%
-                        </span>
-                      </div>
-                      <span className="text-gray-300 text-xs">{op.votos} votos</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              votar();
-            }}
+  if (!isAuthenticated) {
+    return (
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
+          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Enquete</h1>
+          <p className="text-gray-300 mb-4">Entre para acessar esta enquete.</p>
+          <button
+            type="button"
+            onClick={() => router.push("/login")}
+            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
           >
-            {enquete.opcoes.map((op, idx) => (
-              <label
-                key={idx}
-                className="flex items-center gap-3 cursor-pointer text-gray-200 bg-zinc-900 p-2 rounded hover:bg-zinc-800"
-              >
-                <input
-                  type="radio"
-                  name="opcao"
-                  checked={resposta === idx}
-                  onChange={() => setResposta(idx)}
-                  className="accent-yellow-400"
-                />
-                {op.texto}
-              </label>
-            ))}
-            <button
-              type="submit"
-              disabled={resposta === null}
-              className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded"
-            >
-              Votar
-            </button>
-          </form>
+            Fazer login
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <div className="text-center text-gray-400">Carregando...</div>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <div className="text-center text-red-400">
+          Falha ao carregar a enquete.
+          {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
+        </div>
+      </main>
+    );
+  }
+
+  if (!enquete) {
+    return (
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <div className="text-center text-gray-400">Enquete nao encontrada.</div>
+      </main>
+    );
+  }
+
+  const meta = (enquete.metadata || {}) as Record<string, unknown>;
+  type EnqueteOption = { texto?: string; votos?: number; text?: string; votes?: number };
+  const options =
+    (meta.opcoes as EnqueteOption[] | undefined) ||
+    (meta.options as EnqueteOption[] | undefined) ||
+    (meta.pollOptions as EnqueteOption[] | undefined) ||
+    [];
+  const totalVotes = Number(meta.totalVotos || meta.totalVotes || 0);
+  const title = enquete.titulo || enquete.title || "Enquete";
+  const description = enquete.mensagem || enquete.message || "";
+  const statusLabel = resolveStatus(enquete);
+
+  return (
+    <>
+      <Head>
+        <title>{`Enquete | ${title}`}</title>
+      </Head>
+      <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
+        <h1 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+          <FaPoll /> {title}
+        </h1>
+        {description && <div className="mb-4 text-gray-200">{description}</div>}
+        <div className="text-xs text-gray-400 mb-4">Status: {statusLabel}</div>
+        {options.length === 0 ? (
+          <div className="text-gray-400">Aguardando opcoes da enquete.</div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {options.map((option, idx) => {
+              const label = option.texto || option.text || `Opcao ${idx + 1}`;
+              const votes = Number(option.votos ?? option.votes ?? 0);
+              const percent = totalVotes ? Math.round((votes / totalVotes) * 100) : 0;
+
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs">
+                    {label}
+                  </span>
+                  <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
+                    <div
+                      className="bg-yellow-400 h-4 rounded-full transition-all"
+                      style={{ width: `${percent}%` }}
+                    ></div>
+                    <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
+                      {percent}%
+                    </span>
+                  </div>
+                  <span className="text-gray-400 text-xs">{votes} votos</span>
+                </div>
+              );
+            })}
+          </div>
         )}
-      </div>
-    </main>
+        <div className="mt-6 text-xs text-gray-500">
+          Votacao via app sera habilitada quando o backend expor o fluxo de respostas.
+        </div>
+      </main>
+    </>
   );
 }

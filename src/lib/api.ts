@@ -223,12 +223,52 @@ export const usersApi = {
 };
 
 // API de Notificações
+const notificacoesRequest = async <T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<ApiResponse<T>> => {
+  try {
+    const response = await fetch(path, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers || {}),
+      },
+    });
+    const text = await response.text();
+    let body: unknown = undefined;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+    }
+
+    if (!response.ok) {
+      const message =
+        (body as { message?: string; error?: string } | undefined)?.message ||
+        (body as { error?: string } | undefined)?.error ||
+        response.statusText;
+      return { error: message || "Erro desconhecido" };
+    }
+
+    return { data: body as T };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    return { error: message };
+  }
+};
+
 export const notificacoesApi = {
-  getAll: () => apiClient.get("/notificacoes"),
-  getById: (id: string) => apiClient.get(`/notificacoes/${id}`),
-  markAsRead: (id: string) => apiClient.put(`/notificacoes/${id}/read`),
-  markAllAsRead: () => apiClient.put("/notificacoes/read-all"),
-  delete: (id: string) => apiClient.delete(`/notificacoes/${id}`),
+  getAll: () => notificacoesRequest("/api/notificacoes", { method: "GET" }),
+  getById: (id: string) => notificacoesRequest(`/api/notificacoes/${id}`, { method: "GET" }),
+  markAsRead: (id: string) =>
+    notificacoesRequest(`/api/notificacoes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ isRead: true }),
+    }),
+  delete: (id: string) => notificacoesRequest(`/api/notificacoes/${id}`, { method: "DELETE" }),
 };
 
 // API de Rankings

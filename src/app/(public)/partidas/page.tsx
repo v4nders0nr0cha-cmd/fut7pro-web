@@ -3,9 +3,11 @@
 import Head from "next/head";
 import Link from "next/link";
 import { FaHistory, FaUsers, FaRandom } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function PartidasPage() {
-  const isAdmin = false;
+  const { hasPermission } = useAuth();
+  const isAdmin = hasPermission("RACHA_UPDATE");
 
   return (
     <>
@@ -92,7 +94,7 @@ export default function PartidasPage() {
               Gere times equilibrados usando o sistema exclusivo.
             </span>
             {isAdmin ? (
-              <Link href="/admin/sorteio-inteligente">
+              <Link href="/admin/partidas/sorteio-inteligente">
                 <span className="mt-auto px-5 py-2 rounded-xl bg-yellow-400 text-black font-semibold transition text-xs sm:text-base">
                   Acessar
                 </span>

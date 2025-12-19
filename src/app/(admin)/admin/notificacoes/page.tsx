@@ -26,10 +26,10 @@ export default function NotificacoesPage() {
   const [filtroStatus, setFiltroStatus] = useState<"todas" | "lidas" | "naoLidas">("todas");
 
   const tiposDisponiveis = Array.from(
-    new Set(
+    new Set<string>(
       notificacoes
         .map((n) => (n.type || n.tipo || "").toString())
-        .filter((v) => v && v !== "outros")
+        .filter((v): v is string => Boolean(v) && v !== "outros")
     )
   );
 

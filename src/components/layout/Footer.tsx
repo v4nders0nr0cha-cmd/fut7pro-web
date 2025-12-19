@@ -8,19 +8,8 @@ import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
 import { useRacha } from "@/context/RachaContext";
 import { useAboutPublic } from "@/hooks/useAbout";
-
-const patrocinadores = [
-  { nome: "Patrocínio 1", logo: "/images/patrocinadores/patrocinador_01.png" },
-  { nome: "Patrocínio 2", logo: "/images/patrocinadores/patrocinador_02.png" },
-  { nome: "Patrocínio 3", logo: "/images/patrocinadores/patrocinador_03.png" },
-  { nome: "Patrocínio 4", logo: "/images/patrocinadores/patrocinador_04.png" },
-  { nome: "Patrocínio 5", logo: "/images/patrocinadores/patrocinador_05.png" },
-  { nome: "Patrocínio 6", logo: "/images/patrocinadores/patrocinador_06.png" },
-  { nome: "Patrocínio 7", logo: "/images/patrocinadores/patrocinador_07.png" },
-  { nome: "Patrocínio 8", logo: "/images/patrocinadores/patrocinador_08.png" },
-  { nome: "Patrocínio 9", logo: "/images/patrocinadores/patrocinador_09.png" },
-  { nome: "Patrocínio 10", logo: "/images/patrocinadores/patrocinador_10.png" },
-];
+import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { recordSponsorMetric } from "@/lib/sponsor-metrics";
 
 export default function Footer() {
   const tema = useTema();
@@ -28,12 +17,26 @@ export default function Footer() {
   const slug = tenantSlug || rachaConfig.slug;
   const { about } = useAboutPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const impressionRef = useRef(new Set<string>());
+  const { sponsors, isLoading } = usePublicSponsors(slug);
 
   const campoOficial = useMemo(() => {
     if (about?.campoAtual) return about.campoAtual;
     if (about?.camposHistoricos?.length) return about.camposHistoricos[0];
     return null;
   }, [about]);
+
+  const patrocinadoresVisiveis = useMemo(() => {
+    if (!sponsors.length) return [];
+    const onlyFooter = sponsors.filter((s) => s.showOnFooter);
+    const base = onlyFooter.length ? onlyFooter : sponsors;
+    return base.slice(0, 9);
+  }, [sponsors]);
+
+  const patrocinadoresLoop = useMemo(() => {
+    if (!patrocinadoresVisiveis.length) return [];
+    return [...patrocinadoresVisiveis, ...patrocinadoresVisiveis];
+  }, [patrocinadoresVisiveis]);
 
   useEffect(() => {
     const scroll = () => {
@@ -49,6 +52,22 @@ export default function Footer() {
     const interval = setInterval(scroll, 20);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (!patrocinadoresVisiveis.length) return;
+    const currentUrl = typeof window !== "undefined" ? window.location.href : undefined;
+    patrocinadoresVisiveis.forEach((patro) => {
+      if (impressionRef.current.has(patro.id)) return;
+      impressionRef.current.add(patro.id);
+      recordSponsorMetric({
+        slug,
+        sponsorId: patro.id,
+        type: "impression",
+        targetUrl: patro.link,
+        currentUrl,
+      });
+    });
+  }, [patrocinadoresVisiveis, slug]);
 
   const handleManualScroll = (direction: "left" | "right") => {
     if (carouselRef.current) {
@@ -88,17 +107,57 @@ export default function Footer() {
             ref={carouselRef}
             className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
           >
-            {[...patrocinadores, ...patrocinadores].map((patro, index) => (
-              <div key={index} className="min-w-[180px] flex justify-center items-center">
-                <Image
-                  src={patro.logo}
-                  alt={`Logo do patrocinador ${patro.nome} - sistema de racha ${tema.nome}`}
-                  width={160}
-                  height={96}
-                  className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
-                />
+            {isLoading && patrocinadoresLoop.length === 0 ? (
+              <div className="w-full text-center text-gray-400 py-8">
+                Carregando patrocinadores...
               </div>
-            ))}
+            ) : patrocinadoresLoop.length === 0 ? (
+              <div className="w-full text-center text-gray-400 py-8">
+                Nenhum patrocinador publicado ainda.
+              </div>
+            ) : (
+              patrocinadoresLoop.map((patro, index) => {
+                const image = (
+                  <Image
+                    src={patro.logoUrl}
+                    alt={`Logo do patrocinador ${patro.name} - sistema de racha ${tema.nome}`}
+                    width={160}
+                    height={96}
+                    className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
+                  />
+                );
+
+                return (
+                  <div
+                    key={`${patro.id}-${index}`}
+                    className="min-w-[180px] flex justify-center items-center"
+                  >
+                    {patro.link ? (
+                      <a
+                        href={patro.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() =>
+                          recordSponsorMetric({
+                            slug,
+                            sponsorId: patro.id,
+                            type: "click",
+                            targetUrl: patro.link,
+                            currentUrl:
+                              typeof window !== "undefined" ? window.location.href : undefined,
+                          })
+                        }
+                        aria-label={`Visitar site do patrocinador ${patro.name}`}
+                      >
+                        {image}
+                      </a>
+                    ) : (
+                      image
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 
