@@ -14,7 +14,37 @@ import {
 import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
 import { useBranding } from "@/hooks/useBranding";
-import { signIn } from "next-auth/react";
+type TenantMembership = {
+  status?: string | null;
+  role?: string | null;
+  createdAt?: string | null;
+  user?: {
+    id?: string | null;
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+  } | null;
+};
+
+type TenantAdmin = {
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  createdAt?: string | null;
+  userId?: string | null;
+  nome?: string | null;
+};
+
+type TenantCounts = {
+  users?: number | null;
+  athletes?: number | null;
+  players?: number | null;
+  matches?: number | null;
+};
+
+type TenantAboutPage = {
+  data?: unknown;
+} | null;
 
 type Tenant = {
   id: string;
@@ -26,7 +56,10 @@ type Tenant = {
   playersCount?: number | null;
   athletes?: number | null;
   adminsCount?: number | null;
-  admins?: Array<{ name?: string | null; email?: string | null; createdAt?: string | null }>;
+  admins?: TenantAdmin[];
+  memberships?: TenantMembership[] | null;
+  aboutPage?: TenantAboutPage;
+  _count?: TenantCounts | null;
   subscription?: {
     status?: string | null;
     planKey?: string | null;
@@ -118,6 +151,128 @@ function daysSince(dateISO?: string | null) {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
+function cleanValue(value?: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function resolveMembershipOwner(memberships?: TenantMembership[] | null) {
+  if (!Array.isArray(memberships) || memberships.length === 0) return null;
+  const approved =
+    memberships.find((m) => (m.status || "").toUpperCase() === "APROVADO") || memberships[0];
+  const user = approved?.user;
+  if (!user) return null;
+  const name = cleanValue(user.name);
+  const email = cleanValue(user.email);
+  if (!name && !email) return null;
+  return { name, email };
+}
+
+function resolveAboutOwner(aboutPage?: TenantAboutPage | null) {
+  if (!aboutPage) return null;
+  const raw =
+    typeof aboutPage === "object" && aboutPage !== null
+      ? ((aboutPage as { data?: unknown }).data ?? aboutPage)
+      : aboutPage;
+  if (!raw) return null;
+  let data: any = raw;
+  if (typeof raw === "string") {
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!data || typeof data !== "object") return null;
+  const presidente = (data as any).presidente;
+  if (!presidente || typeof presidente !== "object") return null;
+  const name = cleanValue((presidente as any).nome || (presidente as any).name);
+  const email = cleanValue((presidente as any).email);
+  if (!name && !email) return null;
+  return { name, email };
+}
+
+function resolveTenantOwner(tenant: Tenant) {
+  const directName = cleanValue(tenant.ownerName);
+  const directEmail = cleanValue(tenant.ownerEmail);
+  if (directName || directEmail) return { name: directName, email: directEmail };
+
+  const membershipOwner = resolveMembershipOwner(tenant.memberships);
+  if (membershipOwner) return membershipOwner;
+
+  const admin = Array.isArray(tenant.admins) ? tenant.admins[0] : null;
+  const adminName = cleanValue((admin as any)?.name || (admin as any)?.nome || null);
+  const adminEmail = cleanValue((admin as any)?.email || null);
+  if (adminName || adminEmail) return { name: adminName, email: adminEmail };
+
+  const aboutOwner = resolveAboutOwner(tenant.aboutPage);
+  if (aboutOwner) return aboutOwner;
+
+  return { name: null, email: null };
+}
+
+async function signInAdminWithTokens(payload: {
+  accessToken?: string | null;
+  refreshToken?: string | null;
+  user?: {
+    id?: string | null;
+    email?: string | null;
+    name?: string | null;
+    role?: string | null;
+    tenantId?: string | null;
+    tenantSlug?: string | null;
+  } | null;
+}) {
+  if (!payload?.accessToken) {
+    throw new Error("Token de acesso ausente para login.");
+  }
+
+  const csrfResponse = await fetch("/api/auth/csrf", { cache: "no-store" });
+  if (!csrfResponse.ok) {
+    throw new Error("Falha ao preparar login do admin.");
+  }
+  const csrfData = await csrfResponse.json().catch(() => null);
+  const csrfToken = csrfData?.csrfToken;
+  if (!csrfToken) {
+    throw new Error("CSRF token ausente para login do admin.");
+  }
+
+  const params = new URLSearchParams();
+  params.set("csrfToken", csrfToken);
+  params.set("callbackUrl", "/admin/dashboard");
+  params.set("json", "true");
+  params.set("accessToken", payload.accessToken);
+
+  if (payload.refreshToken) params.set("refreshToken", payload.refreshToken);
+  if (payload.user?.id) params.set("id", payload.user.id);
+  if (payload.user?.email) params.set("email", payload.user.email);
+  if (payload.user?.name) params.set("name", payload.user.name);
+  if (payload.user?.role) params.set("role", payload.user.role);
+  if (payload.user?.tenantId) params.set("tenantId", payload.user.tenantId);
+  if (payload.user?.tenantSlug) params.set("tenantSlug", payload.user.tenantSlug);
+
+  const res = await fetch("/api/auth/callback/credentials", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params.toString(),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  const responseUrl = typeof data?.url === "string" ? data.url : "";
+  const errorParam = responseUrl
+    ? new URL(responseUrl, window.location.origin).searchParams.get("error")
+    : null;
+
+  if (!res.ok || data?.error || errorParam) {
+    const msg =
+      data?.error || errorParam || data?.message || "Falha ao autenticar no painel admin.";
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
 export default function RachasCadastradosPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -152,7 +307,8 @@ export default function RachasCadastradosPage() {
           subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
           status
         );
-        const admin = t.ownerName || t.ownerEmail || t.admins?.[0]?.name || t.admins?.[0]?.email;
+        const owner = resolveTenantOwner(t);
+        const admin = owner.name || owner.email || "--";
         const ultimaAtividade = t.lastLoginAt || t.updatedAt || t.createdAt || null;
 
         return {
@@ -163,7 +319,13 @@ export default function RachasCadastradosPage() {
           status,
           ativo: status === "ATIVO" || status === "TRIAL",
           atletas:
-            t.playersCount ?? t.athletes ?? t.adminsCount ?? (t as any)?._count?.players ?? 0,
+            t.playersCount ??
+            t.athletes ??
+            t.adminsCount ??
+            (t as any)?._count?.athletes ??
+            (t as any)?._count?.players ??
+            (t as any)?._count?.users ??
+            0,
           criadoEm: t.createdAt || "",
           ultimaAtividade,
           diasInativo: daysSince(ultimaAtividade),
@@ -267,6 +429,7 @@ export default function RachasCadastradosPage() {
 
   async function handleImpersonate(tenant: any) {
     if (!tenant?.id) return;
+    const popup = window.open("", "_blank", "noopener");
     setPendingAction("Impersonate");
     try {
       const resp = await fetch(`/api/superadmin/tenants/${tenant.id}/impersonate`, {
@@ -278,23 +441,19 @@ export default function RachasCadastradosPage() {
         throw new Error(msg);
       }
 
-      const result = await signIn("credentials", {
-        redirect: false,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        email: data?.user?.email,
-        name: data?.user?.name,
-        role: data?.user?.role,
-        tenantId: data?.user?.tenantId,
-        tenantSlug: data?.user?.tenantSlug,
+      await signInAdminWithTokens({
+        accessToken: data?.accessToken,
+        refreshToken: data?.refreshToken,
+        user: data?.user,
       });
 
-      if (result?.ok) {
-        window.open("/admin/dashboard", "_blank", "noopener");
+      if (popup) {
+        popup.location.href = "/admin/dashboard";
       } else {
-        throw new Error("Falha ao criar sessao de impersonate.");
+        window.open("/admin/dashboard", "_blank", "noopener");
       }
     } catch (error) {
+      if (popup) popup.close();
       const msg = error instanceof Error ? error.message : String(error);
       alert(`Nao foi possivel acessar como admin: ${msg}`);
     } finally {
