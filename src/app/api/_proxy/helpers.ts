@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions as superAdminAuthOptions } from "@/app/api/superadmin-auth/[...nextauth]/route";
 
 type UserLike = {
   id: string;
@@ -12,7 +13,10 @@ type UserLike = {
 };
 
 export async function requireUser(): Promise<UserLike | null> {
-  const session = await getServerSession?.(authOptions as any);
+  let session = await getServerSession?.(authOptions as any);
+  if (!session) {
+    session = await getServerSession?.(superAdminAuthOptions as any);
+  }
   return (session as any)?.user ?? null;
 }
 
