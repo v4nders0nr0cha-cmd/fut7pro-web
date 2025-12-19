@@ -11,6 +11,8 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const isLoginPage = pathname?.startsWith("/superadmin/login");
   const role = (data?.user as any)?.role;
   const isSuperAdmin = role === "SUPERADMIN" || role === "superadmin";
+  const signOutSuper = (params?: any) =>
+    (signOut as any)({ basePath: "/api/superadmin-auth", ...params });
 
   useEffect(() => {
     if (status === "loading") return;
@@ -22,7 +24,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       if (status === "authenticated" && !isSuperAdmin) {
-        signOut({ callbackUrl: "/superadmin/login" }).catch(() => {
+        signOutSuper({ callbackUrl: "/superadmin/login" }).catch(() => {
           router.replace("/superadmin/login");
         });
       }

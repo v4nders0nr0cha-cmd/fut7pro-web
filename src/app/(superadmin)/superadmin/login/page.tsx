@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useBranding } from "@/hooks/useBranding";
 
@@ -21,19 +21,12 @@ export default function SuperAdminLogin() {
       redirect: false,
       email,
       password: senha,
+      basePath: "/api/superadmin-auth",
       callbackUrl: "/superadmin/dashboard",
     });
 
     if (!res?.ok) {
       setErro("E-mail ou senha inválidos.");
-      return;
-    }
-
-    // Confirma role de superadmin antes de redirecionar
-    const session = await getSession();
-    const role = (session?.user as any)?.role;
-    if (role !== "superadmin" && role !== "SUPERADMIN") {
-      setErro("Acesso restrito ao SuperAdmin.");
       return;
     }
 

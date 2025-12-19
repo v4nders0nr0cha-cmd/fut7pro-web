@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
+import { SessionProvider } from "next-auth/react";
 import AdminLayoutContent from "./SuperAdminLayoutContent";
 import { SuperAdminGuard } from "@/components/superadmin/SuperAdminGuard";
 
@@ -14,9 +15,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div
       className={`${inter.className} bg-gradient-to-br from-[#181818] to-[#232323] text-white min-h-screen`}
     >
-      <SuperAdminGuard>
-        <AdminLayoutContent>{children}</AdminLayoutContent>
-      </SuperAdminGuard>
+      <SessionProvider basePath="/api/superadmin-auth">
+        <SuperAdminGuard>
+          <AdminLayoutContent>{children}</AdminLayoutContent>
+        </SuperAdminGuard>
+      </SessionProvider>
     </div>
   );
 }
