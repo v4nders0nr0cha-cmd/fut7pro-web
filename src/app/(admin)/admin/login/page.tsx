@@ -8,11 +8,13 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
+  const [blockedMessage, setBlockedMessage] = useState("");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro("");
+    setBlockedMessage("");
     const res = await signIn("credentials", {
       redirect: false,
       email,
@@ -24,18 +26,16 @@ export default function AdminLoginPage() {
     }
 
     const errorMessage = res?.error || "";
-    const blocked =
-      errorMessage.toLowerCase().includes("bloqueado") ||
-      errorMessage.toLowerCase().includes("blocked") ||
-      errorMessage.toLowerCase().includes("blocked");
+    const blocked = errorMessage.toLowerCase().includes("bloque");
 
     if (blocked) {
-      setErro(
+      setBlockedMessage(
         "Acesso ao Painel Administrativo Bloqueado\n\nEste racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível acessar o painel administrativo.\n\nPara solicitar o desbloqueio e receber mais informações, entre em contato com a nossa equipe pelo e-mail: social@fut7pro.com.br.\n\nSe possível, informe no e-mail: nome do racha, slug do racha e o e-mail do administrador."
       );
-    } else {
-      setErro("E-mail ou senha invalidos.");
+      return;
     }
+
+    setErro("E-mail ou senha invalidos.");
   };
 
   return (
@@ -86,6 +86,25 @@ export default function AdminLoginPage() {
           </a>
         </div>
       </div>
+
+      {blockedMessage && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
+          <div className="bg-zinc-900 text-white rounded-xl shadow-2xl p-6 max-w-lg w-full space-y-4">
+            <h2 className="text-xl font-bold text-center">
+              Acesso ao Painel Administrativo Bloqueado
+            </h2>
+            <p className="whitespace-pre-line text-sm leading-relaxed text-center">
+              {blockedMessage}
+            </p>
+            <button
+              className="mt-2 w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
+              onClick={() => setBlockedMessage("")}
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
