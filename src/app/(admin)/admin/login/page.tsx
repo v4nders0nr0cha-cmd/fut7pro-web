@@ -18,8 +18,24 @@ export default function AdminLoginPage() {
       email,
       password: senha,
     });
-    if (res?.ok) router.push("/admin/dashboard");
-    else setErro("E-mail ou senha invalidos.");
+    if (res?.ok) {
+      router.push("/admin/dashboard");
+      return;
+    }
+
+    const errorMessage = res?.error || "";
+    const blocked =
+      errorMessage.toLowerCase().includes("bloqueado") ||
+      errorMessage.toLowerCase().includes("blocked") ||
+      errorMessage.toLowerCase().includes("blocked");
+
+    if (blocked) {
+      setErro(
+        "Acesso ao Painel Administrativo Bloqueado\n\nEste racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível acessar o painel administrativo.\n\nPara solicitar o desbloqueio e receber mais informações, entre em contato com a nossa equipe pelo e-mail: social@fut7pro.com.br.\n\nSe possível, informe no e-mail: nome do racha, slug do racha e o e-mail do administrador."
+      );
+    } else {
+      setErro("E-mail ou senha invalidos.");
+    }
   };
 
   return (
@@ -33,7 +49,9 @@ export default function AdminLoginPage() {
         </p>
 
         {erro && (
-          <div className="bg-red-600 text-white text-sm rounded p-2 mb-4 text-center">{erro}</div>
+          <div className="bg-red-600 text-white text-sm rounded p-2 mb-4 whitespace-pre-line text-center">
+            {erro}
+          </div>
         )}
 
         <form onSubmit={handleLogin} className="space-y-4">

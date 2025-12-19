@@ -204,9 +204,7 @@ export default function RachasCadastradosPage() {
 
   function handleBlock(selected: string[]) {
     if (!selected.length) return;
-    const reason =
-      prompt("Informe o motivo do bloqueio (aparecerá para o racha bloqueado):", "Inadimplência") ||
-      "Bloqueio manual pelo superadmin";
+    const reason = "Bloqueio manual pelo superadmin";
     setPendingAction("Bloquear");
     Promise.all(
       selected.map((id) =>
