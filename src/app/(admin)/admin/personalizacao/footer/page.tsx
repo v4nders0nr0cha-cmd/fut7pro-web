@@ -180,7 +180,7 @@ export default function FooterPersonalizacaoPage() {
           <h2 className="text-lg text-yellow-300 font-semibold mb-2">Redes sociais</h2>
           <div className="flex gap-4 mt-2">
             <a
-              href="https://www.facebook.com/Fut7Pro"
+              href="https://www.facebook.com/profile.php?id=61581917656941"
               target="_blank"
               rel="noopener noreferrer"
               className="text-yellow-400 hover:scale-110 transition"

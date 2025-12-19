@@ -18,7 +18,7 @@ export default function JsonLd({ siteName, siteUrl, logoUrl, searchUrl }: Props)
     ...(logoUrl ? { logo: new URL(logoUrl, siteUrl).toString() } : {}),
     sameAs: [
       "https://www.instagram.com/fut7pro_app",
-      "https://www.facebook.com/Fut7Pro",
+      "https://www.facebook.com/profile.php?id=61581917656941",
       "https://www.linkedin.com/company/fut7pro",
     ],
   };

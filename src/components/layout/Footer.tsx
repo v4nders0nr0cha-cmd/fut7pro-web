@@ -126,7 +126,11 @@ export default function Footer() {
           <div className="flex flex-col items-center justify-start gap-2">
             <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
             <div className="flex gap-3">
-              <Link href="https://www.facebook.com/Fut7Pro" target="_blank" aria-label="Facebook">
+              <Link
+                href="https://www.facebook.com/profile.php?id=61581917656941"
+                target="_blank"
+                aria-label="Facebook"
+              >
                 <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
                   <FaFacebookF className="text-yellow-400 hover:text-black text-lg" />
                 </div>

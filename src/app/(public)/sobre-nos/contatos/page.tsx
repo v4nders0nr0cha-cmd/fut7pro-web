@@ -230,7 +230,7 @@ export default function ContatosPage() {
                 <FaInstagram />
               </a>
               <a
-                href="https://www.facebook.com/Fut7Pro"
+                href="https://www.facebook.com/profile.php?id=61581917656941"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
