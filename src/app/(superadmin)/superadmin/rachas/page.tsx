@@ -110,6 +110,14 @@ function formatDate(value?: string | null) {
   return format(d, "dd/MM/yyyy");
 }
 
+function daysSince(dateISO?: string | null) {
+  if (!dateISO) return null;
+  const d = new Date(dateISO);
+  if (Number.isNaN(d.getTime())) return null;
+  const diffMs = Date.now() - d.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
 export default function RachasCadastradosPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -117,6 +125,7 @@ export default function RachasCadastradosPage() {
   const brandLabel = brandText("Fut7Pro");
   const [search, setSearch] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
+  const [filtroInatividade, setFiltroInatividade] = useState("");
   const [modalRacha, setModalRacha] = useState<any>(null);
   const [impersonate, setImpersonate] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -145,6 +154,7 @@ export default function RachasCadastradosPage() {
           status
         );
         const admin = t.ownerName || t.ownerEmail || t.admins?.[0]?.name || t.admins?.[0]?.email;
+        const ultimaAtividade = t.lastLoginAt || t.updatedAt || t.createdAt || null;
 
         return {
           id: t.id,
@@ -156,6 +166,8 @@ export default function RachasCadastradosPage() {
           atletas:
             t.playersCount ?? t.athletes ?? t.adminsCount ?? (t as any)?._count?.players ?? 0,
           criadoEm: t.createdAt || "",
+          ultimaAtividade,
+          diasInativo: daysSince(ultimaAtividade),
           bloqueado: status === "BLOQUEADO",
           historico: [
             { acao: "Criado", criadoEm: t.createdAt || "" },
@@ -176,9 +188,23 @@ export default function RachasCadastradosPage() {
       const matchPresidente = (r.presidente || "").toLowerCase().includes(busca);
       const filtro = filtroStatus.toUpperCase();
       const matchStatus = filtro ? r.status === filtro : true;
-      return (matchNome || matchPresidente) && matchStatus;
+      const dias = r.diasInativo ?? null;
+      const cutoff =
+        filtroInatividade === "90"
+          ? 90
+          : filtroInatividade === "180"
+            ? 180
+            : filtroInatividade === "365"
+              ? 365
+              : filtroInatividade === "730"
+                ? 730
+                : filtroInatividade === "1095"
+                  ? 1095
+                  : null;
+      const matchInatividade = cutoff ? dias !== null && dias >= cutoff : true;
+      return (matchNome || matchPresidente) && matchStatus && matchInatividade;
     });
-  }, [rachas, search, filtroStatus]);
+  }, [rachas, search, filtroStatus, filtroInatividade]);
 
   const total = rachas.length;
   const ativos = rachas.filter((r) => r.status === "ATIVO").length;
@@ -294,6 +320,20 @@ export default function RachasCadastradosPage() {
             <option value="Inadimplente">Inadimplentes</option>
             <option value="Bloqueado">Bloqueados</option>
           </select>
+          <select
+            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg ml-0 md:ml-2"
+            value={filtroInatividade}
+            onChange={(e) => setFiltroInatividade(e.target.value)}
+            aria-label="Filtrar por inatividade"
+            title="Sem login/atualizacao ha pelo menos X dias"
+          >
+            <option value="">Todas as inatividades</option>
+            <option value="90">Inativos ha 3+ meses</option>
+            <option value="180">Inativos ha 6+ meses</option>
+            <option value="365">Inativos ha 12+ meses</option>
+            <option value="730">Inativos ha 24+ meses</option>
+            <option value="1095">Inativos ha 36+ meses</option>
+          </select>
           <button
             className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow opacity-60 cursor-not-allowed"
             disabled
@@ -347,6 +387,7 @@ export default function RachasCadastradosPage() {
                 <th className="p-3 text-left">Status</th>
                 <th className="p-3 text-center">Atletas</th>
                 <th className="p-3 text-center">Criado em</th>
+                <th className="p-3 text-center">Ultima atividade</th>
                 <th className="p-3 text-center">Acoes</th>
                 <th className="p-3 text-center">Bloqueio</th>
               </tr>
@@ -383,6 +424,14 @@ export default function RachasCadastradosPage() {
                     <td className="p-3 text-center">{r.atletas ?? 0}</td>
                     <td className="p-3 text-center">
                       {r.criadoEm ? formatDate(r.criadoEm) : "--"}
+                    </td>
+                    <td className="p-3 text-center">
+                      {r.ultimaAtividade ? formatDate(r.ultimaAtividade) : "--"}
+                      {typeof r.diasInativo === "number" ? (
+                        <span className="block text-xs text-zinc-400">
+                          {r.diasInativo} dias sem login
+                        </span>
+                      ) : null}
                     </td>
                     <td className="p-3 text-center flex gap-2">
                       <button
