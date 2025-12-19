@@ -8,44 +8,46 @@ export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
-  const [blockedMessage, setBlockedMessage] = useState("");
+  const [blocked, setBlocked] = useState(false);
+
   const router = useRouter();
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
+  const contactEmail = "social@fut7pro.com.br";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErro("");
-    setBlockedMessage("");
+    setBlocked(false);
+
     const res = await signIn("credentials", {
       redirect: false,
       email,
       password: senha,
     });
+
     if (res?.ok) {
       router.push("/admin/dashboard");
       return;
     }
 
-    // Fallback: consultar mensagem do backend diretamente para diferenciar bloqueio vs credenciais
     try {
       const resp = await fetch(`${apiBase}${loginPath}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password: senha }),
       });
+
       const body = await resp.json().catch(() => ({}) as any);
       const message = (body as any)?.message?.toString?.() ?? "";
-      const blocked =
+      const isBlocked =
         message.toLowerCase().includes("bloque") ||
         message.toLowerCase().includes("blocked") ||
         message.toLowerCase().includes("paused");
 
-      if (blocked) {
-        setBlockedMessage(
-          "Acesso ao Painel Administrativo Bloqueado\n\nEste racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível acessar o painel administrativo.\n\nPara solicitar o desbloqueio e receber mais informações, entre em contato com a nossa equipe pelo e-mail: social@fut7pro.com.br.\n\nSe possível, informe no e-mail: nome do racha, slug do racha e o e-mail do administrador."
-        );
+      if (isBlocked) {
+        setBlocked(true);
         return;
       }
     } catch {
@@ -104,18 +106,34 @@ export default function AdminLoginPage() {
         </div>
       </div>
 
-      {blockedMessage && (
+      {blocked && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-          <div className="bg-zinc-900 text-white rounded-xl shadow-2xl p-6 max-w-lg w-full space-y-4">
+          <div className="bg-zinc-900 text-white rounded-xl shadow-2xl p-6 max-w-lg w-full space-y-3">
             <h2 className="text-xl font-bold text-center">
               Acesso ao Painel Administrativo Bloqueado
             </h2>
-            <p className="whitespace-pre-line text-sm leading-relaxed text-center">
-              {blockedMessage}
+            <p className="text-sm leading-relaxed text-center">
+              Este racha esta temporariamente bloqueado pelo Fut7Pro e, no momento, nao e possivel
+              acessar o painel administrativo.
+            </p>
+            <p className="text-sm leading-relaxed text-center">
+              Para solicitar o desbloqueio e receber mais informacoes, entre em contato com a nossa
+              equipe pelo e-mail:{" "}
+              <a
+                href={`mailto:${contactEmail}`}
+                className="font-semibold text-yellow-300 underline"
+              >
+                {contactEmail}
+              </a>
+              .
+            </p>
+            <p className="text-sm leading-relaxed text-center">
+              Se possivel, informe no e-mail: <strong>nome do racha</strong>,{" "}
+              <strong>slug do racha</strong> e o <strong>e-mail do administrador</strong>.
             </p>
             <button
               className="mt-2 w-full bg-yellow-400 text-black font-bold py-2 rounded hover:bg-yellow-300 transition"
-              onClick={() => setBlockedMessage("")}
+              onClick={() => setBlocked(false)}
             >
               Entendi
             </button>
