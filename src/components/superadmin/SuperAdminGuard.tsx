@@ -2,22 +2,43 @@
 
 import { useEffect } from "react";
 import { signOut, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const { data, status } = useSession();
   const router = useRouter();
+  const pathname = usePathname();
+  const isLoginPage = pathname?.startsWith("/superadmin/login");
+  const role = (data?.user as any)?.role;
+  const isSuperAdmin = role === "SUPERADMIN" || role === "superadmin";
 
   useEffect(() => {
     if (status === "loading") return;
-    const role = (data?.user as any)?.role;
-    if (!role || (role !== "SUPERADMIN" && role !== "superadmin")) {
-      // Expulsa se nao for superadmin
-      signOut({ callbackUrl: "/superadmin/login" }).catch(() => {
+
+    // Em qualquer rota superadmin (exceto login), exigir superadmin
+    if (!isLoginPage) {
+      if (status === "unauthenticated") {
         router.replace("/superadmin/login");
-      });
+        return;
+      }
+      if (status === "authenticated" && !isSuperAdmin) {
+        signOut({ callbackUrl: "/superadmin/login" }).catch(() => {
+          router.replace("/superadmin/login");
+        });
+      }
+      return;
     }
-  }, [data?.user, router, status]);
+
+    // Na pagina de login: se ja for superadmin, redireciona para dashboard
+    if (isLoginPage && status === "authenticated" && isSuperAdmin) {
+      router.replace("/superadmin/dashboard");
+    }
+  }, [isLoginPage, isSuperAdmin, router, status]);
+
+  if (isLoginPage) {
+    // login deve carregar mesmo sem sessao
+    return <>{children}</>;
+  }
 
   if (status === "loading") {
     return (
@@ -27,8 +48,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const role = (data?.user as any)?.role;
-  if (!role || (role !== "SUPERADMIN" && role !== "superadmin")) {
+  if (!isSuperAdmin) {
     return null;
   }
 
