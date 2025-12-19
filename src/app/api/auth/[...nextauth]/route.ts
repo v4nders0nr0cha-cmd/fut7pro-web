@@ -60,8 +60,65 @@ export const authOptions: NextAuthOptionsLike = {
       credentials: {
         email: { label: "E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
+        accessToken: { label: "Access Token", type: "text" },
+        refreshToken: { label: "Refresh Token", type: "text" },
+        tenantSlug: { label: "Tenant Slug", type: "text" },
+        tenantId: { label: "Tenant Id", type: "text" },
+        role: { label: "Role", type: "text" },
+        name: { label: "Name", type: "text" },
       },
       async authorize(credentials) {
+        // fluxo de impersonate: se vier accessToken, validar e retornar usuario direto
+        if (credentials?.accessToken) {
+          const accessToken = credentials.accessToken as string;
+          try {
+            const meResponse = await fetch(`${API_BASE_URL}${ME_PATH}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            let userData: any = null;
+            if (meResponse.ok) {
+              userData = await meResponse.json();
+            } else {
+              // fallback a dados enviados
+              userData = {
+                id: (credentials as any).id || "impersonated",
+                email: credentials.email,
+                name: credentials.name,
+                role: (credentials as any).role ?? "ADMIN",
+                tenantId: credentials.tenantId || null,
+                tenantSlug: credentials.tenantSlug || null,
+              };
+            }
+
+            const resolvedTenantSlug =
+              userData?.tenantSlug ||
+              userData?.slug ||
+              userData?.tenant?.slug ||
+              userData?.racha?.slug ||
+              (credentials as any).tenantSlug ||
+              null;
+            const resolvedTenantId =
+              userData?.tenantId || userData?.tenant?.id || (credentials as any).tenantId || null;
+
+            return {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              tenantId: resolvedTenantId,
+              tenantSlug: resolvedTenantSlug,
+              accessToken,
+              refreshToken: credentials.refreshToken || null,
+              image: userData.image || userData.avatar || null,
+            };
+          } catch (error) {
+            if (process.env.NODE_ENV === "development") {
+              console.log("Erro no authorize via token:", error);
+            }
+            return null;
+          }
+        }
+
         if (!credentials?.email || !credentials?.password) return null;
 
         try {

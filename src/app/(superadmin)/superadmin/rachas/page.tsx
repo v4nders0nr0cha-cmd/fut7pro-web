@@ -7,14 +7,14 @@ import {
   FaSearch,
   FaDownload,
   FaLock,
-  FaUserShield,
   FaInfoCircle,
   FaHistory,
-  FaArrowRight,
+  FaUserShield,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
 import { useBranding } from "@/hooks/useBranding";
+import { signIn } from "next-auth/react";
 
 type Tenant = {
   id: string;
@@ -127,7 +127,6 @@ export default function RachasCadastradosPage() {
   const [filtroStatus, setFiltroStatus] = useState("");
   const [filtroInatividade, setFiltroInatividade] = useState("");
   const [modalRacha, setModalRacha] = useState<any>(null);
-  const [impersonate, setImpersonate] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
@@ -264,6 +263,43 @@ export default function RachasCadastradosPage() {
       .then(() => mutate())
       .catch(() => alert("Falha ao enviar aviso."))
       .finally(() => setPendingAction(null));
+  }
+
+  async function handleImpersonate(tenant: any) {
+    if (!tenant?.id) return;
+    setPendingAction("Impersonate");
+    try {
+      const resp = await fetch(`/api/superadmin/tenants/${tenant.id}/impersonate`, {
+        method: "POST",
+      });
+      const data = await resp.json().catch(() => ({}) as any);
+      if (!resp.ok) {
+        const msg = (data as any)?.message || "Falha ao impersonar admin.";
+        throw new Error(msg);
+      }
+
+      const result = await signIn("credentials", {
+        redirect: false,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        email: data?.user?.email,
+        name: data?.user?.name,
+        role: data?.user?.role,
+        tenantId: data?.user?.tenantId,
+        tenantSlug: data?.user?.tenantSlug,
+      });
+
+      if (result?.ok) {
+        window.location.href = "/admin/dashboard";
+      } else {
+        throw new Error("Falha ao criar sessao de impersonate.");
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      alert(`Nao foi possivel acessar como admin: ${msg}`);
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -443,9 +479,9 @@ export default function RachasCadastradosPage() {
                       </button>
                       <button
                         className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => setImpersonate(r)}
+                        onClick={() => handleImpersonate(r)}
                         title="Acessar Painel Admin como Presidente"
-                        disabled
+                        disabled={Boolean(pendingAction)}
                       >
                         <FaUserShield /> Login como Admin
                       </button>
@@ -487,45 +523,6 @@ export default function RachasCadastradosPage() {
             onClose={() => setModalRacha(null)}
             onRefresh={() => mutate()}
           />
-        )}
-
-        {/* MODAL IMPERSONATE (AGINDO COMO PRESIDENTE) */}
-        {impersonate && (
-          <div
-            className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-60"
-            onClick={() => setImpersonate(null)}
-          >
-            <div
-              className="bg-zinc-900 rounded-xl shadow-xl p-6 w-full max-w-lg mx-auto text-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex flex-col items-center">
-                <FaUserShield className="text-green-400 text-3xl mb-2" />
-                <h3 className="text-xl font-bold mb-1">
-                  Voce esta "agindo como presidente" deste racha
-                </h3>
-                <span className="text-sm text-zinc-400 mb-4">
-                  <b>{impersonate.nome}</b> (Presidente: {impersonate.presidente})<br />
-                  Acoes de impersonate serao habilitadas assim que o backend expuser o endpoint.
-                </span>
-                <button
-                  className="bg-blue-700 text-white px-5 py-2 rounded hover:bg-blue-900 mb-2 flex items-center gap-2"
-                  onClick={() => {
-                    setImpersonate(null);
-                    alert("Impersonate sera habilitado com endpoint real.");
-                  }}
-                >
-                  <FaArrowRight /> Entrar no Painel Administrativo do Presidente
-                </button>
-                <button
-                  className="bg-zinc-700 text-white px-4 py-2 rounded hover:bg-zinc-900"
-                  onClick={() => setImpersonate(null)}
-                >
-                  Fechar
-                </button>
-              </div>
-            </div>
-          </div>
         )}
       </div>
     </>
