@@ -290,7 +290,7 @@ export default function RachasCadastradosPage() {
       });
 
       if (result?.ok) {
-        window.location.href = "/admin/dashboard";
+        window.open("/admin/dashboard", "_blank", "noopener");
       } else {
         throw new Error("Falha ao criar sessao de impersonate.");
       }
