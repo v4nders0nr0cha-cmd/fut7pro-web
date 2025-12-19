@@ -50,13 +50,19 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
     try {
       const resp = await fetch(`/api/superadmin/tenants/${racha.id}/unblock`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: "Desbloqueio manual pelo superadmin" }),
       });
-      if (!resp.ok) throw new Error(await resp.text());
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || "Erro ao desbloquear");
+      }
       onRefresh?.();
       onClose();
     } catch (err) {
       console.error(err);
-      alert("Falha ao desbloquear. Verifique o backend e tente novamente.");
+      const message = err instanceof Error ? err.message : "Falha ao desbloquear.";
+      alert(`Falha ao desbloquear. Detalhe: ${message}`);
     } finally {
       setIsUnblocking(false);
     }
