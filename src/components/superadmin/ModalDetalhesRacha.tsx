@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { FaInfoCircle, FaLock, FaHistory } from "react-icons/fa";
 import { format } from "date-fns";
 
 interface RachaDetalhes {
+  id: string;
   nome: string;
   presidente?: string | null;
   plano?: string | null;
@@ -23,9 +25,12 @@ interface RachaDetalhes {
 interface ModalDetalhesRachaProps {
   racha: RachaDetalhes;
   onClose: () => void;
+  onRefresh?: () => void;
 }
 
-export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRachaProps) {
+export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalDetalhesRachaProps) {
+  const [isUnblocking, setIsUnblocking] = useState(false);
+
   const statusClass =
     racha.status === "BLOQUEADO"
       ? "bg-red-900 text-red-200"
@@ -38,6 +43,24 @@ export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRach
   const plano = racha.plano || (racha.status === "TRIAL" ? "Trial (30 dias)" : "Plano n/d");
   const criadoEm = racha.criadoEm ? format(new Date(racha.criadoEm), "dd/MM/yyyy") : "--";
   const ativo = racha.ativo ?? (racha.status === "ATIVO" || racha.status === "TRIAL");
+
+  async function handleUnblock() {
+    if (isUnblocking) return;
+    setIsUnblocking(true);
+    try {
+      const resp = await fetch(`/api/superadmin/tenants/${racha.id}/unblock`, {
+        method: "POST",
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      onRefresh?.();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      alert("Falha ao desbloquear. Verifique o backend e tente novamente.");
+    } finally {
+      setIsUnblocking(false);
+    }
+  }
 
   return (
     <div
@@ -86,10 +109,11 @@ export default function ModalDetalhesRacha({ racha, onClose }: ModalDetalhesRach
                 : "--"}
             </span>
             <button
-              className="mt-2 bg-green-700 text-white px-4 py-1 rounded hover:bg-green-800"
-              onClick={() => alert("Funcao de desbloquear depende do endpoint do backend.")}
+              className="mt-2 bg-green-700 text-white px-4 py-1 rounded hover:bg-green-800 disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={handleUnblock}
+              disabled={isUnblocking}
             >
-              Desbloquear manualmente
+              {isUnblocking ? "Desbloqueando..." : "Desbloquear manualmente"}
             </button>
           </div>
         )}

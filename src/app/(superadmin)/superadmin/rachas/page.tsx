@@ -433,7 +433,11 @@ export default function RachasCadastradosPage() {
 
         {/* MODAL DETALHES DO RACHA */}
         {modalRacha && (
-          <ModalDetalhesRacha racha={modalRacha} onClose={() => setModalRacha(null)} />
+          <ModalDetalhesRacha
+            racha={modalRacha}
+            onClose={() => setModalRacha(null)}
+            onRefresh={() => mutate()}
+          />
         )}
 
         {/* MODAL IMPERSONATE (AGINDO COMO PRESIDENTE) */}
