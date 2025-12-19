@@ -180,7 +180,7 @@ export default function FooterPersonalizacaoPage() {
           <h2 className="text-lg text-yellow-300 font-semibold mb-2">Redes sociais</h2>
           <div className="flex gap-4 mt-2">
             <a
-              href="https://facebook.com"
+              href="https://www.facebook.com/Fut7Pro"
               target="_blank"
               rel="noopener noreferrer"
               className="text-yellow-400 hover:scale-110 transition"
@@ -196,7 +196,7 @@ export default function FooterPersonalizacaoPage() {
               <FaWhatsapp size={32} />
             </a>
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/fut7pro_app"
               target="_blank"
               rel="noopener noreferrer"
               className="text-yellow-400 hover:scale-110 transition"

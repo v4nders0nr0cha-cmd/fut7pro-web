@@ -221,7 +221,7 @@ export default function ContatosPage() {
             </div>
             <div className="flex gap-4 mt-2">
               <a
-                href="https://instagram.com/fut7pro"
+                href="https://www.instagram.com/fut7pro_app"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
@@ -230,7 +230,7 @@ export default function ContatosPage() {
                 <FaInstagram />
               </a>
               <a
-                href="https://facebook.com/fut7pro"
+                href="https://www.facebook.com/Fut7Pro"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
