@@ -1,8 +1,12 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-import { SessionProvider } from "next-auth/react";
 import AdminLayoutContent from "./SuperAdminLayoutContent";
 import { SuperAdminGuard } from "@/components/superadmin/SuperAdminGuard";
+import dynamic from "next/dynamic";
+
+const SuperAdminProviders = dynamic(() => import("@/components/superadmin/SuperAdminProviders"), {
+  ssr: false,
+});
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,11 +19,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div
       className={`${inter.className} bg-gradient-to-br from-[#181818] to-[#232323] text-white min-h-screen`}
     >
-      <SessionProvider basePath="/api/superadmin-auth">
+      <SuperAdminProviders>
         <SuperAdminGuard>
           <AdminLayoutContent>{children}</AdminLayoutContent>
         </SuperAdminGuard>
-      </SessionProvider>
+      </SuperAdminProviders>
     </div>
   );
 }
