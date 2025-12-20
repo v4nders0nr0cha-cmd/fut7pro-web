@@ -20,6 +20,11 @@ export async function requireUser(): Promise<UserLike | null> {
   return (session as any)?.user ?? null;
 }
 
+export async function requireSuperAdminUser(): Promise<UserLike | null> {
+  const session = await getServerSession?.(superAdminAuthOptions as any);
+  return (session as any)?.user ?? null;
+}
+
 export function resolveTenantSlug(user: UserLike, slug?: string) {
   return slug || user.tenantSlug || (user as any).slug || user.tenantId || null;
 }

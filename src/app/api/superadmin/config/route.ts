@@ -5,7 +5,7 @@ import {
   forwardResponse,
   jsonResponse,
   proxyBackend,
-  requireUser,
+  requireSuperAdminUser,
 } from "../../_proxy/helpers";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: NextRequest) {
-  const user = await requireUser();
+  const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const user = await requireUser();
+  const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }

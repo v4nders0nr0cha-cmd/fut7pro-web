@@ -5,7 +5,7 @@ import {
   forwardResponse,
   jsonResponse,
   proxyBackend,
-  requireUser,
+  requireSuperAdminUser,
 } from "../../../../_proxy/helpers";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(req: NextRequest, { params }: { params: { id?: string } }) {
-  const user = await requireUser();
+  const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
   const id = params?.id;
