@@ -35,9 +35,11 @@ export interface Usuario {
   email: string;
   name?: string;
   role?: string;
+  superadmin?: boolean;
   status?: string;
   tenantId?: string;
   tenantSlug?: string;
+  tenantNome?: string;
   criadoEm?: string;
   atualizadoEm?: string;
   ativo?: boolean;

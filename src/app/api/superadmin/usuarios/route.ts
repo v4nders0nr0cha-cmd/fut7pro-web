@@ -17,6 +17,7 @@ type BackendUser = {
   email?: string | null;
   name?: string | null;
   role?: string | null;
+  superadmin?: boolean | null;
   createdAt?: string | null;
   updatedAt?: string | null;
   tenantId?: string | null;
@@ -32,8 +33,10 @@ function mapUser(user: BackendUser) {
     name,
     email: user.email ?? "",
     role: user.role ?? "ADMIN",
+    superadmin: user.superadmin ?? false,
     tenantId: user.tenantId ?? user.tenant?.id ?? undefined,
     tenantSlug: user.tenantSlug ?? user.tenant?.slug ?? undefined,
+    tenantNome: user.tenant?.name ?? undefined,
     criadoEm: user.createdAt ?? undefined,
     atualizadoEm: user.updatedAt ?? user.createdAt ?? undefined,
     ativo: true,

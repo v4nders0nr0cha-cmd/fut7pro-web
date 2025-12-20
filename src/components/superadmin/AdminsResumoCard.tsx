@@ -15,20 +15,20 @@ const AdminsResumoCard: FC<Props> = ({ admins }) => {
   const trial = admins.filter((a) => normalizar(a.status) === "trial").length;
   const bloqueados = admins.filter((a) => normalizar(a.status) === "bloqueado").length;
   return (
-    <div className="flex flex-wrap gap-4 mb-6">
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="bg-zinc-900 rounded-xl px-6 py-4">
         <span className="text-xs text-zinc-400">Total de Rachas</span>
         <div className="text-xl font-bold text-yellow-400">{total}</div>
       </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
+      <div className="bg-zinc-900 rounded-xl px-6 py-4">
         <span className="text-xs text-zinc-400">Ativos</span>
         <div className="text-xl font-bold text-green-400">{ativos}</div>
       </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
+      <div className="bg-zinc-900 rounded-xl px-6 py-4">
         <span className="text-xs text-zinc-400">Trial</span>
         <div className="text-xl font-bold text-blue-400">{trial}</div>
       </div>
-      <div className="bg-zinc-900 rounded-xl px-6 py-4 flex-1 min-w-[140px]">
+      <div className="bg-zinc-900 rounded-xl px-6 py-4">
         <span className="text-xs text-zinc-400">Bloqueados</span>
         <div className="text-xl font-bold text-red-400">{bloqueados}</div>
       </div>
