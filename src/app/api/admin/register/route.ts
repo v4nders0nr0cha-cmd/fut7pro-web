@@ -1,9 +1,11 @@
 import { NextRequest } from "next/server";
+import { randomBytes } from "crypto";
 import { getApiBase } from "@/lib/get-api-base";
+import { requireSuperAdminUser } from "../../_proxy/helpers";
 
 type RegisterPayload = {
-  rachaNome: string;
-  rachaSlug: string;
+  rachaNome?: string;
+  rachaSlug?: string;
   cidade?: string;
   estado?: string;
   rachaLogoBase64?: string;
@@ -11,8 +13,18 @@ type RegisterPayload = {
   adminApelido?: string;
   adminPosicao: string;
   adminEmail: string;
-  adminSenha: string;
+  adminSenha?: string;
   adminAvatarBase64?: string;
+  existingTenantId?: string;
+  existingRachaSlug?: string;
+  skipTenantCreate?: boolean;
+  autoPassword?: boolean;
+};
+
+type TenantInfo = {
+  id?: string;
+  name?: string;
+  slug?: string;
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
@@ -37,18 +49,47 @@ function safeJsonParse(text: string) {
   }
 }
 
+function shouldUseExisting(payload: RegisterPayload) {
+  return Boolean(payload.existingTenantId || payload.existingRachaSlug || payload.skipTenantCreate);
+}
+
+function generatePassword(length = 12) {
+  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  const bytes = randomBytes(length);
+  return Array.from(bytes)
+    .map((byte) => charset[byte % charset.length])
+    .join("");
+}
+
 async function createTenant(baseUrl: string, data: RegisterPayload) {
   return fetch(resolvePath(baseUrl, "/rachas"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      name: data.rachaNome.trim(),
-      slug: data.rachaSlug.trim(),
-      subdomain: data.rachaSlug.trim(),
+      name: data.rachaNome?.trim(),
+      slug: data.rachaSlug?.trim(),
+      subdomain: data.rachaSlug?.trim(),
       autoJoinEnabled: true,
       autoApproveAthletes: false,
     }),
   });
+}
+
+async function fetchTenantById(baseUrl: string, id: string) {
+  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`));
+}
+
+async function fetchTenantBySlug(baseUrl: string, slug: string) {
+  return fetch(resolvePath(baseUrl, `/rachas/slug/${encodeURIComponent(slug)}`));
+}
+
+async function resolveExistingTenant(baseUrl: string, payload: RegisterPayload) {
+  if (payload.existingTenantId) {
+    return fetchTenantById(baseUrl, payload.existingTenantId.trim());
+  }
+  const slug = payload.existingRachaSlug || payload.rachaSlug;
+  if (!slug) return null;
+  return fetchTenantBySlug(baseUrl, slug.trim());
 }
 
 async function createAdmin(baseUrl: string, data: RegisterPayload) {
@@ -59,7 +100,7 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
       name: data.adminNome.trim(),
       email: data.adminEmail.trim().toLowerCase(),
       password: data.adminSenha,
-      rachaSlug: data.rachaSlug.trim(),
+      rachaSlug: data.rachaSlug?.trim(),
     }),
   });
 }
@@ -80,7 +121,7 @@ async function loginForToken(baseUrl: string, data: RegisterPayload) {
 }
 
 async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken?: string | null) {
-  if (!accessToken) return;
+  if (!accessToken || !data.rachaSlug) return;
 
   // Guardar logo/avatar apenas se forem leves (limitado a ~1MB em base64)
   const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_000_000;
@@ -88,7 +129,7 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
   if (logoTooLarge || avatarTooLarge) return;
 
   const aboutPayload = {
-    nome: data.rachaNome.trim(),
+    nome: data.rachaNome?.trim(),
     logoUrl: data.rachaLogoBase64,
     localizacao: {
       cidade: data.cidade?.trim(),
@@ -115,6 +156,7 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
 }
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const baseUrl = normalizeBase(getApiBase());
@@ -126,27 +168,78 @@ export async function POST(req: NextRequest) {
     return jsonResponse("Payload invalido", 400);
   }
 
+  const useExistingTenant = shouldUseExisting(payload);
+  const wantsAutoPassword = Boolean(payload.autoPassword || !payload.adminSenha);
+  const requiresSuperAdmin = useExistingTenant || wantsAutoPassword;
+
+  if (requiresSuperAdmin) {
+    const user = await requireSuperAdminUser();
+    if (!user) return jsonResponse("Nao autorizado", 401);
+  }
+
   if (!payload.adminNome?.trim())
     return jsonResponse("Informe o primeiro nome do administrador.", 400);
   if (payload.adminNome.trim().split(" ").length > 1)
     return jsonResponse("Use apenas o primeiro nome (sem sobrenome).", 400);
   if (!payload.adminPosicao) return jsonResponse("Selecione a posicao do administrador.", 400);
   if (!payload.adminEmail?.trim()) return jsonResponse("Informe o e-mail.", 400);
-  if (!payload.adminSenha || payload.adminSenha.length < 6)
-    return jsonResponse("A senha deve ter ao menos 6 caracteres.", 400);
-  if (!payload.rachaNome?.trim() || payload.rachaNome.trim().length < 3)
-    return jsonResponse("O nome do racha deve ter ao menos 3 caracteres.", 400);
-  if (!payload.rachaSlug?.trim() || !SLUG_REGEX.test(payload.rachaSlug.trim()))
-    return jsonResponse("Slug invalido: use minusculas, numeros e hifens (3-50).", 400);
-  if (!payload.cidade?.trim()) return jsonResponse("Informe a cidade.", 400);
-  if (!payload.estado?.trim()) return jsonResponse("Selecione o estado.", 400);
 
-  // 1) Cria o tenant/racha
-  const tenantRes = await createTenant(baseUrl, payload);
-  const tenantBodyText = await tenantRes.text();
-  if (!tenantRes.ok) {
-    const body = safeJsonParse(tenantBodyText);
-    return jsonResponse(body?.message || tenantBodyText || "Erro ao criar racha", tenantRes.status);
+  let generatedPassword: string | null = null;
+  if (!payload.adminSenha) {
+    if (!wantsAutoPassword) {
+      return jsonResponse("A senha deve ter ao menos 6 caracteres.", 400);
+    }
+    generatedPassword = generatePassword();
+    payload.adminSenha = generatedPassword;
+  }
+
+  const adminSenha = payload.adminSenha || "";
+  if (adminSenha.length < 6) {
+    return jsonResponse("A senha deve ter ao menos 6 caracteres.", 400);
+  }
+
+  let tenantInfo: TenantInfo | null = null;
+
+  if (useExistingTenant) {
+    const existingRes = await resolveExistingTenant(baseUrl, payload);
+    if (!existingRes) {
+      return jsonResponse("Informe o racha existente.", 400);
+    }
+    const existingText = await existingRes.text();
+    if (!existingRes.ok) {
+      const body = safeJsonParse(existingText);
+      return jsonResponse(
+        body?.message || existingText || "Racha nao encontrado",
+        existingRes.status
+      );
+    }
+    const existing = (existingText ? safeJsonParse(existingText) : null) as TenantInfo | null;
+    tenantInfo = existing;
+    payload.rachaSlug = payload.rachaSlug || existing?.slug || payload.existingRachaSlug;
+    payload.rachaNome = payload.rachaNome || existing?.name || payload.rachaSlug;
+  } else {
+    if (!payload.rachaNome?.trim() || payload.rachaNome.trim().length < 3)
+      return jsonResponse("O nome do racha deve ter ao menos 3 caracteres.", 400);
+    if (!payload.rachaSlug?.trim() || !SLUG_REGEX.test(payload.rachaSlug.trim()))
+      return jsonResponse("Slug invalido: use minusculas, numeros e hifens (3-50).", 400);
+    if (!payload.cidade?.trim()) return jsonResponse("Informe a cidade.", 400);
+    if (!payload.estado?.trim()) return jsonResponse("Selecione o estado.", 400);
+
+    // 1) Cria o tenant/racha
+    const tenantRes = await createTenant(baseUrl, payload);
+    const tenantBodyText = await tenantRes.text();
+    if (!tenantRes.ok) {
+      const body = safeJsonParse(tenantBodyText);
+      return jsonResponse(
+        body?.message || tenantBodyText || "Erro ao criar racha",
+        tenantRes.status
+      );
+    }
+    tenantInfo = tenantBodyText ? safeJsonParse(tenantBodyText) : null;
+  }
+
+  if (!payload.rachaSlug?.trim()) {
+    return jsonResponse("Slug do racha nao encontrado.", 400);
   }
 
   // 2) Cria o admin vinculado ao tenant
@@ -161,15 +254,20 @@ export async function POST(req: NextRequest) {
   }
 
   // 3) Faz login se necessario para obter token e salva nome/logo/localizacao via /admin/about
-  const tokenFromRegister = adminJson?.accessToken || null;
-  const token = tokenFromRegister || (await loginForToken(baseUrl, payload));
-  await primeBranding(baseUrl, payload, token);
+  if (!useExistingTenant) {
+    const tokenFromRegister = adminJson?.accessToken || null;
+    const token = tokenFromRegister || (await loginForToken(baseUrl, payload));
+    await primeBranding(baseUrl, payload, token);
+  }
 
   return new Response(
     JSON.stringify({
       ok: true,
-      message: "Racha e administrador criados com sucesso.",
-      tenant: tenantBodyText ? safeJsonParse(tenantBodyText) : null,
+      message: useExistingTenant
+        ? "Presidente criado para racha existente."
+        : "Racha e administrador criados com sucesso.",
+      tenant: tenantInfo,
+      temporaryPassword: generatedPassword || undefined,
     }),
     { status: 201, headers: { "Content-Type": "application/json" } }
   );

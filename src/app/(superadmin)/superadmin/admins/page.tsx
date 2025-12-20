@@ -5,7 +5,10 @@ import { useState } from "react";
 import { useBranding } from "@/hooks/useBranding";
 import AdminsResumoCard from "@/components/superadmin/AdminsResumoCard";
 import AdminsTable from "@/components/superadmin/AdminsTable";
-import ModalNovoAdmin from "@/components/superadmin/ModalNovoAdmin";
+import ModalNovoAdmin, {
+  type CreatePresidentePayload,
+  type SaveResult,
+} from "@/components/superadmin/ModalNovoAdmin";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Role, Permission } from "@/common/enums";
 
@@ -14,7 +17,37 @@ export default function SuperAdminAdminsPage() {
   const brand = brandingName || "Fut7Pro";
   const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
   const [open, setOpen] = useState(false);
-  const { usuarios, isLoading, rachas } = useSuperAdmin();
+  const { usuarios, isLoading, rachas, refreshAll } = useSuperAdmin();
+
+  async function handleCreatePresidente(payload: CreatePresidentePayload): Promise<SaveResult> {
+    const response = await fetch("/api/admin/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await response.text();
+    let body: any = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+
+    if (!response.ok) {
+      const message = body?.message || body?.error || text || "Erro ao criar presidente.";
+      throw new Error(message);
+    }
+
+    await refreshAll();
+
+    return {
+      message: body?.message || "Presidente criado com sucesso.",
+      temporaryPassword: body?.temporaryPassword || undefined,
+      adminEmail: payload.adminEmail?.trim().toLowerCase(),
+      tenantName: payload.rachaNome || undefined,
+    };
+  }
 
   const adminsParaTabela = (usuarios || []).map((usuario) => ({
     id: usuario.id,
@@ -53,12 +86,18 @@ export default function SuperAdminAdminsPage() {
             className="bg-yellow-400 text-black px-5 py-2 rounded-xl font-bold hover:bg-yellow-300 transition mt-4 sm:mt-0"
             onClick={() => setOpen(true)}
           >
-            + Novo Presidente
+            + Criar Presidente Manual
           </button>
         </div>
         <AdminsResumoCard admins={rachas || []} />
         <AdminsTable admins={adminsParaTabela} isLoading={isLoading} />
-        <ModalNovoAdmin open={open} onClose={() => setOpen(false)} onSave={() => {}} />
+        <ModalNovoAdmin
+          open={open}
+          onClose={() => setOpen(false)}
+          onSave={handleCreatePresidente}
+          rachas={rachas}
+          usuarios={usuarios}
+        />
       </div>
     </>
   );
