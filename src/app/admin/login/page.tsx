@@ -97,44 +97,8 @@ export default function AdminLoginPage() {
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 py-12 lg:flex-row lg:items-center lg:justify-between">
-        <section className="w-full space-y-6 lg:w-1/2 animate-slide-in">
-          <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-300">
-            Painel Fut7Pro
-          </div>
-          <div className="space-y-3">
-            <h1 className="text-3xl font-bold leading-tight sm:text-4xl">Login do Administrador</h1>
-            <p className="text-sm leading-relaxed text-gray-300 sm:text-base">
-              Acesse o centro de comando do seu racha. Tudo que voce atualiza no painel reflete no
-              site publico do racha com sincronizacao imediata.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {HIGHLIGHTS.map((item) => (
-              <div
-                key={item.title}
-                className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur"
-              >
-                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-gray-300">{item.description}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur">
-            <div className="font-semibold text-white">Suporte direto</div>
-            <p className="mt-1 text-xs text-gray-300">
-              Precisa de ajuda para entrar? Fale com a equipe pelo e-mail{" "}
-              <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
-                {contactEmail}
-              </a>
-              .
-            </p>
-          </div>
-        </section>
-
-        <section className="w-full lg:w-[420px] animate-fade-in">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:py-12 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+        <section className="order-1 w-full lg:order-2 lg:w-[420px] animate-fade-in">
           <div className="rounded-2xl border border-white/10 bg-[#0c111d]/85 p-6 shadow-2xl backdrop-blur-xl">
             <div className="space-y-2">
               <h2 className="text-lg font-semibold text-white">Acesse seu painel</h2>
@@ -162,6 +126,7 @@ export default function AdminLoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
+                  autoFocus
                   placeholder="email@exemplo.com"
                   className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
@@ -187,20 +152,95 @@ export default function AdminLoginPage() {
               </button>
             </form>
 
-            <div className="mt-6 text-center text-sm text-gray-300">
-              Ainda nao cadastrou seu racha?{" "}
+            <div className="mt-5 flex flex-col gap-2 text-center text-sm text-gray-300">
               <a
-                href="/cadastrar-racha"
+                href={`mailto:${contactEmail}?subject=Recuperar%20acesso%20ao%20painel%20Fut7Pro`}
                 className="text-yellow-300 underline hover:text-yellow-200"
               >
-                Cadastre-se
+                Esqueci minha senha
+              </a>
+              <div>
+                Nao tem conta?{" "}
+                <a
+                  href="/cadastrar-racha"
+                  className="text-yellow-300 underline hover:text-yellow-200"
+                >
+                  Cadastre seu racha
+                </a>
+              </div>
+              <a
+                href={`mailto:${contactEmail}`}
+                className="text-yellow-300 underline hover:text-yellow-200"
+              >
+                Precisa de ajuda? Fale conosco
               </a>
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-gray-400">
+          <p className="mt-4 hidden text-xs text-gray-400 sm:block">
             Acesso protegido por autenticacao segura e isolada por tenant.
           </p>
+        </section>
+
+        <section className="order-2 w-full space-y-5 lg:order-1 lg:w-1/2 animate-slide-in">
+          <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-300">
+            Painel Fut7Pro
+          </div>
+          <div className="space-y-3">
+            <h1 className="text-3xl font-bold leading-tight sm:text-4xl">Login do Administrador</h1>
+            <p className="text-sm leading-relaxed text-gray-300 sm:hidden">
+              Acesse a administracao do seu racha.
+            </p>
+            <p className="hidden text-sm leading-relaxed text-gray-300 sm:block sm:text-base">
+              Acesse o centro de comando do seu racha. Tudo que voce atualiza no painel reflete no
+              site publico do racha com sincronizacao imediata.
+            </p>
+          </div>
+
+          <details className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur sm:hidden">
+            <summary className="cursor-pointer text-sm font-semibold text-white">
+              Ver beneficios do painel
+            </summary>
+            <div className="mt-3 space-y-2 text-xs text-gray-300">
+              <ul className="space-y-2">
+                {HIGHLIGHTS.map((item) => (
+                  <li key={item.title}>
+                    <span className="font-semibold text-white">{item.title}:</span>{" "}
+                    {item.description}
+                  </li>
+                ))}
+              </ul>
+              <div className="border-t border-white/10 pt-3">
+                Precisa de ajuda?{" "}
+                <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
+                  {contactEmail}
+                </a>
+              </div>
+            </div>
+          </details>
+
+          <div className="hidden grid-cols-2 gap-3 sm:grid">
+            {HIGHLIGHTS.map((item) => (
+              <div
+                key={item.title}
+                className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur"
+              >
+                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-gray-300">{item.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="hidden rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur sm:block">
+            <div className="font-semibold text-white">Suporte direto</div>
+            <p className="mt-1 text-xs text-gray-300">
+              Precisa de ajuda para entrar? Fale com a equipe pelo e-mail{" "}
+              <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
+                {contactEmail}
+              </a>
+              .
+            </p>
+          </div>
         </section>
       </div>
 
