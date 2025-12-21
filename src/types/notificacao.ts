@@ -25,11 +25,14 @@ export interface Notification {
   updatedAt?: string;
   templateId?: string | null;
   automationId?: string | null;
+  campaignId?: string | null;
   titulo: string;
   mensagem: string;
   data: string;
   lida: boolean;
   prioridade?: "normal" | "alta";
+  expiresAt?: string;
+  cta?: { label?: string; url?: string };
   remetente?: string; // ex: "SuperAdmin", "Usuário", "Sistema"
   assunto?: string;
   referenciaId?: string; // id relacionado (ex: id da mensagem)

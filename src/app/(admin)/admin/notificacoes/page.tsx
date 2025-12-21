@@ -3,6 +3,7 @@
 
 import Head from "next/head";
 import { useState } from "react";
+import Link from "next/link";
 import { useNotifications } from "@/hooks/useNotifications";
 import { FaInfoCircle, FaExclamationTriangle, FaEnvelopeOpen, FaBell } from "react-icons/fa";
 
@@ -33,12 +34,34 @@ export default function NotificacoesPage() {
     )
   );
 
+  const normalizePriority = (value?: string | null) => {
+    const raw = (value || "").toString().toLowerCase();
+    if (raw === "alta" || raw === "high") return "alta";
+    return "normal";
+  };
+
+  const getMetadata = (notificacao: (typeof notificacoes)[number]) => {
+    return (notificacao?.metadata ?? {}) as Record<string, any>;
+  };
+
   const notificacoesFiltradas = notificacoes.filter((not) => {
     const tipo = (not.type || not.tipo || "outros").toString();
     if (filtroTipo !== "todos" && tipo !== filtroTipo) return false;
     if (filtroStatus === "lidas" && !not.lida) return false;
     if (filtroStatus === "naoLidas" && not.lida) return false;
     return true;
+  });
+
+  const notificacoesOrdenadas = [...notificacoesFiltradas].sort((a, b) => {
+    const aPriority = normalizePriority(a.prioridade || getMetadata(a).priority);
+    const bPriority = normalizePriority(b.prioridade || getMetadata(b).priority);
+    const aPinned = aPriority === "alta" && !a.lida;
+    const bPinned = bPriority === "alta" && !b.lida;
+    if (aPinned !== bPinned) return aPinned ? -1 : 1;
+
+    const aDate = a.data ? new Date(a.data).getTime() : 0;
+    const bDate = b.data ? new Date(b.data).getTime() : 0;
+    return bDate - aDate;
   });
 
   const handleMarcarComoLida = async (id: string) => {
@@ -106,14 +129,26 @@ export default function NotificacoesPage() {
               Ocorreu um erro ao carregar as notifica��es.
               {error && <div className="text-xs text-red-300 mt-2">{error}</div>}
             </div>
-          ) : notificacoesFiltradas.length === 0 ? (
+          ) : notificacoesOrdenadas.length === 0 ? (
             <div className="text-center text-gray-400 py-12">Nenhuma notifica��o encontrada.</div>
           ) : (
-            notificacoesFiltradas.map((not) => {
+            notificacoesOrdenadas.map((not) => {
               const tipo = (not.type || not.tipo || "outros").toString();
               const icon = ICONS[tipo] || ICONS["outros"];
               const dataLabel = not.data ? new Date(not.data).toLocaleString("pt-BR") : "";
               const statusLabel = not.status ?? (not.lida ? "Lida" : "Nova");
+              const metadata = getMetadata(not);
+              const priority = normalizePriority(not.prioridade || metadata.priority);
+              const cta = (not.cta || metadata.cta || {}) as {
+                label?: string;
+                url?: string;
+              };
+              const expiresAtValue = not.expiresAt || metadata.expiresAt;
+              const isExpired = expiresAtValue
+                ? new Date(expiresAtValue).getTime() < Date.now()
+                : false;
+              const ctaUrl = typeof cta.url === "string" ? cta.url : "";
+              const ctaLabel = cta.label || "Abrir";
 
               return (
                 <div
@@ -132,11 +167,29 @@ export default function NotificacoesPage() {
                         {tipo}
                       </span>
                       <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-gray-300">
+                        {priority === "alta" ? "Alta" : "Normal"}
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-gray-300">
                         {statusLabel}
                       </span>
+                      {isExpired && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-900 text-gray-400">
+                          Expirada
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm">{not.mensagem}</div>
                     <div className="text-xs text-gray-500 mt-2">{dataLabel}</div>
+                    {ctaUrl && !isExpired && (
+                      <div className="mt-3">
+                        <Link
+                          href={ctaUrl}
+                          className="inline-flex items-center text-xs font-semibold px-3 py-1.5 rounded bg-yellow-400 text-black hover:bg-yellow-500 transition"
+                        >
+                          {ctaLabel}
+                        </Link>
+                      </div>
+                    )}
                   </div>
                   {!not.lida && (
                     <button

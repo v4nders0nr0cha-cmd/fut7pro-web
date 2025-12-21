@@ -13,6 +13,7 @@ type UseNotificationsOptions = {
   isRead?: boolean;
   search?: string;
   limit?: number;
+  refreshInterval?: number;
 };
 
 const fetcher = async (url: string) => {
@@ -30,25 +31,25 @@ const coerceDate = (value: unknown) => {
 };
 
 const normalizeNotification = (raw: any): Notificacao => {
+  const metadata = raw?.metadata || {};
   const dataValue =
     coerceDate(raw?.data) || coerceDate(raw?.createdAt) || coerceDate(raw?.updatedAt);
-  const titleValue =
-    raw?.titulo || raw?.title || raw?.metadata?.titulo || raw?.metadata?.title || "";
+  const titleValue = raw?.titulo || raw?.title || metadata?.titulo || metadata?.title || "";
   const messageValue =
-    raw?.mensagem || raw?.message || raw?.metadata?.mensagem || raw?.metadata?.message || "";
+    raw?.mensagem || raw?.message || metadata?.mensagem || metadata?.message || "";
   const typeValue =
-    raw?.type ||
-    raw?.tipo ||
-    raw?.metadata?.type ||
-    raw?.metadata?.tipo ||
-    raw?.category ||
-    "outros";
+    raw?.type || raw?.tipo || metadata?.type || metadata?.tipo || metadata?.category || "outros";
   const readValue =
     typeof raw?.lida === "boolean"
       ? raw.lida
       : typeof raw?.isRead === "boolean"
         ? raw.isRead
         : false;
+  const priorityValue =
+    raw?.prioridade || raw?.priority || metadata?.prioridade || metadata?.priority || undefined;
+  const expiresAtValue = raw?.expiresAt || metadata?.expiresAt || undefined;
+  const ctaValue = raw?.cta || metadata?.cta || undefined;
+  const campaignIdValue = raw?.campaignId || metadata?.campaignId || undefined;
 
   return {
     ...raw,
@@ -61,6 +62,10 @@ const normalizeNotification = (raw: any): Notificacao => {
     data: dataValue || "",
     lida: readValue,
     tipo: raw?.tipo || typeValue,
+    prioridade: priorityValue,
+    expiresAt: expiresAtValue,
+    cta: ctaValue,
+    campaignId: campaignIdValue,
   };
 };
 
@@ -83,6 +88,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
     enabled && rachaId ? buildKey(rachaId, options) : null,
     fetcher,
     {
+      refreshInterval: options.refreshInterval,
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
           console.log("Erro ao carregar notificações:", err);

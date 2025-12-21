@@ -11,7 +11,10 @@ type ComunicacaoBadge = {
 
 export function useComunicacao(): ComunicacaoBadge {
   const { isAuthenticated } = useAuth();
-  const { unreadCount } = useNotifications({ enabled: isAuthenticated });
+  const { unreadCount } = useNotifications({
+    enabled: isAuthenticated,
+    refreshInterval: 30000,
+  });
 
   return { badge: unreadCount, badgeMensagem: 0, badgeSugestoes: 0 };
 }

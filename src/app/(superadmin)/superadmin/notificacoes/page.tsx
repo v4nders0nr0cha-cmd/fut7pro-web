@@ -1,30 +1,68 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import Head from "next/head";
-import { FaEye, FaCopy, FaTrash, FaRedo, FaPlus } from "react-icons/fa";
+import { FaEye, FaCopy, FaRedo, FaPlus, FaBan } from "react-icons/fa";
 import { ModalNovaNotificacao } from "@/components/superadmin/ModalNovaNotificacao";
 import { ModalNotificacaoPreview } from "@/components/superadmin/ModalNotificacaoPreview";
-import { useNotifications } from "@/hooks/useNotifications";
-import type { Notificacao, NotificacaoTipo } from "@/types/notificacao";
 import { useBranding } from "@/hooks/useBranding";
+import { useSuperAdminNotificationCampaigns } from "@/hooks/useSuperAdminNotificationCampaigns";
+import type {
+  NotificationCampaign,
+  NotificationCampaignRecipient,
+} from "@/types/notification-campaign";
 
-const tiposNotificacao: NotificacaoTipo[] = [
-  "Cobrança/Financeiro",
-  "Renovação de Plano",
+const TIPOS_NOTIFICACAO = [
+  "Cobranca/Financeiro",
+  "Renovacao de Plano",
   "Upgrade de Plano",
-  "Promoções e Ofertas",
-  "Gamificação e Conquistas",
-  "Atualizações de Sistema",
+  "Promocoes e Ofertas",
+  "Gamificacao e Conquistas",
+  "Atualizacoes de Sistema",
   "Onboarding/Boas-vindas",
-  "Alertas de Segurança",
-  "Relatórios e Desempenho",
+  "Alertas de Seguranca",
+  "Relatorios e Desempenho",
   "Novidades/Novos Recursos",
   "Suporte/Ajuda",
   "Eventos e Torneios",
-  "Parcerias e Patrocínios",
+  "Parcerias e Patrocinios",
   "Avisos Institucionais",
 ];
+
+const STATUS_OPTIONS = [
+  { value: "todos", label: "Status: Todos" },
+  { value: "PENDING", label: "Pendente" },
+  { value: "SENT", label: "Enviado" },
+  { value: "ERROR", label: "Erro" },
+  { value: "CANCELED", label: "Cancelado" },
+];
+
+const DESTINO_OPTIONS = [
+  { value: "todos", label: "Destino: Todos" },
+  { value: "ALL_ADMINS", label: "Todos Admins" },
+  { value: "PRESIDENTS_ACTIVE", label: "Presidentes Ativos" },
+  { value: "NEW_TENANTS", label: "Novos" },
+];
+
+const DESTINO_LABELS: Record<string, string> = {
+  ALL_ADMINS: "Todos Admins",
+  PRESIDENTS_ACTIVE: "Presidentes Ativos",
+  NEW_TENANTS: "Novos",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pendente",
+  SENT: "Enviado",
+  ERROR: "Erro",
+  CANCELED: "Cancelado",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  SENT: "text-green-400",
+  ERROR: "text-red-400",
+  PENDING: "text-yellow-300",
+  CANCELED: "text-zinc-400",
+};
 
 export default function SuperAdminNotificacoesPage() {
   const { brandText } = useBranding({ scope: "superadmin" });
@@ -33,49 +71,130 @@ export default function SuperAdminNotificacoesPage() {
   const [destino, setDestino] = useState<string>("todos");
   const [tipo, setTipo] = useState<string>("todos");
   const [modalAberto, setModalAberto] = useState<boolean>(false);
-  const [notificacaoPreview, setNotificacaoPreview] = useState<Notificacao | null>(null);
+  const [modalDefaults, setModalDefaults] = useState<NotificationCampaign | null>(null);
+  const [previewCampaign, setPreviewCampaign] = useState<NotificationCampaign | null>(null);
+  const [previewRecipients, setPreviewRecipients] = useState<NotificationCampaignRecipient[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const { notificacoes, isLoading } = useNotifications();
+  const filters = useMemo(
+    () => ({
+      search: busca.trim() || undefined,
+      status: status !== "todos" ? status : undefined,
+      destination: destino !== "todos" ? destino : undefined,
+      category: tipo !== "todos" ? tipo : undefined,
+    }),
+    [busca, status, destino, tipo]
+  );
 
-  const notificacoesFiltradas = (notificacoes || []).filter((n: Notificacao) => {
-    const buscaLower = busca.toLowerCase();
-    const mensagem = n.mensagem || n.titulo || "";
-    return (
-      (busca === "" || mensagem.toLowerCase().includes(buscaLower)) &&
-      (status === "todos" || n.status === status) &&
-      (destino === "todos" || n.destino === destino) &&
-      (tipo === "todos" || n.tipo === tipo || n.type === tipo)
-    );
+  const {
+    campaigns,
+    isLoading,
+    isError,
+    error,
+    previewCampaign: previewRequest,
+    createCampaign,
+    sendTestCampaign,
+    getCampaign,
+    getRecipients,
+    resendCampaign,
+    cancelCampaign,
+  } = useSuperAdminNotificationCampaigns(filters);
+
+  const handleOpenPreview = async (campaign: NotificationCampaign) => {
+    setActionError(null);
+    setPreviewLoading(true);
+    try {
+      const [detail, recipients] = await Promise.all([
+        getCampaign(campaign.id),
+        getRecipients(campaign.id),
+      ]);
+      if (!detail) {
+        setActionError("Falha ao carregar detalhes da campanha");
+      }
+      if (!recipients) {
+        setActionError("Falha ao carregar destinatarios");
+      }
+      setPreviewCampaign((detail as NotificationCampaign) || campaign);
+      setPreviewRecipients((recipients as any)?.recipients || []);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao carregar detalhes");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleDuplicate = (campaign: NotificationCampaign) => {
+    setModalDefaults(campaign);
+    setModalAberto(true);
+  };
+
+  const handleResend = async (campaign: NotificationCampaign) => {
+    setActionError(null);
+    try {
+      const result = await resendCampaign(campaign.id);
+      if (!result) {
+        setActionError("Falha ao reenviar campanha");
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao reenviar campanha");
+    }
+  };
+
+  const handleCancel = async (campaign: NotificationCampaign) => {
+    setActionError(null);
+    try {
+      const result = await cancelCampaign(campaign.id);
+      if (!result) {
+        setActionError("Falha ao cancelar campanha");
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao cancelar campanha");
+    }
+  };
+
+  const closeModal = () => {
+    setModalDefaults(null);
+    setModalAberto(false);
+  };
+
+  const sortedCampaigns = [...campaigns].sort((a, b) => {
+    const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return bDate - aDate;
   });
+
+  const getDestinationLabel = (campaign: NotificationCampaign) => {
+    if (campaign.destination === "NEW_TENANTS") {
+      const days =
+        campaign.newTenantDays && campaign.newTenantDays > 0 ? campaign.newTenantDays : 14;
+      return `Novos (${days} dias)`;
+    }
+    return DESTINO_LABELS[campaign.destination] || campaign.destination;
+  };
 
   return (
     <>
       <Head>
-        <title>{brandText("Notificações e Mensagens em Massa - Fut7Pro SuperAdmin")}</title>
+        <title>{brandText("Notificacoes e Mensagens em Massa - Fut7Pro SuperAdmin")}</title>
         <meta
           name="description"
           content={brandText(
-            "Controle e envie notificações para todos os administradores dos rachas cadastrados no Fut7Pro. Ferramenta profissional de comunicação em massa para SaaS."
-          )}
-        />
-        <meta
-          name="keywords"
-          content={brandText(
-            "notificações, mensagens em massa, SaaS, comunicação, admins, Fut7Pro"
+            "Controle e envie campanhas para administradores dos rachas do Fut7Pro."
           )}
         />
       </Head>
       <div className="px-4 py-6 md:px-10 max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
-            Notificações e Mensagens em Massa
+            Notificacoes e Mensagens em Massa
           </h1>
           <button
             className="flex items-center gap-2 bg-yellow-400 text-zinc-900 font-semibold px-4 py-2 rounded-xl hover:bg-yellow-300 transition"
             onClick={() => setModalAberto(true)}
-            aria-label="Nova Notificação"
+            aria-label="Nova Campanha"
           >
-            <FaPlus /> Nova Notificação
+            <FaPlus /> Nova Campanha
           </button>
         </div>
 
@@ -93,10 +212,11 @@ export default function SuperAdminNotificacoesPage() {
             onChange={(e) => setStatus(e.target.value)}
             aria-label="Filtrar status"
           >
-            <option value="todos">Status: Todos</option>
-            <option value="enviado">Enviado</option>
-            <option value="erro">Erro</option>
-            <option value="pendente">Pendente</option>
+            {STATUS_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
           <select
             className="bg-zinc-800 text-zinc-100 rounded px-3 py-2 border border-zinc-700"
@@ -104,10 +224,11 @@ export default function SuperAdminNotificacoesPage() {
             onChange={(e) => setDestino(e.target.value)}
             aria-label="Filtrar destino"
           >
-            <option value="todos">Destino: Todos</option>
-            <option value="Todos">Todos Admins</option>
-            <option value="Rachas Mensal">Presidentes Ativos</option>
-            <option value="Novos Admin">Novos</option>
+            {DESTINO_OPTIONS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </select>
           <select
             className="bg-zinc-800 text-zinc-100 rounded px-3 py-2 border border-zinc-700"
@@ -116,98 +237,193 @@ export default function SuperAdminNotificacoesPage() {
             aria-label="Filtrar tipo"
           >
             <option value="todos">Tipo: Todos</option>
-            {tiposNotificacao.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {TIPOS_NOTIFICACAO.map((item) => (
+              <option key={item} value={item}>
+                {item}
               </option>
             ))}
           </select>
         </div>
 
+        {actionError && <div className="mb-3 text-sm text-red-400">{actionError}</div>}
+
         <div className="overflow-x-auto rounded-xl shadow-lg bg-zinc-900">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-zinc-800">
               <tr>
-                <th className="px-4 py-3">Mensagem</th>
+                <th className="px-4 py-3">Campanha</th>
                 <th className="px-2 py-3">Tipo</th>
                 <th className="px-2 py-3">Data/Hora</th>
                 <th className="px-2 py-3">Destino</th>
                 <th className="px-2 py-3">Status</th>
+                <th className="px-2 py-3">Canais</th>
                 <th className="px-2 py-3">Enviado por</th>
-                <th className="px-2 py-3">Ações</th>
+                <th className="px-2 py-3">Acoes</th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={7} className="text-center py-6 text-zinc-500">
-                    Carregando notificações...
+                  <td colSpan={8} className="text-center py-6 text-zinc-500">
+                    Carregando campanhas...
                   </td>
                 </tr>
               )}
-              {!isLoading && notificacoesFiltradas.length === 0 ? (
+              {!isLoading && (isError || error) && (
                 <tr>
-                  <td colSpan={7} className="text-center py-6 text-zinc-500">
-                    Nenhuma notificação encontrada.
+                  <td colSpan={8} className="text-center py-6 text-red-400">
+                    Falha ao carregar campanhas.
+                  </td>
+                </tr>
+              )}
+              {!isLoading && !isError && sortedCampaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-6 text-zinc-500">
+                    Nenhuma campanha encontrada.
                   </td>
                 </tr>
               ) : (
-                notificacoesFiltradas.map((n: Notificacao, i: number) => (
-                  <tr key={n.id || i} className="hover:bg-zinc-800">
-                    <td className="px-4 py-3 max-w-xs truncate">
-                      <button
-                        onClick={() => setNotificacaoPreview(n)}
-                        className="hover:underline text-yellow-400"
-                      >
-                        {n.mensagem || n.titulo}
-                      </button>
-                    </td>
-                    <td className="px-2 py-3">{n.tipo || n.type || "—"}</td>
-                    <td className="px-2 py-3">{n.data || "—"}</td>
-                    <td className="px-2 py-3">{n.destino || "—"}</td>
-                    <td
-                      className={`px-2 py-3 font-bold ${
-                        n.status === "enviado"
-                          ? "text-green-400"
-                          : n.status === "erro"
-                            ? "text-red-400"
-                            : "text-yellow-300"
-                      }`}
-                    >
-                      {n.status ? n.status.charAt(0).toUpperCase() + n.status.slice(1) : "—"}
-                    </td>
-                    <td className="px-2 py-3">{n.enviadoPor || "Sistema"}</td>
-                    <td className="px-2 py-3 flex gap-2">
-                      <button
-                        onClick={() => setNotificacaoPreview(n)}
-                        aria-label="Ver mensagem"
-                        title="Ver mensagem"
-                      >
-                        <FaEye />
-                      </button>
-                      <button aria-label="Duplicar" title="Duplicar">
-                        <FaCopy />
-                      </button>
-                      <button aria-label="Reenviar" title="Reenviar">
-                        <FaRedo />
-                      </button>
-                      <button aria-label="Excluir" title="Excluir" className="text-red-500">
-                        <FaTrash />
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                sortedCampaigns.map((campaign) => {
+                  const statusLabel = STATUS_LABELS[campaign.status] || campaign.status;
+                  const destinationLabel = getDestinationLabel(campaign);
+                  const createdAt = campaign.createdAt
+                    ? new Date(campaign.createdAt).toLocaleString("pt-BR")
+                    : "-";
+                  const channels = campaign.channels || [];
+                  const badgeEnabled = campaign.badge !== false;
+
+                  return (
+                    <tr key={campaign.id} className="hover:bg-zinc-800">
+                      <td className="px-4 py-3 max-w-xs truncate">
+                        <button
+                          onClick={() => handleOpenPreview(campaign)}
+                          className="hover:underline text-yellow-400"
+                          title="Ver detalhes"
+                        >
+                          {campaign.title}
+                        </button>
+                        <div className="text-xs text-zinc-500 truncate">{campaign.message}</div>
+                      </td>
+                      <td className="px-2 py-3">{campaign.category || "-"}</td>
+                      <td className="px-2 py-3">{createdAt}</td>
+                      <td className="px-2 py-3">{destinationLabel}</td>
+                      <td className={`px-2 py-3 font-bold ${STATUS_COLORS[campaign.status]}`}>
+                        {statusLabel}
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {badgeEnabled && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-gray-300">
+                              Badge
+                            </span>
+                          )}
+                          {channels.map((channel) => (
+                            <span
+                              key={channel}
+                              className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-gray-300"
+                            >
+                              {channel}
+                            </span>
+                          ))}
+                          {!badgeEnabled && channels.length === 0 && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-gray-300">
+                              Sem canais
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-2 py-3">
+                        {campaign.createdBy?.name || campaign.createdBy?.email || "Sistema"}
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleOpenPreview(campaign)}
+                            aria-label="Ver"
+                            title="Ver"
+                            className="text-yellow-300"
+                          >
+                            <FaEye />
+                          </button>
+                          <button
+                            onClick={() => handleDuplicate(campaign)}
+                            aria-label="Duplicar"
+                            title="Duplicar"
+                            className="text-zinc-200"
+                          >
+                            <FaCopy />
+                          </button>
+                          {campaign.status === "ERROR" && (
+                            <button
+                              onClick={() => handleResend(campaign)}
+                              aria-label="Reenviar"
+                              title="Reenviar"
+                              className="text-zinc-200"
+                            >
+                              <FaRedo />
+                            </button>
+                          )}
+                          {campaign.status === "PENDING" && (
+                            <button
+                              onClick={() => handleCancel(campaign)}
+                              aria-label="Cancelar"
+                              title="Cancelar"
+                              className="text-red-400"
+                            >
+                              <FaBan />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
         </div>
 
-        {modalAberto && <ModalNovaNotificacao onClose={() => setModalAberto(false)} />}
-        {notificacaoPreview && (
-          <ModalNotificacaoPreview
-            notificacao={notificacaoPreview}
-            onClose={() => setNotificacaoPreview(null)}
+        {modalAberto && (
+          <ModalNovaNotificacao
+            onClose={closeModal}
+            onPreview={previewRequest}
+            onCreate={createCampaign}
+            onTest={sendTestCampaign}
+            defaultValues={
+              modalDefaults
+                ? {
+                    title: modalDefaults.title,
+                    message: modalDefaults.message,
+                    category: modalDefaults.category || undefined,
+                    destination: modalDefaults.destination,
+                    priority: modalDefaults.priority,
+                    channels: modalDefaults.channels || [],
+                    badge: modalDefaults.badge ?? true,
+                    ctaLabel: modalDefaults.ctaLabel || undefined,
+                    ctaUrl: modalDefaults.ctaUrl || undefined,
+                    expiresAt: modalDefaults.expiresAt || undefined,
+                    newTenantDays: modalDefaults.newTenantDays || undefined,
+                  }
+                : undefined
+            }
           />
+        )}
+
+        {previewCampaign && (
+          <ModalNotificacaoPreview
+            campaign={previewCampaign}
+            recipients={previewRecipients}
+            onClose={() => {
+              setPreviewCampaign(null);
+              setPreviewRecipients([]);
+            }}
+          />
+        )}
+
+        {previewLoading && (
+          <div className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center text-zinc-200">
+            Carregando detalhes...
+          </div>
         )}
       </div>
     </>
