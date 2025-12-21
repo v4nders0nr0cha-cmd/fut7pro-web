@@ -66,11 +66,13 @@ export const authOptions: NextAuthOptionsLike = {
         tenantId: { label: "Tenant Id", type: "text" },
         role: { label: "Role", type: "text" },
         name: { label: "Name", type: "text" },
+        authProvider: { label: "Auth Provider", type: "text" },
       },
       async authorize(credentials) {
         // fluxo de impersonate: se vier accessToken, validar e retornar usuario direto
         if (credentials?.accessToken) {
           const accessToken = credentials.accessToken as string;
+          const authProvider = (credentials as any)?.authProvider || "credentials";
           try {
             const meResponse = await fetch(`${API_BASE_URL}${ME_PATH}`, {
               headers: { Authorization: `Bearer ${accessToken}` },
@@ -110,6 +112,7 @@ export const authOptions: NextAuthOptionsLike = {
               accessToken,
               refreshToken: credentials.refreshToken || null,
               image: userData.image || userData.avatar || null,
+              authProvider,
             };
           } catch (error) {
             if (process.env.NODE_ENV === "development") {
@@ -185,6 +188,7 @@ export const authOptions: NextAuthOptionsLike = {
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
             image: resolvedImage,
+            authProvider: "credentials",
           };
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
@@ -198,8 +202,12 @@ export const authOptions: NextAuthOptionsLike = {
 
   callbacks: {
     async signIn({ user, account }) {
-      // Para login Google, criar usuário no backend se não existir
+      // Para login Google, criar usuario no backend se nao existir
       if (user?.email && account?.provider === "google") {
+        const idToken = (account as any)?.id_token;
+        if (!idToken) {
+          return false;
+        }
         try {
           const response = await fetch(`${API_BASE_URL}${GOOGLE_PATH}`, {
             method: "POST",
@@ -207,24 +215,26 @@ export const authOptions: NextAuthOptionsLike = {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              email: user.email,
-              name: user.name,
-              image: (user as any).image,
+              idToken,
             }),
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            (user as any).accessToken = data.accessToken;
-            (user as any).refreshToken = data.refreshToken;
-            (user as any).role = data.role;
-            (user as any).tenantId = data.tenantId;
-            (user as any).tenantSlug = data.tenantSlug ?? null;
+          if (!response.ok) {
+            return false;
           }
+
+          const data = await response.json();
+          (user as any).accessToken = data.accessToken;
+          (user as any).refreshToken = data.refreshToken;
+          (user as any).role = data.role;
+          (user as any).tenantId = data.tenantId;
+          (user as any).tenantSlug = data.tenantSlug ?? null;
+          (user as any).authProvider = "google";
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
             console.log("Erro no login Google:", error);
           }
+          return false;
         }
       }
       return true;
@@ -239,6 +249,7 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).accessToken = token.accessToken as string;
         (session.user as any).refreshToken = token.refreshToken as string;
         (session.user as any).accessTokenExp = (token as any).accessTokenExp ?? null;
+        (session.user as any).authProvider = (token as any).authProvider ?? null;
       }
       return session;
     },
@@ -252,6 +263,7 @@ export const authOptions: NextAuthOptionsLike = {
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
         (token as any).accessTokenExp = decodeExp(token.accessToken as string);
+        (token as any).authProvider = (user as any).authProvider ?? null;
       }
 
       // Refresh token se necessário

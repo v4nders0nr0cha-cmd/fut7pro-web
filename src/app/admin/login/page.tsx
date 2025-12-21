@@ -117,7 +117,22 @@ export default function AdminLoginPage() {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="mt-6 space-y-4">
+            <div className="mt-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => signIn("google", { callbackUrl: "/admin/dashboard" })}
+                className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
+              >
+                Continuar com Google
+              </button>
+              <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-gray-500">
+                <span className="h-px flex-1 bg-white/10" />
+                ou
+                <span className="h-px flex-1 bg-white/10" />
+              </div>
+            </div>
+
+            <form onSubmit={handleLogin} className="mt-4 space-y-4">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 E-mail
                 <input

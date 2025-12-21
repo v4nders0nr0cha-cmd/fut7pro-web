@@ -75,21 +75,33 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
   });
 }
 
-async function fetchTenantById(baseUrl: string, id: string) {
-  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`));
+async function fetchTenantById(baseUrl: string, id: string, accessToken?: string) {
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`), { headers });
 }
 
-async function fetchTenantBySlug(baseUrl: string, slug: string) {
-  return fetch(resolvePath(baseUrl, `/rachas/slug/${encodeURIComponent(slug)}`));
+async function fetchTenantBySlug(baseUrl: string, slug: string, accessToken?: string) {
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return fetch(resolvePath(baseUrl, `/rachas/slug/${encodeURIComponent(slug)}`), { headers });
 }
 
-async function resolveExistingTenant(baseUrl: string, payload: RegisterPayload) {
+async function resolveExistingTenant(
+  baseUrl: string,
+  payload: RegisterPayload,
+  accessToken?: string
+) {
   if (payload.existingTenantId) {
-    return fetchTenantById(baseUrl, payload.existingTenantId.trim());
+    return fetchTenantById(baseUrl, payload.existingTenantId.trim(), accessToken);
   }
   const slug = payload.existingRachaSlug || payload.rachaSlug;
   if (!slug) return null;
-  return fetchTenantBySlug(baseUrl, slug.trim());
+  return fetchTenantBySlug(baseUrl, slug.trim(), accessToken);
 }
 
 async function createAdmin(baseUrl: string, data: RegisterPayload) {
@@ -172,9 +184,10 @@ export async function POST(req: NextRequest) {
   const wantsAutoPassword = Boolean(payload.autoPassword || !payload.adminSenha);
   const requiresSuperAdmin = useExistingTenant || wantsAutoPassword;
 
+  let superAdminUser: { accessToken?: string } | null = null;
   if (requiresSuperAdmin) {
-    const user = await requireSuperAdminUser();
-    if (!user) return jsonResponse("Nao autorizado", 401);
+    superAdminUser = await requireSuperAdminUser();
+    if (!superAdminUser) return jsonResponse("Nao autorizado", 401);
   }
 
   if (!payload.adminNome?.trim())
@@ -201,7 +214,7 @@ export async function POST(req: NextRequest) {
   let tenantInfo: TenantInfo | null = null;
 
   if (useExistingTenant) {
-    const existingRes = await resolveExistingTenant(baseUrl, payload);
+    const existingRes = await resolveExistingTenant(baseUrl, payload, superAdminUser?.accessToken);
     if (!existingRes) {
       return jsonResponse("Informe o racha existente.", 400);
     }
