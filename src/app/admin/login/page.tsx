@@ -85,12 +85,17 @@ export default function AdminLoginPage() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[#0b0f16] text-white">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f16] via-[#101827] to-[#151c2e]" />
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-40"
+          style={{ backgroundImage: "url('/images/Capa%20trofeu.jpg')" }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0b0f16]/95 via-[#0e1525]/90 to-[#0b0f16]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.12),_transparent_55%)]" />
         <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-yellow-400/10 blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 py-12 lg:flex-row lg:items-center">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-4 py-12 lg:flex-row lg:items-center lg:justify-between">
         <section className="w-full space-y-6 lg:w-1/2 animate-slide-in">
           <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/30 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-300">
             Painel Fut7Pro
@@ -107,17 +112,17 @@ export default function AdminLoginPage() {
             {HIGHLIGHTS.map((item) => (
               <div
                 key={item.title}
-                className="rounded-xl border border-[#22283a] bg-[#121827]/80 p-4 shadow-lg"
+                className="rounded-xl border border-white/10 bg-white/5 p-4 shadow-lg backdrop-blur"
               >
                 <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-                <p className="mt-2 text-xs leading-relaxed text-gray-400">{item.description}</p>
+                <p className="mt-2 text-xs leading-relaxed text-gray-300">{item.description}</p>
               </div>
             ))}
           </div>
 
-          <div className="rounded-xl border border-[#22283a] bg-[#0f1422]/80 p-4 text-sm text-gray-300">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur">
             <div className="font-semibold text-white">Suporte direto</div>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-1 text-xs text-gray-300">
               Precisa de ajuda para entrar? Fale com a equipe pelo e-mail{" "}
               <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
                 {contactEmail}
@@ -128,10 +133,10 @@ export default function AdminLoginPage() {
         </section>
 
         <section className="w-full lg:w-[420px] animate-fade-in">
-          <div className="rounded-2xl border border-[#1f2433] bg-[#0f1118]/90 p-6 shadow-2xl backdrop-blur">
+          <div className="rounded-2xl border border-white/10 bg-[#0c111d]/85 p-6 shadow-2xl backdrop-blur-xl">
             <div className="space-y-2">
               <h2 className="text-lg font-semibold text-white">Acesse seu painel</h2>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-300">
                 Use o e-mail cadastrado do presidente ou administrador do racha.
               </p>
             </div>
@@ -156,7 +161,7 @@ export default function AdminLoginPage() {
                   required
                   autoComplete="email"
                   placeholder="email@exemplo.com"
-                  className="mt-2 w-full rounded-lg border border-[#23283a] bg-[#151a26] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </label>
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -168,7 +173,7 @@ export default function AdminLoginPage() {
                   required
                   autoComplete="current-password"
                   placeholder="Digite sua senha"
-                  className="mt-2 w-full rounded-lg border border-[#23283a] bg-[#151a26] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </label>
               <button
@@ -191,7 +196,7 @@ export default function AdminLoginPage() {
             </div>
           </div>
 
-          <p className="mt-4 text-xs text-gray-500">
+          <p className="mt-4 text-xs text-gray-400">
             Acesso protegido por autenticacao segura e isolada por tenant.
           </p>
         </section>
@@ -199,7 +204,7 @@ export default function AdminLoginPage() {
 
       {blocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-[#2a3042] bg-[#0f1118] p-6 shadow-2xl animate-slide-in">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl animate-slide-in">
             <h2 className="text-xl font-bold text-center text-white">Acesso ao painel bloqueado</h2>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
               Este racha esta temporariamente bloqueado pelo Fut7Pro e, no momento, nao e possivel
