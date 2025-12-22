@@ -67,8 +67,8 @@ async function primeBranding(
 ) {
   if (!accessToken || !data.rachaSlug) return;
 
-  const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_000_000;
-  const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_000_000;
+  const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_500_000;
+  const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_500_000;
   if (logoTooLarge || avatarTooLarge) return;
 
   const aboutPayload = {

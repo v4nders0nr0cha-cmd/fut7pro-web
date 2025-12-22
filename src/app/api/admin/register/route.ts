@@ -136,8 +136,8 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
   if (!accessToken || !data.rachaSlug) return;
 
   // Guardar logo/avatar apenas se forem leves (limitado a ~1MB em base64)
-  const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_000_000;
-  const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_000_000;
+  const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_500_000;
+  const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_500_000;
   if (logoTooLarge || avatarTooLarge) return;
 
   const aboutPayload = {
