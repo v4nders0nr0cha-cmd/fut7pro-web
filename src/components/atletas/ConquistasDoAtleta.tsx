@@ -16,6 +16,14 @@ export default function ConquistasDoAtleta({
   titulosAnuais,
   titulosQuadrimestrais,
 }: Props) {
+  function resolveIcon(value: string) {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "trophy") return "🏆";
+    if (normalized === "medal") return "🥇";
+    if (normalized === "ball") return "⚽";
+    return value;
+  }
+
   const todasConquistas = [...titulosGrandesTorneios, ...titulosAnuais, ...titulosQuadrimestrais];
 
   const LIMITE_TITULOS = 24;
@@ -46,7 +54,7 @@ export default function ConquistasDoAtleta({
                   title={`${tituloItem.descricao} - ${tituloItem.ano}`}
                   aria-label={`${tituloItem.descricao} ${tituloItem.ano}`}
                 >
-                  <span>{tituloItem.icone}</span>
+                  <span>{resolveIcon(tituloItem.icone)}</span>
                   <span>
                     {tituloItem.descricao}{" "}
                     <span className="text-xs text-gray-400">{tituloItem.ano}</span>

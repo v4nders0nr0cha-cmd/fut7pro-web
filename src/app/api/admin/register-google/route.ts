@@ -152,6 +152,7 @@ export async function POST(req: NextRequest) {
       adminApelido: payload.adminApelido?.trim() || undefined,
       adminPosicao: payload.adminPosicao,
       adminSenha: payload.adminSenha?.trim() || undefined,
+      adminAvatarUrl: payload.adminAvatarBase64 || undefined,
     }),
   });
 

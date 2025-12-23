@@ -5,10 +5,13 @@ import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { useRacha } from "@/context/RachaContext";
 
 export default function ListaAtletasPage() {
   const [busca, setBusca] = useState("");
+  const { tenantSlug } = useRacha();
   const { rankings, isLoading, isError } = usePublicPlayerRankings({
+    slug: tenantSlug,
     type: "geral",
     period: "all",
     limit: 200,

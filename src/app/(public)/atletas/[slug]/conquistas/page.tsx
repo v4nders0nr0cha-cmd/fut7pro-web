@@ -1,44 +1,46 @@
 "use client";
 
 import Head from "next/head";
-import { useParams } from "next/navigation";
 import Link from "next/link";
-import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { notFound, useParams } from "next/navigation";
+import { useRacha } from "@/context/RachaContext";
+import { usePublicAthlete } from "@/hooks/usePublicAthlete";
+import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 
 export default function ConquistasAtletaPage() {
   const { slug } = useParams() as { slug: string };
-  const { rankings, isLoading, isError } = usePublicPlayerRankings({
-    type: "geral",
-    period: "all",
-    limit: 200,
+  const { tenantSlug } = useRacha();
+  const { athlete, conquistas, isLoading, isError } = usePublicAthlete({
+    tenantSlug,
+    athleteSlug: slug,
   });
 
-  const atleta = rankings.find((a) => a.slug === slug);
+  if (isLoading) {
+    return <div className="max-w-4xl mx-auto px-2 py-10 text-gray-300">Carregando...</div>;
+  }
+
+  if (isError || !athlete) {
+    notFound();
+  }
 
   return (
     <>
       <Head>
-        <title>Conquistas | {atleta?.nome || "Atleta"} | Fut7Pro</title>
+        <title>Conquistas | {athlete.firstName || "Atleta"} | Fut7Pro</title>
       </Head>
       <main className="max-w-4xl mx-auto px-2 py-10">
         <Link href={`/atletas/${slug}`} className="text-yellow-400 underline text-sm">
-          ← Voltar para o perfil
+          Voltar para o perfil
         </Link>
 
-        {isLoading && <div className="text-gray-300 mt-4">Carregando conquistas...</div>}
-        {isError && <div className="text-red-300 mt-4">Falha ao carregar conquistas.</div>}
-        {!isLoading && !isError && atleta && (
-          <div className="mt-4 bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h1 className="text-2xl font-bold text-yellow-400 mb-2">Conquistas</h1>
-            <p className="text-gray-300 text-sm">
-              As conquistas públicas do atleta aparecerão aqui quando forem cadastradas e publicadas
-              pelo racha.
-            </p>
-          </div>
-        )}
-        {!isLoading && !isError && !atleta && (
-          <div className="text-gray-300 mt-4">Atleta não encontrado.</div>
-        )}
+        <div className="mt-6">
+          <ConquistasDoAtleta
+            slug={athlete.slug}
+            titulosGrandesTorneios={conquistas.titulosGrandesTorneios}
+            titulosAnuais={conquistas.titulosAnuais}
+            titulosQuadrimestrais={conquistas.titulosQuadrimestrais}
+          />
+        </div>
       </main>
     </>
   );

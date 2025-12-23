@@ -8,6 +8,7 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useState } from "react";
 import type { IconType } from "react-icons";
+import { useMe } from "@/hooks/useMe";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -38,8 +39,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const { badges } = useAdminBadges();
   const { data: session } = useSession();
+  const { me } = useMe();
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
+  const displayAvatar =
+    me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
+  const publicProfileHref = me?.athlete?.slug ? `/atletas/${me.athlete.slug}` : null;
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">
@@ -107,17 +113,42 @@ export default function Header({ onMenuClick }: HeaderProps) {
             tabIndex={0}
           >
             <Image
-              src={session.user?.image ?? "/images/avatar_padrao_admin.png"}
-              alt={session.user?.name ?? "Admin"}
+              src={displayAvatar}
+              alt={displayName}
               width={38}
               height={38}
               className="rounded-full border-2 border-yellow-400"
             />
             <span className="text-yellow-300 font-bold text-base hidden md:inline">
-              {session.user?.name ?? "Admin"}
+              {displayName}
             </span>
             {dropdownOpen && (
               <div className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col">
+                <Link
+                  href="/admin/perfil"
+                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  Meu perfil
+                </Link>
+                <Link
+                  href="/admin/perfil/editar"
+                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                  onClick={() => setDropdownOpen(false)}
+                >
+                  Editar perfil
+                </Link>
+                {publicProfileHref && (
+                  <Link
+                    href={publicProfileHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Ver perfil publico
+                  </Link>
+                )}
                 <button
                   className="flex items-center gap-2 px-4 py-2 text-red-500 hover:bg-zinc-800 text-base"
                   onClick={() => signOut({ callbackUrl: "/admin/login" })}

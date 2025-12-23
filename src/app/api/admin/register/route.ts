@@ -113,6 +113,9 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
       email: data.adminEmail.trim().toLowerCase(),
       password: data.adminSenha,
       rachaSlug: data.rachaSlug?.trim(),
+      apelido: data.adminApelido?.trim() || undefined,
+      posicao: data.adminPosicao,
+      avatarUrl: data.adminAvatarBase64 || undefined,
     }),
   });
 }

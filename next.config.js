@@ -1,6 +1,13 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 
 const isProd = process.env.NODE_ENV === "production";
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+let supabaseHost = null;
+try {
+  supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : null;
+} catch {
+  supabaseHost = null;
+}
 
 // CSP enxuta e compatível (sem 'unsafe-eval' em prod)
 const cspBase = [
@@ -137,6 +144,16 @@ const nextConfig = {
         port: "",
         pathname: "/**",
       },
+      ...(supabaseHost
+        ? [
+            {
+              protocol: "https",
+              hostname: supabaseHost,
+              port: "",
+              pathname: "/**",
+            },
+          ]
+        : []),
       {
         protocol: "https",
         hostname: "fonts.gstatic.com",
