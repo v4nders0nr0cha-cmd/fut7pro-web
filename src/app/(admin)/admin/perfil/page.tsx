@@ -1,7 +1,6 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
@@ -39,7 +38,9 @@ export default function PerfilAdmin() {
   const displayEmail = me?.user?.email || session?.user?.email || "email@nao-informado";
   const roleLabel = me?.membership?.role ? ROLE_LABELS[me.membership.role] : null;
   const adminBadgeLabel = roleLabel ? `Administrador, ${roleLabel}` : "Administrador";
-  const publicProfileHref = me?.athlete?.slug ? `/atletas/${me.athlete.slug}` : null;
+  const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
+  const publicProfileHref =
+    tenantSlug && me?.athlete?.slug ? `/${tenantSlug}/atletas/${me.athlete.slug}` : null;
 
   if (isLoading) {
     return (
@@ -74,12 +75,15 @@ export default function PerfilAdmin() {
 
         <div className="bg-[#181818] border border-[#292929] rounded-lg shadow-md p-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <Image
+            <img
               src={displayAvatar}
               alt={`Avatar do administrador ${displayName}`}
               width={120}
               height={120}
               className="rounded-full border-2 border-yellow-400 object-cover"
+              onError={(event) => {
+                event.currentTarget.src = DEFAULT_AVATAR;
+              }}
             />
             <div className="flex-1 text-center md:text-left">
               <h2 className="text-xl font-semibold text-white">{displayName}</h2>

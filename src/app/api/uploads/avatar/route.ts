@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const tenantSlug = resolveTenantSlug(user);
+  const requestTenantSlug = req.headers.get("x-tenant-slug") || undefined;
+  const tenantSlug = resolveTenantSlug(user, requestTenantSlug);
   if (!tenantSlug) {
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }

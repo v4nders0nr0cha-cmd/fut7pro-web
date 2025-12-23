@@ -1,7 +1,6 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
 import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
@@ -73,6 +72,7 @@ export default function PerfilAtletaPage() {
   const displayAvatar = athlete.avatarUrl || atletaRanking?.foto || DEFAULT_AVATAR;
   const adminLabel = athlete.adminRole ? ROLE_LABELS[athlete.adminRole] : null;
   const adminBadgeLabel = adminLabel ? `Administrador, ${adminLabel}` : null;
+  const backToListHref = tenantSlug ? `/${tenantSlug}/atletas` : "/atletas";
 
   return (
     <>
@@ -84,18 +84,21 @@ export default function PerfilAtletaPage() {
         />
       </Head>
       <main className="max-w-5xl mx-auto px-3 py-10">
-        <Link href="/atletas" className="text-yellow-400 underline text-sm">
+        <Link href={backToListHref} className="text-yellow-400 underline text-sm">
           Voltar para lista de atletas
         </Link>
 
         <div className="mt-4 bg-neutral-900 rounded-2xl p-6 border border-neutral-800 shadow">
           <div className="flex flex-col md:flex-row items-center gap-4">
-            <Image
+            <img
               src={displayAvatar}
               alt={`Foto de ${displayName}`}
               width={96}
               height={96}
               className="rounded-full border border-neutral-700 object-cover"
+              onError={(event) => {
+                event.currentTarget.src = DEFAULT_AVATAR;
+              }}
             />
             <div className="flex-1 text-center md:text-left">
               <h1 className="text-2xl font-bold text-yellow-400">{displayName}</h1>

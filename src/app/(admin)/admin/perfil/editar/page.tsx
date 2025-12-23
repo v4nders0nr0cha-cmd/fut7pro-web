@@ -49,6 +49,7 @@ export default function EditarPerfilPage() {
     position: normalizePosition(me.athlete.position),
     avatarUrl: me.athlete.avatarUrl || null,
   };
+  const tenantSlug = me.tenant?.tenantSlug || null;
 
   async function handleSubmit(values: ProfileFormValues & { avatarFile?: File | null }) {
     try {
@@ -60,11 +61,15 @@ export default function EditarPerfilPage() {
         formData.append("file", values.avatarFile);
         const uploadRes = await fetch("/api/uploads/avatar", {
           method: "POST",
+          headers: tenantSlug ? { "x-tenant-slug": tenantSlug } : undefined,
           body: formData,
         });
         const uploadBody = await uploadRes.json();
         if (!uploadRes.ok) {
           throw new Error(uploadBody?.message || uploadBody?.error || "Erro ao enviar imagem.");
+        }
+        if (!uploadBody?.url) {
+          throw new Error("Upload retornou uma URL invalida.");
         }
         avatarUrl = uploadBody.url;
       }
@@ -78,9 +83,14 @@ export default function EditarPerfilPage() {
         payload.avatarUrl = avatarUrl;
       }
 
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (tenantSlug) {
+        headers["x-tenant-slug"] = tenantSlug;
+      }
+
       const res = await fetch(`/api/tenants/${me.tenant.tenantId}/athletes/me`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
       const body = await res.json();

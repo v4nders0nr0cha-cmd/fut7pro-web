@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState, type ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
 import ImageCropperModal from "@/components/ImageCropperModal";
@@ -121,12 +120,13 @@ export default function ProfileForm({
     <div className="bg-[#181818] border border-[#292929] rounded-lg shadow-md p-6">
       <div className="flex flex-col md:flex-row items-center gap-6">
         <div className="relative">
-          <Image
+          <img
             src={avatarPreview || DEFAULT_AVATAR}
             alt="Avatar do perfil"
             width={120}
             height={120}
             className="rounded-full border-2 border-yellow-400 object-cover"
+            onError={() => setAvatarPreview(DEFAULT_AVATAR)}
           />
           <label className="absolute -bottom-2 right-0 cursor-pointer rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-bold text-black shadow">
             Alterar foto

@@ -45,7 +45,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
   const displayAvatar =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
-  const publicProfileHref = me?.athlete?.slug ? `/atletas/${me.athlete.slug}` : null;
+  const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
+  const publicProfileHref =
+    tenantSlug && me?.athlete?.slug ? `/${tenantSlug}/atletas/${me.athlete.slug}` : null;
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">
@@ -112,12 +114,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
             onClick={() => setDropdownOpen((v) => !v)}
             tabIndex={0}
           >
-            <Image
+            <img
               src={displayAvatar}
               alt={displayName}
               width={38}
               height={38}
               className="rounded-full border-2 border-yellow-400"
+              onError={(event) => {
+                event.currentTarget.src = "/images/avatar_padrao_admin.png";
+              }}
             />
             <span className="text-yellow-300 font-bold text-base hidden md:inline">
               {displayName}

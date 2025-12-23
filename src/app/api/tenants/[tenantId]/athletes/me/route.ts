@@ -17,7 +17,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { tenantId: 
 
   const payload = await req.json();
   const base = getApiBase();
-  const headers = buildHeaders(user, resolveTenantSlug(user), { includeContentType: true });
+  const requestTenantSlug = req.headers.get("x-tenant-slug") || undefined;
+  const headers = buildHeaders(user, resolveTenantSlug(user, requestTenantSlug), {
+    includeContentType: true,
+  });
 
   const { response, body } = await proxyBackend(
     `${base}/tenants/${encodeURIComponent(params.tenantId)}/athletes/me`,
