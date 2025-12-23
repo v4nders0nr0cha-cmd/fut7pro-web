@@ -45,6 +45,26 @@ export default function ProfileForm({
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [formError, setFormError] = useState("");
 
+  function dataUrlToFile(dataUrl: string) {
+    const [header, base64Data] = dataUrl.split(",");
+    if (!base64Data) {
+      throw new Error("Imagem invalida.");
+    }
+    const match = header?.match(/data:(.*);base64/);
+    const mime = match?.[1] || "image/jpeg";
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mime });
+    if (blob.size > MAX_AVATAR_SIZE) {
+      throw new Error("A imagem recortada ficou grande demais.");
+    }
+    const ext = mime.split("/")[1] || "jpg";
+    return new File([blob], `avatar-${Date.now()}.${ext}`, { type: mime });
+  }
+
   useEffect(() => {
     setFirstName(initialValues.firstName);
     setNickname(initialValues.nickname);
@@ -82,19 +102,12 @@ export default function ProfileForm({
 
   async function handleCropApply(cropped: string) {
     try {
-      const response = await fetch(cropped);
-      const blob = await response.blob();
-      if (blob.size > MAX_AVATAR_SIZE) {
-        toast.error("A imagem recortada ficou grande demais.");
-        return;
-      }
-      const file = new File([blob], `avatar-${Date.now()}.jpg`, {
-        type: blob.type || "image/jpeg",
-      });
+      const file = dataUrlToFile(cropped);
       setAvatarFile(file);
       setAvatarPreview(cropped);
     } catch (error) {
-      toast.error("Falha ao preparar a imagem.");
+      const message = error instanceof Error ? error.message : "Falha ao preparar a imagem.";
+      toast.error(message);
     } finally {
       setCropImage(null);
     }
