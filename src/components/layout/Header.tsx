@@ -8,8 +8,7 @@ import { FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useSession, signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
-import { useNotificationBadge } from "@/hooks/useNotificationBadge";
-import { useRacha } from "@/context/RachaContext";
+import { useMe } from "@/hooks/useMe";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -26,7 +25,10 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { data: session } = useSession();
   const router = useRouter();
   const isLoggedIn = !!session?.user;
-  const profileImage = session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
+  const { me } = useMe({ enabled: isLoggedIn });
+  const displayName = me?.athlete?.firstName || session?.user?.name || "Usuario";
+  const profileImage =
+    me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
 
   return (
@@ -101,13 +103,13 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               <Link href="/perfil" className="flex items-center gap-2 hover:opacity-80 transition">
                 <Image
                   src={profileImage}
-                  alt={session.user?.name || "Usuário"}
+                  alt={displayName}
                   width={32}
                   height={32}
                   className="rounded-full border-2 border-yellow-400"
                 />
                 <span className="text-yellow-400 font-bold text-[15px] uppercase truncate max-w-[90px]">
-                  {session.user?.name}
+                  {displayName}
                 </span>
               </Link>
               <button
