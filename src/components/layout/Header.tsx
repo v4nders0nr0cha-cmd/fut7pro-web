@@ -26,7 +26,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { data: session } = useSession();
   const router = useRouter();
   const isLoggedIn = !!session?.user;
-  const profileImage = session?.user?.image || "/images/jogadores/default.png";
+  const profileImage = session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
 
   return (

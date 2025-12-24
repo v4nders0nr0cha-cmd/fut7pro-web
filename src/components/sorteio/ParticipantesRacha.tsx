@@ -203,7 +203,7 @@ export default function ParticipantesRacha({
         id: jogador.id,
         nome: jogador.nome || jogador.apelido || "Jogador",
         slug: slugify(jogador.nome || jogador.apelido || jogador.id),
-        foto: jogador.avatar || jogador.foto || "/images/jogadores/default.png",
+        foto: jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg",
         posicao: normalizarPosicao(jogador.posicao),
         rankingPontos: rankingMap[jogador.id] ?? 0,
         vitorias: 0,

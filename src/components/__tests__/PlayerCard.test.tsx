@@ -77,7 +77,7 @@ describe("PlayerCard", () => {
     const defaultImage = screen.getByAltText("João Silva");
     expect(defaultImage).toBeInTheDocument();
     // Verificar se usa imagem padrão
-    expect(defaultImage).toHaveAttribute("src", expect.stringContaining("default"));
+    expect(defaultImage).toHaveAttribute("src", "/images/jogadores/jogador_padrao_01.jpg");
   });
 
   it("should display correct statistics", () => {

@@ -68,7 +68,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     return (jogadores || []).map((j) => ({
       id: j.id,
       nome: j.nome || j.apelido || "Jogador",
-      avatar: j.avatar || j.foto || "/images/jogadores/default.png",
+      avatar: j.avatar || j.foto || "/images/jogadores/jogador_padrao_01.jpg",
       posicao: mapPosicao(j.posicao),
       slug: (j as any).slug ?? slugify(j.nome || j.apelido || j.id),
     }));
@@ -237,7 +237,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       (torneio.jogadoresCampeoes || []).map((j: any) => ({
         id: j.athleteId || j.id || j.athleteSlug || "",
         nome: j.nome || "",
-        avatar: j.fotoUrl || j.avatar || "/images/jogadores/default.png",
+        avatar: j.fotoUrl || j.avatar || "/images/jogadores/jogador_padrao_01.jpg",
         posicao: (j.posicao as Posicao) || "Meia",
         slug: j.athleteSlug || j.slug,
       }))

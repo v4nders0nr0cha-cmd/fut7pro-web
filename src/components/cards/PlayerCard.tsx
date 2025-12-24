@@ -71,7 +71,7 @@ export default function PlayerCard({
     status = "titular",
   } = normalizedPlayer;
 
-  const imagePath = foto && foto.length > 0 ? foto : "/images/jogadores/default.png";
+  const imagePath = foto && foto.length > 0 ? foto : "/images/jogadores/jogador_padrao_01.jpg";
   const safeName = playerName || name || "Jogador";
 
   const attendancePercent = partidas > 0 ? `${Math.round((presencas / partidas) * 100)}%` : "0%";

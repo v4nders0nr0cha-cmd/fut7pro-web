@@ -26,7 +26,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const isLoggedIn = !!session?.user;
-  const profileImage = session?.user?.image || "/images/jogadores/default.png";
+  const profileImage = session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const userName = session?.user?.name || "Usuário";
 
   if (!open) return null;

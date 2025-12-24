@@ -1,23 +1,39 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { useEffect } from "react";
-import { useRachaPublic } from "@/hooks/useRachaPublic";
-import { useRacha as useRachaContext } from "@/context/RachaContext";
-import { notFound } from "next/navigation";
+import useSWR from "swr";
+import Home from "../page";
+import { useRacha } from "@/context/RachaContext";
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    const message = await res.text().catch(() => "");
+    throw new Error(message || `HTTP ${res.status}`);
+  }
+  return res.json();
+};
 
 export default function RachaPublicPage() {
   const params = useParams();
-  const slug = typeof params?.slug === "string" ? params.slug : "";
-  const { racha, isLoading, isError } = useRachaPublic(slug);
-  const { setRachaId } = useRachaContext();
+  const slug = typeof params?.slug === "string" ? params.slug.trim().toLowerCase() : "";
+  const { setTenantSlug } = useRacha();
+  const { isLoading, error } = useSWR(
+    slug ? `/api/public/${encodeURIComponent(slug)}/about` : null,
+    fetcher,
+    { revalidateOnFocus: false }
+  );
 
-  // Definir o rachaId no contexto quando a página carregar
   useEffect(() => {
-    if (racha?.id) {
-      setRachaId(racha.id);
+    if (slug) {
+      setTenantSlug(slug);
     }
-  }, [racha?.id, setRachaId]);
+  }, [slug, setTenantSlug]);
+
+  if (!slug) {
+    notFound();
+  }
 
   if (isLoading) {
     return (
@@ -28,20 +44,9 @@ export default function RachaPublicPage() {
     );
   }
 
-  if (isError || !racha) {
+  if (error) {
     notFound();
   }
 
-  return (
-    <div className="w-full min-h-screen bg-fundo">
-      {/* Redirecionar para a página principal do racha */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.location.href = '/';
-          `,
-        }}
-      />
-    </div>
-  );
+  return <Home />;
 }
