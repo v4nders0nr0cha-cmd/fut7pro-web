@@ -176,10 +176,30 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
-  const { usuario } = usePerfil();
+  const { usuario, roleLabel, isLoading, isError, isAuthenticated } = usePerfil();
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
+
+  if (isLoading) {
+    return <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil...</div>;
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">
+        Voce precisa fazer login para acessar o seu perfil.
+      </div>
+    );
+  }
+
+  if (isError || !usuario) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-red-200">
+        Nao foi possivel carregar o perfil. Tente novamente mais tarde.
+      </div>
+    );
+  }
 
   const stats =
     filtroStats === "temporada"
@@ -218,6 +238,11 @@ export default function PerfilUsuarioPage() {
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-bold mb-1">{usuario.nome}</h2>
             {usuario.apelido && <p className="text-yellow-300 mb-1">Apelido: {usuario.apelido}</p>}
+            {roleLabel && (
+              <span className="inline-block bg-yellow-400 text-black rounded px-3 py-1 text-xs font-bold mt-1">
+                {roleLabel}
+              </span>
+            )}
             <p className="text-sm">Posição: {usuario.posicao}</p>
             <p
               className="text-sm text-zinc-300"

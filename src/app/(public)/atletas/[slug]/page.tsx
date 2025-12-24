@@ -70,8 +70,10 @@ export default function PerfilAtletaPage() {
   const displayName = athlete.firstName || atletaRanking?.nome || "Atleta";
   const displayNickname = athlete.nickname;
   const displayAvatar = athlete.avatarUrl || atletaRanking?.foto || DEFAULT_AVATAR;
-  const adminLabel = athlete.adminRole ? ROLE_LABELS[athlete.adminRole] : null;
-  const adminBadgeLabel = adminLabel ? `Administrador, ${adminLabel}` : null;
+  const adminLabel = athlete.adminRole
+    ? (ROLE_LABELS[athlete.adminRole] ?? athlete.adminRole)
+    : null;
+  const adminBadgeLabel = adminLabel ?? null;
   const backToListHref = tenantSlug ? `/${tenantSlug}/atletas` : "/atletas";
 
   return (

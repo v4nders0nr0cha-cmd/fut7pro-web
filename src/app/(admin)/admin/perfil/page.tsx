@@ -36,8 +36,10 @@ export default function PerfilAdmin() {
   const displayNickname = me?.athlete?.nickname;
   const displayAvatar = me?.athlete?.avatarUrl || session?.user?.image || DEFAULT_AVATAR;
   const displayEmail = me?.user?.email || session?.user?.email || "email@nao-informado";
-  const roleLabel = me?.membership?.role ? ROLE_LABELS[me.membership.role] : null;
-  const adminBadgeLabel = roleLabel ? `Administrador, ${roleLabel}` : "Administrador";
+  const roleLabel = me?.membership?.role
+    ? (ROLE_LABELS[me.membership.role] ?? me.membership.role)
+    : null;
+  const adminBadgeLabel = roleLabel || "Administrador";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
   const publicProfileHref =
     tenantSlug && me?.athlete?.slug ? `/${tenantSlug}/atletas/${me.athlete.slug}` : null;

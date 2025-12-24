@@ -12,10 +12,15 @@ const fetcher = async (url: string): Promise<MeResponse> => {
   return res.json();
 };
 
-export function useMe() {
-  const { data, error, isLoading, mutate } = useSWR<MeResponse>("/api/me", fetcher, {
-    revalidateOnFocus: false,
-  });
+export function useMe(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
+  const { data, error, isLoading, mutate } = useSWR<MeResponse>(
+    enabled ? "/api/me" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     me: data ?? null,
