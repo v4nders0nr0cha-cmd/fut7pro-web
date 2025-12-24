@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
 import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
 import Image from "next/image";
+import { useSession } from "next-auth/react";
+import { useMe } from "@/hooks/useMe";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
 
-const sitePublicoUrl = "https://fut7pro.com.br/seu-racha";
+const APP_PUBLIC_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
+  /\/+$/,
+  ""
+);
 
 const menu = [
   { label: "Dashboard", icon: MdDashboard, href: "/admin/dashboard" },
@@ -100,6 +107,14 @@ interface SidebarProps {
 export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const { me } = useMe();
+  const { tenantSlug } = useRacha();
+  const resolvedSlug = useMemo(() => {
+    const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
+    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || rachaConfig.slug;
+  }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+  const sitePublicoUrl = `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
 
   useEffect(() => {
     if (!isOpen) setOpen(null);
