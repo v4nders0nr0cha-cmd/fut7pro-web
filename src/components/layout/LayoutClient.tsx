@@ -2,26 +2,66 @@
 
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
 import { useRacha } from "@/context/RachaContext";
-import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
+
+const TENANT_STORAGE_KEY = "fut7pro-tenant-slug";
 
 export default function LayoutClient({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname() ?? "";
+  const router = useRouter();
+  const { data: session } = useSession();
   const { tenantSlug, setTenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const sessionSlug =
+    typeof (session?.user as any)?.tenantSlug === "string"
+      ? (session?.user as any).tenantSlug.trim().toLowerCase()
+      : "";
 
   useEffect(() => {
-    if (slugFromPath && slugFromPath !== tenantSlug) {
-      setTenantSlug(slugFromPath);
+    if (typeof window === "undefined") return;
+
+    const storedSlug = window.sessionStorage.getItem(TENANT_STORAGE_KEY) || "";
+    const nextSlug = sessionSlug || slugFromPath || storedSlug;
+
+    if (slugFromPath && (!sessionSlug || slugFromPath === sessionSlug)) {
+      window.sessionStorage.setItem(TENANT_STORAGE_KEY, slugFromPath);
     }
-  }, [slugFromPath, tenantSlug, setTenantSlug]);
+
+    if (nextSlug && nextSlug !== tenantSlug) {
+      setTenantSlug(nextSlug);
+    }
+  }, [slugFromPath, sessionSlug, tenantSlug, setTenantSlug]);
+
+  useEffect(() => {
+    if (!sessionSlug) return;
+
+    if (slugFromPath && slugFromPath !== sessionSlug) {
+      const nextPath = pathname.replace(
+        new RegExp(`^/${slugFromPath}(?=/|$)`, "i"),
+        `/${sessionSlug}`
+      );
+      if (nextPath !== pathname) {
+        router.replace(nextPath);
+      }
+      return;
+    }
+
+    if (!slugFromPath) {
+      const nextPath = buildPublicHref(pathname || "/", sessionSlug);
+      if (nextPath !== pathname) {
+        router.replace(nextPath);
+      }
+    }
+  }, [pathname, router, sessionSlug, slugFromPath]);
 
   return (
     <>

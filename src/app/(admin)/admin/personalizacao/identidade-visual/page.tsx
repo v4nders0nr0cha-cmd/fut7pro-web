@@ -38,7 +38,7 @@ export default function LogoDoRachaPage() {
     membershipRole === "PRESIDENTE" ||
     (presidenteEmail && userEmail && presidenteEmail === userEmail);
   const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrao Fut7Pro" });
-  const [nomeRacha, setNomeRacha] = useState(rachaConfig.nome || "Fut7Pro");
+  const [nomeRacha, setNomeRacha] = useState("");
   const [saving, setSaving] = useState(false);
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
@@ -47,11 +47,13 @@ export default function LogoDoRachaPage() {
 
   useEffect(() => {
     if (about) {
+      const nomeAtual = about.nome?.trim() || "";
+      const shouldPrefill = nomeAtual && nomeAtual.toLowerCase() !== "fut7pro";
       setLogo({
         url: about.logoUrl || LOGO_PADRAO,
         nome: about.nome || "Logo do racha",
       });
-      setNomeRacha(about.nome || rachaConfig.nome || "Fut7Pro");
+      setNomeRacha(shouldPrefill ? nomeAtual : "");
     }
   }, [about]);
 
@@ -127,6 +129,8 @@ export default function LogoDoRachaPage() {
   }
 
   async function handleSalvarIdentidade() {
+    const nomeDigitado = nomeRacha.trim();
+    const shouldUpdateName = nomeDigitado.length > 0;
     if (slugChanged && slugStatus !== "available") {
       toast.error("Escolha um nome com link disponivel antes de salvar.");
       return;
@@ -141,20 +145,19 @@ export default function LogoDoRachaPage() {
     }
     setSaving(true);
     try {
-      const nomeFinal = nomeRacha.trim() || about?.nome || rachaConfig.nome;
       const nextData: AboutData = {
         ...(about || {}),
-        nome: nomeFinal,
+        ...(shouldUpdateName ? { nome: nomeDigitado } : {}),
         logoUrl: logo.url || LOGO_PADRAO,
       };
       await update(nextData);
 
       if (tenantSlug) {
         const payload: Record<string, string> = {};
-        if (nomeFinal) {
-          payload.name = nomeFinal;
+        if (shouldUpdateName) {
+          payload.name = nomeDigitado;
         }
-        if (slugChanged) {
+        if (shouldUpdateName && slugChanged) {
           payload.slug = slugPreview;
           payload.subdomain = slugPreview;
         }
@@ -240,6 +243,9 @@ export default function LogoDoRachaPage() {
             <div className="text-xs text-gray-400 mt-1">
               Esse nome sera exibido no cabecalho e outras areas do site.
             </div>
+            <div className="text-xs text-gray-400 mt-1">
+              Se nao quiser alterar o nome do racha, deixe o campo em branco e troque apenas a logo.
+            </div>
             <div className="text-xs text-gray-400 mt-2">
               Link publico atual: <span className="text-yellow-300">{currentLink}</span>
             </div>
@@ -272,7 +278,7 @@ export default function LogoDoRachaPage() {
           <div className="w-40 h-40 rounded-full overflow-hidden bg-black flex items-center justify-center shadow-md border-2 border-[#FFD600]">
             <Image
               src={logo.url || LOGO_PADRAO}
-              alt={`Logo do racha ${nomeRacha}`}
+              alt={`Logo do racha ${nomeRacha.trim() || about?.nome || "Racha"}`}
               width={160}
               height={160}
               className="object-contain"
