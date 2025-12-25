@@ -32,7 +32,11 @@ export default function LogoDoRachaPage() {
   const { setTenantSlug } = useRacha();
   const tenantSlug = me?.tenant?.tenantSlug || rachaConfig.slug || "";
   const membershipRole = (me?.membership?.role || "").toUpperCase();
-  const isPresidente = membershipRole === "PRESIDENTE";
+  const presidenteEmail = about?.presidente?.email?.toLowerCase() || null;
+  const userEmail = me?.user?.email?.toLowerCase() || null;
+  const isPresidente =
+    membershipRole === "PRESIDENTE" ||
+    (presidenteEmail && userEmail && presidenteEmail === userEmail);
   const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrao Fut7Pro" });
   const [nomeRacha, setNomeRacha] = useState(rachaConfig.nome || "Fut7Pro");
   const [saving, setSaving] = useState(false);
@@ -185,7 +189,7 @@ export default function LogoDoRachaPage() {
   const disableActions = saving || isLoading || isLoadingMe;
   const disableSave = disableActions || (slugChanged && slugStatus !== "available");
 
-  if (isLoadingMe) {
+  if (isLoadingMe || isLoading) {
     return (
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4 text-center">
         <div className="text-gray-300">Carregando perfil...</div>
