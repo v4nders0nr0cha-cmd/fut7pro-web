@@ -8,6 +8,7 @@ import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "r
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
+import { useBranding } from "@/hooks/useBranding";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 
@@ -114,6 +115,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
     const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
     return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || rachaConfig.slug;
   }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+  const { nome, logo } = useBranding({ scope: "admin", slug: resolvedSlug });
   const sitePublicoUrl = `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
 
   useEffect(() => {
@@ -133,14 +135,14 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
       <div className="px-6 flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <Image
-            src="/images/logos/logo_fut7pro.png"
-            alt="Logo do Fut7Pro - Sistema de rachas e futebol"
+            src={logo}
+            alt={`Logo do ${nome} - Sistema de rachas e futebol`}
             width={42}
             height={42}
             className="rounded"
             priority
           />
-          <span className="font-bold text-xl text-yellow-400">Fut7Pro</span>
+          <span className="font-bold text-xl text-yellow-400">{nome}</span>
         </div>
         {mobile && (
           <button onClick={onClose} aria-label="Fechar menu">

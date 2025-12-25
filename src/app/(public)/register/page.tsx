@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useRacha } from "@/context/RachaContext";
-import { rachaMap } from "@/config/rachaMap";
+import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { rachaId } = useRacha();
+  const { nome: nomeRacha } = useTema();
   const { publicHref } = usePublicLinks();
-  const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
+  const nomeDoRacha = nomeRacha || "Fut7Pro";
 
-  const [nome, setNome] = useState("");
+  const [nomeAtleta, setNomeAtleta] = useState("");
   const [apelido, setApelido] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -20,7 +19,7 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (nome.length > 10 || apelido.length > 10) {
+    if (nomeAtleta.length > 10 || apelido.length > 10) {
       alert("Nome e Apelido devem ter no máximo 10 letras.");
       return;
     }
@@ -28,7 +27,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nome, apelido, email, senha }),
+      body: JSON.stringify({ nome: nomeAtleta, apelido, email, senha }),
     });
 
     if (res.ok) {
@@ -54,8 +53,8 @@ export default function RegisterPage() {
         <form onSubmit={handleRegister} className="space-y-4">
           <input
             type="text"
-            value={nome}
-            onChange={(e) => setNome(e.target.value)}
+            value={nomeAtleta}
+            onChange={(e) => setNomeAtleta(e.target.value)}
             maxLength={10}
             required
             placeholder="Nome (máx. 10 letras)"

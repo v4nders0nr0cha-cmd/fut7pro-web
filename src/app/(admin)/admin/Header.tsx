@@ -9,6 +9,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
+import { useBranding } from "@/hooks/useBranding";
 import { buildPublicHref } from "@/utils/public-links";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
@@ -47,6 +48,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const displayAvatar =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
+  const { logo, nome } = useBranding({ scope: "admin", slug: tenantSlug || undefined });
   const publicProfileHref =
     tenantSlug && me?.athlete?.slug
       ? buildPublicHref(`/atletas/${me.athlete.slug}`, tenantSlug)
@@ -68,8 +70,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
       <Link href="/admin/dashboard" className="flex items-center gap-2 select-none" tabIndex={0}>
         <span className="inline-block rounded-full overflow-hidden w-9 h-9 bg-yellow-400">
           <Image
-            src="/images/logos/logo_fut7pro.png"
-            alt="Logo Fut7Pro Painel Admin"
+            src={logo}
+            alt={`Logo ${nome} Painel Admin`}
             width={36}
             height={36}
             className="rounded-full"
