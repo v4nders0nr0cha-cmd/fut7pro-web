@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const anoAtual = new Date().getFullYear();
 
@@ -20,13 +21,15 @@ const periodos = [
 export default function RankingMeiasPage() {
   const [search, setSearch] = useState("");
   const [periodo, setPeriodo] = useState("q1");
+  const { publicHref, publicSlug } = usePublicLinks();
 
   const { rankings, isLoading, isError, error } = usePublicPlayerRankings(
     periodo === "temporada"
-      ? { type: "geral", period: "year", year: anoAtual, position: "meia" }
+      ? { slug: publicSlug, type: "geral", period: "year", year: anoAtual, position: "meia" }
       : periodo === "todas"
-        ? { type: "geral", period: "all", position: "meia" }
+        ? { slug: publicSlug, type: "geral", period: "all", position: "meia" }
         : {
+            slug: publicSlug,
             type: "geral",
             period: "quarter",
             year: anoAtual,
@@ -122,7 +125,7 @@ export default function RankingMeiasPage() {
                     >
                       <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                        <Link href={`/atletas/${atleta.slug}`}>
+                        <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
                             src={atleta.foto}
                             alt={`Foto do atleta ${atleta.nome} - Ranking Meias`}
@@ -132,7 +135,7 @@ export default function RankingMeiasPage() {
                           />
                         </Link>
                         <Link
-                          href={`/atletas/${atleta.slug}`}
+                          href={publicHref(`/atletas/${atleta.slug}`)}
                           className="text-yellow-300 hover:underline font-semibold"
                           title={`Ver perfil de ${atleta.nome}`}
                         >

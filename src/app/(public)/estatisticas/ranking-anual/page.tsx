@@ -6,14 +6,17 @@ import Image from "next/image";
 import Link from "next/link";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const anoAtual = new Date().getFullYear();
 
 export default function RankingAnualPage() {
   const [ano, setAno] = useState<number>(anoAtual);
   const [search, setSearch] = useState("");
+  const { publicHref, publicSlug } = usePublicLinks();
 
   const { rankings, availableYears, isLoading, isError, error } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: ano,
@@ -123,7 +126,7 @@ export default function RankingAnualPage() {
                     >
                       <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                        <Link href={`/atletas/${atleta.slug}`}>
+                        <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
                             src={atleta.foto}
                             alt={`Foto de ${atleta.nome}`}
@@ -133,7 +136,7 @@ export default function RankingAnualPage() {
                           />
                         </Link>
                         <Link
-                          href={`/atletas/${atleta.slug}`}
+                          href={publicHref(`/atletas/${atleta.slug}`)}
                           className="text-yellow-300 hover:underline font-semibold"
                           title={`Ver perfil de ${atleta.nome}`}
                         >

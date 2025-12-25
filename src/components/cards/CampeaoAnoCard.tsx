@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface CampeaoAnoCardProps {
   titulo: string;
@@ -24,8 +25,10 @@ export default function CampeaoAnoCard({
   slug,
   temporario = false,
 }: CampeaoAnoCardProps) {
+  const { publicHref } = usePublicLinks();
   // Garante que rankings de campeões do ano sempre vão para as rotas ANUAIS
   const destino = href.startsWith("/estatisticas") ? href : slug ? `/atletas/${slug}` : "#";
+  const resolvedHref = publicHref(destino);
 
   // Renderiza o ícone do card de forma flexível
   const renderTitulo = () => (
@@ -47,7 +50,7 @@ export default function CampeaoAnoCard({
 
   return (
     <Link
-      href={destino}
+      href={resolvedHref}
       title={
         href.startsWith("/estatisticas")
           ? `Ver ranking anual relacionado a ${titulo}`

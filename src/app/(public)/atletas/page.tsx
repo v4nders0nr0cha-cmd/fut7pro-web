@@ -6,10 +6,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { useRacha } from "@/context/RachaContext";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function ListaAtletasPage() {
   const [busca, setBusca] = useState("");
   const { tenantSlug } = useRacha();
+  const { publicHref } = usePublicLinks();
   const { rankings, isLoading, isError } = usePublicPlayerRankings({
     slug: tenantSlug,
     type: "geral",
@@ -91,7 +93,7 @@ export default function ListaAtletasPage() {
                 </p>
               </div>
               <Link
-                href={`/atletas/${atleta.slug}`}
+                href={publicHref(`/atletas/${atleta.slug}`)}
                 className="inline-block w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-2 rounded-lg text-sm transition"
               >
                 Ver Perfil

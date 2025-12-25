@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface CampeaoPosicaoCardProps {
   posicao: string;
@@ -24,11 +25,13 @@ export default function CampeaoPosicaoCard({
   slug,
   temporario = false,
 }: CampeaoPosicaoCardProps) {
+  const { publicHref } = usePublicLinks();
   const destino = slug ? `/atletas/${slug}` : href;
+  const resolvedHref = publicHref(destino);
 
   return (
     <Link
-      href={destino}
+      href={resolvedHref}
       title={`Ver perfil de ${nome} - ${posicao}`}
       className="bg-[#1A1A1A] rounded-xl p-4 shadow-sm w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative"
     >

@@ -7,6 +7,7 @@ import { FaPoll } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notificacao } from "@/types/notificacao";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const isEnquete = (notif: Notificacao) => {
   const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
@@ -41,6 +42,7 @@ export default function EnquetePage() {
   const router = useRouter();
   const enqueteId = Array.isArray(params?.id) ? params?.id[0] : (params?.id as string | undefined);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { publicHref } = usePublicLinks();
   const { notificacoes, isLoading, isError, error } = useNotifications({
     enabled: isAuthenticated,
   });
@@ -66,7 +68,7 @@ export default function EnquetePage() {
           <p className="text-gray-300 mb-4">Entre para acessar esta enquete.</p>
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(publicHref("/login"))}
             className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
           >
             Fazer login

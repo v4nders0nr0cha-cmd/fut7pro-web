@@ -8,6 +8,7 @@ import { useRacha } from "@/context/RachaContext";
 import { usePublicAthlete } from "@/hooks/usePublicAthlete";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
@@ -35,6 +36,7 @@ function formatPosition(value?: string | null) {
 export default function PerfilAtletaSlugPage() {
   const { slug, athleteSlug } = useParams() as { slug: string; athleteSlug: string };
   const { setTenantSlug } = useRacha();
+  const { publicHref } = usePublicLinks();
 
   useEffect(() => {
     if (slug) setTenantSlug(slug);
@@ -80,7 +82,7 @@ export default function PerfilAtletaSlugPage() {
     ? (ROLE_LABELS[athlete.adminRole] ?? athlete.adminRole)
     : null;
   const adminBadgeLabel = adminLabel ?? null;
-  const backToListHref = slug ? `/${slug}/atletas` : "/atletas";
+  const backToListHref = publicHref("/atletas");
 
   return (
     <>

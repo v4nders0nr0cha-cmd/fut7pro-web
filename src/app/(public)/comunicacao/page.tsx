@@ -9,6 +9,7 @@ import {
   FaQuestionCircle,
   FaHeadset,
 } from "react-icons/fa";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const items = [
   {
@@ -50,6 +51,8 @@ const items = [
 ];
 
 export default function ComunicacaoPage() {
+  const { publicHref } = usePublicLinks();
+
   return (
     <>
       <Head>
@@ -73,7 +76,7 @@ export default function ComunicacaoPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
         {items.map((item) => (
           <Link
-            href={item.href}
+            href={publicHref(item.href)}
             key={item.href}
             className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-yellow-400 transition-all border border-zinc-800 hover:border-yellow-400 flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
           >

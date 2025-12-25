@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Head from "next/head";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const estatisticasLinks = [
   {
@@ -38,6 +39,8 @@ const estatisticasLinks = [
 ];
 
 export default function EstatisticasPage() {
+  const { publicHref } = usePublicLinks();
+
   return (
     <>
       <Head>
@@ -78,7 +81,7 @@ export default function EstatisticasPage() {
           {estatisticasLinks.map((link) => (
             <Link
               key={link.href}
-              href={link.href}
+              href={publicHref(link.href)}
               className="bg-[#1a1a1a] hover:bg-[#222] border border-gray-700 hover:border-yellow-400 p-6 rounded-xl shadow transition-all flex flex-col justify-between min-h-[140px] break-words"
               tabIndex={0}
               aria-label={link.title}

@@ -6,6 +6,7 @@ import { FaBell, FaPoll } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notificacao } from "@/types/notificacao";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type Kind = "aviso" | "enquete" | "cobranca";
 
@@ -34,6 +35,7 @@ const resolveEnqueteId = (notif: Notificacao) => {
 export default function NotificacoesPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { publicHref } = usePublicLinks();
   const { notificacoes, isLoading, isError, error, markAsRead } = useNotifications({
     enabled: isAuthenticated,
   });
@@ -52,7 +54,7 @@ export default function NotificacoesPage() {
       await markAsRead(notificacao.id);
     }
     if (kind === "enquete" && enqueteId) {
-      router.push(`/comunicacao/enquetes/${enqueteId}`);
+      router.push(publicHref(`/comunicacao/enquetes/${enqueteId}`));
     }
   };
 
@@ -72,7 +74,7 @@ export default function NotificacoesPage() {
           <p className="text-gray-300 mb-4">Entre para ver notificacoes e avisos do seu racha.</p>
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(publicHref("/login"))}
             className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
           >
             Fazer login

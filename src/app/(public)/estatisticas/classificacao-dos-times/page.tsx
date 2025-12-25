@@ -3,11 +3,14 @@
 import Head from "next/head";
 import { useState } from "react";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function ClassificacaoTimesPage() {
   const [year, setYear] = useState<number | undefined>(undefined);
+  const { publicSlug } = usePublicLinks();
 
   const { teams, availableYears, isLoading, isError, error } = usePublicTeamRankings({
+    slug: publicSlug,
     year,
   });
 

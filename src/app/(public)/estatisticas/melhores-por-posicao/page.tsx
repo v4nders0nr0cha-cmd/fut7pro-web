@@ -3,6 +3,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { FaFutbol, FaHandsHelping, FaShieldAlt } from "react-icons/fa";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const cards = [
   {
@@ -32,6 +33,8 @@ const cards = [
 ];
 
 export default function MelhoresPorPosicaoPage() {
+  const { publicHref } = usePublicLinks();
+
   return (
     <>
       <Head>
@@ -62,7 +65,7 @@ export default function MelhoresPorPosicaoPage() {
           {cards.map((card) => (
             <Link
               key={card.label}
-              href={card.href}
+              href={publicHref(card.href)}
               className="bg-[#232323] flex flex-col items-center gap-3 rounded-2xl py-8 px-2 shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all cursor-pointer text-center"
             >
               {card.icon}

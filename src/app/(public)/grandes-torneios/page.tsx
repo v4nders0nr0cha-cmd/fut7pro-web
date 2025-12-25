@@ -4,12 +4,13 @@ import Head from "next/head";
 import Link from "next/link";
 import useSWR from "swr";
 import Image from "next/image";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function GrandesTorneiosPage() {
-  const { data: torneios } = useSWR(`/api/public/${rachaConfig.slug}/torneios`, fetcher, {
+  const { publicHref, publicSlug } = usePublicLinks();
+  const { data: torneios } = useSWR(`/api/public/${publicSlug}/torneios`, fetcher, {
     revalidateOnFocus: false,
   });
 
@@ -69,7 +70,7 @@ export default function GrandesTorneiosPage() {
                         Edição {torneio.ano || "especial"} com os melhores jogadores do racha.
                       </p>
                       <Link
-                        href={`/grandes-torneios/${torneio.slug}`}
+                        href={publicHref(`/grandes-torneios/${torneio.slug}`)}
                         className="inline-block mt-1 text-sm font-semibold text-yellow-400 hover:underline"
                       >
                         Ver Detalhes →

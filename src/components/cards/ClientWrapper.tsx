@@ -5,6 +5,7 @@ import SeletorAno from "@/components/cards/SeletorAno";
 import CampeaoAnoCard from "@/components/cards/CampeaoAnoCard";
 import CampeaoPosicaoCard from "@/components/cards/CampeaoPosicaoCard";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const posicoes = [
   { label: "Atacante do Ano", icon: "⚽", position: "Atacante" },
@@ -14,13 +15,19 @@ const posicoes = [
 ];
 
 export default function ClientWrapper() {
+  const { publicSlug } = usePublicLinks();
   const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
 
   const {
     rankings: rankingGeral,
     availableYears,
     isLoading: loadingGeral,
-  } = usePublicPlayerRankings({ type: "geral", period: "year", year: anoSelecionado });
+  } = usePublicPlayerRankings({
+    slug: publicSlug,
+    type: "geral",
+    period: "year",
+    year: anoSelecionado,
+  });
 
   useEffect(() => {
     if (!anoSelecionado && availableYears.length) {
@@ -52,6 +59,7 @@ export default function ClientWrapper() {
   }, [rankingGeral]);
 
   const rankingAtacante = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: anoSelecionado,
@@ -59,6 +67,7 @@ export default function ClientWrapper() {
     limit: 1,
   });
   const rankingMeia = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: anoSelecionado,
@@ -66,6 +75,7 @@ export default function ClientWrapper() {
     limit: 1,
   });
   const rankingZagueiro = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: anoSelecionado,
@@ -73,6 +83,7 @@ export default function ClientWrapper() {
     limit: 1,
   });
   const rankingGoleiro = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: anoSelecionado,

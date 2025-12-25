@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function RegisterPage() {
   const router = useRouter();
   const { rachaId } = useRacha();
+  const { publicHref } = usePublicLinks();
   const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
 
   const [nome, setNome] = useState("");
@@ -31,7 +33,7 @@ export default function RegisterPage() {
 
     if (res.ok) {
       alert("Conta criada com sucesso!");
-      router.push("/login");
+      router.push(publicHref("/login"));
     } else {
       const erro = await res.text();
       alert("Erro ao cadastrar: " + erro);
@@ -98,7 +100,7 @@ export default function RegisterPage() {
 
         <div className="mt-6 text-center text-sm">
           Já tem conta?{" "}
-          <a href="/login" className="text-yellow-400 hover:underline">
+          <a href={publicHref("/login")} className="text-yellow-400 hover:underline">
             Entrar
           </a>
         </div>

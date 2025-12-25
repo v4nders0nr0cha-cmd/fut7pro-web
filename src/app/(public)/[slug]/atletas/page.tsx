@@ -7,11 +7,13 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { useRacha } from "@/context/RachaContext";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function ListaAtletasSlugPage() {
   const { slug } = useParams() as { slug: string };
   const [busca, setBusca] = useState("");
   const { setTenantSlug } = useRacha();
+  const { publicHref } = usePublicLinks();
 
   useEffect(() => {
     if (slug) setTenantSlug(slug);
@@ -98,7 +100,7 @@ export default function ListaAtletasSlugPage() {
                 </p>
               </div>
               <Link
-                href={`/${slug}/atletas/${atleta.slug}`}
+                href={publicHref(`/atletas/${atleta.slug}`)}
                 className="inline-block w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-2 rounded-lg text-sm transition"
               >
                 Ver Perfil

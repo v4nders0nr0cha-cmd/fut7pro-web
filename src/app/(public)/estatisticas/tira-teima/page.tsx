@@ -3,9 +3,12 @@
 import Head from "next/head";
 import { useMemo, useState } from "react";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function TiraTeimaPage() {
+  const { publicSlug } = usePublicLinks();
   const { rankings, isLoading, isError } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "all",
     limit: 200,

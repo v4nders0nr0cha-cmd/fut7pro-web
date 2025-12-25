@@ -5,25 +5,30 @@ import Link from "next/link";
 import { useTema } from "@/hooks/useTema";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import type { RankingAtleta } from "@/types/estatisticas";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 
 export default function Sidebar() {
   const { logo, nome } = useTema();
+  const { publicHref, publicSlug } = usePublicLinks();
   const currentYear = new Date().getFullYear();
   const { rankings: topGeral } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "year",
     year: currentYear,
     limit: 5,
   });
   const { rankings: topGols } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "artilheiros",
     period: "year",
     year: currentYear,
     limit: 1,
   });
   const { rankings: topAssist } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "assistencias",
     period: "year",
     year: currentYear,
@@ -40,28 +45,28 @@ export default function Sidebar() {
   const artilheiroData = {
     name: artilheiro?.nome ?? "Artilheiro em atualização",
     value: artilheiro ? `${artilheiro.gols ?? artilheiro.pontos ?? 0} gols` : "Em processamento",
-    href: artilheiro?.slug ? `/atletas/${artilheiro.slug}` : "/estatisticas/atacantes",
+    href: publicHref(artilheiro?.slug ? `/atletas/${artilheiro.slug}` : "/estatisticas/atacantes"),
     image: safeImage(artilheiro?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
   };
 
   const maestroData = {
     name: maestro?.nome ?? "Maestro em atualização",
     value: maestro ? `${maestro.assistencias ?? 0} assistências` : "Em processamento",
-    href: maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/meias",
+    href: publicHref(maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/meias"),
     image: safeImage(maestro?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
   };
 
   const melhorDoAnoData = {
     name: melhorDoAno?.nome ?? "Ranking em atualização",
     value: melhorDoAno ? `${melhorDoAno.pontos ?? 0} pontos` : "Em processamento",
-    href: melhorDoAno?.slug ? `/atletas/${melhorDoAno.slug}` : "/estatisticas",
+    href: publicHref(melhorDoAno?.slug ? `/atletas/${melhorDoAno.slug}` : "/estatisticas"),
     image: safeImage(melhorDoAno?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
   };
 
   const goleiroData = {
     name: goleiro?.nome ?? melhorDoAnoData.name,
     value: goleiro ? `${goleiro.pontos ?? 0} pontos` : melhorDoAnoData.value,
-    href: goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/goleiros",
+    href: publicHref(goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/goleiros"),
     image: safeImage(goleiro?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
   };
 
@@ -102,7 +107,7 @@ export default function Sidebar() {
         title="Artilheiro do Ano"
         name={artilheiroData.name}
         value={artilheiroData.value}
-        href="/estatisticas/atacantes"
+        href={publicHref("/estatisticas/atacantes")}
         image={artilheiroData.image}
         icon="/images/icons/bola-de-ouro.png"
       />
@@ -111,7 +116,7 @@ export default function Sidebar() {
         title="Meia do Ano"
         name={maestroData.name}
         value={maestroData.value}
-        href="/estatisticas/meias"
+        href={publicHref("/estatisticas/meias")}
         image={maestroData.image}
         icon="/images/icons/chuteira-de-ouro.png"
       />
@@ -120,7 +125,7 @@ export default function Sidebar() {
         title="Goleiro do Ano"
         name={goleiroData.name}
         value={goleiroData.value}
-        href="/estatisticas/goleiros"
+        href={publicHref("/estatisticas/goleiros")}
         image={goleiroData.image}
         icon="/images/icons/luva-de-ouro.png"
       />
@@ -142,7 +147,7 @@ export default function Sidebar() {
             ? maioresPontuadores.map((p) => ({
                 name: p.nome,
                 value: p.pontos ?? 0,
-                href: p.slug ? `/atletas/${p.slug}` : undefined,
+                href: p.slug ? publicHref(`/atletas/${p.slug}`) : undefined,
               }))
             : [
                 { name: "Jogador 1", value: 0 },

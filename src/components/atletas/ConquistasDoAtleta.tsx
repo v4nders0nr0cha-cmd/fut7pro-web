@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { TituloAtleta } from "@/types/estatisticas";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface Props {
   slug: string;
@@ -16,6 +17,7 @@ export default function ConquistasDoAtleta({
   titulosAnuais,
   titulosQuadrimestrais,
 }: Props) {
+  const { publicHref } = usePublicLinks();
   function resolveIcon(value: string) {
     const normalized = value.trim().toLowerCase();
     if (normalized === "trophy") return "🏆";
@@ -82,7 +84,7 @@ export default function ConquistasDoAtleta({
       {passouDoLimite && (
         <div className="mt-2 text-center">
           <Link
-            href={`/atletas/${slug}/conquistas`}
+            href={publicHref(`/atletas/${slug}/conquistas`)}
             className="text-yellow-400 hover:underline font-semibold"
           >
             Ver todas as conquistas &rarr;

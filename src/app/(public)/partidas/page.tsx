@@ -4,10 +4,12 @@ import Head from "next/head";
 import Link from "next/link";
 import { FaHistory, FaUsers, FaRandom } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function PartidasPage() {
   const { hasPermission } = useAuth();
   const isAdmin = hasPermission("RACHA_UPDATE");
+  const { publicHref } = usePublicLinks();
 
   return (
     <>
@@ -37,7 +39,7 @@ export default function PartidasPage() {
       <div className="flex justify-center w-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl">
           {/* Histórico de Partidas */}
-          <Link href="/partidas/historico">
+          <Link href={publicHref("/partidas/historico")}>
             <div className="group bg-gradient-to-br from-[#181818cc] to-[#212121] border border-yellow-500/40 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] cursor-pointer min-h-[280px]">
               <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-[#222] rounded-full mb-4 sm:mb-6 group-hover:bg-yellow-400/90 transition">
                 <FaHistory className="text-yellow-400 group-hover:text-black text-2xl sm:text-4xl transition" />
@@ -55,7 +57,7 @@ export default function PartidasPage() {
           </Link>
 
           {/* Times do Dia */}
-          <Link href="/partidas/times-do-dia">
+          <Link href={publicHref("/partidas/times-do-dia")}>
             <div className="group bg-gradient-to-br from-[#181818cc] to-[#212121] border border-yellow-500/40 rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col items-center justify-between transition-all duration-300 hover:scale-[1.03] hover:border-yellow-400 hover:shadow-[0_0_16px_2px_#FFD60090] cursor-pointer min-h-[280px]">
               <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center bg-[#222] rounded-full mb-4 sm:mb-6 group-hover:bg-yellow-400/90 transition">
                 <FaUsers className="text-yellow-400 group-hover:text-black text-2xl sm:text-4xl transition" />

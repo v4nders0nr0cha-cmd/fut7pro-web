@@ -16,6 +16,7 @@ import Image from "next/image";
 import { useTema } from "@/hooks/useTema";
 import { useMe } from "@/hooks/useMe";
 import { usePathname } from "next/navigation";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -28,6 +29,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const pathname = usePathname() ?? "";
   const isLoggedIn = !!session?.user;
   const { me } = useMe({ enabled: isLoggedIn });
+  const { publicHref } = usePublicLinks();
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const userName = me?.athlete?.firstName || session?.user?.name || "Usuario";
@@ -71,12 +73,17 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
         {/* Navegação */}
         <nav className="flex flex-col gap-4 text-[17px]">
           {links.map(({ href, label, icon: Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(href + "/");
+            const resolvedHref = publicHref(href);
+            const isActive =
+              pathname === resolvedHref ||
+              pathname.startsWith(resolvedHref + "/") ||
+              pathname === href ||
+              pathname.startsWith(href + "/");
 
             return (
               <Link
                 key={href}
-                href={href}
+                href={resolvedHref}
                 onClick={onClose}
                 className={`flex items-center gap-4 px-2 py-2 rounded transition-all duration-200 ${
                   isActive
@@ -95,7 +102,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
         {isLoggedIn && (
           <div className="mt-10 border-t border-zinc-700 pt-4">
             <Link
-              href="/perfil"
+              href={publicHref("/perfil")}
               onClick={onClose}
               className="flex items-center gap-3 text-yellow-400 font-semibold hover:underline"
             >

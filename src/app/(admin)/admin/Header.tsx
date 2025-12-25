@@ -9,6 +9,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
+import { buildPublicHref } from "@/utils/public-links";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -47,7 +48,9 @@ export default function Header({ onMenuClick }: HeaderProps) {
     me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
   const publicProfileHref =
-    tenantSlug && me?.athlete?.slug ? `/${tenantSlug}/atletas/${me.athlete.slug}` : null;
+    tenantSlug && me?.athlete?.slug
+      ? buildPublicHref(`/atletas/${me.athlete.slug}`, tenantSlug)
+      : null;
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">

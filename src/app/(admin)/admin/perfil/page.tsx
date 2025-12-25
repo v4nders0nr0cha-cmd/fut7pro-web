@@ -4,6 +4,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
+import { buildPublicHref } from "@/utils/public-links";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
@@ -42,7 +43,9 @@ export default function PerfilAdmin() {
   const adminBadgeLabel = roleLabel || "Administrador";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
   const publicProfileHref =
-    tenantSlug && me?.athlete?.slug ? `/${tenantSlug}/atletas/${me.athlete.slug}` : null;
+    tenantSlug && me?.athlete?.slug
+      ? buildPublicHref(`/atletas/${me.athlete.slug}`, tenantSlug)
+      : null;
 
   if (isLoading) {
     return (

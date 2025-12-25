@@ -5,13 +5,18 @@ import Link from "next/link";
 import { notFound, useParams } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
 import { usePublicAthlete } from "@/hooks/usePublicAthlete";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function HistoricoAtletaPage() {
-  const { slug } = useParams() as { slug: string };
+  const params = useParams() as { slug?: string; athleteSlug?: string };
   const { tenantSlug } = useRacha();
+  const { publicHref } = usePublicLinks();
+  const tenantFromParams = params.athleteSlug ? params.slug : undefined;
+  const athleteSlug = params.athleteSlug || params.slug || "";
+  const resolvedTenantSlug = tenantFromParams || tenantSlug;
   const { athlete, isLoading, isError } = usePublicAthlete({
-    tenantSlug,
-    athleteSlug: slug,
+    tenantSlug: resolvedTenantSlug,
+    athleteSlug,
   });
 
   if (isLoading) {
@@ -28,7 +33,10 @@ export default function HistoricoAtletaPage() {
         <title>Historico | {athlete.firstName || "Atleta"} | Fut7Pro</title>
       </Head>
       <main className="max-w-4xl mx-auto px-2 py-10">
-        <Link href={`/atletas/${slug}`} className="text-yellow-400 underline text-sm">
+        <Link
+          href={publicHref(`/atletas/${athleteSlug}`)}
+          className="text-yellow-400 underline text-sm"
+        >
           Voltar para o perfil
         </Link>
 

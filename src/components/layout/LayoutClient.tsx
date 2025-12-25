@@ -1,15 +1,27 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
+import { useRacha } from "@/context/RachaContext";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 export default function LayoutClient({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname() ?? "";
+  const { tenantSlug, setTenantSlug } = useRacha();
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+
+  useEffect(() => {
+    if (slugFromPath && slugFromPath !== tenantSlug) {
+      setTenantSlug(slugFromPath);
+    }
+  }, [slugFromPath, tenantSlug, setTenantSlug]);
 
   return (
     <>

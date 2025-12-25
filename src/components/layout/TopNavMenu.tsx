@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Trophy, BarChart, Medal, User, Info } from "lucide-react";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 // Novo ícone de "Partidas"
 const PartidasIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -49,18 +50,25 @@ const pages = [
 
 export default function TopNavMenu() {
   const pathname = usePathname() ?? "";
+  const { publicHref } = usePublicLinks();
 
   return (
     <nav className="w-full border-b border-[#232323] bg-[#181818] flex justify-center z-40 select-none animate-slide-down">
       <ul className="flex gap-6 md:gap-12 py-3">
         {pages.map(({ href, label, icon }) => {
+          const resolvedHref = publicHref(href);
           const isActive =
-            href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+            resolvedHref === "/"
+              ? pathname === "/" || pathname === href
+              : pathname === resolvedHref ||
+                pathname.startsWith(resolvedHref + "/") ||
+                pathname === href ||
+                pathname.startsWith(href + "/");
 
           return (
             <li key={href} className="relative">
               <Link
-                href={href}
+                href={resolvedHref}
                 className={`flex items-center px-2 transition-all duration-300 ${
                   isActive
                     ? "text-yellow-400 font-extrabold"

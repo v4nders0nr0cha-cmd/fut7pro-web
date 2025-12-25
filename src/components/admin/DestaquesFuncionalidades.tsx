@@ -4,12 +4,11 @@ import Link from "next/link";
 import { FaRandom, FaUsers, FaTrophy } from "react-icons/fa";
 import Image from "next/image";
 import { useRacha } from "@/context/RachaContext";
+import { buildPublicHref } from "@/utils/public-links";
 
 export default function DestaquesFuncionalidades() {
   const { tenantSlug } = useRacha();
-  const publicTimesPath = tenantSlug
-    ? `/${tenantSlug}/partidas/times-do-dia`
-    : "/partidas/times-do-dia";
+  const publicTimesPath = buildPublicHref("/partidas/times-do-dia", tenantSlug);
 
   return (
     <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3 mt-2">

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
 import type { Notificacao } from "@/types/notificacao";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const isComunicado = (notif: Notificacao) => {
   const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
@@ -35,6 +36,7 @@ const resolveAuthor = (notif: Notificacao) => {
 export default function ComunicadosPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { publicHref } = usePublicLinks();
   const { notificacoes, isLoading, isError, error } = useNotifications({
     enabled: isAuthenticated,
   });
@@ -57,7 +59,7 @@ export default function ComunicadosPage() {
           <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu racha.</p>
           <button
             type="button"
-            onClick={() => router.push("/login")}
+            onClick={() => router.push(publicHref("/login"))}
             className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
           >
             Fazer login

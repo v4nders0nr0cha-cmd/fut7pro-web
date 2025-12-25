@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
 import { rachaMap } from "@/config/rachaMap";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function LoginPage() {
   const { rachaId } = useRacha();
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const { publicHref } = usePublicLinks();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +25,7 @@ export default function LoginPage() {
       email,
       password,
     });
-    if (res?.ok) router.push("/");
+    if (res?.ok) router.push(publicHref("/"));
     else alert("Login inválido");
   };
 
@@ -90,7 +92,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center text-sm">
           Ainda não tem conta?{" "}
-          <a href="/register" className="text-yellow-400 hover:underline">
+          <a href={publicHref("/register")} className="text-yellow-400 hover:underline">
             Cadastre-se
           </a>
         </div>

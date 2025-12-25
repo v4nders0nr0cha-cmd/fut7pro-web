@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { usePublicMatch } from "@/hooks/usePublicMatch";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 
@@ -14,7 +14,8 @@ export default function PartidaDetalhesPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = typeof params?.id === "string" ? params.id : "";
-  const { match, isLoading, isError, error } = usePublicMatch(matchId, rachaConfig.slug);
+  const { publicHref, publicSlug } = usePublicLinks();
+  const { match, isLoading, isError, error } = usePublicMatch(matchId, publicSlug);
 
   const lineups = useMemo(() => {
     if (!match?.presences?.length) return { timeA: [], timeB: [] as { nome: string }[] };
@@ -65,7 +66,7 @@ export default function PartidaDetalhesPage() {
         <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida não encontrada</h1>
         <p className="text-textoSuave">Verifique o ID da partida ou volte ao histórico.</p>
         <Link
-          href="/partidas"
+          href={publicHref("/partidas")}
           className="mt-4 inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
         >
           Voltar ao histórico
@@ -160,7 +161,7 @@ export default function PartidaDetalhesPage() {
 
         <div className="mt-6 flex justify-between items-center">
           <Link
-            href="/partidas"
+            href={publicHref("/partidas")}
             className="text-sm text-yellow-400 underline hover:text-yellow-300 transition"
           >
             Voltar ao histórico

@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const quadrimestres = [
   { value: 1, label: "1º Quadrimestre (Jan-Abr)" },
@@ -19,8 +20,10 @@ export default function RankingQuadrimestralPage() {
   const [ano, setAno] = useState<number>(anoAtual);
   const [quadrimestre, setQuadrimestre] = useState<number>(1);
   const [search, setSearch] = useState("");
+  const { publicHref, publicSlug } = usePublicLinks();
 
   const { rankings, availableYears, isLoading, isError, error } = usePublicPlayerRankings({
+    slug: publicSlug,
     type: "geral",
     period: "quarter",
     year: ano,
@@ -149,7 +152,7 @@ export default function RankingQuadrimestralPage() {
                     >
                       <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                        <Link href={`/atletas/${atleta.slug}`}>
+                        <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
                             src={atleta.foto}
                             alt={`Foto de ${atleta.nome}`}
@@ -159,7 +162,7 @@ export default function RankingQuadrimestralPage() {
                           />
                         </Link>
                         <Link
-                          href={`/atletas/${atleta.slug}`}
+                          href={publicHref(`/atletas/${atleta.slug}`)}
                           className="text-yellow-300 hover:underline font-semibold"
                           title={`Ver perfil de ${atleta.nome}`}
                         >

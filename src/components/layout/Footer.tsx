@@ -10,6 +10,7 @@ import { useRacha } from "@/context/RachaContext";
 import { useAboutPublic } from "@/hooks/useAbout";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
 import { recordSponsorMetric } from "@/lib/sponsor-metrics";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function Footer() {
   const tema = useTema();
@@ -19,6 +20,7 @@ export default function Footer() {
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
   const { sponsors, isLoading } = usePublicSponsors(slug);
+  const { publicHref } = usePublicLinks();
 
   const campoOficial = useMemo(() => {
     if (about?.campoAtual) return about.campoAtual;
@@ -212,25 +214,25 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
-            <Link href="/sistema-de-ranking" className="hover:underline">
+            <Link href={publicHref("/estatisticas")} className="hover:underline">
               Sistema de Ranking
             </Link>
-            <Link href="/sistema-de-premiacoes" className="hover:underline">
+            <Link href={publicHref("/os-campeoes")} className="hover:underline">
               Sistema de Premiações
             </Link>
-            <Link href="/sistema-de-balanceamento" className="hover:underline">
+            <Link href={publicHref("/sorteio-inteligente")} className="hover:underline">
               Sistema de Balanceamento
             </Link>
-            <Link href="/como-funciona" className="hover:underline">
+            <Link href={publicHref("/sobre-nos")} className="hover:underline">
               Como Funciona
             </Link>
-            <Link href="/sobre" className="hover:underline">
+            <Link href={publicHref("/sobre-nos")} className="hover:underline">
               Sobre o {tema.nome}
             </Link>
-            <Link href="/termos-de-uso" className="hover:underline">
+            <Link href={publicHref("/termos")} className="hover:underline">
               Termos de Uso
             </Link>
-            <Link href="/politica-de-privacidade" className="hover:underline">
+            <Link href={publicHref("/privacidade")} className="hover:underline">
               Política de Privacidade
             </Link>
           </div>

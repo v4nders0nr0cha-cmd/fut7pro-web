@@ -7,10 +7,12 @@ import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "
 import { useAboutPublic } from "@/hooks/useAbout";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function NossaHistoriaPage() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
+  const { publicHref } = usePublicLinks();
   const { about } = useAboutPublic(slug);
   const data = about || {};
 
@@ -243,7 +245,7 @@ export default function NossaHistoriaPage() {
             <div className="flex flex-wrap gap-4">
               {membrosAntigos.slice(0, 5).map((membro, idx) => (
                 <Link
-                  href={`/atletas/${membro.nome.toLowerCase().replace(/\s/g, "-")}`}
+                  href={publicHref(`/atletas/${membro.nome.toLowerCase().replace(/\s/g, "-")}`)}
                   key={idx}
                   className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-36 hover:border-yellow-400 border border-neutral-700"
                 >
@@ -274,7 +276,7 @@ export default function NossaHistoriaPage() {
             <div className="flex flex-wrap gap-4">
               {campeoesHistoricos.map((jogador, idx) => (
                 <Link
-                  href={`/atletas/${jogador.slug}`}
+                  href={publicHref(`/atletas/${jogador.slug}`)}
                   key={idx}
                   className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-40 hover:border-yellow-400 border border-neutral-700 transition"
                 >

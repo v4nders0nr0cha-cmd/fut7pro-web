@@ -9,6 +9,7 @@ import { useSession, signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useMe } from "@/hooks/useMe";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -26,17 +27,21 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const router = useRouter();
   const isLoggedIn = !!session?.user;
   const { me } = useMe({ enabled: isLoggedIn });
+  const { publicHref } = usePublicLinks();
   const displayName = me?.athlete?.firstName || session?.user?.name || "Usuario";
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
+  const homeHref = publicHref("/");
+  const loginHref = publicHref("/login");
+  const profileHref = publicHref("/perfil");
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
       <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-h-[62px] relative">
         {/* Logo e nome */}
         <Link
-          href="/"
+          href={homeHref}
           className="flex items-center gap-3 hover:opacity-90 transition-all"
           aria-label={`Página inicial ${nome}`}
         >
@@ -65,14 +70,14 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             const handleClick = (e: React.MouseEvent) => {
               if (!isLoggedIn) {
                 e.preventDefault();
-                router.push("/login");
+                router.push(loginHref);
               }
             };
 
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={publicHref(item.href)}
                 className="relative flex items-center gap-2 group px-2 py-1 rounded-lg transition"
                 aria-label={item.label}
                 onClick={handleClick}
@@ -91,7 +96,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           {/* Perfil/Login - à direita dos ícones */}
           {!isLoggedIn ? (
             <Link
-              href="/login"
+              href={loginHref}
               className="ml-2 flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-3 py-1 rounded-full font-bold text-[14px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
               style={{ letterSpacing: 1 }}
             >
@@ -100,7 +105,10 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             </Link>
           ) : (
             <div className="flex items-center gap-3 ml-3">
-              <Link href="/perfil" className="flex items-center gap-2 hover:opacity-80 transition">
+              <Link
+                href={profileHref}
+                className="flex items-center gap-2 hover:opacity-80 transition"
+              >
                 <Image
                   src={profileImage}
                   alt={displayName}

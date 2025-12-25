@@ -15,6 +15,7 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { useAuth } from "@/hooks/useAuth";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildDestaquesDoDia, getTimeCampeao } from "@/utils/destaquesDoDia";
 import type { PublicMatch } from "@/types/partida";
 
@@ -130,6 +131,7 @@ export default function Home() {
   const slug = tenantSlug || rachaConfig.slug;
   const { hasPermission } = useAuth();
   const isAdmin = hasPermission("RACHA_UPDATE");
+  const { publicHref } = usePublicLinks();
 
   const [modalOpen, setModalOpen] = useState(false);
   const {
@@ -309,7 +311,7 @@ export default function Home() {
             image={campeaoInfo?.time?.logoUrl || DEFAULT_TEAM_IMAGE}
             date={championDate}
             players={championPlayers.slice(0, 7)}
-            href={`/${slug}/partidas/times-do-dia`}
+            href={publicHref("/partidas/times-do-dia")}
           />
 
           {/* GRID DESTAQUES DO DIA - Desktop: Sempre visivel; Mobile: sumir e usar modal */}
@@ -350,22 +352,22 @@ export default function Home() {
 
           {/* CARDS PRINCIPAIS COM LINKS E ORDEM CORRETA */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-2">
-            <Link href="/atletas">
+            <Link href={publicHref("/atletas")}>
               <Card title="Conquistas" description="Colecione medalhas e evolua seu perfil." />
             </Link>
-            <Link href="/estatisticas/ranking-geral">
+            <Link href={publicHref("/estatisticas/ranking-geral")}>
               <Card title="Ranking" description="Compare seu desempenho com os melhores." />
             </Link>
-            <Link href="/os-campeoes">
+            <Link href={publicHref("/os-campeoes")}>
               <Card title="Campeoes" description="Veja quem se destacou nos rachas." />
             </Link>
-            <Link href="/estatisticas/tira-teima">
+            <Link href={publicHref("/estatisticas/tira-teima")}>
               <Card
                 title="Tira Teima"
                 description="Compare jogadores lado a lado com dados reais."
               />
             </Link>
-            <Link href="/estatisticas">
+            <Link href={publicHref("/estatisticas")}>
               <Card title="Estatisticas" description="Acompanhe sua performance em tempo real." />
             </Link>
             {/* Sorteio Inteligente so e clicavel para admin */}

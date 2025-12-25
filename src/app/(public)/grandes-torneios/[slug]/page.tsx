@@ -3,7 +3,7 @@
 import { useParams, notFound } from "next/navigation";
 import Image from "next/image";
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const fetcher = (url: string) =>
   fetch(url).then((r) => {
@@ -12,10 +12,11 @@ const fetcher = (url: string) =>
   });
 
 export default function DetalheTorneioPage() {
-  const params = useParams();
-  const torneioSlug = params?.slug as string;
+  const params = useParams() as { slug?: string; torneioSlug?: string };
+  const torneioSlug = params.torneioSlug || params.slug;
+  const { publicSlug } = usePublicLinks();
   const { data: torneio, error } = useSWR(
-    torneioSlug ? `/api/public/${rachaConfig.slug}/torneios/${torneioSlug}` : null,
+    torneioSlug ? `/api/public/${publicSlug}/torneios/${torneioSlug}` : null,
     fetcher
   );
 

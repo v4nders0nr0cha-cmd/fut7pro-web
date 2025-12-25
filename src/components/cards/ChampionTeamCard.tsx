@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type ChampionTeamCardProps = {
   teamName: string;
@@ -10,9 +11,10 @@ type ChampionTeamCardProps = {
 
 const ChampionTeamCard = ({ teamName, image }: ChampionTeamCardProps) => {
   const teamImage = image && image.length > 0 ? image : "/images/times/time_campeao_padrao_01.png";
+  const { publicHref } = usePublicLinks();
 
   return (
-    <Link href="/partidas">
+    <Link href={publicHref("/partidas")}>
       <div className="flex items-center gap-3 bg-[#1a1a1a] rounded-xl p-3 mb-4 cursor-pointer hover:bg-[#2a2a2a] transition-all">
         <Image
           src={teamImage}

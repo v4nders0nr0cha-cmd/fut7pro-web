@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { QuadrimestresAno } from "@/types/estatisticas";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface Props {
   dados: QuadrimestresAno;
@@ -15,6 +16,7 @@ const periodos = [
 ];
 
 export default function QuadrimestreGrid({ dados }: Props) {
+  const { publicHref } = usePublicLinks();
   const prioridade = [
     "Melhor do Quadrimestre",
     "Artilheiro",
@@ -61,7 +63,7 @@ export default function QuadrimestreGrid({ dados }: Props) {
                     <span className="flex-1 text-center">
                       {item.slug ? (
                         <Link
-                          href={`/atletas/${item.slug}`}
+                          href={publicHref(`/atletas/${item.slug}`)}
                           className="hover:text-yellow-400 transition underline underline-offset-2"
                           title={`Ver perfil de ${item.nome} - ${item.titulo}`}
                         >

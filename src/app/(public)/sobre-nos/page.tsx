@@ -13,10 +13,12 @@ import {
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha as useRachaContext } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function SobreNosPage() {
   const { rachaId } = useRachaContext();
   const { racha } = useRachaPublic(rachaId);
+  const { publicHref } = usePublicLinks();
 
   const mostrarPrestacaoDeContas = !!racha?.financeiroVisivel;
 
@@ -88,7 +90,7 @@ export default function SobreNosPage() {
             {cards.map((card) => (
               <Link
                 key={card.href}
-                href={card.href}
+                href={publicHref(card.href)}
                 className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 flex flex-col items-start hover:border-yellow-400 hover:shadow-lg hover:scale-[1.03] transition-all"
               >
                 <div className="mb-3">{card.icon}</div>

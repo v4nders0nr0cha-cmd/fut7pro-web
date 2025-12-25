@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useSession } from "next-auth/react";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -18,12 +19,13 @@ export default function BottomMenu() {
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
   const { data: session } = useSession();
   const isLoggedIn = !!session?.user;
+  const { publicHref } = usePublicLinks();
 
   function handleClick(href: string, label: string) {
     if (label === "Perfil" && !isLoggedIn) {
-      router.push("/login");
+      router.push(publicHref("/login"));
     } else {
-      router.push(href);
+      router.push(publicHref(href));
     }
   }
 
@@ -33,7 +35,7 @@ export default function BottomMenu() {
       <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 md:hidden animate-slide-down">
         <button
           type="button"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push(publicHref("/login"))}
           className="flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
           style={{ letterSpacing: 1 }}
         >
@@ -48,7 +50,11 @@ export default function BottomMenu() {
   return (
     <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 py-2 md:hidden animate-slide-down">
       {menu.map((item) => {
-        const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const resolvedHref = publicHref(item.href);
+        const isActive =
+          item.href === "/"
+            ? pathname === "/" || pathname === resolvedHref
+            : pathname.startsWith(resolvedHref) || pathname.startsWith(item.href);
 
         let badgeValue = 0;
         if (item.label === "Comunicação" && badge > 0) badgeValue = badge;

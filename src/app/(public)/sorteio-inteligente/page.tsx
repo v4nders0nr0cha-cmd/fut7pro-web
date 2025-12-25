@@ -4,10 +4,12 @@ import Head from "next/head";
 import Link from "next/link";
 import SorteioInteligenteAdmin from "@/components/sorteio/SorteioInteligenteAdmin";
 import { useAuth } from "@/hooks/useAuth";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function SorteioInteligentePage() {
   const { hasPermission, isAuthenticated, isLoading } = useAuth();
   const isAdmin = isAuthenticated && hasPermission("RACHA_UPDATE");
+  const { publicHref } = usePublicLinks();
 
   if (isLoading) {
     return (
@@ -29,7 +31,7 @@ export default function SorteioInteligentePage() {
           </p>
           {!isAuthenticated && (
             <Link
-              href="/login"
+              href={publicHref("/login")}
               className="inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
             >
               Fazer login

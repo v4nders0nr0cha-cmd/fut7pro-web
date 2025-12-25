@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const getVariacaoIcon = (variacao: string) => {
   switch (variacao) {
@@ -17,10 +18,11 @@ const getVariacaoIcon = (variacao: string) => {
 
 export default function TopTeamsCard() {
   const { teams, isLoading, isError } = usePublicTeamRankings();
+  const { publicHref } = usePublicLinks();
   const top4 = teams.slice(0, 4);
 
   return (
-    <Link href="/estatisticas/classificacao-dos-times" className="block">
+    <Link href={publicHref("/estatisticas/classificacao-dos-times")} className="block">
       <div className="bg-[#1a1a1a] rounded-2xl p-5 text-white shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all cursor-pointer w-full min-h-[290px] flex flex-col justify-between">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-base font-bold uppercase text-yellow-400">Classifica��o dos Times</h2>

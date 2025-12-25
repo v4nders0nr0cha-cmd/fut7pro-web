@@ -3,8 +3,11 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function TorneioMatadorPage() {
+  const { publicHref } = usePublicLinks();
+
   return (
     <main className="min-h-screen bg-fundo text-white pt-6 pb-20">
       <div className="max-w-5xl mx-auto w-full">
@@ -49,7 +52,7 @@ export default function TorneioMatadorPage() {
           <h4 className="text-center text-sm text-gray-300 mb-2">Campeões do torneio:</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4, 5, 6].map((id) => (
-              <Link key={id} href={`/atletas/jogador-${id}`}>
+              <Link key={id} href={publicHref(`/atletas/jogador-${id}`)}>
                 <div className="text-center text-white hover:text-yellow-400 transition">
                   <Image
                     src={`/images/jogadores/jogador_padrao_0${id}.jpg`}
@@ -67,7 +70,10 @@ export default function TorneioMatadorPage() {
 
         {/* Botão para voltar */}
         <div className="text-center">
-          <Link href="/grandes-torneios" className="text-yellow-400 hover:underline text-sm">
+          <Link
+            href={publicHref("/grandes-torneios")}
+            className="text-yellow-400 hover:underline text-sm"
+          >
             ← Voltar para a lista de torneios
           </Link>
         </div>
