@@ -25,6 +25,8 @@ type PublicTorneiosResponse = {
   }>;
 };
 
+const EMPTY_TORNEIOS: PublicTorneiosResponse["results"] = [];
+
 const fetcher = async (url: string): Promise<PublicTorneiosResponse> => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -64,7 +66,7 @@ export default function GrandesTorneiosPage() {
       revalidateOnFocus: false,
     }
   );
-  const torneios = data?.results ?? [];
+  const torneios = useMemo(() => data?.results ?? EMPTY_TORNEIOS, [data?.results]);
   const [selectedYear, setSelectedYear] = useState<number | "all">("all");
   const availableYears = useMemo(() => {
     const years = new Set<number>();
