@@ -38,9 +38,11 @@ export default function BottomMenu() {
           onClick={() => router.push(publicHref("/login"))}
           className="flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
           style={{ letterSpacing: 1 }}
+          title="Area do atleta"
+          aria-label="Entrar - area do atleta"
         >
           <FaUser size={20} className="text-yellow-400" />
-          Entrar ou Cadastrar-se
+          Entrar
         </button>
       </nav>
     );

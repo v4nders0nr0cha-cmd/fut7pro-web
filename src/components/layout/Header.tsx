@@ -97,11 +97,16 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           {!isLoggedIn ? (
             <Link
               href={loginHref}
-              className="ml-2 flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-3 py-1 rounded-full font-bold text-[14px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+              className="ml-2 flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-3 py-1.5 rounded-full shadow-md hover:bg-yellow-400 hover:text-black transition-all"
               style={{ letterSpacing: 1 }}
             >
-              <FaUser size={18} className="text-yellow-400" />
-              ENTRAR OU CADASTRE-SE
+              <FaUser size={18} className="text-yellow-400 shrink-0" />
+              <span className="flex flex-col leading-tight text-left">
+                <span className="text-[13px] font-bold uppercase">Entrar</span>
+                <span className="text-[10px] font-semibold text-yellow-200 normal-case truncate max-w-[140px]">
+                  Atletas do {nome}
+                </span>
+              </span>
             </Link>
           ) : (
             <div className="flex items-center gap-3 ml-3">

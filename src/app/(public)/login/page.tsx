@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useRacha } from "@/context/RachaContext";
-import { rachaMap } from "@/config/rachaMap";
+import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function LoginPage() {
-  const { rachaId } = useRacha();
-  // Nome do racha dinâmico pelo mapa, fallback para "Fut7Pro"
-  const nomeDoRacha = rachaMap[rachaId]?.nome || "Fut7Pro";
+  const { nome } = useTema();
+  const nomeDoRacha = nome || "Fut7Pro";
 
   const [tab, setTab] = useState<"google" | "email">("google");
   const [email, setEmail] = useState("");
@@ -32,6 +30,13 @@ export default function LoginPage() {
   return (
     <main className="w-full min-h-[80vh] flex flex-col items-center justify-center pt-8 md:pt-16 pb-10">
       <div className="bg-zinc-900 p-6 rounded-lg shadow-lg w-full max-w-sm">
+        <div className="mb-4 rounded-md border border-yellow-400/30 bg-[#1a1a1a] px-3 py-2 text-center">
+          <p className="text-sm font-semibold text-yellow-300">
+            Acesso exclusivo para atletas do{" "}
+            <span className="text-yellow-400 font-bold">{nomeDoRacha}</span>
+          </p>
+          <p className="text-xs text-gray-300">Visitantes podem navegar normalmente pelo site.</p>
+        </div>
         <h1 className="text-xl font-bold mb-4 text-center">Acesse sua Conta</h1>
         <p className="text-gray-300 text-center mb-6 text-base font-medium leading-snug">
           Acesse sua conta para editar seu perfil, participar de discussões e enquetes que melhoram
