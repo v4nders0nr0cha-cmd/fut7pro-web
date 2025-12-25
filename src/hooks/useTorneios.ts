@@ -1,13 +1,31 @@
 import useSWR from "swr";
 import type { Torneio } from "@/types/torneio";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+type TorneiosResponse = {
+  results?: Torneio[];
+  total?: number;
+  page?: number;
+  limit?: number;
+};
+
+const fetcher = async (url: string): Promise<TorneiosResponse> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const message = await res.text().catch(() => "");
+    throw new Error(message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  if (Array.isArray(data)) {
+    return { results: data, total: data.length, page: 1, limit: data.length };
+  }
+  return data || { results: [], total: 0, page: 1, limit: 0 };
+};
 
 export function useTorneios(slug?: string) {
   const search = slug ? `?slug=${encodeURIComponent(slug)}` : "";
   const key = slug ? `/api/admin/torneios${search}` : null;
 
-  const { data, error, mutate } = useSWR<Torneio[]>(key, fetcher);
+  const { data, error, mutate } = useSWR<TorneiosResponse>(key, fetcher);
 
   async function addTorneio(torneio: Partial<Torneio>) {
     await fetch("/api/admin/torneios", {
@@ -36,7 +54,10 @@ export function useTorneios(slug?: string) {
   }
 
   return {
-    torneios: data || [],
+    torneios: data?.results ?? [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    limit: data?.limit ?? 0,
     isLoading: !error && !data,
     isError: !!error,
     addTorneio,

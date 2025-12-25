@@ -6,7 +6,6 @@ import Cropper from "react-easy-crop";
 import { FaTimes, FaUpload, FaUser, FaTrash } from "react-icons/fa";
 import type { DadosTorneio, Posicao, Torneio } from "@/types/torneio";
 import type { Jogador } from "@/types/jogador";
-import { rachaConfig } from "@/config/racha.config";
 
 type JogadorSelecionavel = Pick<Jogador, "id" | "nome" | "avatar" | "posicao" | "slug"> &
   Partial<Jogador>;
@@ -21,6 +20,13 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
 
+const toDateInputValue = (value?: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -32,6 +38,11 @@ interface Props {
 export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, torneio }: Props) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
+  const [campeao, setCampeao] = useState("");
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [status, setStatus] = useState<"rascunho" | "publicado">("publicado");
+  const [destacarNoSite, setDestacarNoSite] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -78,7 +89,6 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     const formData = new FormData();
     formData.append("file", file, `${tipo}-${Date.now()}.jpg`);
     formData.append("type", tipo);
-    formData.append("slug", rachaConfig.slug || "");
 
     const res = await fetch("/api/admin/torneios/upload", {
       method: "POST",
@@ -102,6 +112,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setBannerUrl(null);
     const reader = new FileReader();
     reader.onloadend = () => {
       setCropSrc(reader.result as string);
@@ -149,6 +160,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setLogoUrl(null);
     const reader = new FileReader();
     reader.onloadend = () => setLogo(reader.result as string);
     reader.readAsDataURL(file);
@@ -177,8 +189,21 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!titulo || !descricao || !banner || !logo || campeoes.filter(Boolean).length === 0) {
-      setErro("Preencha todos os campos obrigatorios e adicione pelo menos um campeao.");
+    const resolvedBannerUrl = bannerUrl || torneio?.bannerUrl || "";
+    const resolvedLogoUrl = logoUrl || torneio?.logoUrl || "";
+
+    if (
+      !titulo ||
+      !descricao ||
+      !campeao ||
+      !dataInicio ||
+      campeoes.filter(Boolean).length === 0 ||
+      !resolvedBannerUrl ||
+      !resolvedLogoUrl
+    ) {
+      setErro(
+        "Preencha todos os campos obrigatorios, envie o banner e a logo do time campeao e adicione pelo menos um campeao."
+      );
       return;
     }
 
@@ -192,17 +217,24 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
         fotoUrl: jogador.avatar,
       }));
 
+    const dateForYear = dataInicio || dataFim;
+    const resolvedAno = dateForYear
+      ? new Date(dateForYear).getFullYear()
+      : (torneio?.ano ?? new Date().getFullYear());
+
     const payload: DadosTorneio = {
       nome: titulo.trim(),
       slug: torneio?.slug ?? slugify(titulo),
-      ano: torneio?.ano ?? new Date().getFullYear(),
+      ano: resolvedAno,
       descricao,
       descricaoResumida: descricao.slice(0, 180),
-      campeao: jogadoresMapeados[0]?.nome,
-      status: torneio?.status ?? "rascunho",
-      destacarNoSite: torneio?.destacarNoSite ?? false,
-      bannerBase64: bannerUrl ?? banner ?? torneio?.banner ?? torneio?.bannerUrl,
-      logoBase64: logoUrl ?? logo ?? torneio?.logo ?? torneio?.logoUrl,
+      campeao: campeao.trim(),
+      status,
+      destacarNoSite,
+      bannerUrl: resolvedBannerUrl || undefined,
+      logoUrl: resolvedLogoUrl || undefined,
+      dataInicio: dataInicio || undefined,
+      dataFim: dataFim || undefined,
       jogadoresCampeoes: jogadoresMapeados.length
         ? jogadoresMapeados
         : ((torneio?.jogadoresCampeoes as any) ?? []),
@@ -230,6 +262,11 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     if (!torneio || !open) return;
     setTitulo(torneio.nome || "");
     setDescricao(torneio.descricao || "");
+    setCampeao(torneio.campeao || "");
+    setDataInicio(toDateInputValue(torneio.dataInicio));
+    setDataFim(toDateInputValue(torneio.dataFim));
+    setStatus(torneio.status === "publicado" ? "publicado" : "rascunho");
+    setDestacarNoSite(Boolean(torneio.destacarNoSite));
     setQtdVagas(torneio.jogadoresCampeoes?.length || 7);
     setPremioTotal(torneio.premioTotal ?? null);
     setPremioMvp(torneio.mvp ?? "");
@@ -253,6 +290,11 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     if (!open || torneio) return;
     setTitulo("");
     setDescricao("");
+    setCampeao("");
+    setDataInicio("");
+    setDataFim("");
+    setStatus("publicado");
+    setDestacarNoSite(false);
     setQtdVagas(7);
     setPremioTotal(null);
     setPremioMvp("");
@@ -308,6 +350,63 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             maxLength={200}
             placeholder="Ex: Edicao especial realizada em 2025 com os melhores jogadores do racha."
           />
+        </div>
+
+        {/* Data do evento */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+          <div>
+            <label className="text-gray-300 font-medium text-sm">Data inicio *</label>
+            <input
+              type="date"
+              className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-gray-300 font-medium text-sm">Data fim (opcional)</label>
+            <input
+              type="date"
+              className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Time campeao */}
+        <div className="mb-3">
+          <label className="text-gray-300 font-medium text-sm">Time campeao (nome) *</label>
+          <input
+            type="text"
+            className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
+            value={campeao}
+            onChange={(e) => setCampeao(e.target.value)}
+            required
+            maxLength={60}
+            placeholder="Ex: Time Azul"
+          />
+        </div>
+
+        {/* Publicacao */}
+        <div className="mb-4 flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={status === "publicado"}
+              onChange={(e) => setStatus(e.target.checked ? "publicado" : "rascunho")}
+            />
+            Publicar no site
+          </label>
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={destacarNoSite}
+              onChange={(e) => setDestacarNoSite(e.target.checked)}
+            />
+            Destacar no site
+          </label>
         </div>
 
         {/* Banner */}
