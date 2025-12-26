@@ -1,40 +1,27 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { FaPlus, FaTrash, FaInfoCircle } from "react-icons/fa";
+import { useJogadores } from "@/hooks/useJogadores";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
+import type { Jogador } from "@/types/jogador";
 
-// MOCK temporário (substituir por API futuramente)
-const MOCK_JOGADORES = [
-  {
-    id: "1",
-    nome: "Carlos Silva",
-    apelido: "Carlinhos",
-    posicao: "Atacante",
-    status: "Ativo",
-    mensalista: true,
-    avatar: "/images/jogadores/jogador_padrao_01.jpg",
-  },
-  {
-    id: "2",
-    nome: "Lucas Souza",
-    apelido: "Luk",
-    posicao: "Meia",
-    status: "Ativo",
-    mensalista: false,
-    avatar: "/images/jogadores/jogador_padrao_02.jpg",
-  },
-  {
-    id: "3",
-    nome: "Renan Costa",
-    apelido: "Rena",
-    posicao: "Zagueiro",
-    status: "Suspenso",
-    mensalista: true,
-    avatar: "/images/jogadores/jogador_padrao_03.jpg",
-  },
-];
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const POSICAO_LABEL: Record<string, string> = {
+  goleiro: "Goleiro",
+  zagueiro: "Zagueiro",
+  meia: "Meia",
+  atacante: "Atacante",
+};
+
+function formatPosicao(value?: string | null) {
+  if (!value) return "-";
+  const key = value.toLowerCase();
+  return POSICAO_LABEL[key] || value;
+}
 
 // MODAL DE ADIÇÃO
 function ModalMensalista({
@@ -42,19 +29,23 @@ function ModalMensalista({
   onClose,
   jogadores,
   onAdd,
+  loadingId,
+  error,
 }: {
   open: boolean;
   onClose: () => void;
-  jogadores: typeof MOCK_JOGADORES;
+  jogadores: Jogador[];
   onAdd: (id: string) => void;
+  loadingId?: string | null;
+  error?: string | null;
 }) {
   const [busca, setBusca] = useState("");
 
+  const termo = busca.toLowerCase();
   const jogadoresDisponiveis = jogadores.filter(
     (j) =>
       !j.mensalista &&
-      (j.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        j.apelido.toLowerCase().includes(busca.toLowerCase()))
+      (j.nome.toLowerCase().includes(termo) || (j.apelido || "").toLowerCase().includes(termo))
   );
 
   if (!open) return null;
@@ -79,26 +70,36 @@ function ModalMensalista({
           {jogadoresDisponiveis.map((j) => (
             <div key={j.id} className="flex items-center gap-3 bg-[#23272f] rounded-xl px-2 py-2">
               <Image
-                src={j.avatar}
+                src={j.avatar || j.foto || j.photoUrl || DEFAULT_AVATAR}
                 alt={`Foto do jogador ${j.nome}`}
                 width={36}
                 height={36}
-                className="rounded-full border-2 border-gray-500"
+                className="rounded-full border-2 border-gray-500 object-cover"
               />
               <div className="flex-1">
                 <div className="text-white font-semibold">{j.nome}</div>
-                <div className="text-xs text-cyan-200">{j.apelido}</div>
+                <div className="text-xs text-cyan-200">{j.apelido || "-"}</div>
               </div>
               <button
                 onClick={() => onAdd(j.id)}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded shadow text-xs flex items-center gap-1"
+                disabled={loadingId === j.id}
+                className={`bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-1 rounded shadow text-xs flex items-center gap-1 ${
+                  loadingId === j.id ? "opacity-70 cursor-not-allowed" : ""
+                }`}
                 title="Adicionar como mensalista"
               >
-                <FaPlus /> Adicionar
+                {loadingId === j.id ? (
+                  "Adicionando..."
+                ) : (
+                  <>
+                    <FaPlus /> Adicionar
+                  </>
+                )}
               </button>
             </div>
           ))}
         </div>
+        {error && <div className="text-xs text-red-300">{error}</div>}
         <button
           type="button"
           onClick={onClose}
@@ -112,20 +113,46 @@ function ModalMensalista({
 }
 
 export default function MensalistasPage() {
-  const [jogadores, setJogadores] = useState(MOCK_JOGADORES);
+  const { rachaId } = useRacha();
+  const resolvedRachaId = rachaId || rachaConfig.slug;
+  const { jogadores, isLoading, isError, error, updateJogador, mutate } =
+    useJogadores(resolvedRachaId);
   const [modalOpen, setModalOpen] = useState(false);
+  const [acaoErro, setAcaoErro] = useState<string | null>(null);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const mensalistas = jogadores.filter((j) => j.mensalista);
+  const mensalistas = useMemo(() => jogadores.filter((j) => j.mensalista), [jogadores]);
+  const showFetchError = isError && !acaoErro;
+  const pageError = acaoErro || (showFetchError ? error || "Erro ao carregar jogadores." : null);
 
-  function handleAddMensalista(id: string) {
-    setJogadores((prev) => prev.map((j) => (j.id === id ? { ...j, mensalista: true } : j)));
-    setModalOpen(false);
+  async function handleAddMensalista(id: string) {
+    if (loadingId) return;
+    setLoadingId(id);
+    setAcaoErro(null);
+    const result = await updateJogador(id, { mensalista: true });
+    if (!result) {
+      setAcaoErro("Nao foi possivel atualizar mensalista.");
+    } else {
+      await mutate();
+      setModalOpen(false);
+    }
+    setLoadingId(null);
   }
 
-  function handleRemoverMensalista(id: string) {
-    if (window.confirm("Deseja realmente remover este jogador dos mensalistas?")) {
-      setJogadores((prev) => prev.map((j) => (j.id === id ? { ...j, mensalista: false } : j)));
+  async function handleRemoverMensalista(id: string) {
+    if (loadingId) return;
+    if (!window.confirm("Deseja realmente remover este jogador dos mensalistas?")) {
+      return;
     }
+    setLoadingId(id);
+    setAcaoErro(null);
+    const result = await updateJogador(id, { mensalista: false });
+    if (!result) {
+      setAcaoErro("Nao foi possivel remover mensalista.");
+    } else {
+      await mutate();
+    }
+    setLoadingId(null);
   }
 
   return (
@@ -176,51 +203,75 @@ export default function MensalistasPage() {
           </button>
         </div>
 
+        {pageError && <div className="text-center text-sm text-red-300 mb-6">{pageError}</div>}
+
         <div className="flex flex-wrap justify-center gap-7">
-          {mensalistas.length === 0 ? (
+          {isLoading ? (
+            <div className="text-gray-400 font-semibold py-12 text-center w-full">
+              Carregando mensalistas...
+            </div>
+          ) : showFetchError ? (
+            <div className="text-gray-400 font-semibold py-12 text-center w-full">
+              Nao foi possivel carregar os mensalistas.
+            </div>
+          ) : mensalistas.length === 0 ? (
             <div className="text-gray-400 font-semibold py-12 text-center w-full">
               Nenhum mensalista cadastrado.
             </div>
           ) : (
-            mensalistas.map((j) => (
-              <div
-                key={j.id}
-                className="bg-[#191b1f] rounded-2xl border-2 border-yellow-400 p-6 flex flex-col items-center w-[320px] max-w-full shadow hover:shadow-xl transition relative"
-              >
-                <button
-                  className="absolute top-3 right-3 text-red-700 hover:text-red-500 bg-gray-900 rounded-full p-2 transition"
-                  onClick={() => handleRemoverMensalista(j.id)}
-                  title="Remover mensalista"
+            mensalistas.map((j) => {
+              const avatar = j.avatar || j.foto || j.photoUrl || DEFAULT_AVATAR;
+              const status = String(j.status || "Ativo");
+              const statusKey = status.toLowerCase();
+              const statusClass =
+                statusKey === "ativo"
+                  ? "bg-green-600"
+                  : statusKey === "inativo"
+                    ? "bg-gray-500"
+                    : "bg-red-700";
+              const posicao = formatPosicao(j.posicao || j.position);
+
+              return (
+                <div
+                  key={j.id}
+                  className="bg-[#191b1f] rounded-2xl border-2 border-yellow-400 p-6 flex flex-col items-center w-[320px] max-w-full shadow hover:shadow-xl transition relative"
                 >
-                  <FaTrash />
-                </button>
-                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-400 mb-2 shadow-lg bg-black">
-                  <Image
-                    src={j.avatar}
-                    alt={`Foto do jogador ${j.nome}`}
-                    width={96}
-                    height={96}
-                    className="object-cover w-full h-full"
-                    priority
-                  />
-                </div>
-                <div className="text-lg font-bold text-white">{j.nome}</div>
-                <div className="text-sm font-semibold text-cyan-200 mb-2">{j.apelido}</div>
-                <div className="flex gap-2 mt-2 flex-wrap justify-center">
-                  <span className="px-3 py-0.5 rounded bg-cyan-700 text-white text-xs">
-                    {j.posicao}
-                  </span>
-                  <span
-                    className={`px-3 py-0.5 rounded ${j.status === "Ativo" ? "bg-green-600" : j.status === "Inativo" ? "bg-gray-500" : "bg-red-700"} text-white text-xs`}
+                  <button
+                    className={`absolute top-3 right-3 text-red-700 hover:text-red-500 bg-gray-900 rounded-full p-2 transition ${
+                      loadingId === j.id ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
+                    onClick={() => handleRemoverMensalista(j.id)}
+                    title="Remover mensalista"
+                    disabled={loadingId === j.id}
                   >
-                    {j.status}
-                  </span>
-                  <span className="px-3 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
-                    Mensalista
-                  </span>
+                    <FaTrash />
+                  </button>
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-yellow-400 mb-2 shadow-lg bg-black">
+                    <Image
+                      src={avatar}
+                      alt={`Foto do jogador ${j.nome}`}
+                      width={96}
+                      height={96}
+                      className="object-cover w-full h-full"
+                      priority
+                    />
+                  </div>
+                  <div className="text-lg font-bold text-white">{j.nome}</div>
+                  <div className="text-sm font-semibold text-cyan-200 mb-2">{j.apelido || "-"}</div>
+                  <div className="flex gap-2 mt-2 flex-wrap justify-center">
+                    <span className="px-3 py-0.5 rounded bg-cyan-700 text-white text-xs">
+                      {posicao}
+                    </span>
+                    <span className={`px-3 py-0.5 rounded ${statusClass} text-white text-xs`}>
+                      {status}
+                    </span>
+                    <span className="px-3 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
+                      Mensalista
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -229,6 +280,8 @@ export default function MensalistasPage() {
           onClose={() => setModalOpen(false)}
           jogadores={jogadores}
           onAdd={handleAddMensalista}
+          loadingId={loadingId}
+          error={acaoErro}
         />
       </main>
     </>
