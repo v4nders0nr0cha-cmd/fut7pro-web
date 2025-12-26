@@ -311,6 +311,7 @@ export default function Page() {
   const [showModalCadastro, setShowModalCadastro] = useState(false);
   const [cadastroErro, setCadastroErro] = useState<string | null>(null);
   const [cadastroLoading, setCadastroLoading] = useState(false);
+  const [posicaoFiltro, setPosicaoFiltro] = useState("todas");
   const [showModalEditar, setShowModalEditar] = useState(false);
   const [jogadorEditar, setJogadorEditar] = useState<Jogador | undefined>();
   const [editarErro, setEditarErro] = useState<string | null>(null);
@@ -323,11 +324,14 @@ export default function Page() {
   const [vincularErro, setVincularErro] = useState<string | null>(null);
   const [vinculando, setVinculando] = useState(false);
 
-  const jogadoresFiltrados = jogadores.filter(
-    (j) =>
-      j.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      j.apelido.toLowerCase().includes(busca.toLowerCase())
-  );
+  const jogadoresFiltrados = jogadores.filter((j) => {
+    const termo = busca.toLowerCase();
+    const nomeOk = j.nome.toLowerCase().includes(termo) || j.apelido.toLowerCase().includes(termo);
+    if (!nomeOk) return false;
+    if (posicaoFiltro === "todas") return true;
+    const posicao = String(j.posicao || j.position || "").toLowerCase();
+    return posicao === posicaoFiltro;
+  });
 
   const contasComLogin = useMemo(() => jogadores.filter((j) => j.userId), [jogadores]);
   const podeVincular = contasComLogin.length > 0;
@@ -583,15 +587,29 @@ export default function Page() {
 
         {/* BARRA DE BUSCA */}
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-6">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <input
-              type="text"
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por nome ou apelido..."
-              className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-72 focus:border-cyan-600"
-            />
-            <FaSearch className="text-gray-400 text-lg -ml-8 pointer-events-none" />
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="text"
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Buscar por nome ou apelido..."
+                className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-72 focus:border-cyan-600"
+              />
+              <FaSearch className="text-gray-400 text-lg -ml-8 pointer-events-none" />
+            </div>
+            <select
+              value={posicaoFiltro}
+              onChange={(e) => setPosicaoFiltro(e.target.value)}
+              className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-52 focus:border-cyan-600"
+              aria-label="Filtrar por posicao"
+            >
+              <option value="todas">Todas as posicoes</option>
+              <option value="goleiro">Goleiro</option>
+              <option value="zagueiro">Zagueiro</option>
+              <option value="meia">Meia</option>
+              <option value="atacante">Atacante</option>
+            </select>
           </div>
           <button
             onClick={abrirModalCadastro}
