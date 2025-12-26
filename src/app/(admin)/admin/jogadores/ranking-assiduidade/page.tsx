@@ -1,36 +1,12 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { FaInfoCircle } from "react-icons/fa";
-
-const MOCK_RANK = [
-  {
-    id: "1",
-    nome: "Carlos Silva",
-    apelido: "Carlinhos",
-    avatar: "/images/jogadores/jogador_padrao_01.jpg",
-    jogos: 28,
-    mensalista: true,
-  },
-  {
-    id: "2",
-    nome: "Lucas Souza",
-    apelido: "Luk",
-    avatar: "/images/jogadores/jogador_padrao_02.jpg",
-    jogos: 27,
-    mensalista: false,
-  },
-  {
-    id: "3",
-    nome: "Renan Costa",
-    apelido: "Rena",
-    avatar: "/images/jogadores/jogador_padrao_03.jpg",
-    jogos: 24,
-    mensalista: true,
-  },
-];
+import { useJogadores } from "@/hooks/useJogadores";
+import { useRacha } from "@/context/RachaContext";
+import { rachaConfig } from "@/config/racha.config";
 
 const PERIODOS = [
   { label: "Este mês", value: "mes" },
@@ -39,20 +15,68 @@ const PERIODOS = [
   { label: "Todos os anos", value: "todos" },
 ];
 
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+
+const getQuarter = (date: Date) => Math.floor(date.getMonth() / 4) + 1;
+
 export default function RankingAssiduidade() {
   const [periodo, setPeriodo] = useState("mes");
+  const { rachaId } = useRacha();
+  const resolvedRachaId = rachaId || rachaConfig.slug;
+  const { jogadores, isLoading, isError, error } = useJogadores(resolvedRachaId);
 
-  const jogadoresFiltrados = MOCK_RANK.map((j) => ({
-    ...j,
-    jogos:
-      periodo === "mes"
-        ? Math.max(j.jogos - 20, 1)
-        : periodo === "quadrimestre"
-          ? Math.max(j.jogos - 10, 1)
-          : periodo === "ano"
-            ? j.jogos
-            : j.jogos + 10,
-  })).sort((a, b) => b.jogos - a.jogos);
+  const jogadoresFiltrados = useMemo(() => {
+    const now = new Date();
+    const currentQuarter = getQuarter(now);
+    const currentYear = now.getFullYear();
+
+    return jogadores
+      .map((jogador: any) => {
+        const presences = Array.isArray(jogador.presences) ? jogador.presences : [];
+        const fallbackJogos =
+          typeof jogador.presencas === "number"
+            ? jogador.presencas
+            : typeof jogador.partidas === "number"
+              ? jogador.partidas
+              : 0;
+
+        const jogos = presences.length
+          ? presences.filter((presence: any) => {
+              const status = String(presence?.status || "").toUpperCase();
+              if (status === "AUSENTE") return false;
+              if (periodo === "todos") return true;
+              const rawDate = presence?.match?.date || presence?.match?.data || null;
+              if (!rawDate) return false;
+              const parsed = new Date(rawDate);
+              if (Number.isNaN(parsed.getTime())) return false;
+              if (periodo === "mes") {
+                return parsed.getMonth() === now.getMonth() && parsed.getFullYear() === currentYear;
+              }
+              if (periodo === "ano") {
+                return parsed.getFullYear() === currentYear;
+              }
+              if (periodo === "quadrimestre") {
+                return (
+                  parsed.getFullYear() === currentYear && getQuarter(parsed) === currentQuarter
+                );
+              }
+              return false;
+            }).length
+          : periodo === "todos"
+            ? fallbackJogos
+            : 0;
+
+        return {
+          id: jogador.id,
+          nome: jogador.nome,
+          apelido: jogador.apelido,
+          avatar: jogador.avatar || jogador.foto || jogador.photoUrl || DEFAULT_AVATAR,
+          jogos,
+          mensalista: Boolean(jogador.mensalista),
+        };
+      })
+      .sort((a, b) => b.jogos - a.jogos);
+  }, [jogadores, periodo]);
 
   return (
     <>
@@ -117,37 +141,54 @@ export default function RankingAssiduidade() {
               </tr>
             </thead>
             <tbody>
-              {jogadoresFiltrados.length === 0 && (
+              {isLoading && (
                 <tr>
                   <td colSpan={5} className="text-center text-gray-400 py-8">
-                    Nenhum jogador registrado no período selecionado.
+                    Carregando ranking...
                   </td>
                 </tr>
               )}
-              {jogadoresFiltrados.map((j, idx) => (
-                <tr key={j.id} className="border-t border-gray-800 hover:bg-[#22242b]">
-                  <td className="py-3 px-4 font-bold text-cyan-300">{idx + 1}</td>
-                  <td className="py-3 px-4 flex items-center gap-3">
-                    <Image
-                      src={j.avatar}
-                      alt={`Foto do jogador ${j.nome}`}
-                      width={38}
-                      height={38}
-                      className="rounded-full border-2 border-cyan-400 shadow"
-                    />
-                    <span className="text-white">{j.nome}</span>
-                  </td>
-                  <td className="py-3 px-4 text-cyan-200 font-semibold">{j.apelido}</td>
-                  <td className="py-3 px-4 text-white font-bold">{j.jogos}</td>
-                  <td className="py-3 px-4">
-                    {j.mensalista && (
-                      <span className="px-2 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
-                        Mensalista
-                      </span>
-                    )}
+              {isError && !isLoading && (
+                <tr>
+                  <td colSpan={5} className="text-center text-red-400 py-8">
+                    Erro ao carregar ranking.
+                    {error && <div className="text-xs text-red-300 mt-1">{error}</div>}
                   </td>
                 </tr>
-              ))}
+              )}
+              {!isLoading && !isError && jogadoresFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-gray-400 py-8">
+                    Nenhum jogador registrado no periodo selecionado.
+                  </td>
+                </tr>
+              )}
+              {!isLoading &&
+                !isError &&
+                jogadoresFiltrados.map((j, idx) => (
+                  <tr key={j.id} className="border-t border-gray-800 hover:bg-[#22242b]">
+                    <td className="py-3 px-4 font-bold text-cyan-300">{idx + 1}</td>
+                    <td className="py-3 px-4 flex items-center gap-3">
+                      <Image
+                        src={j.avatar}
+                        alt={`Foto do jogador ${j.nome}`}
+                        width={38}
+                        height={38}
+                        className="rounded-full border-2 border-cyan-400 shadow object-cover"
+                      />
+                      <span className="text-white">{j.nome}</span>
+                    </td>
+                    <td className="py-3 px-4 text-cyan-200 font-semibold">{j.apelido || "-"}</td>
+                    <td className="py-3 px-4 text-white font-bold">{j.jogos}</td>
+                    <td className="py-3 px-4">
+                      {j.mensalista && (
+                        <span className="px-2 py-0.5 rounded bg-yellow-500 text-black font-semibold text-xs">
+                          Mensalista
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
