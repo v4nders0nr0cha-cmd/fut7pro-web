@@ -1,7 +1,9 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
+import { toast } from "react-hot-toast";
 import type { Jogador, PosicaoJogador } from "@/types/jogador";
+import ImageCropperModal from "@/components/ImageCropperModal";
 
 const POSICOES: { label: string; value: PosicaoJogador }[] = [
   { label: "Atacante", value: "atacante" },
@@ -9,6 +11,9 @@ const POSICOES: { label: string; value: PosicaoJogador }[] = [
   { label: "Zagueiro", value: "zagueiro" },
   { label: "Goleiro", value: "goleiro" },
 ];
+
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 
 export default function JogadorForm({
   jogador,
@@ -26,7 +31,6 @@ export default function JogadorForm({
       id: "",
       nome: "",
       apelido: "",
-      email: "",
       foto: "",
       status: "Ativo",
       mensalista: false,
@@ -34,19 +38,41 @@ export default function JogadorForm({
     }
   );
   const [fotoFile, setFotoFile] = useState<File | null>(null);
-  const [fotoPreview, setFotoPreview] = useState<string>(jogador?.foto || "");
+  const [fotoPreview, setFotoPreview] = useState<string>(
+    jogador?.foto || jogador?.photoUrl || jogador?.avatar || ""
+  );
+  const [cropImage, setCropImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function dataUrlToFile(dataUrl: string) {
+    const [header, base64Data] = dataUrl.split(",");
+    if (!base64Data) {
+      throw new Error("Imagem invalida.");
+    }
+    const match = header?.match(/data:(.*);base64/);
+    const mime = match?.[1] || "image/jpeg";
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mime });
+    if (blob.size > MAX_AVATAR_SIZE) {
+      throw new Error("A imagem recortada ficou grande demais.");
+    }
+    const ext = mime.split("/")[1] || "jpg";
+    return new File([blob], `avatar-${Date.now()}.${ext}`, { type: mime });
+  }
 
   useEffect(() => {
     if (jogador) {
       setForm(jogador);
-      setFotoPreview(jogador.foto || "");
+      setFotoPreview(jogador.foto || jogador.photoUrl || jogador.avatar || "");
     } else {
       setForm({
         id: "",
         nome: "",
         apelido: "",
-        email: "",
         foto: "",
         status: "Ativo",
         mensalista: false,
@@ -55,6 +81,7 @@ export default function JogadorForm({
       setFotoPreview("");
       setFotoFile(null);
     }
+    setCropImage(null);
   }, [jogador]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -74,12 +101,19 @@ export default function JogadorForm({
 
   function handleFotoChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) {
-      setFotoFile(file);
-      const preview = URL.createObjectURL(file);
-      setFotoPreview(preview);
-      setForm((prev) => ({ ...prev, foto: preview }));
+    if (!file) return;
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error("Envie uma imagem JPEG, PNG ou WebP.");
+      return;
     }
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error("Envie uma imagem com ate 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setCropImage(String(reader.result));
+    reader.onerror = () => toast.error("Falha ao ler a imagem.");
+    reader.readAsDataURL(file);
   }
 
   function handleFotoClick() {
@@ -90,6 +124,21 @@ export default function JogadorForm({
     e.preventDefault();
     if (onSave) onSave(form, fotoFile);
   }
+
+  async function handleCropApply(cropped: string) {
+    try {
+      const file = dataUrlToFile(cropped);
+      setFotoFile(file);
+      setFotoPreview(cropped);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Falha ao preparar a imagem.";
+      toast.error(message);
+    } finally {
+      setCropImage(null);
+    }
+  }
+
+  const hasPreview = !!fotoPreview && fotoPreview !== "null" && fotoPreview !== "undefined";
 
   return (
     <form
@@ -102,11 +151,12 @@ export default function JogadorForm({
           className="w-20 h-20 bg-[#222] rounded-lg border-2 border-dashed border-yellow-600 flex items-center justify-center cursor-pointer hover:border-yellow-400 transition"
           title="Clique para selecionar uma foto"
         >
-          {fotoPreview ? (
+          {hasPreview ? (
             <img
               src={fotoPreview}
-              alt="Preview Foto"
+              alt="Preview foto"
               className="object-cover w-full h-full rounded-lg"
+              onError={() => setFotoPreview("")}
             />
           ) : (
             <span className="text-gray-400 text-sm text-center px-2">+ Foto</span>
@@ -114,7 +164,7 @@ export default function JogadorForm({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept={ALLOWED_TYPES.join(",")}
             onChange={handleFotoChange}
             className="hidden"
           />
@@ -143,17 +193,6 @@ export default function JogadorForm({
             />
           </div>
         </div>
-      </div>
-      <div>
-        <label className="block font-medium text-yellow-500 mb-1">E-mail</label>
-        <input
-          name="email"
-          type="email"
-          value={form.email || ""}
-          onChange={handleChange}
-          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-          placeholder="Opcional"
-        />
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
@@ -219,6 +258,16 @@ export default function JogadorForm({
           </button>
         )}
       </div>
+
+      <ImageCropperModal
+        open={!!cropImage}
+        imageSrc={cropImage || ""}
+        aspect={1}
+        shape="round"
+        title="Ajustar foto do jogador"
+        onCancel={() => setCropImage(null)}
+        onApply={handleCropApply}
+      />
     </form>
   );
 }

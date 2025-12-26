@@ -145,7 +145,7 @@ export default function RankingGeralPage() {
                             alt={`Foto de ${atleta.nome}`}
                             width={32}
                             height={32}
-                            className="rounded-full border border-yellow-400"
+                            className="rounded-full border border-yellow-400 object-cover"
                           />
                         </Link>
                         <Link
