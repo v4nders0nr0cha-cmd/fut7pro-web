@@ -1,10 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
 
-type PartidasSlugPageProps = {
-  params: { slug: string };
-};
+import Page from "@/app/(public)/partidas/page";
 
-export default function PartidasSlugPage({ params }: PartidasSlugPageProps) {
-  const slug = params.slug || "racha";
-  redirect(`/${slug}/partidas/times-do-dia`);
+export default function SlugPage() {
+  return <Page />;
 }

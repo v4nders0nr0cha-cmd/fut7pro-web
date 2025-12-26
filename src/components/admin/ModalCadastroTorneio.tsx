@@ -20,6 +20,12 @@ const slugify = (text: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)+/g, "");
 
+const normalizeSearch = (text: string) =>
+  text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
 const toDateInputValue = (value?: string | null) => {
   if (!value) return "";
   const date = new Date(value);
@@ -61,6 +67,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
 
   const [vagaEmSelecao, setVagaEmSelecao] = useState<number | null>(null);
+  const [buscaJogador, setBuscaJogador] = useState("");
   const inputBannerRef = useRef<HTMLInputElement>(null);
   const inputLogoRef = useRef<HTMLInputElement>(null);
   const { rachaId } = useRacha();
@@ -79,6 +86,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     return (jogadores || []).map((j) => ({
       id: j.id,
       nome: j.nome || j.apelido || "Jogador",
+      apelido: j.apelido || "",
       avatar: j.avatar || j.foto || "/images/jogadores/jogador_padrao_01.jpg",
       posicao: mapPosicao(j.posicao),
       slug: (j as any).slug ?? slugify(j.nome || j.apelido || j.id),
@@ -256,6 +264,16 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   }
 
   const idsSelecionados = campeoes.filter(Boolean).map((j) => j!.id);
+  const jogadoresFiltrados = useMemo(() => {
+    const termo = normalizeSearch(buscaJogador.trim());
+    return jogadoresDisponiveis
+      .filter((j) => !idsSelecionados.includes(j.id))
+      .filter((j) => {
+        if (!termo) return true;
+        const alvo = normalizeSearch(`${j.nome} ${j.apelido ?? ""} ${j.posicao}`);
+        return alvo.includes(termo);
+      });
+  }, [buscaJogador, idsSelecionados, jogadoresDisponiveis]);
 
   // Preenche estado em modo edicao
   useEffect(() => {
@@ -305,6 +323,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     setLogoUrl(null);
     setErro("");
   }, [open, torneio]);
+
+  useEffect(() => {
+    if (vagaEmSelecao !== null) {
+      setBuscaJogador("");
+    }
+  }, [vagaEmSelecao]);
 
   if (!open) return null;
   return (
@@ -489,7 +513,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
         {/* Premiacoes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-gray-300 font-medium text-sm">Premia‡Æo Total (R$)</label>
+            <label className="text-gray-300 font-medium text-sm">Premiacao Total (R$)</label>
             <input
               type="number"
               min={0}
@@ -503,14 +527,14 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             />
           </div>
           <div>
-            <label className="text-gray-300 font-medium text-sm">Premia‡Æo MVP</label>
+            <label className="text-gray-300 font-medium text-sm">Premiacao MVP</label>
             <input
               type="text"
               className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
               value={premioMvp}
               onChange={(e) => setPremioMvp(e.target.value)}
               maxLength={60}
-              placeholder="Ex: Trof‚u + Voucher"
+              placeholder="Ex: Trofeu + Voucher"
             />
           </div>
         </div>
@@ -608,10 +632,16 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
                 <div className="text-sm text-gray-300">Carregando jogadores...</div>
               )}
               {!loadingJogadores && (
-                <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                  {jogadoresDisponiveis
-                    .filter((j) => !idsSelecionados.includes(j.id))
-                    .map((jogador) => (
+                <>
+                  <input
+                    type="text"
+                    value={buscaJogador}
+                    onChange={(e) => setBuscaJogador(e.target.value)}
+                    placeholder="Buscar jogador..."
+                    className="mb-3 w-full rounded bg-zinc-900 text-white text-sm px-3 py-2 border border-zinc-700 focus:border-yellow-400"
+                  />
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+                    {jogadoresFiltrados.map((jogador) => (
                       <button
                         key={jogador.id}
                         type="button"
@@ -634,9 +664,11 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
                         </div>
                       </button>
                     ))}
-                  {jogadoresDisponiveis.filter((j) => !idsSelecionados.includes(j.id)).length ===
-                    0 && <p className="text-xs text-gray-300">Nenhum jogador disponivel.</p>}
-                </div>
+                    {jogadoresFiltrados.length === 0 && (
+                      <p className="text-xs text-gray-300">Nenhum jogador encontrado.</p>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </div>

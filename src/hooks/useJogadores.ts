@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import useSWR from "swr";
 import { jogadoresApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
@@ -27,6 +28,35 @@ export function useJogadores(rachaId: string) {
       },
     }
   );
+
+  const jogadoresNormalizados = useMemo(() => {
+    if (!Array.isArray(data)) return [];
+    return data.map((jogador: any) => {
+      const nome = jogador?.nome ?? jogador?.name ?? jogador?.user?.name ?? "";
+      const apelido = jogador?.apelido ?? jogador?.nickname ?? "";
+      const posicao = jogador?.posicao ?? jogador?.position ?? "Meia";
+      const avatar = jogador?.avatar ?? jogador?.photoUrl ?? jogador?.foto ?? "";
+      const foto = jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
+      const mensalista =
+        typeof jogador?.mensalista === "boolean" ? jogador.mensalista : Boolean(jogador?.isMember);
+      const status = jogador?.status ?? "Ativo";
+      const email = jogador?.email ?? "";
+      const timeId = jogador?.timeId ?? "";
+
+      return {
+        ...jogador,
+        nome,
+        apelido,
+        posicao,
+        avatar,
+        foto,
+        mensalista,
+        status,
+        email,
+        timeId,
+      } as Jogador;
+    });
+  }, [data]);
 
   const addJogador = async (jogador: Partial<Jogador>) => {
     if (!rachaId) return null;
@@ -80,7 +110,7 @@ export function useJogadores(rachaId: string) {
   };
 
   return {
-    jogadores: data || [],
+    jogadores: jogadoresNormalizados,
     isLoading: isLoading || apiState.isLoading,
     isError: !!error || apiState.isError,
     error: apiState.error,
