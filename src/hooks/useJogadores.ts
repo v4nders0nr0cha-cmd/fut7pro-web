@@ -49,10 +49,15 @@ export function useJogadores(rachaId: string) {
   const mapJogadorPayload = (jogador: Partial<Jogador>) => {
     const payload: Record<string, unknown> = {};
     const nome = jogador.nome ?? jogador.name;
-    if (nome !== undefined) payload.name = nome;
+    if (nome !== undefined) {
+      payload.name = typeof nome === "string" ? nome.trim() : nome;
+    }
 
     const apelido = jogador.apelido ?? jogador.nickname;
-    if (apelido !== undefined) payload.nickname = apelido;
+    if (apelido !== undefined) {
+      const apelidoValue = typeof apelido === "string" ? apelido.trim() : apelido;
+      payload.nickname = apelidoValue || null;
+    }
 
     const posicao = jogador.posicao ?? jogador.position;
     if (posicao !== undefined) payload.position = String(posicao).toLowerCase();
@@ -60,13 +65,22 @@ export function useJogadores(rachaId: string) {
     const foto = jogador.foto ?? jogador.photoUrl ?? jogador.avatar;
     if (foto !== undefined) payload.photoUrl = foto || null;
 
-    if (jogador.status !== undefined) payload.status = jogador.status;
+    if (jogador.status !== undefined) {
+      const normalized = String(jogador.status).toLowerCase();
+      if (normalized === "ativo") payload.status = "Ativo";
+      else if (normalized === "inativo") payload.status = "Inativo";
+      else if (normalized === "suspenso") payload.status = "Suspenso";
+      else payload.status = jogador.status;
+    }
 
     const mensalista =
       typeof jogador.mensalista === "boolean" ? jogador.mensalista : jogador.isMember;
     if (typeof mensalista === "boolean") payload.isMember = mensalista;
 
-    if (jogador.email !== undefined) payload.email = jogador.email;
+    if (jogador.email !== undefined) {
+      const emailValue = String(jogador.email).trim().toLowerCase();
+      payload.email = emailValue || null;
+    }
 
     const birthDate = jogador.birthDate ?? jogador.dataNascimento ?? jogador.nascimento;
     if (birthDate !== undefined) payload.birthDate = birthDate;

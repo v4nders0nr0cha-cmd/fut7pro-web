@@ -14,18 +14,21 @@ export default function JogadorForm({
   jogador,
   onCancel,
   onSave,
+  isLoading,
 }: {
   jogador?: Jogador;
   onCancel?: () => void;
-  onSave?: (jogador: Partial<Jogador>) => void;
+  onSave?: (jogador: Partial<Jogador>, fotoFile?: File | null) => void;
+  isLoading?: boolean;
 }) {
   const [form, setForm] = useState<Partial<Jogador>>(
     jogador || {
       id: "",
       nome: "",
       apelido: "",
+      email: "",
       foto: "",
-      status: "ativo",
+      status: "Ativo",
       mensalista: false,
       posicao: "atacante",
     }
@@ -43,8 +46,9 @@ export default function JogadorForm({
         id: "",
         nome: "",
         apelido: "",
+        email: "",
         foto: "",
-        status: "ativo",
+        status: "Ativo",
         mensalista: false,
         posicao: "atacante",
       });
@@ -84,10 +88,7 @@ export default function JogadorForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (onSave) onSave(form);
-    setFotoFile(null);
-    setFotoPreview("");
-    if (onCancel) onCancel();
+    if (onSave) onSave(form, fotoFile);
   }
 
   return (
@@ -138,10 +139,21 @@ export default function JogadorForm({
               onChange={handleChange}
               className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
               maxLength={15}
-              required
+              placeholder="Opcional"
             />
           </div>
         </div>
+      </div>
+      <div>
+        <label className="block font-medium text-yellow-500 mb-1">E-mail</label>
+        <input
+          name="email"
+          type="email"
+          value={form.email || ""}
+          onChange={handleChange}
+          className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          placeholder="Opcional"
+        />
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
@@ -152,9 +164,9 @@ export default function JogadorForm({
             onChange={handleChange}
             className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
           >
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="suspenso">Suspenso</option>
+            <option value="Ativo">Ativo</option>
+            <option value="Inativo">Inativo</option>
+            <option value="Suspenso">Suspenso</option>
           </select>
         </div>
         <div className="flex-1">
@@ -188,11 +200,16 @@ export default function JogadorForm({
       <div className="flex gap-4">
         <button
           type="submit"
-          className="bg-yellow-500 text-gray-900 font-bold py-2 rounded hover:bg-yellow-600 transition shadow flex-1"
+          disabled={isLoading}
+          className={`font-bold py-2 rounded transition shadow flex-1 ${
+            isLoading
+              ? "bg-gray-700 text-gray-300 cursor-not-allowed"
+              : "bg-yellow-500 text-gray-900 hover:bg-yellow-600"
+          }`}
         >
-          {form.id ? "Salvar Alterações" : "Cadastrar Jogador"}
+          {isLoading ? "Salvando..." : form.id ? "Salvar Alteracoes" : "Cadastrar Jogador"}
         </button>
-        {form.id && onCancel && (
+        {onCancel && (
           <button
             type="button"
             onClick={onCancel}

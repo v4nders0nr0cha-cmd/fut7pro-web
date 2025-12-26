@@ -15,6 +15,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
 import { rachaConfig } from "@/config/racha.config";
 import type { Jogador } from "@/types/jogador";
+import JogadorForm from "@/components/admin/JogadorForm";
 
 // --- MODAL EXCLUSÃO ---
 function ModalExcluirJogador({
@@ -61,6 +62,47 @@ function ModalExcluirJogador({
             Excluir DEFINITIVAMENTE
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// --- MODAL CADASTRO ---
+function ModalCadastroJogador({
+  open,
+  onClose,
+  onSave,
+  loading,
+  error,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSave: (jogador: Partial<Jogador>, fotoFile?: File | null) => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-cyan-700 rounded-2xl shadow-xl p-6 w-full max-w-2xl flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg text-cyan-300 font-bold">Cadastrar Jogador</h2>
+            <p className="text-sm text-gray-300">
+              Cadastro manual cria um jogador sem login. Use apenas quando necessario.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold px-3 py-2 rounded-md"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <JogadorForm onSave={onSave} onCancel={onClose} isLoading={loading} />
+
+        {error && <div className="text-sm text-red-300">{error}</div>}
       </div>
     </div>
   );
@@ -220,10 +262,14 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const rachaId = rachaConfig.slug;
-  const { jogadores, isLoading, isError, error, deleteJogador, mutate } = useJogadores(rachaId);
+  const { jogadores, isLoading, isError, error, deleteJogador, mutate, addJogador } =
+    useJogadores(rachaId);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
+  const [showModalCadastro, setShowModalCadastro] = useState(false);
+  const [cadastroErro, setCadastroErro] = useState<string | null>(null);
+  const [cadastroLoading, setCadastroLoading] = useState(false);
   const [showModalVincular, setShowModalVincular] = useState(false);
   const [jogadorVinculo, setJogadorVinculo] = useState<Jogador | undefined>();
   const [buscaConta, setBuscaConta] = useState("");
@@ -257,6 +303,19 @@ export default function Page() {
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [buscaConta, contasComLogin, jogadorVinculo?.id, showModalVincular]);
 
+  const abrirModalCadastro = () => {
+    setCadastroErro(null);
+    setCadastroLoading(false);
+    setShowModalCadastro(true);
+  };
+
+  const fecharModalCadastro = () => {
+    if (cadastroLoading) return;
+    setShowModalCadastro(false);
+    setCadastroErro(null);
+    setCadastroLoading(false);
+  };
+
   const abrirModalVinculo = (jogador: Jogador) => {
     setJogadorVinculo(jogador);
     setBuscaConta("");
@@ -273,6 +332,74 @@ export default function Page() {
     setContaSelecionada("");
     setConfirmacaoVinculo("");
     setVincularErro(null);
+  };
+
+  const uploadAvatar = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("/api/uploads/avatar", {
+      method: "POST",
+      body: formData,
+    });
+
+    const text = await response.text();
+    let body: unknown = undefined;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+    }
+
+    if (!response.ok) {
+      const message =
+        (body as { message?: string; error?: string } | undefined)?.message ||
+        (body as { error?: string } | undefined)?.error ||
+        "Erro ao enviar imagem.";
+      throw new Error(message);
+    }
+
+    const url = (body as { url?: string } | undefined)?.url;
+    if (!url) {
+      throw new Error("Upload retornou uma URL invalida.");
+    }
+
+    return url;
+  };
+
+  const confirmarCadastro = async (jogador: Partial<Jogador>, fotoFile?: File | null) => {
+    if (cadastroLoading) return;
+    setCadastroLoading(true);
+    setCadastroErro(null);
+
+    try {
+      let uploadedUrl: string | undefined;
+      if (fotoFile) {
+        uploadedUrl = await uploadAvatar(fotoFile);
+      }
+
+      const payload: Partial<Jogador> = {
+        ...jogador,
+        foto: undefined,
+      };
+      if (typeof uploadedUrl !== "undefined") {
+        payload.photoUrl = uploadedUrl;
+      }
+
+      const result = await addJogador(payload);
+      if (!result) {
+        throw new Error("Nao foi possivel cadastrar o jogador.");
+      }
+
+      setShowModalCadastro(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Nao foi possivel cadastrar o jogador.";
+      setCadastroErro(message);
+    } finally {
+      setCadastroLoading(false);
+    }
   };
 
   const confirmarVinculo = async () => {
@@ -372,7 +499,7 @@ export default function Page() {
             <FaSearch className="text-gray-400 text-lg -ml-8 pointer-events-none" />
           </div>
           <button
-            onClick={() => alert("Cadastro manual implementado apenas em casos específicos.")}
+            onClick={abrirModalCadastro}
             className="flex items-center gap-2 bg-cyan-700 hover:bg-cyan-800 text-white px-4 py-2 rounded-lg font-bold"
           >
             <FaUserPlus /> Cadastrar Jogador
@@ -484,6 +611,14 @@ export default function Page() {
           if (excluirJogador) deleteJogador(excluirJogador.id);
           setShowModalExcluir(false);
         }}
+      />
+
+      <ModalCadastroJogador
+        open={showModalCadastro}
+        onClose={fecharModalCadastro}
+        onSave={confirmarCadastro}
+        loading={cadastroLoading}
+        error={cadastroErro}
       />
 
       <ModalVincularJogador
