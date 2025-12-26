@@ -66,7 +66,7 @@ export default function RankingArtilheirosPage() {
               Ranking dos Artilheiros
             </h2>
             <p className="text-sm text-gray-400 max-w-xl mb-3 text-center">
-              Confira quem balanãou mais as redes e compare o desempenho por quadrimestre, na
+              Confira quem balançou mais as redes e compare o desempenho por quadrimestre, na
               temporada atual ou em todas as temporadas do Racha.
               <br className="hidden sm:inline" />
               Selecione o período abaixo para filtrar o ranking.
