@@ -1,8 +1,15 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
-import { FaUserPlus, FaSearch, FaEdit, FaTrash, FaExclamationTriangle } from "react-icons/fa";
+import { useMemo, useState } from "react";
+import {
+  FaUserPlus,
+  FaSearch,
+  FaEdit,
+  FaTrash,
+  FaExclamationTriangle,
+  FaLink,
+} from "react-icons/fa";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
@@ -59,6 +66,142 @@ function ModalExcluirJogador({
   );
 }
 
+// --- MODAL VINCULO ---
+function ModalVincularJogador({
+  open,
+  jogador,
+  contas,
+  busca,
+  onBuscaChange,
+  contaId,
+  onContaChange,
+  confirmacao,
+  onConfirmacaoChange,
+  onClose,
+  onConfirm,
+  loading,
+  error,
+}: {
+  open: boolean;
+  jogador?: Jogador;
+  contas: Jogador[];
+  busca: string;
+  onBuscaChange: (value: string) => void;
+  contaId: string;
+  onContaChange: (value: string) => void;
+  confirmacao: string;
+  onConfirmacaoChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open || !jogador) return null;
+  const confirmacaoOk = confirmacao.trim().toUpperCase() === "VINCULAR";
+  const confirmDisabled = !confirmacaoOk || !contaId || loading;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <Image
+            src={jogador.avatar || "/images/jogadores/jogador_padrao_01.jpg"}
+            alt={jogador.nome}
+            width={56}
+            height={56}
+            className="rounded-full object-cover"
+          />
+          <div>
+            <h2 className="text-lg text-yellow-400 font-bold">Vincular Jogador</h2>
+            <p className="text-sm text-gray-300">
+              Jogador NPC: <span className="text-white font-semibold">{jogador.nome}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-300 leading-relaxed">
+          <p className="mb-2">
+            Esta acao conecta a conta com login ao jogador NPC selecionado. O atleta passa a usar
+            este jogador, mantendo todo o historico, rankings e estatisticas do NPC.
+          </p>
+          <p className="mb-2">
+            Os dados da conta escolhida (nome, apelido, foto, posicao, status) passam a substituir
+            os dados atuais do NPC.
+          </p>
+          <p>
+            Se a conta escolhida ja tiver historico, o vinculo sera bloqueado para evitar
+            duplicidade.
+          </p>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <label className="text-sm text-gray-200 font-semibold">Conta do atleta (com login)</label>
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => onBuscaChange(e.target.value)}
+            placeholder="Buscar por nome, apelido ou email..."
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
+          />
+          <select
+            value={contaId}
+            onChange={(e) => onContaChange(e.target.value)}
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
+          >
+            <option value="">Selecione a conta do atleta</option>
+            {contas.map((conta) => (
+              <option key={conta.id} value={conta.userId || ""}>
+                {conta.nome}
+                {conta.apelido ? ` (${conta.apelido})` : ""} - {conta.email || "sem email"}
+              </option>
+            ))}
+          </select>
+          {contas.length === 0 && (
+            <div className="text-xs text-yellow-300">
+              Nenhuma conta com login encontrada para vincular.
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm text-gray-200 font-semibold">
+            Para confirmar, digite <span className="text-yellow-400">VINCULAR</span>
+          </label>
+          <input
+            type="text"
+            value={confirmacao}
+            onChange={(e) => onConfirmacaoChange(e.target.value)}
+            placeholder="VINCULAR"
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-yellow-400"
+          />
+        </div>
+
+        {error && <div className="text-sm text-red-300">{error}</div>}
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+            className={`px-4 py-2 rounded-md font-bold ${
+              confirmDisabled
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-yellow-500 hover:bg-yellow-600 text-black"
+            }`}
+          >
+            {loading ? "Vinculando..." : "Vincular"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- BADGE DE STATUS ---
 function StatusBadge({ status }: { status: Jogador["status"] }) {
   const color =
@@ -77,16 +220,103 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const rachaId = rachaConfig.slug;
-  const { jogadores, isLoading, isError, error, deleteJogador } = useJogadores(rachaId);
+  const { jogadores, isLoading, isError, error, deleteJogador, mutate } = useJogadores(rachaId);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
+  const [showModalVincular, setShowModalVincular] = useState(false);
+  const [jogadorVinculo, setJogadorVinculo] = useState<Jogador | undefined>();
+  const [buscaConta, setBuscaConta] = useState("");
+  const [contaSelecionada, setContaSelecionada] = useState("");
+  const [confirmacaoVinculo, setConfirmacaoVinculo] = useState("");
+  const [vincularErro, setVincularErro] = useState<string | null>(null);
+  const [vinculando, setVinculando] = useState(false);
 
   const jogadoresFiltrados = jogadores.filter(
     (j) =>
       j.nome.toLowerCase().includes(busca.toLowerCase()) ||
       j.apelido.toLowerCase().includes(busca.toLowerCase())
   );
+
+  const contasComLogin = useMemo(() => jogadores.filter((j) => j.userId), [jogadores]);
+  const podeVincular = contasComLogin.length > 0;
+
+  const contasFiltradas = useMemo(() => {
+    if (!showModalVincular) return [];
+    const termo = buscaConta.trim().toLowerCase();
+    return contasComLogin
+      .filter((j) => j.id !== jogadorVinculo?.id)
+      .filter((j) => {
+        if (!termo) return true;
+        return (
+          j.nome.toLowerCase().includes(termo) ||
+          j.apelido.toLowerCase().includes(termo) ||
+          (j.email || "").toLowerCase().includes(termo)
+        );
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [buscaConta, contasComLogin, jogadorVinculo?.id, showModalVincular]);
+
+  const abrirModalVinculo = (jogador: Jogador) => {
+    setJogadorVinculo(jogador);
+    setBuscaConta("");
+    setContaSelecionada("");
+    setConfirmacaoVinculo("");
+    setVincularErro(null);
+    setShowModalVincular(true);
+  };
+
+  const fecharModalVinculo = () => {
+    setShowModalVincular(false);
+    setJogadorVinculo(undefined);
+    setBuscaConta("");
+    setContaSelecionada("");
+    setConfirmacaoVinculo("");
+    setVincularErro(null);
+  };
+
+  const confirmarVinculo = async () => {
+    if (!jogadorVinculo || !contaSelecionada) return;
+    setVinculando(true);
+    setVincularErro(null);
+
+    try {
+      const response = await fetch("/api/jogadores/vincular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jogadorId: jogadorVinculo.id,
+          userId: contaSelecionada,
+        }),
+      });
+
+      const text = await response.text();
+      let body: unknown = undefined;
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      }
+
+      if (!response.ok) {
+        const message =
+          (body as { message?: string; error?: string } | undefined)?.message ||
+          (body as { error?: string } | undefined)?.error ||
+          "Falha ao vincular jogador.";
+        throw new Error(message);
+      }
+
+      await mutate();
+      fecharModalVinculo();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Falha ao vincular jogador.";
+      setVincularErro(message);
+    } finally {
+      setVinculando(false);
+    }
+  };
 
   const cardVariants = {
     hidden: { opacity: 0, y: 18 },
@@ -196,10 +426,32 @@ export default function Page() {
                               Mensalista
                             </span>
                           )}
+                          {j.userId ? (
+                            <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
+                              Com login
+                            </span>
+                          ) : (
+                            <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5 text-xs">
+                              Sem login
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
                     <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                      {!j.userId && (
+                        <button
+                          className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                            podeVincular
+                              ? "bg-indigo-700 hover:bg-indigo-800 text-white"
+                              : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                          }`}
+                          disabled={!podeVincular}
+                          onClick={() => abrirModalVinculo(j)}
+                        >
+                          <FaLink /> Vincular
+                        </button>
+                      )}
                       <button
                         className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
                         onClick={() => alert("Função de edição em desenvolvimento.")}
@@ -232,6 +484,22 @@ export default function Page() {
           if (excluirJogador) deleteJogador(excluirJogador.id);
           setShowModalExcluir(false);
         }}
+      />
+
+      <ModalVincularJogador
+        open={showModalVincular}
+        jogador={jogadorVinculo}
+        contas={contasFiltradas}
+        busca={buscaConta}
+        onBuscaChange={setBuscaConta}
+        contaId={contaSelecionada}
+        onContaChange={setContaSelecionada}
+        confirmacao={confirmacaoVinculo}
+        onConfirmacaoChange={setConfirmacaoVinculo}
+        onClose={fecharModalVinculo}
+        onConfirm={confirmarVinculo}
+        loading={vinculando}
+        error={vincularErro}
       />
     </>
   );

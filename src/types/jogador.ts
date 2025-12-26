@@ -14,11 +14,13 @@ export type Jogador = {
   id: string;
   nome: string;
   apelido: string;
+  name?: string;
   email: string;
   dataNascimento?: string;
   birthDate?: string;
   nascimento?: string;
   posicao: PosicaoJogador;
+  position?: PosicaoJogador;
   avatar: string;
   foto?: string;
   photoUrl?: string | null;
@@ -38,6 +40,12 @@ export type Jogador = {
   rachas?: unknown[];
   createdAt?: string;
   updatedAt?: string;
+  userId?: string | null;
+  user?: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+  } | null;
 };
 
 export type AtletaPendente = {

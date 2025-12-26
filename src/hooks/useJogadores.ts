@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import useSWR from "swr";
-import { jogadoresApi } from "@/lib/api";
 import { useApiState } from "./useApiState";
 import type { Jogador } from "@/types/jogador";
 
@@ -16,6 +15,64 @@ const fetcher = async (url: string) => {
 
 export function useJogadores(rachaId: string) {
   const apiState = useApiState();
+
+  const requestJson = async (input: string, init?: RequestInit) => {
+    const response = await fetch(input, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
+    });
+    const text = await response.text();
+    let body: unknown = undefined;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = text;
+      }
+    }
+
+    if (!response.ok) {
+      const message =
+        (body as { message?: string; error?: string } | undefined)?.message ||
+        (body as { error?: string } | undefined)?.error ||
+        response.statusText ||
+        "Erro ao processar requisicao";
+      throw new Error(typeof message === "string" ? message : "Erro ao processar requisicao");
+    }
+
+    return body;
+  };
+
+  const mapJogadorPayload = (jogador: Partial<Jogador>) => {
+    const payload: Record<string, unknown> = {};
+    const nome = jogador.nome ?? jogador.name;
+    if (nome !== undefined) payload.name = nome;
+
+    const apelido = jogador.apelido ?? jogador.nickname;
+    if (apelido !== undefined) payload.nickname = apelido;
+
+    const posicao = jogador.posicao ?? jogador.position;
+    if (posicao !== undefined) payload.position = String(posicao).toLowerCase();
+
+    const foto = jogador.foto ?? jogador.photoUrl ?? jogador.avatar;
+    if (foto !== undefined) payload.photoUrl = foto || null;
+
+    if (jogador.status !== undefined) payload.status = jogador.status;
+
+    const mensalista =
+      typeof jogador.mensalista === "boolean" ? jogador.mensalista : jogador.isMember;
+    if (typeof mensalista === "boolean") payload.isMember = mensalista;
+
+    if (jogador.email !== undefined) payload.email = jogador.email;
+
+    const birthDate = jogador.birthDate ?? jogador.dataNascimento ?? jogador.nascimento;
+    if (birthDate !== undefined) payload.birthDate = birthDate;
+
+    return payload;
+  };
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
     rachaId ? `/api/jogadores?rachaId=${rachaId}` : null,
@@ -42,6 +99,8 @@ export function useJogadores(rachaId: string) {
       const status = jogador?.status ?? "Ativo";
       const email = jogador?.email ?? "";
       const timeId = jogador?.timeId ?? "";
+      const userId = jogador?.userId ?? jogador?.user?.id ?? null;
+      const user = jogador?.user ?? null;
 
       return {
         ...jogador,
@@ -54,6 +113,8 @@ export function useJogadores(rachaId: string) {
         status,
         email,
         timeId,
+        userId,
+        user,
       } as Jogador;
     });
   }, [data]);
@@ -62,46 +123,38 @@ export function useJogadores(rachaId: string) {
     if (!rachaId) return null;
 
     return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.create({
-        ...jogador,
-        rachaId,
+      const payload = mapJogadorPayload(jogador);
+      const response = await requestJson("/api/jogadores", {
+        method: "POST",
+        body: JSON.stringify(payload),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return response;
     });
   };
 
   const updateJogador = async (id: string, jogador: Partial<Jogador>) => {
     return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.update(id, {
-        ...jogador,
-        rachaId,
+      const payload = mapJogadorPayload(jogador);
+      const response = await requestJson(`/api/jogadores/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
       });
 
-      if (response.error) {
-        throw new Error(response.error);
-      }
-
       await mutate();
-      return response.data;
+      return response;
     });
   };
 
   const deleteJogador = async (id: string) => {
     return apiState.handleAsync(async () => {
-      const response = await jogadoresApi.delete(id);
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      const response = await requestJson(`/api/jogadores/${id}`, {
+        method: "DELETE",
+      });
 
       await mutate();
-      return response.data;
+      return response;
     });
   };
 
