@@ -2,13 +2,22 @@ import useSWR from "swr";
 import { rachaConfig } from "@/config/racha.config";
 import type { PublicMatch } from "@/types/partida";
 
+type PublicMatchResponse = {
+  slug?: string;
+  result?: PublicMatch;
+};
+
 const fetcher = async (url: string): Promise<PublicMatch> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.text();
     throw new Error(body || "Falha ao buscar partida publica");
   }
-  return res.json();
+  const data = (await res.json()) as PublicMatch | PublicMatchResponse;
+  if (data && typeof data === "object" && "result" in data) {
+    return (data as PublicMatchResponse).result ?? (data as PublicMatch);
+  }
+  return data as PublicMatch;
 };
 
 export function usePublicMatch(id?: string, slug?: string) {

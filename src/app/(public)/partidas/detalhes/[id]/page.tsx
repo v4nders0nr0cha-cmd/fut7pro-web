@@ -9,6 +9,16 @@ import { usePublicMatch } from "@/hooks/usePublicMatch";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
+const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+
+type LineupPlayer = { id: string; nome: string; foto: string };
+type HighlightPlayer = {
+  id: string;
+  nome: string;
+  foto: string;
+  gols: number;
+  assistencias: number;
+};
 
 export default function PartidaDetalhesPage() {
   const params = useParams();
@@ -18,18 +28,74 @@ export default function PartidaDetalhesPage() {
   const { match, isLoading, isError, error } = usePublicMatch(matchId, publicSlug);
 
   const lineups = useMemo(() => {
-    if (!match?.presences?.length) return { timeA: [], timeB: [] as { nome: string }[] };
-    const timeAPlayers: { nome: string }[] = [];
-    const timeBPlayers: { nome: string }[] = [];
+    if (!match?.presences?.length) {
+      return { timeA: [] as LineupPlayer[], timeB: [] as LineupPlayer[] };
+    }
+
+    const timeAPlayers: LineupPlayer[] = [];
+    const timeBPlayers: LineupPlayer[] = [];
+    const teamAId = match.teamA.id ?? "";
+    const teamBId = match.teamB.id ?? "";
+
     match.presences.forEach((presence) => {
-      const nome = presence.athlete?.name || "Jogador";
-      const target =
-        presence.teamId === match.teamA.id || presence.team?.id === match.teamA.id
-          ? timeAPlayers
-          : timeBPlayers;
-      target.push({ nome });
+      const athlete = presence.athlete;
+      const player: LineupPlayer = {
+        id: athlete?.id || presence.id,
+        nome: athlete?.name || "Jogador",
+        foto: athlete?.photoUrl || FALLBACK_PLAYER,
+      };
+      const presenceTeamId = presence.teamId || presence.team?.id || "";
+      const presenceTeamName = presence.team?.name || "";
+
+      const isTeamA =
+        (teamAId && presenceTeamId === teamAId) ||
+        (!teamAId && presenceTeamName === match.teamA.name);
+      const isTeamB =
+        (teamBId && presenceTeamId === teamBId) ||
+        (!teamBId && presenceTeamName === match.teamB.name);
+
+      const target = isTeamA ? timeAPlayers : isTeamB ? timeBPlayers : timeAPlayers;
+      if (target.some((entry) => entry.id === player.id)) return;
+      target.push(player);
     });
+
     return { timeA: timeAPlayers, timeB: timeBPlayers };
+  }, [match]);
+
+  const highlights = useMemo(() => {
+    if (!match?.presences?.length) {
+      return {
+        artilheiro: null as HighlightPlayer | null,
+        maestro: null as HighlightPlayer | null,
+      };
+    }
+
+    const map = new Map<string, HighlightPlayer>();
+    match.presences.forEach((presence) => {
+      const athlete = presence.athlete;
+      const id = athlete?.id || presence.id;
+      const current = map.get(id) || {
+        id,
+        nome: athlete?.name || "Jogador",
+        foto: athlete?.photoUrl || FALLBACK_PLAYER,
+        gols: 0,
+        assistencias: 0,
+      };
+
+      current.gols += Number(presence.goals ?? 0);
+      current.assistencias += Number(presence.assists ?? 0);
+      map.set(id, current);
+    });
+
+    const players = Array.from(map.values());
+    const artilheiro =
+      players.filter((player) => player.gols > 0).sort((a, b) => b.gols - a.gols)[0] || null;
+    const maestro =
+      players
+        .filter((player) => player.assistencias > 0)
+        .sort((a, b) => b.assistencias - a.assistencias)[0] || null;
+
+    return { artilheiro, maestro };
   }, [match]);
 
   if (isLoading) {
@@ -63,21 +129,25 @@ export default function PartidaDetalhesPage() {
   if (!match) {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida não encontrada</h1>
-        <p className="text-textoSuave">Verifique o ID da partida ou volte ao histórico.</p>
+        <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida nao encontrada</h1>
+        <p className="text-textoSuave">Verifique o ID da partida ou volte ao historico.</p>
         <Link
-          href={publicHref("/partidas")}
+          href={publicHref("/partidas/historico")}
           className="mt-4 inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
         >
-          Voltar ao histórico
+          Voltar ao historico
         </Link>
       </div>
     );
   }
 
   const dataLabel = match.date
-    ? format(new Date(match.date), "dd/MM/yyyy 'às' HH:mm")
-    : "Data não informada";
+    ? format(new Date(match.date), "dd/MM/yyyy 'as' HH:mm")
+    : "Data nao informada";
+  const scoreA = Number(match.score?.teamA ?? match.scoreA ?? 0);
+  const scoreB = Number(match.score?.teamB ?? match.scoreB ?? 0);
+  const winnerLabel =
+    scoreA === scoreB ? "Empate" : scoreA > scoreB ? match.teamA.name : match.teamB.name;
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
@@ -91,13 +161,17 @@ export default function PartidaDetalhesPage() {
           </div>
           <div>
             <p className="text-sm text-neutral-400">Local</p>
-            <p className="text-lg font-semibold">{match.location || "Não informado"}</p>
+            <p className="text-lg font-semibold">{match.location || "Nao informado"}</p>
           </div>
           <div>
             <p className="text-sm text-neutral-400">Status</p>
             <span className="px-3 py-1 rounded-xl text-xs w-fit bg-green-700 text-white">
               Finalizado
             </span>
+          </div>
+          <div>
+            <p className="text-sm text-neutral-400">Vencedor</p>
+            <p className="text-lg font-semibold">{winnerLabel}</p>
           </div>
         </div>
 
@@ -114,9 +188,9 @@ export default function PartidaDetalhesPage() {
               <span className="font-bold text-lg">{match.teamA.name}</span>
             </div>
             <span className="text-4xl font-extrabold">
-              {match.score.teamA}
+              {scoreA}
               <span className="mx-2 text-yellow-400 font-bold">x</span>
-              {match.score.teamB}
+              {scoreB}
             </span>
             <div className="flex flex-col items-center gap-1">
               <Image
@@ -133,38 +207,108 @@ export default function PartidaDetalhesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
+            <h2 className="text-lg font-bold text-yellow-400 mb-2">Artilheiro (gols)</h2>
+            {highlights.artilheiro ? (
+              <div className="flex items-center gap-3">
+                <Image
+                  src={highlights.artilheiro.foto}
+                  alt={`Foto ${highlights.artilheiro.nome}`}
+                  width={36}
+                  height={36}
+                  className="rounded-full"
+                />
+                <div>
+                  <p className="text-sm font-semibold">{highlights.artilheiro.nome}</p>
+                  <p className="text-xs text-neutral-400">{highlights.artilheiro.gols} gols</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400">Sem dados de gols.</p>
+            )}
+          </div>
+
+          <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
+            <h2 className="text-lg font-bold text-yellow-400 mb-2">Maestro (assistencias)</h2>
+            {highlights.maestro ? (
+              <div className="flex items-center gap-3">
+                <Image
+                  src={highlights.maestro.foto}
+                  alt={`Foto ${highlights.maestro.nome}`}
+                  width={36}
+                  height={36}
+                  className="rounded-full"
+                />
+                <div>
+                  <p className="text-sm font-semibold">{highlights.maestro.nome}</p>
+                  <p className="text-xs text-neutral-400">
+                    {highlights.maestro.assistencias} assistencias
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-neutral-400">Sem dados de assistencias.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
             <h2 className="text-lg font-bold text-yellow-400 mb-2">Time {match.teamA.name}</h2>
             {lineups.timeA.length ? (
-              <ul className="text-sm text-neutral-200 space-y-1">
-                {lineups.timeA.map((jogador, idx) => (
-                  <li key={`a-${idx}`}>{jogador.nome}</li>
+              <ul className="space-y-2 text-sm text-neutral-200">
+                {lineups.timeA.map((jogador) => (
+                  <li key={jogador.id} className="flex items-center gap-2">
+                    <Image
+                      src={jogador.foto}
+                      alt={`Foto ${jogador.nome}`}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                    <span>{jogador.nome}</span>
+                  </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-neutral-400 text-sm">Jogadores não informados.</p>
+              <p className="text-neutral-400 text-sm">Jogadores nao informados.</p>
             )}
           </div>
 
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
             <h2 className="text-lg font-bold text-yellow-400 mb-2">Time {match.teamB.name}</h2>
             {lineups.timeB.length ? (
-              <ul className="text-sm text-neutral-200 space-y-1">
-                {lineups.timeB.map((jogador, idx) => (
-                  <li key={`b-${idx}`}>{jogador.nome}</li>
+              <ul className="space-y-2 text-sm text-neutral-200">
+                {lineups.timeB.map((jogador) => (
+                  <li key={jogador.id} className="flex items-center gap-2">
+                    <Image
+                      src={jogador.foto}
+                      alt={`Foto ${jogador.nome}`}
+                      width={28}
+                      height={28}
+                      className="rounded-full"
+                    />
+                    <span>{jogador.nome}</span>
+                  </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-neutral-400 text-sm">Jogadores não informados.</p>
+              <p className="text-neutral-400 text-sm">Jogadores nao informados.</p>
             )}
           </div>
         </div>
 
-        <div className="mt-6 flex justify-between items-center">
+        <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <Link
-            href={publicHref("/partidas")}
+            href={publicHref("/partidas/historico")}
             className="text-sm text-yellow-400 underline hover:text-yellow-300 transition"
           >
-            Voltar ao histórico
+            Voltar ao historico
+          </Link>
+          <Link
+            href={publicHref("/partidas/times-do-dia")}
+            className="text-sm text-yellow-400 underline hover:text-yellow-300 transition"
+          >
+            Ver Time Campeao do Dia
           </Link>
           <button
             onClick={() => router.back()}
