@@ -2,6 +2,7 @@
 
 import Head from "next/head";
 import Image from "next/image";
+import html2canvas from "html2canvas";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ConquistasAtleta, TituloAtleta } from "@/types/estatisticas";
@@ -249,12 +250,13 @@ function ConquistasColuna({
 }
 
 export default function TiraTeimaPage() {
-  const { publicSlug, publicHref } = usePublicLinks();
+  const { publicSlug } = usePublicLinks();
   const searchParams = useSearchParams();
   const currentYear = new Date().getFullYear();
   const [periodo, setPeriodo] = useState("current");
   const [shareFeedback, setShareFeedback] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const captureRef = useRef<HTMLDivElement | null>(null);
   const { rankings, isLoading, isError } = usePublicPlayerRankings({
     slug: publicSlug,
     type: "geral",
@@ -344,34 +346,59 @@ export default function TiraTeimaPage() {
     }
   };
 
-  const handleShare = async () => {
+  const handleShareImage = async () => {
     if (typeof window === "undefined") return;
+    if (!captureRef.current) return;
     setIsSharing(true);
 
-    const basePath = publicHref("/estatisticas/tira-teima");
-    const params = new URLSearchParams();
-    if (escolhaA) params.set("atleta1", escolhaA);
-    if (escolhaB) params.set("atleta2", escolhaB);
-    if (periodo) params.set("periodo", periodo);
-
-    const path = params.toString() ? `${basePath}?${params.toString()}` : basePath;
-    const url = new URL(path, window.location.origin).toString();
-    const title = "Tira Teima Fut7Pro";
-    const text = atletaA && atletaB ? `Tira teima: ${nomeA} vs ${nomeB}` : "Tira teima Fut7Pro";
-
     try {
-      if (navigator.share) {
-        await navigator.share({ title, text, url });
-        pushShareFeedback("Compartilhado");
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        pushShareFeedback("Link copiado");
-      } else {
-        pushShareFeedback("Copie o link do navegador");
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      const canvas = await html2canvas(captureRef.current, {
+        backgroundColor: "#101010",
+        scale: 2,
+        useCORS: true,
+      });
+
+      const slugPart = publicSlug ? `-${publicSlug}` : "";
+      const nomeSlug = `${nomeA}-${nomeB}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+      const fileName = `tira-teima${slugPart}-${nomeSlug || "comparativo"}.png`;
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+
+      if (!blob) {
+        pushShareFeedback("Nao foi possivel gerar a imagem");
+        return;
       }
+
+      const file = new File([blob], fileName, { type: "image/png" });
+      const canShareFile =
+        typeof navigator !== "undefined" &&
+        typeof navigator.canShare === "function" &&
+        navigator.canShare({ files: [file] });
+
+      if (navigator.share && canShareFile) {
+        await navigator.share({
+          title: "Tira Teima Fut7Pro",
+          text: atletaA && atletaB ? `Tira teima: ${nomeA} vs ${nomeB}` : "Tira teima Fut7Pro",
+          files: [file],
+        });
+        pushShareFeedback("Imagem compartilhada");
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      URL.revokeObjectURL(url);
+      pushShareFeedback("Imagem salva");
     } catch (err) {
       if ((err as Error)?.name !== "AbortError") {
-        pushShareFeedback("Falha ao compartilhar");
+        pushShareFeedback("Falha ao gerar imagem");
       }
     } finally {
       setIsSharing(false);
@@ -428,85 +455,90 @@ export default function TiraTeimaPage() {
                 </select>
               </div>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 mb-6">
-              <button
-                type="button"
-                className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded-lg text-sm transition disabled:opacity-60"
-                onClick={handleShare}
-                disabled={isSharing}
-              >
-                {isSharing ? "Compartilhando..." : "Compartilhar tira-teima"}
-              </button>
-              {shareFeedback && <span className="text-xs text-gray-400">{shareFeedback}</span>}
-            </div>
 
             {(atletaA || atletaB) && (
-              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <p className="text-sm text-gray-400">Atleta A</p>
-                    <p className="text-xl font-bold text-yellow-400">{atletaA?.nome || "-"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Atleta B</p>
-                    <p className="text-xl font-bold text-yellow-400">{atletaB?.nome || "-"}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-200">
-                  {comparaveis.map((item) => (
-                    <div
-                      key={item.label}
-                      className="bg-neutral-800 rounded-lg p-3 border border-neutral-700"
-                    >
-                      <p className="text-gray-400 text-xs">{item.label}</p>
-                      <div className="flex justify-between text-lg font-bold mt-1">
-                        <span>{item.a ?? "-"}</span>
-                        <span className="text-yellow-400">vs</span>
-                        <span>{item.b ?? "-"}</span>
-                      </div>
+              <>
+                <div
+                  ref={captureRef}
+                  className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <p className="text-sm text-gray-400">Atleta A</p>
+                      <p className="text-xl font-bold text-yellow-400">{atletaA?.nome || "-"}</p>
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-sm text-gray-400">Atleta B</p>
+                      <p className="text-xl font-bold text-yellow-400">{atletaB?.nome || "-"}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-200">
+                    {comparaveis.map((item) => (
+                      <div
+                        key={item.label}
+                        className="bg-neutral-800 rounded-lg p-3 border border-neutral-700"
+                      >
+                        <p className="text-gray-400 text-xs">{item.label}</p>
+                        <div className="flex justify-between text-lg font-bold mt-1">
+                          <span>{item.a ?? "-"}</span>
+                          <span className="text-yellow-400">vs</span>
+                          <span>{item.b ?? "-"}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 border-t border-neutral-800 pt-6">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+                      <h2 className="text-lg font-bold text-yellow-400">Minhas Conquistas</h2>
+                      <span className="text-xs text-gray-400">
+                        Periodo: {periodo === "all" ? "Todas as temporadas" : "Temporada atual"}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <ConquistasColuna
+                        titulo="Atleta A"
+                        nome={nomeA}
+                        total={totalTitulosA}
+                        conquistas={conquistasFiltradasA}
+                        categorias={conquistasCategorias}
+                        loading={conquistasLoadingA}
+                        error={conquistasErrorA}
+                        temAtleta={Boolean(atletaA)}
+                      />
+                      <ConquistasColuna
+                        titulo="Atleta B"
+                        nome={nomeB}
+                        total={totalTitulosB}
+                        conquistas={conquistasFiltradasB}
+                        categorias={conquistasCategorias}
+                        loading={conquistasLoadingB}
+                        error={conquistasErrorB}
+                        temAtleta={Boolean(atletaB)}
+                      />
+                    </div>
+
+                    <div className="mt-4 text-center text-xs text-gray-400">
+                      {totalTitulosA === 0 && totalTitulosB === 0
+                        ? "Sem conquistas registradas para o periodo."
+                        : `Mais titulos: ${vencedorConquistas}`}
+                    </div>
+                  </div>
                 </div>
-
-                <div className="mt-8 border-t border-neutral-800 pt-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
-                    <h2 className="text-lg font-bold text-yellow-400">Minhas Conquistas</h2>
-                    <span className="text-xs text-gray-400">
-                      Periodo: {periodo === "all" ? "Todas as temporadas" : "Temporada atual"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ConquistasColuna
-                      titulo="Atleta A"
-                      nome={nomeA}
-                      total={totalTitulosA}
-                      conquistas={conquistasFiltradasA}
-                      categorias={conquistasCategorias}
-                      loading={conquistasLoadingA}
-                      error={conquistasErrorA}
-                      temAtleta={Boolean(atletaA)}
-                    />
-                    <ConquistasColuna
-                      titulo="Atleta B"
-                      nome={nomeB}
-                      total={totalTitulosB}
-                      conquistas={conquistasFiltradasB}
-                      categorias={conquistasCategorias}
-                      loading={conquistasLoadingB}
-                      error={conquistasErrorB}
-                      temAtleta={Boolean(atletaB)}
-                    />
-                  </div>
-
-                  <div className="mt-4 text-center text-xs text-gray-400">
-                    {totalTitulosA === 0 && totalTitulosB === 0
-                      ? "Sem conquistas registradas para o periodo."
-                      : `Mais titulos: ${vencedorConquistas}`}
-                  </div>
+                <div className="mt-6 flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-60"
+                    onClick={handleShareImage}
+                    disabled={isSharing}
+                  >
+                    {isSharing ? "Gerando imagem..." : "Compartilhar/baixar imagem"}
+                  </button>
+                  {shareFeedback && <span className="text-xs text-gray-400">{shareFeedback}</span>}
                 </div>
-              </div>
+              </>
             )}
           </>
         )}
