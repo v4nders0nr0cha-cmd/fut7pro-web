@@ -11,9 +11,9 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const anoAtual = new Date().getFullYear();
 
 const periodos = [
-  { label: "1� Quadrimestre", value: "q1" },
-  { label: "2� Quadrimestre", value: "q2" },
-  { label: "3� Quadrimestre", value: "q3" },
+  { label: "1º Quadrimestre", value: "q1" },
+  { label: "2º Quadrimestre", value: "q2" },
+  { label: "3º Quadrimestre", value: "q3" },
   { label: "Temporada Atual", value: "temporada" },
   { label: "Todas as Temporadas", value: "todas" },
 ];
@@ -44,20 +44,20 @@ export default function RankingArtilheirosPage() {
   return (
     <>
       <Head>
-        <title>Ranking dos Artilheiros | Estat�sticas | Fut7Pro</title>
+        <title>Ranking dos Artilheiros | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
           content="Veja o ranking dos artilheiros do racha de futebol 7. Descubra quem fez mais gols na temporada atual, por quadrimestre ou em todas as temporadas do Fut7Pro."
         />
         <meta
           name="keywords"
-          content="Ranking Artilheiros, Fut7Pro, futebol 7, estat�sticas, temporada atual, todas as temporadas, jogadores, gols, racha"
+          content="Ranking Artilheiros, Fut7Pro, futebol 7, estatísticas, temporada atual, todas as temporadas, jogadores, gols, racha"
         />
       </Head>
 
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
         <h1 className="sr-only">
-          Ranking dos Artilheiros do Racha de Futebol 7 - Jogadores com Mais Gols, Estat�sticas
+          Ranking dos Artilheiros do Racha de Futebol 7 - Jogadores com Mais Gols, Estatísticas
         </h1>
 
         <div className="w-full flex flex-col items-center justify-center">
@@ -66,17 +66,17 @@ export default function RankingArtilheirosPage() {
               Ranking dos Artilheiros
             </h2>
             <p className="text-sm text-gray-400 max-w-xl mb-3 text-center">
-              Confira quem balan�ou mais as redes e compare o desempenho por quadrimestre, na
+              Confira quem balanãou mais as redes e compare o desempenho por quadrimestre, na
               temporada atual ou em todas as temporadas do Racha.
               <br className="hidden sm:inline" />
-              Selecione o per�odo abaixo para filtrar o ranking.
+              Selecione o período abaixo para filtrar o ranking.
             </p>
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
                 className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-                aria-label="Selecionar per�odo do ranking"
+                aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (
                   <option key={p.value} value={p.value}>

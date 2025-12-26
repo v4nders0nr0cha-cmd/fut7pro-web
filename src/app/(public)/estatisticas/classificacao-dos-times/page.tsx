@@ -61,7 +61,7 @@ export default function ClassificacaoTimesPage() {
               value={anoSelecionado ?? ""}
               onChange={handleYearChange}
               className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-              aria-label="Selecionar temporada da classifica��o"
+              aria-label="Selecionar temporada da classificação"
             >
               {anosOrdenados.map((ano) => (
                 <option key={ano} value={ano}>

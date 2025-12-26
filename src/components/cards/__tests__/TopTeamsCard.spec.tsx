@@ -59,10 +59,10 @@ jest.mock("@/hooks/usePublicTeamRankings", () => ({
 }));
 
 describe("TopTeamsCard", () => {
-  it('renderiza t�tulo e bot�o "Ver todos"', () => {
+  it('renderiza titulo e botao "Ver todos"', () => {
     render(<TopTeamsCard />);
 
-    expect(screen.getByText(/Classifica��o dos Times/i)).toBeInTheDocument();
+    expect(screen.getByText(/Classificação dos Times/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver todos/i })).toBeInTheDocument();
   });
 
@@ -74,7 +74,7 @@ describe("TopTeamsCard", () => {
     expect(screen.getByText("Time Gama")).toBeInTheDocument();
   });
 
-  it("renderiza pontua��o dos times", () => {
+  it("renderiza pontuacao dos times", () => {
     render(<TopTeamsCard />);
 
     expect(screen.getByText("24")).toBeInTheDocument();
@@ -87,7 +87,7 @@ describe("TopTeamsCard", () => {
 
     expect(screen.getByText("#")).toBeInTheDocument();
     expect(screen.getByText("Time")).toBeInTheDocument();
-    expect(screen.getByText("")).toBeInTheDocument();
+    expect(screen.getByText("↑↓")).toBeInTheDocument();
     expect(screen.getByText("Pts")).toBeInTheDocument();
   });
 });

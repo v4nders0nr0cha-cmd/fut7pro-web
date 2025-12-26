@@ -36,29 +36,29 @@ export default function AdminHistoricoPartidasPage() {
   return (
     <>
       <Head>
-        <title>Hist�rico de Partidas | Painel Admin - Fut7Pro</title>
+        <title>Histórico de Partidas | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Corrija placares, status, gols e assist�ncias das partidas do seu racha. Painel do Presidente Fut7Pro, seguro e audit�vel."
+          content="Corrija placares, status, gols e assistências das partidas do seu racha. Painel do Presidente Fut7Pro, seguro e auditável."
         />
         <meta
           name="keywords"
-          content="admin fut7, editar partidas, corrigir placar, editar gols, editar assist�ncias, hist�rico futebol 7"
+          content="admin fut7, editar partidas, corrigir placar, editar gols, editar assistências, histórico futebol 7"
         />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto text-white">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
-          Hist�rico de Partidas (Admin)
+          Histórico de Partidas (Admin)
         </h1>
         <p className="text-base md:text-lg mb-6 text-textoSuave text-center">
-          Corrija eventuais erros de placar, gols ou assist�ncias de qualquer partida do hist�rico.
-          Edi��o r�pida e f�cil, baseada nas partidas reais cadastradas no sistema.
+          Corrija eventuais erros de placar, gols ou assistências de qualquer partida do histórico.
+          Edição rápida e fácil, baseada nas partidas reais cadastradas no sistema.
         </p>
 
         <section className="mb-8 flex flex-col items-center">
           <h2 className="text-xl font-semibold text-yellow-300 mb-3">
-            {partidaEditando ? "Editar partida" : "Selecionar partida para edi��o"}
+            {partidaEditando ? "Editar partida" : "Selecionar partida para edição"}
           </h2>
           <div className="w-full flex justify-center">
             <PartidaForm
@@ -70,7 +70,7 @@ export default function AdminHistoricoPartidasPage() {
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold text-yellow-300 mb-3">Hist�rico de partidas</h2>
+          <h2 className="text-lg font-semibold text-yellow-300 mb-3">Histórico de partidas</h2>
           {isLoading ? (
             <div className="text-center text-gray-400 py-8">Carregando partidas...</div>
           ) : isError ? (
@@ -80,7 +80,7 @@ export default function AdminHistoricoPartidasPage() {
             </div>
           ) : partidas.length === 0 ? (
             <div className="text-center text-gray-400 py-8">
-              Nenhuma partida cadastrada ainda. Use o formul�rio acima para adicionar partidas
+              Nenhuma partida cadastrada ainda. Use o formulário acima para adicionar partidas
               retroativas ou corrigir rodadas antigas.
             </div>
           ) : (

@@ -1,4 +1,4 @@
-﻿// Healthcheck do backend para validar conectividade (com timeouts curtos para nÃ£o travar build)
+// Healthcheck do backend para validar conectividade (com timeouts curtos para não travar build)
 export const runtime = "nodejs";
 
 export async function GET() {
@@ -36,7 +36,7 @@ export async function GET() {
   // Endpoints leves para evitar loop longo em build (prioriza ping/liveness)
   const healthEndpoints = ["/health/ping", "/health/liveness", "/health", "/api/health"];
 
-  // Testar domÃ­nio principal e fallback Railway, se existir
+  // Testar domínio principal e fallback Railway, se existir
   const railwayUrl = process.env.RAILWAY_BACKEND_URL || "https://fut7pro-backend.up.railway.app";
   const testUrls = [
     { base, endpoints: healthEndpoints },
@@ -72,7 +72,7 @@ export async function GET() {
           );
         }
       } catch (error: any) {
-        // Continua para o prÃ³ximo endpoint sem travar
+        // Continua para o próximo endpoint sem travar
         console.log(`Healthcheck failed for ${testBase}${endpoint}:`, error?.message || error);
       }
     }

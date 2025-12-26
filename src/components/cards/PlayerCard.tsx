@@ -29,7 +29,7 @@ interface PlayerCardProps {
     tenantId?: string;
   };
   href?: string;
-  // Suporte a props legadas usadas em algumas pÃ¡ginas pÃºblicas
+  // Suporte a props legadas usadas em algumas páginas públicas
   title?: string;
   name?: string;
   value?: string;

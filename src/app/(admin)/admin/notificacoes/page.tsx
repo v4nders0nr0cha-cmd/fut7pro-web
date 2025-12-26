@@ -71,15 +71,15 @@ export default function NotificacoesPage() {
   return (
     <>
       <Head>
-        <title>Notifica��es | Painel Admin - Fut7Pro</title>
+        <title>Notificações | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Veja todas as notifica��es do seu racha, mensagens do SuperAdmin e avisos do Fut7Pro."
+          content="Veja todas as notificações do seu racha, mensagens do SuperAdmin e avisos do Fut7Pro."
         />
       </Head>
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
         <div className="flex items-center justify-between mb-4 gap-3">
-          <h1 className="text-2xl font-bold text-yellow-400">Notifica��es</h1>
+          <h1 className="text-2xl font-bold text-yellow-400">Notificações</h1>
           {unreadCount > 0 && (
             <button
               type="button"
@@ -115,7 +115,7 @@ export default function NotificacoesPage() {
               className="bg-[#1f1f23] border border-gray-700 rounded px-2 py-1 text-xs text-white"
             >
               <option value="todas">Todas</option>
-              <option value="naoLidas">Somente n�o lidas</option>
+              <option value="naoLidas">Somente não lidas</option>
               <option value="lidas">Somente lidas</option>
             </select>
           </div>
@@ -126,11 +126,11 @@ export default function NotificacoesPage() {
             <div className="text-center text-gray-400 py-8">Carregando...</div>
           ) : isError ? (
             <div className="text-center text-red-400 py-8">
-              Ocorreu um erro ao carregar as notifica��es.
+              Ocorreu um erro ao carregar as notificações.
               {error && <div className="text-xs text-red-300 mt-2">{error}</div>}
             </div>
           ) : notificacoesOrdenadas.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">Nenhuma notifica��o encontrada.</div>
+            <div className="text-center text-gray-400 py-12">Nenhuma notificação encontrada.</div>
           ) : (
             notificacoesOrdenadas.map((not) => {
               const tipo = (not.type || not.tipo || "outros").toString();

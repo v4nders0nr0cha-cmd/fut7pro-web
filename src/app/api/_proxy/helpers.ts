@@ -40,7 +40,7 @@ export function buildHeaders(
 
   if (tenantSlug) {
     headers["x-tenant-slug"] = tenantSlug;
-    // header auxiliar para compatibilidade / diagn�stico
+    // header auxiliar para compatibilidade / diagnóstico
     headers["x-tenant-id"] = tenantSlug;
   }
 

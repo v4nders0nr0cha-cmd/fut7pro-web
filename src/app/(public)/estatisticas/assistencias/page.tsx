@@ -11,9 +11,9 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const anoAtual = new Date().getFullYear();
 
 const periodos = [
-  { label: "1� Quadrimestre", value: "q1" },
-  { label: "2� Quadrimestre", value: "q2" },
-  { label: "3� Quadrimestre", value: "q3" },
+  { label: "1º Quadrimestre", value: "q1" },
+  { label: "2º Quadrimestre", value: "q2" },
+  { label: "3º Quadrimestre", value: "q3" },
   { label: "Temporada Atual", value: "temporada" },
   { label: "Todas as Temporadas", value: "todas" },
 ];
@@ -44,29 +44,29 @@ export default function RankingAssistenciasPage() {
   return (
     <>
       <Head>
-        <title>Ranking de Assist�ncias | Estat�sticas | Fut7Pro</title>
+        <title>Ranking de Assistências | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Confira o Ranking de Assist�ncias. Veja quem mais participou dos gols, compare por quadrimestre, temporada atual ou no hist�rico completo de temporadas do seu racha."
+          content="Confira o Ranking de Assistências. Veja quem mais participou dos gols, compare por quadrimestre, temporada atual ou no histórico completo de temporadas do seu racha."
         />
         <meta
           name="keywords"
-          content="Ranking Assist�ncias, Fut7Pro, futebol 7, passes para gol, estat�sticas, temporada atual, todas as temporadas, racha"
+          content="Ranking Assistências, Fut7Pro, futebol 7, passes para gol, estatísticas, temporada atual, todas as temporadas, racha"
         />
       </Head>
 
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
-        <h1 className="sr-only">Ranking de Assist�ncias - Jogadores com Mais Passes para Gol</h1>
+        <h1 className="sr-only">Ranking de Assistências - Jogadores com Mais Passes para Gol</h1>
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
             <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-2">
-              Ranking de Assist�ncias
+              Ranking de Assistências
             </h2>
             <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
-              Veja quem mais colaborou com seus companheiros no <b>Ranking de Assist�ncias</b>.
-              Compare o desempenho por quadrimestre, na temporada atual ou no hist�rico completo de
-              todas as temporadas do seu racha. Selecione o per�odo abaixo para visualizar os
+              Veja quem mais colaborou com seus companheiros no <b>Ranking de Assistências</b>.
+              Compare o desempenho por quadrimestre, na temporada atual ou no histórico completo de
+              todas as temporadas do seu racha. Selecione o período abaixo para visualizar os
               destaques.
             </p>
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
@@ -74,7 +74,7 @@ export default function RankingAssistenciasPage() {
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
                 className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-                aria-label="Selecionar per�odo do ranking"
+                aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -115,7 +115,7 @@ export default function RankingAssistenciasPage() {
                 <tr>
                   <th className="p-2 text-left">#</th>
                   <th className="p-2 text-left">Atleta</th>
-                  <th className="p-2 text-right text-yellow-400 text-base">Assist?ncias</th>
+                  <th className="p-2 text-right text-yellow-400 text-base">Assistências</th>
                   <th className="p-2 text-right">Jogos</th>
                 </tr>
               </thead>
@@ -132,7 +132,7 @@ export default function RankingAssistenciasPage() {
                         <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
                             src={atleta.foto}
-                            alt={`Foto do atleta ${atleta.nome} - Ranking Assist?ncias Fut7Pro`}
+                            alt={`Foto do atleta ${atleta.nome} - Ranking Assistências Fut7Pro`}
                             width={32}
                             height={32}
                             className="rounded-full border border-yellow-400"

@@ -79,5 +79,5 @@ export function useFinanceiroPublic(rachaId: string) {
   };
 }
 
-// Reexporta o tipo usado na pÃ¡gina pÃºblica
+// Reexporta o tipo usado na página pública
 export type { LancamentoFinanceiro };

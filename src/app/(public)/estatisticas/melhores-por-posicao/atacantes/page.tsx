@@ -11,9 +11,9 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const anoAtual = new Date().getFullYear();
 
 const periodos = [
-  { label: "1� Quadrimestre", value: "q1" },
-  { label: "2� Quadrimestre", value: "q2" },
-  { label: "3� Quadrimestre", value: "q3" },
+  { label: "1º Quadrimestre", value: "q1" },
+  { label: "2º Quadrimestre", value: "q2" },
+  { label: "3º Quadrimestre", value: "q3" },
   { label: "Temporada Atual", value: "temporada" },
   { label: "Todas as Temporadas", value: "todas" },
 ];
@@ -45,14 +45,14 @@ export default function RankingAtacantesPage() {
   return (
     <>
       <Head>
-        <title>Ranking dos Melhores Atacantes | Estat�sticas</title>
+        <title>Ranking dos Melhores Atacantes | Estatísticas</title>
         <meta
           name="description"
-          content="Veja o ranking dos melhores atacantes por quadrimestre, temporada atual ou hist�rico completo. Descubra os destaques de cada posi��o no seu racha de futebol 7."
+          content="Veja o ranking dos melhores atacantes por quadrimestre, temporada atual ou histórico completo. Descubra os destaques de cada posição no seu racha de futebol 7."
         />
         <meta
           name="keywords"
-          content="Ranking Atacantes, Melhores Atacantes, Estat�sticas, Temporada Atual, Todas as Temporadas, Racha, Futebol 7"
+          content="Ranking Atacantes, Melhores Atacantes, Estatísticas, Temporada Atual, Todas as Temporadas, Racha, Futebol 7"
         />
       </Head>
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
@@ -65,15 +65,15 @@ export default function RankingAtacantesPage() {
             </h2>
             <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
               Confira o <b>Ranking dos Atacantes</b> com os maiores destaques por quadrimestre, na
-              temporada atual ou no hist�rico completo do seu racha. Selecione o per�odo para
-              filtrar os jogadores que mais pontuaram na posi��o!
+              temporada atual ou no histórico completo do seu racha. Selecione o período para
+              filtrar os jogadores que mais pontuaram na posição!
             </p>
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
                 className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-                aria-label="Selecionar per�odo do ranking"
+                aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (
                   <option key={p.value} value={p.value}>
