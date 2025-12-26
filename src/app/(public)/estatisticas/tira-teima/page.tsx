@@ -2,7 +2,6 @@
 
 import Head from "next/head";
 import Image from "next/image";
-import html2canvas from "html2canvas";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ConquistasAtleta, TituloAtleta } from "@/types/estatisticas";
@@ -28,6 +27,32 @@ function resolveAvatar(url?: string | null) {
   if (!url) return DEFAULT_AVATAR;
   const trimmed = url.trim();
   return trimmed.length > 0 ? trimmed : DEFAULT_AVATAR;
+}
+
+function dataUrlToBlob(dataUrl: string) {
+  const [header, data] = dataUrl.split(",");
+  const mimeMatch = /data:(.*?);base64/.exec(header || "");
+  const mime = mimeMatch?.[1] ?? "image/png";
+  const binary = atob(data || "");
+  const array = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    array[i] = binary.charCodeAt(i);
+  }
+  return new Blob([array], { type: mime });
+}
+
+async function canvasToBlob(canvas: HTMLCanvasElement) {
+  if (typeof canvas.toBlob !== "function") {
+    const dataUrl = canvas.toDataURL("image/png");
+    return dataUrlToBlob(dataUrl);
+  }
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("blob"));
+    }, "image/png");
+  });
 }
 
 function AthletePicker({
@@ -352,11 +377,18 @@ export default function TiraTeimaPage() {
     setIsSharing(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      if (document?.fonts?.ready) {
+        await document.fonts.ready;
+      }
+      const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(captureRef.current, {
         backgroundColor: "#101010",
         scale: 2,
         useCORS: true,
+        logging: false,
+        scrollX: -window.scrollX,
+        scrollY: -window.scrollY,
       });
 
       const slugPart = publicSlug ? `-${publicSlug}` : "";
@@ -366,27 +398,30 @@ export default function TiraTeimaPage() {
         .replace(/(^-|-$)+/g, "");
       const fileName = `tira-teima${slugPart}-${nomeSlug || "comparativo"}.png`;
 
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
-
-      if (!blob) {
-        pushShareFeedback("Nao foi possivel gerar a imagem");
-        return;
-      }
-
+      const blob = await canvasToBlob(canvas);
       const file = new File([blob], fileName, { type: "image/png" });
+      const isTouchDevice =
+        typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
       const canShareFile =
         typeof navigator !== "undefined" &&
         typeof navigator.canShare === "function" &&
         navigator.canShare({ files: [file] });
 
-      if (navigator.share && canShareFile) {
-        await navigator.share({
-          title: "Tira Teima Fut7Pro",
-          text: atletaA && atletaB ? `Tira teima: ${nomeA} vs ${nomeB}` : "Tira teima Fut7Pro",
-          files: [file],
-        });
-        pushShareFeedback("Imagem compartilhada");
-        return;
+      if (navigator.share && canShareFile && isTouchDevice) {
+        try {
+          await navigator.share({
+            title: "Tira Teima Fut7Pro",
+            text: atletaA && atletaB ? `Tira teima: ${nomeA} vs ${nomeB}` : "Tira teima Fut7Pro",
+            files: [file],
+          });
+          pushShareFeedback("Imagem compartilhada");
+          return;
+        } catch (err) {
+          if ((err as Error)?.name === "AbortError") {
+            pushShareFeedback("Compartilhamento cancelado");
+            return;
+          }
+        }
       }
 
       const url = URL.createObjectURL(blob);
@@ -462,14 +497,18 @@ export default function TiraTeimaPage() {
                   ref={captureRef}
                   className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
+                  <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-6 text-center md:text-left">
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-400">Atleta A</p>
-                      <p className="text-xl font-bold text-yellow-400">{atletaA?.nome || "-"}</p>
+                      <p className="text-xl font-bold text-yellow-400 truncate">
+                        {atletaA?.nome || "-"}
+                      </p>
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm text-gray-400">Atleta B</p>
-                      <p className="text-xl font-bold text-yellow-400">{atletaB?.nome || "-"}</p>
+                      <p className="text-xl font-bold text-yellow-400 truncate">
+                        {atletaB?.nome || "-"}
+                      </p>
                     </div>
                   </div>
 
