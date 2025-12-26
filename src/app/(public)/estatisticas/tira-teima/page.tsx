@@ -497,18 +497,36 @@ export default function TiraTeimaPage() {
                   ref={captureRef}
                   className="bg-neutral-900 border border-neutral-800 rounded-xl p-5"
                 >
-                  <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-6 text-center md:text-left">
-                    <div className="min-w-0">
-                      <p className="text-sm text-gray-400">Atleta A</p>
-                      <p className="text-xl font-bold text-yellow-400 truncate">
-                        {atletaA?.nome || "-"}
-                      </p>
+                  <div className="grid grid-cols-2 gap-4 sm:gap-6 mb-6">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Image
+                        src={resolveAvatar(atletaA?.foto)}
+                        alt={atletaA?.nome ? `Foto de ${atletaA.nome}` : "Foto do atleta A"}
+                        width={40}
+                        height={40}
+                        className="rounded-full border border-neutral-700 object-cover shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm text-gray-400">Atleta A</p>
+                        <p className="text-lg sm:text-xl font-bold text-yellow-400 leading-tight break-words">
+                          {atletaA?.nome || "-"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm text-gray-400">Atleta B</p>
-                      <p className="text-xl font-bold text-yellow-400 truncate">
-                        {atletaB?.nome || "-"}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Image
+                        src={resolveAvatar(atletaB?.foto)}
+                        alt={atletaB?.nome ? `Foto de ${atletaB.nome}` : "Foto do atleta B"}
+                        width={40}
+                        height={40}
+                        className="rounded-full border border-neutral-700 object-cover shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm text-gray-400">Atleta B</p>
+                        <p className="text-lg sm:text-xl font-bold text-yellow-400 leading-tight break-words">
+                          {atletaB?.nome || "-"}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
