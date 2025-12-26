@@ -27,6 +27,7 @@ const menu = [
       { label: "Próximos Rachas", href: "/admin/partidas/proximos-rachas" },
       { label: "Time Campeão do Dia", href: "/admin/partidas/time-campeao-do-dia" },
       { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },
+      { label: "Criar Times", href: "/admin/partidas/criar-times" },
       { label: "Sorteio Inteligente", href: "/admin/partidas/sorteio-inteligente" },
       { label: "Criar Partidas", href: "/admin/partidas/criar" },
     ],

@@ -34,27 +34,27 @@ export default function ClassificacaoTimesPage() {
   return (
     <>
       <Head>
-        <title>Classifica��o dos Times | Estat�sticas | Fut7Pro</title>
+        <title>Classificação dos Times | Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja a classifica��o dos times de futebol 7 com base nos dados reais do seu racha. Acompanhe pontos, jogos, vit�rias, empates e derrotas, sempre atualizados a partir das partidas registradas no painel Fut7Pro."
+          content="Veja a classificação dos times de futebol 7 com base nos dados reais do seu racha. Acompanhe pontos, jogos, vitórias, empates e derrotas, sempre atualizados a partir das partidas registradas no painel Fut7Pro."
         />
         <meta
           name="keywords"
-          content="classifica��o de times, futebol 7, ranking, tabela, temporadas, pontos, estat�sticas, fut7, racha, SaaS, Fut7Pro"
+          content="classificação de times, futebol 7, ranking, tabela, temporadas, pontos, estatísticas, fut7, racha, SaaS, Fut7Pro"
         />
       </Head>
 
       <main className="w-full min-h-screen bg-fundo text-white">
         {/* H1 oculto para SEO */}
         <h1 className="sr-only">
-          Classifica��o dos Times - Tabela de Pontua��o, Estat�sticas dos Times, Ranking de Futebol
+          Classificaçãoo dos Times - Tabela de Pontuação, Estatísticas dos Times, Ranking de Futebol
           7 no Fut7Pro
         </h1>
 
         <div className="mb-4 mt-8 flex flex-col items-center gap-4">
           <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center">
-            Classifica��o dos Times
+            Classificação dos Times
           </h2>
           {anosOrdenados.length > 0 && (
             <select
@@ -73,8 +73,8 @@ export default function ClassificacaoTimesPage() {
         </div>
 
         <p className="text-center text-sm text-gray-400 mb-6 max-w-2xl mx-auto">
-          Veja a <b>classifica��o dos times</b> baseada no <b>snapshot oficial</b> de cada
-          temporada. Os dados s�o calculados a partir das partidas registradas no painel admin,
+          Veja a <b>classificação dos times</b> baseada no <b>snapshot oficial</b> de cada
+          temporada. Os dados são calculados a partir das partidas registradas no painel admin,
           respeitando o contexto multi-tenant do seu racha no Fut7Pro.
         </p>
 
@@ -86,16 +86,16 @@ export default function ClassificacaoTimesPage() {
             scrollbarWidth: "thin",
           }}
           tabIndex={0}
-          aria-label="Tabela de classifica��o dos times, role lateralmente para ver todas as colunas"
+          aria-label="Tabela de classificação dos times, role lateralmente para ver todas as colunas"
         >
           {isLoading && (
             <div className="py-8 text-center text-gray-400">
-              Carregando classifica��o dos times...
+              Carregando classificação dos times...
             </div>
           )}
           {isError && !isLoading && (
             <div className="py-8 text-center text-red-400">
-              Erro ao carregar classifica��o dos times.
+              Erro ao carregar classificação dos times.
               {error && <div className="mt-1 text-xs text-red-300">{error}</div>}
             </div>
           )}
@@ -107,7 +107,7 @@ export default function ClassificacaoTimesPage() {
                   <th className="p-2 text-left">Time</th>
                   <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
                   <th className="p-2 text-right">Jogos</th>
-                  <th className="p-2 text-right">Vit�rias</th>
+                  <th className="p-2 text-right">Vitórias</th>
                   <th className="p-2 text-right">Empates</th>
                   <th className="p-2 text-right">Derrotas</th>
                 </tr>

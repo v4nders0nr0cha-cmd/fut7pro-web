@@ -17,8 +17,41 @@ export default function CriarTimesPage() {
   const [nome, setNome] = useState("");
   const [cor, setCor] = useState("#FFD700");
   const [logo, setLogo] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState("");
   const [editandoTime, setEditandoTime] = useState<string | null>(null);
   const [dicasOpen, setDicasOpen] = useState(false);
+
+  const handleLogoUpload = async (file: File) => {
+    setLogoUploading(true);
+    setLogoError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/uploads/team-logo", {
+        method: "POST",
+        headers: {
+          "x-tenant-slug": currentSlug,
+        },
+        body: formData,
+      });
+
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || "Falha ao enviar logo.");
+      }
+
+      if (payload?.url) {
+        setLogo(payload.url);
+      }
+    } catch (err) {
+      setLogoError(err instanceof Error ? err.message : "Falha ao enviar logo.");
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   const handleAdicionarTime = async () => {
     if (!nome.trim()) return alert("Digite o nome do time!");
@@ -121,13 +154,26 @@ export default function CriarTimesPage() {
                 type="file"
                 accept="image/*"
                 onChange={(e) => {
-                  if (e.target.files?.[0]) {
-                    const url = URL.createObjectURL(e.target.files[0]);
-                    setLogo(url);
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    void handleLogoUpload(file);
                   }
                 }}
                 className="w-full text-sm text-gray-300"
+                disabled={logoUploading}
               />
+              <label className="block text-sm mt-3 mb-1 text-gray-300">
+                URL da Logo (opcional)
+              </label>
+              <input
+                type="url"
+                value={logo}
+                onChange={(e) => setLogo(e.target.value)}
+                placeholder="https://..."
+                className="w-full p-2 rounded bg-[#222] border border-[#333] text-white"
+              />
+              {logoUploading && <p className="text-xs text-gray-400 mt-2">Enviando logo...</p>}
+              {logoError && <p className="text-xs text-red-400 mt-2">{logoError}</p>}
               {logo && (
                 <Image
                   src={logo}
@@ -142,7 +188,8 @@ export default function CriarTimesPage() {
 
           <button
             onClick={handleAdicionarTime}
-            className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 py-2 rounded font-bold flex items-center gap-2"
+            disabled={logoUploading || isLoading}
+            className="bg-yellow-400 hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed text-black px-4 py-2 rounded font-bold flex items-center gap-2"
           >
             <FaPlus /> {editandoTime ? "Salvar Alterações" : "Adicionar Time"}
           </button>

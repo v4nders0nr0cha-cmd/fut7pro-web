@@ -224,7 +224,7 @@ export default function MonetizacaoPage() {
           </h2>
           <ul className="space-y-3 text-gray-200">
             <li>
-              Divulgue o site, rankings e fotos em vez de só prints no WhatsApp. Gere tráfego para
+              Divulgue o site do racha, rankings e fotos em vez de só prints. Isso gera tráfego para
               seu painel.
             </li>
             <li>
@@ -267,10 +267,9 @@ export default function MonetizacaoPage() {
             <FaTrophy className="text-yellow-400" /> Bolão Interno – Atenção Legal
           </h2>
           <div className="bg-[#23272F] border-l-4 border-yellow-600 p-5 rounded-xl text-gray-200 space-y-2">
-            <b>Engaje jogadores com bolão entre atletas:</b> Engaje os jogadores com bolões entre
-            atletas: incentive apostas entre quem disputa a mesma posição, artilharia, campeão do
-            quadrimestre ou do ano. Essas dinâmicas mantêm a assiduidade alta durante toda a
-            temporada.
+            <b>Engaje jogadores com bolão entre atletas:</b> incentive apostas entre quem disputa a
+            mesma posição, artilharia, campeão do quadrimestre ou do ano. Essas dinâmicas mantêm a
+            assiduidade alta durante toda a temporada.
             <br />
             <span className="text-yellow-300 font-semibold">Atenção:</span> O valor arrecadado deve
             ser 100% revertido para o prêmio. O presidente não pode reter taxa ou comissão para não
