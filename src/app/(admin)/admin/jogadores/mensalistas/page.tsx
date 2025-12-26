@@ -112,12 +112,70 @@ function ModalMensalista({
   );
 }
 
+// MODAL DE REMOCAO
+function ModalRemoverMensalista({
+  open,
+  jogador,
+  onClose,
+  onConfirm,
+  loading,
+  error,
+}: {
+  open: boolean;
+  jogador?: Jogador | null;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open || !jogador) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center">
+      <div className="bg-[#1c1e22] rounded-2xl p-6 min-w-[320px] w-full max-w-md shadow-xl flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <FaTrash className="text-red-400 text-xl" />
+          <h2 className="text-lg text-red-300 font-bold">Remover Mensalista</h2>
+        </div>
+        <div className="text-sm text-gray-200 leading-relaxed">
+          Voce esta removendo <b>{jogador.nome}</b> da lista de mensalistas.
+          <br />
+          Ele continuara cadastrado no racha, mas perdera o status de mensalista.
+          <br />
+          Essa acao pode ser revertida a qualquer momento.
+        </div>
+        {error && <div className="text-xs text-red-300">{error}</div>}
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 font-semibold text-sm disabled:opacity-70"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-500 font-bold text-sm disabled:opacity-70"
+          >
+            {loading ? "Removendo..." : "Remover mensalista"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MensalistasPage() {
   const { rachaId } = useRacha();
   const resolvedRachaId = rachaId || rachaConfig.slug;
   const { jogadores, isLoading, isError, error, updateJogador, mutate } =
     useJogadores(resolvedRachaId);
   const [modalOpen, setModalOpen] = useState(false);
+  const [removerOpen, setRemoverOpen] = useState(false);
+  const [removerJogador, setRemoverJogador] = useState<Jogador | null>(null);
   const [acaoErro, setAcaoErro] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -139,18 +197,30 @@ export default function MensalistasPage() {
     setLoadingId(null);
   }
 
-  async function handleRemoverMensalista(id: string) {
+  function abrirRemocao(jogador: Jogador) {
     if (loadingId) return;
-    if (!window.confirm("Deseja realmente remover este jogador dos mensalistas?")) {
-      return;
-    }
-    setLoadingId(id);
+    setRemoverJogador(jogador);
+    setRemoverOpen(true);
     setAcaoErro(null);
-    const result = await updateJogador(id, { mensalista: false });
+  }
+
+  function fecharRemocao() {
+    if (loadingId) return;
+    setRemoverOpen(false);
+    setRemoverJogador(null);
+  }
+
+  async function confirmarRemocao() {
+    if (!removerJogador || loadingId) return;
+    setLoadingId(removerJogador.id);
+    setAcaoErro(null);
+    const result = await updateJogador(removerJogador.id, { mensalista: false });
     if (!result) {
       setAcaoErro("Nao foi possivel remover mensalista.");
     } else {
       await mutate();
+      setRemoverOpen(false);
+      setRemoverJogador(null);
     }
     setLoadingId(null);
   }
@@ -240,7 +310,7 @@ export default function MensalistasPage() {
                     className={`absolute top-3 right-3 text-red-700 hover:text-red-500 bg-gray-900 rounded-full p-2 transition ${
                       loadingId === j.id ? "opacity-70 cursor-not-allowed" : ""
                     }`}
-                    onClick={() => handleRemoverMensalista(j.id)}
+                    onClick={() => abrirRemocao(j)}
                     title="Remover mensalista"
                     disabled={loadingId === j.id}
                   >
@@ -281,6 +351,15 @@ export default function MensalistasPage() {
           jogadores={jogadores}
           onAdd={handleAddMensalista}
           loadingId={loadingId}
+          error={acaoErro}
+        />
+
+        <ModalRemoverMensalista
+          open={removerOpen}
+          jogador={removerJogador}
+          onClose={fecharRemocao}
+          onConfirm={confirmarRemocao}
+          loading={Boolean(loadingId)}
           error={acaoErro}
         />
       </main>
