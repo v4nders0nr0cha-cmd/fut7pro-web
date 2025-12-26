@@ -8,6 +8,8 @@ import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { useRacha } from "@/context/RachaContext";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function ListaAtletasPage() {
   const [busca, setBusca] = useState("");
   const { tenantSlug } = useRacha();
@@ -62,44 +64,49 @@ export default function ListaAtletasPage() {
 
       {!isLoading && !isError && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {atletasFiltrados.map((atleta) => (
-            <div
-              key={atleta.slug || atleta.id}
-              className="bg-neutral-900 rounded-xl p-4 shadow-md border border-neutral-800 hover:border-yellow-400 transition"
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <Image
-                  src={atleta.foto || "/images/jogadores/jogador_padrao_01.jpg"}
-                  alt={`Foto do atleta ${atleta.nome}`}
-                  width={48}
-                  height={48}
-                  className="rounded-full border border-neutral-700"
-                />
-                <div>
-                  <h2 className="text-lg font-bold text-yellow-400">{atleta.nome}</h2>
-                  <p className="text-sm text-gray-400">{atleta.slug}</p>
-                </div>
-              </div>
-              <div className="text-sm text-gray-300 space-y-1 mb-3">
-                <p>
-                  <span className="font-bold text-yellow-400">Jogos:</span> {atleta.jogos}
-                </p>
-                <p>
-                  <span className="font-bold text-yellow-400">Gols:</span> {atleta.gols} |{" "}
-                  <span className="font-bold text-yellow-400">Assist:</span> {atleta.assistencias}
-                </p>
-                <p>
-                  <span className="font-bold text-yellow-400">Ranking:</span> {atleta.pontos} pts
-                </p>
-              </div>
-              <Link
-                href={publicHref(`/atletas/${atleta.slug}`)}
-                className="inline-block w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-2 rounded-lg text-sm transition"
+          {atletasFiltrados.map((atleta) => {
+            const profileSlug = atleta.slug?.trim() ? atleta.slug : atleta.id;
+            const slugLabel = atleta.slug && !UUID_REGEX.test(atleta.slug) ? atleta.slug : null;
+
+            return (
+              <div
+                key={atleta.slug || atleta.id}
+                className="bg-neutral-900 rounded-xl p-4 shadow-md border border-neutral-800 hover:border-yellow-400 transition"
               >
-                Ver Perfil
-              </Link>
-            </div>
-          ))}
+                <div className="flex items-center gap-3 mb-3">
+                  <Image
+                    src={atleta.foto || "/images/jogadores/jogador_padrao_01.jpg"}
+                    alt={`Foto do atleta ${atleta.nome}`}
+                    width={48}
+                    height={48}
+                    className="rounded-full border border-neutral-700"
+                  />
+                  <div>
+                    <h2 className="text-lg font-bold text-yellow-400">{atleta.nome}</h2>
+                    {slugLabel && <p className="text-sm text-gray-400">{slugLabel}</p>}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-300 space-y-1 mb-3">
+                  <p>
+                    <span className="font-bold text-yellow-400">Jogos:</span> {atleta.jogos}
+                  </p>
+                  <p>
+                    <span className="font-bold text-yellow-400">Gols:</span> {atleta.gols} |{" "}
+                    <span className="font-bold text-yellow-400">Assist:</span> {atleta.assistencias}
+                  </p>
+                  <p>
+                    <span className="font-bold text-yellow-400">Ranking:</span> {atleta.pontos} pts
+                  </p>
+                </div>
+                <Link
+                  href={publicHref(`/atletas/${profileSlug}`)}
+                  className="inline-block w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-2 rounded-lg text-sm transition"
+                >
+                  Ver Perfil
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
     </>

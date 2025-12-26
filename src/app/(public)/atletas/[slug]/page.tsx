@@ -57,7 +57,7 @@ export default function PerfilAtletaPage() {
     limit: 400,
   });
 
-  const atletaRanking = rankings.find((item) => item.slug === slug);
+  const atletaRanking = rankings.find((item) => item.slug === slug || item.id === slug);
 
   if (isLoadingAthlete || isLoadingRankings) {
     return (

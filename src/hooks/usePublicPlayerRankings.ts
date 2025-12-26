@@ -82,6 +82,11 @@ function resolvePositionLabel(value?: string | null) {
   }
 }
 
+function resolveAthleteSlug(slug: string | null | undefined, id: string) {
+  const trimmed = typeof slug === "string" ? slug.trim() : "";
+  return trimmed.length > 0 ? trimmed : id;
+}
+
 export interface UsePublicPlayerRankingsOptions {
   slug?: string;
   type: PlayerRankingType;
@@ -123,6 +128,10 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
   });
 
   const rankingResults = data?.results ?? [];
+  const normalizedRankings = rankingResults.map((entry) => ({
+    ...entry,
+    slug: resolveAthleteSlug(entry.slug, entry.id),
+  }));
   const athleteResults = athletesData?.results ?? [];
   const positionFilter = normalizePosition(options.position);
 
@@ -132,7 +141,7 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
       )
     : athleteResults;
 
-  const rankingIds = new Set(rankingResults.map((entry) => entry.id));
+  const rankingIds = new Set(normalizedRankings.map((entry) => entry.id));
   const missingAthletes = filteredAthletes
     .filter((athlete) => !rankingIds.has(athlete.id))
     .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
@@ -140,7 +149,7 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
   const zeroEntries: RankingAtleta[] = missingAthletes.map((athlete) => ({
     id: athlete.id,
     nome: athlete.nome,
-    slug: athlete.slug ?? "",
+    slug: resolveAthleteSlug(athlete.slug, athlete.id),
     foto: athlete.foto && athlete.foto.trim() ? athlete.foto : DEFAULT_AVATAR,
     posicao: resolvePositionLabel(athlete.posicao ?? athlete.position),
     position: normalizePosition(athlete.posicao ?? athlete.position) || undefined,
@@ -153,7 +162,7 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
     assistencias: 0,
   }));
 
-  const mergedRankings = [...rankingResults, ...zeroEntries];
+  const mergedRankings = [...normalizedRankings, ...zeroEntries];
   const limitedRankings = options.limit ? mergedRankings.slice(0, options.limit) : mergedRankings;
   const shouldWaitAthletes = !rankingResults.length && athletesLoading;
   const loading = isLoading || shouldWaitAthletes;

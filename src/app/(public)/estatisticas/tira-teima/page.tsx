@@ -140,8 +140,11 @@ export default function TiraTeimaPage() {
     [rankings]
   );
 
-  const atletaA = atletasOrdenados.find((a) => a.slug === escolhaA);
-  const atletaB = atletasOrdenados.find((a) => a.slug === escolhaB);
+  const atletaA = atletasOrdenados.find((a) => a.slug === escolhaA || a.id === escolhaA);
+  const atletaB = atletasOrdenados.find((a) => a.slug === escolhaB || a.id === escolhaB);
+
+  const athleteSlugA = atletaA?.slug?.trim() || atletaA?.id;
+  const athleteSlugB = atletaB?.slug?.trim() || atletaB?.id;
 
   const {
     conquistas: conquistasA,
@@ -149,8 +152,8 @@ export default function TiraTeimaPage() {
     isError: conquistasErrorA,
   } = usePublicAthlete({
     tenantSlug: publicSlug,
-    athleteSlug: atletaA?.slug,
-    enabled: Boolean(atletaA?.slug),
+    athleteSlug: athleteSlugA,
+    enabled: Boolean(athleteSlugA),
   });
   const {
     conquistas: conquistasB,
@@ -158,8 +161,8 @@ export default function TiraTeimaPage() {
     isError: conquistasErrorB,
   } = usePublicAthlete({
     tenantSlug: publicSlug,
-    athleteSlug: atletaB?.slug,
-    enabled: Boolean(atletaB?.slug),
+    athleteSlug: athleteSlugB,
+    enabled: Boolean(athleteSlugB),
   });
 
   const conquistasFiltradasA = useMemo(
