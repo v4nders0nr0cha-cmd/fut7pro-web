@@ -7,7 +7,9 @@ const fetcher = async (url: string): Promise<PublicAthleteResponse> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(body || "Falha ao carregar atleta");
+    const err = new Error(body || "Falha ao carregar atleta") as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
   return res.json();
 };
@@ -29,6 +31,9 @@ export function usePublicAthlete(options: {
     revalidateOnFocus: false,
   });
 
+  const status = (error as { status?: number } | null)?.status;
+  const isNotFound = status === 404;
+
   return {
     athlete: data?.athlete ?? null,
     conquistas: data?.conquistas ?? {
@@ -38,8 +43,9 @@ export function usePublicAthlete(options: {
     },
     slug: data?.slug ?? tenantSlug ?? "",
     isLoading,
-    isError: Boolean(error),
-    error: error instanceof Error ? error.message : null,
+    isError: Boolean(error) && !isNotFound,
+    isNotFound,
+    error: error instanceof Error && !isNotFound ? error.message : null,
     mutate,
   };
 }

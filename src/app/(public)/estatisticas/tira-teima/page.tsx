@@ -1,7 +1,8 @@
 "use client";
 
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ConquistasAtleta, TituloAtleta } from "@/types/estatisticas";
 import { usePublicAthlete } from "@/hooks/usePublicAthlete";
@@ -12,6 +13,140 @@ const PERIODOS = [
   { label: "Temporada atual", value: "current" },
   { label: "Todas as temporadas", value: "all" },
 ];
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+
+type AthleteOption = {
+  id: string;
+  slug: string;
+  nome: string;
+  foto: string;
+  posicao?: string;
+};
+
+function resolveAvatar(url?: string | null) {
+  if (!url) return DEFAULT_AVATAR;
+  const trimmed = url.trim();
+  return trimmed.length > 0 ? trimmed : DEFAULT_AVATAR;
+}
+
+function AthletePicker({
+  label,
+  value,
+  athletes,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  athletes: AthleteOption[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filtro, setFiltro] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const selected = useMemo(
+    () => athletes.find((athlete) => athlete.slug === value || athlete.id === value),
+    [athletes, value]
+  );
+
+  const filtrados = useMemo(() => {
+    const termo = filtro.trim().toLowerCase();
+    if (!termo) return athletes;
+    return athletes.filter((athlete) => athlete.nome.toLowerCase().includes(termo));
+  }, [athletes, filtro]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) setFiltro("");
+  }, [open]);
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <label className="block text-sm text-gray-300 mb-1">{label}</label>
+      <button
+        type="button"
+        className="w-full bg-neutral-800 text-white rounded px-3 py-2 border border-neutral-700 flex items-center justify-between gap-3"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+      >
+        <span className="flex items-center gap-2 min-w-0">
+          <Image
+            src={resolveAvatar(selected?.foto)}
+            alt={selected?.nome ? `Foto de ${selected.nome}` : "Foto do atleta"}
+            width={28}
+            height={28}
+            className="rounded-full border border-neutral-700 object-cover"
+          />
+          <span className="truncate">{selected?.nome || "Selecione"}</span>
+        </span>
+        <span className="text-xs text-gray-400">v</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 mt-2 bg-neutral-900 border border-neutral-700 rounded-lg shadow-xl z-20">
+          <div className="p-2">
+            <input
+              className="w-full rounded bg-neutral-800 text-white text-sm px-2 py-1 border border-neutral-700"
+              placeholder="Buscar atleta..."
+              value={filtro}
+              onChange={(event) => setFiltro(event.target.value)}
+            />
+          </div>
+          <div className="max-h-56 overflow-y-auto pb-2">
+            {filtrados.length === 0 && (
+              <p className="text-xs text-center text-gray-500 py-2">Nenhum atleta encontrado.</p>
+            )}
+            {filtrados.map((athlete) => {
+              const isSelected = athlete.slug === value || athlete.id === value;
+              return (
+                <button
+                  key={athlete.slug || athlete.id}
+                  type="button"
+                  className={`w-full px-3 py-2 flex items-center gap-2 text-left transition ${
+                    isSelected
+                      ? "bg-yellow-100 text-black"
+                      : "text-white hover:bg-yellow-100 hover:text-black"
+                  }`}
+                  onClick={() => {
+                    onChange(athlete.slug || athlete.id);
+                    setOpen(false);
+                  }}
+                  aria-label={`Selecionar ${athlete.nome}`}
+                >
+                  <Image
+                    src={resolveAvatar(athlete.foto)}
+                    alt={`Foto de ${athlete.nome}`}
+                    width={28}
+                    height={28}
+                    className="rounded-full border border-neutral-700 object-cover"
+                  />
+                  <span className="flex-1 truncate">{athlete.nome}</span>
+                  {athlete.posicao && (
+                    <span
+                      className={isSelected ? "text-xs text-black/70" : "text-xs text-yellow-400"}
+                    >
+                      {athlete.posicao}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function filterConquistas(
   conquistas: ConquistasAtleta,
@@ -114,10 +249,12 @@ function ConquistasColuna({
 }
 
 export default function TiraTeimaPage() {
-  const { publicSlug } = usePublicLinks();
+  const { publicSlug, publicHref } = usePublicLinks();
   const searchParams = useSearchParams();
   const currentYear = new Date().getFullYear();
   const [periodo, setPeriodo] = useState("current");
+  const [shareFeedback, setShareFeedback] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
   const { rankings, isLoading, isError } = usePublicPlayerRankings({
     slug: publicSlug,
     type: "geral",
@@ -131,8 +268,12 @@ export default function TiraTeimaPage() {
     if (!searchParams) return;
     const atleta1 = searchParams.get("atleta1");
     const atleta2 = searchParams.get("atleta2");
+    const periodoParam = searchParams.get("periodo");
     if (atleta1 && !escolhaA) setEscolhaA(atleta1);
     if (atleta2 && !escolhaB) setEscolhaB(atleta2);
+    if (periodoParam === "all" || periodoParam === "current") {
+      setPeriodo(periodoParam);
+    }
   }, [searchParams, escolhaA, escolhaB]);
 
   const atletasOrdenados = useMemo(
@@ -196,6 +337,47 @@ export default function TiraTeimaPage() {
     { label: "Titulos quadrimestrais (individual)", key: "titulosQuadrimestrais" as const },
   ];
 
+  const pushShareFeedback = (message: string) => {
+    setShareFeedback(message);
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => setShareFeedback(""), 3000);
+    }
+  };
+
+  const handleShare = async () => {
+    if (typeof window === "undefined") return;
+    setIsSharing(true);
+
+    const basePath = publicHref("/estatisticas/tira-teima");
+    const params = new URLSearchParams();
+    if (escolhaA) params.set("atleta1", escolhaA);
+    if (escolhaB) params.set("atleta2", escolhaB);
+    if (periodo) params.set("periodo", periodo);
+
+    const path = params.toString() ? `${basePath}?${params.toString()}` : basePath;
+    const url = new URL(path, window.location.origin).toString();
+    const title = "Tira Teima Fut7Pro";
+    const text = atletaA && atletaB ? `Tira teima: ${nomeA} vs ${nomeB}` : "Tira teima Fut7Pro";
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text, url });
+        pushShareFeedback("Compartilhado");
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        pushShareFeedback("Link copiado");
+      } else {
+        pushShareFeedback("Copie o link do navegador");
+      }
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") {
+        pushShareFeedback("Falha ao compartilhar");
+      }
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -219,36 +401,18 @@ export default function TiraTeimaPage() {
         {!isLoading && !isError && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Atleta A</label>
-                <select
-                  value={escolhaA}
-                  onChange={(e) => setEscolhaA(e.target.value)}
-                  className="w-full bg-neutral-800 text-white rounded px-3 py-2 border border-neutral-700"
-                >
-                  <option value="">Selecione</option>
-                  {atletasOrdenados.map((a) => (
-                    <option key={a.slug} value={a.slug}>
-                      {a.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Atleta B</label>
-                <select
-                  value={escolhaB}
-                  onChange={(e) => setEscolhaB(e.target.value)}
-                  className="w-full bg-neutral-800 text-white rounded px-3 py-2 border border-neutral-700"
-                >
-                  <option value="">Selecione</option>
-                  {atletasOrdenados.map((a) => (
-                    <option key={a.slug} value={a.slug}>
-                      {a.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <AthletePicker
+                label="Atleta A"
+                value={escolhaA}
+                athletes={atletasOrdenados}
+                onChange={setEscolhaA}
+              />
+              <AthletePicker
+                label="Atleta B"
+                value={escolhaB}
+                athletes={atletasOrdenados}
+                onChange={setEscolhaB}
+              />
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Periodo</label>
                 <select
@@ -263,6 +427,17 @@ export default function TiraTeimaPage() {
                   ))}
                 </select>
               </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 mb-6">
+              <button
+                type="button"
+                className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded-lg text-sm transition disabled:opacity-60"
+                onClick={handleShare}
+                disabled={isSharing}
+              >
+                {isSharing ? "Compartilhando..." : "Compartilhar tira-teima"}
+              </button>
+              {shareFeedback && <span className="text-xs text-gray-400">{shareFeedback}</span>}
             </div>
 
             {(atletaA || atletaB) && (
