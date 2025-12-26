@@ -17,8 +17,8 @@ const getVariacaoIcon = (variacao: string) => {
 };
 
 export default function TopTeamsCard() {
-  const { publicHref, publicSlug } = usePublicLinks();
-  const { teams, isLoading, isError } = usePublicTeamRankings({ slug: publicSlug });
+  const { teams, isLoading, isError } = usePublicTeamRankings();
+  const { publicHref } = usePublicLinks();
   const top4 = teams.slice(0, 4);
 
   return (
