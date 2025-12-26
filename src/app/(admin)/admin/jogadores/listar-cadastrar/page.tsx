@@ -108,6 +108,47 @@ function ModalCadastroJogador({
   );
 }
 
+// --- MODAL EDICAO ---
+function ModalEditarJogador({
+  open,
+  jogador,
+  onClose,
+  onSave,
+  loading,
+  error,
+}: {
+  open: boolean;
+  jogador?: Jogador;
+  onClose: () => void;
+  onSave: (jogador: Partial<Jogador>, fotoFile?: File | null) => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open || !jogador) return null;
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-cyan-700 rounded-2xl shadow-xl p-6 w-full max-w-2xl flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg text-cyan-300 font-bold">Editar Jogador</h2>
+            <p className="text-sm text-gray-300">Atualize os dados do atleta e ajuste a foto.</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white text-sm font-semibold px-3 py-2 rounded-md"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <JogadorForm jogador={jogador} onSave={onSave} onCancel={onClose} isLoading={loading} />
+
+        {error && <div className="text-sm text-red-300">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
 // --- MODAL VINCULO ---
 function ModalVincularJogador({
   open,
@@ -262,7 +303,7 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const rachaId = rachaConfig.slug;
-  const { jogadores, isLoading, isError, error, deleteJogador, mutate, addJogador } =
+  const { jogadores, isLoading, isError, error, deleteJogador, mutate, addJogador, updateJogador } =
     useJogadores(rachaId);
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
@@ -270,6 +311,10 @@ export default function Page() {
   const [showModalCadastro, setShowModalCadastro] = useState(false);
   const [cadastroErro, setCadastroErro] = useState<string | null>(null);
   const [cadastroLoading, setCadastroLoading] = useState(false);
+  const [showModalEditar, setShowModalEditar] = useState(false);
+  const [jogadorEditar, setJogadorEditar] = useState<Jogador | undefined>();
+  const [editarErro, setEditarErro] = useState<string | null>(null);
+  const [editarLoading, setEditarLoading] = useState(false);
   const [showModalVincular, setShowModalVincular] = useState(false);
   const [jogadorVinculo, setJogadorVinculo] = useState<Jogador | undefined>();
   const [buscaConta, setBuscaConta] = useState("");
@@ -314,6 +359,21 @@ export default function Page() {
     setShowModalCadastro(false);
     setCadastroErro(null);
     setCadastroLoading(false);
+  };
+
+  const abrirModalEditar = (jogador: Jogador) => {
+    setJogadorEditar(jogador);
+    setEditarErro(null);
+    setEditarLoading(false);
+    setShowModalEditar(true);
+  };
+
+  const fecharModalEditar = () => {
+    if (editarLoading) return;
+    setShowModalEditar(false);
+    setJogadorEditar(undefined);
+    setEditarErro(null);
+    setEditarLoading(false);
   };
 
   const abrirModalVinculo = (jogador: Jogador) => {
@@ -399,6 +459,41 @@ export default function Page() {
       setCadastroErro(message);
     } finally {
       setCadastroLoading(false);
+    }
+  };
+
+  const confirmarEdicao = async (jogador: Partial<Jogador>, fotoFile?: File | null) => {
+    if (!jogadorEditar || editarLoading) return;
+    setEditarLoading(true);
+    setEditarErro(null);
+
+    try {
+      let uploadedUrl: string | undefined;
+      if (fotoFile) {
+        uploadedUrl = await uploadAvatar(fotoFile);
+      }
+
+      const payload: Partial<Jogador> = {
+        ...jogador,
+        foto: undefined,
+        email: undefined,
+      };
+      if (typeof uploadedUrl !== "undefined") {
+        payload.photoUrl = uploadedUrl;
+      }
+
+      const result = await updateJogador(jogadorEditar.id, payload);
+      if (!result) {
+        throw new Error("Nao foi possivel atualizar o jogador.");
+      }
+
+      setShowModalEditar(false);
+      setJogadorEditar(undefined);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Nao foi possivel atualizar o jogador.";
+      setEditarErro(message);
+    } finally {
+      setEditarLoading(false);
     }
   };
 
@@ -581,7 +676,7 @@ export default function Page() {
                       )}
                       <button
                         className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                        onClick={() => alert("Função de edição em desenvolvimento.")}
+                        onClick={() => abrirModalEditar(j)}
                       >
                         <FaEdit /> Editar
                       </button>
@@ -619,6 +714,15 @@ export default function Page() {
         onSave={confirmarCadastro}
         loading={cadastroLoading}
         error={cadastroErro}
+      />
+
+      <ModalEditarJogador
+        open={showModalEditar}
+        jogador={jogadorEditar}
+        onClose={fecharModalEditar}
+        onSave={confirmarEdicao}
+        loading={editarLoading}
+        error={editarErro}
       />
 
       <ModalVincularJogador
