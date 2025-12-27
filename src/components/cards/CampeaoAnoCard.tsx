@@ -26,6 +26,9 @@ export default function CampeaoAnoCard({
   temporario = false,
 }: CampeaoAnoCardProps) {
   const { publicHref } = usePublicLinks();
+  const resolvedImage =
+    image && image.trim().length > 0 ? image : "/images/jogadores/jogador_padrao_01.jpg";
+  const paddingClass = temporario ? "pt-7" : "";
   // Garante que rankings de campeões do ano sempre vão para as rotas ANUAIS
   const destino = href.startsWith("/estatisticas") ? href : slug ? `/atletas/${slug}` : "#";
   const resolvedHref = publicHref(destino);
@@ -36,7 +39,7 @@ export default function CampeaoAnoCard({
       {icone && typeof icone === "string" && icone.startsWith("/") ? (
         <Image
           src={icone}
-          alt={`Ícone do prêmio ${titulo}`}
+          alt={`Icone do premio ${titulo}`}
           width={22}
           height={22}
           className="inline-block align-middle"
@@ -56,18 +59,18 @@ export default function CampeaoAnoCard({
           ? `Ver ranking anual relacionado a ${titulo}`
           : `Ver perfil de ${nome} - ${titulo}`
       }
-      className="bg-[#1A1A1A] rounded-2xl p-4 shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative"
+      className={`bg-[#1A1A1A] rounded-2xl p-4 ${paddingClass} shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative`}
     >
       {temporario && (
-        <span className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-gray-300">
-          🕓 Temporário
+        <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full">
+          temporariamente
         </span>
       )}
 
       {renderTitulo()}
 
       <Image
-        src={image}
+        src={resolvedImage}
         alt={`Imagem do campeão ${nome} - ${titulo}`}
         width={100}
         height={100}
