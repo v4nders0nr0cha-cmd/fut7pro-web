@@ -241,7 +241,11 @@ export default function OsCampeoesAdminPage() {
         throw new Error(payload?.error || "Erro ao finalizar temporada.");
       }
       const created = Number.isFinite(payload?.created) ? payload.created : 0;
-      setMensagemFechamento(`Temporada ${anoBase} finalizada. ${created} conquistas geradas.`);
+      const annualCreated = Number.isFinite(payload?.annualCreated) ? payload.annualCreated : 0;
+      const quarterCreated = Number.isFinite(payload?.quarterCreated) ? payload.quarterCreated : 0;
+      setMensagemFechamento(
+        `Temporada ${anoBase} finalizada. ${created} conquistas geradas (anuais: ${annualCreated}, quadrimestrais: ${quarterCreated}).`
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao finalizar temporada.";
       setMensagemFechamento(message);
