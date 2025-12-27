@@ -21,12 +21,40 @@ export default function OsCampeoesAdminPage() {
     availableYears,
     isLoading: loadingGeral,
   } = usePublicPlayerRankings({ type: "geral", period: "year", year: anoSelecionado });
+  const anoBase = anoSelecionado ?? availableYears[0] ?? new Date().getFullYear();
+  const [fechandoTemporada, setFechandoTemporada] = useState(false);
+  const [mensagemFechamento, setMensagemFechamento] = useState<string | null>(null);
 
   useEffect(() => {
     if (!anoSelecionado && availableYears.length) {
       setAnoSelecionado(availableYears[0]);
     }
   }, [availableYears, anoSelecionado]);
+
+  const handleFinalizarTemporada = async () => {
+    if (fechandoTemporada) return;
+    setFechandoTemporada(true);
+    setMensagemFechamento(null);
+
+    try {
+      const response = await fetch("/api/campeoes/finalizar-temporada", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ year: anoBase }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(payload?.error || "Erro ao finalizar temporada.");
+      }
+      const created = Number.isFinite(payload?.created) ? payload.created : 0;
+      setMensagemFechamento(`Temporada ${anoBase} finalizada. ${created} conquistas geradas.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao finalizar temporada.";
+      setMensagemFechamento(message);
+    } finally {
+      setFechandoTemporada(false);
+    }
+  };
 
   const campeoesDoAno = useMemo(() => {
     if (!rankingGeral.length) return [];
@@ -116,11 +144,11 @@ export default function OsCampeoesAdminPage() {
             destaques por posição.
           </p>
 
-          <div className="flex justify-center mb-8">
+          <div className="flex flex-col items-center gap-3 mb-8">
             <div className="inline-block">
               <select
                 className="bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-yellow-200 font-semibold"
-                value={anoSelecionado || availableYears[0] || new Date().getFullYear()}
+                value={anoBase}
                 onChange={(e) => setAnoSelecionado(Number(e.target.value))}
               >
                 {(availableYears.length ? availableYears : [new Date().getFullYear()]).map(
@@ -132,6 +160,19 @@ export default function OsCampeoesAdminPage() {
                 )}
               </select>
             </div>
+            <button
+              type="button"
+              onClick={handleFinalizarTemporada}
+              disabled={fechandoTemporada}
+              className={`border border-yellow-400 text-yellow-200 font-semibold px-4 py-2 rounded transition ${
+                fechandoTemporada ? "opacity-60 cursor-not-allowed" : "hover:bg-yellow-400/10"
+              }`}
+            >
+              {fechandoTemporada ? "Finalizando temporada..." : "Finalizar temporada"}
+            </button>
+            {mensagemFechamento && (
+              <p className="text-sm text-gray-300 text-center">{mensagemFechamento}</p>
+            )}
           </div>
 
           <section className="mb-12">
@@ -182,7 +223,7 @@ export default function OsCampeoesAdminPage() {
             <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">
               Campeões por Quadrimestre
             </h2>
-            <QuadrimestreGrid dados={quadrimestres} />
+            <QuadrimestreGrid dados={quadrimestres} year={anoBase} />
           </section>
         </div>
       </main>

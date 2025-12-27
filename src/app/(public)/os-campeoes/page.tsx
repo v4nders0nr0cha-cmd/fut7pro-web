@@ -3,7 +3,8 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import QuadrimestreGrid from "@/components/cards/QuadrimestreGrid";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
@@ -49,6 +50,7 @@ const positionMeta = [
 export default function CampeoesPage() {
   const { publicHref, publicSlug } = usePublicLinks();
   const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
+  const [saibaMaisOpen, setSaibaMaisOpen] = useState(false);
   const anoBase = anoSelecionado ?? CURRENT_YEAR;
 
   const rankingAno = usePublicPlayerRankings({
@@ -169,6 +171,7 @@ export default function CampeoesPage() {
   }, [anoBase, publicHref, rankingAno.rankings, rankingTimesAno.teams]);
 
   const melhoresPorPosicao = useMemo(() => {
+    const temporario = anoBase === CURRENT_YEAR;
     return positionMeta.map((meta) => {
       const top = pickTopByPosition(rankingAno.rankings, meta.key);
       return {
@@ -178,6 +181,8 @@ export default function CampeoesPage() {
         image: safeImage(top?.foto, meta.fallback),
         icon: meta.icon,
         href: publicHref(`${meta.href}?period=temporada&year=${anoBase}`),
+        temporario,
+        highlight: true,
       };
     });
   }, [anoBase, publicHref, rankingAno.rankings]);
@@ -241,8 +246,18 @@ export default function CampeoesPage() {
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-yellow-400 mb-2">Os Campeoes</h2>
           <p className="text-textoSuave">
-            Destaque anual e quadrimestral com dados reais do painel do racha.
+            Hall da Fama do racha, com os campeoes do ano e de cada quadrimestre, baseados em
+            desempenho real nos jogos, rankings e estatisticas oficiais.
           </p>
+          <div className="flex justify-center mt-3">
+            <button
+              type="button"
+              onClick={() => setSaibaMaisOpen(true)}
+              className="text-yellow-300 hover:text-yellow-200 font-semibold text-sm underline underline-offset-4"
+            >
+              Saiba mais
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col items-center gap-4 mb-10">
@@ -287,9 +302,164 @@ export default function CampeoesPage() {
           <h3 className="text-2xl font-bold text-yellow-400 text-center mb-6">
             Campeoes por Quadrimestre
           </h3>
-          <QuadrimestreGrid dados={quadrimestres} />
+          <QuadrimestreGrid dados={quadrimestres} year={anoBase} />
         </section>
       </main>
+
+      <Transition.Root show={saibaMaisOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setSaibaMaisOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 translate-y-6"
+              enterTo="opacity-100 translate-y-0"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 translate-y-0"
+              leaveTo="opacity-0 translate-y-6"
+            >
+              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+                <button
+                  onClick={() => setSaibaMaisOpen(false)}
+                  className="absolute right-4 top-4 bg-black/70 rounded-full px-3 py-1 text-white text-sm"
+                  aria-label="Fechar"
+                >
+                  X
+                </button>
+
+                <Dialog.Title className="text-2xl font-bold text-yellow-400 mb-4 text-center">
+                  Como funciona a pagina Os Campeoes
+                </Dialog.Title>
+
+                <div className="space-y-5 text-sm text-gray-200 leading-relaxed">
+                  <p>
+                    A pagina Os Campeoes funciona como o Hall da Fama oficial do racha, destacando
+                    os melhores atletas e times ao longo do ano e de cada quadrimestre, com base em
+                    dados reais registrados no sistema. Todos os campeoes sao definidos
+                    automaticamente a partir dos rankings, estatisticas e resultados oficiais das
+                    partidas, sem interferencia manual.
+                  </p>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">Escolha do Ano</h4>
+                    <p>
+                      Voce pode selecionar o ano desejado para visualizar os campeoes daquele
+                      periodo. Os anos disponiveis comecam a partir do ano de criacao do racha e
+                      seguem de forma cronologica.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">Campeoes do Ano</h4>
+                    <p className="mb-2">
+                      Nesta secao sao exibidos os principais destaques da temporada:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Melhor do Ano: atleta com maior pontuacao total no ano.</li>
+                      <li>Artilheiro do Ano: atleta com maior numero de gols no ano.</li>
+                      <li>Maestro do Ano: atleta com maior numero de assistencias no ano.</li>
+                      <li>Campeao do Ano: time com maior pontuacao acumulada no ano.</li>
+                    </ul>
+                    <p className="mt-2">
+                      Ao clicar em qualquer card, voce e direcionado ao ranking correspondente
+                      daquele ano. Quando o ano ainda nao foi finalizado, os cards exibem o selo
+                      "Temporariamente", indicando que os resultados podem mudar ate o encerramento
+                      da temporada.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">
+                      Melhores por Posicao no Ano
+                    </h4>
+                    <p className="mb-2">
+                      Abaixo dos campeoes principais estao os vencedores por posicao, considerando
+                      apenas atletas da mesma funcao:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Atacante do Ano</li>
+                      <li>Meia do Ano</li>
+                      <li>Zagueiro do Ano</li>
+                      <li>Goleiro do Ano</li>
+                    </ul>
+                    <p className="mt-2">
+                      O criterio e sempre o mesmo: maior pontuacao dentro da posicao no ano
+                      selecionado. Cada card leva ao ranking especifico daquela posicao.
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">
+                      Campeoes por Quadrimestre
+                    </h4>
+                    <p className="mb-2">O ano e dividido em tres quadrimestres:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>1o Quadrimestre: Janeiro a Abril</li>
+                      <li>2o Quadrimestre: Maio a Agosto</li>
+                      <li>3o Quadrimestre: Setembro a Dezembro</li>
+                    </ul>
+                    <p className="mt-2">
+                      Cada quadrimestre possui seus proprios campeoes, definidos apenas pelo
+                      desempenho dentro daquele periodo. Ao final de cada quadrimestre:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Os rankings do periodo sao finalizados.</li>
+                      <li>Os campeoes recebem o selo de Campeao do Quadrimestre.</li>
+                      <li>
+                        Os rankings do proximo quadrimestre reiniciam do zero, garantindo disputa
+                        justa.
+                      </li>
+                    </ul>
+                    <p className="mt-2">
+                      Antes do inicio de um quadrimestre, os rankings aparecem com a mensagem:
+                      "Ranking liberado no inicio do quadrimestre."
+                    </p>
+                  </div>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">
+                      Conquistas e Icones no Perfil
+                    </h4>
+                    <p className="mb-2">
+                      Sempre que um atleta ou time conquista um titulo (anual ou quadrimestral), ele
+                      recebe um icone de premiacao virtual. Esses icones:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Ficam visiveis no perfil do atleta.</li>
+                      <li>Sao permanentes.</li>
+                      <li>
+                        Sao organizados por importancia, dando mais destaque aos titulos mais raros
+                        e dificeis de conquistar.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-2">Observacao Importante</h4>
+                    <p>
+                      Se um racha for criado no meio do ano, apenas os quadrimestres a partir da
+                      data de criacao passam a ser considerados. Quadrimestres ja encerrados antes
+                      da criacao do racha nao terao campeoes.
+                    </p>
+                  </div>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </>
   );
 }
@@ -302,6 +472,7 @@ function ChampionHighlightCard({
   image,
   icon,
   temporario,
+  highlight,
 }: {
   titulo: string;
   nome: string;
@@ -310,14 +481,21 @@ function ChampionHighlightCard({
   image: string;
   icon: string;
   temporario?: boolean;
+  highlight?: boolean;
 }) {
+  const highlightClasses = highlight
+    ? "shadow-[0_0_18px_2px_rgba(255,204,0,0.28)] ring-1 ring-yellow-400/30 hover:shadow-[0_0_24px_4px_rgba(255,204,0,0.45)]"
+    : "hover:shadow-[0_0_10px_2px_#FFCC00]";
   return (
     <Link
       href={href}
-      className="relative block bg-[#1A1A1A] rounded-xl p-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow"
+      className={`relative block bg-[#1A1A1A] rounded-xl p-4 transition-shadow ${highlightClasses}`}
     >
+      {highlight && (
+        <span className="pointer-events-none absolute -top-10 left-1/2 h-20 w-40 -translate-x-1/2 rounded-full bg-yellow-400/20 blur-2xl" />
+      )}
       {temporario && (
-        <span className="absolute top-2 left-3 text-[10px] uppercase text-gray-300">
+        <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full">
           temporariamente
         </span>
       )}

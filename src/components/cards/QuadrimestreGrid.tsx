@@ -7,27 +7,25 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 interface Props {
   dados: QuadrimestresAno;
+  year?: number;
 }
 
 const periodos = [
   {
-    key: "1o Quadrimestre",
-    label: "1o QUADRIMESTRE (jan-abr)",
-    aliases: ["1º Quadrimestre", "1§ Quadrimestre", "1° Quadrimestre"],
+    order: 1,
+    label: "QUADRIMESTRE (jan-abr)",
   },
   {
-    key: "2o Quadrimestre",
-    label: "2o QUADRIMESTRE (maio-ago)",
-    aliases: ["2º Quadrimestre", "2§ Quadrimestre", "2° Quadrimestre"],
+    order: 2,
+    label: "QUADRIMESTRE (maio-ago)",
   },
   {
-    key: "3o Quadrimestre",
-    label: "3o QUADRIMESTRE (set-dez)",
-    aliases: ["3º Quadrimestre", "3§ Quadrimestre", "3° Quadrimestre"],
+    order: 3,
+    label: "QUADRIMESTRE (set-dez)",
   },
 ];
 
-export default function QuadrimestreGrid({ dados }: Props) {
+export default function QuadrimestreGrid({ dados, year }: Props) {
   const { publicHref } = usePublicLinks();
   const prioridade = [
     "Melhor do Quadrimestre",
@@ -50,22 +48,40 @@ export default function QuadrimestreGrid({ dados }: Props) {
     const idx = prioridade.indexOf(titulo);
     return idx === -1 ? prioridade.length : idx;
   };
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.floor(now.getMonth() / 4) + 1;
+  const targetYear = year ?? currentYear;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-      {periodos.map(({ key, label, aliases }) => {
-        const itens = resolveItens(dados, [key, ...aliases]);
+      {periodos.map(({ label, order }) => {
+        const itens = resolveItensByOrder(dados, order);
+        const isFuture =
+          targetYear > currentYear || (targetYear === currentYear && order > currentQuarter);
+        const isFinished =
+          targetYear < currentYear || (targetYear === currentYear && order < currentQuarter);
         return (
           <div
-            key={key}
+            key={order}
             className="bg-[#1A1A1A] rounded-xl p-4 shadow-md w-full max-w-sm text-white min-h-[220px] flex flex-col"
           >
-            <h3 className="text-center text-xs font-bold text-gray-400 uppercase">{label}</h3>
+            <h3 className="text-center text-xs font-bold text-gray-400">
+              <span className="inline-flex items-center gap-0.5">
+                <span>{order}</span>
+                <span className="lowercase">o</span>
+              </span>{" "}
+              <span className="uppercase">{label}</span>
+            </h3>
             <h4 className="text-center text-yellow-400 text-sm font-bold mb-4 uppercase">
               CAMPEOES DO QUADRIMESTRE
             </h4>
             <ul className="space-y-2 flex-1">
-              {itens.length > 0 ? (
+              {isFuture ? (
+                <li className="text-center text-gray-500 py-8 text-xs">
+                  Ranking liberado no inicio do quadrimestre.
+                </li>
+              ) : itens.length > 0 ? (
                 [...itens]
                   .sort((a, b) => resolveOrdem(a.titulo) - resolveOrdem(b.titulo))
                   .map((item, index) => (
@@ -86,17 +102,24 @@ export default function QuadrimestreGrid({ dados }: Props) {
                         )}
                       </span>
                       <span className="flex-1 text-center">
-                        {item.slug ? (
-                          <Link
-                            href={publicHref(`/atletas/${item.slug}`)}
-                            className="hover:text-yellow-400 transition underline underline-offset-2"
-                            title={`Ver perfil de ${item.nome} - ${item.titulo}`}
-                          >
-                            {item.nome}
-                          </Link>
-                        ) : (
-                          item.nome
-                        )}
+                        <span className="inline-flex items-center justify-center gap-2">
+                          {item.slug ? (
+                            <Link
+                              href={publicHref(`/atletas/${item.slug}`)}
+                              className="hover:text-yellow-400 transition underline underline-offset-2"
+                              title={`Ver perfil de ${item.nome} - ${item.titulo}`}
+                            >
+                              {item.nome}
+                            </Link>
+                          ) : (
+                            <span>{item.nome}</span>
+                          )}
+                          {isFinished && !item.nome.toLowerCase().includes("processamento") && (
+                            <span className="text-[9px] uppercase tracking-wide text-yellow-200 border border-yellow-400/40 bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                              campeao
+                            </span>
+                          )}
+                        </span>
                       </span>
                       <span className="text-xs text-gray-400 text-right w-28 break-words">
                         {item.titulo}
@@ -114,10 +137,10 @@ export default function QuadrimestreGrid({ dados }: Props) {
   );
 }
 
-function resolveItens(dados: QuadrimestresAno, keys: string[]) {
-  for (const key of keys) {
-    const itens = dados[key];
-    if (itens && itens.length > 0) return itens;
+function resolveItensByOrder(dados: QuadrimestresAno, order: number) {
+  const match = new RegExp(`(^|\\D)${order}(\\D|$)`);
+  for (const [key, itens] of Object.entries(dados)) {
+    if (match.test(key)) return itens;
   }
   return [];
 }
