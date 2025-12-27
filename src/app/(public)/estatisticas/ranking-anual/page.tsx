@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,7 +12,9 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const anoAtual = new Date().getFullYear();
 
 export default function RankingAnualPage() {
-  const [ano, setAno] = useState<number>(anoAtual);
+  const searchParams = useSearchParams();
+  const anoQuery = parseYear(searchParams.get("year"));
+  const [ano, setAno] = useState<number>(anoQuery ?? anoAtual);
   const [search, setSearch] = useState("");
   const { publicHref, publicSlug } = usePublicLinks();
 
@@ -161,4 +164,11 @@ export default function RankingAnualPage() {
       </main>
     </>
   );
+}
+
+function parseYear(value: string | null) {
+  if (!value) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
 }

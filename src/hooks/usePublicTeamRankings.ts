@@ -59,14 +59,22 @@ const teamsFetcher = async (url: string): Promise<PublicTeamsResponse> => {
 export interface UsePublicTeamRankingsOptions {
   slug?: string;
   year?: number;
+  period?: "year" | "quarter";
+  quarter?: number;
 }
 
 export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}) {
   const slug = options.slug ?? rachaConfig.slug;
 
   const params = new URLSearchParams();
+  if (options.period) {
+    params.set("period", options.period);
+  }
   if (options.year) {
     params.set("year", String(options.year));
+  }
+  if (options.quarter) {
+    params.set("quarter", String(options.quarter));
   }
 
   const search = params.toString();

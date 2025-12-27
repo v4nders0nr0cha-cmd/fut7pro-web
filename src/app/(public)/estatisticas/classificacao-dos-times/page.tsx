@@ -2,11 +2,14 @@
 
 import Head from "next/head";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function ClassificacaoTimesPage() {
-  const [year, setYear] = useState<number | undefined>(undefined);
+  const searchParams = useSearchParams();
+  const yearQuery = parseYear(searchParams.get("year"));
+  const [year, setYear] = useState<number | undefined>(yearQuery ?? undefined);
   const { publicSlug } = usePublicLinks();
 
   const { teams, availableYears, isLoading, isError, error } = usePublicTeamRankings({
@@ -148,4 +151,11 @@ export default function ClassificacaoTimesPage() {
       </main>
     </>
   );
+}
+
+function parseYear(value: string | null) {
+  if (!value) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
 }

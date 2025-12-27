@@ -4,6 +4,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
@@ -19,20 +20,31 @@ const periodos = [
 ];
 
 export default function RankingGoleirosPage() {
+  const searchParams = useSearchParams();
+  const yearQuery = parseYear(searchParams.get("year"));
   const [search, setSearch] = useState("");
-  const [periodo, setPeriodo] = useState("q1");
+  const [periodo, setPeriodo] = useState(
+    normalizePeriodo(searchParams.get("period"), Boolean(yearQuery))
+  );
   const { publicHref, publicSlug } = usePublicLinks();
+  const anoReferencia = yearQuery ?? anoAtual;
 
   const { rankings, isLoading, isError, error } = usePublicPlayerRankings(
     periodo === "temporada"
-      ? { slug: publicSlug, type: "geral", period: "year", year: anoAtual, position: "goleiro" }
+      ? {
+          slug: publicSlug,
+          type: "geral",
+          period: "year",
+          year: anoReferencia,
+          position: "goleiro",
+        }
       : periodo === "todas"
         ? { slug: publicSlug, type: "geral", period: "all", position: "goleiro" }
         : {
             slug: publicSlug,
             type: "geral",
             period: "quarter",
-            year: anoAtual,
+            year: anoReferencia,
             quarter: Number(periodo.replace("q", "")) as 1 | 2 | 3,
             position: "goleiro",
           }
@@ -157,4 +169,20 @@ export default function RankingGoleirosPage() {
       </main>
     </>
   );
+}
+
+function parseYear(value: string | null) {
+  if (!value) return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return null;
+  return parsed;
+}
+
+function normalizePeriodo(value: string | null, hasYear: boolean) {
+  if (!value) return hasYear ? "temporada" : "q1";
+  const lower = value.toLowerCase();
+  if (lower === "anual" || lower === "year") return "temporada";
+  if (lower === "all") return "todas";
+  if (["q1", "q2", "q3", "temporada", "todas"].includes(lower)) return lower;
+  return hasYear ? "temporada" : "q1";
 }
