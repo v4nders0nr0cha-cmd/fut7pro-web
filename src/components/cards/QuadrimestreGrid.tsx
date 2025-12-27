@@ -8,6 +8,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 interface Props {
   dados: QuadrimestresAno;
   year?: number;
+  tenantCreatedAt?: string | Date;
 }
 
 const periodos = [
@@ -25,7 +26,7 @@ const periodos = [
   },
 ];
 
-export default function QuadrimestreGrid({ dados, year }: Props) {
+export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props) {
   const { publicHref } = usePublicLinks();
   const prioridade = [
     "Melhor do Quadrimestre",
@@ -52,6 +53,12 @@ export default function QuadrimestreGrid({ dados, year }: Props) {
   const currentYear = now.getFullYear();
   const currentQuarter = Math.floor(now.getMonth() / 4) + 1;
   const targetYear = year ?? currentYear;
+  const createdAt =
+    typeof tenantCreatedAt === "string"
+      ? new Date(tenantCreatedAt)
+      : tenantCreatedAt instanceof Date
+        ? tenantCreatedAt
+        : null;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
@@ -59,8 +66,12 @@ export default function QuadrimestreGrid({ dados, year }: Props) {
         const itens = resolveItensByOrder(dados, order);
         const isFuture =
           targetYear > currentYear || (targetYear === currentYear && order > currentQuarter);
+        const { end } = quarterBounds(targetYear, order);
+        const isBeforeCreation = createdAt ? createdAt.getTime() > end.getTime() : false;
+        const isBlocked = isFuture || isBeforeCreation;
         const isFinished =
-          targetYear < currentYear || (targetYear === currentYear && order < currentQuarter);
+          !isBlocked &&
+          (targetYear < currentYear || (targetYear === currentYear && order < currentQuarter));
         return (
           <div
             key={order}
@@ -77,7 +88,7 @@ export default function QuadrimestreGrid({ dados, year }: Props) {
               CAMPEOES DO QUADRIMESTRE
             </h4>
             <ul className="space-y-2 flex-1">
-              {isFuture ? (
+              {isBlocked ? (
                 <li className="text-center text-gray-500 py-8 text-xs">
                   Ranking liberado no inicio do quadrimestre.
                 </li>
@@ -143,4 +154,22 @@ function resolveItensByOrder(dados: QuadrimestresAno, order: number) {
     if (match.test(key)) return itens;
   }
   return [];
+}
+
+function quarterBounds(year: number, quarter: number) {
+  const mapping: Record<
+    number,
+    { start: { month: number; day: number }; end: { month: number; day: number } }
+  > = {
+    1: { start: { month: 1, day: 1 }, end: { month: 4, day: 30 } },
+    2: { start: { month: 5, day: 1 }, end: { month: 8, day: 31 } },
+    3: { start: { month: 9, day: 1 }, end: { month: 12, day: 31 } },
+  };
+
+  const range = mapping[quarter] ?? mapping[1];
+
+  return {
+    start: new Date(year, range.start.month - 1, range.start.day, 0, 0, 0, 0),
+    end: new Date(year, range.end.month - 1, range.end.day, 23, 59, 59, 999),
+  };
 }

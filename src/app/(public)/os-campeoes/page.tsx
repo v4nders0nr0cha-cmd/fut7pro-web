@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 import QuadrimestreGrid from "@/components/cards/QuadrimestreGrid";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
@@ -15,6 +16,20 @@ import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_TEAM_IMAGE = "/images/times/time_padrao_01.png";
+
+type TenantInfo = {
+  slug: string;
+  name: string;
+  createdAt: string;
+};
+
+const tenantFetcher = async (url: string): Promise<TenantInfo> => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error("Erro ao carregar dados do racha");
+  }
+  return res.json();
+};
 
 const positionMeta = [
   {
@@ -52,6 +67,11 @@ export default function CampeoesPage() {
   const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
   const [saibaMaisOpen, setSaibaMaisOpen] = useState(false);
   const anoBase = anoSelecionado ?? CURRENT_YEAR;
+  const tenantKey = publicSlug ? `/api/public/${publicSlug}/tenant` : null;
+  const { data: tenantData } = useSWR<TenantInfo>(tenantKey, tenantFetcher, {
+    revalidateOnFocus: false,
+  });
+  const tenantCreatedAt = tenantData?.createdAt;
 
   const rankingAno = usePublicPlayerRankings({
     slug: publicSlug,
@@ -139,6 +159,7 @@ export default function CampeoesPage() {
         icon: "/images/icons/trofeu-de-ouro.png",
         href: publicHref(`/estatisticas/ranking-anual?year=${anoBase}`),
         temporario,
+        highlight: true,
       },
       {
         titulo: "Artilheiro do Ano",
@@ -148,6 +169,7 @@ export default function CampeoesPage() {
         icon: "/images/icons/bola-de-ouro.png",
         href: publicHref(`/estatisticas/artilheiros?period=temporada&year=${anoBase}`),
         temporario,
+        highlight: true,
       },
       {
         titulo: "Campeao do Ano",
@@ -157,6 +179,7 @@ export default function CampeoesPage() {
         icon: "/images/icons/trofeu-de-ouro.png",
         href: publicHref(`/estatisticas/classificacao-dos-times?year=${anoBase}`),
         temporario,
+        highlight: true,
       },
       {
         titulo: "Maestro do Ano",
@@ -166,6 +189,7 @@ export default function CampeoesPage() {
         icon: "/images/icons/chuteira-de-ouro.png",
         href: publicHref(`/estatisticas/assistencias?period=temporada&year=${anoBase}`),
         temporario,
+        highlight: true,
       },
     ];
   }, [anoBase, publicHref, rankingAno.rankings, rankingTimesAno.teams]);
@@ -302,7 +326,11 @@ export default function CampeoesPage() {
           <h3 className="text-2xl font-bold text-yellow-400 text-center mb-6">
             Campeoes por Quadrimestre
           </h3>
-          <QuadrimestreGrid dados={quadrimestres} year={anoBase} />
+          <QuadrimestreGrid
+            dados={quadrimestres}
+            year={anoBase}
+            tenantCreatedAt={tenantCreatedAt}
+          />
         </section>
       </main>
 
@@ -486,16 +514,17 @@ function ChampionHighlightCard({
   const highlightClasses = highlight
     ? "shadow-[0_0_18px_2px_rgba(255,204,0,0.28)] ring-1 ring-yellow-400/30 hover:shadow-[0_0_24px_4px_rgba(255,204,0,0.45)]"
     : "hover:shadow-[0_0_10px_2px_#FFCC00]";
+  const paddingClass = temporario ? "pt-7" : "";
   return (
     <Link
       href={href}
-      className={`relative block bg-[#1A1A1A] rounded-xl p-4 transition-shadow ${highlightClasses}`}
+      className={`relative block bg-[#1A1A1A] rounded-xl p-4 ${paddingClass} transition-shadow ${highlightClasses}`}
     >
       {highlight && (
         <span className="pointer-events-none absolute -top-10 left-1/2 h-20 w-40 -translate-x-1/2 rounded-full bg-yellow-400/20 blur-2xl" />
       )}
       {temporario && (
-        <span className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full">
+        <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full z-10">
           temporariamente
         </span>
       )}
