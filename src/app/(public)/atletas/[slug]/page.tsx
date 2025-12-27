@@ -190,7 +190,7 @@ export default function PerfilAtletaPage() {
   const athleteId = athlete?.id || atletaRanking?.id;
   const campeaoDia = useMemo(() => countChampionDays(matches, athleteId), [matches, athleteId]);
 
-  if (isLoadingAthlete || isLoadingRankings) {
+  if (isLoadingAthlete && !athlete) {
     return (
       <div className="w-full max-w-4xl mx-auto px-2 py-12 text-gray-300">Carregando atleta...</div>
     );
@@ -264,7 +264,6 @@ export default function PerfilAtletaPage() {
                   Nivel de Assiduidade: {nivelAssiduidade}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-zinc-400">Slug: {athlete.slug}</p>
             </div>
           </div>
 
