@@ -1,7 +1,10 @@
 "use client";
 
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { motion } from "framer-motion";
 import useSWR from "swr";
 import CampeaoAnoCard from "@/components/cards/CampeaoAnoCard";
 import QuadrimestreGrid from "@/components/cards/QuadrimestreGrid";
@@ -14,6 +17,9 @@ import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 const CURRENT_YEAR = new Date().getFullYear();
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_TEAM_IMAGE = "/images/times/time_padrao_01.png";
+const SUCCESS_TITLE = "Temporada finalizada com sucesso!";
+const SUCCESS_MESSAGE =
+  "Obrigado por mais um ano de racha. As premia\u00e7\u00f5es foram aplicadas nos perfis dos campe\u00f5es e os rankings j\u00e1 est\u00e3o prontos para o pr\u00f3ximo ano. Boa virada e que venha uma temporada ainda mais braba!";
 
 type TenantInfo = {
   slug: string;
@@ -61,10 +67,18 @@ const positionMeta = [
 ];
 
 export default function OsCampeoesAdminPage() {
-  const { publicSlug } = usePublicLinks();
+  const { publicSlug, publicHref } = usePublicLinks();
   const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
   const [fechandoTemporada, setFechandoTemporada] = useState(false);
   const [mensagemFechamento, setMensagemFechamento] = useState<string | null>(null);
+  const [confirmFinalizacaoOpen, setConfirmFinalizacaoOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [successCounts, setSuccessCounts] = useState<{
+    created: number;
+    annualCreated: number;
+    quarterCreated: number;
+  } | null>(null);
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
   const anoBase = anoSelecionado ?? CURRENT_YEAR;
 
   const tenantKey = publicSlug ? `/api/public/${publicSlug}/tenant` : null;
@@ -229,6 +243,7 @@ export default function OsCampeoesAdminPage() {
     if (fechandoTemporada) return;
     setFechandoTemporada(true);
     setMensagemFechamento(null);
+    setShareFeedback(null);
 
     try {
       const response = await fetch("/api/campeoes/finalizar-temporada", {
@@ -243,14 +258,75 @@ export default function OsCampeoesAdminPage() {
       const created = Number.isFinite(payload?.created) ? payload.created : 0;
       const annualCreated = Number.isFinite(payload?.annualCreated) ? payload.annualCreated : 0;
       const quarterCreated = Number.isFinite(payload?.quarterCreated) ? payload.quarterCreated : 0;
-      setMensagemFechamento(
-        `Temporada ${anoBase} finalizada. ${created} conquistas geradas (anuais: ${annualCreated}, quadrimestrais: ${quarterCreated}).`
-      );
+      setSuccessCounts({ created, annualCreated, quarterCreated });
+      return { ok: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao finalizar temporada.";
       setMensagemFechamento(message);
+      return { ok: false };
     } finally {
       setFechandoTemporada(false);
+    }
+  };
+
+  const triggerCelebration = async () => {
+    try {
+      const { default: confetti } = await import("canvas-confetti");
+      confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 } });
+      confetti({ particleCount: 90, spread: 120, origin: { y: 0.7 }, scalar: 0.8 });
+    } catch {
+      // noop
+    }
+
+    try {
+      const audio = new Audio("/sounds/gol.mp3");
+      audio.volume = 0.4;
+      await audio.play();
+    } catch {
+      // noop
+    }
+  };
+
+  const handleConfirmarFinalizacao = async () => {
+    const result = await handleFinalizarTemporada();
+    setConfirmFinalizacaoOpen(false);
+    if (result?.ok) {
+      setSuccessOpen(true);
+      void triggerCelebration();
+    }
+  };
+
+  const handleShareCampeoes = async () => {
+    const shareUrl = publicHref("/os-campeoes");
+    const shareData = {
+      title: "Campeoes do Racha",
+      text: "Confira os campeoes do racha no Hall da Fama.",
+      url: shareUrl,
+    };
+
+    try {
+      const nav =
+        typeof window !== "undefined"
+          ? (window.navigator as Navigator & {
+              share?: (data: { title?: string; text?: string; url?: string }) => Promise<void>;
+              clipboard?: Clipboard;
+            })
+          : undefined;
+
+      if (nav?.share) {
+        await nav.share(shareData);
+        return;
+      }
+      if (nav?.clipboard?.writeText) {
+        await nav.clipboard.writeText(shareUrl);
+        setShareFeedback("Link copiado para compartilhar.");
+        return;
+      }
+      if (typeof window !== "undefined") {
+        window.open(shareUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch {
+      // noop
     }
   };
 
@@ -300,7 +376,7 @@ export default function OsCampeoesAdminPage() {
             </div>
             <button
               type="button"
-              onClick={handleFinalizarTemporada}
+              onClick={() => setConfirmFinalizacaoOpen(true)}
               disabled={fechandoTemporada}
               className={`border border-yellow-400 text-yellow-200 font-semibold px-4 py-2 rounded transition ${
                 fechandoTemporada ? "opacity-60 cursor-not-allowed" : "hover:bg-yellow-400/10"
@@ -309,7 +385,7 @@ export default function OsCampeoesAdminPage() {
               {fechandoTemporada ? "Finalizando temporada..." : "Finalizar temporada"}
             </button>
             {mensagemFechamento && (
-              <p className="text-sm text-gray-300 text-center">{mensagemFechamento}</p>
+              <p className="text-sm text-red-300 text-center">{mensagemFechamento}</p>
             )}
           </div>
 
@@ -355,6 +431,176 @@ export default function OsCampeoesAdminPage() {
           </section>
         </div>
       </main>
+
+      <Transition.Root show={confirmFinalizacaoOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setConfirmFinalizacaoOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 translate-y-6"
+              enterTo="opacity-100 translate-y-0"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 translate-y-0"
+              leaveTo="opacity-0 translate-y-6"
+            >
+              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+                <Dialog.Title className="text-2xl font-bold text-yellow-400 mb-4 text-center">
+                  Finalizar Temporada
+                </Dialog.Title>
+
+                <div className="space-y-4 text-sm text-gray-200 leading-relaxed">
+                  <p>Tem certeza que deseja finalizar a temporada atual?</p>
+
+                  <div>
+                    <p className="mb-2">Ao confirmar esta acao:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>A temporada do racha sera encerrada definitivamente.</li>
+                      <li>
+                        Os rankings anuais serao finalizados e o sistema passara a contabilizar
+                        dados para o ano seguinte.
+                      </li>
+                      <li>
+                        As premiacoes anuais (Melhor do Ano, Artilheiro do Ano, Maestro do Ano,
+                        Campeao do Ano e Melhores por Posicao) serao aplicadas automaticamente nos
+                        perfis dos atletas e do time vencedor.
+                      </li>
+                      <li>
+                        As premiacoes do 3o quadrimestre tambem serao aplicadas neste momento, ja
+                        que os titulos do 1o e 2o quadrimestres sao concedidos automaticamente ao
+                        final de cada periodo.
+                      </li>
+                    </ul>
+                  </div>
+
+                  <p className="text-yellow-200">
+                    Atencao: apos finalizar a temporada, os resultados nao poderao ser alterados.
+                  </p>
+
+                  <div>
+                    <h4 className="text-yellow-300 font-semibold mb-1">Finalizacao automatica</h4>
+                    <p>
+                      Caso o ano termine e este botao nao seja acionado, o sistema finalizara a
+                      temporada automaticamente no ultimo dia do ano, aplicando todas as premiacoes
+                      pendentes.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmFinalizacaoOpen(false)}
+                    className="px-4 py-2 rounded border border-gray-500/60 text-gray-200 hover:text-white hover:border-gray-300 transition"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmarFinalizacao}
+                    disabled={fechandoTemporada}
+                    className={`px-4 py-2 rounded border border-yellow-400 text-yellow-200 font-semibold transition ${
+                      fechandoTemporada ? "opacity-60 cursor-not-allowed" : "hover:bg-yellow-400/10"
+                    }`}
+                  >
+                    Confirmar finalizacao da temporada
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
+
+      <Transition.Root show={successOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setSuccessOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 translate-y-6"
+              enterTo="opacity-100 translate-y-0"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 translate-y-0"
+              leaveTo="opacity-0 translate-y-6"
+            >
+              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+                <div className="flex flex-col items-center gap-3 mb-4 text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 18, scale: 0.85 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 180, damping: 14 }}
+                    className="rounded-full bg-yellow-400/10 p-3"
+                  >
+                    <Image
+                      src="/images/icons/trofeu-de-ouro.png"
+                      alt="Icone de trofeu"
+                      width={52}
+                      height={52}
+                    />
+                  </motion.div>
+                  <Dialog.Title className="text-2xl font-bold text-yellow-400">
+                    {SUCCESS_TITLE}
+                  </Dialog.Title>
+                  <p className="text-sm text-gray-200">{SUCCESS_MESSAGE}</p>
+                </div>
+
+                {successCounts && (
+                  <p className="text-xs text-gray-400 text-center">
+                    Conquistas geradas: {successCounts.created} (anuais:{" "}
+                    {successCounts.annualCreated}, quadrimestrais: {successCounts.quarterCreated}).
+                  </p>
+                )}
+
+                {shareFeedback && (
+                  <p className="text-xs text-yellow-200 text-center mt-2">{shareFeedback}</p>
+                )}
+
+                <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:justify-center">
+                  <button
+                    type="button"
+                    onClick={handleShareCampeoes}
+                    className="px-4 py-2 rounded border border-yellow-400 text-yellow-200 font-semibold transition hover:bg-yellow-400/10"
+                  >
+                    Compartilhar Campeoes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSuccessOpen(false)}
+                    className="px-4 py-2 rounded border border-gray-500/60 text-gray-200 hover:text-white hover:border-gray-300 transition"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
     </>
   );
 }
