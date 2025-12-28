@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Image from "next/image";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { motion } from "framer-motion";
 import useSWR from "swr";
@@ -73,6 +73,7 @@ export default function OsCampeoesAdminPage() {
   const [mensagemFechamento, setMensagemFechamento] = useState<string | null>(null);
   const [confirmFinalizacaoOpen, setConfirmFinalizacaoOpen] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [successCounts, setSuccessCounts] = useState<{
     created: number;
     annualCreated: number;
@@ -271,9 +272,17 @@ export default function OsCampeoesAdminPage() {
 
   const triggerCelebration = async () => {
     try {
-      const { default: confetti } = await import("canvas-confetti");
-      confetti({ particleCount: 160, spread: 70, origin: { y: 0.6 } });
-      confetti({ particleCount: 90, spread: 120, origin: { y: 0.7 }, scalar: 0.8 });
+      const confettiModule = await import("canvas-confetti");
+      const confetti = "default" in confettiModule ? confettiModule.default : confettiModule;
+      if (typeof confetti !== "function") return;
+
+      const confettiInstance = confettiCanvasRef.current
+        ? confetti.create(confettiCanvasRef.current, { resize: true, useWorker: true })
+        : confetti;
+
+      const baseOptions = { zIndex: 60, origin: { y: 0.6 } };
+      confettiInstance({ ...baseOptions, particleCount: 160, spread: 70 });
+      confettiInstance({ ...baseOptions, particleCount: 90, spread: 120, scalar: 0.8 });
     } catch {
       // noop
     }
@@ -431,6 +440,12 @@ export default function OsCampeoesAdminPage() {
           </section>
         </div>
       </main>
+
+      <canvas
+        ref={confettiCanvasRef}
+        className="fixed inset-0 z-[60] pointer-events-none"
+        aria-hidden="true"
+      />
 
       <Transition.Root show={confirmFinalizacaoOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={() => setConfirmFinalizacaoOpen(false)}>
