@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Image from "next/image";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaSearch, FaHistory, FaFilter, FaCheckCircle, FaTimes } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { useRacha } from "@/context/RachaContext";
@@ -201,39 +201,49 @@ export default function NivelDosAtletasPage() {
     };
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (typeof window === "undefined") return;
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
       prevPositionsRef.current = {};
       return;
     }
 
-    const nextPositions: Record<string, DOMRect> = {};
-    atletasFiltrados.forEach((item) => {
-      const node = cardsRef.current[item.jogador.id];
-      if (!node) return;
+    try {
+      const nextPositions: Record<string, DOMRect> = {};
+      atletasFiltrados.forEach((item) => {
+        const node = cardsRef.current[item.jogador.id];
+        if (!node || !(node instanceof HTMLElement)) return;
 
-      const nextRect = node.getBoundingClientRect();
-      nextPositions[item.jogador.id] = nextRect;
+        const nextRect = node.getBoundingClientRect();
+        nextPositions[item.jogador.id] = nextRect;
 
-      const prevRect = prevPositionsRef.current[item.jogador.id];
-      if (!prevRect) return;
+        const prevRect = prevPositionsRef.current[item.jogador.id];
+        if (!prevRect) return;
 
-      const deltaX = prevRect.left - nextRect.left;
-      const deltaY = prevRect.top - nextRect.top;
-      if (!deltaX && !deltaY) return;
+        const deltaX = prevRect.left - nextRect.left;
+        const deltaY = prevRect.top - nextRect.top;
+        if (!deltaX && !deltaY) return;
 
-      node.style.transition = "none";
-      node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
-      node.getBoundingClientRect();
+        node.style.transition = "none";
+        node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+        node.getBoundingClientRect();
 
-      requestAnimationFrame(() => {
-        node.style.transition = "transform 240ms cubic-bezier(0.2, 0, 0.2, 1)";
-        node.style.transform = "";
+        const animate = () => {
+          node.style.transition = "transform 240ms cubic-bezier(0.2, 0, 0.2, 1)";
+          node.style.transform = "";
+        };
+
+        if (typeof window.requestAnimationFrame === "function") {
+          window.requestAnimationFrame(animate);
+        } else {
+          setTimeout(animate, 16);
+        }
       });
-    });
 
-    prevPositionsRef.current = nextPositions;
+      prevPositionsRef.current = nextPositions;
+    } catch {
+      prevPositionsRef.current = {};
+    }
   }, [atletasFiltrados]);
 
   const atletas = useMemo<AtletaNivel[]>(() => {
