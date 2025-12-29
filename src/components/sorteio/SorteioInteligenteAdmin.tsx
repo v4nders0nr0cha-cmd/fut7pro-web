@@ -12,6 +12,7 @@ import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sort
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
+import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import { rachaConfig } from "@/config/racha.config";
 import { logoPadrao } from "@/config/teamLogoMap";
 
@@ -128,6 +129,13 @@ export default function SorteioInteligenteAdmin() {
   const { rachaId, tenantSlug } = useRacha();
   const resolvedSlug = tenantSlug || rachaId || rachaConfig.slug;
   const { times: timesDisponiveis, isLoading: loadingTimes } = useTimes(resolvedSlug);
+  const {
+    historico,
+    totalTemporada,
+    anoTemporada,
+    isLoading: loadingHistorico,
+    isError: erroHistorico,
+  } = useSorteioHistorico(5);
   const [config, setConfig] = useState<ConfiguracaoRacha | null>(null);
   const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [times, setTimes] = useState<TimeSorteado[]>([]);
@@ -147,6 +155,10 @@ export default function SorteioInteligenteAdmin() {
 
   // Loading do sorteio inteligente
   const [loadingSorteio, setLoadingSorteio] = useState(false);
+  const [partidasTotaisSorteio, setPartidasTotaisSorteio] = useState(0);
+  const [sorteioAvisos, setSorteioAvisos] = useState<string[]>([]);
+  const [sorteioReservas, setSorteioReservas] = useState<Participante[]>([]);
+  const [sorteioErro, setSorteioErro] = useState<string | null>(null);
 
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
@@ -216,20 +228,34 @@ export default function SorteioInteligenteAdmin() {
     }));
 
     setLoadingSorteio(true);
+    setSorteioErro(null);
+    setSorteioAvisos([]);
+    setSorteioReservas([]);
 
-    // Calcula o total de partidas do racha (pode usar só participantes selecionados do dia)
+    // Calcula o total de partidas do racha (pode usar s¢ participantes selecionados do dia)
     const partidasTotais = calcularPartidasTotais(participantes);
+    setPartidasTotaisSorteio(partidasTotais);
 
-    // Balanceamento "pesado" e delay mínimo de 5s (user experience PRO)
+    const sorteiosPublicados = typeof totalTemporada === "number" ? totalTemporada : undefined;
+
+    // Balanceamento "pesado" e delay m¡nimo de 5s (user experience PRO)
     const balanceamentoPromise = new Promise<TimeSorteado[]>((resolve) => {
       setTimeout(() => {
-        // Agora passa partidasTotais!
-        const timesGerados = sortearTimesInteligente(
-          participantes,
-          timesNormalizados,
-          partidasTotais
-        );
-        resolve(timesGerados);
+        try {
+          const resultado = sortearTimesInteligente(participantes, timesNormalizados, {
+            partidasTotais,
+            sorteiosPublicadosNaTemporada: sorteiosPublicados,
+            historico,
+            jogadoresPorTime: config.jogadoresPorTime,
+          });
+          setSorteioAvisos(resultado.avisos);
+          setSorteioReservas(resultado.reservas);
+          resolve(resultado.times);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Falha ao sortear os times.";
+          setSorteioErro(message);
+          resolve([]);
+        }
       }, 150); // pequeno delay para simular "thread" JS
     });
     const delayMinimo = new Promise((resolve) => setTimeout(resolve, 5000));
@@ -240,7 +266,7 @@ export default function SorteioInteligenteAdmin() {
     setPublicado(false);
 
     // GERA A TABELA DE JOGOS conforme times selecionados
-    if (timesNormalizados.length >= 2) {
+    if (timesNormalizados.length >= 2 && timesGerados.length > 0) {
       const jogos = gerarTabelaJogos({
         times: timesNormalizados,
         duracaoRachaMin: config.duracaoRachaMin,
@@ -432,9 +458,52 @@ export default function SorteioInteligenteAdmin() {
       >
         Sortear Times
       </button>
+      {(loadingHistorico || erroHistorico || typeof totalTemporada === "number") && (
+        <div className="text-xs text-center text-yellow-200 mb-3">
+          {loadingHistorico && "Carregando historico de sorteios..."}
+          {erroHistorico && "Falha ao carregar historico. Balanceamento parcial ativo."}
+          {typeof totalTemporada === "number" && (
+            <>
+              {!loadingHistorico && !erroHistorico && (
+                <>
+                  Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
+                  {totalTemporada < 8
+                    ? "Ranking desativado ate completar 8 sorteios."
+                    : "Ranking ativo no balanceamento."}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      {sorteioErro && (
+        <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg text-center mb-3">
+          {sorteioErro}
+        </div>
+      )}
+      {sorteioAvisos.length > 0 && (
+        <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-200 px-4 py-3 rounded-lg text-center mb-3">
+          {sorteioAvisos.map((aviso) => (
+            <div key={aviso}>{aviso}</div>
+          ))}
+        </div>
+      )}
+      {sorteioReservas.length > 0 && (
+        <div className="bg-zinc-800 border border-zinc-700 text-gray-200 px-4 py-3 rounded-lg text-center mb-3">
+          Reservas: {sorteioReservas.map((j) => j.nome).join(", ")}
+        </div>
+      )}
       {times.length > 0 && (
         <>
-          <TimesGerados times={times} />
+          <TimesGerados
+            times={times}
+            jogadoresPorTime={config?.jogadoresPorTime}
+            coeficienteContext={{
+              partidasTotais: partidasTotaisSorteio,
+              sorteiosPublicadosNaTemporada:
+                typeof totalTemporada === "number" ? totalTemporada : undefined,
+            }}
+          />
           <BotaoPublicarTimes
             publicado={publicado}
             loading={publicando}

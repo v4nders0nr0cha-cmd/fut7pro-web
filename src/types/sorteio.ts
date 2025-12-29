@@ -47,3 +47,20 @@ export interface ConfiguracaoRacha {
   numTimes: number;
   jogadoresPorTime: number;
 }
+
+export interface SorteioHistoricoTime {
+  id?: string | null;
+  jogadoresIds: string[];
+}
+
+export interface SorteioHistoricoItem {
+  id: string;
+  createdAt: string;
+  times: SorteioHistoricoTime[];
+}
+
+export interface SorteioHistoricoResponse {
+  anoTemporada: number;
+  totalTemporada: number;
+  historico: SorteioHistoricoItem[];
+}

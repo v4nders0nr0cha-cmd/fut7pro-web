@@ -248,10 +248,10 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
       },
       {
         id: "p4",
-        nome: "Atacante",
-        slug: "a1",
+        nome: "Goleiro 2",
+        slug: "g2",
         foto: "/f4",
-        posicao: "ATA",
+        posicao: "GOL",
         estrelas: estrela("p4"),
         ...base,
       },
@@ -262,12 +262,17 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
       { id: "t2", nome: "Time B", logo: "/l2" },
     ];
 
-    const resultado = sortearTimesInteligente(participantes, times, 2);
+    const resultado = sortearTimesInteligente(participantes, times, {
+      partidasTotais: 2,
+      sorteiosPublicadosNaTemporada: 9,
+      historico: [],
+      jogadoresPorTime: 2,
+    });
 
-    const totalDistribuido = resultado.reduce((acc, t) => acc + t.jogadores.length, 0);
-    expect(resultado).toHaveLength(2);
+    const totalDistribuido = resultado.times.reduce((acc, t) => acc + t.jogadores.length, 0);
+    expect(resultado.times).toHaveLength(2);
     expect(totalDistribuido).toBe(participantes.length);
-    expect(resultado[0].jogadores.length).toBeGreaterThan(0);
+    expect(resultado.times[0].jogadores.length).toBeGreaterThan(0);
   });
 
   it("getCoeficiente prioriza ranking quando ha mais partidas", () => {
@@ -285,9 +290,165 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
       estrelas: { id: "s1", rachaId: "r-fin", jogadorId: "p10", estrelas: 3, atualizadoEm: "" },
       partidas: 12,
     };
-    const coefRankingBaixo = getCoeficiente({ ...base, rankingPontos: 1 }, 12);
-    const coefRankingAlto = getCoeficiente({ ...base, rankingPontos: 8 }, 12);
+    const coefRankingBaixo = getCoeficiente({ ...base, rankingPontos: 1 }, { partidasTotais: 12 });
+    const coefRankingAlto = getCoeficiente({ ...base, rankingPontos: 8 }, { partidasTotais: 12 });
     expect(coefRankingAlto).toBeGreaterThan(coefRankingBaixo);
+  });
+
+  it("getCoeficiente ignora ranking nos primeiros sorteios", () => {
+    const base: Participante = {
+      id: "p11",
+      nome: "Tester 2",
+      slug: "tester-2",
+      foto: "/f2.png",
+      posicao: "ATA",
+      rankingPontos: 3,
+      vitorias: 2,
+      gols: 1,
+      assistencias: 0,
+      mensalista: false,
+      estrelas: { id: "s2", rachaId: "r-fin", jogadorId: "p11", estrelas: 4, atualizadoEm: "" },
+      partidas: 12,
+    };
+    const contexto = { partidasTotais: 12, sorteiosPublicadosNaTemporada: 3 };
+    const coefRankingBaixo = getCoeficiente({ ...base, rankingPontos: 1 }, contexto);
+    const coefRankingAlto = getCoeficiente({ ...base, rankingPontos: 10 }, contexto);
+    expect(coefRankingAlto).toBe(coefRankingBaixo);
+  });
+
+  it("sortearTimesInteligente exige goleiro por time", () => {
+    const base = {
+      rankingPontos: 1,
+      vitorias: 1,
+      assistencias: 0,
+      gols: 0,
+      mensalista: true,
+      partidas: 1,
+    };
+    const estrela = (id: string) => ({
+      id: "",
+      rachaId: "r-fin",
+      jogadorId: id,
+      estrelas: 3,
+      atualizadoEm: "",
+      atualizadoPor: "",
+    });
+    const participantes: Participante[] = [
+      {
+        id: "p20",
+        nome: "Zagueiro",
+        slug: "z20",
+        foto: "/f2",
+        posicao: "ZAG",
+        estrelas: estrela("p20"),
+        ...base,
+      },
+      {
+        id: "p21",
+        nome: "Meia",
+        slug: "m20",
+        foto: "/f3",
+        posicao: "MEI",
+        estrelas: estrela("p21"),
+        ...base,
+      },
+    ];
+    const times = [
+      { id: "t1", nome: "Time A", logo: "/l1" },
+      { id: "t2", nome: "Time B", logo: "/l2" },
+    ];
+
+    expect(() =>
+      sortearTimesInteligente(participantes, times, {
+        partidasTotais: 2,
+        sorteiosPublicadosNaTemporada: 9,
+        historico: [],
+        jogadoresPorTime: 2,
+      })
+    ).toThrow(/Goleiros insuficientes/);
+  });
+
+  it("anti-panelinha evita repetir jogador com colega recente", () => {
+    const base = {
+      rankingPontos: 1,
+      vitorias: 1,
+      assistencias: 0,
+      gols: 0,
+      mensalista: true,
+      partidas: 1,
+    };
+    const estrela = (id: string, estrelas: number) => ({
+      id: "",
+      rachaId: "r-fin",
+      jogadorId: id,
+      estrelas,
+      atualizadoEm: "",
+      atualizadoPor: "",
+    });
+    const participantes: Participante[] = [
+      {
+        id: "g1",
+        nome: "Goleiro 1",
+        slug: "g1",
+        foto: "/g1",
+        posicao: "GOL",
+        estrelas: estrela("g1", 4),
+        ...base,
+      },
+      {
+        id: "g2",
+        nome: "Goleiro 2",
+        slug: "g2",
+        foto: "/g2",
+        posicao: "GOL",
+        estrelas: estrela("g2", 4),
+        ...base,
+      },
+      {
+        id: "a1",
+        nome: "Zagueiro 1",
+        slug: "a1",
+        foto: "/a1",
+        posicao: "ZAG",
+        estrelas: estrela("a1", 5),
+        ...base,
+      },
+      {
+        id: "a2",
+        nome: "Zagueiro 2",
+        slug: "a2",
+        foto: "/a2",
+        posicao: "ZAG",
+        estrelas: estrela("a2", 3),
+        ...base,
+      },
+    ];
+
+    const historico = [
+      {
+        id: "h1",
+        createdAt: "2025-01-01T00:00:00.000Z",
+        times: [
+          { id: "t1", jogadoresIds: ["g1", "a1"] },
+          { id: "t2", jogadoresIds: ["g2", "x1"] },
+        ],
+      },
+    ];
+
+    const times = [
+      { id: "t1", nome: "Time A", logo: "/l1" },
+      { id: "t2", nome: "Time B", logo: "/l2" },
+    ];
+
+    const resultado = sortearTimesInteligente(participantes, times, {
+      partidasTotais: 2,
+      sorteiosPublicadosNaTemporada: 9,
+      historico,
+      jogadoresPorTime: 2,
+    });
+
+    const timeG1 = resultado.times.find((t) => t.jogadores.some((j) => j.id === "g1"));
+    expect(timeG1?.jogadores.some((j) => j.id === "a1")).toBe(false);
   });
 
   it("gerarTabelaJogos respeita tempo util e cria confrontos", () => {

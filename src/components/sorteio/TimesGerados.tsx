@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
+import { getCoeficiente, type CoeficienteContext } from "@/utils/sorteioUtils";
 import { useState } from "react";
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
@@ -17,9 +18,15 @@ interface Props {
   times: TimeSorteado[];
   onSaveEdit?: (timesEditados: TimeSorteado[]) => void;
   jogadoresPorTime?: number;
+  coeficienteContext?: CoeficienteContext;
 }
 
-export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Props) {
+export default function TimesGerados({
+  times,
+  onSaveEdit,
+  jogadoresPorTime,
+  coeficienteContext,
+}: Props) {
   const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(structuredClone(times));
   const [editando, setEditando] = useState(false);
 
@@ -75,12 +82,13 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
   // Função utilitária para ordenar jogadores na ordem desejada
   function ordenarJogadores(jogadores: Participante[]): Participante[] {
     const ordemPosicoes: Record<string, number> = { GOL: 0, ZAG: 1, MEI: 2, ATA: 3 };
+    const contexto: CoeficienteContext = coeficienteContext ?? { partidasTotais: 0 };
     return [...jogadores].sort((a, b) => {
       const posA = ordemPosicoes[a.posicao] ?? 99;
       const posB = ordemPosicoes[b.posicao] ?? 99;
       if (posA !== posB) return posA - posB;
       // Dentro da mesma posição, mais forte em cima
-      return getCoeficiente(b) - getCoeficiente(a);
+      return getCoeficiente(b, contexto) - getCoeficiente(a, contexto);
     });
   }
 
@@ -215,12 +223,4 @@ export default function TimesGerados({ times, onSaveEdit, jogadoresPorTime }: Pr
       </div>
     </div>
   );
-}
-
-// Função utilitária local (igual do sorteioUtils) para garantir ordem por força dentro da posição
-function getCoeficiente(j: Participante) {
-  const mediaVitorias = (j as { partidas?: number }).partidas
-    ? j.vitorias / (j as { partidas: number }).partidas
-    : j.vitorias;
-  return j.rankingPontos * 0.5 + mediaVitorias * 0.3 + j.estrelas.estrelas * 0.2;
 }

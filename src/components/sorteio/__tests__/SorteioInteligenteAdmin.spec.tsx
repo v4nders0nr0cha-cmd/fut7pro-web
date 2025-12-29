@@ -19,6 +19,20 @@ const mockParticipantes: Participante[] = [
     partidas: 5,
   },
   {
+    id: "p5",
+    nome: "Goleiro 2",
+    slug: "goleiro-2",
+    foto: "/g2.png",
+    posicao: "GOL",
+    rankingPontos: 11,
+    vitorias: 2,
+    gols: 0,
+    assistencias: 0,
+    estrelas: { id: "e5", rachaId: "racha-1", jogadorId: "p5", estrelas: 3, atualizadoEm: "" },
+    mensalista: true,
+    partidas: 5,
+  },
+  {
     id: "p2",
     nome: "Zagueiro",
     slug: "zagueiro",
@@ -78,6 +92,16 @@ jest.mock("@/hooks/useTimes", () => ({
     updateTime: jest.fn(),
     deleteTime: jest.fn(),
     mutate: jest.fn(),
+  }),
+}));
+
+jest.mock("@/hooks/useSorteioHistorico", () => ({
+  useSorteioHistorico: () => ({
+    historico: [],
+    totalTemporada: 9,
+    anoTemporada: 2025,
+    isLoading: false,
+    isError: false,
   }),
 }));
 
