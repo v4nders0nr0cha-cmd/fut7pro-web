@@ -36,6 +36,7 @@ type AtletaNivel = {
   habilidade: number | null;
   fisico: number | null;
   nivelFinal: number | null;
+  nivelOrdenacao: number | null;
   atualizadoEm: string | null;
   atualizadoPorNome: string | null;
   mensalista: boolean;
@@ -198,12 +199,19 @@ export default function NivelDosAtletasPage() {
       const habilidade = edit.habilidade ?? nivel?.habilidade ?? null;
       const fisico = edit.fisico ?? nivel?.fisico ?? null;
       const nivelFinal = calcularNivelFinal(habilidade, fisico);
+      const nivelOrdenacao =
+        typeof habilidade === "number" && typeof fisico === "number"
+          ? nivelFinal
+          : typeof nivel?.nivelFinal === "number"
+            ? nivel?.nivelFinal
+            : null;
       return {
         jogador,
         posicao: normalizarPosicao(jogador.posicao),
         habilidade,
         fisico,
         nivelFinal,
+        nivelOrdenacao,
         atualizadoEm: nivel?.atualizadoEm ?? null,
         atualizadoPorNome: nivel?.atualizadoPorNome ?? null,
         mensalista: Boolean(jogador.mensalista),
@@ -226,30 +234,51 @@ export default function NivelDosAtletasPage() {
       return true;
     });
 
+    const baseIndexMap = new Map<string, number>();
+    atletas.forEach((item, index) => {
+      baseIndexMap.set(item.jogador.id, index);
+    });
+    const baseIndex = (item: AtletaNivel) => baseIndexMap.get(item.jogador.id) ?? 0;
     const compareText = (a: string, b: string) => a.localeCompare(b);
 
     switch (ordenacao) {
       case "nome":
-        lista = [...lista].sort((a, b) => compareText(a.jogador.nome || "", b.jogador.nome || ""));
+        lista = [...lista].sort((a, b) => {
+          const diff = compareText(a.jogador.nome || "", b.jogador.nome || "");
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
+        });
         break;
       case "posicao":
-        lista = [...lista].sort((a, b) => compareText(a.posicao, b.posicao));
+        lista = [...lista].sort((a, b) => {
+          const diff = compareText(a.posicao, b.posicao);
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
+        });
         break;
       case "habilidade":
-        lista = [...lista].sort((a, b) => (b.habilidade ?? 0) - (a.habilidade ?? 0));
+        lista = [...lista].sort((a, b) => {
+          const diff = (b.habilidade ?? -1) - (a.habilidade ?? -1);
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
+        });
         break;
       case "fisico":
-        lista = [...lista].sort((a, b) => (b.fisico ?? 0) - (a.fisico ?? 0));
+        lista = [...lista].sort((a, b) => {
+          const diff = (b.fisico ?? -1) - (a.fisico ?? -1);
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
+        });
         break;
       case "atualizado":
         lista = [...lista].sort((a, b) => {
           const dataA = a.atualizadoEm ? new Date(a.atualizadoEm).getTime() : 0;
           const dataB = b.atualizadoEm ? new Date(b.atualizadoEm).getTime() : 0;
-          return dataB - dataA;
+          const diff = dataB - dataA;
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
         });
         break;
       default:
-        lista = [...lista].sort((a, b) => (b.nivelFinal ?? 0) - (a.nivelFinal ?? 0));
+        lista = [...lista].sort((a, b) => {
+          const diff = (b.nivelOrdenacao ?? -1) - (a.nivelOrdenacao ?? -1);
+          return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
+        });
     }
 
     return lista;
