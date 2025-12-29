@@ -34,6 +34,7 @@ export interface Participante {
   assistencias: number;
   estrelas: AvaliacaoEstrela; // Um por racha (via API busca o correto)
   mensalista: boolean;
+  isBot?: boolean;
   partidas?: number;
 }
 

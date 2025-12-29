@@ -4,6 +4,7 @@ import { useMemo, useRef } from "react";
 import CardTimeDoDia from "@/components/cards/CardTimeDoDia";
 import ConfrontosDoDia from "@/components/lists/ConfrontosDoDia";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { useAdminMatches } from "@/hooks/useAdminMatches";
 import type { PublicMatch, TimeDoDia } from "@/types/partida";
 
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
@@ -14,6 +15,7 @@ type Confronto = { id: string; timeA: string; timeB: string; hora?: string };
 
 type TimesDoDiaClientProps = {
   slug?: string;
+  source?: "public" | "admin";
 };
 
 function parseDate(value: string | null | undefined) {
@@ -169,13 +171,21 @@ function buildTimesDoDia(matches: PublicMatch[]) {
   };
 }
 
-export default function TimesDoDiaClient({ slug }: TimesDoDiaClientProps) {
+export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDiaClientProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const { matches, isLoading, isError, error } = usePublicMatches({
+  const isAdmin = source === "admin";
+  const publicData = usePublicMatches({
     slug,
     scope: "recent",
     limit: 20,
+    enabled: !isAdmin,
   });
+  const adminData = useAdminMatches({ enabled: isAdmin });
+
+  const matches = isAdmin ? adminData.matches : publicData.matches;
+  const isLoading = isAdmin ? adminData.isLoading : publicData.isLoading;
+  const isError = isAdmin ? adminData.isError : publicData.isError;
+  const error = isAdmin ? adminData.error : publicData.error;
 
   const { times, confrontos, dataReferencia } = useMemo(() => buildTimesDoDia(matches), [matches]);
 

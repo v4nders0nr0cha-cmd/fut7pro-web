@@ -9,8 +9,12 @@ jest.mock("next/navigation", () => ({
 jest.mock("@/hooks/usePublicMatches", () => ({
   usePublicMatches: jest.fn(),
 }));
+jest.mock("@/hooks/useAdminMatches", () => ({
+  useAdminMatches: jest.fn(),
+}));
 
 const mockedUsePublicMatches = require("@/hooks/usePublicMatches").usePublicMatches as jest.Mock;
+const mockedUseAdminMatches = require("@/hooks/useAdminMatches").useAdminMatches as jest.Mock;
 
 describe("TimesDoDiaClient", () => {
   afterEach(() => {
@@ -18,6 +22,12 @@ describe("TimesDoDiaClient", () => {
   });
 
   it("exibe estado vazio quando nao ha times publicados", () => {
+    mockedUseAdminMatches.mockReturnValue({
+      matches: [],
+      isLoading: false,
+      isError: false,
+      error: undefined,
+    });
     mockedUsePublicMatches.mockReturnValue({
       matches: [],
       isLoading: false,
@@ -31,6 +41,12 @@ describe("TimesDoDiaClient", () => {
   });
 
   it("renderiza times e confrontos quando ha partidas", () => {
+    mockedUseAdminMatches.mockReturnValue({
+      matches: [],
+      isLoading: false,
+      isError: false,
+      error: undefined,
+    });
     mockedUsePublicMatches.mockReturnValue({
       matches: [
         {

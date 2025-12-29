@@ -27,6 +27,7 @@ export type Jogador = {
   status: StatusJogador;
   mensalista: boolean;
   isMember?: boolean;
+  isBot?: boolean;
   timeId: string;
   rachaId?: string;
   tenantSlug?: string;

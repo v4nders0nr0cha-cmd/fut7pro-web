@@ -13,8 +13,9 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
-export function useJogadores(rachaId: string) {
+export function useJogadores(rachaId: string, options?: { includeBots?: boolean }) {
   const apiState = useApiState();
+  const includeBots = options?.includeBots ?? false;
 
   const requestJson = async (input: string, init?: RequestInit) => {
     const response = await fetch(input, {
@@ -89,7 +90,12 @@ export function useJogadores(rachaId: string) {
   };
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId ? `/api/jogadores?rachaId=${rachaId}` : null,
+    rachaId
+      ? `/api/jogadores?${new URLSearchParams({
+          rachaId,
+          ...(includeBots ? { includeBots: "true" } : {}),
+        }).toString()}`
+      : null,
     fetcher,
     {
       onError: (err) => {
@@ -110,6 +116,7 @@ export function useJogadores(rachaId: string) {
       const foto = jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
       const mensalista =
         typeof jogador?.mensalista === "boolean" ? jogador.mensalista : Boolean(jogador?.isMember);
+      const isBot = Boolean(jogador?.isBot);
       const status = jogador?.status ?? "Ativo";
       const email = jogador?.email ?? "";
       const timeId = jogador?.timeId ?? "";
@@ -124,6 +131,7 @@ export function useJogadores(rachaId: string) {
         avatar,
         foto,
         mensalista,
+        isBot,
         status,
         email,
         timeId,

@@ -32,7 +32,7 @@ export default function TimesDoDiaPage() {
             Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
             jogos estão logo abaixo.
           </p>
-          <TimesDoDiaClient slug={tenantSlug || undefined} />
+          <TimesDoDiaClient slug={tenantSlug || undefined} source="admin" />
         </div>
       </main>
     </>

@@ -51,6 +51,7 @@ function resolvePesos(partidasTotais: number, sorteiosPublicadosNaTemporada?: nu
 
 // Coeficiente geral: pesos dinamicos (estrelas x ranking), ajustado pelo numero de partidas
 export function getCoeficiente(j: Participante, contextoOuPartidas: number | CoeficienteContext) {
+  if (j.isBot) return 0;
   const contexto =
     typeof contextoOuPartidas === "number"
       ? { partidasTotais: contextoOuPartidas }

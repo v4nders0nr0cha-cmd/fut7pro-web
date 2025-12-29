@@ -130,11 +130,11 @@ export default function ParticipantesRacha({
   setParticipantes,
 }: Props) {
   const { niveis, isLoading: loadingEstrelas } = useNiveisAtletas(rachaId);
-  const [popoverIndex, setPopoverIndex] = useState<number | null>(null);
+  const [popoverKey, setPopoverKey] = useState<string | null>(null);
   const [seededMensalistas, setSeededMensalistas] = useState(false);
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
 
-  const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
+  const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId, { includeBots: true });
 
   const estrelasGlobais = useMemo(() => {
     const map: { [id: string]: AvaliacaoEstrela } = {};
@@ -209,7 +209,7 @@ export default function ParticipantesRacha({
   }, []);
 
   const participantesDisponiveis = useMemo<Participante[]>(() => {
-    return (jogadores || []).map((jogador) => {
+    const mapped = (jogadores || []).map((jogador) => {
       const estrela = estrelasGlobais[jogador.id] ?? buildDefaultEstrelas(jogador.id);
 
       return {
@@ -224,9 +224,13 @@ export default function ParticipantesRacha({
         gols: 0,
         estrelas: estrela,
         mensalista: !!jogador.mensalista,
+        isBot: jogador.isBot,
         partidas: (jogador as any).partidas ?? 0,
       };
     });
+    const bots = mapped.filter((item) => item.isBot);
+    const reais = mapped.filter((item) => !item.isBot);
+    return [...reais, ...bots];
   }, [jogadores, estrelasGlobais, buildDefaultEstrelas, rankingMap]);
 
   // Inicializa automaticamente mensalistas na primeira carga
@@ -267,7 +271,7 @@ export default function ParticipantesRacha({
         ]);
       }
     }
-    setPopoverIndex(null);
+    setPopoverKey(null);
   }
 
   const listSelecionados = participantes;
@@ -276,6 +280,35 @@ export default function ParticipantesRacha({
   );
 
   const vagasRestantes = Math.max(0, maxParticipantes - participantes.length);
+  const goleirosNecessarios = config?.numTimes ?? 0;
+
+  const {
+    mensalistasSelecionados,
+    goleirosSelecionados,
+    outrosSelecionados,
+    goleirosSelecionadosTotal,
+  } = useMemo(() => {
+    const mensalistas = listSelecionados.filter((p) => p.mensalista);
+    const mensalistasIds = new Set(mensalistas.map((p) => p.id));
+    const goleiros = listSelecionados.filter(
+      (p) => p.posicao === "GOL" && !mensalistasIds.has(p.id)
+    );
+    const outros = listSelecionados.filter((p) => !mensalistasIds.has(p.id) && p.posicao !== "GOL");
+    const totalGoleiros = listSelecionados.filter((p) => p.posicao === "GOL").length;
+    return {
+      mensalistasSelecionados: mensalistas,
+      goleirosSelecionados: goleiros,
+      outrosSelecionados: outros,
+      goleirosSelecionadosTotal: totalGoleiros,
+    };
+  }, [listSelecionados]);
+
+  const goleiroSlots = Math.max(
+    0,
+    Math.min(vagasRestantes, goleirosNecessarios - goleirosSelecionadosTotal)
+  );
+  const vagasGerais = Math.max(0, vagasRestantes - goleiroSlots);
+  const goleirosDisponiveis = atletasDisponiveis.filter((p) => p.posicao === "GOL");
 
   function CardJogador({
     jogador,
@@ -366,7 +399,53 @@ export default function ParticipantesRacha({
       </h2>
       {/* Grid: Selecionados + Vagas Vazias */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 relative z-0">
-        {listSelecionados.map((jogador) => (
+        {mensalistasSelecionados.map((jogador) => (
+          <CardJogador
+            key={jogador.id}
+            jogador={jogador}
+            selecionado
+            onClick={() => handleSelect(jogador.id)}
+          />
+        ))}
+
+        {goleirosSelecionados.map((jogador) => (
+          <CardJogador
+            key={jogador.id}
+            jogador={jogador}
+            selecionado
+            onClick={() => handleSelect(jogador.id)}
+          />
+        ))}
+
+        {/* Vagas exclusivas para goleiro */}
+        {Array.from({ length: goleiroSlots }).map((_, idx) => {
+          const key = `gol-${idx}`;
+          const isOpen = popoverKey === key;
+          return (
+            <div
+              key={`vaga-goleiro-${idx}`}
+              className={`flex flex-col items-center justify-center p-2 rounded-lg border border-yellow-500/40 bg-zinc-900 opacity-90 cursor-pointer relative min-h-[94px] hover:border-yellow-400 group transition ${isOpen ? "z-50" : "z-0"}`}
+              onClick={() => setPopoverKey(key)}
+              onKeyDown={(e) => e.key === "Enter" && setPopoverKey(key)}
+              role="button"
+              tabIndex={0}
+              aria-label="Escolher goleiro"
+            >
+              <FaUserPlus className="text-gray-500 text-3xl mb-2 group-hover:text-yellow-400 transition" />
+              <span className="text-xs text-yellow-300 font-bold text-center">
+                Escolha o Goleiro
+              </span>
+              <PopoverSelecionarJogador
+                open={isOpen}
+                onClose={() => setPopoverKey(null)}
+                onSelecionar={handleSelect}
+                listaDisponivel={goleirosDisponiveis}
+              />
+            </div>
+          );
+        })}
+
+        {outrosSelecionados.map((jogador) => (
           <CardJogador
             key={jogador.id}
             jogador={jogador}
@@ -376,14 +455,15 @@ export default function ParticipantesRacha({
         ))}
 
         {/* Cards de vagas clicaveis */}
-        {Array.from({ length: vagasRestantes }).map((_, idx) => {
-          const isOpen = popoverIndex === idx;
+        {Array.from({ length: vagasGerais }).map((_, idx) => {
+          const key = `vaga-${idx}`;
+          const isOpen = popoverKey === key;
           return (
             <div
               key={`vaga-vazia-${idx}`}
               className={`flex flex-col items-center justify-center p-2 rounded-lg border border-zinc-700 bg-zinc-900 opacity-80 cursor-pointer relative min-h-[94px] hover:border-yellow-400 group transition ${isOpen ? "z-50" : "z-0"}`}
-              onClick={() => setPopoverIndex(idx)}
-              onKeyDown={(e) => e.key === "Enter" && setPopoverIndex(idx)}
+              onClick={() => setPopoverKey(key)}
+              onKeyDown={(e) => e.key === "Enter" && setPopoverKey(key)}
               role="button"
               tabIndex={0}
               aria-label="Adicionar jogador"
@@ -392,7 +472,7 @@ export default function ParticipantesRacha({
               <span className="text-xs text-gray-400 font-bold text-center">Vaga disponivel</span>
               <PopoverSelecionarJogador
                 open={isOpen}
-                onClose={() => setPopoverIndex(null)}
+                onClose={() => setPopoverKey(null)}
                 onSelecionar={handleSelect}
                 listaDisponivel={atletasDisponiveis}
               />
