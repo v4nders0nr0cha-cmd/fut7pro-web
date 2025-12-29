@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { FaSearch, FaHistory, FaFilter, FaCheckCircle, FaTimes } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { useRacha } from "@/context/RachaContext";
@@ -170,6 +170,8 @@ export default function NivelDosAtletasPage() {
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [statusById, setStatusById] = useState<Record<string, SaveStatus>>({});
   const statusTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const cardsRef = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevPositionsRef = useRef<Record<string, DOMRect>>({});
 
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [bulkHabilidade, setBulkHabilidade] = useState("");
@@ -198,6 +200,41 @@ export default function NivelDosAtletasPage() {
       Object.values(statusTimers).forEach((timer) => clearTimeout(timer));
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+      prevPositionsRef.current = {};
+      return;
+    }
+
+    const nextPositions: Record<string, DOMRect> = {};
+    atletasFiltrados.forEach((item) => {
+      const node = cardsRef.current[item.jogador.id];
+      if (!node) return;
+
+      const nextRect = node.getBoundingClientRect();
+      nextPositions[item.jogador.id] = nextRect;
+
+      const prevRect = prevPositionsRef.current[item.jogador.id];
+      if (!prevRect) return;
+
+      const deltaX = prevRect.left - nextRect.left;
+      const deltaY = prevRect.top - nextRect.top;
+      if (!deltaX && !deltaY) return;
+
+      node.style.transition = "none";
+      node.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+      node.getBoundingClientRect();
+
+      requestAnimationFrame(() => {
+        node.style.transition = "transform 240ms cubic-bezier(0.2, 0, 0.2, 1)";
+        node.style.transform = "";
+      });
+    });
+
+    prevPositionsRef.current = nextPositions;
+  }, [atletasFiltrados]);
 
   const atletas = useMemo<AtletaNivel[]>(() => {
     return (jogadores || []).map((jogador) => {
@@ -662,7 +699,11 @@ export default function NivelDosAtletasPage() {
             return (
               <div
                 key={jogador.id}
+                ref={(node) => {
+                  cardsRef.current[jogador.id] = node;
+                }}
                 className="bg-[#232323] border border-zinc-800 rounded-xl p-4 shadow-sm flex flex-col gap-3"
+                style={{ willChange: "transform" }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
