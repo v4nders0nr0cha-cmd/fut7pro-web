@@ -8,8 +8,13 @@ export interface AvaliacaoEstrela {
   id: string; // id do registro de estrela no banco
   rachaId: string; // racha ao qual essa estrela pertence
   jogadorId: string; // jogador avaliado
-  estrelas: number; // 1-5 estrelas
+  athleteId?: string | null;
+  habilidade?: number | null;
+  fisico?: number | null;
+  nivelFinal?: number | null;
+  estrelas: number; // 1-5 estrelas (nivel final)
   atualizadoPor?: string; // id do admin que avaliou
+  atualizadoPorNome?: string | null;
   atualizadoEm: string; // timestamp ISO
 }
 

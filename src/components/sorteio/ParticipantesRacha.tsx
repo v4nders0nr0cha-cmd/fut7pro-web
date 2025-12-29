@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import EditorEstrelas from "./EditorEstrelas";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela, Posicao } from "@/types/sorteio";
 import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useNiveisAtletas } from "@/hooks/useNiveisAtletas";
+import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
+import { formatNivel } from "@/utils/nivel-atleta";
 import type { Jogador } from "@/types/jogador";
 
 interface Props {
@@ -127,46 +129,64 @@ export default function ParticipantesRacha({
   participantes,
   setParticipantes,
 }: Props) {
-  const [estrelasGlobais, setEstrelasGlobais] = useState<{ [id: string]: AvaliacaoEstrela }>({});
-  const [loadingEstrelas, setLoadingEstrelas] = useState(false);
+  const { niveis, isLoading: loadingEstrelas } = useNiveisAtletas(rachaId);
   const [popoverIndex, setPopoverIndex] = useState<number | null>(null);
   const [seededMensalistas, setSeededMensalistas] = useState(false);
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
 
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
 
+  const estrelasGlobais = useMemo(() => {
+    const map: { [id: string]: AvaliacaoEstrela } = {};
+    (niveis || []).forEach((nivel) => {
+      map[nivel.jogadorId] = nivel;
+    });
+    return map;
+  }, [niveis]);
+
   const maxParticipantes =
     config?.numTimes && config?.jogadoresPorTime ? config.numTimes * config.jogadoresPorTime : 0;
 
-  // Ao montar: busca avaliacoes de estrelas do backend
+  const buildDefaultEstrelas = useCallback(
+    (jogadorId: string): AvaliacaoEstrela => ({
+      id: "",
+      rachaId,
+      jogadorId,
+      habilidade: null,
+      fisico: null,
+      nivelFinal: null,
+      estrelas: 0,
+      atualizadoEm: "",
+      atualizadoPor: "",
+    }),
+    [rachaId]
+  );
+
   useEffect(() => {
     if (!rachaId) return;
-    setLoadingEstrelas(true);
-    fetch(`/api/estrelas?rachaId=${rachaId}`)
-      .then((res) => res.json())
-      .then((data: AvaliacaoEstrela[]) => {
-        const estrelasMap: { [id: string]: AvaliacaoEstrela } = {};
-        data.forEach((a) => {
-          estrelasMap[a.jogadorId] = a;
-        });
-        setEstrelasGlobais(estrelasMap);
+    const needsUpdate = participantes.some((p) => {
+      const next = estrelasGlobais[p.id] ?? buildDefaultEstrelas(p.id);
+      const atual = p.estrelas;
+      return (
+        !atual ||
+        atual.id !== next.id ||
+        atual.estrelas !== next.estrelas ||
+        atual.nivelFinal !== next.nivelFinal ||
+        atual.habilidade !== next.habilidade ||
+        atual.fisico !== next.fisico ||
+        atual.atualizadoEm !== next.atualizadoEm
+      );
+    });
 
-        setParticipantes(
-          participantes.map((p) => ({
-            ...p,
-            estrelas: estrelasMap[p.id] ?? {
-              id: "",
-              rachaId,
-              jogadorId: p.id,
-              estrelas: 0,
-              atualizadoEm: "",
-              atualizadoPor: "",
-            },
-          }))
-        );
-      })
-      .finally(() => setLoadingEstrelas(false));
-  }, [rachaId, participantes, setParticipantes]);
+    if (!needsUpdate) return;
+
+    setParticipantes(
+      participantes.map((p) => ({
+        ...p,
+        estrelas: estrelasGlobais[p.id] ?? buildDefaultEstrelas(p.id),
+      }))
+    );
+  }, [rachaId, participantes, estrelasGlobais, buildDefaultEstrelas, setParticipantes]);
 
   // Busca ranking publico para enriquecer o balanceamento
   useEffect(() => {
@@ -190,14 +210,7 @@ export default function ParticipantesRacha({
 
   const participantesDisponiveis = useMemo<Participante[]>(() => {
     return (jogadores || []).map((jogador) => {
-      const estrela = estrelasGlobais[jogador.id] ?? {
-        id: "",
-        rachaId,
-        jogadorId: jogador.id,
-        estrelas: 0,
-        atualizadoEm: "",
-        atualizadoPor: "",
-      };
+      const estrela = estrelasGlobais[jogador.id] ?? buildDefaultEstrelas(jogador.id);
 
       return {
         id: jogador.id,
@@ -214,7 +227,7 @@ export default function ParticipantesRacha({
         partidas: (jogador as any).partidas ?? 0,
       };
     });
-  }, [jogadores, estrelasGlobais, rachaId, rankingMap]);
+  }, [jogadores, estrelasGlobais, buildDefaultEstrelas, rankingMap]);
 
   // Inicializa automaticamente mensalistas na primeira carga
   useEffect(() => {
@@ -246,15 +259,10 @@ export default function ParticipantesRacha({
           ...participantes,
           {
             ...participanteOriginal,
-            estrelas: estrelasGlobais[participanteOriginal.id] ??
-              participanteOriginal.estrelas ?? {
-                id: "",
-                rachaId,
-                jogadorId: participanteOriginal.id,
-                estrelas: 0,
-                atualizadoEm: "",
-                atualizadoPor: "",
-              },
+            estrelas:
+              estrelasGlobais[participanteOriginal.id] ??
+              participanteOriginal.estrelas ??
+              buildDefaultEstrelas(participanteOriginal.id),
           },
         ]);
       }
@@ -280,67 +288,21 @@ export default function ParticipantesRacha({
     onClick: () => void;
     children?: React.ReactNode;
   }) {
-    const estrelaAtual = estrelasGlobais[jogador.id]?.estrelas ?? jogador.estrelas?.estrelas ?? 0;
-
-    const handleUpdateEstrela = async (val: number) => {
-      if (!selecionado) return;
-      setEstrelasGlobais((prev) => ({
-        ...prev,
-        [jogador.id]: {
-          ...(prev[jogador.id] || {
-            id: "",
-            rachaId,
-            jogadorId: jogador.id,
-            estrelas: 0,
-            atualizadoEm: "",
-            atualizadoPor: "",
-          }),
-          estrelas: val,
-          atualizadoEm: new Date().toISOString(),
-        },
-      }));
-      setParticipantes(
-        participantes.map((p) =>
-          p.id === jogador.id
-            ? {
-                ...p,
-                estrelas: {
-                  ...(p.estrelas || {
-                    id: "",
-                    rachaId,
-                    jogadorId: jogador.id,
-                    estrelas: 0,
-                    atualizadoEm: "",
-                    atualizadoPor: "",
-                  }),
-                  estrelas: val,
-                  atualizadoEm: new Date().toISOString(),
-                },
-              }
-            : p
-        )
-      );
-
-      await fetch(`/api/estrelas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          rachaId,
-          jogadorId: jogador.id,
-          estrelas: val,
-        }),
-      });
-    };
+    const estrelaInfo =
+      estrelasGlobais[jogador.id] ?? jogador.estrelas ?? buildDefaultEstrelas(jogador.id);
+    const habilidade = estrelaInfo?.habilidade ?? null;
+    const fisico = estrelaInfo?.fisico ?? null;
+    const nivelFinal = estrelaInfo?.nivelFinal ?? estrelaInfo?.estrelas ?? 0;
+    const temNivel = typeof habilidade === "number" && typeof fisico === "number";
+    const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Fisico ${typeof fisico === "number" ? fisico : "-"}`;
+    const nivelTexto = formatNivel(temNivel ? nivelFinal : null);
 
     return (
       <div
         className={`flex flex-col justify-between p-2 rounded-lg border relative min-h-[94px] shadow-sm gap-0.5
                     ${selecionado ? "bg-yellow-100 border-yellow-400 cursor-pointer" : "bg-zinc-800 border-zinc-700 cursor-pointer hover:border-yellow-500"}
                 `}
-        onClick={(e) => {
-          if ((e.target as HTMLElement).closest(".editor-estrelas")) return;
-          onClick();
-        }}
+        onClick={onClick}
       >
         <div className="flex flex-row items-center justify-between w-full">
           <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
@@ -384,12 +346,13 @@ export default function ParticipantesRacha({
           >
             {jogador.posicao}
           </span>
-          <div className="editor-estrelas flex items-center justify-center w-full min-w-[110px] max-w-[120px] mx-2">
-            <EditorEstrelas
-              value={estrelaAtual}
-              onChange={handleUpdateEstrela}
-              disabled={!selecionado || loadingEstrelas}
-            />
+          <div className="flex items-center gap-2 mx-2" title={tooltip}>
+            <StarRatingDisplay value={nivelFinal} max={5} size={14} />
+            <span
+              className={`text-xs font-semibold ${selecionado ? "text-black" : "text-gray-200"}`}
+            >
+              Nivel {nivelTexto}
+            </span>
           </div>
         </div>
       </div>
@@ -478,6 +441,9 @@ export default function ParticipantesRacha({
       </div>
       {loadingJogadores && (
         <div className="text-center text-xs text-gray-400 mt-2">Carregando atletas...</div>
+      )}
+      {loadingEstrelas && (
+        <div className="text-center text-xs text-gray-400 mt-2">Carregando niveis...</div>
       )}
     </section>
   );

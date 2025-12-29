@@ -3,7 +3,9 @@
 import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
 import { getCoeficiente, type CoeficienteContext } from "@/utils/sorteioUtils";
+import { formatNivel } from "@/utils/nivel-atleta";
 import { useState } from "react";
+import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import {
@@ -107,6 +109,13 @@ export default function TimesGerados({
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: jogador.id,
     });
+    const habilidade = jogador.estrelas?.habilidade ?? null;
+    const fisico = jogador.estrelas?.fisico ?? null;
+    const nivelFinal = jogador.estrelas?.nivelFinal ?? jogador.estrelas?.estrelas ?? 0;
+    const temNivel = typeof habilidade === "number" && typeof fisico === "number";
+    const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Fisico ${typeof fisico === "number" ? fisico : "-"}`;
+    const nivelTexto = formatNivel(temNivel ? nivelFinal : null);
+
     return (
       <div
         ref={setNodeRef}
@@ -128,7 +137,10 @@ export default function TimesGerados({
         />
         <span className="text-sm font-semibold">{jogador.nome}</span>
         <span className="text-xs text-gray-400">{jogador.posicao}</span>
-        <span className="ml-1 text-yellow-400">{"⭐".repeat(jogador.estrelas.estrelas)}</span>
+        <div className="ml-2 flex items-center gap-1" title={tooltip}>
+          <StarRatingDisplay value={nivelFinal} size={12} />
+          <span className="text-xs text-yellow-300">Nivel {nivelTexto}</span>
+        </div>
         {editando && (
           <select
             className="ml-2 bg-zinc-800 border border-zinc-700 rounded text-xs text-white"

@@ -37,6 +37,7 @@ const menu = [
     icon: MdPerson,
     children: [
       { label: "Listar/Cadastrar", href: "/admin/jogadores/listar-cadastrar" },
+      { label: "Nivel dos Atletas", href: "/admin/jogadores/nivel-dos-atletas" },
       { label: "Ranking Assiduidade", href: "/admin/jogadores/ranking-assiduidade" },
       { label: "Mensalistas", href: "/admin/jogadores/mensalistas" },
     ],
