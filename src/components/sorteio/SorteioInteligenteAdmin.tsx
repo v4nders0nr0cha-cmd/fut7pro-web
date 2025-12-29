@@ -468,7 +468,7 @@ export default function SorteioInteligenteAdmin() {
                 <>
                   Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
                   {totalTemporada < 8
-                    ? "Ranking desativado ate completar 8 sorteios."
+                    ? "Fase de calibracao: nos primeiros 8 sorteios, o balanceamento usa apenas as estrelas do admin."
                     : "Ranking ativo no balanceamento."}
                 </>
               )}
