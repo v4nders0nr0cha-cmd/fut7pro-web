@@ -350,16 +350,16 @@ export default function SorteioInteligenteAdmin() {
             balanceados e justos.
             <br />
             <br />
-            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros sorteios do sistema (ou no
-            começo de cada ano/temporada), como ainda não há rankings históricos, o balanceamento
-            será feito <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a cada
-            jogador.
+            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados do
+            sistema (ou no começo de cada ano/temporada, quando os rankings reiniciam), como ainda
+            não há rankings históricos, o balanceamento será feito{" "}
+            <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a cada jogador. A
+            contagem começa somente após a publicação do sorteio.
             <br />
             <br />
-            <b>IMPORTANTE:</b> A partir do momento que o sistema acumula mais jogos, rankings e
-            avaliações começam a ser usados para calibrar o equilíbrio dos times. Leva de 8 a 10
-            rachas para o sistema aprender quem são os melhores, deixando o sorteio cada vez mais
-            justo.
+            <b>IMPORTANTE:</b> Após os 8 sorteios publicados, o sistema passa a usar rankings e
+            avaliações para calibrar o equilíbrio dos times. Leva de 8 a 10 rachas para o sistema
+            aprender quem são os melhores, deixando o sorteio cada vez mais justo.
             <br />
             <br />
             <b>Configurações Iniciais:</b> As opções de número de times, tempo de partida e
@@ -468,7 +468,7 @@ export default function SorteioInteligenteAdmin() {
                 <>
                   Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
                   {totalTemporada < 8
-                    ? "Fase de calibracao: nos primeiros 8 sorteios, o balanceamento usa apenas as estrelas do admin."
+                    ? "Fase de calibracao: nos primeiros 8 sorteios publicados, o balanceamento usa apenas as estrelas do admin."
                     : "Ranking ativo no balanceamento."}
                 </>
               )}
