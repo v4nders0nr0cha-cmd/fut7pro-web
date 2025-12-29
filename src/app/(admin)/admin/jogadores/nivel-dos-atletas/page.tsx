@@ -30,9 +30,13 @@ type EditState = {
   fisico?: number | null;
 };
 
+type SaveStatus = "saving" | "saved" | "error";
+
 type AtletaNivel = {
   jogador: Jogador;
   posicao: string;
+  habilidadeSalva: number | null;
+  fisicoSalva: number | null;
   habilidade: number | null;
   fisico: number | null;
   nivelFinal: number | null;
@@ -163,8 +167,9 @@ export default function NivelDosAtletasPage() {
   const [ordenacao, setOrdenacao] = useState("nivel");
 
   const [edits, setEdits] = useState<Record<string, EditState>>({});
-  const [savingIds, setSavingIds] = useState<Record<string, boolean>>({});
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [statusById, setStatusById] = useState<Record<string, SaveStatus>>({});
+  const statusTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [bulkHabilidade, setBulkHabilidade] = useState("");
@@ -187,27 +192,33 @@ export default function NivelDosAtletasPage() {
 
   useEffect(() => {
     const timers = timersRef.current;
+    const statusTimers = statusTimersRef.current;
     return () => {
       Object.values(timers).forEach((timer) => clearTimeout(timer));
+      Object.values(statusTimers).forEach((timer) => clearTimeout(timer));
     };
   }, []);
 
   const atletas = useMemo<AtletaNivel[]>(() => {
     return (jogadores || []).map((jogador) => {
       const nivel = niveisMap[jogador.id];
+      const habilidadeSalva = typeof nivel?.habilidade === "number" ? nivel.habilidade : null;
+      const fisicoSalva = typeof nivel?.fisico === "number" ? nivel.fisico : null;
       const edit = edits[jogador.id] || {};
       const habilidade = edit.habilidade ?? nivel?.habilidade ?? null;
       const fisico = edit.fisico ?? nivel?.fisico ?? null;
       const nivelFinal = calcularNivelFinal(habilidade, fisico);
       const nivelOrdenacao =
-        typeof habilidade === "number" && typeof fisico === "number"
-          ? nivelFinal
-          : typeof nivel?.nivelFinal === "number"
-            ? nivel?.nivelFinal
+        typeof nivel?.nivelFinal === "number"
+          ? nivel?.nivelFinal
+          : typeof habilidadeSalva === "number" && typeof fisicoSalva === "number"
+            ? calcularNivelFinal(habilidadeSalva, fisicoSalva)
             : null;
       return {
         jogador,
         posicao: normalizarPosicao(jogador.posicao),
+        habilidadeSalva,
+        fisicoSalva,
         habilidade,
         fisico,
         nivelFinal,
@@ -230,7 +241,7 @@ export default function NivelDosAtletasPage() {
       }
       if (posicao !== "todas" && item.posicao !== posicao) return false;
       if (apenasMensalistas && !item.mensalista) return false;
-      if (semNivel && typeof item.habilidade !== "number") return false;
+      if (semNivel && typeof item.habilidadeSalva !== "number") return false;
       return true;
     });
 
@@ -256,13 +267,13 @@ export default function NivelDosAtletasPage() {
         break;
       case "habilidade":
         lista = [...lista].sort((a, b) => {
-          const diff = (b.habilidade ?? -1) - (a.habilidade ?? -1);
+          const diff = (b.habilidadeSalva ?? -1) - (a.habilidadeSalva ?? -1);
           return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
         });
         break;
       case "fisico":
         lista = [...lista].sort((a, b) => {
-          const diff = (b.fisico ?? -1) - (a.fisico ?? -1);
+          const diff = (b.fisicoSalva ?? -1) - (a.fisicoSalva ?? -1);
           return diff !== 0 ? diff : baseIndex(a) - baseIndex(b);
         });
         break;
@@ -305,6 +316,22 @@ export default function NivelDosAtletasPage() {
 
   const limparSelecao = () => setSelectedIds({});
 
+  const setStatus = (id: string, status: SaveStatus, ttlMs = 2000) => {
+    if (statusTimersRef.current[id]) {
+      clearTimeout(statusTimersRef.current[id]);
+    }
+    setStatusById((prev) => ({ ...prev, [id]: status }));
+    if (status !== "saving") {
+      statusTimersRef.current[id] = setTimeout(() => {
+        setStatusById((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }, ttlMs);
+    }
+  };
+
   const scheduleSave = (id: string, habilidade: number | null, fisico: number | null) => {
     if (!canEdit) return;
 
@@ -312,15 +339,23 @@ export default function NivelDosAtletasPage() {
       clearTimeout(timersRef.current[id]);
     }
 
+    if (typeof habilidade === "number" && typeof fisico === "number") {
+      setStatus(id, "saving");
+    }
+
     timersRef.current[id] = setTimeout(async () => {
       if (typeof habilidade !== "number" || typeof fisico !== "number") return;
-      setSavingIds((prev) => ({ ...prev, [id]: true }));
       const result = await atualizarNivel({ athleteId: id, habilidade, fisico });
-      setSavingIds((prev) => ({ ...prev, [id]: false }));
       if (result) {
-        toast.success("Salvo");
+        setStatus(id, "saved");
+        setEdits((current) => {
+          if (!current[id]) return current;
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
       } else {
-        toast.error("Falha ao salvar");
+        setStatus(id, "error", 3200);
       }
     }, 300);
   };
@@ -396,8 +431,20 @@ export default function NivelDosAtletasPage() {
         [id]: { habilidade, fisico },
       }));
 
+      setStatus(id, "saving");
       const result = await atualizarNivel({ athleteId: id, habilidade, fisico });
-      if (!result) skipped += 1;
+      if (result) {
+        setStatus(id, "saved");
+        setEdits((current) => {
+          if (!current[id]) return current;
+          const next = { ...current };
+          delete next[id];
+          return next;
+        });
+      } else {
+        setStatus(id, "error", 3200);
+        skipped += 1;
+      }
     }
 
     setBulkLoading(false);
@@ -596,7 +643,21 @@ export default function NivelDosAtletasPage() {
             const nivelTexto = formatNivel(nivelFinal);
             const semHabilidade = typeof habilidade !== "number";
             const selecionado = Boolean(selectedIds[jogador.id]);
-            const saving = Boolean(savingIds[jogador.id]);
+            const status = statusById[jogador.id];
+            const statusLabel =
+              status === "saving"
+                ? "Salvando..."
+                : status === "saved"
+                  ? "Salvo"
+                  : status === "error"
+                    ? "Falha ao salvar"
+                    : null;
+            const statusClass =
+              status === "saving"
+                ? "border-yellow-500/40 text-yellow-200 bg-yellow-500/10"
+                : status === "saved"
+                  ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                  : "border-red-500/40 text-red-300 bg-red-500/10";
 
             return (
               <div
@@ -680,7 +741,18 @@ export default function NivelDosAtletasPage() {
                     <StarRatingDisplay value={nivelFinal ?? 0} size={14} />
                     <span className="text-sm text-yellow-300">Nivel do atleta: {nivelTexto}</span>
                   </div>
-                  {saving && <span className="text-xs text-green-400">Salvando...</span>}
+                  {statusLabel && (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusClass}`}
+                    >
+                      {status === "saving" && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-yellow-300 animate-pulse" />
+                      )}
+                      {status === "saved" && <FaCheckCircle size={10} />}
+                      {status === "error" && <FaTimes size={10} />}
+                      {statusLabel}
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-gray-400">
