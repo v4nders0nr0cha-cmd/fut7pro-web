@@ -11,106 +11,115 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
   const metade = Math.ceil(jogos.length / 2);
   const jogosIda = jogos.slice(0, metade);
   const jogosVolta = jogos.slice(metade);
+  const secoes = [
+    { titulo: "Ida", lista: jogosIda },
+    { titulo: "Volta", lista: jogosVolta },
+  ].filter((secao) => secao.lista.length > 0);
 
   return (
-    <div className="mt-8 flex flex-col md:flex-row gap-8">
-      {/* Tabela de Ida */}
-      <div className="flex-1">
-        <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-2 text-center">Ida</h3>
-        <div className="overflow-x-auto rounded-xl">
-          <table className="min-w-full bg-gray-900 text-white rounded-xl shadow">
-            <thead>
-              <tr className="bg-[#222a38] text-yellow-300">
-                <th className="px-4 py-2">Rodada</th>
-                <th className="px-4 py-2">Jogo</th>
-                <th className="px-4 py-2">Tempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jogosIda.map((jogo, idx) => (
-                <tr key={jogo.ordem} className="border-b border-gray-800">
-                  <td className="text-center font-bold">{idx + 1}</td>
-                  <td className="flex items-center justify-center gap-2 py-2">
-                    <span className="flex items-center gap-1">
-                      <span className="font-medium">{jogo.timeA.nome}</span>
-                      <Image
-                        src={jogo.timeA.logo}
-                        alt={jogo.timeA.nome}
-                        width={28}
-                        height={28}
-                        className="rounded"
-                        style={{ objectFit: "cover" }}
-                      />
-                    </span>
-                    <span className="font-bold text-yellow-400 text-base mx-1">x</span>
-                    <span className="flex items-center gap-1">
-                      <Image
-                        src={jogo.timeB.logo}
-                        alt={jogo.timeB.nome}
-                        width={28}
-                        height={28}
-                        className="rounded"
-                        style={{ objectFit: "cover" }}
-                      />
-                      <span className="font-medium">{jogo.timeB.nome}</span>
-                    </span>
-                  </td>
-                  <td className="text-center">{jogo.tempo} min</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <div className="mt-6 flex flex-col gap-6 md:flex-row md:gap-8">
+      {secoes.map((secao) => (
+        <div key={secao.titulo} className="flex-1">
+          <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-3 text-center">
+            {secao.titulo}
+          </h3>
 
-      {/* Tabela de Volta */}
-      <div className="flex-1">
-        <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-2 text-center">Volta</h3>
-        <div className="overflow-x-auto rounded-xl">
-          <table className="min-w-full bg-gray-900 text-white rounded-xl shadow">
-            <thead>
-              <tr className="bg-[#222a38] text-yellow-300">
-                <th className="px-4 py-2">Rodada</th>
-                <th className="px-4 py-2">Jogo</th>
-                <th className="px-4 py-2">Tempo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jogosVolta.map((jogo, idx) => (
-                <tr key={jogo.ordem} className="border-b border-gray-800">
-                  <td className="text-center font-bold">{idx + 1}</td>
-                  <td className="flex items-center justify-center gap-2 py-2">
-                    <span className="flex items-center gap-1">
-                      <span className="font-medium">{jogo.timeA.nome}</span>
-                      <Image
-                        src={jogo.timeA.logo}
-                        alt={jogo.timeA.nome}
-                        width={28}
-                        height={28}
-                        className="rounded"
-                        style={{ objectFit: "cover" }}
-                      />
+          <div className="hidden md:block">
+            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0f1522] shadow">
+              <table className="w-full table-fixed text-sm text-white">
+                <thead>
+                  <tr className="bg-[#1b2436] text-yellow-300 text-xs uppercase tracking-wide">
+                    <th className="w-20 px-3 py-3 text-left">Rodada</th>
+                    <th className="px-3 py-3 text-center">Confronto</th>
+                    <th className="w-20 px-3 py-3 text-right">Tempo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {secao.lista.map((jogo, idx) => (
+                    <tr
+                      key={`${secao.titulo}-${jogo.ordem}`}
+                      className="border-t border-[#1e2a3a] odd:bg-[#0f1626] even:bg-[#0c1320]"
+                    >
+                      <td className="px-3 py-3 text-left font-semibold">{idx + 1}</td>
+                      <td className="px-3 py-3">
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                          <div className="flex items-center justify-end gap-2 min-w-0">
+                            <span className="truncate font-medium">{jogo.timeA.nome}</span>
+                            <Image
+                              src={jogo.timeA.logo}
+                              alt={jogo.timeA.nome}
+                              width={26}
+                              height={26}
+                              className="rounded shrink-0"
+                              style={{ objectFit: "cover" }}
+                            />
+                          </div>
+                          <span className="text-yellow-400 font-bold text-base">x</span>
+                          <div className="flex items-center justify-start gap-2 min-w-0">
+                            <Image
+                              src={jogo.timeB.logo}
+                              alt={jogo.timeB.nome}
+                              width={26}
+                              height={26}
+                              className="rounded shrink-0"
+                              style={{ objectFit: "cover" }}
+                            />
+                            <span className="truncate font-medium">{jogo.timeB.nome}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-3 text-right text-yellow-200 font-semibold">
+                        {jogo.tempo} min
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {secao.lista.map((jogo, idx) => (
+              <div
+                key={`${secao.titulo}-mobile-${jogo.ordem}`}
+                className="rounded-xl border border-zinc-800 bg-[#0f1522] px-3 py-3 shadow"
+              >
+                <div className="flex items-center justify-between text-[11px] text-gray-400 uppercase tracking-wide">
+                  <span>Rodada {idx + 1}</span>
+                  <span>{jogo.tempo} min</span>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Image
+                      src={jogo.timeA.logo}
+                      alt={jogo.timeA.nome}
+                      width={26}
+                      height={26}
+                      className="rounded shrink-0"
+                      style={{ objectFit: "cover" }}
+                    />
+                    <span className="truncate text-sm font-semibold">{jogo.timeA.nome}</span>
+                  </div>
+                  <span className="text-yellow-400 font-bold text-sm">x</span>
+                  <div className="flex items-center gap-2 min-w-0 justify-end">
+                    <span className="truncate text-sm font-semibold text-right">
+                      {jogo.timeB.nome}
                     </span>
-                    <span className="font-bold text-yellow-400 text-base mx-1">x</span>
-                    <span className="flex items-center gap-1">
-                      <Image
-                        src={jogo.timeB.logo}
-                        alt={jogo.timeB.nome}
-                        width={28}
-                        height={28}
-                        className="rounded"
-                        style={{ objectFit: "cover" }}
-                      />
-                      <span className="font-medium">{jogo.timeB.nome}</span>
-                    </span>
-                  </td>
-                  <td className="text-center">{jogo.tempo} min</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <Image
+                      src={jogo.timeB.logo}
+                      alt={jogo.timeB.nome}
+                      width={26}
+                      height={26}
+                      className="rounded shrink-0"
+                      style={{ objectFit: "cover" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 }

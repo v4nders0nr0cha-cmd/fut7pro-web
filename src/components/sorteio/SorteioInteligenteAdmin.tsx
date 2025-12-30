@@ -535,13 +535,20 @@ export default function SorteioInteligenteAdmin() {
                 typeof totalTemporada === "number" ? totalTemporada : undefined,
             }}
           />
+          {tabelaJogos.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-base md:text-lg text-yellow-300 font-bold text-center mb-3">
+                Tabela de Confrontos
+              </h3>
+              {/* NOVO: Tabela de jogos gerada automaticamente */}
+              <TabelaJogosRacha jogos={tabelaJogos} />
+            </div>
+          )}
           <BotaoPublicarTimes
             publicado={publicado}
             loading={publicando}
             onClick={handlePublicarTimes}
           />
-          {/* NOVO: Tabela de jogos gerada automaticamente */}
-          <TabelaJogosRacha jogos={tabelaJogos} />
         </>
       )}
     </div>
