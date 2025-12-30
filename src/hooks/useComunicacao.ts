@@ -9,10 +9,15 @@ type ComunicacaoBadge = {
   badgeSugestoes: number; // Resposta do admin para sugestões
 };
 
-export function useComunicacao(): ComunicacaoBadge {
+type UseComunicacaoOptions = {
+  enabled?: boolean;
+};
+
+export function useComunicacao(options: UseComunicacaoOptions = {}): ComunicacaoBadge {
   const { isAuthenticated } = useAuth();
+  const enabled = options.enabled ?? true;
   const { unreadCount } = useNotifications({
-    enabled: isAuthenticated,
+    enabled: isAuthenticated && enabled,
     refreshInterval: 30000,
   });
 

@@ -4,6 +4,7 @@ import { FaHome, FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -16,9 +17,15 @@ const menu = [
 export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
   const { data: session } = useSession();
-  const isLoggedIn = !!session?.user;
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+  const sessionSlug =
+    typeof (session?.user as any)?.tenantSlug === "string"
+      ? (session?.user as any).tenantSlug.trim().toLowerCase()
+      : "";
+  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
+  const isLoggedIn = Boolean(session?.user && isTenantSession);
+  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
   const { publicHref } = usePublicLinks();
 
   function handleClick(href: string, label: string) {

@@ -31,6 +31,7 @@ describe("Sidebar", () => {
 describe("BottomMenu", () => {
   const useSession = require("next-auth/react").useSession as jest.Mock;
   const useComunicacao = require("@/hooks/useComunicacao").useComunicacao as jest.Mock;
+  const usePathname = require("next/navigation").usePathname as jest.Mock;
 
   it("mostra CTA de login quando não autenticado", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
@@ -41,9 +42,10 @@ describe("BottomMenu", () => {
 
   it("mostra itens do menu e badges quando autenticado", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
       status: "authenticated",
     });
+    usePathname.mockReturnValue("/ruimdebola");
     useComunicacao.mockReturnValue({
       badge: 2,
       badgeMensagem: 1,

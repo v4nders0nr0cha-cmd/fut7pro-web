@@ -3,13 +3,14 @@
 import type { FC } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useSession, signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useMe } from "@/hooks/useMe";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -25,13 +26,20 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { logo, nome } = useTema();
   const { data: session } = useSession();
   const router = useRouter();
-  const isLoggedIn = !!session?.user;
+  const pathname = usePathname() ?? "";
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+  const sessionSlug =
+    typeof (session?.user as any)?.tenantSlug === "string"
+      ? (session?.user as any).tenantSlug.trim().toLowerCase()
+      : "";
+  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
+  const isLoggedIn = Boolean(session?.user && isTenantSession);
   const { me } = useMe({ enabled: isLoggedIn });
   const { publicHref } = usePublicLinks();
   const displayName = me?.athlete?.firstName || session?.user?.name || "Usuario";
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
-  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao();
+  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/login");
   const profileHref = publicHref("/perfil");

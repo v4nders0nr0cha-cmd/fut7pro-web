@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
@@ -11,36 +10,28 @@ import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
 import { useRacha } from "@/context/RachaContext";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
-
-const TENANT_STORAGE_KEY = "fut7pro-tenant-slug";
+import { rachaConfig } from "@/config/racha.config";
 
 export default function LayoutClient({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname() ?? "";
-  const { data: session } = useSession();
   const { tenantSlug, setTenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const sessionSlug =
-    typeof (session?.user as any)?.tenantSlug === "string"
-      ? (session?.user as any).tenantSlug.trim().toLowerCase()
-      : "";
+  const defaultSlug = (rachaConfig.slug || "").trim().toLowerCase();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
-    const storedSlug = window.sessionStorage.getItem(TENANT_STORAGE_KEY) || "";
-    const nextSlug = slugFromPath || sessionSlug || storedSlug;
-
     if (slugFromPath) {
-      window.sessionStorage.setItem(TENANT_STORAGE_KEY, slugFromPath);
-    } else if (sessionSlug && sessionSlug !== storedSlug) {
-      window.sessionStorage.setItem(TENANT_STORAGE_KEY, sessionSlug);
+      if (slugFromPath !== tenantSlug) {
+        setTenantSlug(slugFromPath);
+      }
+      return;
     }
 
-    if (nextSlug && nextSlug !== tenantSlug) {
-      setTenantSlug(nextSlug);
+    if (defaultSlug && tenantSlug !== defaultSlug) {
+      setTenantSlug(defaultSlug);
     }
-  }, [slugFromPath, sessionSlug, tenantSlug, setTenantSlug]);
+  }, [slugFromPath, tenantSlug, setTenantSlug, defaultSlug]);
 
   return (
     <>

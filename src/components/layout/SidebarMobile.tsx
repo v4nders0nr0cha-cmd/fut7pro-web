@@ -17,6 +17,7 @@ import { useTema } from "@/hooks/useTema";
 import { useMe } from "@/hooks/useMe";
 import { usePathname } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -27,7 +28,13 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { data: session } = useSession();
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
-  const isLoggedIn = !!session?.user;
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+  const sessionSlug =
+    typeof (session?.user as any)?.tenantSlug === "string"
+      ? (session?.user as any).tenantSlug.trim().toLowerCase()
+      : "";
+  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
+  const isLoggedIn = Boolean(session?.user && isTenantSession);
   const { me } = useMe({ enabled: isLoggedIn });
   const { publicHref } = usePublicLinks();
   const profileImage =

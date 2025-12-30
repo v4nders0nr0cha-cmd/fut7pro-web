@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Shuffle } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import ChampionBanner from "@/components/cards/ChampionBanner";
 import GamesOfTheDayMobileModal from "@/components/cards/GamesOfTheDayMobileModal";
 import TopTeamsCard from "@/components/cards/TopTeamsCard";
@@ -17,6 +19,7 @@ import { rachaConfig } from "@/config/racha.config";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildDestaquesDoDia, getTimeCampeao } from "@/utils/destaquesDoDia";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 import type { PublicMatch } from "@/types/partida";
 
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
@@ -130,7 +133,15 @@ export default function Home() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
   const { hasPermission } = useAuth();
-  const isAdmin = hasPermission("RACHA_UPDATE");
+  const pathname = usePathname() ?? "";
+  const { data: session } = useSession();
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+  const sessionSlug =
+    typeof (session?.user as any)?.tenantSlug === "string"
+      ? (session?.user as any).tenantSlug.trim().toLowerCase()
+      : "";
+  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
+  const isAdmin = isTenantSession && hasPermission("RACHA_UPDATE");
   const { publicHref } = usePublicLinks();
 
   const [modalOpen, setModalOpen] = useState(false);
