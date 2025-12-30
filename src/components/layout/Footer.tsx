@@ -308,10 +308,14 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 text-center">
-          <Link href={rachaConfig.urls.site} target="_blank" aria-label={`Site ${tema.nome}`}>
+          <Link
+            href={rachaConfig.urls.site}
+            target="_blank"
+            aria-label={`Site ${rachaConfig.nome}`}
+          >
             <Image
-              src={tema.logo}
-              alt={`Logo ${tema.nome} sistema de futebol 7 entre amigos`}
+              src={rachaConfig.logo}
+              alt={`Logo ${rachaConfig.nome} sistema de futebol 7 entre amigos`}
               width={64}
               height={64}
               className="mx-auto mb-2"
