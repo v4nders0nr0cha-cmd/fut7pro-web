@@ -9,6 +9,7 @@ export interface JogoConfronto {
   timeA: Time;
   timeB: Time;
   tempo: number; // em minutos
+  turno: "ida" | "volta";
 }
 
 export type CoeficienteContext = {
@@ -420,11 +421,14 @@ export function gerarConfrontos(times: Time[], idaVolta = false): [Time, Time][]
       const timeB = times[j];
       if (timeA && timeB) {
         confrontos.push([timeA, timeB]);
-        if (idaVolta) confrontos.push([timeB, timeA]);
       }
     }
   }
-  return confrontos;
+  if (!idaVolta) {
+    return confrontos;
+  }
+  const volta = confrontos.map(([timeA, timeB]) => [timeB, timeA] as [Time, Time]);
+  return [...confrontos, ...volta];
 }
 
 // ===== Gerar tabela de jogos =====
@@ -441,19 +445,39 @@ export function gerarTabelaJogos({
   const tempoUtil = duracaoRachaMin - TEMPO_RESERVA;
   const maxPartidas = Math.floor(tempoUtil / duracaoPartidaMin);
 
-  let confrontos = gerarConfrontos(times, false);
-
-  if (confrontos.length < maxPartidas) {
-    confrontos = gerarConfrontos(times, true);
+  const confrontosIda = gerarConfrontos(times, false);
+  if (!confrontosIda.length || maxPartidas <= 0) {
+    return [];
   }
-  confrontos = confrontos.slice(0, maxPartidas);
+
+  if (confrontosIda.length >= maxPartidas) {
+    return confrontosIda
+      .slice(0, maxPartidas)
+      .filter(([timeA, timeB]) => !!timeA && !!timeB)
+      .map(([timeA, timeB], idx) => ({
+        ordem: idx + 1,
+        timeA,
+        timeB,
+        tempo: duracaoPartidaMin,
+        turno: "ida" as const,
+      }));
+  }
+
+  const confrontosVolta = confrontosIda.map(([timeA, timeB]) => [timeB, timeA] as [Time, Time]);
+  const restantes = Math.max(0, maxPartidas - confrontosIda.length);
+  const voltaSelecionados = confrontosVolta.slice(0, restantes);
+  const confrontos = [
+    ...confrontosIda.map((par) => ({ par, turno: "ida" as const })),
+    ...voltaSelecionados.map((par) => ({ par, turno: "volta" as const })),
+  ];
 
   return confrontos
-    .filter(([timeA, timeB]) => !!timeA && !!timeB)
-    .map(([timeA, timeB], idx) => ({
+    .filter(({ par: [timeA, timeB] }) => !!timeA && !!timeB)
+    .map(({ par: [timeA, timeB], turno }, idx) => ({
       ordem: idx + 1,
       timeA,
       timeB,
       tempo: duracaoPartidaMin,
+      turno,
     }));
 }

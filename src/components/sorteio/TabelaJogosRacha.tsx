@@ -7,25 +7,25 @@ import type { JogoConfronto } from "@/utils/sorteioUtils";
 export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) {
   if (!jogos || jogos.length === 0) return null;
 
-  // Divide pela metade: ida e volta
-  const metade = Math.ceil(jogos.length / 2);
-  const jogosIda = jogos.slice(0, metade);
-  const jogosVolta = jogos.slice(metade);
+  const jogosIda = jogos.filter((jogo) => jogo.turno !== "volta");
+  const jogosVolta = jogos.filter((jogo) => jogo.turno === "volta");
   const secoes = [
     { titulo: "Ida", lista: jogosIda },
     { titulo: "Volta", lista: jogosVolta },
   ].filter((secao) => secao.lista.length > 0);
 
+  const gridCols = secoes.length > 1 ? "md:grid-cols-2" : "md:grid-cols-1";
+
   return (
-    <div className="mt-6 flex flex-col gap-6 md:flex-row md:gap-8">
+    <div className={`mt-6 grid grid-cols-1 gap-6 ${gridCols} md:gap-8 items-start`}>
       {secoes.map((secao) => (
-        <div key={secao.titulo} className="flex-1">
+        <div key={secao.titulo} className="min-w-0">
           <h3 className="text-lg md:text-xl text-yellow-400 font-bold mb-3 text-center">
             {secao.titulo}
           </h3>
 
           <div className="hidden md:block">
-            <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0f1522] shadow">
+            <div className="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-[#0f1522] shadow">
               <table className="w-full table-fixed text-sm text-white">
                 <thead>
                   <tr className="bg-[#1b2436] text-yellow-300 text-xs uppercase tracking-wide">
