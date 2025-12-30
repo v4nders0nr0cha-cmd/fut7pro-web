@@ -64,8 +64,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
       </button>
 
       {/* MARCA FIXA FUT7PRO (admin) */}
-      <Link href="/admin/dashboard" className="flex items-center gap-2 select-none" tabIndex={0}>
-        <span className="text-white font-extrabold text-lg tracking-tight">
+      <Link
+        href="/admin/dashboard"
+        className="flex items-center gap-2 select-none ml-1 md:ml-2"
+        tabIndex={0}
+      >
+        <span className="text-white font-extrabold text-xl md:text-2xl tracking-tight leading-none">
           Fut
           <span className="text-yellow-400 animate-pulse drop-shadow-[0_0_12px_rgba(250,204,21,0.75)]">
             7
