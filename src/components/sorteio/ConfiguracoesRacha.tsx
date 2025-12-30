@@ -13,6 +13,7 @@ const DURACOES_RACHA = [60, 90, 120, 150];
 const DURACOES_PARTIDA = Array.from({ length: 41 }, (_, i) => 5 + i); // 5~45min
 const NUM_TIMES = [2, 3, 4, 5, 6];
 const JOGADORES_POR_TIME = [5, 6, 7];
+const DEFAULT_JOGADORES_POR_TIME = 7;
 
 // Função sempre segura
 function ensureNumber(val: unknown, allowed: number[], fallback: number): number {
@@ -24,7 +25,7 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
   const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(DURACOES_RACHA[0]);
   const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(DURACOES_PARTIDA[0]);
   const [numTimes, setNumTimes] = useState<number>(NUM_TIMES[0]);
-  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(JOGADORES_POR_TIME[0]);
+  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(DEFAULT_JOGADORES_POR_TIME);
 
   // Carrega do localStorage só quando monta
   useEffect(() => {
@@ -39,7 +40,7 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
           );
           setNumTimes(ensureNumber(obj.numTimes, NUM_TIMES, NUM_TIMES[0]));
           setJogadoresPorTime(
-            ensureNumber(obj.jogadoresPorTime, JOGADORES_POR_TIME, JOGADORES_POR_TIME[0])
+            ensureNumber(obj.jogadoresPorTime, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
           );
         }
       }
@@ -68,7 +69,9 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     if (!DURACOES_RACHA.includes(duracaoRachaMin)) setDuracaoRachaMin(DURACOES_RACHA[0]);
     if (!DURACOES_PARTIDA.includes(duracaoPartidaMin)) setDuracaoPartidaMin(DURACOES_PARTIDA[0]);
     if (!NUM_TIMES.includes(numTimes)) setNumTimes(NUM_TIMES[0]);
-    if (!JOGADORES_POR_TIME.includes(jogadoresPorTime)) setJogadoresPorTime(JOGADORES_POR_TIME[0]);
+    if (!JOGADORES_POR_TIME.includes(jogadoresPorTime)) {
+      setJogadoresPorTime(DEFAULT_JOGADORES_POR_TIME);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
 
@@ -154,7 +157,7 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
             value={jogadoresPorTime}
             onChange={(e) =>
               setJogadoresPorTime(
-                ensureNumber(e.target.value, JOGADORES_POR_TIME, JOGADORES_POR_TIME[0])
+                ensureNumber(e.target.value, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
               )
             }
             className="w-full rounded p-1 bg-zinc-800 text-white"
