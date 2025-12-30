@@ -431,6 +431,221 @@ export function gerarConfrontos(times: Time[], idaVolta = false): [Time, Time][]
   return [...confrontos, ...volta];
 }
 
+type ConfrontoSlot = {
+  timeA: Time;
+  timeB: Time;
+  turno: "ida" | "volta";
+};
+
+type TeamScheduleState = {
+  lastIndex: number;
+  consecutive: number;
+};
+
+type ScheduleMetrics = {
+  maxConsecutiveByTeam: number;
+  backToBackCount: number;
+  scoreTotal: number;
+};
+
+function initScheduleState(times: Time[]): Record<string, TeamScheduleState> {
+  const state: Record<string, TeamScheduleState> = {};
+  times.forEach((time) => {
+    state[time.id] = { lastIndex: -9999, consecutive: 0 };
+  });
+  return state;
+}
+
+function cloneScheduleState(state: Record<string, TeamScheduleState>) {
+  const clone: Record<string, TeamScheduleState> = {};
+  Object.entries(state).forEach(([key, value]) => {
+    clone[key] = { lastIndex: value.lastIndex, consecutive: value.consecutive };
+  });
+  return clone;
+}
+
+function createSeededRandom(seed: number) {
+  let value = seed;
+  return () => {
+    value = (value * 9301 + 49297) % 233280;
+    return value / 233280;
+  };
+}
+
+function scoreCandidate(
+  match: ConfrontoSlot,
+  state: Record<string, TeamScheduleState>,
+  index: number,
+  numTimes: number
+) {
+  const teams = [match.timeA, match.timeB];
+  let penalty = 0;
+  let restScore = 0;
+
+  teams.forEach((team) => {
+    const current = state[team.id] ?? { lastIndex: -9999, consecutive: 0 };
+    const rest = current.lastIndex >= 0 ? index - current.lastIndex : index + 1;
+    const isBackToBack = current.lastIndex === index - 1;
+    const nextConsecutive = isBackToBack ? current.consecutive + 1 : 1;
+
+    restScore += rest;
+    if (isBackToBack) {
+      penalty += 110;
+    }
+    if (numTimes > 2 && nextConsecutive >= 3) {
+      penalty += 10000;
+    }
+  });
+
+  return { penalty, restScore };
+}
+
+function applyMatchState(
+  match: ConfrontoSlot,
+  state: Record<string, TeamScheduleState>,
+  index: number
+) {
+  const teams = [match.timeA, match.timeB];
+  teams.forEach((team) => {
+    const current = state[team.id] ?? { lastIndex: -9999, consecutive: 0 };
+    const isBackToBack = current.lastIndex === index - 1;
+    const nextConsecutive = isBackToBack ? current.consecutive + 1 : 1;
+    state[team.id] = { lastIndex: index, consecutive: nextConsecutive };
+  });
+}
+
+function scheduleGreedy(
+  matches: ConfrontoSlot[],
+  numTimes: number,
+  limit: number,
+  baseState: Record<string, TeamScheduleState>,
+  startIndex: number,
+  seed: number
+) {
+  const rng = createSeededRandom(seed);
+  const remaining = [...matches];
+  const schedule: ConfrontoSlot[] = [];
+  const state = cloneScheduleState(baseState);
+
+  while (remaining.length > 0 && schedule.length < limit) {
+    const index = startIndex + schedule.length;
+    let bestIdx = 0;
+    let bestPenalty = Number.POSITIVE_INFINITY;
+    let bestRest = -1;
+    let bestKey = "";
+
+    for (let i = 0; i < remaining.length; i += 1) {
+      const candidate = remaining[i]!;
+      const { penalty, restScore } = scoreCandidate(candidate, state, index, numTimes);
+      const key = `${candidate.timeA.id}-${candidate.timeB.id}-${candidate.turno}`;
+
+      if (penalty < bestPenalty) {
+        bestPenalty = penalty;
+        bestRest = restScore;
+        bestIdx = i;
+        bestKey = key;
+        continue;
+      }
+
+      if (penalty === bestPenalty) {
+        if (restScore > bestRest) {
+          bestRest = restScore;
+          bestIdx = i;
+          bestKey = key;
+          continue;
+        }
+
+        if (restScore === bestRest) {
+          if (key < bestKey) {
+            bestIdx = i;
+            bestKey = key;
+            continue;
+          }
+
+          if (key === bestKey && rng() > 0.5) {
+            bestIdx = i;
+          }
+        }
+      }
+    }
+
+    const selected = remaining.splice(bestIdx, 1)[0]!;
+    schedule.push(selected);
+    applyMatchState(selected, state, startIndex + schedule.length - 1);
+  }
+
+  return { schedule, state };
+}
+
+export function validateSchedule(jogos: Array<{ timeA: Time; timeB: Time }>, numTimes: number) {
+  const state: Record<string, TeamScheduleState> = {};
+  let maxConsecutiveByTeam = 0;
+  let backToBackCount = 0;
+  let scoreTotal = 0;
+
+  jogos.forEach((jogo, index) => {
+    [jogo.timeA, jogo.timeB].forEach((team) => {
+      const current = state[team.id] ?? { lastIndex: -9999, consecutive: 0 };
+      const isBackToBack = current.lastIndex === index - 1;
+      const nextConsecutive = isBackToBack ? current.consecutive + 1 : 1;
+
+      if (isBackToBack) {
+        backToBackCount += 1;
+        scoreTotal += 110;
+      }
+      if (numTimes > 2 && nextConsecutive >= 3) {
+        scoreTotal += 10000;
+      }
+
+      state[team.id] = { lastIndex: index, consecutive: nextConsecutive };
+      if (nextConsecutive > maxConsecutiveByTeam) {
+        maxConsecutiveByTeam = nextConsecutive;
+      }
+    });
+  });
+
+  return { maxConsecutiveByTeam, backToBackCount, scoreTotal } satisfies ScheduleMetrics;
+}
+
+function optimizeSchedule(
+  schedule: ConfrontoSlot[],
+  numTimes: number,
+  start: number,
+  end: number,
+  iterations: number,
+  seed: number
+) {
+  if (end - start < 2) {
+    return schedule;
+  }
+
+  const rng = createSeededRandom(seed);
+  let bestScore = validateSchedule(schedule, numTimes).scoreTotal;
+
+  for (let i = 0; i < iterations; i += 1) {
+    const first = start + Math.floor(rng() * (end - start));
+    let second = start + Math.floor(rng() * (end - start));
+    if (first === second) {
+      second = start + ((second + 1) % (end - start));
+    }
+
+    const tmp = schedule[first]!;
+    schedule[first] = schedule[second]!;
+    schedule[second] = tmp;
+
+    const score = validateSchedule(schedule, numTimes).scoreTotal;
+    if (score < bestScore) {
+      bestScore = score;
+    } else {
+      const revert = schedule[first]!;
+      schedule[first] = schedule[second]!;
+      schedule[second] = revert;
+    }
+  }
+
+  return schedule;
+}
+
 // ===== Gerar tabela de jogos =====
 export function gerarTabelaJogos({
   times,
@@ -444,40 +659,86 @@ export function gerarTabelaJogos({
   const TEMPO_RESERVA = 15;
   const tempoUtil = duracaoRachaMin - TEMPO_RESERVA;
   const maxPartidas = Math.floor(tempoUtil / duracaoPartidaMin);
+  const numTimes = times.length;
 
-  const confrontosIda = gerarConfrontos(times, false);
+  const confrontosIda = gerarConfrontos(times, false).map(([timeA, timeB]) => ({
+    timeA,
+    timeB,
+    turno: "ida" as const,
+  }));
+
   if (!confrontosIda.length || maxPartidas <= 0) {
     return [];
   }
 
-  if (confrontosIda.length >= maxPartidas) {
-    return confrontosIda
-      .slice(0, maxPartidas)
-      .filter(([timeA, timeB]) => !!timeA && !!timeB)
-      .map(([timeA, timeB], idx) => ({
-        ordem: idx + 1,
-        timeA,
-        timeB,
-        tempo: duracaoPartidaMin,
-        turno: "ida" as const,
-      }));
+  const confrontosVolta = confrontosIda.map((jogo) => ({
+    timeA: jogo.timeB,
+    timeB: jogo.timeA,
+    turno: "volta" as const,
+  }));
+
+  const maxIda = Math.min(maxPartidas, confrontosIda.length);
+  const maxVolta = Math.min(Math.max(0, maxPartidas - maxIda), confrontosVolta.length);
+
+  let bestSchedule: ConfrontoSlot[] = [];
+  let bestScore = Number.POSITIVE_INFINITY;
+  const attempts = numTimes > 2 ? 20 : 1;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const seed = 17 + attempt * 31;
+    const baseState = initScheduleState(times);
+    const { schedule: idaSchedule, state } = scheduleGreedy(
+      confrontosIda,
+      numTimes,
+      maxIda,
+      baseState,
+      0,
+      seed
+    );
+
+    const { schedule: voltaSchedule } = scheduleGreedy(
+      confrontosVolta,
+      numTimes,
+      maxVolta,
+      state,
+      idaSchedule.length,
+      seed + 7
+    );
+
+    let schedule = [...idaSchedule, ...voltaSchedule];
+    if (schedule.length === 0) {
+      continue;
+    }
+
+    schedule = optimizeSchedule(schedule, numTimes, 0, idaSchedule.length, 250, seed + 11);
+    if (voltaSchedule.length > 1) {
+      schedule = optimizeSchedule(
+        schedule,
+        numTimes,
+        idaSchedule.length,
+        schedule.length,
+        250,
+        seed + 19
+      );
+    }
+
+    const stats = validateSchedule(schedule, numTimes);
+    const invalid = numTimes > 2 && stats.maxConsecutiveByTeam > 2;
+    const score = invalid ? stats.scoreTotal + 1000000 : stats.scoreTotal;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestSchedule = schedule;
+    }
   }
 
-  const confrontosVolta = confrontosIda.map(([timeA, timeB]) => [timeB, timeA] as [Time, Time]);
-  const restantes = Math.max(0, maxPartidas - confrontosIda.length);
-  const voltaSelecionados = confrontosVolta.slice(0, restantes);
-  const confrontos = [
-    ...confrontosIda.map((par) => ({ par, turno: "ida" as const })),
-    ...voltaSelecionados.map((par) => ({ par, turno: "volta" as const })),
-  ];
-
-  return confrontos
-    .filter(({ par: [timeA, timeB] }) => !!timeA && !!timeB)
-    .map(({ par: [timeA, timeB], turno }, idx) => ({
+  return bestSchedule
+    .filter((jogo) => jogo.timeA && jogo.timeB)
+    .map((jogo, idx) => ({
       ordem: idx + 1,
-      timeA,
-      timeB,
+      timeA: jogo.timeA,
+      timeB: jogo.timeB,
       tempo: duracaoPartidaMin,
-      turno,
+      turno: jogo.turno,
     }));
 }

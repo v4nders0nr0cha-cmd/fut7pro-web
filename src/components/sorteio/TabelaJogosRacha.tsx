@@ -13,6 +13,7 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
     { titulo: "Ida", lista: jogosIda },
     { titulo: "Volta", lista: jogosVolta },
   ].filter((secao) => secao.lista.length > 0);
+  const maxRows = secoes.reduce((acc, secao) => Math.max(acc, secao.lista.length), 0);
 
   const gridCols = secoes.length > 1 ? "md:grid-cols-2" : "md:grid-cols-1";
 
@@ -73,6 +74,18 @@ export default function TabelaJogosRacha({ jogos }: { jogos: JogoConfronto[] }) 
                       </td>
                     </tr>
                   ))}
+                  {Array.from({ length: Math.max(0, maxRows - secao.lista.length) }).map(
+                    (_, idx) => (
+                      <tr
+                        key={`${secao.titulo}-placeholder-${idx}`}
+                        className="border-t border-[#1e2a3a] bg-[#0c1320]/60"
+                      >
+                        <td className="px-3 py-3 text-left text-transparent">-</td>
+                        <td className="px-3 py-3 text-center text-transparent">-</td>
+                        <td className="px-3 py-3 text-right text-transparent">-</td>
+                      </tr>
+                    )
+                  )}
                 </tbody>
               </table>
             </div>
