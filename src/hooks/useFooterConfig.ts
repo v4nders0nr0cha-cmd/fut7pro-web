@@ -4,16 +4,18 @@ import type { FooterConfig, FooterConfigResponse } from "@/types/footer";
 const fetcher = (url: string) =>
   fetch(url).then((res) => res.json()) as Promise<FooterConfigResponse>;
 
-export function useFooterConfigPublic(slug?: string) {
-  const { data, error, mutate, isLoading } = useSWR(
-    slug ? `/api/public/${slug}/footer` : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      dedupingInterval: 30000,
-    }
-  );
+type FooterHookOptions = {
+  enabled?: boolean;
+};
+
+export function useFooterConfigPublic(slug?: string, options: FooterHookOptions = {}) {
+  const enabled = options.enabled ?? true;
+  const key = enabled && slug ? `/api/public/${slug}/footer` : null;
+  const { data, error, mutate, isLoading } = useSWR(key, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: true,
+    dedupingInterval: 30000,
+  });
 
   return {
     footer: data?.data as FooterConfig | undefined,
@@ -23,8 +25,10 @@ export function useFooterConfigPublic(slug?: string) {
   };
 }
 
-export function useFooterConfigAdmin() {
-  const { data, error, mutate, isLoading } = useSWR(`/api/admin/footer`, fetcher, {
+export function useFooterConfigAdmin(options: FooterHookOptions = {}) {
+  const enabled = options.enabled ?? true;
+  const key = enabled ? `/api/admin/footer` : null;
+  const { data, error, mutate, isLoading } = useSWR(key, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     dedupingInterval: 30000,

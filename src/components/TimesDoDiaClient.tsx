@@ -7,6 +7,7 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import { useAboutPublic } from "@/hooks/useAbout";
+import { useFooterConfigAdmin, useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import type { PublicMatch, TimeDoDia } from "@/types/partida";
 
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
@@ -228,6 +229,9 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
   });
   const adminData = useAdminMatches({ enabled: isAdmin && !publicado });
   const { about } = useAboutPublic(slug);
+  const { footer: footerPublic } = useFooterConfigPublic(slug, { enabled: !isAdmin });
+  const { footer: footerAdmin } = useFooterConfigAdmin({ enabled: isAdmin });
+  const footer = isAdmin ? footerAdmin : footerPublic;
 
   const matches = isAdmin ? adminData.matches : publicData.matches;
   const fallbackError = isAdmin ? adminData.error : publicData.error;
@@ -262,15 +266,24 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
   }, [about]);
 
   const localInfo = useMemo(() => {
-    if (sorteioPublicado.data?.local) return sorteioPublicado.data.local;
-    if (!campoOficial) return null;
+    const localPublicacao = sorteioPublicado.data?.local;
+    const campoNome = footer?.campo?.nome || localPublicacao?.nome || campoOficial?.nome;
+    const campoEndereco =
+      footer?.campo?.endereco || localPublicacao?.endereco || campoOficial?.endereco;
+    const campoMapa = footer?.campo?.mapa || localPublicacao?.mapa || campoOficial?.mapa;
+    const hasFooterCampo = Boolean(
+      footer?.campo?.nome || footer?.campo?.endereco || footer?.campo?.mapa
+    );
+    const observacoes =
+      localPublicacao?.observacoes || (hasFooterCampo ? undefined : campoOficial?.descricao);
+    if (!campoNome && !campoEndereco && !campoMapa && !observacoes) return null;
     return {
-      nome: campoOficial.nome,
-      endereco: campoOficial.endereco,
-      mapa: campoOficial.mapa,
-      observacoes: campoOficial.descricao,
+      nome: campoNome,
+      endereco: campoEndereco,
+      mapa: campoMapa,
+      observacoes,
     };
-  }, [campoOficial, sorteioPublicado.data?.local]);
+  }, [campoOficial, footer, sorteioPublicado.data?.local]);
 
   const [curtidas, setCurtidas] = useState<number>(0);
   const [curtido, setCurtido] = useState(false);
@@ -287,6 +300,26 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
     if (source !== "public" || !likeKey || typeof window === "undefined") return;
     setCurtido(window.localStorage.getItem(likeKey) === "1");
   }, [likeKey, source]);
+
+  const confrontosDetalhados = useMemo(() => {
+    if (!confrontos.length) return [];
+    const timeLogoMap = new Map<string, string>();
+    times.forEach((time) => {
+      const key = time?.nome?.trim().toLowerCase();
+      if (key) {
+        timeLogoMap.set(key, time.logo || DEFAULT_LOGO);
+      }
+    });
+    return confrontos.map((confronto) => {
+      const keyA = confronto.timeA?.trim().toLowerCase();
+      const keyB = confronto.timeB?.trim().toLowerCase();
+      return {
+        ...confronto,
+        logoA: (keyA && timeLogoMap.get(keyA)) || DEFAULT_LOGO,
+        logoB: (keyB && timeLogoMap.get(keyB)) || DEFAULT_LOGO,
+      };
+    });
+  }, [confrontos, times]);
 
   if (isLoading) {
     return <div className="text-center text-neutral-300">Carregando times publicados...</div>;
@@ -311,7 +344,7 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
 
   const dataLabel = dataReferencia ? new Date(dataReferencia).toLocaleDateString("pt-BR") : null;
   const dataLabelPrefix = publicado ? "Publicado em" : "Referencia";
-  const observacoes = sorteioPublicado.data?.local?.observacoes || (localInfo?.observacoes ?? null);
+  const observacoes = localInfo?.observacoes ?? null;
 
   return (
     <>
@@ -344,7 +377,7 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
         <h3 className="text-lg font-semibold text-yellow-400 mb-3 text-center">
           Confrontos do dia
         </h3>
-        <ConfrontosDoDia confrontos={confrontos} />
+        <ConfrontosDoDia confrontos={confrontosDetalhados} />
       </div>
       {source === "public" && publicacaoId && (
         <div className="mt-6 flex flex-col items-center gap-3">
