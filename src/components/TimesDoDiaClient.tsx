@@ -43,6 +43,25 @@ function isSameDay(a: Date, b: Date) {
   );
 }
 
+function formatDateLabel(value?: string | null) {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-");
+    return `${day}/${month}/${year}`;
+  }
+  const parsed = parseDate(value);
+  return parsed ? parsed.toLocaleDateString("pt-BR") : null;
+}
+
+function parseLocalDateTime(dateValue?: string | null, timeValue?: string | null) {
+  if (!dateValue || !timeValue) return null;
+  const datePart = dateValue.trim();
+  const timePart = timeValue.trim();
+  if (!datePart || !timePart) return null;
+  const candidate = new Date(`${datePart}T${timePart}:00`);
+  return Number.isNaN(candidate.getTime()) ? null : candidate;
+}
+
 function mapStatus(status?: string | null): TimeDoDia["jogadores"][number]["status"] {
   switch (status) {
     case "SUBSTITUTO":
@@ -192,10 +211,13 @@ function buildConfrontosPublicados(
     timeB: string;
   }>,
   publicadoEm?: string | null,
-  duracaoPartidaMin?: number
+  duracaoPartidaMin?: number,
+  dataPartida?: string | null,
+  horaPartida?: string | null
 ) {
   if (!confrontos.length) return [];
-  const base = publicadoEm ? new Date(publicadoEm) : null;
+  const base =
+    parseLocalDateTime(dataPartida, horaPartida) || (publicadoEm ? new Date(publicadoEm) : null);
   return confrontos.map((confronto, index) => {
     const ordem = confronto.ordem ?? index + 1;
     const tempo = confronto.tempo ?? duracaoPartidaMin ?? 0;
@@ -239,14 +261,24 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
 
   const sorteioTimes = sorteioPublicado.data?.times ?? [];
   const publishedAt = sorteioPublicado.data?.publicadoEm ?? null;
+  const dataPartida = sorteioPublicado.data?.dataPartida ?? null;
+  const horaPartida = sorteioPublicado.data?.horaPartida ?? null;
   const confrontosPublicados = useMemo(
     () =>
       buildConfrontosPublicados(
         sorteioPublicado.data?.confrontos ?? [],
         publishedAt,
-        sorteioPublicado.data?.configuracao?.duracaoPartidaMin
+        sorteioPublicado.data?.configuracao?.duracaoPartidaMin,
+        dataPartida,
+        horaPartida
       ),
-    [publishedAt, sorteioPublicado.data?.confrontos, sorteioPublicado.data?.configuracao]
+    [
+      publishedAt,
+      dataPartida,
+      horaPartida,
+      sorteioPublicado.data?.confrontos,
+      sorteioPublicado.data?.configuracao,
+    ]
   );
 
   const fallback = useMemo(() => buildTimesDoDia(matches), [matches]);
@@ -342,17 +374,32 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
     );
   }
 
-  const dataLabel = dataReferencia ? new Date(dataReferencia).toLocaleDateString("pt-BR") : null;
-  const dataLabelPrefix = publicado ? "Publicado em" : "Referencia";
+  const dataPartidaLabel = formatDateLabel(dataPartida);
+  const horaPartidaLabel = horaPartida ? horaPartida.trim() : null;
+  const dataLabel = dataPartidaLabel
+    ? dataPartidaLabel
+    : dataReferencia
+      ? new Date(dataReferencia).toLocaleDateString("pt-BR")
+      : null;
+  const dataLabelPrefix = dataPartidaLabel
+    ? "Data da partida"
+    : publicado
+      ? "Publicado em"
+      : "Referencia";
   const observacoes = localInfo?.observacoes ?? null;
 
   return (
     <>
-      {(dataLabel || localInfo || observacoes) && (
+      {(dataLabel || horaPartidaLabel || localInfo || observacoes) && (
         <div className="mb-6 rounded-lg border border-yellow-500/20 bg-[#1c1c1c] px-4 py-3 text-sm text-neutral-200">
           {dataLabel && (
             <div className="mb-1">
               {dataLabelPrefix}: <span className="text-yellow-300">{dataLabel}</span>
+            </div>
+          )}
+          {horaPartidaLabel && (
+            <div className="mb-1">
+              Horario: <span className="text-neutral-100">{horaPartidaLabel}</span>
             </div>
           )}
           {localInfo?.nome && (

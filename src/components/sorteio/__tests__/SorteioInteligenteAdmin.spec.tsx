@@ -116,6 +116,8 @@ jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
           duracaoPartidaMin: 10,
           numTimes: 2,
           jogadoresPorTime: 2,
+          dataPartida: "2025-12-30",
+          horaPartida: "19:30",
         })
       }
       disabled={disabled}

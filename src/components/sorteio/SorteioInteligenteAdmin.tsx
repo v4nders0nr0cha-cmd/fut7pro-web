@@ -300,6 +300,14 @@ export default function SorteioInteligenteAdmin() {
   async function handlePublicarTimes() {
     if (!config || times.length === 0 || !resolvedSlug) return;
 
+    const dataPartida = config.dataPartida?.trim();
+    const horaPartida = config.horaPartida?.trim();
+    if (!dataPartida || !horaPartida) {
+      setSorteioErro("Defina a data e o horario da partida antes de publicar.");
+      return;
+    }
+
+    setSorteioErro(null);
     setPublicando(true);
     try {
       const res = await fetch("/api/sorteio/publicar", {
@@ -312,6 +320,8 @@ export default function SorteioInteligenteAdmin() {
           participantes,
           times,
           tabelaJogos,
+          dataPartida,
+          horaPartida,
         }),
       });
 

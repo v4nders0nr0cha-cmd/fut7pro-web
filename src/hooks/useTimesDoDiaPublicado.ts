@@ -21,6 +21,8 @@ export type TimesDoDiaPublicado = {
   id?: string;
   publicado?: boolean;
   publicadoEm?: string;
+  dataPartida?: string;
+  horaPartida?: string;
   configuracao?: {
     duracaoRachaMin?: number;
     duracaoPartidaMin?: number;

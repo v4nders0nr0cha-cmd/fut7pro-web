@@ -52,6 +52,8 @@ export interface ConfiguracaoRacha {
   duracaoPartidaMin: number;
   numTimes: number;
   jogadoresPorTime: number;
+  dataPartida?: string;
+  horaPartida?: string;
 }
 
 export interface SorteioHistoricoTime {

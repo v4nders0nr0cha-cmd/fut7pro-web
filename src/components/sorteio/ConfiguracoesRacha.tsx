@@ -21,11 +21,25 @@ function ensureNumber(val: unknown, allowed: number[], fallback: number): number
   return allowed.includes(n) ? n : fallback;
 }
 
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function getLocalDateValue(date = new Date()) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function getLocalTimeValue(date = new Date()) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
+}
+
 export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props) {
   const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(DURACOES_RACHA[0]);
   const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(DURACOES_PARTIDA[0]);
   const [numTimes, setNumTimes] = useState<number>(NUM_TIMES[0]);
   const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(DEFAULT_JOGADORES_POR_TIME);
+  const [dataPartida, setDataPartida] = useState<string>(getLocalDateValue());
+  const [horaPartida, setHoraPartida] = useState<string>(getLocalTimeValue());
 
   // Carrega do localStorage só quando monta
   useEffect(() => {
@@ -42,6 +56,12 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
           setJogadoresPorTime(
             ensureNumber(obj.jogadoresPorTime, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
           );
+          if (typeof obj.dataPartida === "string" && obj.dataPartida.trim()) {
+            setDataPartida(obj.dataPartida);
+          }
+          if (typeof obj.horaPartida === "string" && obj.horaPartida.trim()) {
+            setHoraPartida(obj.horaPartida);
+          }
         }
       }
     } catch {
@@ -55,14 +75,28 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
     try {
       localStorage.setItem(
         rachaConfig.storage.configKey,
-        JSON.stringify({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime })
+        JSON.stringify({
+          duracaoRachaMin,
+          duracaoPartidaMin,
+          numTimes,
+          jogadoresPorTime,
+          dataPartida,
+          horaPartida,
+        })
       );
     } catch {
       /* ignore */
     }
-    onSubmit({ duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime });
+    onSubmit({
+      duracaoRachaMin,
+      duracaoPartidaMin,
+      numTimes,
+      jogadoresPorTime,
+      dataPartida,
+      horaPartida,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime]);
+  }, [duracaoRachaMin, duracaoPartidaMin, numTimes, jogadoresPorTime, dataPartida, horaPartida]);
 
   // Se valores ficarem inválidos por alguma alteração externa, sempre recupera o fallback
   useEffect(() => {
@@ -172,6 +206,40 @@ export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props
           </select>
         </div>
       </div>
+      <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex-1">
+          <label htmlFor="data-partida" className="text-sm">
+            Data da Partida:
+          </label>
+          <input
+            id="data-partida"
+            type="date"
+            value={dataPartida}
+            onChange={(e) => setDataPartida(e.target.value)}
+            className="w-full rounded p-1 bg-zinc-800 text-white"
+            disabled={disabled}
+            tabIndex={disabled ? -1 : 0}
+          />
+        </div>
+        <div className="flex-1">
+          <label htmlFor="hora-partida" className="text-sm">
+            Horario da Partida:
+          </label>
+          <input
+            id="hora-partida"
+            type="time"
+            step="60"
+            value={horaPartida}
+            onChange={(e) => setHoraPartida(e.target.value)}
+            className="w-full rounded p-1 bg-zinc-800 text-white"
+            disabled={disabled}
+            tabIndex={disabled ? -1 : 0}
+          />
+        </div>
+      </div>
+      <p className="text-xs text-gray-400">
+        A data e o horario aparecem nas paginas de Times do Dia.
+      </p>
     </form>
   );
 }
