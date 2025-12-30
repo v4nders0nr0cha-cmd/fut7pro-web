@@ -12,9 +12,14 @@ jest.mock("@/hooks/usePublicMatches", () => ({
 jest.mock("@/hooks/useAdminMatches", () => ({
   useAdminMatches: jest.fn(),
 }));
+jest.mock("@/hooks/useTimesDoDiaPublicado", () => ({
+  useTimesDoDiaPublicado: jest.fn(),
+}));
 
 const mockedUsePublicMatches = require("@/hooks/usePublicMatches").usePublicMatches as jest.Mock;
 const mockedUseAdminMatches = require("@/hooks/useAdminMatches").useAdminMatches as jest.Mock;
+const mockedUseTimesDoDiaPublicado = require("@/hooks/useTimesDoDiaPublicado")
+  .useTimesDoDiaPublicado as jest.Mock;
 
 describe("TimesDoDiaClient", () => {
   afterEach(() => {
@@ -22,6 +27,12 @@ describe("TimesDoDiaClient", () => {
   });
 
   it("exibe estado vazio quando nao ha times publicados", () => {
+    mockedUseTimesDoDiaPublicado.mockReturnValue({
+      data: { publicado: false, times: [] },
+      isLoading: false,
+      isError: false,
+      error: undefined,
+    });
     mockedUseAdminMatches.mockReturnValue({
       matches: [],
       isLoading: false,
@@ -41,6 +52,33 @@ describe("TimesDoDiaClient", () => {
   });
 
   it("renderiza times e confrontos quando ha partidas", () => {
+    mockedUseTimesDoDiaPublicado.mockReturnValue({
+      data: {
+        publicado: true,
+        times: [
+          {
+            id: "t1",
+            nome: "Azul",
+            logo: "/logo.png",
+            cor: "#111",
+            jogadores: [],
+          },
+          {
+            id: "t2",
+            nome: "Laranja",
+            logo: "/logo.png",
+            cor: "#222",
+            jogadores: [],
+          },
+        ],
+        confrontos: [
+          { id: "c1", ordem: 1, tempo: 6, turno: "ida", timeA: "Azul", timeB: "Laranja" },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: undefined,
+    });
     mockedUseAdminMatches.mockReturnValue({
       matches: [],
       isLoading: false,
@@ -48,16 +86,7 @@ describe("TimesDoDiaClient", () => {
       error: undefined,
     });
     mockedUsePublicMatches.mockReturnValue({
-      matches: [
-        {
-          id: "m1",
-          date: "2025-01-01T10:00:00.000Z",
-          score: { teamA: 1, teamB: 0 },
-          teamA: { id: "a", name: "Azul", logoUrl: null, color: "#111" },
-          teamB: { id: "b", name: "Laranja", logoUrl: null, color: "#222" },
-          presences: [],
-        },
-      ],
+      matches: [],
       isLoading: false,
       isError: false,
       error: undefined,

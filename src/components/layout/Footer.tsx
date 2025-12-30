@@ -8,6 +8,7 @@ import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
 import { useRacha } from "@/context/RachaContext";
 import { useAboutPublic } from "@/hooks/useAbout";
+import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
 import { recordSponsorMetric } from "@/lib/sponsor-metrics";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
@@ -17,16 +18,52 @@ export default function Footer() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
   const { about } = useAboutPublic(slug);
+  const { footer } = useFooterConfigPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
   const { sponsors, isLoading } = usePublicSponsors(slug);
   const { publicHref } = usePublicLinks();
 
-  const campoOficial = useMemo(() => {
+  const campoAbout = useMemo(() => {
     if (about?.campoAtual) return about.campoAtual;
     if (about?.camposHistoricos?.length) return about.camposHistoricos[0];
     return null;
   }, [about]);
+
+  const campoNome = footer?.campo?.nome || campoAbout?.nome;
+  const campoEndereco = footer?.campo?.endereco || campoAbout?.endereco || tema.endereco;
+  const campoMapa =
+    footer?.campo?.mapa ||
+    campoAbout?.mapa ||
+    "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3656.532659134175!2d-46.63633848502184!3d-23.58802138466644!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59bfd39ab0f1%3A0x17727fd74a3f5b1e!2sCampo%20de%20Futebol%20Exemplo!5e0!3m2!1spt-BR!2sbr!4v1618950669409!5m2!1spt-BR!2sbr";
+
+  const legenda =
+    footer?.legenda && footer.legenda.trim().length > 0
+      ? footer.legenda
+      : rachaConfig.frases.principal;
+
+  const topicosPadrao = useMemo(
+    () => [
+      { id: "ranking", label: "Sistema de Ranking", href: publicHref("/estatisticas") },
+      { id: "premiacao", label: "Sistema de Premiacao", href: publicHref("/os-campeoes") },
+      {
+        id: "balanceamento",
+        label: "Sistema de Balanceamento",
+        href: publicHref("/sorteio-inteligente"),
+      },
+      { id: "como-funciona", label: "Como Funciona", href: publicHref("/sobre-nos") },
+      { id: "sobre", label: `Sobre o ${tema.nome}`, href: publicHref("/sobre-nos") },
+      { id: "termos", label: "Termos de Uso", href: publicHref("/termos") },
+      { id: "privacidade", label: "Politica de Privacidade", href: publicHref("/privacidade") },
+    ],
+    [publicHref, tema.nome]
+  );
+
+  const topicosOcultos = footer?.topicosOcultos ?? [];
+  const topicosExtras = footer?.topicosExtras ?? [];
+  const topicosVisiveis = topicosPadrao.filter(
+    (topico) => !topicosOcultos.includes(topico.id) && !topicosOcultos.includes(topico.label)
+  );
 
   const patrocinadoresVisiveis = useMemo(() => {
     if (!sponsors.length) return [];
@@ -166,14 +203,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] lg:grid-cols-3 gap-10 items-start">
           <div>
             <p className="text-yellow-400 font-bold mb-2">NOSSO CAMPO OFICIAL</p>
-            <p className="text-gray-300 mb-3">
-              {campoOficial?.endereco || tema.endereco || "Endereço não informado"}
-            </p>
+            {campoNome ? <p className="text-gray-100 font-semibold mb-1">{campoNome}</p> : null}
+            <p className="text-gray-300 mb-3">{campoEndereco || "Endereco nao informado"}</p>
             <iframe
-              src={
-                campoOficial?.mapa ||
-                "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3656.532659134175!2d-46.63633848502184!3d-23.58802138466644!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94ce59bfd39ab0f1%3A0x17727fd74a3f5b1e!2sCampo%20de%20Futebol%20Exemplo!5e0!3m2!1spt-BR!2sbr!4v1618950669409!5m2!1spt-BR!2sbr"
-              }
+              src={campoMapa}
               width="100%"
               height="150"
               className="rounded-md border-none"
@@ -214,27 +247,16 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col gap-2 text-sm text-right text-gray-300">
-            <Link href={publicHref("/estatisticas")} className="hover:underline">
-              Sistema de Ranking
-            </Link>
-            <Link href={publicHref("/os-campeoes")} className="hover:underline">
-              Sistema de Premiações
-            </Link>
-            <Link href={publicHref("/sorteio-inteligente")} className="hover:underline">
-              Sistema de Balanceamento
-            </Link>
-            <Link href={publicHref("/sobre-nos")} className="hover:underline">
-              Como Funciona
-            </Link>
-            <Link href={publicHref("/sobre-nos")} className="hover:underline">
-              Sobre o {tema.nome}
-            </Link>
-            <Link href={publicHref("/termos")} className="hover:underline">
-              Termos de Uso
-            </Link>
-            <Link href={publicHref("/privacidade")} className="hover:underline">
-              Política de Privacidade
-            </Link>
+            {topicosVisiveis.map((topico) => (
+              <Link key={topico.id} href={topico.href} className="hover:underline">
+                {topico.label}
+              </Link>
+            ))}
+            {topicosExtras.map((topico, idx) => (
+              <span key={`${topico}-${idx}`} className="text-gray-300">
+                {topico}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -249,7 +271,7 @@ export default function Footer() {
               priority
             />
           </Link>
-          <p className="text-sm text-gray-400">{rachaConfig.frases.principal}</p>
+          <p className="text-sm text-gray-400">{legenda}</p>
         </div>
 
         <div className="mt-6 text-center text-xs text-gray-500">

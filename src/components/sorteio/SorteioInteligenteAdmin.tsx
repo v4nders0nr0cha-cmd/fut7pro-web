@@ -363,44 +363,45 @@ export default function SorteioInteligenteAdmin() {
             <b>Como garantir um sorteio realmente equilibrado?</b>
             <br />
             <br />
-            O sistema de sorteio inteligente utiliza rankings, posições e estrelas para criar times
-            balanceados e justos.
+            O sorteio inteligente combina nivel do atleta (habilidade 1-5 + fisico 1-3), ranking do
+            racha, posicao e historico recente de sorteios (anti-panelinha) para montar times
+            equilibrados.
             <br />
             <br />
-            <b>PRIMEIRO SORTEIO / INÍCIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados do
-            sistema (ou no começo de cada ano/temporada, quando os rankings reiniciam), como ainda
-            não há rankings históricos, o balanceamento será feito{" "}
-            <b>exclusivamente pelas estrelas atribuídas pelo administrador</b> a cada jogador. A
-            contagem começa somente após a publicação do sorteio.
+            <b>PRIMEIROS 8 SORTEIOS / INICIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados
+            do sistema (ou no inicio de cada ano/temporada, quando os rankings reiniciam), o
+            balanceamento usa <b>somente as estrelas definidas pelo administrador</b>. A contagem
+            comeca apos a publicacao do sorteio. Rankings e estatisticas continuam sendo
+            registrados, apenas nao pesam no balanceamento.
             <br />
             <br />
-            <b>IMPORTANTE:</b> Após os 8 sorteios publicados, o sistema passa a usar rankings e
-            avaliações para calibrar o equilíbrio dos times. Leva de 8 a 10 rachas para o sistema
-            aprender quem são os melhores, deixando o sorteio cada vez mais justo.
+            <b>APOS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posicao, e aplica
+            o anti-panelinha com base no historico recente para evitar repeticao de jogadores no
+            mesmo time. O equilibrio melhora a cada racha conforme o historico cresce.
             <br />
             <br />
-            <b>Configurações Iniciais:</b> As opções de número de times, tempo de partida e
-            quantidade de jogadores <b>não influenciam no balanceamento</b>. Servem apenas para
-            organizar os jogadores nos times e gerar automaticamente a tabela de confrontos. O
-            algoritmo do sorteio vai sempre priorizar ranking, estrelas e posição.
+            <b>GOLEIROS:</b> Sempre 1 goleiro por time. Se faltar goleiro real, use o Goleiro
+            Reserva (BOT) para completar o sorteio.
             <br />
             <br />
-            <b>Tabela de Confrontos:</b> A tabela é calculada conforme o tempo total do racha,
-            sempre reservando 15 minutos para organização, trocas de times e imprevistos. Exemplo:
-            Se o racha tem 60 minutos, a tabela será criada para 45 minutos de jogos. O modelo da
-            tabela e o tempo sugerido são <b>opcionais</b> e podem ser ajustados pelo administrador
-            conforme a realidade do grupo.
+            <b>CONFIGURACOES INICIAIS:</b> Numero de times, tempo de partida e jogadores por time
+            <b>nao influenciam no balanceamento</b>. Servem para organizar os times e gerar a tabela
+            de confrontos.
             <br />
             <br />
-            <b>Dica:</b> Ajuste manualmente os times se notar algum desequilíbrio, até que rankings
-            e estrelas estejam bem definidos. Isso garante jogos mais disputados enquanto a
-            plataforma calibra sozinha.
+            <b>TABELA DE CONFRONTOS:</b> A tabela e calculada conforme o tempo total do racha,
+            reservando 15 minutos para organizacao e imprevistos. Exemplo: se o racha tem 60
+            minutos, a tabela sera criada para 45 minutos de jogos. O modelo e o tempo sugerido
+            podem ser ajustados pelo administrador conforme a realidade do grupo.
             <br />
             <br />
-            <b>Estrelas:</b> Avalie cada jogador considerando não só habilidade, mas também{" "}
-            <b>condicionamento físico</b> e <b>aspectos psicológicos</b>. Não avalie apenas pelo
-            futebol! As estrelas podem (e devem) ser ajustadas sempre que perceber evolução ou queda
-            de desempenho.
+            <b>ESTRELAS (NIVEL DO ATLETA):</b> Defina habilidade e fisico na pagina Nivel dos
+            Atletas. O nivel final e calculado automaticamente e usado no sorteio. Ajuste sempre que
+            perceber evolucao ou queda de desempenho.
+            <br />
+            <br />
+            <b>Dica:</b> Se notar desequilibrio, ajuste manualmente os times enquanto o historico
+            ainda esta curto. Isso garante jogos mais disputados ate a calibracao completa.
             <br />
             <br />
             Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e

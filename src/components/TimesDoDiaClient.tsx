@@ -1,17 +1,27 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import CardTimeDoDia from "@/components/cards/CardTimeDoDia";
 import ConfrontosDoDia from "@/components/lists/ConfrontosDoDia";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
+import { useAboutPublic } from "@/hooks/useAbout";
 import type { PublicMatch, TimeDoDia } from "@/types/partida";
 
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_COLOR = "#facc15";
 
-type Confronto = { id: string; timeA: string; timeB: string; hora?: string };
+type Confronto = {
+  id: string;
+  timeA: string;
+  timeB: string;
+  hora?: string;
+  ordem?: number;
+  tempo?: number;
+  turno?: "ida" | "volta";
+};
 
 type TimesDoDiaClientProps = {
   slug?: string;
@@ -171,23 +181,112 @@ function buildTimesDoDia(matches: PublicMatch[]) {
   };
 }
 
+function buildConfrontosPublicados(
+  confrontos: Array<{
+    id: string;
+    ordem?: number;
+    tempo?: number;
+    turno?: "ida" | "volta";
+    timeA: string;
+    timeB: string;
+  }>,
+  publicadoEm?: string | null,
+  duracaoPartidaMin?: number
+) {
+  if (!confrontos.length) return [];
+  const base = publicadoEm ? new Date(publicadoEm) : null;
+  return confrontos.map((confronto, index) => {
+    const ordem = confronto.ordem ?? index + 1;
+    const tempo = confronto.tempo ?? duracaoPartidaMin ?? 0;
+    let hora: string | undefined;
+    if (base && tempo > 0) {
+      const inicio = new Date(base.getTime() + (ordem - 1) * tempo * 60000);
+      hora = inicio.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+    return {
+      ...confronto,
+      ordem,
+      tempo,
+      hora,
+    };
+  });
+}
+
 export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDiaClientProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const isAdmin = source === "admin";
+  const sorteioPublicado = useTimesDoDiaPublicado({ slug, source, enabled: true });
+  const publicado = Boolean(sorteioPublicado.data?.times?.length);
   const publicData = usePublicMatches({
     slug,
     scope: "recent",
     limit: 20,
-    enabled: !isAdmin,
+    enabled: !isAdmin && !publicado,
   });
-  const adminData = useAdminMatches({ enabled: isAdmin });
+  const adminData = useAdminMatches({ enabled: isAdmin && !publicado });
+  const { about } = useAboutPublic(slug);
 
   const matches = isAdmin ? adminData.matches : publicData.matches;
-  const isLoading = isAdmin ? adminData.isLoading : publicData.isLoading;
-  const isError = isAdmin ? adminData.isError : publicData.isError;
-  const error = isAdmin ? adminData.error : publicData.error;
+  const fallbackError = isAdmin ? adminData.error : publicData.error;
+  const fallbackLoading = isAdmin ? adminData.isLoading : publicData.isLoading;
 
-  const { times, confrontos, dataReferencia } = useMemo(() => buildTimesDoDia(matches), [matches]);
+  const sorteioTimes = sorteioPublicado.data?.times ?? [];
+  const publishedAt = sorteioPublicado.data?.publicadoEm ?? null;
+  const confrontosPublicados = useMemo(
+    () =>
+      buildConfrontosPublicados(
+        sorteioPublicado.data?.confrontos ?? [],
+        publishedAt,
+        sorteioPublicado.data?.configuracao?.duracaoPartidaMin
+      ),
+    [publishedAt, sorteioPublicado.data?.confrontos, sorteioPublicado.data?.configuracao]
+  );
+
+  const fallback = useMemo(() => buildTimesDoDia(matches), [matches]);
+  const times = publicado ? sorteioTimes : fallback.times;
+  const confrontos = publicado ? confrontosPublicados : fallback.confrontos;
+  const dataReferencia = publicado ? publishedAt : fallback.dataReferencia;
+
+  const hasFallbackData = !publicado && fallback.times.length > 0;
+  const error = hasFallbackData ? null : sorteioPublicado.error || fallbackError;
+  const isLoading = sorteioPublicado.isLoading || (!publicado && fallbackLoading);
+  const isError = Boolean(error);
+
+  const campoOficial = useMemo(() => {
+    if (about?.campoAtual) return about.campoAtual;
+    if (about?.camposHistoricos?.length) return about.camposHistoricos[0];
+    return null;
+  }, [about]);
+
+  const localInfo = useMemo(() => {
+    if (sorteioPublicado.data?.local) return sorteioPublicado.data.local;
+    if (!campoOficial) return null;
+    return {
+      nome: campoOficial.nome,
+      endereco: campoOficial.endereco,
+      mapa: campoOficial.mapa,
+      observacoes: campoOficial.descricao,
+    };
+  }, [campoOficial, sorteioPublicado.data?.local]);
+
+  const [curtidas, setCurtidas] = useState<number>(0);
+  const [curtido, setCurtido] = useState(false);
+  const [curtindo, setCurtindo] = useState(false);
+  const publicacaoId = sorteioPublicado.data?.id;
+  const likeKey = source === "public" && publicacaoId ? `fut7pro-like-${publicacaoId}` : null;
+
+  useEffect(() => {
+    if (source !== "public") return;
+    setCurtidas(sorteioPublicado.data?.curtidas ?? 0);
+  }, [source, sorteioPublicado.data?.curtidas]);
+
+  useEffect(() => {
+    if (source !== "public" || !likeKey || typeof window === "undefined") return;
+    setCurtido(window.localStorage.getItem(likeKey) === "1");
+  }, [likeKey, source]);
 
   if (isLoading) {
     return <div className="text-center text-neutral-300">Carregando times publicados...</div>;
@@ -211,13 +310,28 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
   }
 
   const dataLabel = dataReferencia ? new Date(dataReferencia).toLocaleDateString("pt-BR") : null;
+  const dataLabelPrefix = publicado ? "Publicado em" : "Referencia";
+  const observacoes = sorteioPublicado.data?.local?.observacoes || (localInfo?.observacoes ?? null);
 
   return (
     <>
-      {dataLabel && (
-        <p className="text-center text-neutral-400 text-sm mb-4">
-          Referencia: {dataLabel} (dados em tempo real)
-        </p>
+      {(dataLabel || localInfo || observacoes) && (
+        <div className="mb-6 rounded-lg border border-yellow-500/20 bg-[#1c1c1c] px-4 py-3 text-sm text-neutral-200">
+          {dataLabel && (
+            <div className="mb-1">
+              {dataLabelPrefix}: <span className="text-yellow-300">{dataLabel}</span>
+            </div>
+          )}
+          {localInfo?.nome && (
+            <div className="mb-1">
+              Local: <span className="text-neutral-100">{localInfo.nome}</span>
+            </div>
+          )}
+          {localInfo?.endereco && (
+            <div className="mb-1 text-neutral-300">Endereco: {localInfo.endereco}</div>
+          )}
+          {observacoes && <div className="text-neutral-300">Obs: {observacoes}</div>}
+        </div>
       )}
       <div ref={gridRef}>
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -232,6 +346,43 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
         </h3>
         <ConfrontosDoDia confrontos={confrontos} />
       </div>
+      {source === "public" && publicacaoId && (
+        <div className="mt-6 flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!slug || curtindo || curtido) return;
+              setCurtindo(true);
+              try {
+                const res = await fetch(`/api/public/${slug}/times-do-dia/like`, {
+                  method: "POST",
+                });
+                if (!res.ok) {
+                  throw new Error(await res.text());
+                }
+                const body = await res.json();
+                const next = Number.isFinite(body?.curtidas) ? Number(body.curtidas) : curtidas + 1;
+                setCurtidas(next);
+                setCurtido(true);
+                if (likeKey && typeof window !== "undefined") {
+                  window.localStorage.setItem(likeKey, "1");
+                }
+              } catch {
+                // silencioso
+              } finally {
+                setCurtindo(false);
+              }
+            }}
+            className={`px-5 py-2 rounded-full font-semibold transition ${
+              curtido ? "bg-green-500 text-white" : "bg-yellow-400 text-black hover:bg-yellow-300"
+            }`}
+            disabled={curtindo || curtido}
+          >
+            {curtindo ? "Salvando..." : curtido ? "Curtido" : "Curtir"}
+          </button>
+          <span className="text-xs text-neutral-400">{curtidas} curtidas</span>
+        </div>
+      )}
     </>
   );
 }

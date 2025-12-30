@@ -29,6 +29,10 @@ jest.mock("@/hooks/useAbout", () => ({
   useAboutPublic: () => ({ about: null }),
 }));
 
+jest.mock("@/hooks/useFooterConfig", () => ({
+  useFooterConfigPublic: () => ({ footer: null }),
+}));
+
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ tenantSlug: "fut7pro", rachaId: "racha-1" }),
 }));
