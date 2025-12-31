@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
@@ -560,6 +561,16 @@ export default function SorteioInteligenteAdmin() {
             loading={publicando}
             onClick={handlePublicarTimes}
           />
+          {publicado && (
+            <div className="mt-3 text-center">
+              <Link
+                href="/admin/partidas/times-do-dia"
+                className="text-sm font-semibold text-yellow-300 hover:text-yellow-200 underline"
+              >
+                Veja como os atletas veem no site publico.
+              </Link>
+            </div>
+          )}
         </>
       )}
     </div>
