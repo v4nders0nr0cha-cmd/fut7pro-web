@@ -144,10 +144,16 @@ export default function PartidaDetalhesPage() {
   const dataLabel = match.date
     ? format(new Date(match.date), "dd/MM/yyyy 'as' HH:mm")
     : "Data nao informada";
-  const scoreA = Number(match.score?.teamA ?? match.scoreA ?? 0);
-  const scoreB = Number(match.score?.teamB ?? match.scoreB ?? 0);
-  const winnerLabel =
-    scoreA === scoreB ? "Empate" : scoreA > scoreB ? match.teamA.name : match.teamB.name;
+  const hasScore = match.scoreA !== null && match.scoreB !== null;
+  const scoreA = hasScore ? Number(match.scoreA) : null;
+  const scoreB = hasScore ? Number(match.scoreB) : null;
+  const winnerLabel = hasScore
+    ? scoreA === scoreB
+      ? "Empate"
+      : scoreA > scoreB
+        ? match.teamA.name
+        : match.teamB.name
+    : "A definir";
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
@@ -165,8 +171,12 @@ export default function PartidaDetalhesPage() {
           </div>
           <div>
             <p className="text-sm text-neutral-400">Status</p>
-            <span className="px-3 py-1 rounded-xl text-xs w-fit bg-green-700 text-white">
-              Finalizado
+            <span
+              className={`px-3 py-1 rounded-xl text-xs w-fit ${
+                hasScore ? "bg-green-700 text-white" : "bg-yellow-500/20 text-yellow-200"
+              }`}
+            >
+              {hasScore ? "Finalizado" : "Aguardando resultado"}
             </span>
           </div>
           <div>
@@ -188,9 +198,9 @@ export default function PartidaDetalhesPage() {
               <span className="font-bold text-lg">{match.teamA.name}</span>
             </div>
             <span className="text-4xl font-extrabold">
-              {scoreA}
+              {hasScore ? scoreA : "--"}
               <span className="mx-2 text-yellow-400 font-bold">x</span>
-              {scoreB}
+              {hasScore ? scoreB : "--"}
             </span>
             <div className="flex flex-col items-center gap-1">
               <Image

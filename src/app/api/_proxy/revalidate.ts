@@ -57,7 +57,7 @@ export function buildTorneioPaths(slug?: string | null, torneioSlug?: string | n
 
 export function buildSorteioPaths(slug?: string | null) {
   if (!slug) return [];
-  return [`/${slug}/partidas`, `/${slug}/partidas/times-do-dia`];
+  return [`/${slug}/partidas`, `/${slug}/partidas/historico`, `/${slug}/partidas/times-do-dia`];
 }
 
 export function buildEstatutoPaths(slug?: string | null) {

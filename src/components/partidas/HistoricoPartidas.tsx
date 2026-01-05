@@ -167,10 +167,16 @@ export default function HistoricoPartidas() {
           filteredMatches.map((match: PublicMatch) => {
             const date = parseMatchDate(match.date);
             const dateLabel = date ? format(date, "dd/MM/yyyy HH:mm") : "Data nao informada";
-            const scoreA = Number(match.score?.teamA ?? match.scoreA ?? 0);
-            const scoreB = Number(match.score?.teamB ?? match.scoreB ?? 0);
-            const winner =
-              scoreA === scoreB ? "Empate" : scoreA > scoreB ? match.teamA.name : match.teamB.name;
+            const hasScore = match.scoreA !== null && match.scoreB !== null;
+            const scoreA = hasScore ? Number(match.scoreA) : null;
+            const scoreB = hasScore ? Number(match.scoreB) : null;
+            const winner = hasScore
+              ? scoreA === scoreB
+                ? "Empate"
+                : scoreA > scoreB
+                  ? match.teamA.name
+                  : match.teamB.name
+              : "A definir";
 
             return (
               <div
@@ -197,7 +203,7 @@ export default function HistoricoPartidas() {
                       <span className="text-sm font-semibold">{match.teamA.name}</span>
                     </div>
                     <span className="text-lg font-bold text-yellow-400">
-                      {scoreA} x {scoreB}
+                      {hasScore ? `${scoreA} x ${scoreB}` : "-- x --"}
                     </span>
                     <div className="flex items-center gap-2">
                       <Image
@@ -212,7 +218,9 @@ export default function HistoricoPartidas() {
                   </div>
 
                   <div className="flex flex-col items-end gap-2">
-                    <span className="text-xs text-neutral-400">Vencedor: {winner}</span>
+                    <span className="text-xs text-neutral-400">
+                      {hasScore ? `Vencedor: ${winner}` : "Aguardando resultado"}
+                    </span>
                     <Link
                       href={publicHref(`/partidas/detalhes/${match.id}`)}
                       className="text-xs text-yellow-400 hover:text-yellow-300 transition underline"

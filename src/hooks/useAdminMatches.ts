@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import useSWR from "swr";
-import { useRacha } from "@/context/RachaContext";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
 type AdminMatchesOptions = {
@@ -75,13 +74,25 @@ function mapPresence(presence: any, fallbackMatchId: string, index: number): Pub
   };
 }
 
+function normalizeNullableNumber(value: unknown) {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function resolveScore(raw: unknown, fallback: unknown) {
+  if (raw === null) return null;
+  if (raw === undefined) return normalizeNullableNumber(fallback);
+  return normalizeNullableNumber(raw);
+}
+
 function normalizeMatch(raw: any): PublicMatch {
   const rawDate = raw?.date ?? raw?.data ?? raw?.createdAt ?? new Date().toISOString();
   const date = toIso(rawDate) ?? new Date().toISOString();
   const teamA = mapTeam(raw?.teamA ?? raw?.timeA, raw?.teamAId ?? `${raw?.id}-a`, "Time A");
   const teamB = mapTeam(raw?.teamB ?? raw?.timeB, raw?.teamBId ?? `${raw?.id}-b`, "Time B");
-  const scoreA = Number.isFinite(raw?.scoreA) ? Number(raw.scoreA) : Number(raw?.golsTimeA ?? 0);
-  const scoreB = Number.isFinite(raw?.scoreB) ? Number(raw.scoreB) : Number(raw?.golsTimeB ?? 0);
+  const normalizedScoreA = resolveScore(raw?.scoreA, raw?.golsTimeA);
+  const normalizedScoreB = resolveScore(raw?.scoreB, raw?.golsTimeB);
   const presences = Array.isArray(raw?.presences)
     ? raw.presences.map((presence: any, index: number) =>
         mapPresence(presence, raw?.id ?? "match", index)
@@ -92,11 +103,11 @@ function normalizeMatch(raw: any): PublicMatch {
     id: raw?.id ?? `match-${date}`,
     date,
     location: raw?.location ?? raw?.local ?? null,
-    scoreA: Number.isFinite(scoreA) ? scoreA : 0,
-    scoreB: Number.isFinite(scoreB) ? scoreB : 0,
+    scoreA: normalizedScoreA,
+    scoreB: normalizedScoreB,
     score: {
-      teamA: Number.isFinite(scoreA) ? scoreA : 0,
-      teamB: Number.isFinite(scoreB) ? scoreB : 0,
+      teamA: normalizedScoreA ?? 0,
+      teamB: normalizedScoreB ?? 0,
     },
     teamA,
     teamB,
@@ -105,9 +116,8 @@ function normalizeMatch(raw: any): PublicMatch {
 }
 
 export function useAdminMatches(options: AdminMatchesOptions = {}) {
-  const { rachaId } = useRacha();
   const enabled = options.enabled ?? true;
-  const key = enabled && rachaId ? `/api/partidas?rachaId=${rachaId}` : null;
+  const key = enabled ? "/api/partidas" : null;
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
     revalidateOnFocus: false,
