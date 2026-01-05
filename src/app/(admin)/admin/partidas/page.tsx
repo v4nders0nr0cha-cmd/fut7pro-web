@@ -126,7 +126,7 @@ export default function PartidasPage() {
 
               <div className="mt-5 flex flex-col gap-3">
                 <Link
-                  href="/admin/partidas/historico?scope=hoje&tab=sem-resultado"
+                  href="/admin/partidas/resultados-do-dia"
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
                 >
                   Lancar Resultados de Hoje

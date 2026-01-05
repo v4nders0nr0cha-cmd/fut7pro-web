@@ -24,6 +24,7 @@ const menu = [
     icon: FaFutbol,
     children: [
       { label: "Partidas e Resultados", href: "/admin/partidas" },
+      { label: "Resultados do Dia", href: "/admin/partidas/resultados-do-dia" },
       { label: "Próximos Rachas", href: "/admin/partidas/proximos-rachas" },
       { label: "Time Campeão do Dia", href: "/admin/partidas/time-campeao-do-dia" },
       { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },

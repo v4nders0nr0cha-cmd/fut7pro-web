@@ -53,3 +53,19 @@ export async function GET(req: NextRequest) {
     false
   );
 }
+
+export async function POST(req: NextRequest) {
+  const payload = await req.json().catch(() => null);
+  if (!payload) {
+    return jsonResponse({ error: "Payload invalido" }, { status: 400 });
+  }
+
+  return forwardToBackend(
+    req,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    true
+  );
+}

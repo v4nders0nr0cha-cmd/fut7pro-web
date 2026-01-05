@@ -1,382 +1,516 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaListOl, FaPlus, FaFutbol, FaCheckCircle } from "react-icons/fa";
+import {
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaClock,
+  FaMapMarkerAlt,
+  FaPlus,
+  FaTrash,
+  FaUsers,
+} from "react-icons/fa";
+import { useMe } from "@/hooks/useMe";
+import { useTimes } from "@/hooks/useTimes";
+import { useJogadores } from "@/hooks/useJogadores";
+import type { Jogador } from "@/types/jogador";
+import type { Time } from "@/types/time";
 
-// MOCKS (mantidos para exemplo)
-const TIMES_MOCK = [
-  { id: 1, nome: "Leões" },
-  { id: 2, nome: "Tigres" },
-  { id: 3, nome: "Águias" },
-  { id: 4, nome: "Furacão" },
-];
-const JOGADORES_MOCK = [
-  { id: 1, nome: "João", timeId: 1 },
-  { id: 2, nome: "Pedro", timeId: 1 },
-  { id: 3, nome: "Lucas", timeId: 2 },
-  { id: 4, nome: "Marcos", timeId: 2 },
-  { id: 5, nome: "Caio", timeId: 3 },
-  { id: 6, nome: "Thiago", timeId: 3 },
-  { id: 7, nome: "Rafael", timeId: 4 },
-  { id: 8, nome: "Gustavo", timeId: 4 },
-];
+const RESULTS_ROUTE = "/admin/partidas/resultados-do-dia";
 
-type Time = { id: number; nome: string };
-type Jogador = { id: number; nome: string; timeId: number };
-type GolAssistencia = { jogadorGol: number; jogadorAssist: number | null };
-type Partida = {
-  id: number;
-  timeA: Time | null;
-  timeB: Time | null;
-  golsA: GolAssistencia[];
-  golsB: GolAssistencia[];
-  data: string;
+type MatchDraft = {
+  id: string;
+  teamAId: string;
+  teamBId: string;
+  playersA: string[];
+  playersB: string[];
 };
+
+type PlayerOption = {
+  id: string;
+  label: string;
+  name: string;
+};
+
+function createDraftId() {
+  return `draft-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+}
+
+function buildIsoDate(dateValue: string, timeValue: string) {
+  if (!dateValue) return null;
+  const time = timeValue || "00:00";
+  const iso = `${dateValue}T${time}:00`;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
+function getPlayerLabel(player: Jogador) {
+  const apelido = player.apelido || player.nickname;
+  if (apelido) return `${player.nome} (${apelido})`;
+  return player.nome || "Atleta";
+}
 
 export default function PartidaClassicaPage() {
   const router = useRouter();
+  const { me } = useMe();
+  const tenantId = me?.tenant?.tenantId ?? "";
+  const tenantSlug = me?.tenant?.tenantSlug ?? undefined;
+  const { times, isLoading: timesLoading } = useTimes(tenantSlug);
+  const { jogadores, isLoading: jogadoresLoading } = useJogadores(tenantId, {
+    includeBots: true,
+  });
 
-  const [dataRodada, setDataRodada] = useState("");
-  const [partidas, setPartidas] = useState<Partida[]>([]);
-  const [modalOpen, setModalOpen] = useState<null | { partidaId: number; lado: "A" | "B" }>(null);
-  const [rodadaSalva, setRodadaSalva] = useState(false);
+  const [dateValue, setDateValue] = useState("");
+  const [timeValue, setTimeValue] = useState("");
+  const [location, setLocation] = useState("");
+  const [matches, setMatches] = useState<MatchDraft[]>([]);
+  const [searchMap, setSearchMap] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const adicionarPartida = () => {
-    setPartidas((prev) => [
+  const playerOptions = useMemo<PlayerOption[]>(() => {
+    return (jogadores || [])
+      .map((player) => ({
+        id: player.id,
+        label: getPlayerLabel(player),
+        name: player.nome || player.name || "Atleta",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  }, [jogadores]);
+
+  const playerLabelById = useMemo(() => {
+    const map = new Map<string, string>();
+    playerOptions.forEach((player) => map.set(player.id, player.label));
+    return map;
+  }, [playerOptions]);
+
+  const resultsUrl = dateValue ? `${RESULTS_ROUTE}?date=${dateValue}` : RESULTS_ROUTE;
+
+  const addMatch = () => {
+    setMatches((prev) => [
       ...prev,
-      {
-        id: prev.length + 1,
-        timeA: null,
-        timeB: null,
-        golsA: [],
-        golsB: [],
-        data: dataRodada,
-      },
+      { id: createDraftId(), teamAId: "", teamBId: "", playersA: [], playersB: [] },
     ]);
   };
 
-  const atualizarTime = (id: number, timeKey: "timeA" | "timeB", value: string) => {
-    setPartidas((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              [timeKey]: TIMES_MOCK.find((t) => t.nome === value) || null,
-              ...(timeKey === "timeA" ? { golsA: [] } : { golsB: [] }),
-            }
-          : p
-      )
-    );
+  const removeMatch = (id: string) => {
+    setMatches((prev) => prev.filter((match) => match.id !== id));
+    setSearchMap((prev) => {
+      const updated = { ...prev };
+      delete updated[`${id}-A`];
+      delete updated[`${id}-B`];
+      return updated;
+    });
   };
 
-  const abrirModalGol = (partidaId: number, lado: "A" | "B") => setModalOpen({ partidaId, lado });
-  const fecharModalGol = () => setModalOpen(null);
+  const updateMatch = (id: string, updates: Partial<MatchDraft>) => {
+    setMatches((prev) => prev.map((match) => (match.id === id ? { ...match, ...updates } : match)));
+  };
 
-  const adicionarGolAssist = (jogadorGol: number, jogadorAssist: number | null) => {
-    if (!modalOpen) return;
-    setPartidas((prev) =>
-      prev.map((p) => {
-        if (p.id !== modalOpen.partidaId) return p;
-        if (modalOpen.lado === "A") {
-          return { ...p, golsA: [...p.golsA, { jogadorGol, jogadorAssist }] };
-        }
-        return { ...p, golsB: [...p.golsB, { jogadorGol, jogadorAssist }] };
+  const togglePlayer = (matchId: string, side: "A" | "B", playerId: string) => {
+    setMatches((prev) =>
+      prev.map((match) => {
+        if (match.id !== matchId) return match;
+        const key = side === "A" ? "playersA" : "playersB";
+        const list = match[key];
+        const exists = list.includes(playerId);
+        const nextList = exists ? list.filter((item) => item !== playerId) : [...list, playerId];
+        return { ...match, [key]: nextList } as MatchDraft;
       })
     );
-    fecharModalGol();
   };
 
-  const getJogadoresDoTime = (time: Time | null) =>
-    time ? JOGADORES_MOCK.filter((j) => j.timeId === time.id) : [];
-  const getNomeJogador = (id: number | null) =>
-    id ? JOGADORES_MOCK.find((j) => j.id === id)?.nome || "" : "";
+  const updateTeam = (matchId: string, side: "A" | "B", teamId: string) => {
+    if (side === "A") {
+      updateMatch(matchId, { teamAId: teamId, playersA: [] });
+    } else {
+      updateMatch(matchId, { teamBId: teamId, playersB: [] });
+    }
+  };
 
-  // Mock persistente: salva partidas em localStorage
-  function salvarRodadaNoHistorico() {
-    const historicoRaw = window.localStorage.getItem("fut7pro_historico_partidas") || "[]";
-    const historico = JSON.parse(historicoRaw);
+  const updateSearch = (matchId: string, side: "A" | "B", value: string) => {
+    setSearchMap((prev) => ({ ...prev, [`${matchId}-${side}`]: value }));
+  };
 
-    const partidasFormatadas = partidas.map((p) => ({
-      data: p.data,
-      timeA: p.timeA?.nome,
-      timeB: p.timeB?.nome,
-      golsA: p.golsA.map((g) => ({
-        jogadorGol: getNomeJogador(g.jogadorGol),
-        jogadorAssist: g.jogadorAssist ? getNomeJogador(g.jogadorAssist) : null,
-      })),
-      golsB: p.golsB.map((g) => ({
-        jogadorGol: getNomeJogador(g.jogadorGol),
-        jogadorAssist: g.jogadorAssist ? getNomeJogador(g.jogadorAssist) : null,
-      })),
-      placarA: p.golsA.length,
-      placarB: p.golsB.length,
-    }));
+  const validateMatches = () => {
+    if (!dateValue) return "Informe a data da rodada.";
+    if (!matches.length) return "Adicione pelo menos uma partida.";
+    if (!tenantId) return "Nao foi possivel identificar o racha logado.";
 
-    historico.push({
-      dataRodada,
-      partidas: partidasFormatadas,
-      createdAt: new Date().toISOString(),
-    });
+    for (let i = 0; i < matches.length; i += 1) {
+      const match = matches[i];
+      if (!match.teamAId || !match.teamBId) {
+        return `Selecione os times da partida ${i + 1}.`;
+      }
+      if (match.teamAId === match.teamBId) {
+        return `Os times da partida ${i + 1} nao podem ser iguais.`;
+      }
+      if (!match.playersA.length || !match.playersB.length) {
+        return `Selecione os atletas das duas equipes na partida ${i + 1}.`;
+      }
+      const overlap = match.playersA.filter((id) => match.playersB.includes(id));
+      if (overlap.length) {
+        return `Ha atletas duplicados nas equipes da partida ${i + 1}.`;
+      }
+    }
 
-    window.localStorage.setItem("fut7pro_historico_partidas", JSON.stringify(historico));
-    setRodadaSalva(true);
-    setTimeout(() => router.push("/admin/partidas/historico"), 2000);
-  }
+    return null;
+  };
+
+  const handleSave = async () => {
+    const validationError = validateMatches();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const isoDate = buildIsoDate(dateValue, timeValue);
+    if (!isoDate) {
+      setError("Data ou horario invalido.");
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      for (const draft of matches) {
+        const payload: Record<string, unknown> = {
+          date: isoDate,
+          teamAId: draft.teamAId,
+          teamBId: draft.teamBId,
+        };
+        if (location.trim()) payload.location = location.trim();
+
+        const response = await fetch("/api/partidas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(body || "Falha ao criar partida classica");
+        }
+
+        const createdMatch = (await response.json()) as { id?: string };
+        if (!createdMatch?.id) {
+          throw new Error("Resposta invalida ao criar partida classica");
+        }
+
+        const presences = [
+          ...draft.playersA.map((athleteId) => ({
+            athleteId,
+            teamId: draft.teamAId,
+            goals: 0,
+            assists: 0,
+            status: "TITULAR",
+          })),
+          ...draft.playersB.map((athleteId) => ({
+            athleteId,
+            teamId: draft.teamBId,
+            goals: 0,
+            assists: 0,
+            status: "TITULAR",
+          })),
+        ];
+
+        if (presences.length) {
+          const updateResponse = await fetch(`/api/partidas/${createdMatch.id}/resultado`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ presences }),
+          });
+
+          if (!updateResponse.ok) {
+            const body = await updateResponse.text();
+            throw new Error(body || "Falha ao registrar presencas da partida");
+          }
+        }
+      }
+
+      setSuccess(true);
+      setMatches([]);
+      setSearchMap({});
+      setTimeout(() => {
+        router.push(resultsUrl);
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao salvar partidas");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const renderTeamSelect = (match: MatchDraft, side: "A" | "B") => {
+    const selectedId = side === "A" ? match.teamAId : match.teamBId;
+    return (
+      <select
+        value={selectedId}
+        onChange={(e) => updateTeam(match.id, side, e.target.value)}
+        className="w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
+      >
+        <option value="">Selecione o time {side}</option>
+        {times.map((time) => (
+          <option key={time.id} value={time.id}>
+            {time.nome}
+          </option>
+        ))}
+      </select>
+    );
+  };
+
+  const renderRoster = (match: MatchDraft, side: "A" | "B", team: Time | undefined) => {
+    const selected = side === "A" ? match.playersA : match.playersB;
+    const blocked = new Set(side === "A" ? match.playersB : match.playersA);
+    const searchKey = `${match.id}-${side}`;
+    const query = (searchMap[searchKey] || "").trim().toLowerCase();
+    const filteredPlayers = playerOptions.filter((player) =>
+      query ? player.label.toLowerCase().includes(query) : true
+    );
+
+    return (
+      <div className="mt-3 rounded-xl border border-neutral-800 bg-[#151515] p-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-neutral-300">Atletas do {team?.nome || `Time ${side}`}</p>
+          <span className="text-[11px] text-neutral-400">{selected.length} selecionados</span>
+        </div>
+        <input
+          value={searchMap[searchKey] || ""}
+          onChange={(e) => updateSearch(match.id, side, e.target.value)}
+          placeholder="Buscar atleta"
+          className="mt-2 w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-xs text-neutral-100"
+        />
+        <div className="mt-3 max-h-40 space-y-2 overflow-y-auto">
+          {filteredPlayers.length === 0 ? (
+            <p className="text-xs text-neutral-500">Nenhum atleta encontrado.</p>
+          ) : (
+            filteredPlayers.map((player) => {
+              const checked = selected.includes(player.id);
+              const disabled = blocked.has(player.id);
+              return (
+                <label key={player.id} className="flex items-center gap-2 text-sm text-neutral-200">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => togglePlayer(match.id, side, player.id)}
+                    disabled={disabled}
+                  />
+                  <span className={disabled ? "opacity-50" : ""}>{player.label}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+        {selected.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selected.map((playerId) => (
+              <span
+                key={playerId}
+                className="rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-[11px] text-neutral-200"
+              >
+                {playerLabelById.get(playerId) || "Atleta"}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
       <Head>
-        <title>Partida Clássica | Fut7Pro Admin</title>
+        <title>Partida Classica | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Cadastre partidas manualmente, retroativas ou de formatos clássicos do seu racha. Atualize históricos, rankings e estatísticas no Fut7Pro."
+          content="Cadastre partidas classicas com times reais e escalacoes completas. Lance resultados depois no Resultados do Dia do Fut7Pro."
         />
         <meta
           name="keywords"
-          content="partida clássica, cadastro manual, retroativo, fut7, racha, painel admin"
+          content="partida classica, cadastro manual, times, atletas, painel admin, fut7pro"
         />
       </Head>
-      <main className="max-w-3xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-5 flex items-center gap-3">
-          <FaListOl className="text-yellow-400" /> Partida Clássica
-        </h1>
-        <p className="text-base text-neutral-300 mb-8">
-          Cadastre rodadas com partidas clássicas(estilo 8 minutos ou 2 gols) ou outros. Também
-          adicione jogos antigos aqui, partidas avulsas e resultados do seu racha sem usar o sorteio
-          inteligente. Escolha a data, crie as partidas da rodada, selecione os times e lance gols e
-          assistências para cada partida.
-        </p>
 
-        {/* Data da rodada */}
-        <div className="mb-8 flex flex-col md:flex-row items-center gap-4">
-          <label className="text-yellow-300 font-semibold">Data da Rodada:</label>
-          <input
-            type="date"
-            className="bg-neutral-900 border border-yellow-400 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={dataRodada}
-            onChange={(e) => setDataRodada(e.target.value)}
-          />
-          <button
-            className="bg-yellow-400 text-black font-bold px-6 py-2 rounded-xl hover:bg-yellow-500 transition flex items-center gap-2"
-            onClick={adicionarPartida}
-            type="button"
-            disabled={!dataRodada}
-          >
-            <FaPlus /> Nova Partida
-          </button>
-        </div>
+      <main className="min-h-screen bg-fundo text-white px-4 pt-[64px] md:pt-[80px] pb-24 md:pb-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col gap-3 mb-8">
+            <h1 className="text-3xl font-bold text-yellow-400">Partida Classica</h1>
+            <p className="text-sm text-neutral-300 max-w-3xl">
+              Cadastre partidas avulsas ou retroativas com times reais, selecione os atletas que
+              participaram e deixe tudo pronto para lancar resultados no painel. Essas partidas
+              aparecem automaticamente no Resultados do Dia e no historico publico.
+            </p>
+          </div>
 
-        {/* Lista de partidas da rodada */}
-        <div className="space-y-7">
-          {partidas.map((p) => (
-            <div
-              key={p.id}
-              className="bg-neutral-900 border border-yellow-700 rounded-xl px-4 py-4 flex flex-col gap-2 shadow"
-              style={{ borderColor: "#f9b300" }}
-            >
-              <div className="flex flex-col md:flex-row md:items-center gap-2 flex-1">
-                <select
-                  className="bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
-                  value={p.timeA?.nome || ""}
-                  onChange={(e) => atualizarTime(p.id, "timeA", e.target.value)}
-                >
-                  <option value="">Time A</option>
-                  {TIMES_MOCK.map((t) => (
-                    <option key={t.id} value={t.nome}>
-                      {t.nome}
-                    </option>
-                  ))}
-                </select>
-                <span className="mx-2 font-bold text-yellow-400 text-lg">x</span>
-                <select
-                  className="bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
-                  value={p.timeB?.nome || ""}
-                  onChange={(e) => atualizarTime(p.id, "timeB", e.target.value)}
-                >
-                  <option value="">Time B</option>
-                  {TIMES_MOCK.map((t) => (
-                    <option key={t.id} value={t.nome}>
-                      {t.nome}
-                    </option>
-                  ))}
-                </select>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-6">
+            <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6">
+              <h2 className="text-lg font-semibold text-yellow-300 mb-4">Dados da rodada</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-neutral-400 flex items-center gap-2">
+                    <FaCalendarAlt /> Data
+                  </label>
+                  <input
+                    type="date"
+                    value={dateValue}
+                    onChange={(e) => setDateValue(e.target.value)}
+                    className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-neutral-400 flex items-center gap-2">
+                    <FaClock /> Horario (opcional)
+                  </label>
+                  <input
+                    type="time"
+                    value={timeValue}
+                    onChange={(e) => setTimeValue(e.target.value)}
+                    className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs text-neutral-400 flex items-center gap-2">
+                    <FaMapMarkerAlt /> Local (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Ex: Arena principal"
+                    className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
+                  />
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+
+              <div className="mt-6 flex flex-wrap items-center gap-3">
                 <button
-                  className="bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition flex items-center gap-2"
-                  onClick={() => abrirModalGol(p.id, "A")}
-                  disabled={!p.timeA}
                   type="button"
+                  onClick={addMatch}
+                  className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
                 >
-                  <FaFutbol /> Gols {p.timeA?.nome || "Time A"}: {p.golsA.length}
+                  <FaPlus /> Adicionar partida
                 </button>
-                <button
-                  className="bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg hover:bg-yellow-400 transition flex items-center gap-2"
-                  onClick={() => abrirModalGol(p.id, "B")}
-                  disabled={!p.timeB}
-                  type="button"
-                >
-                  <FaFutbol /> Gols {p.timeB?.nome || "Time B"}: {p.golsB.length}
-                </button>
-                <span className="ml-auto flex gap-2 font-bold text-green-400 text-lg">
-                  {p.golsA.length} <span className="text-yellow-300">x</span> {p.golsB.length}
+                <span className="text-xs text-neutral-400">
+                  {matches.length} partidas adicionadas
                 </span>
               </div>
-              {(p.golsA.length > 0 || p.golsB.length > 0) && (
-                <div className="mt-2 text-sm text-neutral-200">
-                  <div>
-                    {p.golsA.map((g, idx) => (
-                      <div key={idx}>
-                        <span className="text-yellow-300 font-bold">
-                          Gol {idx + 1} {p.timeA?.nome && `(${p.timeA.nome})`}:
-                        </span>{" "}
-                        {getNomeJogador(g.jogadorGol)}
-                        {g.jogadorAssist && (
-                          <span className="ml-2 text-cyan-300">
-                            <span className="font-bold">Assist:</span>{" "}
-                            {getNomeJogador(g.jogadorAssist)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                    {p.golsB.map((g, idx) => (
-                      <div key={idx}>
-                        <span className="text-yellow-300 font-bold">
-                          Gol {idx + 1} {p.timeB?.nome && `(${p.timeB.nome})`}:
-                        </span>{" "}
-                        {getNomeJogador(g.jogadorGol)}
-                        {g.jogadorAssist && (
-                          <span className="ml-2 text-cyan-300">
-                            <span className="font-bold">Assist:</span>{" "}
-                            {getNomeJogador(g.jogadorAssist)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+
+              {timesLoading || jogadoresLoading ? (
+                <div className="mt-6 rounded-xl border border-neutral-800 bg-[#1a1a1a] p-4 text-sm text-neutral-300">
+                  Carregando times e atletas...
                 </div>
-              )}
-            </div>
-          ))}
+              ) : times.length === 0 ? (
+                <div className="mt-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+                  Nenhum time cadastrado. Cadastre os times antes de criar partidas classicas.
+                </div>
+              ) : jogadores.length === 0 ? (
+                <div className="mt-6 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
+                  Nenhum atleta cadastrado. Cadastre atletas antes de montar partidas classicas.
+                </div>
+              ) : null}
+
+              <div className="mt-6 space-y-5">
+                {matches.map((match, index) => {
+                  const teamA = times.find((time) => time.id === match.teamAId);
+                  const teamB = times.find((time) => time.id === match.teamBId);
+
+                  return (
+                    <div
+                      key={match.id}
+                      className="rounded-2xl border border-neutral-800 bg-[#101010] p-5"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-sm text-neutral-300">
+                            <FaUsers className="text-yellow-400" /> Partida {index + 1}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeMatch(match.id)}
+                            className="text-xs text-red-200 hover:text-red-300"
+                          >
+                            <FaTrash /> Remover
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs text-neutral-400 mb-2 block">Time A</label>
+                            {renderTeamSelect(match, "A")}
+                            {renderRoster(match, "A", teamA)}
+                          </div>
+                          <div>
+                            <label className="text-xs text-neutral-400 mb-2 block">Time B</label>
+                            {renderTeamSelect(match, "B")}
+                            {renderRoster(match, "B", teamB)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <aside className="space-y-6">
+              <div className="rounded-2xl border border-neutral-800 bg-[#151515] p-6">
+                <h2 className="text-lg font-semibold text-yellow-300 mb-3">Checklist rapido</h2>
+                <ul className="space-y-2 text-sm text-neutral-300">
+                  <li>Escolha a data da rodada e adicione as partidas.</li>
+                  <li>Defina os times e selecione os atletas de cada equipe.</li>
+                  <li>Salve para liberar o lancamento de resultados no Resultados do Dia.</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-neutral-800 bg-[#151515] p-6">
+                <h2 className="text-lg font-semibold text-yellow-300 mb-3">Salvar partidas</h2>
+                <p className="text-sm text-neutral-300 mb-4">
+                  As partidas classicas serao enviadas para o backend e aparecerem no site publico
+                  quando forem finalizadas.
+                </p>
+
+                {error && (
+                  <div className="mb-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="w-full rounded-xl bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-600 disabled:opacity-60"
+                >
+                  {isSaving ? "Salvando partidas..." : "Salvar e ir para Resultados do Dia"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push(resultsUrl)}
+                  className="mt-3 w-full rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
+                >
+                  Abrir Resultados do Dia
+                </button>
+              </div>
+            </aside>
+          </div>
         </div>
 
-        {modalOpen &&
-          (() => {
-            const partida = partidas.find((p) => p.id === modalOpen.partidaId);
-            if (!partida) return null;
-            const time = modalOpen.lado === "A" ? partida.timeA : partida.timeB;
-            const jogadores = getJogadoresDoTime(time);
-            return (
-              <ModalAdicionarGol
-                jogadores={jogadores}
-                onClose={fecharModalGol}
-                onSave={adicionarGolAssist}
-              />
-            );
-          })()}
-
-        {/* Salvar rodada */}
-        {partidas.length > 0 && (
-          <div className="mt-10 flex justify-end">
-            <button
-              className="bg-green-500 text-white font-bold px-8 py-3 rounded-xl text-lg hover:bg-green-600 transition"
-              onClick={salvarRodadaNoHistorico}
-              type="button"
-            >
-              Salvar Rodada
-            </button>
-          </div>
-        )}
-
-        {/* Sucesso ao salvar */}
-        {rodadaSalva && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-neutral-900 border-2 border-green-400 rounded-2xl px-8 py-10 shadow-xl flex flex-col items-center">
-              <FaCheckCircle className="text-green-400 text-5xl mb-4" />
-              <h2 className="text-2xl font-bold text-green-400 mb-2">Rodada salva com sucesso!</h2>
-              <p className="text-base text-neutral-300 mb-1 text-center">
-                As partidas desta rodada já estão disponíveis no{" "}
-                <span className="text-yellow-400">Histórico</span>.
-              </p>
-              <p className="text-sm text-neutral-400">Você será redirecionado automaticamente...</p>
+        {success && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+            <div className="rounded-2xl border border-green-500/40 bg-[#101010] p-6 text-center shadow-xl">
+              <FaCheckCircle className="mx-auto mb-3 text-4xl text-green-400" />
+              <h2 className="text-xl font-semibold text-green-300 mb-2">
+                Partidas salvas com sucesso!
+              </h2>
+              <p className="text-sm text-neutral-300">Redirecionando para o Resultados do Dia...</p>
             </div>
           </div>
         )}
       </main>
     </>
-  );
-}
-
-// Modal para adicionar Gol e Assistência
-function ModalAdicionarGol({
-  jogadores,
-  onClose,
-  onSave,
-}: {
-  jogadores: Jogador[];
-  onClose: () => void;
-  onSave: (jogadorGol: number, jogadorAssist: number | null) => void;
-}) {
-  const [jogadorGol, setJogadorGol] = useState<number | "">("");
-  const [jogadorAssist, setJogadorAssist] = useState<number | "">("");
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-      <div className="bg-neutral-900 rounded-2xl shadow-xl border-2 border-yellow-600 w-full max-w-md p-8 relative flex flex-col items-center">
-        <button
-          className="absolute top-4 right-4 text-2xl text-neutral-400 hover:text-yellow-400"
-          onClick={onClose}
-          aria-label="Fechar modal"
-        >
-          ×
-        </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-6">Adicionar Gol e Assistência</h2>
-        <div className="w-full flex flex-col gap-4 mb-6">
-          <div>
-            <label className="block text-neutral-300 font-semibold mb-1">Gol do Jogador</label>
-            <select
-              className="w-full bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
-              value={jogadorGol}
-              onChange={(e) => setJogadorGol(Number(e.target.value))}
-            >
-              <option value="">Selecione...</option>
-              {jogadores.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-neutral-300 font-semibold mb-1">
-              Assistência do Jogador
-            </label>
-            <select
-              className="w-full bg-neutral-800 border border-yellow-400 rounded px-3 py-2 text-white"
-              value={jogadorAssist}
-              onChange={(e) => setJogadorAssist(Number(e.target.value))}
-            >
-              <option value="">Selecione...</option>
-              <option value="">Nenhuma</option>
-              {jogadores.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.nome}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-        <button
-          className="w-full bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl text-lg hover:bg-yellow-500 transition"
-          onClick={() => jogadorGol && onSave(jogadorGol, jogadorAssist || null)}
-          disabled={!jogadorGol}
-          type="button"
-        >
-          Salvar Gol
-        </button>
-      </div>
-    </div>
   );
 }
