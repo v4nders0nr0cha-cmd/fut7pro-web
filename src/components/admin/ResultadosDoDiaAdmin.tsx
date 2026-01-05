@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { format } from "date-fns";
-import { FaExclamationTriangle } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
@@ -524,6 +524,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(status === "finished");
   const [scoreMode, setScoreMode] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const lastSavedKey = useRef<string | null>(null);
   const didMount = useRef(false);
 
@@ -728,11 +729,14 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
     }
   };
 
-  const handleFinalize = async () => {
-    const confirmed = window.confirm(
-      "Ao finalizar, o resultado entra nos rankings e no historico publico. Deseja continuar?"
-    );
-    if (!confirmed) return;
+  const handleFinalize = () => {
+    if (locked) return;
+    setShowFinalizeConfirm(true);
+  };
+
+  const confirmFinalize = async () => {
+    if (isSaving) return;
+    setShowFinalizeConfirm(false);
     onStatusChange(match.id, "finished");
     setLocalStatus("finished");
     setLocked(true);
@@ -973,6 +977,41 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
           )}
         </div>
       </div>
+
+      {showFinalizeConfirm && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-3">
+              <FaCheckCircle className="text-yellow-300 text-xl" />
+              <h3 className="text-lg font-semibold text-yellow-300">Finalizar partida</h3>
+            </div>
+            <p className="text-sm text-neutral-300">
+              Ao finalizar, o resultado entra nos rankings, estatisticas e historico publico.
+            </p>
+            <ul className="mt-4 space-y-2 text-xs text-neutral-300">
+              <li>- A edicao fica bloqueada (pode desbloquear para correcao).</li>
+              <li>- Vitorias, empates e derrotas sao calculados automaticamente.</li>
+            </ul>
+            <div className="mt-5 flex flex-col sm:flex-row gap-3">
+              <button
+                type="button"
+                onClick={() => setShowFinalizeConfirm(false)}
+                className="flex-1 rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={confirmFinalize}
+                disabled={isSaving}
+                className="flex-1 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60"
+              >
+                Finalizar agora
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <GoalModal
         open={goalModalTeam !== null}
