@@ -1,15 +1,41 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
+const MONTH_LABELS = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
 
-type MatchStatusFilter = "all" | "open" | "done";
+type MatchStatusFilter = "open" | "progress" | "done";
+type MatchScopeFilter = "today" | "all";
+
+type MatchMeta = {
+  match: PublicMatch;
+  date: Date | null;
+  year: number | null;
+  month: number | null;
+  isToday: boolean;
+  hasResult: boolean;
+  status: MatchStatusFilter;
+};
 
 type GoalEvent = {
   id: string;
@@ -44,6 +70,21 @@ function formatDate(value?: string | null, withTime = false) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Data nao informada";
   return withTime ? format(date, "dd/MM/yyyy HH:mm") : format(date, "dd/MM/yyyy");
+}
+
+function parseMatchDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function isSameLocalDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
 }
 
 function resolvePresenceTeamId(
@@ -229,6 +270,11 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   const handleSave = async () => {
     setSaving(true);
     setError(null);
+    if (events.some((event) => !event.scorerId)) {
+      setError("Informe o autor do gol em cada lance antes de salvar.");
+      setSaving(false);
+      return;
+    }
     try {
       const response = await fetch(`/api/partidas/${match.id}/resultado`, {
         method: "PUT",
@@ -494,47 +540,154 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 }
 
 export default function HistoricoPartidasAdmin() {
+  const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>("open");
+  const [scopeFilter, setScopeFilter] = useState<MatchScopeFilter>("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
+
+  useEffect(() => {
+    if (!searchParams) return;
+
+    const tabParam = normalizeKey(searchParams.get("tab"));
+    if (tabParam) {
+      if (tabParam === "sem-resultado" || tabParam === "semresultado") {
+        setStatusFilter("open");
+      } else if (tabParam === "em-andamento" || tabParam === "emandamento") {
+        setStatusFilter("progress");
+      } else if (tabParam === "finalizadas" || tabParam === "finalizada") {
+        setStatusFilter("done");
+      }
+    }
+
+    const scopeParam = normalizeKey(searchParams.get("scope"));
+    if (scopeParam) {
+      if (scopeParam === "hoje" || scopeParam === "today") {
+        setScopeFilter("today");
+      } else if (scopeParam === "historico" || scopeParam === "todas" || scopeParam === "all") {
+        setScopeFilter("all");
+      }
+    }
+
+    const yearParam = searchParams.get("ano") || searchParams.get("year");
+    if (yearParam && /^\d{4}$/.test(yearParam)) {
+      setYearFilter(yearParam);
+    }
+
+    const monthParam = searchParams.get("mes") || searchParams.get("month");
+    if (monthParam && /^\d{1,2}$/.test(monthParam)) {
+      setMonthFilter(monthParam);
+    }
+  }, [searchParams]);
 
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [matches]);
 
+  const matchMeta = useMemo(() => {
+    const now = new Date();
+    let hasTodayMatches = false;
+    let hasTodayOpen = false;
+
+    const base = sortedMatches.map((match) => {
+      const date = parseMatchDate(match.date);
+      const isToday = date ? isSameLocalDay(date, now) : false;
+      const hasResult = matchHasResult(match);
+      if (isToday) {
+        hasTodayMatches = true;
+        if (!hasResult) hasTodayOpen = true;
+      }
+      return {
+        match,
+        date,
+        year: date ? date.getFullYear() : null,
+        month: date ? date.getMonth() + 1 : null,
+        isToday,
+        hasResult,
+      };
+    });
+
+    const todayFinalized = hasTodayMatches && !hasTodayOpen;
+    const list: MatchMeta[] = base.map((item) => ({
+      ...item,
+      status: !item.hasResult ? "open" : item.isToday && !todayFinalized ? "progress" : "done",
+    }));
+
+    return {
+      list,
+      hasTodayMatches,
+      todayFinalized,
+    };
+  }, [sortedMatches]);
+
+  const availableYears = useMemo(() => {
+    const years = new Set<number>();
+    matchMeta.list.forEach((item) => {
+      if (item.year) years.add(item.year);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [matchMeta.list]);
+
+  const availableMonths = useMemo(() => {
+    if (scopeFilter === "today") return [];
+    const months = new Set<number>();
+    matchMeta.list.forEach((item) => {
+      if (!item.month) return;
+      if (yearFilter !== "all" && item.year !== Number(yearFilter)) return;
+      months.add(item.month);
+    });
+    return Array.from(months).sort((a, b) => a - b);
+  }, [matchMeta.list, scopeFilter, yearFilter]);
+
   const filteredMatches = useMemo(() => {
-    const searchValue = search.trim().toLowerCase();
-    return sortedMatches.filter((match) => {
-      const isDone = matchHasResult(match);
-      if (statusFilter === "done" && !isDone) return false;
-      if (statusFilter === "open" && isDone) return false;
+    const searchValue = normalizeKey(search);
+    return matchMeta.list.filter((item) => {
+      if (scopeFilter === "today" && !item.isToday) return false;
+      if (statusFilter === "open" && item.status !== "open") return false;
+      if (statusFilter === "progress" && item.status !== "progress") return false;
+      if (statusFilter === "done" && item.status !== "done") return false;
+
+      if (scopeFilter === "all") {
+        if (yearFilter !== "all" && item.year !== Number(yearFilter)) return false;
+        if (monthFilter !== "all" && item.month !== Number(monthFilter)) return false;
+      }
 
       if (!searchValue) return true;
-      const dateLabel = formatDate(match.date);
-      const target = `${match.teamA.name} ${match.teamB.name} ${match.location ?? ""} ${dateLabel}`
-        .toLowerCase()
-        .trim();
+      const athletesLabel = item.match.presences
+        .map((presence) => `${presence.athlete?.name ?? ""} ${presence.athlete?.nickname ?? ""}`)
+        .join(" ");
+      const target = normalizeKey(
+        `${item.match.teamA.name} ${item.match.teamB.name} ${item.match.location ?? ""} ${formatDate(item.match.date)} ${athletesLabel}`
+      );
       return target.includes(searchValue);
     });
-  }, [sortedMatches, search, statusFilter]);
+  }, [matchMeta.list, monthFilter, scopeFilter, search, statusFilter, yearFilter]);
 
   const totals = useMemo(() => {
-    const total = matches.length;
-    const done = matches.filter((match) => matchHasResult(match)).length;
-    return { total, done, open: total - done };
-  }, [matches]);
+    const total = matchMeta.list.length;
+    const open = matchMeta.list.filter((item) => item.status === "open").length;
+    const progress = matchMeta.list.filter((item) => item.status === "progress").length;
+    const done = matchMeta.list.filter((item) => item.status === "done").length;
+    return { total, open, progress, done };
+  }, [matchMeta.list]);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
           <p className="text-xs text-neutral-400">Total de partidas</p>
           <p className="text-2xl font-bold text-yellow-400">{totals.total}</p>
         </div>
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-          <p className="text-xs text-neutral-400">Aguardando resultado</p>
+          <p className="text-xs text-neutral-400">Sem resultado</p>
           <p className="text-2xl font-bold text-yellow-400">{totals.open}</p>
+        </div>
+        <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
+          <p className="text-xs text-neutral-400">Em andamento</p>
+          <p className="text-2xl font-bold text-yellow-400">{totals.progress}</p>
         </div>
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
           <p className="text-xs text-neutral-400">Finalizadas</p>
@@ -542,29 +695,106 @@ export default function HistoricoPartidasAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_220px_auto] gap-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por time, data ou local"
-          className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as MatchStatusFilter)}
-          className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
-        >
-          <option value="all">Todos os status</option>
-          <option value="open">Sem resultado</option>
-          <option value="done">Finalizados</option>
-        </select>
-        <button
-          type="button"
-          onClick={() => mutate()}
-          className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
-        >
-          Atualizar
-        </button>
+      {matchMeta.todayFinalized && (
+        <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 text-sm text-green-200">
+          Resultados do dia registrados com sucesso. Rankings e destaques foram atualizados.
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "open", label: "Sem resultado", count: totals.open },
+              { value: "progress", label: "Em andamento", count: totals.progress },
+              { value: "done", label: "Finalizadas", count: totals.done },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setStatusFilter(tab.value as MatchStatusFilter)}
+                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                  statusFilter === tab.value
+                    ? "border-yellow-400 bg-yellow-400 text-black"
+                    : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
+                }`}
+              >
+                {tab.label}
+                <span
+                  className={`ml-2 rounded-full px-2 py-0.5 text-[10px] ${
+                    statusFilter === tab.value
+                      ? "bg-black/20 text-black"
+                      : "bg-neutral-800 text-neutral-200"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "today", label: "Hoje" },
+              { value: "all", label: "Historico completo" },
+            ].map((scope) => (
+              <button
+                key={scope.value}
+                type="button"
+                onClick={() => setScopeFilter(scope.value as MatchScopeFilter)}
+                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                  scopeFilter === scope.value
+                    ? "border-cyan-400 bg-cyan-400/20 text-cyan-200"
+                    : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-cyan-400/60"
+                }`}
+              >
+                {scope.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_150px_auto] gap-3">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por time, atleta, data ou local"
+            className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
+          />
+          <select
+            value={yearFilter}
+            onChange={(e) => setYearFilter(e.target.value)}
+            disabled={scopeFilter === "today"}
+            className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100 disabled:opacity-60"
+          >
+            <option value="all">Todos os anos</option>
+            {availableYears.map((year) => (
+              <option key={year} value={String(year)}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select
+            value={monthFilter}
+            onChange={(e) => setMonthFilter(e.target.value)}
+            disabled={scopeFilter === "today"}
+            className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100 disabled:opacity-60"
+          >
+            <option value="all">Todos os meses</option>
+            {availableMonths.map((month) => (
+              <option key={month} value={String(month)}>
+                {MONTH_LABELS[month - 1]}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => mutate()}
+            className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
+          >
+            Atualizar
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -581,10 +811,21 @@ export default function HistoricoPartidasAdmin() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredMatches.map((match) => {
-            const hasResult = matchHasResult(match);
+          {filteredMatches.map((item) => {
+            const { match, status, hasResult } = item;
             const scoreLabel = hasResult ? `${match.scoreA} x ${match.scoreB}` : "-- x --";
-            const statusLabel = hasResult ? "Finalizada" : "Aguardando resultado";
+            const statusLabel =
+              status === "open"
+                ? "Sem resultado"
+                : status === "progress"
+                  ? "Em andamento"
+                  : "Finalizada";
+            const statusClass =
+              status === "open"
+                ? "bg-yellow-500/20 text-yellow-200"
+                : status === "progress"
+                  ? "bg-cyan-500/20 text-cyan-200"
+                  : "bg-green-600/20 text-green-200";
 
             return (
               <div
@@ -601,11 +842,7 @@ export default function HistoricoPartidasAdmin() {
                     </p>
                   </div>
                   <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                      hasResult
-                        ? "bg-green-600/20 text-green-200"
-                        : "bg-yellow-500/20 text-yellow-200"
-                    }`}
+                    className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusClass}`}
                   >
                     {statusLabel}
                   </span>
@@ -647,7 +884,11 @@ export default function HistoricoPartidasAdmin() {
 
                 <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="text-xs text-neutral-500">
-                    {hasResult ? "Resultado registrado" : "Sem resultado"}
+                    {status === "open"
+                      ? "Sem resultado"
+                      : status === "progress"
+                        ? "Em andamento"
+                        : "Resultado registrado"}
                   </div>
                   <button
                     type="button"
