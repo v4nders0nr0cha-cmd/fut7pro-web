@@ -6,33 +6,35 @@ import { useSearchParams } from "next/navigation";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
+const anoAtual = new Date().getFullYear();
+
+const periodos = [
+  { label: "1o Quadrimestre", value: "q1" },
+  { label: "2o Quadrimestre", value: "q2" },
+  { label: "3o Quadrimestre", value: "q3" },
+  { label: "Temporada Atual", value: "temporada" },
+  { label: "Todas as Temporadas", value: "todas" },
+];
+
 export default function ClassificacaoTimesPage() {
   const searchParams = useSearchParams();
   const yearQuery = parseYear(searchParams.get("year"));
-  const [year, setYear] = useState<number | undefined>(yearQuery ?? undefined);
+  const [periodo, setPeriodo] = useState(normalizePeriodo(searchParams.get("period")));
   const { publicSlug } = usePublicLinks();
+  const anoReferencia = yearQuery ?? anoAtual;
 
-  const { teams, availableYears, isLoading, isError, error } = usePublicTeamRankings({
-    slug: publicSlug,
-    year,
-  });
-
-  const anosOrdenados = [...availableYears].sort((a, b) => b - a);
-  const anoSelecionado = year ?? anosOrdenados[0];
-
-  const handleYearChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = event.target.value;
-    if (!value) {
-      setYear(undefined);
-      return;
-    }
-    const parsed = Number(value);
-    if (Number.isNaN(parsed)) {
-      setYear(undefined);
-    } else {
-      setYear(parsed);
-    }
-  };
+  const { teams, isLoading, isError, error } = usePublicTeamRankings(
+    periodo === "temporada"
+      ? { slug: publicSlug, period: "year", year: anoReferencia }
+      : periodo === "todas"
+        ? { slug: publicSlug, period: "all" }
+        : {
+            slug: publicSlug,
+            period: "quarter",
+            year: anoReferencia,
+            quarter: Number(periodo.replace("q", "")) as 1 | 2 | 3,
+          }
+  );
 
   return (
     <>
@@ -59,26 +61,24 @@ export default function ClassificacaoTimesPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center">
             Classificação dos Times
           </h2>
-          {anosOrdenados.length > 0 && (
-            <select
-              value={anoSelecionado ?? ""}
-              onChange={handleYearChange}
-              className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
-              aria-label="Selecionar temporada da classificação"
-            >
-              {anosOrdenados.map((ano) => (
-                <option key={ano} value={ano}>
-                  Temporada {ano}
-                </option>
-              ))}
-            </select>
-          )}
+          <select
+            value={periodo}
+            onChange={(e) => setPeriodo(e.target.value)}
+            className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+            aria-label="Selecionar periodo da classificacao"
+          >
+            {periodos.map((opcao) => (
+              <option key={opcao.value} value={opcao.value}>
+                {opcao.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <p className="text-center text-sm text-gray-400 mb-6 max-w-2xl mx-auto">
-          Veja a <b>classificação dos times</b> baseada no <b>snapshot oficial</b> de cada
-          temporada. Os dados são calculados a partir das partidas registradas no painel admin,
-          respeitando o contexto multi-tenant do seu racha no Fut7Pro.
+          Veja a <b>classificacao dos times</b> baseada nas partidas registradas no painel admin.
+          Selecione 1o, 2o, 3o Quadrimestre, Temporada Atual ou Todas as Temporadas para comparar o
+          desempenho dos times no seu racha.
         </p>
 
         {/* Tabela responsiva, com scroll dark sempre garantido */}
@@ -158,4 +158,13 @@ function parseYear(value: string | null) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return null;
   return parsed;
+}
+
+function normalizePeriodo(value: string | null) {
+  if (!value) return "temporada";
+  const lower = value.toLowerCase();
+  if (lower === "anual" || lower === "year") return "temporada";
+  if (lower === "all" || lower === "historico") return "todas";
+  if (["q1", "q2", "q3", "temporada", "todas"].includes(lower)) return lower;
+  return "temporada";
 }

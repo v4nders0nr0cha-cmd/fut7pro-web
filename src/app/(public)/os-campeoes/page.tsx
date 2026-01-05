@@ -128,9 +128,15 @@ export default function CampeoesPage() {
     rankingAno.availableYears.forEach((year) => combined.add(year));
     rankingTimesAno.availableYears.forEach((year) => combined.add(year));
     const list = Array.from(combined).filter((year) => Number.isFinite(year));
-    if (!list.length) return [CURRENT_YEAR];
-    return list.sort((a, b) => a - b);
-  }, [rankingAno.availableYears, rankingTimesAno.availableYears]);
+    const createdYear = resolveYearFromDate(tenantCreatedAt);
+    const minYear = createdYear ?? (list.length ? Math.min(...list) : CURRENT_YEAR);
+    const maxYear = Math.max(CURRENT_YEAR, createdYear ?? CURRENT_YEAR, ...list);
+    const range: number[] = [];
+    for (let year = minYear; year <= maxYear; year += 1) {
+      range.push(year);
+    }
+    return range.length ? range : [CURRENT_YEAR];
+  }, [rankingAno.availableYears, rankingTimesAno.availableYears, tenantCreatedAt]);
 
   useEffect(() => {
     if (!anosDisponiveis.length) return;
@@ -559,6 +565,13 @@ function safeImage(src?: string | null, fallback: string = DEFAULT_PLAYER_IMAGE)
   if (!src) return fallback;
   const trimmed = src.trim();
   return trimmed ? trimmed : fallback;
+}
+
+function resolveYearFromDate(value?: string | null) {
+  if (!value) return undefined;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed.getFullYear();
 }
 
 function pickTopByMetric(list: RankingAtleta[], metric: "pontos" | "gols" | "assistencias") {
