@@ -2,9 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { format } from "date-fns";
-import { useSearchParams } from "next/navigation";
+import { FaExclamationTriangle } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
@@ -88,27 +87,21 @@ function formatTime(value?: Date | null) {
   return format(value, "HH:mm");
 }
 
-function toInputDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseInputDate(value: string) {
-  if (!value) return null;
-  const [year, month, day] = value.split("-").map(Number);
-  if (!year || !month || !day) return null;
-  const date = new Date(year, month - 1, day);
-  if (Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
 function parseMatchDate(value?: string | null) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
   return date;
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date: Date, offset: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + offset);
+  return next;
 }
 
 function isSameLocalDay(left: Date, right: Date) {
@@ -994,27 +987,15 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 }
 
 export default function ResultadosDoDiaAdmin() {
-  const searchParams = useSearchParams();
-  const dateParam = searchParams.get("date") ?? "";
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
-  const [selectedDate, setSelectedDate] = useState<Date>(() => {
-    return parseInputDate(dateParam) ?? new Date();
-  });
   const [statusFilter, setStatusFilter] = useState<MatchFilter>("all");
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatus>>({});
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
+  const [showPendingAlert, setShowPendingAlert] = useState(true);
 
   useEffect(() => {
     setStatusMap(loadStatusMap());
   }, []);
-
-  useEffect(() => {
-    const parsed = parseInputDate(dateParam);
-    if (!parsed) return;
-    if (!isSameLocalDay(parsed, selectedDate)) {
-      setSelectedDate(parsed);
-    }
-  }, [dateParam, selectedDate]);
 
   const updateStatus = (matchId: string, status: MatchStatus) => {
     setStatusMap((prev) => {
@@ -1024,20 +1005,49 @@ export default function ResultadosDoDiaAdmin() {
     });
   };
 
-  const matchCards = useMemo(() => {
-    const filtered = matches
+  const { activeLabel, matchCards } = useMemo(() => {
+    const today = startOfDay(new Date());
+    const yesterday = addDays(today, -1);
+
+    const entries = matches
       .map((match) => {
         const date = parseMatchDate(match.date);
-        return { match, date };
+        if (!date) return null;
+        return {
+          match,
+          date,
+          status: resolveMatchStatus(match, statusMap),
+        };
       })
-      .filter((item) => item.date && isSameLocalDay(item.date, selectedDate));
+      .filter(Boolean) as Array<{ match: PublicMatch; date: Date; status: MatchStatus }>;
 
-    filtered.sort((a, b) => {
-      if (!a.date || !b.date) return 0;
-      return a.date.getTime() - b.date.getTime();
-    });
+    const todayEntries = entries.filter((entry) => isSameLocalDay(entry.date, today));
+    const pendingYesterday = entries.filter(
+      (entry) => isSameLocalDay(entry.date, yesterday) && entry.status !== "finished"
+    );
+    const futureEntries = entries
+      .filter((entry) => startOfDay(entry.date).getTime() > today.getTime())
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    return filtered.map((item, index) => {
+    let activeDate = today;
+    let filtered: Array<{ match: PublicMatch; date: Date; status: MatchStatus }> = [];
+    let activeLabelValue = "";
+
+    if (todayEntries.length > 0) {
+      activeDate = today;
+      filtered = todayEntries.sort((a, b) => a.date.getTime() - b.date.getTime());
+      activeLabelValue = `Jogos de hoje - ${format(activeDate, "dd/MM/yyyy")}`;
+    } else if (pendingYesterday.length > 0) {
+      activeDate = yesterday;
+      filtered = pendingYesterday.sort((a, b) => a.date.getTime() - b.date.getTime());
+      activeLabelValue = `Jogos pendentes de ontem - ${format(activeDate, "dd/MM/yyyy")}`;
+    } else if (futureEntries.length > 0) {
+      activeDate = startOfDay(futureEntries[0].date);
+      filtered = futureEntries.filter((entry) => isSameLocalDay(entry.date, activeDate));
+      activeLabelValue = `Proximo jogo em ${format(activeDate, "dd/MM/yyyy")}`;
+    }
+
+    const cards = filtered.map((item, index) => {
       const teamAId = item.match.teamA.id ?? "team-a";
       const teamBId = item.match.teamB.id ?? "team-b";
       const goalsA = countPresenceGoals(item.match, teamAId, teamAId, teamBId);
@@ -1049,12 +1059,44 @@ export default function ResultadosDoDiaAdmin() {
         match: item.match,
         date: item.date ?? null,
         order: index + 1,
-        status: resolveMatchStatus(item.match, statusMap),
+        status: item.status,
         scoreA,
         scoreB,
       } as MatchCard;
     });
-  }, [matches, selectedDate, statusMap]);
+
+    return {
+      activeLabel: activeLabelValue,
+      matchCards: cards,
+    };
+  }, [matches, statusMap]);
+
+  const pendingInfo = useMemo(() => {
+    const today = startOfDay(new Date());
+    const pending = matches
+      .map((match) => {
+        const date = parseMatchDate(match.date);
+        if (!date) return null;
+        return {
+          date,
+          status: resolveMatchStatus(match, statusMap),
+        };
+      })
+      .filter(Boolean)
+      .filter((item) => {
+        const day = startOfDay((item as { date: Date }).date);
+        return (
+          day.getTime() < today.getTime() && (item as { status: MatchStatus }).status !== "finished"
+        );
+      }) as Array<{ date: Date; status: MatchStatus }>;
+
+    if (!pending.length) return null;
+    pending.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return {
+      count: pending.length,
+      oldestDate: pending[0].date,
+    };
+  }, [matches, statusMap]);
 
   const filteredCards = useMemo(() => {
     if (statusFilter === "all") return matchCards;
@@ -1073,6 +1115,28 @@ export default function ResultadosDoDiaAdmin() {
 
   return (
     <div className="space-y-6">
+      {pendingInfo && showPendingAlert && (
+        <div className="mb-2">
+          <div className="relative flex items-center gap-3 rounded-lg border-l-4 border-yellow-400 bg-yellow-900/70 px-4 py-3 text-sm font-semibold text-yellow-200 shadow">
+            <FaExclamationTriangle className="text-yellow-300 text-lg" />
+            <span>
+              Atencao: {pendingInfo.count} {pendingInfo.count === 1 ? "confronto" : "confrontos"}{" "}
+              sem resultado pendente
+              {pendingInfo.count === 1 ? "" : "s"} desde{" "}
+              {format(pendingInfo.oldestDate, "dd/MM/yyyy")}. Publique os resultados para atualizar
+              rankings e historico.
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowPendingAlert(false)}
+              className="absolute right-3 top-2 text-lg text-yellow-200 hover:text-white"
+              aria-label="Fechar alerta"
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
@@ -1082,20 +1146,9 @@ export default function ResultadosDoDiaAdmin() {
             Lance placares e gols em tempo real. Ao finalizar, rankings e perfis sao atualizados
             automaticamente.
           </p>
+          {activeLabel && <p className="mt-2 text-xs text-yellow-200">{activeLabel}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex flex-col">
-            <label className="text-xs text-neutral-400 mb-1">Data</label>
-            <input
-              type="date"
-              value={toInputDate(selectedDate)}
-              onChange={(e) => {
-                const nextDate = parseInputDate(e.target.value);
-                if (nextDate) setSelectedDate(nextDate);
-              }}
-              className="rounded-lg border border-neutral-800 bg-[#101010] px-3 py-2 text-xs text-neutral-100"
-            />
-          </div>
           {AUTO_SAVE_ENABLED && (
             <div className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs text-green-200">
               Auto salvar: ativado
@@ -1138,23 +1191,9 @@ export default function ResultadosDoDiaAdmin() {
       ) : matchCards.length === 0 ? (
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-8 text-center">
           <p className="text-sm text-neutral-300 mb-4">
-            Nenhum confronto do dia encontrado. Publique o Sorteio Inteligente ou crie uma Partida
-            Classica.
+            Nenhum confronto do dia encontrado. Quando houver jogos publicados para o dia, eles
+            aparecem aqui para lancamento em tempo real.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              href="/admin/partidas/sorteio-inteligente"
-              className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
-            >
-              Publicar Sorteio Inteligente
-            </Link>
-            <Link
-              href="/admin/partidas/criar/classica"
-              className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
-            >
-              Criar Partida Classica
-            </Link>
-          </div>
         </div>
       ) : filteredCards.length === 0 ? (
         <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
