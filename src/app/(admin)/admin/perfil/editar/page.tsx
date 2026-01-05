@@ -47,6 +47,7 @@ export default function EditarPerfilPage() {
     firstName: me.athlete.firstName || "",
     nickname: me.athlete.nickname || "",
     position: normalizePosition(me.athlete.position),
+    positionSecondary: normalizePosition(me.athlete.positionSecondary),
     avatarUrl: me.athlete.avatarUrl || null,
   };
   const tenantSlug = me.tenant?.tenantSlug || null;
@@ -78,6 +79,7 @@ export default function EditarPerfilPage() {
         firstName: values.firstName.trim(),
         nickname: values.nickname.trim(),
         position: values.position,
+        positionSecondary: values.positionSecondary || null,
       };
       if (typeof avatarUrl !== "undefined") {
         payload.avatarUrl = avatarUrl;

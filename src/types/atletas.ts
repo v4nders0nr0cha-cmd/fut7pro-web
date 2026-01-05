@@ -41,6 +41,7 @@ export interface Atleta {
   slug: string;
   foto: string;
   posicao: PosicaoAtleta;
+  posicaoSecundaria?: PosicaoAtleta | null;
   status: StatusAtleta;
   mensalista: boolean;
   ultimaPartida?: string;

@@ -15,6 +15,7 @@ export type ProfileFormValues = {
   firstName: string;
   nickname: string;
   position: Posicao;
+  positionSecondary?: Posicao | null;
   avatarUrl?: string | null;
 };
 
@@ -38,6 +39,9 @@ export default function ProfileForm({
   const [firstName, setFirstName] = useState(initialValues.firstName);
   const [nickname, setNickname] = useState(initialValues.nickname);
   const [position, setPosition] = useState<Posicao>(initialValues.position);
+  const [positionSecondary, setPositionSecondary] = useState<Posicao | "">(
+    initialValues.positionSecondary ?? ""
+  );
   const [avatarPreview, setAvatarPreview] = useState<string>(
     initialValues.avatarUrl || DEFAULT_AVATAR
   );
@@ -69,6 +73,7 @@ export default function ProfileForm({
     setFirstName(initialValues.firstName);
     setNickname(initialValues.nickname);
     setPosition(initialValues.position);
+    setPositionSecondary(initialValues.positionSecondary ?? "");
     setAvatarPreview(initialValues.avatarUrl || DEFAULT_AVATAR);
     setAvatarFile(null);
   }, [initialValues]);
@@ -80,6 +85,9 @@ export default function ProfileForm({
     if (trimmed.length > 10) return "Maximo de 10 caracteres.";
     if (nickname.trim().length > 10) return "Apelido com maximo de 10 caracteres.";
     if (!position) return "Selecione a posicao.";
+    if (positionSecondary && positionSecondary === position) {
+      return "Posicao secundaria nao pode ser igual a principal.";
+    }
     return null;
   }
 
@@ -124,6 +132,7 @@ export default function ProfileForm({
       firstName: firstName.trim(),
       nickname: nickname.trim(),
       position,
+      positionSecondary: positionSecondary || null,
       avatarUrl: initialValues.avatarUrl ?? null,
       avatarFile,
     });
@@ -191,6 +200,22 @@ export default function ProfileForm({
                 className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
               >
                 <option value="">Selecione</option>
+                {POSICOES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="text-sm text-zinc-300">
+              Posicao secundaria
+              <select
+                value={positionSecondary}
+                onChange={(e) => setPositionSecondary(e.target.value as Posicao | "")}
+                disabled={saving}
+                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+              >
+                <option value="">Nenhuma</option>
                 {POSICOES.map((item) => (
                   <option key={item} value={item}>
                     {item}

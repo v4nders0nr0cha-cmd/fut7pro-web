@@ -21,6 +21,8 @@ export type Jogador = {
   nascimento?: string;
   posicao: PosicaoJogador;
   position?: PosicaoJogador;
+  posicaoSecundaria?: PosicaoJogador | null;
+  positionSecondary?: PosicaoJogador | null;
   avatar: string;
   foto?: string;
   photoUrl?: string | null;
@@ -55,5 +57,6 @@ export type AtletaPendente = {
   email: string;
   apelido: string;
   posicao: PosicaoJogador;
+  posicaoSecundaria?: PosicaoJogador | null;
   avatar: string;
 };

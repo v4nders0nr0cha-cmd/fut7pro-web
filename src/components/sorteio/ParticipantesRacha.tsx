@@ -18,7 +18,7 @@ interface Props {
   setParticipantes: (p: Participante[]) => void;
 }
 
-function normalizarPosicao(posicao?: Jogador["posicao"]): Posicao {
+function normalizarPosicao(posicao?: Jogador["posicao"] | Jogador["posicaoSecundaria"]): Posicao {
   const value = String(posicao || "").toLowerCase();
   if (value.startsWith("gol")) return "GOL";
   if (value.startsWith("zag")) return "ZAG";
@@ -218,6 +218,9 @@ export default function ParticipantesRacha({
         slug: slugify(jogador.nome || jogador.apelido || jogador.id),
         foto: jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg",
         posicao: normalizarPosicao(jogador.posicao),
+        posicaoSecundaria: jogador.posicaoSecundaria
+          ? normalizarPosicao(jogador.posicaoSecundaria)
+          : undefined,
         rankingPontos: rankingMap[jogador.id] ?? 0,
         vitorias: 0,
         assistencias: 0,

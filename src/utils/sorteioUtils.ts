@@ -1,6 +1,6 @@
 // src/utils/sorteioUtils.ts
 
-import type { Participante, TimeSorteado, SorteioHistoricoItem } from "@/types/sorteio";
+import type { Participante, Posicao, TimeSorteado, SorteioHistoricoItem } from "@/types/sorteio";
 
 export type Time = { id: string; nome: string; logo: string };
 
@@ -148,6 +148,133 @@ function recalcularTimes(times: TimeSorteado[], contexto: CoeficienteContext) {
   });
 }
 
+type AjustePosicaoResult = {
+  participantes: Participante[];
+  goleirosSelecionados: Participante[];
+  avisos: string[];
+};
+
+type ParticipanteAjustado = Participante & {
+  posicaoPrincipal: Posicao;
+  posicaoSecundaria?: Posicao;
+};
+
+function ajustarPosicoesSecundarias(
+  participantes: Participante[],
+  quantidadeTimes: number,
+  contexto: CoeficienteContext
+): AjustePosicaoResult {
+  if (!quantidadeTimes) {
+    return { participantes, goleirosSelecionados: [], avisos: [] };
+  }
+
+  const avisos: string[] = [];
+  const base: ParticipanteAjustado[] = participantes.map((p) => {
+    const posicaoPrincipal = p.posicao;
+    const posicaoSecundaria =
+      p.posicaoSecundaria && p.posicaoSecundaria !== posicaoPrincipal
+        ? p.posicaoSecundaria
+        : undefined;
+    return {
+      ...p,
+      posicao: posicaoPrincipal,
+      posicaoPrincipal,
+      posicaoSecundaria,
+    };
+  });
+
+  const primaryGoalies = base.filter((p) => p.posicaoPrincipal === "GOL");
+  const secondaryGoalies = base.filter(
+    (p) => p.posicaoPrincipal !== "GOL" && p.posicaoSecundaria === "GOL"
+  );
+  const totalGoalkeepers = primaryGoalies.length + secondaryGoalies.length;
+  if (totalGoalkeepers < quantidadeTimes) {
+    throw new Error(
+      `Goleiros insuficientes: ${totalGoalkeepers}/${quantidadeTimes}. Selecione mais goleiros.`
+    );
+  }
+
+  const sortByCoefDesc = <T extends Participante>(list: T[]) =>
+    [...list].sort((a, b) => getCoeficiente(b, contexto) - getCoeficiente(a, contexto));
+  const primarySorted = sortByCoefDesc(primaryGoalies);
+  const secondarySorted = sortByCoefDesc(secondaryGoalies);
+
+  const goleirosSelecionados = primarySorted.slice(0, quantidadeTimes);
+  const faltando = quantidadeTimes - goleirosSelecionados.length;
+  if (faltando > 0) {
+    avisos.push("Goleiros insuficientes na posicao principal. Secundarias foram usadas.");
+    goleirosSelecionados.push(...secondarySorted.slice(0, faltando));
+  }
+
+  const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
+
+  const ajustados: ParticipanteAjustado[] = base.map((p) => {
+    if (goleirosIds.has(p.id)) {
+      return { ...p, posicao: "GOL" };
+    }
+    if (p.posicaoPrincipal === "GOL" && p.posicaoSecundaria && p.posicaoSecundaria !== "GOL") {
+      return { ...p, posicao: p.posicaoSecundaria };
+    }
+    return { ...p, posicao: p.posicaoPrincipal };
+  });
+
+  const counts: Record<"GOL" | "ZAG" | "MEI" | "ATA", number> = {
+    GOL: 0,
+    ZAG: 0,
+    MEI: 0,
+    ATA: 0,
+  };
+  ajustados.forEach((p) => {
+    counts[p.posicao] = (counts[p.posicao] ?? 0) + 1;
+  });
+
+  const targetPorLinha = quantidadeTimes;
+  const linhas = ["ZAG", "MEI", "ATA"] as const;
+  const shortages = linhas
+    .map((pos) => ({
+      pos,
+      shortage: Math.max(0, targetPorLinha - counts[pos]),
+    }))
+    .filter((item) => item.shortage > 0)
+    .sort((a, b) => b.shortage - a.shortage);
+
+  shortages.forEach((item) => {
+    let faltam = item.shortage;
+    while (faltam > 0) {
+      const candidatos = ajustados.filter(
+        (p) => p.posicao !== "GOL" && p.posicao !== item.pos && p.posicaoSecundaria === item.pos
+      );
+      if (!candidatos.length) {
+        avisos.push(`Posicao ${item.pos} insuficiente mesmo com secundarias.`);
+        break;
+      }
+
+      candidatos.sort((a, b) => {
+        const surplusA = counts[a.posicao] - targetPorLinha;
+        const surplusB = counts[b.posicao] - targetPorLinha;
+        if (surplusA !== surplusB) {
+          return surplusB - surplusA;
+        }
+        return getCoeficiente(a, contexto) - getCoeficiente(b, contexto);
+      });
+
+      const escolhido = candidatos[0]!;
+      counts[escolhido.posicao] -= 1;
+      escolhido.posicao = item.pos;
+      counts[item.pos] += 1;
+      faltam -= 1;
+    }
+  });
+
+  const goleirosSelecionadosAjustados = ajustados.filter((p) => goleirosIds.has(p.id));
+
+  return {
+    participantes: ajustados,
+    goleirosSelecionados: sortByCoefDesc(goleirosSelecionadosAjustados),
+    avisos,
+  };
+}
+
 function distribuirComCusto({
   jogadores,
   times,
@@ -234,6 +361,11 @@ export function sortearTimesInteligente(
     sorteiosPublicadosNaTemporada: contexto.sorteiosPublicadosNaTemporada,
   };
   const pairWeights = buildPairWeights(contexto.historico ?? []);
+  const ajustes = ajustarPosicoesSecundarias(participantes, quantidadeTimes, coefContext);
+  const participantesAjustados = ajustes.participantes;
+  if (ajustes.avisos.length) {
+    avisos.push(...ajustes.avisos);
+  }
 
   // 1. Inicializar times
   const times: TimeSorteado[] = timesSelecionados.map((t) => ({
@@ -246,18 +378,11 @@ export function sortearTimesInteligente(
   }));
 
   // 2. Garantir 1 goleiro por time
-  const goleiros = participantes.filter((p) => p.posicao === "GOL");
-  if (goleiros.length < quantidadeTimes) {
-    throw new Error(
-      `Goleiros insuficientes: ${goleiros.length}/${quantidadeTimes}. Selecione mais goleiros.`
-    );
-  }
-
-  const goleirosOrdenados = [...goleiros].sort(
-    (a, b) => getCoeficiente(b, coefContext) - getCoeficiente(a, coefContext)
+  const goleirosSelecionados = ajustes.goleirosSelecionados;
+  const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
+  const goleirosReservas = participantesAjustados.filter(
+    (p) => p.posicao === "GOL" && !goleirosIds.has(p.id)
   );
-  const goleirosSelecionados = goleirosOrdenados.slice(0, quantidadeTimes);
-  const goleirosReservas = goleirosOrdenados.slice(quantidadeTimes);
 
   if (goleirosReservas.length) {
     reservas.push(...goleirosReservas);
@@ -273,8 +398,7 @@ export function sortearTimesInteligente(
     time.coeficienteTotal += getCoeficiente(goleiro, coefContext);
   });
 
-  const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
-  const participantesAtivos = participantes.filter(
+  const participantesAtivos = participantesAjustados.filter(
     (p) => p.posicao !== "GOL" || goleirosIds.has(p.id)
   );
 

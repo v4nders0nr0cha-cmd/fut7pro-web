@@ -13,6 +13,7 @@ export type MeAthlete = {
   firstName: string;
   nickname?: string | null;
   position?: string | null;
+  positionSecondary?: string | null;
   avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;

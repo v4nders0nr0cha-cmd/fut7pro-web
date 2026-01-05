@@ -111,6 +111,12 @@ export default function PerfilAdmin() {
               {formatPosition(me.athlete.position)}
             </div>
             <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
+              <span className="text-zinc-400">Posicao secundaria: </span>
+              {me.athlete.positionSecondary
+                ? formatPosition(me.athlete.positionSecondary)
+                : "Nao informado"}
+            </div>
+            <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
               <span className="text-zinc-400">Status: </span>
               {me.athlete.status || "Nao informado"}
             </div>

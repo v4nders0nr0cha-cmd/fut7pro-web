@@ -35,6 +35,7 @@ export default function JogadorForm({
       status: "Ativo",
       mensalista: false,
       posicao: "atacante",
+      posicaoSecundaria: null,
     }
   );
   const [fotoFile, setFotoFile] = useState<File | null>(null);
@@ -77,6 +78,7 @@ export default function JogadorForm({
         status: "Ativo",
         mensalista: false,
         posicao: "atacante",
+        posicaoSecundaria: null,
       });
       setFotoPreview("");
       setFotoFile(null);
@@ -122,6 +124,12 @@ export default function JogadorForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const posicaoPrimaria = String(form.posicao || "").toLowerCase();
+    const posicaoSec = String(form.posicaoSecundaria || "").toLowerCase();
+    if (posicaoSec && posicaoPrimaria === posicaoSec) {
+      toast.error("Posicao secundaria nao pode ser igual a principal.");
+      return;
+    }
     if (onSave) onSave(form, fotoFile);
   }
 
@@ -234,6 +242,24 @@ export default function JogadorForm({
             />
             Mensalista
           </label>
+        </div>
+      </div>
+      <div className="flex gap-4">
+        <div className="flex-1">
+          <label className="block font-medium text-yellow-500 mb-1">Posicao secundaria</label>
+          <select
+            name="posicaoSecundaria"
+            value={form.posicaoSecundaria ?? ""}
+            onChange={handleChange}
+            className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+          >
+            <option value="">Nenhuma</option>
+            {POSICOES.map((pos) => (
+              <option key={pos.value} value={pos.value}>
+                {pos.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       <div className="flex gap-4">

@@ -63,6 +63,16 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
     const posicao = jogador.posicao ?? jogador.position;
     if (posicao !== undefined) payload.position = String(posicao).toLowerCase();
 
+    const posicaoSecundaria = jogador.posicaoSecundaria ?? jogador.positionSecondary;
+    if (posicaoSecundaria !== undefined) {
+      if (posicaoSecundaria === null) {
+        payload.positionSecondary = null;
+      } else {
+        const normalized = String(posicaoSecundaria).toLowerCase().trim();
+        payload.positionSecondary = normalized || null;
+      }
+    }
+
     const foto = jogador.foto ?? jogador.photoUrl ?? jogador.avatar;
     if (foto !== undefined) payload.photoUrl = foto || null;
 
@@ -112,6 +122,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       const nome = jogador?.nome ?? jogador?.name ?? jogador?.user?.name ?? "";
       const apelido = jogador?.apelido ?? jogador?.nickname ?? "";
       const posicao = jogador?.posicao ?? jogador?.position ?? "Meia";
+      const posicaoSecundaria = jogador?.posicaoSecundaria ?? jogador?.positionSecondary ?? null;
       const avatar = jogador?.avatar ?? jogador?.photoUrl ?? jogador?.foto ?? "";
       const foto = jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
       const mensalista =
@@ -128,6 +139,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         nome,
         apelido,
         posicao,
+        posicaoSecundaria,
         avatar,
         foto,
         mensalista,

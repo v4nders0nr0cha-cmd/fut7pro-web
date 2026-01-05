@@ -244,6 +244,9 @@ export default function PerfilUsuarioPage() {
               </span>
             )}
             <p className="text-sm">Posição: {usuario.posicao}</p>
+            <p className="text-sm">
+              Posicao secundaria: {usuario.posicaoSecundaria || "Nao informado"}
+            </p>
             <p
               className="text-sm text-zinc-300"
               title={`Último jogo: ${usuario.ultimaPartida ?? "Data não registrada"}`}

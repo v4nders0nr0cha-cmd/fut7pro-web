@@ -115,6 +115,12 @@ export default function TimesGerados({
     const temNivel = typeof habilidade === "number" && typeof fisico === "number";
     const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Fisico ${typeof fisico === "number" ? fisico : "-"}`;
     const nivelTexto = formatNivel(temNivel ? nivelFinal : null);
+    const posicaoPrincipal = jogador.posicaoPrincipal;
+    const usandoSecundaria = posicaoPrincipal && posicaoPrincipal !== jogador.posicao;
+    const posicaoLabel = usandoSecundaria ? `${jogador.posicao} (sec)` : jogador.posicao;
+    const posicaoTitle = usandoSecundaria
+      ? `Posicao principal: ${posicaoPrincipal}`
+      : jogador.posicao;
 
     return (
       <div
@@ -136,7 +142,9 @@ export default function TimesGerados({
           className="rounded-full"
         />
         <span className="text-sm font-semibold">{jogador.nome}</span>
-        <span className="text-xs text-gray-400">{jogador.posicao}</span>
+        <span className="text-xs text-gray-400" title={posicaoTitle}>
+          {posicaoLabel}
+        </span>
         <div className="ml-2 flex items-center gap-1" title={tooltip}>
           <StarRatingDisplay value={nivelFinal} size={12} />
           <span className="text-xs text-yellow-300">Nivel {nivelTexto}</span>

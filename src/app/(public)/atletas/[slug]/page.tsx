@@ -254,6 +254,11 @@ export default function PerfilAtletaPage() {
                 <span className="inline-flex items-center rounded-full border border-yellow-400 px-3 py-1 text-xs text-yellow-300">
                   Posicao: {formatPosition(athlete.position)}
                 </span>
+                {athlete.positionSecondary && (
+                  <span className="inline-flex items-center rounded-full border border-yellow-400 px-3 py-1 text-xs text-yellow-300">
+                    Posicao secundaria: {formatPosition(athlete.positionSecondary)}
+                  </span>
+                )}
                 <span className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
                   Status: {athlete.status || "Nao informado"}
                 </span>

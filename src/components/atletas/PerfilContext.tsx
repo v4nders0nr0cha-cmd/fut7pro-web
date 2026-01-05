@@ -22,6 +22,7 @@ type PerfilUpdatePayload = {
   firstName: string;
   nickname: string;
   position: PosicaoAtleta;
+  positionSecondary?: PosicaoAtleta | null;
   avatarFile?: File | null;
 };
 
@@ -72,6 +73,11 @@ function normalizePosition(value?: string | null): PosicaoAtleta {
   return "Atacante";
 }
 
+function normalizeOptionalPosition(value?: string | null): PosicaoAtleta | null {
+  if (!value) return null;
+  return normalizePosition(value);
+}
+
 function normalizeStatus(value?: string | null): StatusAtleta {
   if (!value) return "Ativo";
   const normalized = value.trim().toLowerCase();
@@ -101,6 +107,7 @@ function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): At
     slug: me?.athlete?.slug || slugify(nome),
     foto,
     posicao: normalizePosition(me?.athlete?.position),
+    posicaoSecundaria: normalizeOptionalPosition(me?.athlete?.positionSecondary),
     status: normalizeStatus(me?.athlete?.status),
     mensalista,
     ultimaPartida: undefined,
@@ -173,6 +180,9 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
         nickname: dados.nickname.trim(),
         position: dados.position,
       };
+      if (dados.positionSecondary !== undefined) {
+        payload.positionSecondary = dados.positionSecondary ?? null;
+      }
       if (typeof avatarUrl !== "undefined") {
         payload.avatarUrl = avatarUrl;
       }

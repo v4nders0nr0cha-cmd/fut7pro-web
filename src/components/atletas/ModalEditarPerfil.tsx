@@ -15,6 +15,9 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
   const [nome, setNome] = useState(usuario?.nome || "");
   const [apelido, setApelido] = useState(usuario?.apelido || "");
   const [posicao, setPosicao] = useState<PosicaoAtleta | "">(usuario?.posicao || "");
+  const [posicaoSecundaria, setPosicaoSecundaria] = useState<PosicaoAtleta | "">(
+    usuario?.posicaoSecundaria || ""
+  );
   const [fotoPreview, setFotoPreview] = useState(usuario?.foto || DEFAULT_AVATAR);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [erro, setErro] = useState("");
@@ -26,6 +29,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
     setNome(usuario.nome || "");
     setApelido(usuario.apelido || "");
     setPosicao(usuario.posicao || "");
+    setPosicaoSecundaria(usuario.posicaoSecundaria || "");
     setFotoPreview(usuario.foto || DEFAULT_AVATAR);
     setFotoFile(null);
   }, [usuario]);
@@ -77,6 +81,11 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       setErro("Selecione a posicao.");
       return;
     }
+    const posicaoSecundariaSelecionada = (posicaoSecundaria || "") as PosicaoAtleta | "";
+    if (posicaoSecundariaSelecionada && posicaoSecundariaSelecionada === posicaoSelecionada) {
+      setErro("Posicao secundaria nao pode ser igual a principal.");
+      return;
+    }
 
     setErro("");
     try {
@@ -85,6 +94,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
         firstName: trimmedNome,
         nickname: trimmedApelido,
         position: posicaoSelecionada,
+        positionSecondary: posicaoSecundariaSelecionada || null,
         avatarFile: fotoFile ?? undefined,
       });
       setSucesso(true);
@@ -177,6 +187,21 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
             >
               <option value="">Selecione</option>
+              <option value="Goleiro">Goleiro</option>
+              <option value="Zagueiro">Zagueiro</option>
+              <option value="Meia">Meia</option>
+              <option value="Atacante">Atacante</option>
+            </select>
+          </label>
+          <label className="text-sm text-yellow-300">
+            Posicao secundaria (opcional)
+            <select
+              value={posicaoSecundaria}
+              onChange={(e) => setPosicaoSecundaria(e.target.value as PosicaoAtleta | "")}
+              disabled={salvando}
+              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
+            >
+              <option value="">Nenhuma</option>
               <option value="Goleiro">Goleiro</option>
               <option value="Zagueiro">Zagueiro</option>
               <option value="Meia">Meia</option>

@@ -28,6 +28,8 @@ export interface Participante {
   slug: string;
   foto: string;
   posicao: Posicao;
+  posicaoPrincipal?: Posicao;
+  posicaoSecundaria?: Posicao;
   rankingPontos: number;
   vitorias: number;
   gols: number;
