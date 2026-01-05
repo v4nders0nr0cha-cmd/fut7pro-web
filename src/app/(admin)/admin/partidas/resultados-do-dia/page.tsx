@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import { Suspense } from "react";
 import ResultadosDoDiaAdmin from "@/components/admin/ResultadosDoDiaAdmin";
 
 export default function ResultadosDoDiaPage() {
@@ -20,7 +21,15 @@ export default function ResultadosDoDiaPage() {
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-10 px-4 bg-fundo min-h-screen text-white">
         <div className="max-w-6xl mx-auto">
-          <ResultadosDoDiaAdmin />
+          <Suspense
+            fallback={
+              <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-sm text-neutral-300">
+                Carregando resultados do dia...
+              </div>
+            }
+          >
+            <ResultadosDoDiaAdmin />
+          </Suspense>
         </div>
       </main>
     </>
