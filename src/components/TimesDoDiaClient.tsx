@@ -13,6 +13,7 @@ import type { PublicMatch, TimeDoDia } from "@/types/partida";
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_COLOR = "#facc15";
+const INTERVALO_TROCA_SEG = 85;
 
 type Confronto = {
   id: string;
@@ -223,7 +224,9 @@ function buildConfrontosPublicados(
     const tempo = confronto.tempo ?? duracaoPartidaMin ?? 0;
     let hora: string | undefined;
     if (base && tempo > 0) {
-      const inicio = new Date(base.getTime() + (ordem - 1) * tempo * 60000);
+      const intervaloMs = INTERVALO_TROCA_SEG * 1000;
+      const passoMs = tempo * 60000 + intervaloMs;
+      const inicio = new Date(base.getTime() + (ordem - 1) * passoMs);
       hora = inicio.toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
