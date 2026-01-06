@@ -1,16 +1,21 @@
 "use client";
 
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { usePartidas } from "@/hooks/usePartidas";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
 import BannerUpload from "@/components/admin/BannerUpload";
 import { buildDestaquesDoDia } from "@/utils/destaquesDoDia";
+import type { DestaqueDiaResponse } from "@/types/destaques";
 
 export default function TimeCampeaoDoDiaPage() {
-  const { partidas, isLoading, isError, error } = usePartidas();
-  const [bannerUrl, setBannerUrl] = useState<string | null>(null);
+  const { partidas, isLoading, isError, error, mutate } = usePartidas();
+  const [destaqueDia, setDestaqueDia] = useState<DestaqueDiaResponse | null>(null);
+  const [isFetchingDestaque, setIsFetchingDestaque] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
 
   const { confrontos, times, dataReferencia } = useMemo(
@@ -19,7 +24,138 @@ export default function TimeCampeaoDoDiaPage() {
   );
 
   const hasDados = confrontos.length > 0 && times.length > 0;
-  const dataLabel = dataReferencia ? new Date(dataReferencia).toLocaleDateString("pt-BR") : null;
+  const dataKey = useMemo(() => {
+    if (!dataReferencia) return null;
+    const date = new Date(dataReferencia);
+    if (Number.isNaN(date.getTime())) return null;
+    return format(date, "yyyy-MM-dd");
+  }, [dataReferencia]);
+
+  const bannerUrl = destaqueDia?.bannerUrl ?? null;
+  const destaqueAtualizadoEm = destaqueDia?.updatedAt
+    ? new Date(destaqueDia.updatedAt).toLocaleString("pt-BR")
+    : null;
+
+  useEffect(() => {
+    if (!dataKey) {
+      setDestaqueDia(null);
+      setIsFetchingDestaque(false);
+      return;
+    }
+
+    let active = true;
+    setIsFetchingDestaque(true);
+    setActionError(null);
+
+    fetch(`/api/admin/destaques-do-dia?date=${dataKey}`, { cache: "no-store" })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          throw new Error(body?.error || "Falha ao carregar destaques do dia.");
+        }
+        return body as DestaqueDiaResponse | null;
+      })
+      .then((body) => {
+        if (!active) return;
+        setDestaqueDia(body);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setActionError(err instanceof Error ? err.message : "Falha ao carregar destaques.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setIsFetchingDestaque(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [dataKey]);
+
+  const saveDestaque = async (payload: Partial<DestaqueDiaResponse>) => {
+    if (!dataKey) return null;
+    setIsSaving(true);
+    setActionError(null);
+    try {
+      const response = await fetch("/api/admin/destaques-do-dia", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dataKey, ...payload }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error || "Falha ao salvar destaques.");
+      }
+      setDestaqueDia(body);
+      return body as DestaqueDiaResponse;
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao salvar destaques.");
+      return null;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBannerUpload = async (file: File) => {
+    if (!dataKey) return;
+    setIsSaving(true);
+    setActionError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/admin/destaques-do-dia/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok || !body?.url) {
+        throw new Error(body?.error || "Falha ao enviar banner.");
+      }
+      await saveDestaque({ bannerUrl: body.url });
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao enviar banner.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBannerRemove = async () => {
+    await saveDestaque({ bannerUrl: null });
+  };
+
+  const handleZagueiroChange = async (athleteId: string) => {
+    await saveDestaque({ zagueiroId: athleteId || null });
+  };
+
+  const handleAusencia = async (
+    role: "atacante" | "meia" | "goleiro" | "zagueiro",
+    athleteId: string,
+    ausente: boolean
+  ) => {
+    if (!dataKey || !athleteId) return;
+    setIsSaving(true);
+    setActionError(null);
+    try {
+      const response = await fetch("/api/admin/destaques-do-dia/ausencia", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dataKey, athleteId, role, ausente }),
+      });
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(body?.error || "Falha ao atualizar ausencia.");
+      }
+      if (body?.destaque) {
+        setDestaqueDia(body.destaque as DestaqueDiaResponse);
+      }
+      await mutate();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Falha ao atualizar ausencia.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
@@ -40,10 +176,23 @@ export default function TimeCampeaoDoDiaPage() {
           Time Campeao do Dia
         </h1>
         <p className="text-gray-300 mb-6 text-center text-lg max-w-2xl">
-          Os dados abaixo sao calculados a partir das partidas finalizadas do dia{" "}
-          {dataLabel ?? "mais recente"}. O <b>Time Campeao</b> e definido por vitorias e pontos, e
-          os destaques individuais consideram gols e assistencias registrados nas presencas.
+          Os dados abaixo sao calculados automaticamente com base nas partidas finalizadas em
+          Resultados do Dia. Zagueiro do Dia tem que ser escolhido manualmente.
         </p>
+        {isFetchingDestaque && (
+          <div className="text-xs text-yellow-300 mb-3">Carregando dados salvos do dia...</div>
+        )}
+        {destaqueAtualizadoEm && (
+          <div className="text-xs text-zinc-400 mb-4">
+            Ultima atualizacao: {destaqueAtualizadoEm}
+          </div>
+        )}
+        {actionError && (
+          <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg max-w-xl text-center mb-6">
+            <p className="font-semibold mb-1">Nao foi possivel concluir a acao.</p>
+            <p className="text-sm">{actionError}</p>
+          </div>
+        )}
 
         {isLoading && (
           <div className="text-gray-300 py-10 text-center">
@@ -81,9 +230,21 @@ export default function TimeCampeaoDoDiaPage() {
             {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
 
             <div className="w-full flex flex-col items-center gap-12 mt-4 max-w-5xl">
-              <CardsDestaquesDiaV2 confrontos={confrontos} times={times} />
+              <CardsDestaquesDiaV2
+                confrontos={confrontos}
+                times={times}
+                zagueiroId={destaqueDia?.zagueiroId ?? null}
+                faltou={destaqueDia?.faltou ?? null}
+                onSelectZagueiro={handleZagueiroChange}
+                onToggleAusencia={handleAusencia}
+              />
 
-              <BannerUpload bannerUrl={bannerUrl} setBannerUrl={setBannerUrl} timeCampeao={null} />
+              <BannerUpload
+                bannerUrl={bannerUrl}
+                isSaving={isSaving}
+                onUpload={handleBannerUpload}
+                onRemove={handleBannerRemove}
+              />
             </div>
           </>
         )}

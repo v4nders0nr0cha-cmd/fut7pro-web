@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
@@ -357,12 +358,21 @@ type GoalModalProps = {
   open: boolean;
   teamId: string;
   teamName: string;
+  opponentName: string;
   players: RosterPlayer[];
   onClose: () => void;
   onSave: (event: GoalEvent) => void;
 };
 
-function GoalModal({ open, teamId, teamName, players, onClose, onSave }: GoalModalProps) {
+function GoalModal({
+  open,
+  teamId,
+  teamName,
+  opponentName,
+  players,
+  onClose,
+  onSave,
+}: GoalModalProps) {
   const [scorerId, setScorerId] = useState("");
   const [assistId, setAssistId] = useState(NO_ASSIST_ID);
   const [scorerQuery, setScorerQuery] = useState("");
@@ -463,6 +473,11 @@ function GoalModal({ open, teamId, teamName, players, onClose, onSave }: GoalMod
                 </option>
               ))}
             </select>
+            {isOwnGoal && (
+              <p className="text-xs text-yellow-200 mt-1">
+                Este gol sera computado para o time {opponentName || "adversario"}.
+              </p>
+            )}
           </div>
 
           <div>
@@ -1071,6 +1086,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
         open={goalModalTeam !== null}
         teamId={goalModalTeam === "A" ? teamAId : teamBId}
         teamName={goalModalTeam === "A" ? match.teamA.name : match.teamB.name}
+        opponentName={goalModalTeam === "A" ? match.teamB.name : match.teamA.name}
         players={goalModalTeam === "A" ? rosterA : rosterB}
         onClose={() => setGoalModalTeam(null)}
         onSave={handleSaveGoal}
@@ -1255,6 +1271,8 @@ export default function ResultadosDoDiaAdmin() {
     return { total, notStarted, inProgress, finished };
   }, [matchCards]);
 
+  const allFinished = totals.total > 0 && totals.finished === totals.total;
+
   const pendingLabel = totals.notStarted > 0 ? `${totals.notStarted} partidas sem resultado` : "";
 
   return (
@@ -1278,6 +1296,22 @@ export default function ResultadosDoDiaAdmin() {
             >
               x
             </button>
+          </div>
+        </div>
+      )}
+      {allFinished && (
+        <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-4 text-sm text-green-100">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <FaCheckCircle className="text-green-300 text-lg" />
+              <span>Veja o Time Campeao do Dia e os destaques individuais da rodada.</span>
+            </div>
+            <Link
+              href="/admin/partidas/time-campeao-do-dia"
+              className="rounded-full border border-green-400/60 bg-green-400/10 px-4 py-2 text-xs font-semibold text-green-100 hover:border-green-300 hover:bg-green-400/20"
+            >
+              Abrir Time Campeao do Dia
+            </Link>
           </div>
         </div>
       )}

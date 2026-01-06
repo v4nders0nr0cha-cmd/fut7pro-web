@@ -4,6 +4,7 @@ import type { PublicMatch } from "@/types/partida";
 
 export type JogadorDestaque = {
   id?: string;
+  timeId?: string;
   nome: string;
   apelido?: string;
   pos: string;
@@ -18,7 +19,13 @@ export type TimeDestaque = {
   jogadores: JogadorDestaque[];
 };
 
-export type EventoGolV2 = { time: "a" | "b"; jogador: string; assistencia: string };
+export type EventoGolV2 = {
+  time: "a" | "b";
+  jogadorId?: string;
+  jogador: string;
+  assistenciaId?: string;
+  assistencia: string;
+};
 export type ResultadoPartidaV2 = { placar: { a: number; b: number }; eventos: EventoGolV2[] };
 export type ConfrontoV2 = {
   ida: { a: number; b: number };
@@ -50,6 +57,7 @@ type BackendAthlete = {
 
 type BackendPresence = {
   id?: string;
+  status?: string | null;
   teamId?: string | null;
   team?: BackendTeam | null;
   athlete?: BackendAthlete | null;
@@ -186,6 +194,7 @@ export function buildDestaquesDoDia(
     const teamBKey = resolveTeamKey(match.teamB, match.teamBId, match.teamB?.name);
 
     (match.presences ?? []).forEach((presence) => {
+      if (presence.status === "AUSENTE") return;
       const teamKey = resolveTeamKey(presence.team, presence.teamId, presence.team?.name);
       const teamEntry = teamMap.get(teamKey);
       if (!teamEntry) return;
@@ -195,6 +204,7 @@ export function buildDestaquesDoDia(
       if (teamEntry.jogadores.has(jogadorId)) return;
       teamEntry.jogadores.set(jogadorId, {
         id: jogadorId,
+        timeId: teamEntry.key,
         nome: athlete.name,
         apelido: athlete.nickname ?? "",
         pos: normalizePosicao(athlete.position),
@@ -231,7 +241,9 @@ export function buildDestaquesDoDia(
 
     const eventos: EventoGolV2[] = [];
     (match.presences ?? []).forEach((presence) => {
+      if (presence.status === "AUSENTE") return;
       const athleteName = presence.athlete?.name ?? "";
+      const athleteId = presence.athlete?.id ?? "";
       if (!athleteName) return;
       const teamKey = resolveTeamKey(presence.team, presence.teamId, presence.team?.name);
       const timeLabel: "a" | "b" = teamKey && teamKey === teamBKey ? "b" : "a";
@@ -242,7 +254,9 @@ export function buildDestaquesDoDia(
       for (let i = 0; i < gols; i += 1) {
         eventos.push({
           time: timeLabel,
+          jogadorId: athleteId || undefined,
           jogador: athleteName,
+          assistenciaId: undefined,
           assistencia: "faltou",
         });
       }
@@ -250,7 +264,9 @@ export function buildDestaquesDoDia(
       for (let i = 0; i < assists; i += 1) {
         eventos.push({
           time: timeLabel,
+          jogadorId: undefined,
           jogador: "faltou",
+          assistenciaId: athleteId || undefined,
           assistencia: athleteName,
         });
       }

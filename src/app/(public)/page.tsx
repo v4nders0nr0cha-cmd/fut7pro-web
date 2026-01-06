@@ -14,6 +14,7 @@ import PlayerCard from "@/components/cards/PlayerCard";
 import GamesOfTheDay from "@/components/cards/GamesOfTheDay";
 import { useJogosDoDia } from "@/hooks/useJogosDoDia";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { usePublicDestaquesDoDia } from "@/hooks/usePublicDestaquesDoDia";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +25,8 @@ import type { PublicMatch } from "@/types/partida";
 
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_TEAM_IMAGE = "/images/times/time_campeao_padrao_01.png";
+const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
+const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";
 
 type PositionCode = "ATA" | "MEIA" | "ZAG" | "GOL" | "";
 
@@ -37,6 +40,18 @@ type PlayerStats = {
   assists: number;
   games: number;
   presences: number;
+};
+
+type HighlightPlayer = {
+  id: string;
+  name: string;
+  posicao: string;
+  foto: string;
+  gols: number;
+  assistencias: number;
+  partidas: number;
+  presencas: number;
+  status?: "titular" | "substituto" | "ausente";
 };
 
 function parseMatchDate(value?: string | null) {
@@ -76,6 +91,7 @@ function buildDayStats(matches: PublicMatch[]): PlayerStats[] {
     (match.presences ?? []).forEach((presence) => {
       const athlete = presence.athlete;
       if (!athlete?.name) return;
+      if (presence.status === "AUSENTE") return;
 
       const id = athlete.id || `${athlete.name}-${presence.teamId ?? match.id}`;
       const existing = map.get(id);
@@ -94,7 +110,7 @@ function buildDayStats(matches: PublicMatch[]): PlayerStats[] {
       current.goals += Number(presence.goals ?? 0);
       current.assists += Number(presence.assists ?? 0);
       current.games += 1;
-      if (presence.status !== "AUSENTE") current.presences += 1;
+      current.presences += 1;
 
       map.set(id, current);
     });
@@ -115,7 +131,7 @@ function pickTop(
   })[0];
 }
 
-function buildHighlight(stat: PlayerStats | null, title: string) {
+function buildHighlight(stat: PlayerStats | null, title: string): HighlightPlayer | null {
   if (!stat) return null;
   return {
     id: stat.id,
@@ -126,6 +142,21 @@ function buildHighlight(stat: PlayerStats | null, title: string) {
     assistencias: stat.assists,
     partidas: stat.games,
     presencas: stat.presences,
+  };
+}
+
+function buildBotHighlight(title: string, role: "atacante" | "meia" | "zagueiro" | "goleiro") {
+  const isGoalkeeper = role === "goleiro";
+  return {
+    id: `bot-${role}`,
+    name: isGoalkeeper ? "Goleiro Reserva BOT" : "Jogador Reserva BOT",
+    posicao: title,
+    foto: isGoalkeeper ? BOT_GOALKEEPER_IMAGE : BOT_PLAYER_IMAGE,
+    gols: 0,
+    assistencias: 0,
+    partidas: 0,
+    presencas: 0,
+    status: "ausente" as const,
   };
 }
 
@@ -160,6 +191,7 @@ export default function Home() {
     scope: "recent",
     limit: 20,
   });
+  const { destaque: destaqueDia } = usePublicDestaquesDoDia({ slug });
 
   const { confrontos, times, dataReferencia } = useMemo(
     () => buildDestaquesDoDia(matches),
@@ -179,10 +211,13 @@ export default function Home() {
   }, [matches, dataReferencia]);
 
   const stats = useMemo(() => buildDayStats(matchesDoDia), [matchesDoDia]);
+  const destaqueFaltou = destaqueDia?.faltou ?? null;
 
   const highlights = useMemo(() => {
     const championPlayers = campeaoInfo?.time?.jogadores ?? [];
     const statsByName = new Map(stats.map((stat) => [stat.name, stat]));
+    const statsById = new Map(stats.map((stat) => [stat.id, stat]));
+    const manualZagueiroId = destaqueDia?.zagueiroId ?? null;
 
     const buildFromChampion = (
       pos: PositionCode,
@@ -209,16 +244,38 @@ export default function Home() {
       return pickTop(enriched, primary, secondary);
     };
 
+    const resolveManualZagueiro = () => {
+      if (!manualZagueiroId) return null;
+      const byId = statsById.get(manualZagueiroId);
+      if (byId) return byId;
+      const candidate = championPlayers.find((player) => player.id === manualZagueiroId);
+      if (!candidate) return null;
+      return {
+        id: candidate.id || candidate.nome,
+        name: candidate.nome,
+        nickname: candidate.apelido || undefined,
+        positionCode: "ZAG",
+        photoUrl: candidate.foto || null,
+        goals: 0,
+        assists: 0,
+        games: 0,
+        presences: 0,
+      } as PlayerStats;
+    };
+
     const atacantes = stats.filter((stat) => stat.positionCode === "ATA");
     const meias = stats.filter((stat) => stat.positionCode === "MEIA");
     const zagueiros = stats.filter((stat) => stat.positionCode === "ZAG");
     const goleiros = stats.filter((stat) => stat.positionCode === "GOL");
 
+    const zagueiroManual = resolveManualZagueiro();
+
     const atacante =
       buildFromChampion("ATA", "goals", "assists") || pickTop(atacantes, "goals", "assists");
     const meia =
       buildFromChampion("MEIA", "assists", "goals") || pickTop(meias, "assists", "goals");
-    const zagueiro = buildFromChampion("ZAG", "games", "goals") || zagueiros[0] || null;
+    const zagueiro =
+      zagueiroManual || buildFromChampion("ZAG", "games", "goals") || zagueiros[0] || null;
     const goleiro = buildFromChampion("GOL", "games", "goals") || goleiros[0] || null;
 
     const artilheiro = pickTop(stats, "goals", "assists");
@@ -232,8 +289,9 @@ export default function Home() {
       artilheiro,
       maestro,
     };
-  }, [campeaoInfo, stats]);
+  }, [campeaoInfo, stats, destaqueDia?.zagueiroId]);
 
+  const destaqueDate = destaqueDia?.date ? parseMatchDate(destaqueDia.date) : null;
   const championDate = dataReferencia
     ? new Date(dataReferencia).toLocaleDateString("pt-BR", {
         weekday: "long",
@@ -241,51 +299,91 @@ export default function Home() {
         month: "long",
         year: "numeric",
       })
-    : isLoadingHighlights
-      ? "Carregando..."
-      : "Resultados pendentes";
+    : destaqueDate
+      ? destaqueDate.toLocaleDateString("pt-BR", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })
+      : isLoadingHighlights
+        ? "Carregando..."
+        : "Resultados pendentes";
 
   const championPlayers =
     campeaoInfo?.time?.jogadores?.map((player) => player.nome).filter(Boolean) ?? [];
+  const bannerImage = destaqueDia?.bannerUrl || campeaoInfo?.time?.logoUrl || DEFAULT_TEAM_IMAGE;
 
   const highlightCards = [
-    buildHighlight(highlights.atacante, "Atacante do Dia"),
-    buildHighlight(highlights.meia, "Meia do Dia"),
-    buildHighlight(highlights.zagueiro, "Zagueiro do Dia"),
-    buildHighlight(highlights.goleiro, "Goleiro do Dia"),
-  ].filter(Boolean) as Array<NonNullable<ReturnType<typeof buildHighlight>>>;
+    destaqueFaltou?.atacante
+      ? buildBotHighlight("Atacante do Dia", "atacante")
+      : buildHighlight(highlights.atacante, "Atacante do Dia"),
+    destaqueFaltou?.meia
+      ? buildBotHighlight("Meia do Dia", "meia")
+      : buildHighlight(highlights.meia, "Meia do Dia"),
+    destaqueFaltou?.zagueiro
+      ? buildBotHighlight("Zagueiro do Dia", "zagueiro")
+      : buildHighlight(highlights.zagueiro, "Zagueiro do Dia"),
+    destaqueFaltou?.goleiro
+      ? buildBotHighlight("Goleiro do Dia", "goleiro")
+      : buildHighlight(highlights.goleiro, "Goleiro do Dia"),
+  ].filter(Boolean) as HighlightPlayer[];
 
   const modalDestaques = [
-    highlights.atacante
+    destaqueFaltou?.atacante
       ? {
           title: "Atacante do Dia",
-          name: highlights.atacante.name,
-          value: highlights.atacante.goals ? `${highlights.atacante.goals} gols` : undefined,
-          image: highlights.atacante.photoUrl || DEFAULT_PLAYER_IMAGE,
+          name: "Jogador Reserva BOT",
+          image: BOT_PLAYER_IMAGE,
         }
-      : null,
-    highlights.meia
+      : highlights.atacante
+        ? {
+            title: "Atacante do Dia",
+            name: highlights.atacante.name,
+            value: highlights.atacante.goals ? `${highlights.atacante.goals} gols` : undefined,
+            image: highlights.atacante.photoUrl || DEFAULT_PLAYER_IMAGE,
+          }
+        : null,
+    destaqueFaltou?.meia
       ? {
           title: "Meia do Dia",
-          name: highlights.meia.name,
-          value: highlights.meia.assists ? `${highlights.meia.assists} assistencias` : undefined,
-          image: highlights.meia.photoUrl || DEFAULT_PLAYER_IMAGE,
+          name: "Jogador Reserva BOT",
+          image: BOT_PLAYER_IMAGE,
         }
-      : null,
-    highlights.zagueiro
+      : highlights.meia
+        ? {
+            title: "Meia do Dia",
+            name: highlights.meia.name,
+            value: highlights.meia.assists ? `${highlights.meia.assists} assistencias` : undefined,
+            image: highlights.meia.photoUrl || DEFAULT_PLAYER_IMAGE,
+          }
+        : null,
+    destaqueFaltou?.zagueiro
       ? {
           title: "Zagueiro do Dia",
-          name: highlights.zagueiro.name,
-          image: highlights.zagueiro.photoUrl || DEFAULT_PLAYER_IMAGE,
+          name: "Jogador Reserva BOT",
+          image: BOT_PLAYER_IMAGE,
         }
-      : null,
-    highlights.goleiro
+      : highlights.zagueiro
+        ? {
+            title: "Zagueiro do Dia",
+            name: highlights.zagueiro.name,
+            image: highlights.zagueiro.photoUrl || DEFAULT_PLAYER_IMAGE,
+          }
+        : null,
+    destaqueFaltou?.goleiro
       ? {
           title: "Goleiro do Dia",
-          name: highlights.goleiro.name,
-          image: highlights.goleiro.photoUrl || DEFAULT_PLAYER_IMAGE,
+          name: "Goleiro Reserva BOT",
+          image: BOT_GOALKEEPER_IMAGE,
         }
-      : null,
+      : highlights.goleiro
+        ? {
+            title: "Goleiro do Dia",
+            name: highlights.goleiro.name,
+            image: highlights.goleiro.photoUrl || DEFAULT_PLAYER_IMAGE,
+          }
+        : null,
   ].filter(Boolean) as Array<{ title: string; name: string; value?: string; image?: string }>;
 
   const modalArtilheiroMaestro = [
@@ -319,7 +417,7 @@ export default function Home() {
           <h1 className="sr-only">Fut7Pro: Sistema para Racha, Fut7 e Futebol Amador</h1>
 
           <ChampionBanner
-            image={campeaoInfo?.time?.logoUrl || DEFAULT_TEAM_IMAGE}
+            image={bannerImage}
             date={championDate}
             players={championPlayers.slice(0, 7)}
             href={publicHref("/partidas/times-do-dia")}
