@@ -5,6 +5,7 @@ import Image from "next/image";
 import { format } from "date-fns";
 import { FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
@@ -71,6 +72,14 @@ function normalizeKey(value?: string | null) {
   return value?.trim().toLowerCase() ?? "";
 }
 
+function normalizeLabel(value?: string | null) {
+  return (value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
 function createEventId() {
   return `goal-${Date.now()}-${Math.round(Math.random() * 100000)}`;
 }
@@ -102,6 +111,23 @@ function addDays(date: Date, offset: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + offset);
   return next;
+}
+
+function parsePublishedDate(value?: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parts = trimmed.split("/");
+  if (parts.length >= 3) {
+    const day = Number(parts[0]);
+    const month = Number(parts[1]);
+    const year = Number(parts[2].trim().slice(0, 4));
+    const date = new Date(year, month - 1, day);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  const fallback = new Date(trimmed);
+  if (!Number.isNaN(fallback.getTime())) return fallback;
+  return null;
 }
 
 function isSameLocalDay(left: Date, right: Date) {
@@ -623,15 +649,20 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   }, [events, localStatus]);
 
   const persistMatch = useCallback(
-    async (options?: { closeOnSuccess?: boolean; silent?: boolean }) => {
+    async (options?: {
+      closeOnSuccess?: boolean;
+      silent?: boolean;
+      statusOverride?: MatchStatus;
+    }) => {
       if (options?.silent && lastSavedKey.current === saveKey) return;
 
+      const statusToPersist = options?.statusOverride ?? localStatus;
       setIsSaving(true);
       setError(null);
       try {
         const payload = {
-          scoreA: localStatus === "not_started" ? null : scoreA,
-          scoreB: localStatus === "not_started" ? null : scoreB,
+          scoreA: statusToPersist === "not_started" ? null : scoreA,
+          scoreB: statusToPersist === "not_started" ? null : scoreB,
           presences: presencePayload,
         };
 
@@ -686,6 +717,11 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   const handleSaveGoal = (event: GoalEvent) => {
     setEvents((prev) => [...prev, event]);
     setGoalModalTeam(null);
+    if (localStatus === "not_started") {
+      onStatusChange(match.id, "in_progress");
+      setLocalStatus("in_progress");
+      setLocked(false);
+    }
   };
 
   const handleRemoveGoal = (eventId: string) => {
@@ -740,7 +776,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
     onStatusChange(match.id, "finished");
     setLocalStatus("finished");
     setLocked(true);
-    await persistMatch({ silent: false });
+    await persistMatch({ silent: false, statusOverride: "finished" });
   };
 
   const handleUnlock = () => {
@@ -1027,6 +1063,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 
 export default function ResultadosDoDiaAdmin() {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
   const [statusFilter, setStatusFilter] = useState<MatchFilter>("all");
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatus>>({});
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
@@ -1086,7 +1123,51 @@ export default function ResultadosDoDiaAdmin() {
       activeLabelValue = `Proximo jogo em ${format(activeDate, "dd/MM/yyyy")}`;
     }
 
-    const cards = filtered.map((item, index) => {
+    const confrontos = sorteioPublicado.data?.confrontos ?? [];
+    const publishedDate =
+      parsePublishedDate(sorteioPublicado.data?.dataPartida) ||
+      parseMatchDate(sorteioPublicado.data?.publicadoEm);
+
+    let orderedEntries = filtered;
+    if (confrontos.length && publishedDate && isSameLocalDay(publishedDate, activeDate)) {
+      const assigned = new Set<string>();
+      const ordered: Array<{ entry: (typeof filtered)[number]; order: number }> = [];
+
+      const normalizedEntries = filtered.map((entry) => ({
+        entry,
+        direct: `${normalizeLabel(entry.match.teamA.name)}|${normalizeLabel(
+          entry.match.teamB.name
+        )}`,
+        reverse: `${normalizeLabel(entry.match.teamB.name)}|${normalizeLabel(
+          entry.match.teamA.name
+        )}`,
+      }));
+
+      confrontos.forEach((confronto, index) => {
+        const key = `${normalizeLabel(confronto.timeA)}|${normalizeLabel(confronto.timeB)}`;
+        const match =
+          normalizedEntries.find(
+            (item) => !assigned.has(item.entry.match.id) && item.direct === key
+          ) ||
+          normalizedEntries.find(
+            (item) => !assigned.has(item.entry.match.id) && item.reverse === key
+          );
+        if (!match) return;
+        assigned.add(match.entry.match.id);
+        ordered.push({ entry: match.entry, order: confronto.ordem ?? index + 1 });
+      });
+
+      const remaining = filtered
+        .filter((entry) => !assigned.has(entry.match.id))
+        .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      orderedEntries = [
+        ...ordered.map((item) => ({ ...item.entry, orderOverride: item.order })),
+        ...remaining,
+      ] as Array<(typeof filtered)[number] & { orderOverride?: number }>;
+    }
+
+    const cards = orderedEntries.map((item, index) => {
       const teamAId = item.match.teamA.id ?? "team-a";
       const teamBId = item.match.teamB.id ?? "team-b";
       const goalsA = countPresenceGoals(item.match, teamAId, teamAId, teamBId);
@@ -1097,7 +1178,7 @@ export default function ResultadosDoDiaAdmin() {
       return {
         match: item.match,
         date: item.date ?? null,
-        order: index + 1,
+        order: (item as { orderOverride?: number }).orderOverride ?? index + 1,
         status: item.status,
         scoreA,
         scoreB,
@@ -1108,7 +1189,7 @@ export default function ResultadosDoDiaAdmin() {
       activeLabel: activeLabelValue,
       matchCards: cards,
     };
-  }, [matches, statusMap]);
+  }, [matches, sorteioPublicado.data, statusMap]);
 
   const pendingInfo = useMemo(() => {
     const today = startOfDay(new Date());
