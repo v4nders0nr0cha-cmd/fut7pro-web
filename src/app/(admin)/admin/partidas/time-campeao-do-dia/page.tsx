@@ -73,6 +73,22 @@ export default function TimeCampeaoDoDiaPage() {
     };
   }, [dataKey]);
 
+  const parseBody = (text: string) => {
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+
+  const resolveErrorMessage = (text: string, fallback: string) => {
+    const body = parseBody(text);
+    if (body?.error) return body.error;
+    if (body?.message) return body.message;
+    return text || fallback;
+  };
+
   const saveDestaque = async (payload: Partial<DestaqueDiaResponse>) => {
     if (!dataKey) return null;
     setIsSaving(true);
@@ -83,9 +99,10 @@ export default function TimeCampeaoDoDiaPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: dataKey, ...payload }),
       });
-      const body = await response.json().catch(() => null);
+      const bodyText = await response.text().catch(() => "");
+      const body = parseBody(bodyText);
       if (!response.ok) {
-        throw new Error(body?.error || "Falha ao salvar destaques.");
+        throw new Error(resolveErrorMessage(bodyText, "Falha ao salvar destaques."));
       }
       setDestaqueDia(body);
       return body as DestaqueDiaResponse;
@@ -98,7 +115,7 @@ export default function TimeCampeaoDoDiaPage() {
   };
 
   const handleBannerUpload = async (file: File) => {
-    if (!dataKey) return;
+    if (!dataKey) return false;
     setIsSaving(true);
     setActionError(null);
     try {
@@ -108,13 +125,16 @@ export default function TimeCampeaoDoDiaPage() {
         method: "POST",
         body: formData,
       });
-      const body = await response.json().catch(() => null);
+      const bodyText = await response.text().catch(() => "");
+      const body = parseBody(bodyText);
       if (!response.ok || !body?.url) {
-        throw new Error(body?.error || "Falha ao enviar banner.");
+        throw new Error(resolveErrorMessage(bodyText, "Falha ao enviar banner."));
       }
-      await saveDestaque({ bannerUrl: body.url });
+      const saved = await saveDestaque({ bannerUrl: body.url });
+      return Boolean(saved);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Falha ao enviar banner.");
+      return false;
     } finally {
       setIsSaving(false);
     }
