@@ -67,6 +67,9 @@ export interface SorteioHistoricoItem {
   id: string;
   createdAt: string;
   times: SorteioHistoricoTime[];
+  dataPartida?: string | null;
+  horaPartida?: string | null;
+  confrontosCount?: number | null;
 }
 
 export interface SorteioHistoricoResponse {

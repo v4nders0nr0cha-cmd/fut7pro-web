@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
@@ -127,6 +128,23 @@ function parsePublishedDate(value?: string | null) {
   }
   const fallback = new Date(trimmed);
   if (!Number.isNaN(fallback.getTime())) return fallback;
+  return null;
+}
+
+function parseDayParam(value?: string | null) {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split("-").map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+  }
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(trimmed)) {
+    const [day, month, year] = trimmed.split("/").map(Number);
+    if (!year || !month || !day) return null;
+    return new Date(year, month - 1, day);
+  }
   return null;
 }
 
@@ -1064,6 +1082,8 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 export default function ResultadosDoDiaAdmin() {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
+  const searchParams = useSearchParams();
+  const forcedDate = useMemo(() => parseDayParam(searchParams?.get("data")), [searchParams]);
   const [statusFilter, setStatusFilter] = useState<MatchFilter>("all");
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatus>>({});
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
@@ -1109,7 +1129,11 @@ export default function ResultadosDoDiaAdmin() {
     let filtered: Array<{ match: PublicMatch; date: Date; status: MatchStatus }> = [];
     let activeLabelValue = "";
 
-    if (todayEntries.length > 0) {
+    if (forcedDate) {
+      activeDate = startOfDay(forcedDate);
+      filtered = entries.filter((entry) => isSameLocalDay(entry.date, activeDate));
+      activeLabelValue = `Jogos de ${format(activeDate, "dd/MM/yyyy")}`;
+    } else if (todayEntries.length > 0) {
       activeDate = today;
       filtered = todayEntries.sort((a, b) => a.date.getTime() - b.date.getTime());
       activeLabelValue = `Jogos de hoje - ${format(activeDate, "dd/MM/yyyy")}`;
@@ -1189,7 +1213,7 @@ export default function ResultadosDoDiaAdmin() {
       activeLabel: activeLabelValue,
       matchCards: cards,
     };
-  }, [matches, sorteioPublicado.data, statusMap]);
+  }, [matches, sorteioPublicado.data, statusMap, forcedDate]);
 
   const pendingInfo = useMemo(() => {
     const today = startOfDay(new Date());

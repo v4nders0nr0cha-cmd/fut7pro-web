@@ -2,39 +2,78 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
+import type { SorteioHistoricoItem } from "@/types/sorteio";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
-const MONTH_LABELS = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-];
+const PAGE_SIZE = 30;
+const HISTORICO_LIMIT = 90;
 
-type MatchStatusFilter = "open" | "progress" | "done";
-type MatchScopeFilter = "today" | "all";
+const DAY_STATUS_LABELS: Record<DayStatus, string> = {
+  pending: "Pendente",
+  partial: "Parcial",
+  complete: "Completo",
+};
+
+const DAY_STATUS_BADGES: Record<DayStatus, string> = {
+  pending: "bg-yellow-500/20 text-yellow-200",
+  partial: "bg-cyan-500/20 text-cyan-200",
+  complete: "bg-green-600/20 text-green-200",
+};
+
+const ORIGIN_LABELS: Record<DayOrigin, string> = {
+  sorteio: "Sorteio Inteligente",
+  classica: "Partida Classica",
+  misto: "Misto",
+};
+
+const ORIGIN_BADGES: Record<DayOrigin, string> = {
+  sorteio: "bg-blue-500/20 text-blue-200",
+  classica: "bg-purple-500/20 text-purple-200",
+  misto: "bg-amber-500/20 text-amber-200",
+};
+
+type DayStatus = "pending" | "partial" | "complete";
+
+type DayOrigin = "sorteio" | "classica" | "misto";
+
+type DayFilter = DayStatus | "all";
+
+type OriginFilter = DayOrigin | "all";
 
 type MatchMeta = {
   match: PublicMatch;
-  date: Date | null;
-  year: number | null;
-  month: number | null;
-  isToday: boolean;
+  date: Date;
   hasResult: boolean;
-  status: MatchStatusFilter;
+  scoreA: number;
+  scoreB: number;
+};
+
+type DayHighlights = {
+  campeao: string | null;
+  artilheiro: string | null;
+  maestro: string | null;
+};
+
+type DaySummary = {
+  key: string;
+  date: Date;
+  matches: MatchMeta[];
+  total: number;
+  done: number;
+  status: DayStatus;
+  origin: DayOrigin;
+  location: string;
+  hora: string;
+  highlights: DayHighlights;
+  lastUpdateLabel: string | null;
+  searchLabel: string;
 };
 
 type GoalEvent = {
@@ -79,12 +118,25 @@ function parseMatchDate(value?: string | null) {
   return date;
 }
 
-function isSameLocalDay(left: Date, right: Date) {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function toDayKey(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
+function parseDayKey(value?: string | null) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
+function isWithinRange(date: Date, start?: Date | null, end?: Date | null) {
+  if (start && date.getTime() < startOfDay(start).getTime()) return false;
+  if (end && date.getTime() > startOfDay(end).getTime()) return false;
+  return true;
 }
 
 function resolvePresenceTeamId(
@@ -104,6 +156,209 @@ function resolvePresenceTeamId(
     return fallbackB;
   }
   return "";
+}
+
+function countPresenceGoals(match: PublicMatch, teamId: string, teamAId: string, teamBId: string) {
+  return match.presences.reduce((total, presence) => {
+    const resolvedTeam = resolvePresenceTeamId(
+      presence,
+      match.teamA,
+      match.teamB,
+      teamAId,
+      teamBId
+    );
+    if (resolvedTeam !== teamId) return total;
+    return total + Number(presence.goals ?? 0);
+  }, 0);
+}
+
+function matchHasResult(match: PublicMatch) {
+  return match.scoreA !== null && match.scoreB !== null;
+}
+
+function buildMatchMeta(match: PublicMatch): MatchMeta | null {
+  const date = parseMatchDate(match.date);
+  if (!date) return null;
+  const teamAId = match.teamA.id ?? `${match.id}-a`;
+  const teamBId = match.teamB.id ?? `${match.id}-b`;
+  const goalsA = countPresenceGoals(match, teamAId, teamAId, teamBId);
+  const goalsB = countPresenceGoals(match, teamBId, teamAId, teamBId);
+  const scoreA = match.scoreA ?? goalsA;
+  const scoreB = match.scoreB ?? goalsB;
+
+  return {
+    match,
+    date,
+    hasResult: matchHasResult(match),
+    scoreA,
+    scoreB,
+  };
+}
+
+function buildDaySearchLabel(matches: MatchMeta[]) {
+  const chunks: string[] = [];
+  matches.forEach(({ match }) => {
+    chunks.push(match.teamA.name, match.teamB.name, match.location ?? "", formatDate(match.date));
+    match.presences.forEach((presence) => {
+      const athlete = presence.athlete;
+      if (!athlete) return;
+      chunks.push(`${athlete.name} ${athlete.nickname ?? ""}`);
+    });
+  });
+  return normalizeKey(chunks.join(" "));
+}
+
+function buildLastUpdateLabel(matches: MatchMeta[]) {
+  let lastUpdate: Date | null = null;
+  matches.forEach(({ match }) => {
+    match.presences.forEach((presence) => {
+      const updatedAt = presence.updatedAt || presence.createdAt;
+      if (!updatedAt) return;
+      const date = new Date(updatedAt);
+      if (Number.isNaN(date.getTime())) return;
+      if (!lastUpdate || date.getTime() > lastUpdate.getTime()) {
+        lastUpdate = date;
+      }
+    });
+  });
+  return lastUpdate ? format(lastUpdate, "dd/MM/yyyy HH:mm") : null;
+}
+
+function buildDayHighlights(matches: MatchMeta[]): DayHighlights {
+  const teamStats = new Map<
+    string,
+    { name: string; points: number; goalsFor: number; goalsAgainst: number }
+  >();
+  const playerGoals = new Map<string, { name: string; goals: number }>();
+  const playerAssists = new Map<string, { name: string; assists: number }>();
+
+  const matchesWithResult = matches.filter((item) => item.hasResult);
+  if (!matchesWithResult.length) {
+    return { campeao: null, artilheiro: null, maestro: null };
+  }
+
+  matchesWithResult.forEach(({ match, scoreA, scoreB }) => {
+    const teamAId = match.teamA.id ?? `${match.id}-a`;
+    const teamBId = match.teamB.id ?? `${match.id}-b`;
+
+    const teamAStats = teamStats.get(teamAId) ?? {
+      name: match.teamA.name || "Time A",
+      points: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+    };
+    const teamBStats = teamStats.get(teamBId) ?? {
+      name: match.teamB.name || "Time B",
+      points: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+    };
+
+    teamAStats.goalsFor += scoreA;
+    teamAStats.goalsAgainst += scoreB;
+    teamBStats.goalsFor += scoreB;
+    teamBStats.goalsAgainst += scoreA;
+
+    if (scoreA > scoreB) {
+      teamAStats.points += 3;
+    } else if (scoreB > scoreA) {
+      teamBStats.points += 3;
+    } else {
+      teamAStats.points += 1;
+      teamBStats.points += 1;
+    }
+
+    teamStats.set(teamAId, teamAStats);
+    teamStats.set(teamBId, teamBStats);
+
+    match.presences.forEach((presence) => {
+      const athlete = presence.athlete;
+      if (!athlete || !athlete.name) return;
+      const goals = Number(presence.goals ?? 0);
+      const assists = Number(presence.assists ?? 0);
+
+      if (goals > 0) {
+        const current = playerGoals.get(athlete.id) ?? { name: athlete.name, goals: 0 };
+        current.goals += goals;
+        playerGoals.set(athlete.id, current);
+      }
+
+      if (assists > 0) {
+        const current = playerAssists.get(athlete.id) ?? { name: athlete.name, assists: 0 };
+        current.assists += assists;
+        playerAssists.set(athlete.id, current);
+      }
+    });
+  });
+
+  const champion = Array.from(teamStats.values())
+    .sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      const diffA = a.goalsFor - a.goalsAgainst;
+      const diffB = b.goalsFor - b.goalsAgainst;
+      if (diffB !== diffA) return diffB - diffA;
+      return b.goalsFor - a.goalsFor;
+    })
+    .map((team) => team.name)[0];
+
+  const artilheiro = Array.from(playerGoals.values())
+    .sort((a, b) => {
+      if (b.goals !== a.goals) return b.goals - a.goals;
+      return a.name.localeCompare(b.name);
+    })
+    .map((player) => `${player.name} (${player.goals}g)`)[0];
+
+  const maestro = Array.from(playerAssists.values())
+    .sort((a, b) => {
+      if (b.assists !== a.assists) return b.assists - a.assists;
+      return a.name.localeCompare(b.name);
+    })
+    .map((player) => `${player.name} (${player.assists}a)`)[0];
+
+  return {
+    campeao: champion ?? null,
+    artilheiro: artilheiro ?? null,
+    maestro: maestro ?? null,
+  };
+}
+
+function resolveSorteioDayKey(item: SorteioHistoricoItem) {
+  if (item.dataPartida && /^\d{4}-\d{2}-\d{2}$/.test(item.dataPartida)) {
+    const [year, month, day] = item.dataPartida.split("-").map(Number);
+    return toDayKey(new Date(year, month - 1, day));
+  }
+  const createdAt = new Date(item.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return null;
+  return toDayKey(createdAt);
+}
+
+function buildSorteioMap(historico: SorteioHistoricoItem[]) {
+  const map = new Map<string, { count: number | null; createdAt: Date }>();
+  historico.forEach((item) => {
+    const key = resolveSorteioDayKey(item);
+    if (!key) return;
+    const createdAt = new Date(item.createdAt);
+    if (Number.isNaN(createdAt.getTime())) return;
+    const count = typeof item.confrontosCount === "number" ? item.confrontosCount : null;
+    const existing = map.get(key);
+    if (!existing || createdAt.getTime() > existing.createdAt.getTime()) {
+      map.set(key, { count, createdAt });
+    }
+  });
+  return map;
+}
+
+function resolveDayOrigin(
+  dayKey: string,
+  totalMatches: number,
+  sorteioMap: Map<string, { count: number | null }>
+) {
+  const sorteioInfo = sorteioMap.get(dayKey);
+  if (!sorteioInfo) return "classica" as DayOrigin;
+  if (typeof sorteioInfo.count === "number" && sorteioInfo.count > 0) {
+    return totalMatches > sorteioInfo.count ? "misto" : "sorteio";
+  }
+  return "sorteio";
 }
 
 function buildRoster(match: PublicMatch, targetTeamId: string, teamAId: string, teamBId: string) {
@@ -194,10 +449,6 @@ function scoreByTeam(events: GoalEvent[], teamId: string) {
   return events.filter((event) => event.teamId === teamId && event.scorerId).length;
 }
 
-function matchHasResult(match: PublicMatch) {
-  return match.scoreA !== null && match.scoreB !== null;
-}
-
 type MatchResultModalProps = {
   match: PublicMatch;
   onClose: () => void;
@@ -217,7 +468,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   );
   const rosterB = useMemo(
     () => buildRoster(match, teamBId, teamAId, teamBId),
-    [match, teamAId, teamBId]
+    [match, teamBId, teamAId, teamBId]
   );
   const stats = useMemo(() => buildStats(events), [events]);
 
@@ -352,7 +603,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-yellow-400">Resultado da partida</h2>
             <p className="text-sm text-neutral-400">
-              {formatDate(match.date, true)} • {match.location || "Local nao informado"}
+              {formatDate(match.date, true)} - {match.location || "Local nao informado"}
             </p>
           </div>
           <button
@@ -542,12 +793,14 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 export default function HistoricoPartidasAdmin() {
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<MatchStatusFilter>("open");
-  const [scopeFilter, setScopeFilter] = useState<MatchScopeFilter>("all");
-  const [yearFilter, setYearFilter] = useState("all");
-  const [monthFilter, setMonthFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<DayFilter>("all");
+  const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (!searchParams) return;
@@ -555,348 +808,540 @@ export default function HistoricoPartidasAdmin() {
     const tabParam = normalizeKey(searchParams.get("tab"));
     if (tabParam) {
       if (tabParam === "sem-resultado" || tabParam === "semresultado") {
-        setStatusFilter("open");
+        setStatusFilter("pending");
       } else if (tabParam === "em-andamento" || tabParam === "emandamento") {
-        setStatusFilter("progress");
+        setStatusFilter("partial");
       } else if (tabParam === "finalizadas" || tabParam === "finalizada") {
-        setStatusFilter("done");
+        setStatusFilter("complete");
       }
     }
 
     const scopeParam = normalizeKey(searchParams.get("scope"));
-    if (scopeParam) {
-      if (scopeParam === "hoje" || scopeParam === "today") {
-        setScopeFilter("today");
-      } else if (scopeParam === "historico" || scopeParam === "todas" || scopeParam === "all") {
-        setScopeFilter("all");
-      }
+    if (scopeParam === "hoje" || scopeParam === "today") {
+      const todayKey = toDayKey(new Date());
+      setRangeStart(todayKey);
+      setRangeEnd(todayKey);
+    } else if (scopeParam === "historico" || scopeParam === "todas" || scopeParam === "all") {
+      setRangeStart("");
+      setRangeEnd("");
     }
 
-    const yearParam = searchParams.get("ano") || searchParams.get("year");
-    if (yearParam && /^\d{4}$/.test(yearParam)) {
-      setYearFilter(yearParam);
-    }
-
-    const monthParam = searchParams.get("mes") || searchParams.get("month");
-    if (monthParam && /^\d{1,2}$/.test(monthParam)) {
-      setMonthFilter(monthParam);
+    const originParam = normalizeKey(searchParams.get("origem"));
+    if (originParam === "sorteio" || originParam === "classica" || originParam === "misto") {
+      setOriginFilter(originParam as OriginFilter);
     }
   }, [searchParams]);
 
-  const sortedMatches = useMemo(() => {
-    return [...matches].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [search, statusFilter, originFilter, rangeStart, rangeEnd]);
+
+  const sorteioMap = useMemo(() => buildSorteioMap(sorteioHistorico), [sorteioHistorico]);
+
+  const matchEntries = useMemo(() => {
+    return matches
+      .map((match) => buildMatchMeta(match))
+      .filter((item): item is MatchMeta => Boolean(item));
   }, [matches]);
 
-  const matchMeta = useMemo(() => {
-    const now = new Date();
-    let hasTodayMatches = false;
-    let hasTodayOpen = false;
+  const daySummaries = useMemo(() => {
+    const grouped = new Map<string, MatchMeta[]>();
 
-    const base = sortedMatches.map((match) => {
-      const date = parseMatchDate(match.date);
-      const isToday = date ? isSameLocalDay(date, now) : false;
-      const hasResult = matchHasResult(match);
-      if (isToday) {
-        hasTodayMatches = true;
-        if (!hasResult) hasTodayOpen = true;
-      }
-      return {
-        match,
+    matchEntries.forEach((entry) => {
+      const key = toDayKey(entry.date);
+      const list = grouped.get(key) ?? [];
+      list.push(entry);
+      grouped.set(key, list);
+    });
+
+    const summaries: DaySummary[] = [];
+
+    grouped.forEach((matchesOfDay, key) => {
+      const sortedMatches = [...matchesOfDay].sort((a, b) => a.date.getTime() - b.date.getTime());
+      const total = sortedMatches.length;
+      const done = sortedMatches.filter((item) => item.hasResult).length;
+      const status: DayStatus = done === 0 ? "pending" : done === total ? "complete" : "partial";
+      const origin = resolveDayOrigin(key, total, sorteioMap);
+      const date = startOfDay(sortedMatches[0].date);
+      const firstMatch = sortedMatches[0].match;
+      const location =
+        sortedMatches.find((item) => item.match.location)?.match.location ||
+        firstMatch.location ||
+        "Local nao informado";
+      const hora = format(sortedMatches[0].date, "HH:mm");
+      const highlights = buildDayHighlights(sortedMatches);
+      const lastUpdateLabel = buildLastUpdateLabel(sortedMatches);
+      const searchLabel = buildDaySearchLabel(sortedMatches);
+
+      summaries.push({
+        key,
         date,
-        year: date ? date.getFullYear() : null,
-        month: date ? date.getMonth() + 1 : null,
-        isToday,
-        hasResult,
-      };
+        matches: sortedMatches,
+        total,
+        done,
+        status,
+        origin,
+        location,
+        hora,
+        highlights,
+        lastUpdateLabel,
+        searchLabel,
+      });
     });
 
-    const todayFinalized = hasTodayMatches && !hasTodayOpen;
-    const list: MatchMeta[] = base.map((item) => ({
-      ...item,
-      status: !item.hasResult ? "open" : item.isToday && !todayFinalized ? "progress" : "done",
-    }));
+    return summaries.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [matchEntries, sorteioMap]);
 
-    return {
-      list,
-      hasTodayMatches,
-      todayFinalized,
-    };
-  }, [sortedMatches]);
-
-  const availableYears = useMemo(() => {
-    const years = new Set<number>();
-    matchMeta.list.forEach((item) => {
-      if (item.year) years.add(item.year);
-    });
-    return Array.from(years).sort((a, b) => b - a);
-  }, [matchMeta.list]);
-
-  const availableMonths = useMemo(() => {
-    if (scopeFilter === "today") return [];
-    const months = new Set<number>();
-    matchMeta.list.forEach((item) => {
-      if (!item.month) return;
-      if (yearFilter !== "all" && item.year !== Number(yearFilter)) return;
-      months.add(item.month);
-    });
-    return Array.from(months).sort((a, b) => a - b);
-  }, [matchMeta.list, scopeFilter, yearFilter]);
-
-  const filteredMatches = useMemo(() => {
+  const filteredDays = useMemo(() => {
     const searchValue = normalizeKey(search);
-    return matchMeta.list.filter((item) => {
-      if (scopeFilter === "today" && !item.isToday) return false;
-      if (statusFilter === "open" && item.status !== "open") return false;
-      if (statusFilter === "progress" && item.status !== "progress") return false;
-      if (statusFilter === "done" && item.status !== "done") return false;
+    const startDate = parseDayKey(rangeStart);
+    const endDate = parseDayKey(rangeEnd);
 
-      if (scopeFilter === "all") {
-        if (yearFilter !== "all" && item.year !== Number(yearFilter)) return false;
-        if (monthFilter !== "all" && item.month !== Number(monthFilter)) return false;
-      }
-
+    return daySummaries.filter((day) => {
+      if (statusFilter !== "all" && day.status !== statusFilter) return false;
+      if (originFilter !== "all" && day.origin !== originFilter) return false;
+      if (!isWithinRange(day.date, startDate, endDate)) return false;
       if (!searchValue) return true;
-      const athletesLabel = item.match.presences
-        .map((presence) => `${presence.athlete?.name ?? ""} ${presence.athlete?.nickname ?? ""}`)
-        .join(" ");
-      const target = normalizeKey(
-        `${item.match.teamA.name} ${item.match.teamB.name} ${item.match.location ?? ""} ${formatDate(item.match.date)} ${athletesLabel}`
-      );
-      return target.includes(searchValue);
+      return day.searchLabel.includes(searchValue);
     });
-  }, [matchMeta.list, monthFilter, scopeFilter, search, statusFilter, yearFilter]);
+  }, [daySummaries, originFilter, rangeEnd, rangeStart, search, statusFilter]);
 
   const totals = useMemo(() => {
-    const total = matchMeta.list.length;
-    const open = matchMeta.list.filter((item) => item.status === "open").length;
-    const progress = matchMeta.list.filter((item) => item.status === "progress").length;
-    const done = matchMeta.list.filter((item) => item.status === "done").length;
-    return { total, open, progress, done };
-  }, [matchMeta.list]);
+    const total = filteredDays.length;
+    const pending = filteredDays.filter((day) => day.status === "pending").length;
+    const partial = filteredDays.filter((day) => day.status === "partial").length;
+    const complete = filteredDays.filter((day) => day.status === "complete").length;
+    return { total, pending, partial, complete };
+  }, [filteredDays]);
+
+  const todayKey = toDayKey(new Date());
+  const todayDay = daySummaries.find((day) => day.key === todayKey) ?? null;
+  const nextPendingDay = daySummaries.find((day) => day.status !== "complete") ?? null;
+  const selectedDayKey = searchParams?.get("dia") ?? "";
+  const selectedDay = selectedDayKey
+    ? (daySummaries.find((day) => day.key === selectedDayKey) ?? null)
+    : null;
+
+  const buildHistoricoLink = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams?.toString());
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      } else {
+        params.delete(key);
+      }
+    });
+    const query = params.toString();
+    return query ? `/admin/partidas/historico?${query}` : "/admin/partidas/historico";
+  };
+
+  const renderEmptyState = (message: string) => (
+    <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
+      {message}
+    </div>
+  );
+
+  if (isLoading) {
+    return renderEmptyState("Carregando historico...");
+  }
+
+  if (isError) {
+    return renderEmptyState(
+      `Falha ao carregar historico. ${error instanceof Error ? error.message : ""}`
+    );
+  }
+
+  if (selectedDayKey && !selectedDay) {
+    return (
+      <div className="space-y-4">
+        {renderEmptyState("Dia nao encontrado ou sem partidas registradas.")}
+        <Link
+          href={buildHistoricoLink({ dia: null })}
+          className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
+        >
+          Voltar para o historico
+        </Link>
+      </div>
+    );
+  }
+
+  if (selectedDay) {
+    const statusLabel = DAY_STATUS_LABELS[selectedDay.status];
+    const originLabel = ORIGIN_LABELS[selectedDay.origin];
+    const statusBadge = DAY_STATUS_BADGES[selectedDay.status];
+
+    return (
+      <div className="space-y-6">
+        <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-neutral-400">Historico do dia</p>
+              <h2 className="text-2xl md:text-3xl font-bold text-yellow-400">
+                {format(selectedDay.date, "dd/MM/yyyy")} - {selectedDay.hora}
+              </h2>
+              <p className="text-sm text-neutral-400 mt-1">
+                {selectedDay.location || "Local nao informado"}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-300">
+                <span className={`rounded-full px-3 py-1 font-semibold ${statusBadge}`}>
+                  {statusLabel}
+                </span>
+                <span
+                  className={`rounded-full px-3 py-1 font-semibold ${ORIGIN_BADGES[selectedDay.origin]}`}
+                >
+                  {originLabel}
+                </span>
+                <span className="rounded-full px-3 py-1 font-semibold bg-neutral-800 text-neutral-200">
+                  {selectedDay.done} de {selectedDay.total} partidas finalizadas
+                </span>
+              </div>
+              {selectedDay.lastUpdateLabel && (
+                <p className="mt-2 text-xs text-neutral-400">
+                  Ultima atualizacao: {selectedDay.lastUpdateLabel}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href={buildHistoricoLink({ dia: null })}
+                className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
+              >
+                Voltar para o historico
+              </Link>
+              {selectedDay.status !== "complete" && (
+                <Link
+                  href={`/admin/partidas/resultados-do-dia?data=${selectedDay.key}`}
+                  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
+                >
+                  Continuar lancando resultados
+                </Link>
+              )}
+              <button
+                type="button"
+                className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
+              >
+                Exportar resumo (em breve)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
+            <p className="text-xs text-neutral-400">Time campeao do dia</p>
+            <p className="text-base font-semibold text-yellow-300">
+              {selectedDay.highlights.campeao || "Nao definido"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
+            <p className="text-xs text-neutral-400">Artilheiro do dia</p>
+            <p className="text-base font-semibold text-yellow-300">
+              {selectedDay.highlights.artilheiro || "Nao definido"}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
+            <p className="text-xs text-neutral-400">Maestro do dia</p>
+            <p className="text-base font-semibold text-yellow-300">
+              {selectedDay.highlights.maestro || "Nao definido"}
+            </p>
+          </div>
+        </div>
+
+        {selectedDay.matches.length === 0 ? (
+          renderEmptyState("Nenhuma partida encontrada para este dia.")
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {selectedDay.matches.map((item, index) => {
+              const { match, hasResult, scoreA, scoreB } = item;
+              const scoreLabel = hasResult ? `${scoreA} x ${scoreB}` : "-- x --";
+              const statusLabel = hasResult ? "Finalizada" : "Sem resultado";
+              const statusClass = hasResult
+                ? "bg-green-600/20 text-green-200"
+                : "bg-yellow-500/20 text-yellow-200";
+              const horario = format(item.date, "HH:mm");
+
+              return (
+                <div
+                  key={match.id}
+                  className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                      <p className="text-xs text-neutral-400">Rodada {index + 1}</p>
+                      <p className="text-sm text-neutral-300 font-semibold">
+                        {format(item.date, "dd/MM/yyyy")} - {horario}
+                      </p>
+                      <p className="text-xs text-neutral-500">
+                        {match.location || "Local nao informado"}
+                      </p>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusClass}`}
+                    >
+                      {statusLabel}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src={match.teamA.logoUrl || FALLBACK_LOGO}
+                        alt={`Logo ${match.teamA.name}`}
+                        width={38}
+                        height={38}
+                        className="rounded"
+                      />
+                      <div>
+                        <p className="text-xs text-neutral-400">Time A</p>
+                        <p className="text-sm font-semibold">{match.teamA.name}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-yellow-400">{scoreLabel}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-xs text-neutral-400">Time B</p>
+                        <p className="text-sm font-semibold">{match.teamB.name}</p>
+                      </div>
+                      <Image
+                        src={match.teamB.logoUrl || FALLBACK_LOGO}
+                        alt={`Logo ${match.teamB.name}`}
+                        width={38}
+                        height={38}
+                        className="rounded"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="text-xs text-neutral-500">
+                      {hasResult ? "Resultado registrado" : "Sem resultado"}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedMatch(match)}
+                      className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
+                    >
+                      {hasResult ? "Editar resultado" : "Lancar resultado"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {selectedMatch && (
+          <MatchResultModal
+            match={selectedMatch}
+            onClose={() => setSelectedMatch(null)}
+            onSaved={() => {
+              setSelectedMatch(null);
+              mutate();
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  const visibleDays = filteredDays.slice(0, visibleCount);
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-          <p className="text-xs text-neutral-400">Total de partidas</p>
+          <p className="text-xs text-neutral-400">Total de dias</p>
           <p className="text-2xl font-bold text-yellow-400">{totals.total}</p>
         </div>
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-          <p className="text-xs text-neutral-400">Sem resultado</p>
-          <p className="text-2xl font-bold text-yellow-400">{totals.open}</p>
+          <p className="text-xs text-neutral-400">Dias pendentes</p>
+          <p className="text-2xl font-bold text-yellow-400">{totals.pending}</p>
         </div>
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-          <p className="text-xs text-neutral-400">Em andamento</p>
-          <p className="text-2xl font-bold text-yellow-400">{totals.progress}</p>
+          <p className="text-xs text-neutral-400">Dias parciais</p>
+          <p className="text-2xl font-bold text-yellow-400">{totals.partial}</p>
         </div>
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-          <p className="text-xs text-neutral-400">Finalizadas</p>
-          <p className="text-2xl font-bold text-yellow-400">{totals.done}</p>
+          <p className="text-xs text-neutral-400">Dias completos</p>
+          <p className="text-2xl font-bold text-yellow-400">{totals.complete}</p>
         </div>
       </div>
 
-      {matchMeta.todayFinalized && (
-        <div className="rounded-xl border border-green-500/40 bg-green-500/10 p-4 text-sm text-green-200">
-          Resultados do dia registrados com sucesso. Rankings e destaques foram atualizados.
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          href={todayDay ? buildHistoricoLink({ dia: todayDay.key }) : buildHistoricoLink({})}
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+            todayDay
+              ? "border-cyan-400 bg-cyan-400/20 text-cyan-200"
+              : "border-neutral-700 bg-[#1a1a1a] text-neutral-400"
+          }`}
+        >
+          Hoje
+        </Link>
+        <Link
+          href={
+            nextPendingDay
+              ? buildHistoricoLink({ dia: nextPendingDay.key })
+              : buildHistoricoLink({})
+          }
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+            nextPendingDay
+              ? "border-yellow-400 bg-yellow-400/10 text-yellow-200"
+              : "border-neutral-700 bg-[#1a1a1a] text-neutral-400"
+          }`}
+        >
+          Proximo dia pendente
+        </Link>
+        <button
+          type="button"
+          onClick={() => {
+            setSearch("");
+            setStatusFilter("all");
+            setOriginFilter("all");
+            setRangeStart("");
+            setRangeEnd("");
+          }}
+          className="rounded-full border border-neutral-700 bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-neutral-200 hover:border-yellow-400/60"
+        >
+          Historico completo
+        </button>
+      </div>
 
-      <div className="space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: "open", label: "Sem resultado", count: totals.open },
-              { value: "progress", label: "Em andamento", count: totals.progress },
-              { value: "done", label: "Finalizadas", count: totals.done },
-            ].map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setStatusFilter(tab.value as MatchStatusFilter)}
-                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                  statusFilter === tab.value
-                    ? "border-yellow-400 bg-yellow-400 text-black"
-                    : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`ml-2 rounded-full px-2 py-0.5 text-[10px] ${
-                    statusFilter === tab.value
-                      ? "bg-black/20 text-black"
-                      : "bg-neutral-800 text-neutral-200"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: "today", label: "Hoje" },
-              { value: "all", label: "Historico completo" },
-            ].map((scope) => (
-              <button
-                key={scope.value}
-                type="button"
-                onClick={() => setScopeFilter(scope.value as MatchScopeFilter)}
-                className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-                  scopeFilter === scope.value
-                    ? "border-cyan-400 bg-cyan-400/20 text-cyan-200"
-                    : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-cyan-400/60"
-                }`}
-              >
-                {scope.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_160px_150px_auto] gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px_200px_200px_auto] gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por time, atleta, data ou local"
+          className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
+        />
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as DayFilter)}
+          className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
+        >
+          <option value="all">Todos os status</option>
+          <option value="pending">Pendente</option>
+          <option value="partial">Parcial</option>
+          <option value="complete">Completo</option>
+        </select>
+        <select
+          value={originFilter}
+          onChange={(e) => setOriginFilter(e.target.value as OriginFilter)}
+          className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
+        >
+          <option value="all">Todas as origens</option>
+          <option value="sorteio">Sorteio Inteligente</option>
+          <option value="classica">Partida Classica</option>
+          <option value="misto">Misto</option>
+        </select>
+        <div className="grid grid-cols-2 gap-2">
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por time, atleta, data ou local"
-            className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
+            type="date"
+            value={rangeStart}
+            onChange={(e) => setRangeStart(e.target.value)}
+            className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-3 py-3 text-xs text-neutral-100"
           />
-          <select
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value)}
-            disabled={scopeFilter === "today"}
-            className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100 disabled:opacity-60"
-          >
-            <option value="all">Todos os anos</option>
-            {availableYears.map((year) => (
-              <option key={year} value={String(year)}>
-                {year}
-              </option>
-            ))}
-          </select>
-          <select
-            value={monthFilter}
-            onChange={(e) => setMonthFilter(e.target.value)}
-            disabled={scopeFilter === "today"}
-            className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100 disabled:opacity-60"
-          >
-            <option value="all">Todos os meses</option>
-            {availableMonths.map((month) => (
-              <option key={month} value={String(month)}>
-                {MONTH_LABELS[month - 1]}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => mutate()}
-            className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
-          >
-            Atualizar
-          </button>
+          <input
+            type="date"
+            value={rangeEnd}
+            onChange={(e) => setRangeEnd(e.target.value)}
+            className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-3 py-3 text-xs text-neutral-100"
+          />
         </div>
+        <button
+          type="button"
+          onClick={() => mutate()}
+          className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
+        >
+          Atualizar
+        </button>
       </div>
 
-      {isLoading ? (
-        <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
-          Carregando partidas...
-        </div>
-      ) : isError ? (
-        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-6 text-center text-sm text-red-200">
-          Falha ao carregar partidas. {error instanceof Error ? error.message : ""}
-        </div>
-      ) : filteredMatches.length === 0 ? (
-        <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
-          Nenhuma partida encontrada para os filtros atuais.
-        </div>
+      {filteredDays.length === 0 ? (
+        renderEmptyState("Nenhum dia encontrado para os filtros atuais.")
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {filteredMatches.map((item) => {
-            const { match, status, hasResult } = item;
-            const scoreLabel = hasResult ? `${match.scoreA} x ${match.scoreB}` : "-- x --";
-            const statusLabel =
-              status === "open"
-                ? "Sem resultado"
-                : status === "progress"
-                  ? "Em andamento"
-                  : "Finalizada";
-            const statusClass =
-              status === "open"
-                ? "bg-yellow-500/20 text-yellow-200"
-                : status === "progress"
-                  ? "bg-cyan-500/20 text-cyan-200"
-                  : "bg-green-600/20 text-green-200";
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {visibleDays.map((day) => {
+            const statusLabel = DAY_STATUS_LABELS[day.status];
+            const statusBadge = DAY_STATUS_BADGES[day.status];
+            const originLabel = ORIGIN_LABELS[day.origin];
+            const originBadge = ORIGIN_BADGES[day.origin];
 
             return (
-              <div
-                key={match.id}
-                className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4"
-              >
-                <div className="flex items-center justify-between gap-3 mb-4">
+              <div key={day.key} className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
+                <div className="flex items-start justify-between gap-3 mb-4">
                   <div>
-                    <p className="text-sm text-neutral-300 font-semibold">
-                      {formatDate(match.date, true)}
+                    <p className="text-sm font-semibold text-yellow-300">
+                      {format(day.date, "dd/MM/yyyy")} - {day.hora}
                     </p>
-                    <p className="text-xs text-neutral-500">
-                      {match.location || "Local nao informado"}
-                    </p>
+                    <p className="text-xs text-neutral-500">{day.location}</p>
+                    {day.lastUpdateLabel && (
+                      <p className="text-xs text-neutral-500 mt-1">
+                        Ultima atualizacao: {day.lastUpdateLabel}
+                      </p>
+                    )}
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusClass}`}
-                  >
-                    {statusLabel}
+                  <div className="flex flex-col items-end gap-2">
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold ${statusBadge}`}
+                    >
+                      {statusLabel}
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-[11px] font-semibold ${originBadge}`}
+                    >
+                      {originLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-300">
+                  <span className="rounded-full bg-neutral-800 px-3 py-1 font-semibold">
+                    {day.done} de {day.total} partidas finalizadas
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <Image
-                      src={match.teamA.logoUrl || FALLBACK_LOGO}
-                      alt={`Logo ${match.teamA.name}`}
-                      width={38}
-                      height={38}
-                      className="rounded"
-                    />
-                    <div>
-                      <p className="text-xs text-neutral-400">Time A</p>
-                      <p className="text-sm font-semibold">{match.teamA.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-lg font-bold text-yellow-400">{scoreLabel}</p>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
-                      <p className="text-xs text-neutral-400">Time B</p>
-                      <p className="text-sm font-semibold">{match.teamB.name}</p>
-                    </div>
-                    <Image
-                      src={match.teamB.logoUrl || FALLBACK_LOGO}
-                      alt={`Logo ${match.teamB.name}`}
-                      width={38}
-                      height={38}
-                      className="rounded"
-                    />
-                  </div>
+                <div className="mt-4 space-y-1 text-xs text-neutral-400">
+                  <p>
+                    Time campeao do dia:{" "}
+                    <span className="text-neutral-200">
+                      {day.highlights.campeao || "Nao definido"}
+                    </span>
+                  </p>
+                  <p>
+                    Artilheiro do dia:{" "}
+                    <span className="text-neutral-200">
+                      {day.highlights.artilheiro || "Nao definido"}
+                    </span>
+                  </p>
+                  <p>
+                    Maestro do dia:{" "}
+                    <span className="text-neutral-200">
+                      {day.highlights.maestro || "Nao definido"}
+                    </span>
+                  </p>
                 </div>
 
-                <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div className="text-xs text-neutral-500">
-                    {status === "open"
-                      ? "Sem resultado"
-                      : status === "progress"
-                        ? "Em andamento"
-                        : "Resultado registrado"}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedMatch(match)}
-                    className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link
+                    href={buildHistoricoLink({ dia: day.key })}
+                    className="rounded-xl border border-neutral-700 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-800"
                   >
-                    {hasResult ? "Editar resultado" : "Lancar resultado"}
-                  </button>
+                    Ver confrontos do dia
+                  </Link>
+                  {day.status !== "complete" && (
+                    <Link
+                      href={`/admin/partidas/resultados-do-dia?data=${day.key}`}
+                      className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
+                    >
+                      Continuar lancando resultados
+                    </Link>
+                  )}
                 </div>
               </div>
             );
@@ -904,15 +1349,16 @@ export default function HistoricoPartidasAdmin() {
         </div>
       )}
 
-      {selectedMatch && (
-        <MatchResultModal
-          match={selectedMatch}
-          onClose={() => setSelectedMatch(null)}
-          onSaved={() => {
-            setSelectedMatch(null);
-            mutate();
-          }}
-        />
+      {filteredDays.length > visibleCount && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+            className="rounded-xl border border-neutral-700 px-5 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
+          >
+            Carregar mais dias
+          </button>
+        </div>
       )}
     </div>
   );

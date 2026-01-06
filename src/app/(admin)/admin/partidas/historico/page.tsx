@@ -22,11 +22,11 @@ export default function AdminHistoricoPartidasPage() {
       <main className="pt-20 pb-24 md:pt-6 md:pb-10 px-4 bg-fundo min-h-screen text-white">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
-            Historico de Partidas (Admin)
+            Historico de Partidas
           </h1>
           <p className="text-base md:text-lg mb-6 text-textoSuave text-center">
-            Lance resultados em tempo real, registre gols e assistencias e mantenha o site publico
-            do racha sempre atualizado.
+            Navegue pelos dias de racha, acompanhe o status das rodadas e acesse os confrontos para
+            editar resultados com rapidez.
           </p>
           <HistoricoPartidasAdmin />
         </div>
