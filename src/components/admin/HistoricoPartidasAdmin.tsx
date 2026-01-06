@@ -14,6 +14,7 @@ const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const PAGE_SIZE = 30;
 const HISTORICO_LIMIT = 90;
+const DEFAULT_RANGE_DAYS = 30;
 
 const DAY_STATUS_LABELS: Record<DayStatus, string> = {
   pending: "Pendente",
@@ -131,6 +132,16 @@ function parseDayKey(value?: string | null) {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return null;
   return new Date(year, month - 1, day);
+}
+
+function buildDefaultRange() {
+  const end = new Date();
+  const start = new Date(end);
+  start.setDate(start.getDate() - DEFAULT_RANGE_DAYS);
+  return {
+    start: format(start, "yyyy-MM-dd"),
+    end: format(end, "yyyy-MM-dd"),
+  };
 }
 
 function isWithinRange(date: Date, start?: Date | null, end?: Date | null) {
@@ -468,7 +479,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   );
   const rosterB = useMemo(
     () => buildRoster(match, teamBId, teamAId, teamBId),
-    [match, teamBId, teamAId, teamBId]
+    [match, teamBId, teamAId]
   );
   const stats = useMemo(() => buildStats(events), [events]);
 
@@ -794,11 +805,12 @@ export default function HistoricoPartidasAdmin() {
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
+  const defaultRange = useMemo(() => buildDefaultRange(), []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<DayFilter>("all");
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
-  const [rangeStart, setRangeStart] = useState("");
-  const [rangeEnd, setRangeEnd] = useState("");
+  const [rangeStart, setRangeStart] = useState(defaultRange.start);
+  const [rangeEnd, setRangeEnd] = useState(defaultRange.end);
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -821,7 +833,7 @@ export default function HistoricoPartidasAdmin() {
       const todayKey = toDayKey(new Date());
       setRangeStart(todayKey);
       setRangeEnd(todayKey);
-    } else if (scopeParam === "historico" || scopeParam === "todas" || scopeParam === "all") {
+    } else if (scopeParam === "todas" || scopeParam === "all" || scopeParam === "completo") {
       setRangeStart("");
       setRangeEnd("");
     }
@@ -830,7 +842,7 @@ export default function HistoricoPartidasAdmin() {
     if (originParam === "sorteio" || originParam === "classica" || originParam === "misto") {
       setOriginFilter(originParam as OriginFilter);
     }
-  }, [searchParams]);
+  }, [defaultRange, searchParams]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
