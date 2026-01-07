@@ -63,6 +63,8 @@ type PlayerOption = {
   name: string;
   isBot: boolean;
   position: string;
+  positionLabel: string;
+  searchLabel: string;
 };
 
 type MatchCard = {
@@ -121,6 +123,20 @@ function normalizePosition(value?: string | null) {
   if (cleaned.startsWith("mei")) return "meia";
   if (cleaned.startsWith("ata")) return "atacante";
   return cleaned;
+}
+
+function resolvePositionLabel(value?: string | null) {
+  const normalized = normalizePosition(value);
+  if (!normalized) return "";
+  if (normalized === "goleiro") return "Goleiro";
+  if (normalized === "zagueiro") return "Zagueiro";
+  if (normalized === "meia") return "Meia";
+  if (normalized === "atacante") return "Atacante";
+  return normalized
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0]?.toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 function isGoalie(player: Jogador) {
@@ -308,14 +324,24 @@ function PartidaClassicaClient() {
 
   const playerOptions = useMemo<PlayerOption[]>(() => {
     return (jogadores || [])
-      .map((player) => ({
-        id: player.id,
-        label: getPlayerLabel(player),
-        name: player.nome || player.name || "Atleta",
-        isBot: Boolean(player.isBot),
-        position: normalizePosition(player.posicao || player.position || ""),
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+      .map((player) => {
+        const label = getPlayerLabel(player);
+        const position = normalizePosition(player.posicao || player.position || "");
+        const positionLabel = resolvePositionLabel(position);
+        return {
+          id: player.id,
+          label,
+          name: player.nome || player.name || "Atleta",
+          isBot: Boolean(player.isBot),
+          position,
+          positionLabel,
+          searchLabel: normalizeKey(`${label} ${positionLabel}`),
+        };
+      })
+      .sort((a, b) => {
+        if (a.isBot !== b.isBot) return a.isBot ? 1 : -1;
+        return a.name.localeCompare(b.name, "pt-BR");
+      });
   }, [jogadores]);
 
   const playerLabelById = useMemo(() => {
@@ -1118,9 +1144,9 @@ function PartidaClassicaClient() {
     const selected = side === "A" ? match.playersA : match.playersB;
     const blocked = new Set(side === "A" ? match.playersB : match.playersA);
     const searchKey = `${match.id}-${side}`;
-    const query = (retroSearchMap[searchKey] || "").trim().toLowerCase();
+    const query = normalizeKey(retroSearchMap[searchKey] || "");
     const filteredPlayers = playerOptions.filter((player) =>
-      query ? player.label.toLowerCase().includes(query) : true
+      query ? player.searchLabel.includes(query) : true
     );
 
     return (
@@ -1150,7 +1176,14 @@ function PartidaClassicaClient() {
                     onChange={() => toggleRetroPlayer(match.id, side, player.id)}
                     disabled={disabled}
                   />
-                  <span className={disabled ? "opacity-50" : ""}>{player.label}</span>
+                  <span className={`flex-1 ${disabled ? "opacity-50" : ""}`}>{player.label}</span>
+                  {player.positionLabel && (
+                    <span
+                      className={`text-[11px] text-neutral-400 ${disabled ? "opacity-50" : ""}`}
+                    >
+                      {player.positionLabel}
+                    </span>
+                  )}
                 </label>
               );
             })
@@ -1176,7 +1209,7 @@ function PartidaClassicaClient() {
     const selected = teamRosters[team.id] || [];
     const query = normalizeKey(teamSearchMap[team.id] || "");
     const filteredPlayers = playerOptions.filter((player) =>
-      query ? normalizeKey(player.label).includes(query) : true
+      query ? player.searchLabel.includes(query) : true
     );
     return (
       <div className="mt-3 rounded-xl border border-neutral-800 bg-[#151515] p-4">
@@ -1206,7 +1239,14 @@ function PartidaClassicaClient() {
                     onChange={() => toggleTeamPlayer(team.id, player.id)}
                     disabled={disabled}
                   />
-                  <span className={disabled ? "opacity-50" : ""}>{player.label}</span>
+                  <span className={`flex-1 ${disabled ? "opacity-50" : ""}`}>{player.label}</span>
+                  {player.positionLabel && (
+                    <span
+                      className={`text-[11px] text-neutral-400 ${disabled ? "opacity-50" : ""}`}
+                    >
+                      {player.positionLabel}
+                    </span>
+                  )}
                 </label>
               );
             })
