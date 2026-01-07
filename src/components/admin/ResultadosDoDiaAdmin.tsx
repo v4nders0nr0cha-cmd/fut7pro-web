@@ -33,6 +33,11 @@ const STATUS_BADGES: Record<MatchStatus, string> = {
 type MatchStatus = "not_started" | "in_progress" | "finished";
 type MatchFilter = "all" | MatchStatus;
 
+type ResultadosDoDiaAdminProps = {
+  showHeader?: boolean;
+  showFilters?: boolean;
+};
+
 type GoalEvent = {
   id: string;
   teamId: string;
@@ -1095,7 +1100,10 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   );
 }
 
-export default function ResultadosDoDiaAdmin() {
+export default function ResultadosDoDiaAdmin({
+  showHeader = true,
+  showFilters = true,
+}: ResultadosDoDiaAdminProps) {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
   const searchParams = useSearchParams();
@@ -1315,48 +1323,52 @@ export default function ResultadosDoDiaAdmin() {
           </div>
         </div>
       )}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
-            Registrar Resultados do Dia
-          </h1>
-          <p className="text-sm text-gray-300 mt-2">
-            Lance placares e gols em tempo real. Ao finalizar, rankings e perfis sao atualizados
-            automaticamente.
-          </p>
-          {activeLabel && <p className="mt-2 text-xs text-yellow-200">{activeLabel}</p>}
+      {showHeader && (
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
+              Registrar Resultados do Dia
+            </h1>
+            <p className="text-sm text-gray-300 mt-2">
+              Lance placares e gols em tempo real. Ao finalizar, rankings e perfis sao atualizados
+              automaticamente.
+            </p>
+            {activeLabel && <p className="mt-2 text-xs text-yellow-200">{activeLabel}</p>}
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            {AUTO_SAVE_ENABLED && (
+              <div className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs text-green-200">
+                Auto salvar: ativado
+              </div>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {AUTO_SAVE_ENABLED && (
-            <div className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs text-green-200">
-              Auto salvar: ativado
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {[
-          { value: "all", label: "Todas" },
-          { value: "not_started", label: "Sem resultado" },
-          { value: "in_progress", label: "Em andamento" },
-          { value: "finished", label: "Finalizadas" },
-        ].map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            onClick={() => setStatusFilter(filter.value as MatchFilter)}
-            className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-              statusFilter === filter.value
-                ? "border-yellow-400 bg-yellow-400 text-black"
-                : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
-            }`}
-          >
-            {filter.label}
-          </button>
-        ))}
-        {pendingLabel && <span className="text-xs text-yellow-200 ml-2">{pendingLabel}</span>}
-      </div>
+      {showFilters && (
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { value: "all", label: "Todas" },
+            { value: "not_started", label: "Sem resultado" },
+            { value: "in_progress", label: "Em andamento" },
+            { value: "finished", label: "Finalizadas" },
+          ].map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              onClick={() => setStatusFilter(filter.value as MatchFilter)}
+              className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+                statusFilter === filter.value
+                  ? "border-yellow-400 bg-yellow-400 text-black"
+                  : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
+              }`}
+            >
+              {filter.label}
+            </button>
+          ))}
+          {pendingLabel && <span className="text-xs text-yellow-200 ml-2">{pendingLabel}</span>}
+        </div>
+      )}
 
       {isLoading ? (
         <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
