@@ -1,7 +1,7 @@
 "use client";
 
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   FaArrowLeft,
@@ -75,6 +75,22 @@ type MatchCard = {
 
 function createDraftId() {
   return `draft-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+}
+
+export default function PartidaClassicaPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-fundo text-white px-4 pt-[64px] md:pt-[80px] pb-24 md:pb-10">
+          <div className="mx-auto max-w-6xl rounded-2xl border border-neutral-800 bg-[#151515] p-6 text-sm text-neutral-300">
+            Carregando sessao de partidas classicas...
+          </div>
+        </div>
+      }
+    >
+      <PartidaClassicaClient />
+    </Suspense>
+  );
 }
 
 function buildIsoDate(dateValue: string, timeValue: string) {
@@ -216,7 +232,7 @@ function pickTopTeam(list: TeamRankingEntry[]) {
   return [...list].sort((a, b) => b.pontos - a.pontos)[0];
 }
 
-export default function PartidaClassicaPage() {
+function PartidaClassicaClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
