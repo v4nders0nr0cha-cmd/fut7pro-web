@@ -1,7 +1,7 @@
 "use client";
 
 import Head from "next/head";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   FaArrowLeft,
@@ -681,31 +681,34 @@ function PartidaClassicaClient() {
     setNextTeamB(nextOpponent);
   }, [latestMatchInfo, liveRules.winnerStays, nextTeamA, nextTeamB, selectedTeams]);
 
-  const updateQueryDate = (nextDate?: string) => {
-    const params = new URLSearchParams(searchParams?.toString());
-    if (nextDate) {
-      params.set("data", nextDate);
-    } else {
-      params.delete("data");
-    }
-    const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname);
-  };
+  const updateQueryDate = useCallback(
+    (nextDate?: string) => {
+      const params = new URLSearchParams(searchParams?.toString());
+      if (nextDate) {
+        params.set("data", nextDate);
+      } else {
+        params.delete("data");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
 
   useEffect(() => {
     if (mode !== "live" || !liveActive || !liveDate) return;
     if (queryDate !== liveDate) updateQueryDate(liveDate);
-  }, [liveActive, liveDate, mode, queryDate]);
+  }, [liveActive, liveDate, mode, queryDate, updateQueryDate]);
 
   useEffect(() => {
     if (mode !== "live" && queryDate) updateQueryDate(undefined);
-  }, [mode, queryDate]);
+  }, [mode, queryDate, updateQueryDate]);
 
   useEffect(() => {
     if (mode !== "live") return;
     if (!queryDate) return;
     if (liveDate !== queryDate) setLiveDate(queryDate);
-  }, [mode, queryDate]);
+  }, [liveDate, mode, queryDate]);
 
   const toggleTeamSelection = (teamId: string) => {
     setSelectedTeams((prev) => {
