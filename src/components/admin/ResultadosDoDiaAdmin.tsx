@@ -1140,10 +1140,15 @@ export default function ResultadosDoDiaAdmin({
     });
   };
 
-  const handleDeleteMatch = useCallback(
+  const openDeleteModal = useCallback((match: PublicMatch) => {
+    setDeleteTarget(match);
+    setDeleteError(null);
+    setDeleteLoading(false);
+  }, []);
+
+  const confirmDeleteMatch = useCallback(
     async (match: PublicMatch) => {
       if (deleteLoading) return;
-      setDeleteTarget(match);
       setDeleteError(null);
       setDeleteLoading(true);
       try {
@@ -1514,7 +1519,7 @@ export default function ResultadosDoDiaAdmin({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        handleDeleteMatch(item.match);
+                        openDeleteModal(item.match);
                       }}
                       disabled={deleteLoading}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-red-300 hover:text-red-200 disabled:opacity-60"
@@ -1551,21 +1556,23 @@ export default function ResultadosDoDiaAdmin({
                 <FaTrash className="text-yellow-300" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-yellow-300">Deletando rodada</h3>
+                <h3 className="text-lg font-semibold text-yellow-300">
+                  {deleteLoading ? "Deletando rodada" : "Excluir rodada"}
+                </h3>
                 <p className="text-xs text-neutral-400">
                   {deleteTarget.teamA.name} x {deleteTarget.teamB.name}
                 </p>
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-3 text-sm text-neutral-300">
-              {deleteLoading && (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+            <div className="mt-4 text-sm text-neutral-300">
+              {deleteLoading ? (
+                <div className="flex items-center gap-3">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+                  <span>Aguarde, estamos removendo esta rodada.</span>
+                </div>
+              ) : (
+                <p>Tem certeza que deseja deletar esta rodada? Essa acao nao pode ser desfeita.</p>
               )}
-              <span>
-                {deleteLoading
-                  ? "Aguarde, estamos removendo esta rodada."
-                  : "Nao foi possivel concluir a exclusao."}
-              </span>
             </div>
             {deleteError && (
               <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">
@@ -1573,13 +1580,20 @@ export default function ResultadosDoDiaAdmin({
               </div>
             )}
             {!deleteLoading && (
-              <div className="mt-5 flex justify-end">
+              <div className="mt-5 flex justify-end gap-2">
                 <button
                   type="button"
                   onClick={handleCloseDeleteModal}
                   className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-200 hover:bg-neutral-800"
                 >
-                  Fechar
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteTarget && confirmDeleteMatch(deleteTarget)}
+                  className="rounded-lg bg-red-500 px-4 py-2 text-xs font-semibold text-white hover:bg-red-600"
+                >
+                  Deletar rodada
                 </button>
               </div>
             )}
