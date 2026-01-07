@@ -1867,7 +1867,15 @@ function PartidaClassicaClient() {
               Carregando resultados...
             </div>
           ) : (
-            <ResultadosDoDiaAdmin showHeader={false} showFilters={false} matchIds={liveMatchIds} />
+            <ResultadosDoDiaAdmin
+              showHeader={false}
+              showFilters={false}
+              matchIds={liveMatchIds}
+              allowDelete
+              onDeleteMatch={(matchId) =>
+                setLiveMatchIds((prev) => prev.filter((id) => id !== matchId))
+              }
+            />
           )}
         </section>
       )}

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import { FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaCheckCircle, FaExclamationTriangle, FaTrash } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
@@ -37,6 +37,8 @@ type ResultadosDoDiaAdminProps = {
   showHeader?: boolean;
   showFilters?: boolean;
   matchIds?: string[];
+  allowDelete?: boolean;
+  onDeleteMatch?: (matchId: string) => void;
 };
 
 type GoalEvent = {
@@ -1105,6 +1107,8 @@ export default function ResultadosDoDiaAdmin({
   showHeader = true,
   showFilters = true,
   matchIds,
+  allowDelete = false,
+  onDeleteMatch,
 }: ResultadosDoDiaAdminProps) {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const scopedMatches = useMemo(() => {
@@ -1120,6 +1124,9 @@ export default function ResultadosDoDiaAdmin({
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatus>>({});
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
   const [showPendingAlert, setShowPendingAlert] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<PublicMatch | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setStatusMap(loadStatusMap());
@@ -1131,6 +1138,42 @@ export default function ResultadosDoDiaAdmin({
       saveStatusMap(next);
       return next;
     });
+  };
+
+  const handleDeleteMatch = useCallback(
+    async (match: PublicMatch) => {
+      if (deleteLoading) return;
+      setDeleteTarget(match);
+      setDeleteError(null);
+      setDeleteLoading(true);
+      try {
+        const response = await fetch(`/api/partidas/${match.id}`, { method: "DELETE" });
+        if (!response.ok) {
+          const body = await response.text();
+          throw new Error(body || "Falha ao deletar rodada.");
+        }
+        setStatusMap((prev) => {
+          const next = { ...prev };
+          delete next[match.id];
+          saveStatusMap(next);
+          return next;
+        });
+        onDeleteMatch?.(match.id);
+        await mutate();
+        setDeleteTarget(null);
+      } catch (err) {
+        setDeleteError(err instanceof Error ? err.message : "Falha ao deletar rodada.");
+      } finally {
+        setDeleteLoading(false);
+      }
+    },
+    [deleteLoading, mutate, onDeleteMatch]
+  );
+
+  const handleCloseDeleteModal = () => {
+    if (deleteLoading) return;
+    setDeleteTarget(null);
+    setDeleteError(null);
   };
 
   const { activeLabel, matchCards } = useMemo(() => {
@@ -1400,11 +1443,18 @@ export default function ResultadosDoDiaAdmin({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredCards.map((item) => (
-            <button
+            <div
               key={item.match.id}
-              type="button"
               onClick={() => setSelectedMatch(item.match)}
-              className="text-left rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4 hover:border-yellow-400/50 transition"
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setSelectedMatch(item.match);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className="text-left rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4 hover:border-yellow-400/50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/60 cursor-pointer"
             >
               <div className="flex items-center justify-between gap-3 mb-4">
                 <div>
@@ -1458,9 +1508,24 @@ export default function ResultadosDoDiaAdmin({
 
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-neutral-500">Clique para abrir</span>
-                <span className="text-xs text-yellow-300">Abrir</span>
+                <div className="flex items-center gap-3">
+                  {allowDelete && (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDeleteMatch(item.match);
+                      }}
+                      disabled={deleteLoading}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-red-300 hover:text-red-200 disabled:opacity-60"
+                    >
+                      <FaTrash /> Deletar
+                    </button>
+                  )}
+                  <span className="text-xs text-yellow-300">Abrir</span>
+                </div>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       )}
@@ -1476,6 +1541,50 @@ export default function ResultadosDoDiaAdmin({
             mutate();
           }}
         />
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-neutral-800 bg-[#151515] p-6">
+            <div className="flex items-center gap-3 text-yellow-200">
+              <div className="h-8 w-8 rounded-full bg-yellow-400/10 flex items-center justify-center">
+                <FaTrash className="text-yellow-300" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-yellow-300">Deletando rodada</h3>
+                <p className="text-xs text-neutral-400">
+                  {deleteTarget.teamA.name} x {deleteTarget.teamB.name}
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center gap-3 text-sm text-neutral-300">
+              {deleteLoading && (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+              )}
+              <span>
+                {deleteLoading
+                  ? "Aguarde, estamos removendo esta rodada."
+                  : "Nao foi possivel concluir a exclusao."}
+              </span>
+            </div>
+            {deleteError && (
+              <div className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">
+                {deleteError}
+              </div>
+            )}
+            {!deleteLoading && (
+              <div className="mt-5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleCloseDeleteModal}
+                  className="rounded-lg border border-neutral-700 px-4 py-2 text-xs text-neutral-200 hover:bg-neutral-800"
+                >
+                  Fechar
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
