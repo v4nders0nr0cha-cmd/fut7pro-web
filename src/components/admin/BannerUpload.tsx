@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import Cropper, { type Area, type Point } from "react-easy-crop";
 
 type Props = {
   bannerUrl: string | null;
@@ -10,11 +11,60 @@ type Props = {
   onRemove?: () => void;
 };
 
+const loadImage = (url: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Falha ao carregar imagem"));
+    image.src = url;
+  });
+
+const getCroppedFile = async (previewUrl: string | null, file: File, cropPixels: Area | null) => {
+  if (!cropPixels) return file;
+  const sourceUrl = previewUrl || URL.createObjectURL(file);
+  const shouldRevoke = !previewUrl;
+
+  try {
+    const image = await loadImage(sourceUrl);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    const cropX = Math.max(0, Math.round(cropPixels.x));
+    const cropY = Math.max(0, Math.round(cropPixels.y));
+    const cropWidth = Math.min(image.naturalWidth - cropX, Math.round(cropPixels.width));
+    const cropHeight = Math.min(image.naturalHeight - cropY, Math.round(cropPixels.height));
+
+    canvas.width = Math.max(1, cropWidth);
+    canvas.height = Math.max(1, cropHeight);
+
+    ctx.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, file.type || "image/jpeg", 0.92)
+    );
+
+    if (!blob) return file;
+    return new File([blob], file.name, {
+      type: file.type || "image/jpeg",
+      lastModified: file.lastModified,
+    });
+  } finally {
+    if (shouldRevoke) {
+      URL.revokeObjectURL(sourceUrl);
+    }
+  }
+};
+
 export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, onRemove }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     if (!previewUrl) return undefined;
@@ -41,6 +91,10 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
     setPreviewUrl(url);
     setPendingFile(file);
     setLoadError(false);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setIsCropping(true);
     event.target.value = "";
   };
 
@@ -48,6 +102,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
     setPreviewUrl(null);
     setPendingFile(null);
     setLoadError(false);
+    setIsCropping(false);
     onRemove?.();
   };
 
@@ -59,20 +114,31 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
     setPreviewUrl(null);
     setPendingFile(null);
     setLoadError(false);
+    setIsCropping(false);
   };
 
   const handleSave = async () => {
     if (!pendingFile) return;
-    const ok = await onUpload(pendingFile);
+    const output = await getCroppedFile(previewUrl, pendingFile, croppedAreaPixels);
+    const ok = await onUpload(output);
     if (ok) {
       setPendingFile(null);
       setPreviewUrl(null);
+      setIsCropping(false);
     }
   };
 
   useEffect(() => {
     setLoadError(false);
   }, [displayUrl]);
+
+  const handleCropComplete = (_area: Area, pixels: Area) => {
+    setCroppedAreaPixels(pixels);
+  };
+
+  const handleZoomChange = (value: number) => {
+    setZoom(value);
+  };
 
   return (
     <div className="bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 mt-2 flex flex-col gap-4 items-center justify-center w-full max-w-2xl">
@@ -89,7 +155,58 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
       />
       {displayUrl ? (
         <div className="flex flex-col items-center gap-2 w-full">
-          {!loadError ? (
+          {isCropping && previewUrl ? (
+            <div className="w-full max-w-xl flex flex-col gap-3">
+              <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-950">
+                <Cropper
+                  image={previewUrl}
+                  crop={crop}
+                  zoom={zoom}
+                  rotation={0}
+                  aspect={16 / 9}
+                  minZoom={1}
+                  maxZoom={3}
+                  cropShape="rect"
+                  showGrid={true}
+                  zoomSpeed={0.2}
+                  restrictPosition={true}
+                  onCropChange={setCrop}
+                  onZoomChange={handleZoomChange}
+                  onCropComplete={handleCropComplete}
+                  style={{
+                    containerStyle: { width: "100%", height: "100%" },
+                    cropAreaStyle: {
+                      border: "2px solid rgba(250, 204, 21, 0.9)",
+                      boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.55)",
+                    },
+                  }}
+                  classes={{}}
+                  mediaProps={{}}
+                  cropperProps={{}}
+                  zoomWithScroll={false}
+                  keyboardStep={1}
+                />
+                <div className="pointer-events-none absolute inset-0">
+                  <div className="absolute inset-0 border-2 border-yellow-400/70 rounded-xl" />
+                  <div className="absolute left-1/2 top-0 bottom-0 w-px bg-yellow-400/30" />
+                  <div className="absolute top-1/2 left-0 right-0 h-px bg-yellow-400/30" />
+                </div>
+              </div>
+              <div className="w-full flex items-center justify-between text-xs text-zinc-300">
+                <span>Area do banner (16:9). Arraste para posicionar.</span>
+                <span>Zoom: {zoom.toFixed(2)}x</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.05}
+                value={zoom}
+                onChange={(event) => handleZoomChange(Number(event.target.value))}
+                className="w-full accent-yellow-400"
+              />
+            </div>
+          ) : !loadError ? (
             <img
               src={displayUrl}
               alt="Banner do Time Campeao do Dia"
