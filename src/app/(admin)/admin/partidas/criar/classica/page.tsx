@@ -159,14 +159,6 @@ function parseMatchDate(value?: string | null) {
   return date;
 }
 
-function isSameLocalDay(left: Date, right: Date) {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-}
-
 function resolvePresenceTeamId(
   presence: any,
   teamA: any,
@@ -279,6 +271,7 @@ function PartidaClassicaClient() {
     goalieRequired: false,
   });
   const [liveActive, setLiveActive] = useState(false);
+  const [liveMatchIds, setLiveMatchIds] = useState<string[]>([]);
   const [liveError, setLiveError] = useState<string | null>(null);
   const [liveNotice, setLiveNotice] = useState<string | null>(null);
   const [liveMatchError, setLiveMatchError] = useState<string | null>(null);
@@ -423,24 +416,22 @@ function PartidaClassicaClient() {
     mutate: mutateMatches,
   } = useAdminMatches({ enabled: mode === "live" && liveActive });
 
+  const sessionMatches = useMemo(() => {
+    if (!liveMatchIds.length) return [] as PublicMatch[];
+    const matchMap = new Map(adminMatches.map((match) => [match.id, match]));
+    return liveMatchIds.map((matchId) => matchMap.get(matchId)).filter(Boolean) as PublicMatch[];
+  }, [adminMatches, liveMatchIds]);
+
   const sessionCards = useMemo(() => {
-    if (!liveDate) return [] as MatchCard[];
-    const day = new Date(`${liveDate}T00:00:00`);
-    if (Number.isNaN(day.getTime())) return [] as MatchCard[];
-    return adminMatches
+    if (!sessionMatches.length) return [] as MatchCard[];
+    return sessionMatches
       .map((match) => {
         const date = parseMatchDate(match.date);
-        if (!date || !isSameLocalDay(date, day)) return null;
         const { scoreA, scoreB, hasResult } = resolveMatchScore(match);
         return { match, date, scoreA, scoreB, hasResult } as MatchCard;
       })
-      .filter(Boolean)
-      .sort((a, b) => {
-        const left = (a as MatchCard).date?.getTime() ?? 0;
-        const right = (b as MatchCard).date?.getTime() ?? 0;
-        return left - right;
-      }) as MatchCard[];
-  }, [adminMatches, liveDate]);
+      .filter(Boolean) as MatchCard[];
+  }, [sessionMatches]);
 
   const pendingMatches = useMemo(
     () => sessionCards.filter((item) => !item.hasResult),
@@ -552,6 +543,7 @@ function PartidaClassicaClient() {
         teamRosters?: Record<string, string[]>;
         rules?: LiveRules;
         isActive?: boolean;
+        matchIds?: string[];
       };
       if (parsed?.date) setLiveDate(parsed.date);
       if (parsed?.time) setLiveTime(parsed.time);
@@ -566,6 +558,7 @@ function PartidaClassicaClient() {
       }
       if (parsed?.rules) setLiveRules(parsed.rules);
       if (typeof parsed?.isActive === "boolean") setLiveActive(parsed.isActive);
+      if (Array.isArray(parsed?.matchIds)) setLiveMatchIds(parsed.matchIds);
       setHasLiveDraft(true);
     } catch {
       setHasLiveDraft(false);
@@ -612,7 +605,8 @@ function PartidaClassicaClient() {
       selectedTeams.length > 0 ||
       liveLocation ||
       liveTime ||
-      liveDate !== defaultDate;
+      liveDate !== defaultDate ||
+      liveMatchIds.length > 0;
     if (!hasContent) {
       window.localStorage.removeItem(liveStorageKey);
       setHasLiveDraft(false);
@@ -627,6 +621,7 @@ function PartidaClassicaClient() {
       teamRosters,
       rules: liveRules,
       isActive: liveActive,
+      matchIds: liveMatchIds,
     };
     window.localStorage.setItem(liveStorageKey, JSON.stringify(payload));
     setHasLiveDraft(true);
@@ -636,6 +631,7 @@ function PartidaClassicaClient() {
     liveDate,
     liveDraftLoaded,
     liveLocation,
+    liveMatchIds,
     liveRules,
     liveStorageKey,
     liveTeamCount,
@@ -798,6 +794,7 @@ function PartidaClassicaClient() {
       goalieRequired: false,
     });
     setLiveActive(false);
+    setLiveMatchIds([]);
     setMatchTeamA("");
     setMatchTeamB("");
     setMatchTime("");
@@ -937,7 +934,7 @@ function PartidaClassicaClient() {
     setCreatingMatch(true);
     setLiveMatchError(null);
     try {
-      await createMatch({
+      const createdId = await createMatch({
         teamAId: opts.teamAId,
         teamBId: opts.teamBId,
         dateValue: liveDate,
@@ -946,6 +943,7 @@ function PartidaClassicaClient() {
         rosterA,
         rosterB,
       });
+      setLiveMatchIds((prev) => (prev.includes(createdId) ? prev : [...prev, createdId]));
       await mutateMatches();
       setMatchTeamA("");
       setMatchTeamB("");
@@ -1869,7 +1867,7 @@ function PartidaClassicaClient() {
               Carregando resultados...
             </div>
           ) : (
-            <ResultadosDoDiaAdmin showHeader={false} showFilters={false} />
+            <ResultadosDoDiaAdmin showHeader={false} showFilters={false} matchIds={liveMatchIds} />
           )}
         </section>
       )}

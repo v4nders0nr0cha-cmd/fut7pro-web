@@ -36,6 +36,7 @@ type MatchFilter = "all" | MatchStatus;
 type ResultadosDoDiaAdminProps = {
   showHeader?: boolean;
   showFilters?: boolean;
+  matchIds?: string[];
 };
 
 type GoalEvent = {
@@ -1103,8 +1104,15 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 export default function ResultadosDoDiaAdmin({
   showHeader = true,
   showFilters = true,
+  matchIds,
 }: ResultadosDoDiaAdminProps) {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const scopedMatches = useMemo(() => {
+    if (!matchIds) return matches;
+    if (matchIds.length === 0) return [];
+    const allowed = new Set(matchIds);
+    return matches.filter((match) => allowed.has(match.id));
+  }, [matchIds, matches]);
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
   const searchParams = useSearchParams();
   const forcedDate = useMemo(() => parseDayParam(searchParams?.get("data")), [searchParams]);
@@ -1129,7 +1137,7 @@ export default function ResultadosDoDiaAdmin({
     const today = startOfDay(new Date());
     const yesterday = addDays(today, -1);
 
-    const entries = matches
+    const entries = scopedMatches
       .map((match) => {
         const date = parseMatchDate(match.date);
         if (!date) return null;
@@ -1237,11 +1245,11 @@ export default function ResultadosDoDiaAdmin({
       activeLabel: activeLabelValue,
       matchCards: cards,
     };
-  }, [matches, sorteioPublicado.data, statusMap, forcedDate]);
+  }, [scopedMatches, sorteioPublicado.data, statusMap, forcedDate]);
 
   const pendingInfo = useMemo(() => {
     const today = startOfDay(new Date());
-    const pending = matches
+    const pending = scopedMatches
       .map((match) => {
         const date = parseMatchDate(match.date);
         if (!date) return null;
@@ -1264,7 +1272,7 @@ export default function ResultadosDoDiaAdmin({
       count: pending.length,
       oldestDate: pending[0].date,
     };
-  }, [matches, statusMap]);
+  }, [scopedMatches, statusMap]);
 
   const filteredCards = useMemo(() => {
     if (statusFilter === "all") return matchCards;
