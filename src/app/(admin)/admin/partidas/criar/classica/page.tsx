@@ -75,8 +75,40 @@ type MatchCard = {
   hasResult: boolean;
 };
 
+type StandingsRow = {
+  teamId: string;
+  name: string;
+  points: number;
+  played: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDiff: number;
+};
+
 function createDraftId() {
   return `draft-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+}
+
+function getBrasiliaTimeValue(date = new Date()) {
+  try {
+    const parts = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).formatToParts(date);
+    const hour = parts.find((part) => part.type === "hour")?.value ?? "00";
+    const minute = parts.find((part) => part.type === "minute")?.value ?? "00";
+    return `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+  } catch {
+    const local = new Date();
+    const hour = String(local.getHours()).padStart(2, "0");
+    const minute = String(local.getMinutes()).padStart(2, "0");
+    return `${hour}:${minute}`;
+  }
 }
 
 export default function PartidaClassicaPage() {
@@ -203,19 +235,6 @@ function resolveMatchScore(match: PublicMatch) {
   return { scoreA, scoreB, hasResult };
 }
 
-function formatDateLabel(value?: string | null) {
-  if (!value) return "Data nao informada";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data nao informada";
-  return date.toLocaleDateString("pt-BR");
-}
-
-function formatTimeLabel(value?: Date | null) {
-  if (!value) return "--:--";
-  if (Number.isNaN(value.getTime())) return "--:--";
-  return value.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
 function parseScore(value: string) {
   if (value === "") return null;
   const parsed = Number(value);
@@ -285,6 +304,7 @@ function PartidaClassicaClient() {
   const [nextTeamA, setNextTeamA] = useState("");
   const [nextTeamB, setNextTeamB] = useState("");
   const [nextTime, setNextTime] = useState("");
+  const [nextTimeAuto, setNextTimeAuto] = useState(false);
   const [hasLiveDraft, setHasLiveDraft] = useState(false);
   const [liveDraftLoaded, setLiveDraftLoaded] = useState(false);
 
@@ -437,6 +457,82 @@ function PartidaClassicaClient() {
     () => sessionCards.filter((item) => !item.hasResult),
     [sessionCards]
   );
+
+  const liveStandings = useMemo<StandingsRow[]>(() => {
+    const map = new Map<string, StandingsRow>();
+
+    const ensureTeam = (teamId: string, name: string) => {
+      if (!teamId) return;
+      if (!map.has(teamId)) {
+        map.set(teamId, {
+          teamId,
+          name,
+          points: 0,
+          played: 0,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          goalDiff: 0,
+        });
+      }
+    };
+
+    selectedTeamsData.forEach((team) => ensureTeam(team.id, team.nome));
+
+    sessionCards.forEach((item, index) => {
+      const teamAId = item.match.teamA.id ?? `team-a-${index}`;
+      const teamBId = item.match.teamB.id ?? `team-b-${index}`;
+      ensureTeam(teamAId, item.match.teamA.name);
+      ensureTeam(teamBId, item.match.teamB.name);
+      if (!item.hasResult) return;
+
+      const rowA = map.get(teamAId);
+      const rowB = map.get(teamBId);
+      if (!rowA || !rowB) return;
+
+      const scoreA = Number(item.scoreA ?? 0);
+      const scoreB = Number(item.scoreB ?? 0);
+
+      rowA.played += 1;
+      rowB.played += 1;
+      rowA.goalsFor += scoreA;
+      rowA.goalsAgainst += scoreB;
+      rowB.goalsFor += scoreB;
+      rowB.goalsAgainst += scoreA;
+
+      if (scoreA > scoreB) {
+        rowA.wins += 1;
+        rowB.losses += 1;
+        rowA.points += 3;
+      } else if (scoreB > scoreA) {
+        rowB.wins += 1;
+        rowA.losses += 1;
+        rowB.points += 3;
+      } else {
+        rowA.draws += 1;
+        rowB.draws += 1;
+        rowA.points += 1;
+        rowB.points += 1;
+      }
+    });
+
+    const rows = Array.from(map.values()).map((row) => ({
+      ...row,
+      goalDiff: row.goalsFor - row.goalsAgainst,
+    }));
+
+    rows.sort((a, b) => {
+      if (b.points !== a.points) return b.points - a.points;
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      if (b.goalDiff !== a.goalDiff) return b.goalDiff - a.goalDiff;
+      if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+      return a.name.localeCompare(b.name, "pt-BR");
+    });
+
+    return rows;
+  }, [selectedTeamsData, sessionCards]);
 
   const latestMatchInfo = useMemo(() => {
     if (!sessionCards.length) return null;
@@ -1621,9 +1717,10 @@ function PartidaClassicaClient() {
       <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-yellow-300">Rodadas e confrontos</h2>
+            <h2 className="text-lg font-semibold text-yellow-300">Tabela de classificacao</h2>
             <p className="text-xs text-neutral-400">
-              Cadastre a rodada atual e acompanhe a sequencia de jogos.
+              Pontuacao em tempo real baseada nos resultados desta sessao (3 pontos vitoria, 1
+              empate).
             </p>
           </div>
           <button
@@ -1639,7 +1736,7 @@ function PartidaClassicaClient() {
           <div className="rounded-2xl border border-neutral-800 bg-[#101010] p-4 space-y-4">
             <div className="flex items-center gap-2 text-xs text-neutral-400">
               <FaUsers className="text-yellow-400" />
-              Rodada {sessionCards.length + 1}
+              Rodada {liveMatchIds.length + 1}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex flex-col gap-2">
@@ -1706,45 +1803,57 @@ function PartidaClassicaClient() {
           </div>
         )}
 
-        {sessionCards.length === 0 ? (
-          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
-            Nenhuma rodada cadastrada ainda. Use o botao acima para iniciar a primeira partida.
+        <div className="rounded-2xl border border-neutral-800 bg-[#101010]">
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-neutral-200">
+              <thead className="bg-[#0f0f0f] text-[11px] uppercase tracking-wide text-neutral-400">
+                <tr>
+                  <th className="px-4 py-3 text-left">Pos</th>
+                  <th className="px-4 py-3 text-left">Time</th>
+                  <th className="px-3 py-3 text-right">Pts</th>
+                  <th className="px-3 py-3 text-right">J</th>
+                  <th className="px-3 py-3 text-right">V</th>
+                  <th className="px-3 py-3 text-right">E</th>
+                  <th className="px-3 py-3 text-right">D</th>
+                  <th className="px-3 py-3 text-right">GP</th>
+                  <th className="px-3 py-3 text-right">GC</th>
+                  <th className="px-3 py-3 text-right">SG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {liveStandings.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-6 text-center text-xs text-neutral-400">
+                      Selecione os times e registre resultados para ver a tabela.
+                    </td>
+                  </tr>
+                ) : (
+                  liveStandings.map((row, index) => (
+                    <tr
+                      key={row.teamId}
+                      className={`border-t border-neutral-800 ${
+                        index === 0 ? "bg-green-500/5" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-semibold text-neutral-300">{index + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-neutral-100">{row.name}</td>
+                      <td className="px-3 py-3 text-right font-semibold text-yellow-300">
+                        {row.points}
+                      </td>
+                      <td className="px-3 py-3 text-right">{row.played}</td>
+                      <td className="px-3 py-3 text-right">{row.wins}</td>
+                      <td className="px-3 py-3 text-right">{row.draws}</td>
+                      <td className="px-3 py-3 text-right">{row.losses}</td>
+                      <td className="px-3 py-3 text-right">{row.goalsFor}</td>
+                      <td className="px-3 py-3 text-right">{row.goalsAgainst}</td>
+                      <td className="px-3 py-3 text-right">{row.goalDiff}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {sessionCards.map((item, index) => (
-              <div
-                key={item.match.id}
-                className="rounded-2xl border border-neutral-800 bg-[#101010] p-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs text-neutral-400">Rodada {index + 1}</p>
-                    <p className="text-sm text-neutral-300">
-                      {formatDateLabel(item.match.date)} - {formatTimeLabel(item.date)}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                      item.hasResult
-                        ? "bg-green-500/20 text-green-200"
-                        : "bg-yellow-500/20 text-yellow-200"
-                    }`}
-                  >
-                    {item.hasResult ? "Finalizada" : "Pendente"}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-neutral-200">{item.match.teamA.name}</span>
-                  <span className="text-yellow-400 font-semibold">
-                    {item.scoreA} x {item.scoreB}
-                  </span>
-                  <span className="text-neutral-200">{item.match.teamB.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        </div>
 
         {liveActive && sessionCards.length > 0 && (
           <div className="rounded-2xl border border-neutral-800 bg-[#101010] p-4 space-y-4">
@@ -1813,13 +1922,33 @@ function PartidaClassicaClient() {
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-neutral-400">Horario</label>
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs text-neutral-400">Horario</label>
+                  <label className="flex items-center gap-2 text-[11px] text-neutral-400">
+                    <input
+                      type="checkbox"
+                      checked={nextTimeAuto}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setNextTimeAuto(checked);
+                        if (checked) setNextTime("");
+                      }}
+                    />
+                    Horario automatico
+                  </label>
+                </div>
                 <input
                   type="time"
                   value={nextTime}
                   onChange={(e) => setNextTime(e.target.value)}
+                  disabled={nextTimeAuto}
                   className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
                 />
+                {nextTimeAuto && (
+                  <span className="text-[11px] text-neutral-500">
+                    Horario definido automaticamente no momento do cadastro (Brasilia).
+                  </span>
+                )}
               </div>
             </div>
             <button
@@ -1828,7 +1957,7 @@ function PartidaClassicaClient() {
                 handleCreateLiveMatch({
                   teamAId: nextTeamA,
                   teamBId: nextTeamB,
-                  timeValue: nextTime,
+                  timeValue: nextTimeAuto ? getBrasiliaTimeValue() : nextTime,
                 })
               }
               disabled={creatingMatch}

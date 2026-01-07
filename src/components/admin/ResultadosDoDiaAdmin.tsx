@@ -1182,6 +1182,49 @@ export default function ResultadosDoDiaAdmin({
   };
 
   const { activeLabel, matchCards } = useMemo(() => {
+    if (matchIds) {
+      if (matchIds.length === 0) {
+        return { activeLabel: "", matchCards: [] as MatchCard[] };
+      }
+      const matchMap = new Map(scopedMatches.map((match) => [match.id, match]));
+      const orderedEntries = matchIds
+        .map((matchId) => {
+          const match = matchMap.get(matchId);
+          if (!match) return null;
+          const date = parseMatchDate(match.date);
+          if (!date) return null;
+          return {
+            match,
+            date,
+            status: resolveMatchStatus(match, statusMap),
+          };
+        })
+        .filter(Boolean) as Array<{ match: PublicMatch; date: Date; status: MatchStatus }>;
+
+      const cards = orderedEntries.map((item, index) => {
+        const teamAId = item.match.teamA.id ?? "team-a";
+        const teamBId = item.match.teamB.id ?? "team-b";
+        const goalsA = countPresenceGoals(item.match, teamAId, teamAId, teamBId);
+        const goalsB = countPresenceGoals(item.match, teamBId, teamAId, teamBId);
+        const scoreA = item.match.scoreA ?? goalsA;
+        const scoreB = item.match.scoreB ?? goalsB;
+
+        return {
+          match: item.match,
+          date: item.date ?? null,
+          order: index + 1,
+          status: item.status,
+          scoreA,
+          scoreB,
+        } as MatchCard;
+      });
+
+      return {
+        activeLabel: "Rodadas da sessao",
+        matchCards: cards,
+      };
+    }
+
     const today = startOfDay(new Date());
     const yesterday = addDays(today, -1);
 
@@ -1293,7 +1336,7 @@ export default function ResultadosDoDiaAdmin({
       activeLabel: activeLabelValue,
       matchCards: cards,
     };
-  }, [scopedMatches, sorteioPublicado.data, statusMap, forcedDate]);
+  }, [matchIds, scopedMatches, sorteioPublicado.data, statusMap, forcedDate]);
 
   const pendingInfo = useMemo(() => {
     const today = startOfDay(new Date());
