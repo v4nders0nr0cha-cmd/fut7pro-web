@@ -305,6 +305,7 @@ function PartidaClassicaClient() {
   const [nextTeamB, setNextTeamB] = useState("");
   const [nextTime, setNextTime] = useState("");
   const [nextTimeAuto, setNextTimeAuto] = useState(false);
+  const [nextTimePreview, setNextTimePreview] = useState(getBrasiliaTimeValue());
   const [hasLiveDraft, setHasLiveDraft] = useState(false);
   const [liveDraftLoaded, setLiveDraftLoaded] = useState(false);
 
@@ -776,6 +777,15 @@ function PartidaClassicaClient() {
     setNextTeamA(latestMatchInfo.winnerId);
     setNextTeamB(nextOpponent);
   }, [latestMatchInfo, liveRules.winnerStays, nextTeamA, nextTeamB, selectedTeams]);
+
+  useEffect(() => {
+    if (!nextTimeAuto) return;
+    setNextTimePreview(getBrasiliaTimeValue());
+    const interval = setInterval(() => {
+      setNextTimePreview(getBrasiliaTimeValue());
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [nextTimeAuto]);
 
   const updateQueryDate = useCallback(
     (nextDate?: string) => {
@@ -1946,7 +1956,8 @@ function PartidaClassicaClient() {
                 />
                 {nextTimeAuto && (
                   <span className="text-[11px] text-neutral-500">
-                    Horario definido automaticamente no momento do cadastro (Brasilia).
+                    Agora (Brasilia): {nextTimePreview}. Horario definido automaticamente no momento
+                    do cadastro.
                   </span>
                 )}
               </div>

@@ -588,6 +588,8 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   const [localStatus, setLocalStatus] = useState<MatchStatus>(status);
   const [goalModalTeam, setGoalModalTeam] = useState<"A" | "B" | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [goalSavePending, setGoalSavePending] = useState(false);
+  const [goalSaveInFlight, setGoalSaveInFlight] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [locked, setLocked] = useState(status === "finished");
   const [scoreMode, setScoreMode] = useState(false);
@@ -750,6 +752,17 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
     return () => clearTimeout(timeout);
   }, [events, localStatus, locked, persistMatch]);
 
+  useEffect(() => {
+    if (goalSavePending && isSaving) {
+      setGoalSaveInFlight(true);
+      setGoalSavePending(false);
+      return;
+    }
+    if (goalSaveInFlight && !isSaving) {
+      setGoalSaveInFlight(false);
+    }
+  }, [goalSaveInFlight, goalSavePending, isSaving]);
+
   const handleAddGoal = (team: "A" | "B") => {
     if (locked) return;
     setGoalModalTeam(team);
@@ -758,6 +771,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   const handleSaveGoal = (event: GoalEvent) => {
     setEvents((prev) => [...prev, event]);
     setGoalModalTeam(null);
+    setGoalSavePending(true);
     if (localStatus === "not_started") {
       onStatusChange(match.id, "in_progress");
       setLocalStatus("in_progress");
@@ -955,6 +969,12 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
           </button>
           {AUTO_SAVE_ENABLED && (
             <span className="text-xs text-green-300">Auto salvar: ativado</span>
+          )}
+          {(goalSavePending || goalSaveInFlight) && (
+            <span className="inline-flex items-center gap-2 text-xs text-yellow-300">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+              Registrando gol...
+            </span>
           )}
         </div>
 
