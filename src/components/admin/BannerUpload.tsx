@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import Image from "next/image";
 
 type Props = {
   bannerUrl: string | null;
@@ -33,7 +32,6 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
   }, [bannerUrl, previewUrl]);
 
   const displayUrl = previewUrl || bannerUrl;
-  const isLocal = Boolean(displayUrl?.startsWith("blob:") || displayUrl?.startsWith("data:"));
   const hasPending = Boolean(pendingFile);
 
   const handleUpload = (event: ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +47,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
   const handleRemove = () => {
     setPreviewUrl(null);
     setPendingFile(null);
+    setLoadError(false);
     onRemove?.();
   };
 
@@ -59,6 +58,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
   const handleCancel = () => {
     setPreviewUrl(null);
     setPendingFile(null);
+    setLoadError(false);
   };
 
   const handleSave = async () => {
@@ -69,6 +69,10 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
       setPreviewUrl(null);
     }
   };
+
+  useEffect(() => {
+    setLoadError(false);
+  }, [displayUrl]);
 
   return (
     <div className="bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 mt-2 flex flex-col gap-4 items-center justify-center w-full max-w-2xl">
@@ -86,14 +90,12 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
       {displayUrl ? (
         <div className="flex flex-col items-center gap-2 w-full">
           {!loadError ? (
-            <Image
+            <img
               src={displayUrl}
               alt="Banner do Time Campeao do Dia"
-              width={600}
-              height={150}
               className="rounded-xl object-cover w-full max-w-xl"
-              unoptimized={isLocal}
               onError={() => setLoadError(true)}
+              loading="lazy"
             />
           ) : (
             <div className="w-full max-w-xl rounded-xl border border-yellow-400/40 bg-zinc-800 px-4 py-6 text-center text-sm text-yellow-200">

@@ -17,6 +17,9 @@ export default function TimeCampeaoDoDiaPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
+  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   const { confrontos, times, dataReferencia } = useMemo(
     () => buildDestaquesDoDia(partidas as any),
@@ -71,6 +74,11 @@ export default function TimeCampeaoDoDiaPage() {
     return () => {
       active = false;
     };
+  }, [dataKey]);
+
+  useEffect(() => {
+    setPublishMessage(null);
+    setPublishError(null);
   }, [dataKey]);
 
   const parseBody = (text: string) => {
@@ -177,6 +185,27 @@ export default function TimeCampeaoDoDiaPage() {
     }
   };
 
+  const handlePublish = async () => {
+    if (!dataKey) return;
+    setIsPublishing(true);
+    setPublishError(null);
+    setPublishMessage(null);
+    try {
+      const response = await fetch("/api/admin/destaques-do-dia/publicar", {
+        method: "POST",
+      });
+      const bodyText = await response.text().catch(() => "");
+      if (!response.ok) {
+        throw new Error(resolveErrorMessage(bodyText, "Falha ao publicar no site."));
+      }
+      setPublishMessage("Destaques publicados no site publico com sucesso.");
+    } catch (err) {
+      setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -265,6 +294,30 @@ export default function TimeCampeaoDoDiaPage() {
                 onUpload={handleBannerUpload}
                 onRemove={handleBannerRemove}
               />
+
+              <div className="w-full max-w-2xl flex flex-col items-center gap-3 bg-zinc-900 border border-yellow-400/40 rounded-xl p-6">
+                <div className="text-yellow-300 font-semibold text-lg text-center">
+                  Salvar e Publicar no Site
+                </div>
+                <p className="text-sm text-zinc-300 text-center max-w-md">
+                  Aplica o Time Campeao do Dia, destaques individuais e banner no site publico do
+                  seu racha.
+                </p>
+                <button
+                  type="button"
+                  className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-2 rounded-lg shadow disabled:opacity-60"
+                  onClick={handlePublish}
+                  disabled={isSaving || isPublishing}
+                >
+                  {isPublishing ? "Publicando no site..." : "Salvar e Publicar no Site"}
+                </button>
+                {publishMessage && (
+                  <div className="text-sm text-green-300 text-center">{publishMessage}</div>
+                )}
+                {publishError && (
+                  <div className="text-sm text-red-200 text-center">{publishError}</div>
+                )}
+              </div>
             </div>
           </>
         )}
