@@ -4,17 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { FaExclamationTriangle } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useProximosRachas } from "@/hooks/useProximosRachas";
 import type { PublicMatch } from "@/types/partida";
+import type { ProximoRachaItem } from "@/types/agenda";
 
 const STATUS_STORAGE_KEY = "fut7pro_match_status";
 const ROTATION_MS = 10000;
 const ITEM_HEIGHT = 80;
-
-// MOCK: proximos rachas/feriados (simule integracao real depois)
-const PROXIMOS_RACHAS = [
-  { data: "Sab 06/07/25", hora: "06:00", feriado: false },
-  { data: "Qua 10/07/25", hora: "20:30", feriado: true, feriadoNome: "Feriado Municipal" },
-];
+const WEEKDAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
 type MatchStatus = "not_started" | "in_progress" | "finished";
 
@@ -32,6 +29,24 @@ function parseMatchDate(value?: string | null) {
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function buildOccurrenceDate(item: ProximoRachaItem | null) {
+  if (!item?.date || !item?.time) return null;
+  const [year, month, day] = item.date.split("-").map((part) => Number(part));
+  const [hour, minute] = item.time.split(":").map((part) => Number(part));
+  if ([year, month, day, hour, minute].some((value) => Number.isNaN(value))) return null;
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+function formatUpcomingLabel(item: ProximoRachaItem | null) {
+  const date = buildOccurrenceDate(item);
+  if (!date) return "";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  const weekday = WEEKDAYS_SHORT[date.getDay()] || "";
+  return `${weekday} ${day}/${month}/${year}`;
 }
 
 function loadStatusMap() {
@@ -58,6 +73,7 @@ function resolveMatchStatus(match: PublicMatch, statusMap: Record<string, MatchS
 
 export default function BannerNotificacoes() {
   const { matches } = useAdminMatches();
+  const { items: proximosRachas } = useProximosRachas({ limit: 10 });
   const [showBanner, setShowBanner] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
@@ -67,7 +83,10 @@ export default function BannerNotificacoes() {
     setStatusMap(loadStatusMap());
   }, []);
 
-  const feriadoRacha = useMemo(() => PROXIMOS_RACHAS.find((r) => r.feriado), []);
+  const feriadoRacha = useMemo(
+    () => proximosRachas.find((racha) => racha.holiday),
+    [proximosRachas]
+  );
 
   const pendingInfo = useMemo(() => {
     const today = startOfDay(new Date());
@@ -100,10 +119,11 @@ export default function BannerNotificacoes() {
     const items: NotificationItem[] = [];
 
     if (feriadoRacha) {
+      const label = formatUpcomingLabel(feriadoRacha);
       items.push({
         id: "holiday-warning",
-        message: `Atencao: Seu racha esta agendado para um dia de feriado (${feriadoRacha.data}${
-          feriadoRacha.feriadoNome ? ` - ${feriadoRacha.feriadoNome}` : ""
+        message: `Atencao: Seu racha esta agendado para um dia de feriado (${label}${
+          feriadoRacha.holidayName ? ` - ${feriadoRacha.holidayName}` : ""
         }). Confirme se o racha ira acontecer normalmente ou reagende.`,
       });
     }
