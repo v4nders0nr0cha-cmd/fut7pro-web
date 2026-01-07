@@ -13,7 +13,7 @@ try {
 const cspBase = [
   "default-src 'self'",
   "base-uri 'self'",
-  "img-src 'self' data: https: https://www.google-analytics.com",
+  "img-src 'self' data: blob: https: https://www.google-analytics.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
