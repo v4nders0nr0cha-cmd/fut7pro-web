@@ -52,7 +52,7 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                   {tipo}
                 </td>
                 <td className="px-2 py-1">{l.categoria || "-"}</td>
-                <td className="px-2 py-1">{l.descricao}</td>
+                <td className="px-2 py-1">{l.descricao || "-"}</td>
                 <td
                   className={`px-2 py-1 font-bold ${valor >= 0 ? "text-green-300" : "text-red-300"}`}
                 >

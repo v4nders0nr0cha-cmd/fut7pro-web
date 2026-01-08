@@ -9,9 +9,8 @@ type Props = {
   initialData?: LancamentoFinanceiro | null;
   serverError?: string | null;
   isSaving?: boolean;
+  categorias?: string[];
 };
-
-const categoriasMock = ["Campo", "Material", "Diarias", "Multa", "Premiacao", "Evento", "Outros"];
 
 export default function ModalLancamento({
   open,
@@ -20,8 +19,10 @@ export default function ModalLancamento({
   initialData,
   serverError,
   isSaving,
+  categorias,
 }: Props) {
   const isEdit = !!initialData;
+  const categoriasDisponiveis = Array.isArray(categorias) ? categorias : [];
   const [form, setForm] = useState<LancamentoFinanceiro>({
     id: initialData?.id || "",
     data: initialData?.data || new Date().toISOString().slice(0, 10),
@@ -176,20 +177,20 @@ export default function ModalLancamento({
         </div>
         <div className="mb-2">
           <label className="text-xs text-gray-300 font-bold mb-1 block">Categoria *</label>
-          <select
+          <input
             name="categoria"
             value={form.categoria}
             onChange={handleChange}
             className="w-full bg-neutral-800 rounded px-2 py-1 text-sm text-white outline-yellow-500 border border-neutral-700"
             required
-          >
-            <option value="">Selecione...</option>
-            {categoriasMock.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+            placeholder="Ex: Campo"
+            list="categorias-lancamento"
+          />
+          <datalist id="categorias-lancamento">
+            {categoriasDisponiveis.map((cat) => (
+              <option key={cat} value={cat} />
             ))}
-          </select>
+          </datalist>
         </div>
         <div className="mb-2">
           <label className="text-xs text-gray-300 font-bold mb-1 block">Descricao *</label>

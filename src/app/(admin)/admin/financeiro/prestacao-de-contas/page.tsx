@@ -1,9 +1,9 @@
 "use client";
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
-import { useRacha } from "@/context/RachaContext";
-import { useRachaPublic } from "@/hooks/useRachaPublic";
+import useSWR from "swr";
 import { useFinanceiro } from "@/hooks/useFinanceiro";
+import { useMe } from "@/hooks/useMe";
 import type { LancamentoFinanceiro } from "@/types/financeiro";
 import CardResumoFinanceiro from "./components/CardResumoFinanceiro";
 import TabelaLancamentos from "./components/TabelaLancamentos";
@@ -18,6 +18,22 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+
+type TenantPayload = {
+  id?: string;
+  slug?: string;
+  name?: string;
+  financeiroVisivel?: boolean;
+};
+
+const tenantFetcher = async (url: string): Promise<TenantPayload> => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Erro ao carregar dados do racha");
+  }
+  return res.json();
+};
 
 // Gera dados para grafico (saldo acumulado mes a mes) usando lancamentos reais
 function dadosGrafico(lancamentos: LancamentoFinanceiro[]) {
@@ -40,8 +56,12 @@ function dadosGrafico(lancamentos: LancamentoFinanceiro[]) {
 }
 
 export default function PrestacaoDeContasAdmin() {
-  const { rachaId } = useRacha();
-  const { racha, mutate: mutateRacha } = useRachaPublic(rachaId);
+  const { me } = useMe();
+  const tenantId = me?.tenant?.tenantId ?? "";
+  const { data: tenantData, mutate: mutateTenant } = useSWR<TenantPayload>(
+    tenantId ? `/api/admin/rachas/${tenantId}` : null,
+    tenantFetcher
+  );
   const {
     lancamentos,
     isLoading: carregandoLancamentos,
@@ -63,19 +83,40 @@ export default function PrestacaoDeContasAdmin() {
   const [ano, setAno] = useState(String(hoje.getFullYear()));
   const [todosAnos, setTodosAnos] = useState(false);
 
+  const categoriasDisponiveis = useMemo(() => {
+    const valores = new Set<string>();
+    (lancamentos || []).forEach((l) => {
+      const categoria = (l.categoria || "").trim();
+      if (categoria) valores.add(categoria);
+    });
+    return Array.from(valores).sort((a, b) => a.localeCompare(b));
+  }, [lancamentos]);
+
+  const anosDisponiveis = useMemo(() => {
+    const valores = new Set<number>();
+    (lancamentos || []).forEach((l) => {
+      const anoLancamento = Number(l.data?.slice(0, 4));
+      if (!Number.isNaN(anoLancamento)) valores.add(anoLancamento);
+    });
+    valores.add(hoje.getFullYear());
+    return Array.from(valores)
+      .sort((a, b) => b - a)
+      .map(String);
+  }, [hoje, lancamentos]);
+
   useEffect(() => {
-    if (racha?.financeiroVisivel !== undefined) {
-      setVisivel(racha.financeiroVisivel);
+    if (tenantData?.financeiroVisivel !== undefined) {
+      setVisivel(tenantData.financeiroVisivel);
     }
-  }, [racha?.financeiroVisivel]);
+  }, [tenantData?.financeiroVisivel]);
 
   async function handleToggle(valor: boolean) {
-    if (!rachaId) return;
+    if (!tenantId) return;
 
     setSaving(true);
     try {
-      const response = await fetch(`/api/admin/rachas/${rachaId}`, {
-        method: "PATCH",
+      const response = await fetch(`/api/admin/rachas/${tenantId}`, {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -89,8 +130,8 @@ export default function PrestacaoDeContasAdmin() {
       }
 
       setVisivel(valor);
-      if (mutateRacha) {
-        mutateRacha();
+      if (mutateTenant) {
+        mutateTenant();
       }
     } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
@@ -269,9 +310,11 @@ export default function PrestacaoDeContasAdmin() {
             className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-xs"
             disabled={todosAnos}
           >
-            <option value="2025">2025</option>
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
+            {anosDisponiveis.map((anoDisponivel) => (
+              <option key={anoDisponivel} value={anoDisponivel}>
+                {anoDisponivel}
+              </option>
+            ))}
           </select>
           <button
             type="button"
@@ -326,6 +369,7 @@ export default function PrestacaoDeContasAdmin() {
           initialData={editData}
           serverError={erroLancamento}
           isSaving={salvandoLancamento}
+          categorias={categoriasDisponiveis}
         />
         {erroLancamento && <div className="mt-2 text-xs text-red-400">{erroLancamento}</div>}
         {salvandoLancamento && (

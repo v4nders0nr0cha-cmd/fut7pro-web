@@ -9,12 +9,15 @@ interface Props {
 }
 
 const tiposMap: Record<string, string> = {
+  entrada: "Receita",
+  saida: "Despesa",
+  receita: "Receita",
+  despesa: "Despesa",
   diaria: "Diária",
   mensalidade: "Mensalidade",
   patrocinio: "Patrocínio",
   evento: "Evento",
   outros: "Outro",
-  despesa: "Despesa",
   despesa_adm: "Despesa Administrativa",
   sistema: `Sistema ${rachaConfig.nome}`,
 };
@@ -43,6 +46,8 @@ export default function TabelaLancamentos({ lancamentos }: Props) {
           className="p-2 rounded bg-neutral-900 border border-neutral-700 text-sm text-white"
         >
           <option value="">Todos os tipos</option>
+          <option value="entrada">Receita</option>
+          <option value="saida">Despesa</option>
           <option value="diaria">Diária</option>
           <option value="mensalidade">Mensalidade</option>
           <option value="patrocinio">Patrocínio</option>
@@ -87,7 +92,7 @@ export default function TabelaLancamentos({ lancamentos }: Props) {
                   <td className="p-2 text-gray-200">
                     {new Date(l.data).toLocaleDateString("pt-BR")}
                   </td>
-                  <td className="p-2 text-gray-200">{tiposMap[l.tipo]}</td>
+                  <td className="p-2 text-gray-200">{tiposMap[l.tipo] || l.tipo || "-"}</td>
                   <td className="p-2 text-gray-300">{l.descricao}</td>
                   <td
                     className={`p-2 font-bold ${l.valor >= 0 ? "text-green-400" : "text-red-400"}`}

@@ -10,7 +10,13 @@ describe("ModalLancamento", () => {
     const onClose = jest.fn();
 
     const { container } = render(
-      <ModalLancamento open onClose={onClose} onSave={onSave} initialData={null} />
+      <ModalLancamento
+        open
+        onClose={onClose}
+        onSave={onSave}
+        initialData={null}
+        categorias={["Campo", "Material"]}
+      />
     );
     const form = container.querySelector("form");
     if (form) {
@@ -23,7 +29,7 @@ describe("ModalLancamento", () => {
     fireEvent.change(container.querySelector('input[name="data"]')!, {
       target: { value: "2025-01-10" },
     });
-    fireEvent.change(container.querySelector('select[name="categoria"]')!, {
+    fireEvent.change(container.querySelector('input[name="categoria"]')!, {
       target: { value: "Campo" },
     });
     fireEvent.change(container.querySelector('input[name="descricao"]')!, {
@@ -55,7 +61,13 @@ describe("ModalLancamento", () => {
     };
 
     const { container } = render(
-      <ModalLancamento open onClose={jest.fn()} onSave={onSave} initialData={initial} />
+      <ModalLancamento
+        open
+        onClose={jest.fn()}
+        onSave={onSave}
+        initialData={initial}
+        categorias={["Material"]}
+      />
     );
 
     expect(screen.getByAltText(/Comprovante/i)).toBeInTheDocument();

@@ -11,23 +11,25 @@ const handleAsyncMock = jest.fn((fn: any) => fn());
 
 const swrMock = jest.fn((key: string) => {
   const map: Record<string, any> = {
-    "/api/admin/financeiro?rachaId=r-fin": {
+    "/api/admin/financeiro?tenantId=tenant-1": {
       data: [
         {
           id: "l1",
-          tipo: "receita",
-          data: "2025-01-01",
-          descricao: "Mensalidade",
-          valor: 100,
-          responsavel: "Admin",
+          type: "ENTRADA",
+          date: "2025-01-01T00:00:00.000Z",
+          description: "Mensalidade",
+          category: "Mensalidade",
+          value: 100,
+          tenantId: "tenant-1",
         },
       ],
       isLoading: false,
       error: undefined,
       mutate: mutateMock,
     },
-    "/api/public/financeiro/r-fin": {
+    "/api/public/r-fin/financeiro": {
       data: {
+        tenant: { id: "t1", slug: "r-fin", name: "Racha Fin" },
         resumo: { saldoAtual: 200, totalReceitas: 300, totalDespesas: 100 },
         lancamentos: [
           {
@@ -106,8 +108,10 @@ jest.mock("swr", () => ({
   default: (...args: any[]) => swrMock(args[0]),
 }));
 
-jest.mock("@/context/RachaContext", () => ({
-  useRacha: jest.fn(() => ({ rachaId: "r-fin" })),
+jest.mock("@/hooks/useMe", () => ({
+  useMe: jest.fn(() => ({
+    me: { tenant: { tenantId: "tenant-1", tenantSlug: "r-fin" } },
+  })),
 }));
 
 jest.mock("@/hooks/useApiState", () => ({
@@ -121,21 +125,6 @@ jest.mock("@/hooks/useApiState", () => ({
   })),
 }));
 
-jest.mock("@/lib/api", () => {
-  const financeiroApi = {
-    create: jest.fn().mockResolvedValue({ data: { id: "new-lanc" } }),
-    getRelatorios: jest.fn().mockResolvedValue({ data: { receitas: 100, despesas: 50 } }),
-  };
-  return { financeiroApi };
-});
-
-const { financeiroApi } = jest.requireMock("@/lib/api") as {
-  financeiroApi: {
-    create: jest.Mock;
-    getRelatorios: jest.Mock;
-  };
-};
-
 describe("Fluxos de financeiro, sorteio e rankings", () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -144,7 +133,7 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
   it("useFinanceiro retorna lancamentos e filtra por tipo", () => {
     const { result } = renderHook(() => useFinanceiro());
     expect(result.current.lancamentos).toHaveLength(1);
-    expect(result.current.getLancamentosPorTipo("receita")).toHaveLength(1);
+    expect(result.current.getLancamentosPorTipo("entrada")).toHaveLength(1);
     expect(result.current.getLancamentoById("l1")?.descricao).toBe("Mensalidade");
     expect(
       result.current.getLancamentosPorPeriodo("2025-01-01", "2025-01-02").map((l) => l.id)
@@ -153,14 +142,33 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
   });
 
   it("useFinanceiro chama addLancamento e dispara mutate", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "new-lanc" }),
+      text: async () => "",
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
     const { result } = renderHook(() => useFinanceiro());
-    await result.current.addLancamento({ descricao: "Nova", valor: 50, tipo: "entrada" });
-    expect(financeiroApi.create).toHaveBeenCalledWith({
+    await result.current.addLancamento({
+      data: "2025-01-01",
       descricao: "Nova",
       valor: 50,
       tipo: "entrada",
-      rachaId: "r-fin",
     });
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/financeiro",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(body).toEqual(
+      expect.objectContaining({
+        tenantId: "tenant-1",
+        type: "ENTRADA",
+        value: 50,
+        description: "Nova",
+      })
+    );
     expect(mutateMock).toHaveBeenCalled();
     expect(handleAsyncMock).toHaveBeenCalled();
   });
@@ -168,8 +176,11 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
   it("useFinanceiro chama getRelatorios", async () => {
     const { result } = renderHook(() => useFinanceiro());
     const data = await result.current.getRelatorios();
-    expect(financeiroApi.getRelatorios).toHaveBeenCalledWith("r-fin");
-    expect(data).toEqual({ receitas: 100, despesas: 50 });
+    expect(data).toEqual({
+      totalReceitas: 100,
+      totalDespesas: 0,
+      saldoAtual: 100,
+    });
   });
 
   it("useFinanceiroPublic monta resumo e lancamentos publicos", () => {

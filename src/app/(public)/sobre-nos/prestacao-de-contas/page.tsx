@@ -2,7 +2,6 @@
 import Head from "next/head";
 import { useMemo, useState } from "react";
 import { useRacha as useRachaContext } from "@/context/RachaContext";
-import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
 import { notFound } from "next/navigation";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
@@ -11,24 +10,38 @@ import type { LancamentoFinanceiro } from "@/hooks/useFinanceiroPublic";
 import { rachaConfig } from "@/config/racha.config";
 
 export default function PrestacaoDeContasPage() {
-  // Pega rachaId do contexto global (multi-rachas)
-  const { rachaId } = useRachaContext();
-  const { racha, isLoading: isLoadingRacha, isError: isErrorRacha } = useRachaPublic(rachaId);
+  const { tenantSlug } = useRachaContext();
+  const slug = tenantSlug || rachaConfig.slug;
   const {
     resumo,
     lancamentos,
     isLoading: isLoadingFinanceiro,
     isError: isErrorFinanceiro,
-  } = useFinanceiroPublic(rachaId);
+    isNotFound,
+    tenant,
+  } = useFinanceiroPublic(slug);
+  const tenantName = tenant?.name || rachaConfig.nome;
 
-  // Estados para filtros
+  const hoje = useMemo(() => new Date(), []);
   const [periodo, setPeriodo] = useState<"mes" | "quadrimestre" | "ano">("ano");
-  const [mes, setMes] = useState("07");
-  const [ano, setAno] = useState("2025");
+  const [mes, setMes] = useState(String(hoje.getMonth() + 1).padStart(2, "0"));
+  const [ano, setAno] = useState(String(hoje.getFullYear()));
   const [todosAnos, setTodosAnos] = useState(false);
 
+  const anosDisponiveis = useMemo(() => {
+    const valores = new Set<number>();
+    lancamentos.forEach((l) => {
+      const anoLancamento = Number(l.data?.slice(0, 4));
+      if (!Number.isNaN(anoLancamento)) valores.add(anoLancamento);
+    });
+    valores.add(hoje.getFullYear());
+    return Array.from(valores)
+      .sort((a, b) => b - a)
+      .map(String);
+  }, [hoje, lancamentos]);
+
   // Se não estiver visível, retorna 404 do Next.js
-  if (!isLoadingRacha && (!racha || !racha.financeiroVisivel)) {
+  if (!isLoadingFinanceiro && isNotFound) {
     notFound();
   }
 
@@ -55,7 +68,7 @@ export default function PrestacaoDeContasPage() {
     return lancamentos;
   }, [lancamentos, periodo, mes, ano, todosAnos]);
 
-  if (isLoadingRacha || isLoadingFinanceiro) {
+  if (isLoadingFinanceiro) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
@@ -64,7 +77,7 @@ export default function PrestacaoDeContasPage() {
     );
   }
 
-  if (isErrorRacha || isErrorFinanceiro) {
+  if (isErrorFinanceiro) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
         <h1 className="text-2xl font-bold text-red-400 mb-4">Erro ao carregar dados</h1>
@@ -76,7 +89,7 @@ export default function PrestacaoDeContasPage() {
   return (
     <>
       <Head>
-        <title>Prestação de Contas – {racha?.nome || rachaConfig.nome}</title>
+        <title>Prestação de Contas – {tenantName}</title>
         <meta
           name="description"
           content="Acompanhe o saldo, receitas e despesas do nosso racha com total transparência. Veja como os valores são usados em cada mês e acompanhe a gestão financeira do grupo."
@@ -85,10 +98,7 @@ export default function PrestacaoDeContasPage() {
           name="keywords"
           content="prestação de contas, futebol 7, racha, receitas, despesas, transparência, atletas"
         />
-        <meta
-          property="og:title"
-          content={`Prestação de Contas – ${racha?.nome || rachaConfig.nome}`}
-        />
+        <meta property="og:title" content={`Prestação de Contas – ${tenantName}`} />
         <meta
           property="og:description"
           content="Veja a movimentação financeira do racha mês a mês. Transparência para todos os atletas do grupo."
@@ -157,9 +167,11 @@ export default function PrestacaoDeContasPage() {
                   onChange={(e) => setAno(e.target.value)}
                   className="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white text-sm"
                 >
-                  <option value="2023">2023</option>
-                  <option value="2024">2024</option>
-                  <option value="2025">2025</option>
+                  {anosDisponiveis.map((anoDisponivel) => (
+                    <option key={anoDisponivel} value={anoDisponivel}>
+                      {anoDisponivel}
+                    </option>
+                  ))}
                 </select>
               </div>
 
