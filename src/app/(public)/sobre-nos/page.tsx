@@ -11,14 +11,12 @@ import {
   FaFileInvoiceDollar,
 } from "react-icons/fa";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
-import { useRacha as useRachaContext } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function SobreNosPage() {
-  const { rachaId } = useRachaContext();
-  const { racha } = useRachaPublic(rachaId);
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
+  const { racha } = useRachaPublic(publicSlug);
 
   const mostrarPrestacaoDeContas = !!racha?.financeiroVisivel;
 

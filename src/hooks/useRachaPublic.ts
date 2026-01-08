@@ -4,6 +4,30 @@ import useSWR from "swr";
 import type { Racha } from "@/types/racha";
 import { validateSafe, rachaSchema } from "@/lib/validation";
 
+function mapTenantToRacha(data: any): Racha {
+  const createdAt =
+    (data?.criadoEm ?? data?.createdAt ?? data?.atualizadoEm ?? data?.updatedAt) ||
+    new Date().toISOString();
+
+  return {
+    id: data?.id ?? data?.tenantId ?? data?.slug ?? "",
+    nome: data?.nome ?? data?.name ?? "",
+    slug: data?.slug ?? "",
+    descricao: data?.descricao ?? undefined,
+    logoUrl: data?.logoUrl ?? data?.logo ?? undefined,
+    tema: data?.tema ?? undefined,
+    regras: data?.regras ?? undefined,
+    ownerId: data?.ownerId ?? "",
+    ativo: typeof data?.ativo === "boolean" ? data.ativo : true,
+    criadoEm: data?.criadoEm ?? data?.createdAt ?? createdAt,
+    atualizadoEm: data?.atualizadoEm ?? data?.updatedAt ?? createdAt,
+    financeiroVisivel:
+      typeof data?.financeiroVisivel === "boolean" ? data.financeiroVisivel : false,
+    admins: data?.admins ?? undefined,
+    jogadores: data?.jogadores ?? undefined,
+  };
+}
+
 async function fetcher(url: string): Promise<Racha> {
   const res = await fetch(url);
 
@@ -13,26 +37,28 @@ async function fetcher(url: string): Promise<Racha> {
   }
 
   const data = await res.json();
+  const normalized = mapTenantToRacha(data);
 
   // Validar dados recebidos
-  const validation = validateSafe(rachaSchema, data) as
+  const validation = validateSafe(rachaSchema, normalized) as
     | { success: true; data: Racha }
     | { success: false; errors: string[] };
   if (!validation.success) {
     const errors = (validation as { errors: string[] }).errors;
-    throw new Error(`Dados inválidos: ${errors.join(", ")}`);
+    throw new Error(`Dados invalidos: ${errors.join(", ")}`);
   }
 
   return validation.data;
 }
 
 /**
- * Busca os detalhes de um racha específico por slug ou ID (API pública).
+ * Busca os detalhes de um racha especifico por slug ou ID (API publica).
  * @param identifier string (slug ou ID do racha)
  */
 export function useRachaPublic(identifier: string) {
+  const slugValue = identifier?.trim();
   const { data, error, mutate, isLoading } = useSWR(
-    identifier ? `/api/public/rachas/${identifier}` : null,
+    slugValue ? `/api/public/${encodeURIComponent(slugValue)}/tenant` : null,
     fetcher,
     {
       revalidateOnFocus: false,

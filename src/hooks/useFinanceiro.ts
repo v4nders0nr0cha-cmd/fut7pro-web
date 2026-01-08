@@ -22,6 +22,7 @@ type FinanceiroApiItem = {
   adminNome?: string;
   tenantId?: string;
   comprovanteUrl?: string;
+  observacoes?: string;
 };
 
 const fetcher = async (url: string): Promise<FinanceiroApiItem[]> => {
@@ -52,6 +53,7 @@ const normalizeLancamento = (item: FinanceiroApiItem): LancamentoFinanceiro => {
     categoria: item.categoria ?? item.category ?? "",
     valor: normalizedValue,
     comprovanteUrl: item.comprovanteUrl,
+    observacoes: item.observacoes,
     responsavel: item.responsavel ?? item.adminNome ?? "",
     tenantId: item.tenantId,
   };
@@ -71,6 +73,8 @@ type FinanceiroInput = Partial<LancamentoFinanceiro> & {
   description?: string;
   category?: string;
   value?: number;
+  comprovanteUrl?: string;
+  observacoes?: string;
 };
 
 const buildFinanceiroPayload = (input: FinanceiroInput, tenantId: string) => {
@@ -84,6 +88,8 @@ const buildFinanceiroPayload = (input: FinanceiroInput, tenantId: string) => {
     value: Math.abs(rawValue),
     description: input.descricao ?? input.description ?? "",
     category: input.categoria ?? input.category ?? "",
+    comprovanteUrl: input.comprovanteUrl ?? undefined,
+    observacoes: input.observacoes ?? undefined,
     tenantId,
   };
 };

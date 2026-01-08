@@ -48,8 +48,8 @@ async function fetcher(url: string): Promise<FinanceiroPublicData> {
 }
 
 /**
- * Busca dados financeiros públicos de um racha específico.
- * @param rachaId string (ID do racha)
+ * Busca dados financeiros publicos de um racha especifico.
+ * @param slug string (slug do racha)
  */
 export function useFinanceiroPublic(slug: string) {
   const slugValue = slug?.trim();
@@ -97,5 +97,5 @@ export function useFinanceiroPublic(slug: string) {
   };
 }
 
-// Reexporta o tipo usado na página pública
+// Reexporta o tipo usado na pagina publica
 export type { LancamentoFinanceiro };

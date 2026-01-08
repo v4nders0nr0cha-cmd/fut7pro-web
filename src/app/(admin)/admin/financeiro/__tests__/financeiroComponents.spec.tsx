@@ -29,13 +29,15 @@ describe("ModalLancamento", () => {
     fireEvent.change(container.querySelector('input[name="data"]')!, {
       target: { value: "2025-01-10" },
     });
-    fireEvent.change(container.querySelector('input[name="categoria"]')!, {
+    fireEvent.change(container.querySelector('select[name="categoria"]')!, {
       target: { value: "Campo" },
     });
     fireEvent.change(container.querySelector('input[name="descricao"]')!, {
       target: { value: "Mensalidade" },
     });
-    fireEvent.change(container.querySelector('input[name="valor"]')!, { target: { value: "150" } });
+    fireEvent.change(container.querySelector('input[name="valor"]')!, {
+      target: { value: "15000" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /Adicionar/i }));
 

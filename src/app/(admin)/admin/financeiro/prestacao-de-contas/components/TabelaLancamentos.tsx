@@ -1,6 +1,32 @@
 import type { LancamentoFinanceiro } from "@/types/financeiro";
 import { useState } from "react";
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(value ?? 0);
+
+const resolveComprovanteKind = (url?: string) => {
+  if (!url) return "none";
+  const normalized = url.toLowerCase();
+  if (normalized.includes("application/pdf") || normalized.endsWith(".pdf")) return "pdf";
+  if (normalized.startsWith("data:image") || /\.(png|jpe?g|gif|webp|svg)$/.test(normalized)) {
+    return "image";
+  }
+  return "file";
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return "-";
+  const base = value.includes("T") ? value.slice(0, 10) : value;
+  if (base.includes("-")) {
+    return base.split("-").reverse().join("/");
+  }
+  return base;
+};
+
 type Props = {
   lancamentos: LancamentoFinanceiro[];
   onEdit?: (item: LancamentoFinanceiro) => void;
@@ -20,7 +46,7 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
             <th className="text-left px-2 py-2">Data</th>
             <th className="text-left px-2 py-2">Tipo</th>
             <th className="text-left px-2 py-2">Categoria</th>
-            <th className="text-left px-2 py-2">Descrição</th>
+            <th className="text-left px-2 py-2">Descricao</th>
             <th className="text-left px-2 py-2">Valor</th>
             <th className="text-left px-2 py-2">Comprovante</th>
             <th className="text-left px-2 py-2"></th>
@@ -30,7 +56,7 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
           {exibir.length === 0 && (
             <tr>
               <td colSpan={7} className="text-center text-gray-400 py-4">
-                Nenhum lançamento neste período.
+                Nenhum lancamento neste periodo.
               </td>
             </tr>
           )}
@@ -42,29 +68,48 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                   ? "Despesa"
                   : "Receita";
             const valor = l.valor ?? 0;
+            const comprovanteKind = resolveComprovanteKind(l.comprovanteUrl);
 
             return (
               <tr key={l.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
-                <td className="px-2 py-1 font-mono">{l.data?.split("-").reverse().join("/")}</td>
+                <td className="px-2 py-1 font-mono">{formatDate(l.data)}</td>
                 <td
                   className={`px-2 py-1 ${tipo === "Receita" ? "text-green-400" : "text-red-400"}`}
                 >
                   {tipo}
                 </td>
                 <td className="px-2 py-1">{l.categoria || "-"}</td>
-                <td className="px-2 py-1">{l.descricao || "-"}</td>
+                <td className="px-2 py-1">
+                  <div className="text-white">{l.descricao || "-"}</div>
+                  {l.observacoes && (
+                    <div className="text-xs text-gray-400 mt-1">Obs: {l.observacoes}</div>
+                  )}
+                </td>
                 <td
                   className={`px-2 py-1 font-bold ${valor >= 0 ? "text-green-300" : "text-red-300"}`}
                 >
-                  R$ {valor.toFixed(2)}
+                  {formatCurrency(valor)}
                 </td>
                 <td className="px-2 py-1">
-                  {l.comprovanteUrl ? (
-                    <img
-                      src={l.comprovanteUrl}
-                      alt="Comprovante financeiro do racha Fut7Pro"
-                      className="w-8 h-8 rounded shadow object-contain"
-                    />
+                  {comprovanteKind !== "none" ? (
+                    <a
+                      href={l.comprovanteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2"
+                    >
+                      {comprovanteKind === "image" ? (
+                        <img
+                          src={l.comprovanteUrl}
+                          alt="Comprovante financeiro do racha Fut7Pro"
+                          className="w-8 h-8 rounded shadow object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs font-bold text-yellow-400 underline">
+                          {comprovanteKind === "pdf" ? "PDF" : "Arquivo"}
+                        </span>
+                      )}
+                    </a>
                   ) : (
                     <span className="text-gray-400">-</span>
                   )}
