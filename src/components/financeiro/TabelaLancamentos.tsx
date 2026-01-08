@@ -1,7 +1,7 @@
 "use client";
 import type { LancamentoFinanceiro } from "@/components/financeiro/types";
 import { useState } from "react";
-import { FaFileAlt, FaFileDownload } from "react-icons/fa";
+import { FaFileAlt } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
 
 interface Props {
@@ -63,9 +63,6 @@ export default function TabelaLancamentos({ lancamentos }: Props) {
           onChange={(e) => setFiltroPeriodo(e.target.value)}
           className="p-2 rounded bg-neutral-900 border border-neutral-700 text-sm text-white"
         />
-        <button className="ml-auto px-4 py-2 bg-yellow-400 text-black rounded shadow text-sm font-semibold hover:bg-yellow-500 flex items-center gap-2">
-          <FaFileDownload /> Exportar Excel
-        </button>
       </div>
       <div className="overflow-x-auto rounded-xl border border-neutral-800">
         <table className="min-w-full bg-neutral-900 text-xs sm:text-sm">

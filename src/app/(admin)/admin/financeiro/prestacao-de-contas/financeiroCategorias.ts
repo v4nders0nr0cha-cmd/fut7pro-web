@@ -15,6 +15,7 @@ export const CATEGORIAS_DESPESA = [
   "Uniforme",
   "Equipamentos",
   "Marketing",
+  "App Fut7Pro",
   "Transporte",
   "Premiacao",
   "Manutencao",

@@ -1,12 +1,10 @@
 "use client";
 import Head from "next/head";
-import { useMemo, useState } from "react";
 import { useRacha as useRachaContext } from "@/context/RachaContext";
 import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
 import { notFound } from "next/navigation";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
 import TabelaLancamentos from "@/components/financeiro/TabelaLancamentos";
-import type { LancamentoFinanceiro } from "@/hooks/useFinanceiroPublic";
 import { rachaConfig } from "@/config/racha.config";
 
 export default function PrestacaoDeContasPage() {
@@ -22,51 +20,10 @@ export default function PrestacaoDeContasPage() {
   } = useFinanceiroPublic(slug);
   const tenantName = tenant?.name || rachaConfig.nome;
 
-  const hoje = useMemo(() => new Date(), []);
-  const [periodo, setPeriodo] = useState<"mes" | "quadrimestre" | "ano">("ano");
-  const [mes, setMes] = useState(String(hoje.getMonth() + 1).padStart(2, "0"));
-  const [ano, setAno] = useState(String(hoje.getFullYear()));
-  const [todosAnos, setTodosAnos] = useState(false);
-
-  const anosDisponiveis = useMemo(() => {
-    const valores = new Set<number>();
-    lancamentos.forEach((l) => {
-      const anoLancamento = Number(l.data?.slice(0, 4));
-      if (!Number.isNaN(anoLancamento)) valores.add(anoLancamento);
-    });
-    valores.add(hoje.getFullYear());
-    return Array.from(valores)
-      .sort((a, b) => b - a)
-      .map(String);
-  }, [hoje, lancamentos]);
-
   // Se não estiver visível, retorna 404 do Next.js
   if (!isLoadingFinanceiro && isNotFound) {
     notFound();
   }
-
-  const lancamentosFiltrados = useMemo(() => {
-    if (todosAnos) return lancamentos;
-    if (periodo === "mes") return lancamentos.filter((l) => l.data.startsWith(`${ano}-${mes}`));
-    if (periodo === "ano") return lancamentos.filter((l) => l.data.startsWith(`${ano}`));
-    if (periodo === "quadrimestre") {
-      const mesNum = Number(mes);
-      let de = "01",
-        ate = "04";
-      if (mesNum <= 4) {
-        de = "01";
-        ate = "04";
-      } else if (mesNum <= 8) {
-        de = "05";
-        ate = "08";
-      } else {
-        de = "09";
-        ate = "12";
-      }
-      return lancamentos.filter((l) => l.data >= `${ano}-${de}` && l.data <= `${ano}-${ate}`);
-    }
-    return lancamentos;
-  }, [lancamentos, periodo, mes, ano, todosAnos]);
 
   if (isLoadingFinanceiro) {
     return (
@@ -121,75 +78,7 @@ export default function PrestacaoDeContasPage() {
 
           {resumo && <ResumoFinanceiro resumo={resumo} />}
 
-          {/* Filtros */}
-          <div className="mb-6 p-4 bg-neutral-800 rounded-lg border border-neutral-700">
-            <h3 className="text-lg font-semibold text-yellow-400 mb-3">Filtros</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Período</label>
-                <select
-                  value={periodo}
-                  onChange={(e) => setPeriodo(e.target.value as "mes" | "quadrimestre" | "ano")}
-                  className="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white text-sm"
-                >
-                  <option value="mes">Mês</option>
-                  <option value="quadrimestre">Quadrimestre</option>
-                  <option value="ano">Ano</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Mês</label>
-                <select
-                  value={mes}
-                  onChange={(e) => setMes(e.target.value)}
-                  className="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white text-sm"
-                >
-                  <option value="01">Janeiro</option>
-                  <option value="02">Fevereiro</option>
-                  <option value="03">Março</option>
-                  <option value="04">Abril</option>
-                  <option value="05">Maio</option>
-                  <option value="06">Junho</option>
-                  <option value="07">Julho</option>
-                  <option value="08">Agosto</option>
-                  <option value="09">Setembro</option>
-                  <option value="10">Outubro</option>
-                  <option value="11">Novembro</option>
-                  <option value="12">Dezembro</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm text-gray-300 mb-1">Ano</label>
-                <select
-                  value={ano}
-                  onChange={(e) => setAno(e.target.value)}
-                  className="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white text-sm"
-                >
-                  {anosDisponiveis.map((anoDisponivel) => (
-                    <option key={anoDisponivel} value={anoDisponivel}>
-                      {anoDisponivel}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center">
-                <label className="flex items-center text-sm text-gray-300">
-                  <input
-                    type="checkbox"
-                    checked={todosAnos}
-                    onChange={(e) => setTodosAnos(e.target.checked)}
-                    className="mr-2"
-                  />
-                  Todos os anos
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <TabelaLancamentos lancamentos={lancamentosFiltrados} />
+          <TabelaLancamentos lancamentos={lancamentos} />
         </section>
       </main>
     </>
