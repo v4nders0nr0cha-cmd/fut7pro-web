@@ -26,7 +26,12 @@ export default function RachaPublicPage() {
   const { isLoading, error } = useSWR(
     slug ? `/api/public/${encodeURIComponent(slug)}/about` : null,
     fetcher,
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      errorRetryCount: 6,
+      errorRetryInterval: 2000,
+    }
   );
 
   useEffect(() => {
@@ -48,19 +53,8 @@ export default function RachaPublicPage() {
     );
   }
 
-  if (error) {
-    if ((error as FetchError).status === 404) {
-      notFound();
-    }
-
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <h1 className="text-2xl font-bold text-red-400 mb-4">Erro ao carregar o site</h1>
-        <p className="text-gray-300 text-center max-w-md">
-          Nao foi possivel carregar os dados do racha agora. Tente novamente em instantes.
-        </p>
-      </div>
-    );
+  if (error && (error as FetchError).status === 404) {
+    notFound();
   }
 
   return <Home />;
