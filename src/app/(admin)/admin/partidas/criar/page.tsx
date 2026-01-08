@@ -27,7 +27,7 @@ export default function CriarPartidasPage() {
           {/* Card Sorteio Inteligente */}
           <button
             className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl shadow-lg p-8 flex flex-col items-center hover:bg-yellow-400 hover:text-black transition group"
-            onClick={() => router.push("/admin/partidas/criar/sorteio-inteligente")}
+            onClick={() => router.push("/admin/partidas/sorteio-inteligente")}
             type="button"
           >
             <FaRandom
