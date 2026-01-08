@@ -219,7 +219,9 @@ export default function ModalLancamento({
           />
         </div>
         <div className="mb-2">
-          <label className="text-xs text-gray-300 font-bold mb-1 block">Comprovante (imagem)</label>
+          <label className="text-xs text-gray-300 font-bold mb-1 block">
+            Comprovante (opcional)
+          </label>
           <input
             name="comprovante"
             type="file"
