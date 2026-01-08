@@ -264,6 +264,7 @@ function PartidaClassicaClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryDate = searchParams?.get("data") || "";
+  const queryMode = searchParams?.get("modo") || "";
   const defaultDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 
@@ -552,22 +553,12 @@ function PartidaClassicaClient() {
     return { latest, teamAId, teamBId, winnerId, loserId };
   }, [sessionCards]);
 
-  const previewSlug = mode === "retro" ? tenantSlug : "";
+  const isRetroPastYear = retroYear < currentYear;
+  const isRetroCurrentYear = retroYear === currentYear;
+  const previewSlug = mode === "retro" && isRetroPastYear ? tenantSlug : "";
   const rankingAno = usePublicPlayerRankings({
     slug: previewSlug,
     type: "geral",
-    period: "year",
-    year: retroYear,
-  });
-  const rankingGols = usePublicPlayerRankings({
-    slug: previewSlug,
-    type: "artilheiros",
-    period: "year",
-    year: retroYear,
-  });
-  const rankingAssist = usePublicPlayerRankings({
-    slug: previewSlug,
-    type: "assistencias",
     period: "year",
     year: retroYear,
   });
@@ -580,8 +571,8 @@ function PartidaClassicaClient() {
   const previewData = useMemo(() => {
     if (!previewSlug) return null;
     const topPoints = pickTopByMetric(rankingAno.rankings, "pontos");
-    const topGols = pickTopByMetric(rankingGols.rankings, "gols");
-    const topAssist = pickTopByMetric(rankingAssist.rankings, "assistencias");
+    const topGols = pickTopByMetric(rankingAno.rankings, "gols");
+    const topAssist = pickTopByMetric(rankingAno.rankings, "assistencias");
     const topTeam = pickTopTeam(rankingTimes.teams);
     const topGoleiro = pickTopByPosition(rankingAno.rankings, "goleiro");
     const topZagueiro = pickTopByPosition(rankingAno.rankings, "zagueiro");
@@ -606,21 +597,10 @@ function PartidaClassicaClient() {
       topAtacante,
       impactedCount: impactedPlayers.size,
     };
-  }, [
-    previewSlug,
-    rankingAno.rankings,
-    rankingGols.rankings,
-    rankingAssist.rankings,
-    rankingTimes.teams,
-  ]);
+  }, [previewSlug, rankingAno.rankings, rankingTimes.teams]);
 
-  const previewLoading =
-    rankingAno.isLoading ||
-    rankingGols.isLoading ||
-    rankingAssist.isLoading ||
-    rankingTimes.isLoading;
-  const previewError =
-    rankingAno.isError || rankingGols.isError || rankingAssist.isError || rankingTimes.isError;
+  const previewLoading = rankingAno.isLoading || rankingTimes.isLoading;
+  const previewError = rankingAno.isError || rankingTimes.isError;
 
   useEffect(() => {
     if (!liveStorageKey || typeof window === "undefined") return;
@@ -801,6 +781,20 @@ function PartidaClassicaClient() {
     [pathname, router, searchParams]
   );
 
+  const updateQueryMode = useCallback(
+    (nextMode?: SessionMode) => {
+      const params = new URLSearchParams(searchParams?.toString());
+      if (nextMode && nextMode !== "home") {
+        params.set("modo", nextMode);
+      } else {
+        params.delete("modo");
+      }
+      const query = params.toString();
+      router.replace(query ? `${pathname}?${query}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
+
   useEffect(() => {
     if (mode !== "live" || !liveActive || !liveDate) return;
     if (queryDate !== liveDate) updateQueryDate(liveDate);
@@ -815,6 +809,26 @@ function PartidaClassicaClient() {
     if (!queryDate) return;
     if (liveDate !== queryDate) setLiveDate(queryDate);
   }, [liveDate, mode, queryDate]);
+
+  useEffect(() => {
+    if (queryMode === "retro" && mode !== "retro") {
+      setMode("retro");
+      return;
+    }
+    if (queryMode === "live" && mode !== "live") {
+      setMode("live");
+    }
+  }, [mode, queryMode]);
+
+  useEffect(() => {
+    if (mode === "home" && queryMode) {
+      updateQueryMode(undefined);
+      return;
+    }
+    if (mode !== "home" && mode !== queryMode) {
+      updateQueryMode(mode);
+    }
+  }, [mode, queryMode, updateQueryMode]);
 
   const toggleTeamSelection = (teamId: string) => {
     setSelectedTeams((prev) => {
@@ -1226,6 +1240,10 @@ function PartidaClassicaClient() {
 
   const handleFinalizeRetroSeason = async () => {
     if (retroFinalizeLoading) return;
+    if (!isRetroPastYear) {
+      setRetroFinalizeError("Fechamento de temporada disponivel apenas para anos anteriores.");
+      return;
+    }
     setRetroFinalizeLoading(true);
     setRetroFinalizeError(null);
     setRetroFinalizeMessage(null);
@@ -2069,6 +2087,12 @@ function PartidaClassicaClient() {
         </div>
       </div>
 
+      <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 p-4 text-xs text-yellow-200">
+        <span className="font-semibold">Regra do ano vigente:</span> partidas retroativas do ano
+        atual somam nos rankings atuais. Fechamento de temporada e premiacoes sao apenas para anos
+        anteriores.
+      </div>
+
       <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-6">
         <div>
           <h2 className="text-lg font-semibold text-yellow-300">Sessao historica</h2>
@@ -2342,13 +2366,25 @@ function PartidaClassicaClient() {
           <button
             type="button"
             onClick={() => setShowFinalizeRetroModal(true)}
-            className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
+            disabled={!isRetroPastYear}
+            className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Calcular campeoes e aplicar premiacoes
           </button>
         </div>
 
-        {!previewSlug ? (
+        {!isRetroPastYear ? (
+          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
+            {isRetroCurrentYear ? (
+              <>
+                Ano vigente: partidas retroativas entram nos rankings atuais. O fechamento do ano
+                fica disponivel apenas para temporadas anteriores.
+              </>
+            ) : (
+              <>Selecione um ano anterior para visualizar e aplicar premiacoes.</>
+            )}
+          </div>
+        ) : !previewSlug ? (
           <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
             Informe o racha ativo para visualizar o preview de campeoes.
           </div>
