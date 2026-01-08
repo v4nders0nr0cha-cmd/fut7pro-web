@@ -13,11 +13,11 @@ export default function CriarPartidasPage() {
         <title>Criar Partidas | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Escolha o modo de cadastro das partidas do seu racha: Sorteio Inteligente ou Partida Clássica. 100% flexível, prático e rápido no Fut7Pro."
+          content="Escolha o modo de cadastro das partidas do seu racha: Sorteio Inteligente ou Partida Classica. Sessao ao vivo com rodadas dinamicas e resultados em tempo real."
         />
         <meta
           name="keywords"
-          content="criar partidas, sorteio inteligente, partida clássica, fut7, racha, painel admin"
+          content="criar partidas, sorteio inteligente, partida classica, fut7, racha, painel admin"
         />
       </Head>
       <main className="max-w-4xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
@@ -48,7 +48,7 @@ export default function CriarPartidasPage() {
             </p>
           </button>
 
-          {/* Card Partida Clássica */}
+          {/* Card Partida Classica */}
           <button
             className="bg-neutral-900 border-2 border-yellow-500 rounded-2xl shadow-lg p-8 flex flex-col items-center hover:bg-yellow-400 hover:text-black transition group"
             onClick={() => router.push("/admin/partidas/criar/classica")}
@@ -56,14 +56,13 @@ export default function CriarPartidasPage() {
           >
             <FaClipboardList
               className="text-4xl mb-4 text-yellow-400 group-hover:text-black"
-              aria-label="Partidas Clássicas"
+              aria-label="Partidas Classicas"
             />
-            <h2 className="text-xl font-bold mb-2">Partida Clássica</h2>
+            <h2 className="text-xl font-bold mb-2">Partida Classica</h2>
             <p className="text-sm text-neutral-300 group-hover:text-black text-center">
-              Cadastre partidas avulsas ou retroativas, incluindo data, times, gols, assistências e
-              resultados manualmente.
+              Cadastre partidas manualmente em sessao ao vivo, definindo times, elenco e resultados.
               <br />
-              Ideal para históricos antigos ou para rachas com formato tradicional.
+              Ideal para rachas com formato tradicional e rodadas dinamicas.
             </p>
           </button>
         </div>

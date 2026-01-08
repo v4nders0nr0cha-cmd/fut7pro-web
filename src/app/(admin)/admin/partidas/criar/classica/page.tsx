@@ -5,16 +5,12 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   FaArrowLeft,
-  FaBolt,
   FaCalendarAlt,
   FaCheckCircle,
   FaClock,
-  FaExclamationTriangle,
   FaFlagCheckered,
-  FaHistory,
   FaMapMarkerAlt,
   FaPlus,
-  FaTrash,
   FaUsers,
 } from "react-icons/fa";
 import ResultadosDoDiaAdmin from "@/components/admin/ResultadosDoDiaAdmin";
@@ -22,33 +18,14 @@ import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useMe } from "@/hooks/useMe";
 import { useTimes } from "@/hooks/useTimes";
-import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
-import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import type { Jogador } from "@/types/jogador";
 import type { PublicMatch } from "@/types/partida";
 import type { Time } from "@/types/time";
-import type { RankingAtleta } from "@/types/estatisticas";
-import type { TeamRankingEntry } from "@/hooks/usePublicTeamRankings";
 
 const RESULTS_ROUTE = "/admin/partidas/resultados-do-dia";
 const TIME_CAMPEAO_ROUTE = "/admin/partidas/time-campeao-do-dia";
 const MIN_TEAMS = 2;
 const MAX_TEAMS = 10;
-
-type SessionMode = "home" | "live" | "retro";
-type RetroMode = "full" | "score" | "csv";
-
-type MatchDraft = {
-  id: string;
-  teamAId: string;
-  teamBId: string;
-  playersA: string[];
-  playersB: string[];
-  scoreA: string;
-  scoreB: string;
-  date: string;
-  time: string;
-};
 
 type LiveRules = {
   twoGoalsWin: boolean;
@@ -87,10 +64,6 @@ type StandingsRow = {
   goalsAgainst: number;
   goalDiff: number;
 };
-
-function createDraftId() {
-  return `draft-${Date.now()}-${Math.round(Math.random() * 100000)}`;
-}
 
 function getBrasiliaTimeValue(date = new Date()) {
   try {
@@ -235,38 +208,12 @@ function resolveMatchScore(match: PublicMatch) {
   return { scoreA, scoreB, hasResult };
 }
 
-function parseScore(value: string) {
-  if (value === "") return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function pickTopByMetric(list: RankingAtleta[], metric: "pontos" | "gols" | "assistencias") {
-  if (!list.length) return undefined;
-  return [...list].sort((a, b) => (b[metric] ?? 0) - (a[metric] ?? 0))[0];
-}
-
-function pickTopByPosition(list: RankingAtleta[], positionKey: string) {
-  const filtered = list.filter((entry) => {
-    const pos = normalizePosition(entry.posicao ?? entry.position ?? "");
-    return pos === positionKey;
-  });
-  return pickTopByMetric(filtered, "pontos");
-}
-
-function pickTopTeam(list: TeamRankingEntry[]) {
-  if (!list.length) return undefined;
-  return [...list].sort((a, b) => b.pontos - a.pontos)[0];
-}
-
 function PartidaClassicaClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryDate = searchParams?.get("data") || "";
-  const queryMode = searchParams?.get("modo") || "";
   const defaultDate = useMemo(() => new Date().toISOString().slice(0, 10), []);
-  const currentYear = useMemo(() => new Date().getFullYear(), []);
 
   const { me } = useMe();
   const tenantId = me?.tenant?.tenantId ?? "";
@@ -274,8 +221,6 @@ function PartidaClassicaClient() {
 
   const { times, isLoading: timesLoading } = useTimes(tenantSlug || undefined);
   const { jogadores, isLoading: jogadoresLoading } = useJogadores(tenantId, { includeBots: true });
-
-  const [mode, setMode] = useState<SessionMode>("home");
 
   const [liveDate, setLiveDate] = useState(defaultDate);
   const [liveTime, setLiveTime] = useState("");
@@ -310,31 +255,9 @@ function PartidaClassicaClient() {
   const [hasLiveDraft, setHasLiveDraft] = useState(false);
   const [liveDraftLoaded, setLiveDraftLoaded] = useState(false);
 
-  const [retroYear, setRetroYear] = useState(currentYear);
-  const [retroDate, setRetroDate] = useState("");
-  const [retroTime, setRetroTime] = useState("");
-  const [retroLocation, setRetroLocation] = useState("");
-  const [retroMode, setRetroMode] = useState<RetroMode>("full");
-  const [retroMatches, setRetroMatches] = useState<MatchDraft[]>([]);
-  const [retroSearchMap, setRetroSearchMap] = useState<Record<string, string>>({});
-  const [retroSaving, setRetroSaving] = useState(false);
-  const [retroError, setRetroError] = useState<string | null>(null);
-  const [retroSuccess, setRetroSuccess] = useState(false);
-  const [hasRetroDraft, setHasRetroDraft] = useState(false);
-  const [retroDraftLoaded, setRetroDraftLoaded] = useState(false);
-  const [showFinalizeRetroModal, setShowFinalizeRetroModal] = useState(false);
-  const [retroFinalizeError, setRetroFinalizeError] = useState<string | null>(null);
-  const [retroFinalizeLoading, setRetroFinalizeLoading] = useState(false);
-  const [retroFinalizeMessage, setRetroFinalizeMessage] = useState<string | null>(null);
-
   const liveStorageKey = useMemo(() => {
     if (!tenantId && !tenantSlug) return "";
     return `fut7pro.classica.live.${tenantId || tenantSlug}`;
-  }, [tenantId, tenantSlug]);
-
-  const retroStorageKey = useMemo(() => {
-    if (!tenantId && !tenantSlug) return "";
-    return `fut7pro.classica.retro.${tenantId || tenantSlug}`;
   }, [tenantId, tenantSlug]);
 
   const playerOptions = useMemo<PlayerOption[]>(() => {
@@ -428,7 +351,6 @@ function PartidaClassicaClient() {
   ]);
 
   const liveResultsUrl = liveDate ? `${RESULTS_ROUTE}?data=${liveDate}` : RESULTS_ROUTE;
-  const retroResultsUrl = retroDate ? `${RESULTS_ROUTE}?data=${retroDate}` : RESULTS_ROUTE;
 
   const {
     matches: adminMatches,
@@ -436,7 +358,7 @@ function PartidaClassicaClient() {
     isError: matchesError,
     error: matchesErrorObj,
     mutate: mutateMatches,
-  } = useAdminMatches({ enabled: mode === "live" && liveActive });
+  } = useAdminMatches({ enabled: liveActive });
 
   const sessionMatches = useMemo(() => {
     if (!liveMatchIds.length) return [] as PublicMatch[];
@@ -553,55 +475,6 @@ function PartidaClassicaClient() {
     return { latest, teamAId, teamBId, winnerId, loserId };
   }, [sessionCards]);
 
-  const isRetroPastYear = retroYear < currentYear;
-  const isRetroCurrentYear = retroYear === currentYear;
-  const previewSlug = mode === "retro" && isRetroPastYear ? tenantSlug : "";
-  const rankingAno = usePublicPlayerRankings({
-    slug: previewSlug,
-    type: "geral",
-    period: "year",
-    year: retroYear,
-  });
-  const rankingTimes = usePublicTeamRankings({
-    slug: previewSlug,
-    period: "year",
-    year: retroYear,
-  });
-
-  const previewData = useMemo(() => {
-    if (!previewSlug) return null;
-    const topPoints = pickTopByMetric(rankingAno.rankings, "pontos");
-    const topGols = pickTopByMetric(rankingAno.rankings, "gols");
-    const topAssist = pickTopByMetric(rankingAno.rankings, "assistencias");
-    const topTeam = pickTopTeam(rankingTimes.teams);
-    const topGoleiro = pickTopByPosition(rankingAno.rankings, "goleiro");
-    const topZagueiro = pickTopByPosition(rankingAno.rankings, "zagueiro");
-    const topMeia = pickTopByPosition(rankingAno.rankings, "meia");
-    const topAtacante = pickTopByPosition(rankingAno.rankings, "atacante");
-
-    const impactedPlayers = new Set<string>();
-    [topPoints, topGols, topAssist, topGoleiro, topZagueiro, topMeia, topAtacante].forEach(
-      (entry) => {
-        if (entry?.id) impactedPlayers.add(entry.id);
-      }
-    );
-
-    return {
-      topPoints,
-      topGols,
-      topAssist,
-      topTeam,
-      topGoleiro,
-      topZagueiro,
-      topMeia,
-      topAtacante,
-      impactedCount: impactedPlayers.size,
-    };
-  }, [previewSlug, rankingAno.rankings, rankingTimes.teams]);
-
-  const previewLoading = rankingAno.isLoading || rankingTimes.isLoading;
-  const previewError = rankingAno.isError || rankingTimes.isError;
-
   useEffect(() => {
     if (!liveStorageKey || typeof window === "undefined") return;
     const raw = window.localStorage.getItem(liveStorageKey);
@@ -643,37 +516,6 @@ function PartidaClassicaClient() {
       setLiveDraftLoaded(true);
     }
   }, [liveStorageKey]);
-
-  useEffect(() => {
-    if (!retroStorageKey || typeof window === "undefined") return;
-    const raw = window.localStorage.getItem(retroStorageKey);
-    if (!raw) {
-      setHasRetroDraft(false);
-      setRetroDraftLoaded(true);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(raw) as {
-        date?: string;
-        time?: string;
-        location?: string;
-        year?: number;
-        mode?: RetroMode;
-        matches?: MatchDraft[];
-      };
-      if (parsed?.date) setRetroDate(parsed.date);
-      if (parsed?.time) setRetroTime(parsed.time);
-      if (parsed?.location) setRetroLocation(parsed.location);
-      if (typeof parsed?.year === "number") setRetroYear(parsed.year);
-      if (parsed?.mode) setRetroMode(parsed.mode);
-      if (Array.isArray(parsed?.matches)) setRetroMatches(parsed.matches);
-      setHasRetroDraft(true);
-    } catch {
-      setHasRetroDraft(false);
-    } finally {
-      setRetroDraftLoaded(true);
-    }
-  }, [retroStorageKey]);
 
   useEffect(() => {
     if (!liveStorageKey || !liveDraftLoaded || typeof window === "undefined") return;
@@ -718,35 +560,6 @@ function PartidaClassicaClient() {
   ]);
 
   useEffect(() => {
-    if (!retroStorageKey || !retroDraftLoaded || typeof window === "undefined") return;
-    const hasContent = retroMatches.length > 0 || retroDate || retroTime || retroLocation;
-    if (!hasContent) {
-      window.localStorage.removeItem(retroStorageKey);
-      setHasRetroDraft(false);
-      return;
-    }
-    const payload = {
-      date: retroDate,
-      time: retroTime,
-      location: retroLocation,
-      year: retroYear,
-      mode: retroMode,
-      matches: retroMatches,
-    };
-    window.localStorage.setItem(retroStorageKey, JSON.stringify(payload));
-    setHasRetroDraft(true);
-  }, [
-    retroDate,
-    retroDraftLoaded,
-    retroLocation,
-    retroMatches,
-    retroMode,
-    retroStorageKey,
-    retroTime,
-    retroYear,
-  ]);
-
-  useEffect(() => {
     if (!liveRules.winnerStays || !latestMatchInfo) return;
     if (nextTeamA || nextTeamB) return;
     if (!latestMatchInfo.winnerId) return;
@@ -770,6 +583,9 @@ function PartidaClassicaClient() {
   const updateQueryDate = useCallback(
     (nextDate?: string) => {
       const params = new URLSearchParams(searchParams?.toString());
+      if (params.has("modo")) {
+        params.delete("modo");
+      }
       if (nextDate) {
         params.set("data", nextDate);
       } else {
@@ -781,54 +597,23 @@ function PartidaClassicaClient() {
     [pathname, router, searchParams]
   );
 
-  const updateQueryMode = useCallback(
-    (nextMode?: SessionMode) => {
-      const params = new URLSearchParams(searchParams?.toString());
-      if (nextMode && nextMode !== "home") {
-        params.set("modo", nextMode);
-      } else {
-        params.delete("modo");
-      }
-      const query = params.toString();
-      router.replace(query ? `${pathname}?${query}` : pathname);
-    },
-    [pathname, router, searchParams]
-  );
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams?.toString());
+    if (!params.has("modo")) return;
+    params.delete("modo");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname);
+  }, [pathname, router, searchParams]);
 
   useEffect(() => {
-    if (mode !== "live" || !liveActive || !liveDate) return;
+    if (!liveActive || !liveDate) return;
     if (queryDate !== liveDate) updateQueryDate(liveDate);
-  }, [liveActive, liveDate, mode, queryDate, updateQueryDate]);
+  }, [liveActive, liveDate, queryDate, updateQueryDate]);
 
   useEffect(() => {
-    if (mode !== "live" && queryDate) updateQueryDate(undefined);
-  }, [mode, queryDate, updateQueryDate]);
-
-  useEffect(() => {
-    if (mode !== "live") return;
     if (!queryDate) return;
     if (liveDate !== queryDate) setLiveDate(queryDate);
-  }, [liveDate, mode, queryDate]);
-
-  useEffect(() => {
-    if (queryMode === "retro" && mode !== "retro") {
-      setMode("retro");
-      return;
-    }
-    if (queryMode === "live" && mode !== "live") {
-      setMode("live");
-    }
-  }, [mode, queryMode]);
-
-  useEffect(() => {
-    if (mode === "home" && queryMode) {
-      updateQueryMode(undefined);
-      return;
-    }
-    if (mode !== "home" && mode !== queryMode) {
-      updateQueryMode(mode);
-    }
-  }, [mode, queryMode, updateQueryMode]);
+  }, [liveDate, queryDate]);
 
   const toggleTeamSelection = (teamId: string) => {
     setSelectedTeams((prev) => {
@@ -1103,233 +888,6 @@ function PartidaClassicaClient() {
     router.push(TIME_CAMPEAO_ROUTE);
   };
 
-  const addRetroMatch = () => {
-    setRetroMatches((prev) => [
-      ...prev,
-      {
-        id: createDraftId(),
-        teamAId: "",
-        teamBId: "",
-        playersA: [],
-        playersB: [],
-        scoreA: "",
-        scoreB: "",
-        date: retroDate,
-        time: retroTime,
-      },
-    ]);
-  };
-
-  const removeRetroMatch = (id: string) => {
-    setRetroMatches((prev) => prev.filter((match) => match.id !== id));
-    setRetroSearchMap((prev) => {
-      const updated = { ...prev };
-      delete updated[`${id}-A`];
-      delete updated[`${id}-B`];
-      return updated;
-    });
-  };
-
-  const updateRetroMatch = (id: string, updates: Partial<MatchDraft>) => {
-    setRetroMatches((prev) =>
-      prev.map((match) => (match.id === id ? { ...match, ...updates } : match))
-    );
-  };
-
-  const toggleRetroPlayer = (matchId: string, side: "A" | "B", playerId: string) => {
-    setRetroMatches((prev) =>
-      prev.map((match) => {
-        if (match.id !== matchId) return match;
-        const key = side === "A" ? "playersA" : "playersB";
-        const list = match[key];
-        const exists = list.includes(playerId);
-        const nextList = exists ? list.filter((item) => item !== playerId) : [...list, playerId];
-        return { ...match, [key]: nextList } as MatchDraft;
-      })
-    );
-  };
-
-  const updateRetroTeam = (matchId: string, side: "A" | "B", teamId: string) => {
-    if (side === "A") {
-      updateRetroMatch(matchId, { teamAId: teamId, playersA: [] });
-    } else {
-      updateRetroMatch(matchId, { teamBId: teamId, playersB: [] });
-    }
-  };
-
-  const updateRetroSearch = (matchId: string, side: "A" | "B", value: string) => {
-    setRetroSearchMap((prev) => ({ ...prev, [`${matchId}-${side}`]: value }));
-  };
-
-  const validateRetroMatches = () => {
-    if (!retroMatches.length) return "Adicione pelo menos uma partida retroativa.";
-    if (!tenantId) return "Nao foi possivel identificar o racha logado.";
-
-    for (let i = 0; i < retroMatches.length; i += 1) {
-      const match = retroMatches[i];
-      const matchDate = match.date || retroDate;
-      if (!matchDate) return `Informe a data da partida ${i + 1}.`;
-      if (!match.teamAId || !match.teamBId) {
-        return `Selecione os times da partida ${i + 1}.`;
-      }
-      if (match.teamAId === match.teamBId) {
-        return `Os times da partida ${i + 1} nao podem ser iguais.`;
-      }
-      if (retroMode === "full") {
-        if (!match.playersA.length || !match.playersB.length) {
-          return `Selecione os atletas das duas equipes na partida ${i + 1}.`;
-        }
-        const overlap = match.playersA.filter((id) => match.playersB.includes(id));
-        if (overlap.length) {
-          return `Ha atletas duplicados nas equipes da partida ${i + 1}.`;
-        }
-      }
-      if (retroMode === "score") {
-        const scoreA = parseScore(match.scoreA);
-        const scoreB = parseScore(match.scoreB);
-        if (scoreA === null || scoreB === null) {
-          return `Informe o placar final da partida ${i + 1}.`;
-        }
-      }
-    }
-    return null;
-  };
-
-  const handleSaveRetroMatches = async () => {
-    const validationError = validateRetroMatches();
-    if (validationError) {
-      setRetroError(validationError);
-      return;
-    }
-    if (retroMode === "csv") {
-      setRetroError("Importacao CSV ainda nao esta habilitada. Use outro modo por enquanto.");
-      return;
-    }
-
-    setRetroSaving(true);
-    setRetroError(null);
-    try {
-      for (const draft of retroMatches) {
-        const dateValue = draft.date || retroDate;
-        const timeValue = draft.time || retroTime;
-        const scoreA = parseScore(draft.scoreA);
-        const scoreB = parseScore(draft.scoreB);
-
-        await createMatch({
-          teamAId: draft.teamAId,
-          teamBId: draft.teamBId,
-          dateValue,
-          timeValue,
-          locationValue: retroLocation,
-          rosterA: draft.playersA,
-          rosterB: draft.playersB,
-          scoreA,
-          scoreB,
-        });
-      }
-
-      setRetroSuccess(true);
-      setRetroMatches([]);
-      setRetroSearchMap({});
-    } catch (err) {
-      setRetroError(err instanceof Error ? err.message : "Falha ao salvar partidas retroativas.");
-    } finally {
-      setRetroSaving(false);
-    }
-  };
-
-  const handleFinalizeRetroSeason = async () => {
-    if (retroFinalizeLoading) return;
-    if (!isRetroPastYear) {
-      setRetroFinalizeError("Fechamento de temporada disponivel apenas para anos anteriores.");
-      return;
-    }
-    setRetroFinalizeLoading(true);
-    setRetroFinalizeError(null);
-    setRetroFinalizeMessage(null);
-    try {
-      const response = await fetch("/api/campeoes/finalizar-temporada", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: retroYear }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(payload?.error || "Erro ao finalizar temporada.");
-      }
-      setRetroFinalizeMessage("Campeoes calculados e premiacoes aplicadas com sucesso.");
-    } catch (err) {
-      setRetroFinalizeError(err instanceof Error ? err.message : "Erro ao finalizar temporada.");
-    } finally {
-      setRetroFinalizeLoading(false);
-    }
-  };
-
-  const renderRoster = (match: MatchDraft, side: "A" | "B", team: Time | undefined) => {
-    const selected = side === "A" ? match.playersA : match.playersB;
-    const blocked = new Set(side === "A" ? match.playersB : match.playersA);
-    const searchKey = `${match.id}-${side}`;
-    const query = normalizeKey(retroSearchMap[searchKey] || "");
-    const filteredPlayers = playerOptions.filter((player) =>
-      query ? player.searchLabel.includes(query) : true
-    );
-
-    return (
-      <div className="mt-3 rounded-xl border border-neutral-800 bg-[#151515] p-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-neutral-300">Atletas do {team?.nome || `Time ${side}`}</p>
-          <span className="text-[11px] text-neutral-400">{selected.length} selecionados</span>
-        </div>
-        <input
-          value={retroSearchMap[searchKey] || ""}
-          onChange={(e) => updateRetroSearch(match.id, side, e.target.value)}
-          placeholder="Buscar atleta"
-          className="mt-2 w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-xs text-neutral-100"
-        />
-        <div className="mt-3 max-h-40 space-y-2 overflow-y-auto">
-          {filteredPlayers.length === 0 ? (
-            <p className="text-xs text-neutral-500">Nenhum atleta encontrado.</p>
-          ) : (
-            filteredPlayers.map((player) => {
-              const checked = selected.includes(player.id);
-              const disabled = blocked.has(player.id);
-              return (
-                <label key={player.id} className="flex items-center gap-2 text-sm text-neutral-200">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleRetroPlayer(match.id, side, player.id)}
-                    disabled={disabled}
-                  />
-                  <span className={`flex-1 ${disabled ? "opacity-50" : ""}`}>{player.label}</span>
-                  {player.positionLabel && (
-                    <span
-                      className={`text-[11px] text-neutral-400 ${disabled ? "opacity-50" : ""}`}
-                    >
-                      {player.positionLabel}
-                    </span>
-                  )}
-                </label>
-              );
-            })
-          )}
-        </div>
-        {selected.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {selected.map((playerId) => (
-              <span
-                key={playerId}
-                className="rounded-full border border-neutral-700 bg-neutral-800 px-3 py-1 text-[11px] text-neutral-200"
-              >
-                {playerLabelById.get(playerId) || "Atleta"}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
   const renderLiveTeamRoster = (team: Time) => {
     const selected = teamRosters[team.id] || [];
     const query = normalizeKey(teamSearchMap[team.id] || "");
@@ -1393,102 +951,16 @@ function PartidaClassicaClient() {
     );
   };
 
-  const handleBackToHome = () => {
-    setMode("home");
-    setLiveError(null);
-    setRetroError(null);
+  const handleBackToCreate = () => {
+    router.push("/admin/partidas/criar");
   };
-
-  const renderHome = () => (
-    <>
-      <div className="flex flex-col gap-3 mb-8">
-        <h1 className="text-3xl font-bold text-yellow-400">Partidas Classicas</h1>
-        <p className="text-sm text-neutral-300 max-w-3xl">
-          Controle manual de rodadas, ideal para rachas com formato livre ou para lancar historicos
-          retroativos. Selecione o tipo de sessao e acompanhe tudo em tempo real.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <button
-          type="button"
-          onClick={() => setMode("live")}
-          className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 text-left transition hover:border-yellow-400/60"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-yellow-400/10 p-3 text-yellow-300">
-                <FaBolt />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-yellow-300">
-                  Partidas Classicas (Atual)
-                </h2>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Sessao ao vivo com rodadas dinamicas, quem ganha fica e resultados em tempo real.
-                </p>
-              </div>
-            </div>
-            <span className="rounded-full bg-yellow-400 px-3 py-1 text-[11px] font-semibold text-black">
-              Iniciar sessao
-            </span>
-          </div>
-          <ul className="mt-4 space-y-1 text-xs text-neutral-300">
-            <li>- Data do dia, horarios e elenco completo.</li>
-            <li>- Cadastrar partida, proxima rodada e finalizar.</li>
-            <li>- Resultados integrados ao painel em tempo real.</li>
-          </ul>
-          {hasLiveDraft && (
-            <div className="mt-4 rounded-lg border border-green-400/40 bg-green-400/10 px-3 py-2 text-xs text-green-200">
-              Rascunho encontrado. Clique para continuar a sessao.
-            </div>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setMode("retro")}
-          className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 text-left transition hover:border-yellow-400/60"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="rounded-xl bg-yellow-400/10 p-3 text-yellow-300">
-                <FaHistory />
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-yellow-300">
-                  Retroagir Resultados (Historico)
-                </h2>
-                <p className="text-xs text-neutral-400 mt-1">
-                  Lance partidas antigas, ajuste rankings e finalize temporadas com seguranca.
-                </p>
-              </div>
-            </div>
-            <span className="rounded-full border border-yellow-400/40 bg-yellow-400/10 px-3 py-1 text-[11px] font-semibold text-yellow-200">
-              Criar sessao
-            </span>
-          </div>
-          <ul className="mt-4 space-y-1 text-xs text-neutral-300">
-            <li>- Datas anteriores, placar completo ou somente resultado.</li>
-            <li>- Preview de campeoes antes de aplicar premiacoes.</li>
-            <li>- Historico auditavel e controlado.</li>
-          </ul>
-          {hasRetroDraft && (
-            <div className="mt-4 rounded-lg border border-green-400/40 bg-green-400/10 px-3 py-2 text-xs text-green-200">
-              Rascunho historico encontrado. Clique para continuar.
-            </div>
-          )}
-        </button>
-      </div>
-    </>
-  );
 
   const renderLive = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={handleBackToHome}
+          onClick={handleBackToCreate}
           className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 px-3 py-2 text-xs text-neutral-200 hover:bg-neutral-800"
         >
           <FaArrowLeft /> Voltar
@@ -2069,398 +1541,22 @@ function PartidaClassicaClient() {
     </div>
   );
 
-  const renderRetro = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleBackToHome}
-          className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 px-3 py-2 text-xs text-neutral-200 hover:bg-neutral-800"
-        >
-          <FaArrowLeft /> Voltar
-        </button>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Retroagir Resultados</h1>
-          <p className="text-xs text-neutral-400">
-            Lance partidas antigas sem impactar o fluxo atual e finalize temporadas com preview.
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 p-4 text-xs text-yellow-200">
-        <span className="font-semibold">Regra do ano vigente:</span> partidas retroativas do ano
-        atual somam nos rankings atuais. Fechamento de temporada e premiacoes sao apenas para anos
-        anteriores.
-      </div>
-
-      <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold text-yellow-300">Sessao historica</h2>
-          <p className="text-xs text-neutral-400">
-            Defina o ano, data base e o modo de lancamento desejado.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400">Ano</label>
-            <select
-              value={retroYear}
-              onChange={(e) => setRetroYear(Number(e.target.value))}
-              className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-            >
-              {Array.from({ length: 6 }, (_, index) => currentYear - 4 + index).map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 flex items-center gap-2">
-              <FaCalendarAlt /> Data base
-            </label>
-            <input
-              type="date"
-              value={retroDate}
-              onChange={(e) => setRetroDate(e.target.value)}
-              className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 flex items-center gap-2">
-              <FaClock /> Horario
-            </label>
-            <input
-              type="time"
-              value={retroTime}
-              onChange={(e) => setRetroTime(e.target.value)}
-              className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs text-neutral-400 flex items-center gap-2">
-              <FaMapMarkerAlt /> Local
-            </label>
-            <input
-              type="text"
-              value={retroLocation}
-              onChange={(e) => setRetroLocation(e.target.value)}
-              placeholder="Ex: Quadra antiga"
-              className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-neutral-200">
-          {[
-            { key: "full", label: "Completo (placar + elenco)" },
-            { key: "score", label: "Somente placar" },
-            { key: "csv", label: "Importar CSV" },
-          ].map((option) => (
-            <label
-              key={option.key}
-              className={`rounded-xl border px-4 py-3 transition ${
-                retroMode === option.key
-                  ? "border-yellow-400/70 bg-yellow-400/10 text-yellow-100"
-                  : "border-neutral-800 bg-[#101010] text-neutral-300"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="retro-mode"
-                  value={option.key}
-                  checked={retroMode === option.key}
-                  onChange={() => setRetroMode(option.key as RetroMode)}
-                />
-                <span className="font-semibold">{option.label}</span>
-              </div>
-              {option.key === "full" && (
-                <p className="text-xs text-neutral-400 mt-2">
-                  Lance elenco completo e ajuste gols/assistencias depois em Resultados do Dia.
-                </p>
-              )}
-              {option.key === "score" && (
-                <p className="text-xs text-neutral-400 mt-2">
-                  Informe apenas o placar final para agilizar o historico.
-                </p>
-              )}
-              {option.key === "csv" && (
-                <p className="text-xs text-neutral-400 mt-2">
-                  Opcional. Importacao via CSV ainda nao esta habilitada.
-                </p>
-              )}
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-yellow-300">Partidas retroativas</h2>
-            <p className="text-xs text-neutral-400">
-              Cadastre confrontos com times reais e registre resultados do periodo.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={addRetroMatch}
-            className="inline-flex items-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
-          >
-            <FaPlus /> Adicionar partida
-          </button>
-        </div>
-
-        {timesLoading || jogadoresLoading ? (
-          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
-            Carregando times e atletas...
-          </div>
-        ) : times.length === 0 ? (
-          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-            Nenhum time cadastrado. Cadastre os times antes de criar partidas classicas.
-          </div>
-        ) : jogadores.length === 0 ? (
-          <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-            Nenhum atleta cadastrado. Cadastre atletas antes de montar partidas classicas.
-          </div>
-        ) : null}
-
-        <div className="space-y-5">
-          {retroMatches.map((match, index) => {
-            const teamA = times.find((time) => time.id === match.teamAId);
-            const teamB = times.find((time) => time.id === match.teamBId);
-
-            return (
-              <div
-                key={match.id}
-                className="rounded-2xl border border-neutral-800 bg-[#101010] p-5"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 text-sm text-neutral-300">
-                    <FaUsers className="text-yellow-400" /> Partida {index + 1}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeRetroMatch(match.id)}
-                    className="text-xs text-red-200 hover:text-red-300"
-                  >
-                    <FaTrash /> Remover
-                  </button>
-                </div>
-
-                <div className="mt-3 grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs text-neutral-400">Data</label>
-                    <input
-                      type="date"
-                      value={match.date}
-                      onChange={(e) => updateRetroMatch(match.id, { date: e.target.value })}
-                      className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs text-neutral-400">Horario</label>
-                    <input
-                      type="time"
-                      value={match.time}
-                      onChange={(e) => updateRetroMatch(match.id, { time: e.target.value })}
-                      className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs text-neutral-400">Placar A</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={match.scoreA}
-                      onChange={(e) => updateRetroMatch(match.id, { scoreA: e.target.value })}
-                      className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs text-neutral-400">Placar B</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={match.scoreB}
-                      onChange={(e) => updateRetroMatch(match.id, { scoreB: e.target.value })}
-                      className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs text-neutral-400 mb-2 block">Time A</label>
-                    <select
-                      value={match.teamAId}
-                      onChange={(e) => updateRetroTeam(match.id, "A", e.target.value)}
-                      className="w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    >
-                      <option value="">Selecione o time A</option>
-                      {times.map((time) => (
-                        <option key={time.id} value={time.id}>
-                          {time.nome}
-                        </option>
-                      ))}
-                    </select>
-                    {retroMode !== "score" && renderRoster(match, "A", teamA)}
-                  </div>
-                  <div>
-                    <label className="text-xs text-neutral-400 mb-2 block">Time B</label>
-                    <select
-                      value={match.teamBId}
-                      onChange={(e) => updateRetroTeam(match.id, "B", e.target.value)}
-                      className="w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                    >
-                      <option value="">Selecione o time B</option>
-                      {times.map((time) => (
-                        <option key={time.id} value={time.id}>
-                          {time.nome}
-                        </option>
-                      ))}
-                    </select>
-                    {retroMode !== "score" && renderRoster(match, "B", teamB)}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {retroError && (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-xs text-red-200">
-            {retroError}
-          </div>
-        )}
-
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={handleSaveRetroMatches}
-            disabled={retroSaving}
-            className="rounded-xl bg-green-500 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 disabled:opacity-60"
-          >
-            {retroSaving ? "Salvando historico..." : "Salvar historico"}
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push(retroResultsUrl)}
-            className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
-          >
-            Abrir Resultados do Dia
-          </button>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-yellow-300">Campeoes e premiacoes do ano</h2>
-            <p className="text-xs text-neutral-400">
-              Preview do impacto antes de aplicar as premiacoes retroativas.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowFinalizeRetroModal(true)}
-            disabled={!isRetroPastYear}
-            className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            Calcular campeoes e aplicar premiacoes
-          </button>
-        </div>
-
-        {!isRetroPastYear ? (
-          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
-            {isRetroCurrentYear ? (
-              <>
-                Ano vigente: partidas retroativas entram nos rankings atuais. O fechamento do ano
-                fica disponivel apenas para temporadas anteriores.
-              </>
-            ) : (
-              <>Selecione um ano anterior para visualizar e aplicar premiacoes.</>
-            )}
-          </div>
-        ) : !previewSlug ? (
-          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
-            Informe o racha ativo para visualizar o preview de campeoes.
-          </div>
-        ) : previewLoading ? (
-          <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4 text-sm text-neutral-300">
-            Carregando preview do ano {retroYear}...
-          </div>
-        ) : previewError ? (
-          <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-200">
-            Nao foi possivel carregar o preview. Verifique as estatisticas do ano selecionado.
-          </div>
-        ) : previewData ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-neutral-200">
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Campeao do ano</p>
-              <p className="text-yellow-200 font-semibold">
-                {previewData.topTeam?.nome || "Em processamento"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Melhor do ano</p>
-              <p className="text-yellow-200 font-semibold">
-                {previewData.topPoints?.nome || "Em processamento"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Artilheiro do ano</p>
-              <p className="text-yellow-200 font-semibold">
-                {previewData.topGols?.nome || "Em processamento"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Maestro do ano</p>
-              <p className="text-yellow-200 font-semibold">
-                {previewData.topAssist?.nome || "Em processamento"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Melhores por posicao</p>
-              <div className="mt-2 space-y-1 text-xs text-neutral-200">
-                <p>Goleiro: {previewData.topGoleiro?.nome || "Em processamento"}</p>
-                <p>Zagueiro: {previewData.topZagueiro?.nome || "Em processamento"}</p>
-                <p>Meia: {previewData.topMeia?.nome || "Em processamento"}</p>
-                <p>Atacante: {previewData.topAtacante?.nome || "Em processamento"}</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-neutral-800 bg-[#101010] p-4">
-              <p className="text-xs text-neutral-400">Perfis impactados</p>
-              <p className="text-yellow-200 font-semibold">
-                {previewData.impactedCount} atletas receberao icones
-              </p>
-            </div>
-          </div>
-        ) : null}
-      </section>
-    </div>
-  );
-
   return (
     <>
       <Head>
         <title>Partidas Classicas | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Orquestre partidas classicas em tempo real ou retroaja resultados historicos com controle total."
+          content="Orquestre partidas classicas em tempo real com cadastro de confrontos e resultados do dia."
         />
         <meta
           name="keywords"
-          content="partida classica, sessao de jogos, resultados, retroativo, painel admin, fut7pro"
+          content="partida classica, sessao de jogos, resultados, painel admin, fut7pro"
         />
       </Head>
 
       <main className="min-h-screen bg-fundo text-white px-4 pt-[64px] md:pt-[80px] pb-24 md:pb-10">
-        <div className="mx-auto max-w-6xl">{mode === "home" ? renderHome() : null}</div>
-        <div className="mx-auto max-w-6xl">{mode === "live" ? renderLive() : null}</div>
-        <div className="mx-auto max-w-6xl">{mode === "retro" ? renderRetro() : null}</div>
+        <div className="mx-auto max-w-6xl">{renderLive()}</div>
       </main>
 
       {showFinalizeModal && (
@@ -2490,80 +1586,6 @@ function PartidaClassicaClient() {
                 className="flex-1 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
               >
                 Finalizar agora
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showFinalizeRetroModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <FaExclamationTriangle className="text-yellow-300 text-xl" />
-              <h3 className="text-lg font-semibold text-yellow-300">Finalizar temporada</h3>
-            </div>
-            <p className="text-sm text-neutral-300">
-              Essa acao aplica premiacoes do ano {retroYear} e bloqueia alteracoes sem permissao.
-            </p>
-            {retroFinalizeError && (
-              <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 p-2 text-xs text-red-200">
-                {retroFinalizeError}
-              </div>
-            )}
-            {retroFinalizeMessage && (
-              <div className="mt-3 rounded-lg border border-green-500/40 bg-green-500/10 p-2 text-xs text-green-200">
-                {retroFinalizeMessage}
-              </div>
-            )}
-            <div className="mt-5 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={() => setShowFinalizeRetroModal(false)}
-                className="flex-1 rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
-              >
-                Voltar
-              </button>
-              <button
-                type="button"
-                onClick={handleFinalizeRetroSeason}
-                disabled={retroFinalizeLoading}
-                className="flex-1 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60"
-              >
-                {retroFinalizeLoading ? "Processando..." : "Confirmar finalizacao"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {retroSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <div className="rounded-2xl border border-green-500/40 bg-[#101010] p-6 text-center shadow-xl">
-            <FaCheckCircle className="mx-auto mb-3 text-4xl text-green-400" />
-            <h2 className="text-xl font-semibold text-green-300 mb-2">
-              Historico salvo com sucesso!
-            </h2>
-            <p className="text-sm text-neutral-300">
-              As partidas foram registradas e ja aparecem no painel.
-            </p>
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setRetroSuccess(false);
-                  router.push(retroResultsUrl);
-                }}
-                className="flex-1 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
-              >
-                Abrir Resultados do Dia
-              </button>
-              <button
-                type="button"
-                onClick={() => setRetroSuccess(false)}
-                className="flex-1 rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
-              >
-                Fechar
               </button>
             </div>
           </div>
