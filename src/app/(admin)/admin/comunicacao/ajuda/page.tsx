@@ -40,9 +40,9 @@ const artigosMock: ArtigoAjuda[] = [
   {
     id: 3,
     categoria: "Partidas",
-    titulo: "Como programar e gerenciar Próximos Rachas?",
+    titulo: "Como configurar Dias e Horários?",
     conteudo:
-      "Vá em 'Partidas' > 'Próximos Rachas'. Programe novos jogos, informe data, horário e local. Confirme a presença dos jogadores e ajuste os dados conforme necessário antes do sorteio.",
+      "Vá em 'Partidas' > 'Dias e Horários'. Configure a agenda recorrente informando dias fixos, horário e local. Ajuste quando precisar; isso alimenta a agenda do racha.",
   },
   {
     id: 4,

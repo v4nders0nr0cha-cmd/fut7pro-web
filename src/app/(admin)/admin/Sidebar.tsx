@@ -23,13 +23,14 @@ const menu = [
     label: "Partidas",
     icon: FaFutbol,
     children: [
-      { label: "Partidas e Resultados", href: "/admin/partidas" },
-      { label: "Próximos Rachas", href: "/admin/partidas/proximos-rachas" },
-      { label: "Time Campeão do Dia", href: "/admin/partidas/time-campeao-do-dia" },
-      { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },
+      { label: "PRÉ-JOGO", isSection: true },
       { label: "Criar Times", href: "/admin/partidas/criar-times" },
-      { label: "Sorteio Inteligente", href: "/admin/partidas/sorteio-inteligente" },
       { label: "Criar Partidas", href: "/admin/partidas/criar" },
+      { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },
+      { label: "Dias e Horários", href: "/admin/partidas/proximos-rachas" },
+      { label: "PÓS-JOGO", isSection: true },
+      { label: "Partidas e Resultados", href: "/admin/partidas" },
+      { label: "Time Campeão do Dia", href: "/admin/partidas/time-campeao-do-dia" },
     ],
   },
   {
@@ -172,17 +173,30 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                 </button>
                 {open === item.label && (
                   <ul className="ml-6 mt-1 space-y-1 border-l border-yellow-700 pl-3">
-                    {item.children.map((child) => (
-                      <li key={child.href}>
-                        <Link
-                          href={child.href}
-                          className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
-                          onClick={onClose}
+                    {item.children.map((child, index) => {
+                      if ("href" in child) {
+                        return (
+                          <li key={child.href}>
+                            <Link
+                              href={child.href}
+                              className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
+                              onClick={onClose}
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        );
+                      }
+
+                      return (
+                        <li
+                          key={`${child.label}-${index}`}
+                          className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-yellow-200/80"
                         >
                           {child.label}
-                        </Link>
-                      </li>
-                    ))}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </li>

@@ -43,14 +43,14 @@ export default function ProximosRachasPage() {
   return (
     <>
       <Head>
-        <title>Proximos Rachas | Painel Admin - Fut7Pro</title>
+        <title>Dias e Horários | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Confira os proximos dias e horarios dos rachas ja programados no seu racha Fut7Pro. Agenda dinamica, aviso de feriados e gestao completa dos eventos do seu time!"
+          content="Confira os dias e horários recorrentes do seu racha Fut7Pro. Agenda dinâmica, aviso de feriados e gestão completa da agenda do time."
         />
         <meta
           name="keywords"
-          content="fut7, racha, proximos jogos, agenda de racha, futebol amador, painel admin, gestao de partidas, SaaS futebol, Fut7Pro"
+          content="fut7, racha, dias e horários, agenda do racha, futebol amador, painel admin, gestão de partidas, SaaS futebol, Fut7Pro"
         />
       </Head>
 
@@ -58,7 +58,7 @@ export default function ProximosRachasPage() {
         <div className="max-w-2xl w-full mx-auto bg-[#21252B] rounded-2xl shadow-lg px-6 py-6 flex flex-col min-h-[220px] justify-between">
           <div className="flex items-center gap-2 mb-4">
             <FaCalendarAlt className="text-cyan-400 w-6 h-6" />
-            <span className="text-lg font-bold text-cyan-300 tracking-wide">Proximos rachas</span>
+            <span className="text-lg font-bold text-cyan-300 tracking-wide">Dias e horários</span>
           </div>
 
           {isError && error && (
@@ -69,10 +69,10 @@ export default function ProximosRachasPage() {
 
           <div className="flex flex-col gap-2 mb-4">
             {isLoading && ocorrencias.length === 0 ? (
-              <div className="text-sm text-gray-400">Carregando proximos rachas...</div>
+              <div className="text-sm text-gray-400">Carregando dias e horários...</div>
             ) : ocorrencias.length === 0 ? (
               <div className="text-sm text-gray-400">
-                Nenhum racha futuro encontrado. Cadastre dias e horarios para liberar a agenda.
+                Nenhuma agenda encontrada. Cadastre dias e horários para liberar a agenda.
               </div>
             ) : (
               ocorrencias.map((racha) => (
@@ -110,7 +110,7 @@ export default function ProximosRachasPage() {
           </Link>
 
           <div className="mt-3 text-xs text-gray-400 text-center">
-            Os proximos rachas sao calculados automaticamente pelos dias fixos cadastrados.
+            Os dias e horários são calculados automaticamente pelos dias fixos cadastrados.
             <br />
             {temFeriado && (
               <span className="text-red-400 font-semibold">

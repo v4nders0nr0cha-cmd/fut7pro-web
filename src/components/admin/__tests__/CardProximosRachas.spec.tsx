@@ -7,7 +7,7 @@ describe("CardProximosRachas", () => {
     expect(container.querySelectorAll(".animate-pulse").length).toBe(4);
   });
 
-  it("mostra lista de rachas futuros", () => {
+  it("mostra lista de dias e horarios", () => {
     render(
       <CardProximosRachas
         proximos={[
@@ -27,6 +27,6 @@ describe("CardProximosRachas", () => {
 
   it("mostra estado vazio sem rachas", () => {
     render(<CardProximosRachas proximos={[]} />);
-    expect(screen.getByText(/Nenhum racha futuro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma agenda encontrada/i)).toBeInTheDocument();
   });
 });

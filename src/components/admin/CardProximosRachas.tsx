@@ -24,7 +24,9 @@ export default function CardProximosRachas({
     <div className="bg-[#21252B] rounded-2xl shadow-lg px-6 py-6 flex flex-col min-h-[220px] justify-between w-full">
       <div className="flex items-center gap-2 mb-4">
         <FaCalendarAlt className="text-cyan-400 w-6 h-6" />
-        <span className="text-lg font-bold text-cyan-300 tracking-wide">Proximos rachas</span>
+        <span className="text-lg font-bold text-cyan-300 tracking-wide">
+          Dias e Hor{"\u00e1"}rios
+        </span>
       </div>
 
       {isLoading ? (
@@ -51,17 +53,20 @@ export default function CardProximosRachas({
           ))}
         </div>
       ) : (
-        <div className="mb-4 text-sm text-gray-400">Nenhum racha futuro cadastrado.</div>
+        <div className="mb-4 text-sm text-gray-400">
+          Nenhuma agenda encontrada. Cadastre dias e hor{"\u00e1"}rios para liberar a agenda.
+        </div>
       )}
 
       <Link
         href={manageHref}
         className="mt-2 w-full text-center bg-cyan-600 hover:bg-cyan-700 transition text-white font-semibold py-2 px-4 rounded-xl text-sm"
       >
-        Gerenciar dias e horarios
+        Gerenciar dias e hor{"\u00e1"}rios
       </Link>
       <div className="mt-3 text-xs text-gray-400 text-center">
-        Os proximos rachas sao calculados automaticamente a partir do calendario do racha.
+        Os dias e hor{"\u00e1"}rios s{"\u00e3"}o calculados automaticamente pelos dias fixos
+        cadastrados.
       </div>
     </div>
   );
