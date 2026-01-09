@@ -20,6 +20,7 @@ const patrocinadores: Patrocinador[] = [
     descricao: "Desc 1",
     link: "https://p1.com",
     comprovantes: [],
+    displayOrder: 1,
   },
   {
     id: "p2",
@@ -31,6 +32,7 @@ const patrocinadores: Patrocinador[] = [
     logo: "/logo2.png",
     visivel: false,
     comprovantes: [],
+    displayOrder: 2,
   },
 ];
 
@@ -47,7 +49,7 @@ describe("TabelaPatrocinadores", () => {
 
     expect(screen.getByText("Patrocinador 1")).toBeInTheDocument();
     expect(screen.getByText("Patrocinador 2")).toBeInTheDocument();
-    expect(screen.getAllByLabelText(/Adicionar novo patrocinador/i)).toHaveLength(8);
+    expect(screen.getAllByLabelText(/Adicionar patrocinador/i)).toHaveLength(8);
   });
 
   it("dispara callbacks ao interagir com ícones e botões", () => {
@@ -62,7 +64,7 @@ describe("TabelaPatrocinadores", () => {
     fireEvent.click(screen.getAllByTitle(/Excluir/i)[0]);
     expect(baseProps.onExcluir).toHaveBeenCalledWith("p1");
 
-    fireEvent.click(screen.getAllByLabelText(/Adicionar novo patrocinador/i)[0]);
+    fireEvent.click(screen.getAllByLabelText(/Adicionar patrocinador/i)[0]);
     expect(baseProps.onNovo).toHaveBeenCalledTimes(1);
   });
 });

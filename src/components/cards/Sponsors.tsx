@@ -9,14 +9,11 @@ import { usePublicSponsors } from "@/hooks/usePublicSponsors";
 export default function Sponsors() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
-  const { sponsors, isLoading } = usePublicSponsors(slug);
+  const { slots, isLoading } = usePublicSponsors(slug);
 
   const list = useMemo(() => {
-    if (!sponsors.length) return [];
-    const onlyFooter = sponsors.filter((s) => s.showOnFooter);
-    const base = onlyFooter.length ? onlyFooter : sponsors;
-    return base.slice(0, 6);
-  }, [sponsors]);
+    return slots.slice(0, 6);
+  }, [slots]);
 
   return (
     <section className="bg-[#111] py-8 border-t border-yellow-400 px-4">

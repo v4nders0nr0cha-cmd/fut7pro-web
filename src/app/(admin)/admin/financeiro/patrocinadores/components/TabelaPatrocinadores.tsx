@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import type { Patrocinador } from "@/types/financeiro";
 import { FaEdit, FaTrash, FaGlobe, FaEye, FaEyeSlash, FaPlus } from "react-icons/fa";
@@ -8,7 +9,7 @@ interface Props {
   onEditar: (p: Patrocinador) => void;
   onExcluir: (id: string) => void;
   onToggleVisivel: (id: string) => void;
-  onNovo: () => void;
+  onNovo: (slot: number) => void;
 }
 
 export default function TabelaPatrocinadores({
@@ -18,57 +19,62 @@ export default function TabelaPatrocinadores({
   onToggleVisivel,
   onNovo,
 }: Props) {
-  // Garante exatamente 10 posições
-  const cards = [...patrocinadores];
-  while (cards.length < 10) cards.push(undefined as any);
+  const slots = Array.from({ length: 10 }, (_, index) => {
+    const order = index + 1;
+    const sponsor = patrocinadores.find((item) => item.displayOrder === order);
+    return { order, sponsor };
+  });
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
-      {cards.map((p, i) =>
-        p ? (
+      {slots.map(({ order, sponsor }) =>
+        sponsor ? (
           <div
-            key={p.id}
+            key={sponsor.id}
             className="bg-[#232323] rounded-xl shadow p-4 flex flex-col gap-2 items-start relative hover:shadow-lg transition"
           >
+            <span className="text-xs text-gray-500 font-semibold">
+              Patrocinador {String(order).padStart(2, "0")}
+            </span>
             <div className="flex items-center gap-3 w-full">
               <Image
-                src={p.logo}
-                alt={`Logo do patrocinador ${p.nome} - Fut7, sistema de futebol, racha`}
+                src={sponsor.logo}
+                alt={`Logo do patrocinador ${sponsor.nome} - Fut7, sistema de futebol, racha`}
                 width={48}
                 height={48}
                 className="rounded-lg object-contain border border-gray-700 bg-[#111]"
               />
               <div className="flex-1">
-                <div className="font-bold text-yellow-300 text-base truncate">{p.nome}</div>
+                <div className="font-bold text-yellow-300 text-base truncate">{sponsor.nome}</div>
                 <div className="text-xs text-gray-400">
                   Valor:{" "}
                   <span className="font-semibold text-green-400">
-                    R$ {p.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    R$ {sponsor.valor.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
               <button
-                title={p.visivel ? "Ocultar do site público" : "Exibir no site público"}
-                onClick={() => onToggleVisivel(p.id)}
-                className={`ml-2 ${p.visivel ? "text-green-500" : "text-gray-600"} hover:text-yellow-400`}
+                title={sponsor.visivel ? "Ocultar do site publico" : "Exibir no site publico"}
+                onClick={() => onToggleVisivel(sponsor.id)}
+                className={`ml-2 ${sponsor.visivel ? "text-green-500" : "text-gray-600"} hover:text-yellow-400`}
               >
-                {p.visivel ? <FaEye /> : <FaEyeSlash />}
+                {sponsor.visivel ? <FaEye /> : <FaEyeSlash />}
               </button>
             </div>
             <div className="flex items-center gap-2 mt-1">
               <span className="bg-gray-900 text-xs text-gray-200 px-2 py-1 rounded">
-                {p.status.toUpperCase()}
+                {sponsor.status.toUpperCase()}
               </span>
               <span className="bg-gray-800 text-xs text-gray-300 px-2 py-1 rounded">
-                {p.periodoInicio && p.periodoFim
-                  ? `${new Date(p.periodoInicio).toLocaleDateString()} ~ ${new Date(
-                      p.periodoFim
+                {sponsor.periodoInicio && sponsor.periodoFim
+                  ? `${new Date(sponsor.periodoInicio).toLocaleDateString()} ~ ${new Date(
+                      sponsor.periodoFim
                     ).toLocaleDateString()}`
                   : "Periodo nao informado"}
               </span>
-              {p.link && (
+              {sponsor.link && (
                 <a
-                  href={p.link}
+                  href={sponsor.link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-2 text-blue-400 hover:underline"
@@ -78,17 +84,19 @@ export default function TabelaPatrocinadores({
                 </a>
               )}
             </div>
-            {p.descricao && <div className="mt-2 text-sm text-gray-300">{p.descricao}</div>}
+            {sponsor.descricao && (
+              <div className="mt-2 text-sm text-gray-300">{sponsor.descricao}</div>
+            )}
             <div className="flex gap-3 mt-2 w-full justify-end">
               <button
-                onClick={() => onEditar(p)}
+                onClick={() => onEditar(sponsor)}
                 title="Editar"
                 className="text-yellow-400 hover:text-yellow-300"
               >
                 <FaEdit />
               </button>
               <button
-                onClick={() => onExcluir(p.id)}
+                onClick={() => onExcluir(sponsor.id)}
                 title="Excluir"
                 className="text-red-400 hover:text-red-300"
               >
@@ -98,17 +106,17 @@ export default function TabelaPatrocinadores({
           </div>
         ) : (
           <button
-            key={`adicionar-${i}`}
+            key={`adicionar-${order}`}
             type="button"
-            onClick={onNovo}
+            onClick={() => onNovo(order)}
             className="flex flex-col justify-center items-center gap-2 border-2 border-dashed border-yellow-500 rounded-xl min-h-[160px] bg-[#181818] hover:bg-[#232323] hover:shadow-lg transition group w-full h-full"
-            aria-label="Adicionar novo patrocinador"
+            aria-label={`Adicionar patrocinador (${String(order).padStart(2, "0")})`}
           >
             <FaPlus size={32} className="text-yellow-400 group-hover:text-yellow-300" />
             <span className="font-semibold text-yellow-300 text-base group-hover:text-yellow-200">
-              Adicionar Patrocinador
+              Adicionar Patrocinador ({String(order).padStart(2, "0")})
             </span>
-            <span className="text-xs text-gray-400">(máx. 10 patrocinadores)</span>
+            <span className="text-xs text-gray-400">(max. 10 patrocinadores)</span>
           </button>
         )
       )}

@@ -69,7 +69,7 @@ export default function Footer() {
   const { footer } = useFooterConfigPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
-  const { sponsors, isLoading } = usePublicSponsors(slug);
+  const { slots, isLoading } = usePublicSponsors(slug);
   const { publicHref } = usePublicLinks();
 
   const campoAbout = useMemo(() => {
@@ -112,12 +112,7 @@ export default function Footer() {
     (topico) => !topicosOcultos.includes(topico.id) && !topicosOcultos.includes(topico.label)
   );
 
-  const patrocinadoresVisiveis = useMemo(() => {
-    if (!sponsors.length) return [];
-    const onlyFooter = sponsors.filter((s) => s.showOnFooter);
-    const base = onlyFooter.length ? onlyFooter : sponsors;
-    return base.slice(0, 9);
-  }, [sponsors]);
+  const patrocinadoresVisiveis = useMemo(() => slots.slice(0, 10), [slots]);
 
   const patrocinadoresLoop = useMemo(() => {
     if (!patrocinadoresVisiveis.length) return [];

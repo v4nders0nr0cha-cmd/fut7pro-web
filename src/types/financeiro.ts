@@ -67,4 +67,5 @@ export interface Patrocinador {
   observacoes?: string;
   link?: string;
   visivel: boolean;
+  displayOrder?: number;
 }

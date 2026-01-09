@@ -21,6 +21,7 @@ type SponsorApiItem = {
 
 const DEFAULT_LOGO = "/images/patrocinadores/patrocinador_01.png";
 const FUT7PRO_LOGO = "/images/logos/logo_fut7pro.png";
+const SLOT_LIMIT = 10;
 
 const fetcher = async (url: string): Promise<SponsorApiItem[]> => {
   const res = await fetch(url);
@@ -61,6 +62,12 @@ const resolveLogoUrl = (rawLogo: string, fallbackLogo: string, isFut7Pro: boolea
   return trimmed;
 };
 
+const resolveDisplayOrder = (rawOrder: unknown, fallback: number) => {
+  const parsed = typeof rawOrder === "number" ? rawOrder : Number(rawOrder);
+  const order = Number.isFinite(parsed) ? Math.round(parsed) : fallback;
+  return Math.min(Math.max(order, 1), SLOT_LIMIT);
+};
+
 const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => {
   const periodoInicio = normalizeDate(item.periodStart);
   const periodoFim = normalizeDate(item.periodEnd);
@@ -71,6 +78,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
   const isFut7Pro =
     nome.toLowerCase().includes("fut7pro") || link.toLowerCase().includes("fut7pro.com.br");
   const logo = resolveLogoUrl(item.logoUrl ?? "", DEFAULT_LOGO, isFut7Pro);
+  const displayOrder = resolveDisplayOrder(item.displayOrder, index + 1);
 
   return {
     id: String(item.id ?? `patrocinador-${index}`),
@@ -85,6 +93,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     observacoes: descricao,
     link: item.link ?? undefined,
     visivel: item.showOnFooter ?? true,
+    displayOrder,
   };
 };
 
@@ -104,6 +113,10 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
     periodStart: normalizePayloadDate(input.periodoInicio),
     periodEnd: normalizePayloadDate(input.periodoFim),
     showOnFooter: input.visivel ?? true,
+    displayOrder:
+      typeof input.displayOrder === "number"
+        ? resolveDisplayOrder(input.displayOrder, 1)
+        : undefined,
   };
 };
 
@@ -118,7 +131,9 @@ export function usePatrocinadores() {
 
   const patrocinadores = useMemo(() => {
     const origem = Array.isArray(data) ? data : [];
-    return origem.map(normalizeSponsor);
+    return origem
+      .map(normalizeSponsor)
+      .sort((a, b) => (a.displayOrder ?? SLOT_LIMIT + 1) - (b.displayOrder ?? SLOT_LIMIT + 1));
   }, [data]);
 
   async function addPatrocinador(p: Partial<Patrocinador>) {
