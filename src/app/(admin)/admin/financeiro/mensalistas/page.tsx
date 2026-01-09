@@ -2,13 +2,13 @@
 import Head from "next/head";
 import { useMemo, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useJogadores } from "@/hooks/useJogadores";
 import type { Jogador } from "@/types/jogador";
 import type { MensalistaResumo } from "./components/TabelaMensalistas";
 import TabelaMensalistas from "./components/TabelaMensalistas";
 
 const DIAS_SEMANA_LABEL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
-const diasDaSemanaDoRacha = [3, 6]; // TODO: trazer do backend/rachaConfig quando exposto
 
 function countJogosAtletaNoMes(ano: number, mes: number, diasSemanaAtleta: number[]) {
   let count = 0;
@@ -70,7 +70,32 @@ export default function MensalistasPage() {
   const nomeMes = mesesNomes[mesAtual];
 
   const { rachaId } = useRacha();
+  const {
+    items: agendaItems,
+    isLoading: isAgendaLoading,
+    isError: isAgendaError,
+  } = useRachaAgenda();
   const { jogadores, isLoading } = useJogadores(rachaId || "");
+
+  const diasDaSemanaDoRacha = useMemo(() => {
+    const dias = new Set<number>();
+    agendaItems.forEach((item) => {
+      const weekday = Number(item.weekday);
+      if (Number.isInteger(weekday) && weekday >= 0 && weekday <= 6) {
+        dias.add(weekday);
+      }
+    });
+    return Array.from(dias).sort((a, b) => a - b);
+  }, [agendaItems]);
+
+  const agendaDiasLabel =
+    diasDaSemanaDoRacha.length > 0
+      ? diasDaSemanaDoRacha.map((idx) => DIAS_SEMANA_LABEL[idx]).join(" e ")
+      : isAgendaLoading
+        ? "Carregando agenda"
+        : isAgendaError
+          ? "Agenda indisponivel"
+          : "Agenda nao configurada";
 
   const mensalistasBase = useMemo(() => mapMensalistas(jogadores), [jogadores]);
 
@@ -115,9 +140,7 @@ export default function MensalistasPage() {
           automaticamente.
           <br />
           <b>O sistema usa a agenda dos dias do seu racha:</b>{" "}
-          <span className="text-yellow-300">
-            {diasDaSemanaDoRacha.map((idx) => DIAS_SEMANA_LABEL[idx]).join(" e ")}
-          </span>
+          <span className="text-yellow-300">{agendaDiasLabel}</span>
           .<br />
           <span className="text-yellow-400">
             O valor de cada atleta é proporcional ao número de jogos dos dias em que ele é
@@ -144,15 +167,21 @@ export default function MensalistasPage() {
               <span>
                 {nomeMes} {anoAtual}:
               </span>
-              {diasDaSemanaDoRacha.map((dia, i) => (
-                <span
-                  key={dia}
-                  title={`${DIAS_SEMANA_LABEL[dia]}: ${totalJogosPorDia[i]} jogos`}
-                  className="bg-neutral-700 px-3 py-1 rounded-full text-yellow-400 border border-yellow-700 text-sm shadow hover:bg-yellow-800 transition"
-                >
-                  {DIAS_SEMANA_LABEL[dia].slice(0, 3)} <b>({totalJogosPorDia[i]})</b>
+              {diasDaSemanaDoRacha.length > 0 ? (
+                diasDaSemanaDoRacha.map((dia, i) => (
+                  <span
+                    key={dia}
+                    title={`${DIAS_SEMANA_LABEL[dia]}: ${totalJogosPorDia[i]} jogos`}
+                    className="bg-neutral-700 px-3 py-1 rounded-full text-yellow-400 border border-yellow-700 text-sm shadow hover:bg-yellow-800 transition"
+                  >
+                    {DIAS_SEMANA_LABEL[dia].slice(0, 3)} <b>({totalJogosPorDia[i]})</b>
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-gray-400">
+                  {isAgendaError ? "Agenda indisponivel" : "Cadastre dias e horarios para calcular"}
                 </span>
-              ))}
+              )}
               <span className="ml-2 text-gray-300 text-sm font-normal">
                 | Total: <b>{totalJogosNoMes}</b> jogos · {totalSemanasNoMes} semanas
               </span>
