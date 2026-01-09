@@ -6,15 +6,13 @@ import TabelaPatrocinadores from "./components/TabelaPatrocinadores";
 import ModalPatrocinador from "./components/ModalPatrocinador";
 import ToggleVisibilidadePublica from "./components/ToggleVisibilidadePublica";
 import { usePatrocinadores } from "@/hooks/usePatrocinadores";
-import { useRacha } from "@/context/RachaContext";
 import type { Patrocinador } from "@/types/financeiro";
 
 const DATA_ATUAL = new Date().toISOString().slice(0, 10);
 
 export default function PaginaPatrocinadores() {
-  const { rachaId } = useRacha();
   const { patrocinadores, isLoading, addPatrocinador, updatePatrocinador, deletePatrocinador } =
-    usePatrocinadores(rachaId || "");
+    usePatrocinadores();
   const [modalOpen, setModalOpen] = useState(false);
   const [editPatrocinador, setEditPatrocinador] = useState<Patrocinador | undefined>(undefined);
 

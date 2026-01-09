@@ -143,6 +143,7 @@ export default function Footer() {
     if (!patrocinadoresVisiveis.length) return;
     const currentUrl = typeof window !== "undefined" ? window.location.href : undefined;
     patrocinadoresVisiveis.forEach((patro) => {
+      if (patro.isPlaceholder) return;
       if (impressionRef.current.has(patro.id)) return;
       impressionRef.current.add(patro.id);
       recordSponsorMetric({
@@ -224,6 +225,7 @@ export default function Footer() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() =>
+                          !patro.isPlaceholder &&
                           recordSponsorMetric({
                             slug,
                             sponsorId: patro.id,

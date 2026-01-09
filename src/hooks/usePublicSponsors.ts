@@ -4,7 +4,34 @@ import useSWR from "swr";
 import { rachaConfig } from "@/config/racha.config";
 import type { PublicSponsor } from "@/types/sponsor";
 
-const DEFAULT_LOGO = "/images/logos/logo_fut7pro.png";
+const DEFAULT_SPONSOR_LOGOS = [
+  "/images/patrocinadores/patrocinador_01.png",
+  "/images/patrocinadores/patrocinador_02.png",
+  "/images/patrocinadores/patrocinador_03.png",
+  "/images/patrocinadores/patrocinador_04.png",
+  "/images/patrocinadores/patrocinador_05.png",
+  "/images/patrocinadores/patrocinador_06.png",
+  "/images/patrocinadores/patrocinador_07.png",
+  "/images/patrocinadores/patrocinador_08.png",
+  "/images/patrocinadores/patrocinador_09.png",
+  "/images/patrocinadores/patrocinador_10.png",
+];
+
+const buildFallbackSponsors = (): PublicSponsor[] =>
+  DEFAULT_SPONSOR_LOGOS.map((logoUrl, index) => ({
+    id: `placeholder-${index + 1}`,
+    name: `Patrocinador ${String(index + 1).padStart(2, "0")}`,
+    logoUrl,
+    link: null,
+    showOnFooter: true,
+    isPlaceholder: true,
+  }));
+
+const isDefaultSponsor = (sponsor: PublicSponsor) => {
+  const name = sponsor.name.toLowerCase();
+  const link = (sponsor.link || "").toLowerCase();
+  return name.includes("fut7pro") || link.includes("fut7pro.com.br");
+};
 
 const fetcher = async (url: string): Promise<PublicSponsor[]> => {
   const res = await fetch(url, { cache: "no-store" });
@@ -17,10 +44,11 @@ const fetcher = async (url: string): Promise<PublicSponsor[]> => {
   return [];
 };
 
-function normalizeSponsor(raw: any): PublicSponsor {
+function normalizeSponsor(raw: any, index: number): PublicSponsor {
   const name = String(raw?.name ?? raw?.nome ?? "Patrocinador");
   const rawLogo = String(raw?.logoUrl ?? raw?.logo ?? "");
-  const logoUrl = rawLogo.trim().length > 0 ? rawLogo : DEFAULT_LOGO;
+  const fallbackLogo = DEFAULT_SPONSOR_LOGOS[index % DEFAULT_SPONSOR_LOGOS.length];
+  const logoUrl = rawLogo.trim().length > 0 ? rawLogo : fallbackLogo;
 
   return {
     id: String(raw?.id ?? name),
@@ -49,8 +77,18 @@ export function usePublicSponsors(slug?: string) {
     revalidateOnFocus: false,
   });
 
+  const sponsors = Array.isArray(data)
+    ? (() => {
+        const realSponsors = data.filter((sponsor) => !isDefaultSponsor(sponsor));
+        if (data.length === 0 || realSponsors.length === 0) {
+          return buildFallbackSponsors();
+        }
+        return realSponsors.filter((sponsor) => sponsor.showOnFooter !== false);
+      })()
+    : [];
+
   return {
-    sponsors: data ?? [],
+    sponsors,
     isLoading,
     isError: Boolean(error),
     error: error instanceof Error ? error.message : null,

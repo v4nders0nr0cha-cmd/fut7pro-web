@@ -33,6 +33,7 @@ export default function NossosParceiros() {
         link: sponsor.link,
         destaque: sponsor.tier === "PRO" || sponsor.showOnFooter,
         status: sponsor.status,
+        isPlaceholder: sponsor.isPlaceholder,
       })),
     [sponsors]
   );
@@ -41,6 +42,7 @@ export default function NossosParceiros() {
     if (!parceiros.length) return;
     const currentUrl = typeof window !== "undefined" ? window.location.href : undefined;
     parceiros.forEach((patro) => {
+      if (patro.isPlaceholder) return;
       if (impressionRef.current.has(patro.id)) return;
       impressionRef.current.add(patro.id);
       recordSponsorMetric({
@@ -127,6 +129,7 @@ export default function NossosParceiros() {
                       } transition`}
                       rel="noopener noreferrer"
                       onClick={() =>
+                        !p.isPlaceholder &&
                         recordSponsorMetric({
                           slug,
                           sponsorId: p.id,

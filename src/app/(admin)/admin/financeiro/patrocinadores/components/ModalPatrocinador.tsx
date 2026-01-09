@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Patrocinador } from "@/types/financeiro";
 import Image from "next/image";
 import { FaUpload, FaTimes } from "react-icons/fa";
@@ -21,6 +21,15 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Partial<Patrocinador>>(initial || {});
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setForm(initial || {});
+    setLogoPreview(initial?.logo);
+    setLogoError(null);
+  }, [initial, open]);
 
   // Custom scrollbar dark (executa só no client)
   if (typeof window !== "undefined") {
@@ -44,12 +53,41 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     }
   }
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadLogo = async (file: File) => {
+    const formData = new FormData();
+    const extension = file.name.split(".").pop() || "png";
+    formData.append("file", file, `patrocinador-${Date.now()}.${extension}`);
+
+    const res = await fetch("/api/uploads/team-logo", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(data?.message || data?.error || "Erro ao enviar logo.");
+    }
+    return data?.url || data?.path || data?.publicUrl || null;
+  };
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setLogoPreview(url);
-      setForm((f) => ({ ...f, logo: url }));
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+    setLogoUploading(true);
+    setLogoError(null);
+
+    try {
+      const uploadedUrl = await uploadLogo(file);
+      if (!uploadedUrl) {
+        throw new Error("URL nao retornada");
+      }
+      setForm((f) => ({ ...f, logo: uploadedUrl }));
+      setLogoPreview(uploadedUrl);
+    } catch (err) {
+      setLogoError("Falha ao enviar logo. Tente novamente.");
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -153,6 +191,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             >
               <FaUpload /> Selecionar
             </button>
+            {logoUploading && <span className="text-xs text-gray-400">Enviando...</span>}
             {logoPreview && (
               <Image
                 src={logoPreview}
@@ -163,6 +202,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               />
             )}
           </div>
+          {logoError && <div className="text-xs text-red-400">{logoError}</div>}
           <label className="text-sm text-gray-200 font-semibold">Descrição/Observações</label>
           <textarea
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
@@ -180,7 +220,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           <div className="flex justify-end mt-4">
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl disabled:opacity-60 disabled:pointer-events-none"
+              disabled={logoUploading || !form.logo}
             >
               Salvar
             </button>

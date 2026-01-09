@@ -16,4 +16,5 @@ export type PublicSponsor = {
   tier?: string | null;
   showOnFooter?: boolean | null;
   status?: PublicSponsorStatus | string | null;
+  isPlaceholder?: boolean;
 };

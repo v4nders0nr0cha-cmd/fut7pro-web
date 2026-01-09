@@ -15,7 +15,9 @@ const baseProps = {
 
 describe("ModalPatrocinador", () => {
   it("preenche campos obrigatórios e envia dados via onSave", () => {
-    const { container } = render(<ModalPatrocinador {...baseProps} />);
+    const { container } = render(
+      <ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />
+    );
 
     const inputs = container.querySelectorAll("input");
     const [nome, valor, inicio, fim] = inputs;

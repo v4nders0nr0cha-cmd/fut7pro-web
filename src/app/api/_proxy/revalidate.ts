@@ -65,6 +65,11 @@ export function buildEstatutoPaths(slug?: string | null) {
   return [`/${slug}/sobre-nos/estatuto`, "/sobre-nos/estatuto"];
 }
 
+export function buildSponsorPaths(slug?: string | null) {
+  if (!slug) return [];
+  return [`/${slug}/sobre-nos`, `/${slug}/sobre-nos/nossos-parceiros`];
+}
+
 export async function triggerPublicRevalidate(slug?: string | null, paths: string[] = []) {
   if (!slug) return;
 
