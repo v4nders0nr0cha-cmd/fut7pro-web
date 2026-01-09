@@ -1,10 +1,12 @@
 "use client";
 import Head from "next/head";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
+import { useFinanceiro } from "@/hooks/useFinanceiro";
+import type { LancamentoFinanceiro } from "@/types/financeiro";
 import type { Jogador } from "@/types/jogador";
 import type { MensalistaResumo } from "./components/TabelaMensalistas";
 import TabelaMensalistas from "./components/TabelaMensalistas";
@@ -52,6 +54,9 @@ const mesesNomes = [
   "Dezembro",
 ];
 
+const AUTO_MENSALISTAS_CATEGORY = "Mensalistas";
+const AUTO_MENSALISTAS_OBSERVACOES = "auto: mensalistas";
+
 function mapMensalistas(jogadores: Jogador[]): MensalistaResumo[] {
   return jogadores
     .filter((j) => j.mensalista || j.isMember)
@@ -78,11 +83,19 @@ export default function MensalistasPage() {
     isLoading: isAgendaLoading,
     isError: isAgendaError,
   } = useRachaAgenda();
-  const { jogadores, isLoading } = useJogadores(rachaId || "");
-  const { items: competencias, updateCompetencia } = useMensalistaCompetencias(
-    competenciaAno,
-    competenciaMes
-  );
+  const { jogadores, isLoading: isJogadoresLoading } = useJogadores(rachaId || "");
+  const {
+    items: competencias,
+    updateCompetencia,
+    isLoading: isCompetenciasLoading,
+  } = useMensalistaCompetencias(competenciaAno, competenciaMes);
+  const {
+    lancamentos,
+    addLancamento,
+    updateLancamento,
+    deleteLancamento,
+    isLoading: isFinanceiroLoading,
+  } = useFinanceiro();
 
   const agendaOrdenada = useMemo(() => {
     return [...agendaItems].sort((a, b) => {
@@ -220,6 +233,100 @@ export default function MensalistasPage() {
   });
 
   const totalMensalistas = valoresMensais.reduce((sum, m) => sum + m.valorFinal, 0);
+  const competenciaKey = `${competenciaAno}-${String(competenciaMes).padStart(2, "0")}`;
+  const autoMensalistasDescricao = `Mensalistas ${competenciaKey}`;
+  const autoMensalistasData = `${competenciaKey}-01`;
+
+  const autoMensalistasLancamento = useMemo(() => {
+    const descricaoAlvo = autoMensalistasDescricao.toLowerCase();
+    return (lancamentos || []).find((item) => {
+      const categoria = (item.categoria || "").trim().toLowerCase();
+      const descricao = (item.descricao || "").trim().toLowerCase();
+      return categoria === AUTO_MENSALISTAS_CATEGORY.toLowerCase() && descricao === descricaoAlvo;
+    });
+  }, [autoMensalistasDescricao, lancamentos]);
+
+  const autoSyncRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      isAgendaLoading ||
+      isJogadoresLoading ||
+      isCompetenciasLoading ||
+      isFinanceiroLoading ||
+      autoSyncRef.current
+    ) {
+      return;
+    }
+
+    const totalArredondado = Number.isFinite(totalMensalistas)
+      ? Number(totalMensalistas.toFixed(2))
+      : 0;
+
+    if (totalArredondado <= 0) {
+      if (autoMensalistasLancamento?.id) {
+        autoSyncRef.current = true;
+        deleteLancamento(autoMensalistasLancamento.id)
+          .catch(() => {})
+          .finally(() => {
+            autoSyncRef.current = false;
+          });
+      }
+      return;
+    }
+
+    const payload: Partial<LancamentoFinanceiro> = {
+      data: autoMensalistasData,
+      categoria: AUTO_MENSALISTAS_CATEGORY,
+      descricao: autoMensalistasDescricao,
+      valor: totalArredondado,
+      tipo: "entrada",
+      observacoes: AUTO_MENSALISTAS_OBSERVACOES,
+    };
+
+    if (autoMensalistasLancamento?.id) {
+      const valorAtual = Math.abs(autoMensalistasLancamento.valor ?? 0);
+      const dataAtual = (autoMensalistasLancamento.data || "").slice(0, 10);
+      const categoriaAtual = (autoMensalistasLancamento.categoria || "").trim();
+      const descricaoAtual = (autoMensalistasLancamento.descricao || "").trim();
+      const observacoesAtual = (autoMensalistasLancamento.observacoes || "").trim();
+      const precisaAtualizar =
+        Math.abs(valorAtual - totalArredondado) > 0.01 ||
+        dataAtual !== autoMensalistasData ||
+        categoriaAtual !== AUTO_MENSALISTAS_CATEGORY ||
+        descricaoAtual !== autoMensalistasDescricao ||
+        observacoesAtual !== AUTO_MENSALISTAS_OBSERVACOES;
+
+      if (!precisaAtualizar) return;
+
+      autoSyncRef.current = true;
+      updateLancamento(autoMensalistasLancamento.id, payload)
+        .catch(() => {})
+        .finally(() => {
+          autoSyncRef.current = false;
+        });
+      return;
+    }
+
+    autoSyncRef.current = true;
+    addLancamento(payload)
+      .catch(() => {})
+      .finally(() => {
+        autoSyncRef.current = false;
+      });
+  }, [
+    addLancamento,
+    autoMensalistasData,
+    autoMensalistasDescricao,
+    autoMensalistasLancamento,
+    deleteLancamento,
+    isAgendaLoading,
+    isCompetenciasLoading,
+    isFinanceiroLoading,
+    isJogadoresLoading,
+    totalMensalistas,
+    updateLancamento,
+  ]);
 
   return (
     <>
@@ -296,7 +403,7 @@ export default function MensalistasPage() {
           <span className="text-green-400">R$ {totalMensalistas.toFixed(2)}</span>
         </div>
 
-        {isLoading ? (
+        {isJogadoresLoading ? (
           <div className="py-6 text-gray-300">Carregando jogadores...</div>
         ) : (
           <TabelaMensalistas
