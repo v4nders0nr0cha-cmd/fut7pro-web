@@ -7,6 +7,8 @@ import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useNiveisAtletas } from "@/hooks/useNiveisAtletas";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
+import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
 import { formatNivel } from "@/utils/nivel-atleta";
 import type { Jogador } from "@/types/jogador";
@@ -131,10 +133,30 @@ export default function ParticipantesRacha({
 }: Props) {
   const { niveis, isLoading: loadingEstrelas } = useNiveisAtletas(rachaId);
   const [popoverKey, setPopoverKey] = useState<string | null>(null);
-  const [seededMensalistas, setSeededMensalistas] = useState(false);
+  const [seededKey, setSeededKey] = useState<string | null>(null);
+  const [seededIdsKey, setSeededIdsKey] = useState("");
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
 
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId, { includeBots: true });
+  const { items: agendaItems } = useRachaAgenda();
+  const dataPartida = config?.dataPartida ?? "";
+  const horaPartida = config?.horaPartida ?? "";
+  const dataSelecionada = useMemo(() => {
+    if (!dataPartida) return null;
+    const [ano, mes, dia] = dataPartida.split("-").map(Number);
+    if (!ano || !mes || !dia) return null;
+    const parsed = new Date(ano, mes - 1, dia);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+  }, [dataPartida]);
+  const competenciaBase = dataSelecionada ?? new Date();
+  const competenciaAno = competenciaBase.getFullYear();
+  const competenciaMes = competenciaBase.getMonth() + 1;
+  const { items: competencias } = useMensalistaCompetencias(
+    competenciaAno,
+    competenciaMes,
+    Boolean(dataSelecionada)
+  );
 
   const estrelasGlobais = useMemo(() => {
     const map: { [id: string]: AvaliacaoEstrela } = {};
@@ -236,22 +258,134 @@ export default function ParticipantesRacha({
     return [...reais, ...bots];
   }, [jogadores, estrelasGlobais, buildDefaultEstrelas, rankingMap]);
 
-  // Inicializa automaticamente mensalistas na primeira carga
-  useEffect(() => {
-    if (
-      participantes.length === 0 &&
-      config &&
-      participantesDisponiveis.length > 0 &&
-      !seededMensalistas
-    ) {
-      const selecionadosIniciais = participantesDisponiveis.filter((p) => p.mensalista);
-      if (selecionadosIniciais.length) {
-        setParticipantes(selecionadosIniciais);
-        setSeededMensalistas(true);
+  const agendaIdsPorDia = useMemo(() => {
+    const map: Record<number, string[]> = {};
+    agendaItems.forEach((item) => {
+      const weekday = Number(item.weekday);
+      if (!Number.isInteger(weekday)) return;
+      if (!map[weekday]) {
+        map[weekday] = [];
       }
+      map[weekday].push(item.id);
+    });
+    return map;
+  }, [agendaItems]);
+
+  const agendaIdsPorDiaHora = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    agendaItems.forEach((item) => {
+      const weekday = Number(item.weekday);
+      const horaAgenda = item.time ? item.time.slice(0, 5) : "";
+      if (!Number.isInteger(weekday) || !horaAgenda) return;
+      const key = `${weekday}-${horaAgenda}`;
+      if (!map[key]) {
+        map[key] = [];
+      }
+      map[key].push(item.id);
+    });
+    return map;
+  }, [agendaItems]);
+
+  const selectedWeekday = useMemo(() => {
+    if (!dataSelecionada) return null;
+    return dataSelecionada.getDay();
+  }, [dataSelecionada]);
+
+  const agendaIdsSelecionados = useMemo(() => {
+    if (selectedWeekday === null) return [];
+    const horaNormalizada = horaPartida ? horaPartida.slice(0, 5) : "";
+    if (horaNormalizada) {
+      const key = `${selectedWeekday}-${horaNormalizada}`;
+      const idsPorHorario = agendaIdsPorDiaHora[key] ?? [];
+      if (idsPorHorario.length > 0) return idsPorHorario;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, participantesDisponiveis, participantes.length, seededMensalistas]);
+    return agendaIdsPorDia[selectedWeekday] ?? [];
+  }, [agendaIdsPorDia, agendaIdsPorDiaHora, horaPartida, selectedWeekday]);
+
+  const agendaIdsSelecionadosSet = useMemo(
+    () => new Set(agendaIdsSelecionados),
+    [agendaIdsSelecionados]
+  );
+
+  const agendaIdsPadrao = useMemo(() => agendaItems.map((item) => item.id), [agendaItems]);
+
+  const mensalistaAgendaMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    (competencias || []).forEach((competencia) => {
+      map[competencia.athleteId] = Array.isArray(competencia.agendaIds)
+        ? competencia.agendaIds
+        : [];
+    });
+    return map;
+  }, [competencias]);
+
+  const resolveAgendaIds = useCallback(
+    (athleteId: string) => {
+      if (Object.prototype.hasOwnProperty.call(mensalistaAgendaMap, athleteId)) {
+        return mensalistaAgendaMap[athleteId] ?? [];
+      }
+      return agendaIdsPadrao;
+    },
+    [agendaIdsPadrao, mensalistaAgendaMap]
+  );
+
+  const mensalistasParaDia = useMemo(() => {
+    if (agendaIdsSelecionados.length === 0) return [];
+    return participantesDisponiveis.filter((p) => {
+      if (!p.mensalista) return false;
+      const agendaIdsAtleta = resolveAgendaIds(p.id);
+      if (agendaIdsAtleta.length === 0) return false;
+      return agendaIdsAtleta.some((id) => agendaIdsSelecionadosSet.has(id));
+    });
+  }, [
+    agendaIdsSelecionados.length,
+    agendaIdsSelecionadosSet,
+    participantesDisponiveis,
+    resolveAgendaIds,
+  ]);
+
+  const seedKey = useMemo(() => {
+    const weekday = selectedWeekday === null ? "na" : String(selectedWeekday);
+    const hora = horaPartida ? horaPartida.slice(0, 5) : "";
+    return `${competenciaAno}-${competenciaMes}-${weekday}-${hora}`;
+  }, [competenciaAno, competenciaMes, horaPartida, selectedWeekday]);
+
+  const participantesKey = useMemo(() => {
+    return participantes
+      .map((item) => item.id)
+      .sort((a, b) => a.localeCompare(b))
+      .join("|");
+  }, [participantes]);
+
+  const mensalistasKey = useMemo(() => {
+    return mensalistasParaDia
+      .map((item) => item.id)
+      .sort((a, b) => a.localeCompare(b))
+      .join("|");
+  }, [mensalistasParaDia]);
+
+  // Inicializa mensalistas conforme dia/horario da partida
+  useEffect(() => {
+    if (!config || participantesDisponiveis.length === 0) return;
+    const isAutoSelection = seededIdsKey && participantesKey === seededIdsKey;
+    const shouldReseedForData = isAutoSelection && mensalistasKey !== participantesKey;
+    const shouldSeed = participantes.length === 0 || seededKey !== seedKey || shouldReseedForData;
+    if (!shouldSeed) return;
+    setParticipantes(mensalistasParaDia);
+    setSeededKey(seedKey);
+    setSeededIdsKey(mensalistasKey);
+  }, [
+    config,
+    participantes.length,
+    participantesDisponiveis.length,
+    participantesKey,
+    mensalistasKey,
+    mensalistasParaDia,
+    seedKey,
+    seededKey,
+    seededIdsKey,
+    setParticipantes,
+  ]);
 
   function handleSelect(id: string) {
     const isSelected = participantes.some((p) => p.id === id);

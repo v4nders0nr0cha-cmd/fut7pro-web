@@ -129,7 +129,6 @@ function LoaderBolaFutebol() {
 export default function SorteioInteligenteAdmin() {
   const { rachaId, tenantSlug } = useRacha();
   const resolvedSlug = tenantSlug || rachaId || rachaConfig.slug;
-  const configConfirmKey = `${rachaConfig.storage.configKey}-confirmada`;
   const { times: timesDisponiveis, isLoading: loadingTimes } = useTimes(resolvedSlug);
   const {
     historico,
@@ -164,17 +163,6 @@ export default function SorteioInteligenteAdmin() {
 
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(configConfirmKey);
-      if (stored === "true") {
-        setConfigConfirmada(true);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [configConfirmKey]);
 
   useEffect(() => {
     if (!timesDisponiveis || timesDisponiveis.length === 0) {
@@ -215,11 +203,6 @@ export default function SorteioInteligenteAdmin() {
       return;
     }
     setConfigConfirmada(true);
-    try {
-      localStorage.setItem(configConfirmKey, "true");
-    } catch {
-      /* ignore */
-    }
   }
 
   // NOVO: Função para somar o total de partidas já jogadas pelos participantes
@@ -466,11 +449,6 @@ export default function SorteioInteligenteAdmin() {
             className="w-full md:w-auto py-3 px-8 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded text-lg shadow transition"
             onClick={() => {
               setConfigConfirmada(false);
-              try {
-                localStorage.setItem(configConfirmKey, "false");
-              } catch {
-                /* ignore */
-              }
             }}
           >
             Editar Configuração
@@ -481,8 +459,8 @@ export default function SorteioInteligenteAdmin() {
       {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
       {configConfirmada && (
         <div className="text-center text-xs text-yellow-200 mb-4">
-          Esta configuracao foi salva e sera usada neste e nos proximos sorteios. Para alterar,
-          clique em Editar Configuracao.
+          Esta configuracao foi salva para este sorteio. Para alterar, clique em Editar
+          Configuracao.
         </div>
       )}
 
