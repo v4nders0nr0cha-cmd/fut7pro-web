@@ -19,14 +19,18 @@ const statusOptions = [
 
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState<Partial<Patrocinador>>(initial || {});
+  const normalizeInitial = (input?: Partial<Patrocinador>) => ({
+    status: "ativo" as const,
+    ...input,
+  });
+  const [form, setForm] = useState<Partial<Patrocinador>>(normalizeInitial(initial));
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-    setForm(initial || {});
+    setForm(normalizeInitial(initial));
     setLogoPreview(initial?.logo);
     setLogoError(null);
   }, [initial, open]);
