@@ -1,6 +1,7 @@
 "use client";
 import Head from "next/head";
 import { useMemo, useState } from "react";
+import { toast } from "react-hot-toast";
 import CardResumoPatrocinio from "./components/CardResumoPatrocinio";
 import TabelaPatrocinadores from "./components/TabelaPatrocinadores";
 import ModalPatrocinador from "./components/ModalPatrocinador";
@@ -41,39 +42,60 @@ export default function PaginaPatrocinadores() {
   };
 
   const handleExcluir = async (id: string) => {
-    await deletePatrocinador(id);
+    try {
+      await deletePatrocinador(id);
+      toast.success("Patrocinador removido.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao remover patrocinador.";
+      toast.error(message);
+    }
   };
 
   const handleSalvar = async (p: Partial<Patrocinador>) => {
-    if (!p.nome || !p.valor || !p.periodoInicio || !p.periodoFim || !p.status || !p.logo) return;
-    const displayOrder = p.displayOrder ?? selectedSlot ?? 1;
-    if (p.id) {
-      await updatePatrocinador({
-        ...(p as Patrocinador),
-        visivel: p.visivel ?? true,
-        comprovantes: p.comprovantes || [],
-        displayOrder,
-      });
-    } else {
-      await addPatrocinador({
-        ...p,
-        visivel: true,
-        comprovantes: [],
-        displayOrder,
-      });
+    if (!p.nome || !p.valor || !p.periodoInicio || !p.periodoFim || !p.status || !p.logo) {
+      toast.error("Preencha todos os campos obrigatorios.");
+      return;
     }
-    setModalOpen(false);
-    setEditPatrocinador(undefined);
-    setSelectedSlot(null);
+    const displayOrder = p.displayOrder ?? selectedSlot ?? 1;
+    try {
+      if (p.id) {
+        await updatePatrocinador({
+          ...(p as Patrocinador),
+          visivel: p.visivel ?? true,
+          comprovantes: p.comprovantes || [],
+          displayOrder,
+        });
+        toast.success("Patrocinador atualizado.");
+      } else {
+        await addPatrocinador({
+          ...p,
+          visivel: true,
+          comprovantes: [],
+          displayOrder,
+        });
+        toast.success("Patrocinador criado.");
+      }
+      setModalOpen(false);
+      setEditPatrocinador(undefined);
+      setSelectedSlot(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar patrocinador.";
+      toast.error(message);
+    }
   };
 
   const handleToggleVisivelCard = async (id: string) => {
     const alvo = patrocinadores.find((p) => p.id === id);
     if (!alvo) return;
-    await updatePatrocinador({
-      ...alvo,
-      visivel: alvo.visivel === false ? true : false,
-    });
+    try {
+      await updatePatrocinador({
+        ...alvo,
+        visivel: alvo.visivel === false ? true : false,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao atualizar patrocinador.";
+      toast.error(message);
+    }
   };
 
   return (

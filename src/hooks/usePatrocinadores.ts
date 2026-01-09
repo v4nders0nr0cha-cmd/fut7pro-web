@@ -32,6 +32,17 @@ const fetcher = async (url: string): Promise<SponsorApiItem[]> => {
   return res.json();
 };
 
+const parseErrorMessage = async (res: Response, fallback: string) => {
+  const text = await res.text();
+  if (!text) return fallback;
+  try {
+    const data = JSON.parse(text);
+    return data?.message || data?.error || fallback;
+  } catch {
+    return text;
+  }
+};
+
 const normalizeDate = (value?: string | null) => {
   if (!value) return "";
   if (value.includes("T")) return value.slice(0, 10);
@@ -138,26 +149,35 @@ export function usePatrocinadores() {
 
   async function addPatrocinador(p: Partial<Patrocinador>) {
     const payload = buildSponsorPayload(p);
-    await fetch("/api/admin/patrocinadores", {
+    const res = await fetch("/api/admin/patrocinadores", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res, "Erro ao salvar patrocinador"));
+    }
     mutate();
   }
 
   async function updatePatrocinador(p: Patrocinador) {
     const payload = buildSponsorPayload(p);
-    await fetch(`/api/admin/patrocinadores/${p.id}`, {
+    const res = await fetch(`/api/admin/patrocinadores/${p.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res, "Erro ao atualizar patrocinador"));
+    }
     mutate();
   }
 
   async function deletePatrocinador(id: string) {
-    await fetch(`/api/admin/patrocinadores/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/patrocinadores/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res, "Erro ao remover patrocinador"));
+    }
     mutate();
   }
 
