@@ -24,21 +24,31 @@ function formatOccurrenceLabel(item: ProximoRachaItem) {
 }
 
 export default function ProximosRachasPage() {
-  const { items, isLoading, isError, error } = useProximosRachas({ limit: 5 });
+  const { items, isLoading, isError, error } = useProximosRachas({ limit: 30 });
 
-  const ocorrencias = useMemo(
-    () =>
-      items.map((item) => ({
+  const ocorrencias = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    return items
+      .map((item) => ({ item, date: parseOccurrenceDate(item) }))
+      .filter(({ date }) => {
+        if (!date) return false;
+        if (date < now) return false;
+        return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+      })
+      .sort((a, b) => a.date.getTime() - b.date.getTime())
+      .map(({ item }) => ({
         id: item.id,
         label: formatOccurrenceLabel(item),
         time: item.time,
         holiday: Boolean(item.holiday),
         holidayName: item.holidayName ?? undefined,
-      })),
-    [items]
-  );
+      }));
+  }, [items]);
 
-  const temFeriado = useMemo(() => items.some((item) => item.holiday), [items]);
+  const temFeriado = useMemo(() => ocorrencias.some((item) => item.holiday), [ocorrencias]);
 
   return (
     <>
@@ -72,7 +82,9 @@ export default function ProximosRachasPage() {
               <div className="text-sm text-gray-400">Carregando dias e horários...</div>
             ) : ocorrencias.length === 0 ? (
               <div className="text-sm text-gray-400">
-                Nenhuma agenda encontrada. Cadastre dias e horários para liberar a agenda.
+                {items.length === 0
+                  ? "Nenhuma agenda encontrada. Cadastre dias e horarios para liberar a agenda."
+                  : "Nenhum jogo futuro neste mes."}
               </div>
             ) : (
               ocorrencias.map((racha) => (

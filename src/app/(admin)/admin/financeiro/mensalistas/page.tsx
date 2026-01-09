@@ -1,9 +1,10 @@
 "use client";
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
 import type { Jogador } from "@/types/jogador";
 import type { MensalistaResumo } from "./components/TabelaMensalistas";
 import TabelaMensalistas from "./components/TabelaMensalistas";
@@ -68,6 +69,8 @@ export default function MensalistasPage() {
   const anoAtual = hoje.getFullYear();
   const mesAtual = hoje.getMonth();
   const nomeMes = mesesNomes[mesAtual];
+  const competenciaAno = anoAtual;
+  const competenciaMes = mesAtual + 1;
 
   const { rachaId } = useRacha();
   const {
@@ -76,6 +79,88 @@ export default function MensalistasPage() {
     isError: isAgendaError,
   } = useRachaAgenda();
   const { jogadores, isLoading } = useJogadores(rachaId || "");
+  const { items: competencias, updateCompetencia } = useMensalistaCompetencias(
+    competenciaAno,
+    competenciaMes
+  );
+
+  const agendaOrdenada = useMemo(() => {
+    return [...agendaItems].sort((a, b) => {
+      if (a.weekday !== b.weekday) return a.weekday - b.weekday;
+      return a.time.localeCompare(b.time);
+    });
+  }, [agendaItems]);
+
+  const agendaIds = useMemo(() => agendaOrdenada.map((item) => item.id), [agendaOrdenada]);
+
+  const [diasSelecionados, setDiasSelecionados] = useState<Record<string, string[]>>({});
+  const [pagamentos, setPagamentos] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setDiasSelecionados(() => {
+      const next: Record<string, string[]> = {};
+      competencias.forEach((competencia) => {
+        next[competencia.athleteId] = competencia.agendaIds || [];
+      });
+      return next;
+    });
+
+    setPagamentos(() => {
+      const next: Record<string, boolean> = {};
+      competencias.forEach((competencia) => {
+        next[competencia.athleteId] = Boolean(competencia.isPaid);
+      });
+      return next;
+    });
+  }, [competencias]);
+
+  const getDiasSelecionados = useCallback(
+    (id: string) => {
+      if (Object.prototype.hasOwnProperty.call(diasSelecionados, id)) {
+        return diasSelecionados[id] || [];
+      }
+      return agendaIds;
+    },
+    [diasSelecionados, agendaIds]
+  );
+
+  const salvarDiasSelecionados = useCallback(
+    async (id: string, dias: string[]) => {
+      setDiasSelecionados((prev) => ({
+        ...prev,
+        [id]: dias,
+      }));
+      await updateCompetencia(id, { agendaIds: dias });
+    },
+    [updateCompetencia]
+  );
+
+  const togglePagamento = useCallback(
+    async (id: string) => {
+      const nextValue = !Boolean(pagamentos[id]);
+      setPagamentos((prev) => ({
+        ...prev,
+        [id]: nextValue,
+      }));
+      await updateCompetencia(id, { isPaid: nextValue });
+    },
+    [pagamentos, updateCompetencia]
+  );
+
+  const togglePagamentoAll = useCallback(
+    async (checked: boolean, athleteIds: string[]) => {
+      if (athleteIds.length === 0) return;
+      setPagamentos((prev) => {
+        const next = { ...prev };
+        athleteIds.forEach((id) => {
+          next[id] = checked;
+        });
+        return next;
+      });
+      await Promise.all(athleteIds.map((id) => updateCompetencia(id, { isPaid: checked })));
+    },
+    [updateCompetencia]
+  );
 
   const diasDaSemanaDoRacha = useMemo(() => {
     const dias = new Set<number>();
@@ -108,8 +193,20 @@ export default function MensalistasPage() {
   const totalJogosNoMes = totalJogosPorDia.reduce((a, b) => a + b, 0);
   const totalSemanasNoMes = countSemanasNoMes(anoAtual, mesAtual + 1);
 
+  const jogosPorAgendaId = useMemo(() => {
+    const map: Record<string, number> = {};
+    agendaOrdenada.forEach((item) => {
+      map[item.id] = countJogosAtletaNoMes(anoAtual, mesAtual + 1, [item.weekday]);
+    });
+    return map;
+  }, [agendaOrdenada, anoAtual, mesAtual]);
+
   const valoresMensais = mensalistasBase.map((m) => {
-    const jogosAtleta = countJogosAtletaNoMes(anoAtual, mesAtual + 1, diasDaSemanaDoRacha);
+    const diasSelecionadosAtleta = getDiasSelecionados(m.id);
+    const jogosAtleta = diasSelecionadosAtleta.reduce(
+      (sum, agendaId) => sum + (jogosPorAgendaId[agendaId] || 0),
+      0
+    );
     const valorSemDesconto = valorPorDia * jogosAtleta;
     const desconto = descontos[m.id] || 0;
     return {
@@ -210,6 +307,12 @@ export default function MensalistasPage() {
               valor: m.valorFinal,
               ultimoPagamento: m.ultimoPagamento,
             }))}
+            agendaItems={agendaOrdenada}
+            getDiasSelecionados={getDiasSelecionados}
+            onSaveDias={salvarDiasSelecionados}
+            pagamentos={pagamentos}
+            onTogglePagamento={togglePagamento}
+            onTogglePagamentoAll={togglePagamentoAll}
           />
         )}
       </section>
