@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { rachaConfig } from "@/config/racha.config";
 import type { PublicSponsor } from "@/types/sponsor";
 
+const FUT7PRO_LOGO = "/images/logos/logo_fut7pro.png";
 const DEFAULT_SPONSOR_LOGOS = [
   "/images/patrocinadores/patrocinador_01.png",
   "/images/patrocinadores/patrocinador_02.png",
@@ -27,10 +28,10 @@ const buildFallbackSponsors = (): PublicSponsor[] =>
     isPlaceholder: true,
   }));
 
-const isDefaultSponsor = (sponsor: PublicSponsor) => {
-  const name = sponsor.name.toLowerCase();
-  const link = (sponsor.link || "").toLowerCase();
-  return name.includes("fut7pro") || link.includes("fut7pro.com.br");
+const isFut7ProSponsor = (name: string, link?: string | null) => {
+  const lowerName = name.toLowerCase();
+  const lowerLink = (link || "").toLowerCase();
+  return lowerName.includes("fut7pro") || lowerLink.includes("fut7pro.com.br");
 };
 
 const fetcher = async (url: string): Promise<PublicSponsor[]> => {
@@ -44,17 +45,25 @@ const fetcher = async (url: string): Promise<PublicSponsor[]> => {
   return [];
 };
 
+function resolveLogoUrl(rawLogo: string, fallbackLogo: string, isFut7Pro: boolean) {
+  const trimmed = rawLogo.trim();
+  if (!trimmed) return isFut7Pro ? FUT7PRO_LOGO : fallbackLogo;
+  if (trimmed.toLowerCase().includes("logo_fut7pro")) return FUT7PRO_LOGO;
+  return trimmed;
+}
+
 function normalizeSponsor(raw: any, index: number): PublicSponsor {
   const name = String(raw?.name ?? raw?.nome ?? "Patrocinador");
   const rawLogo = String(raw?.logoUrl ?? raw?.logo ?? "");
   const fallbackLogo = DEFAULT_SPONSOR_LOGOS[index % DEFAULT_SPONSOR_LOGOS.length];
-  const logoUrl = rawLogo.trim().length > 0 ? rawLogo : fallbackLogo;
+  const link = raw?.link ?? null;
+  const logoUrl = resolveLogoUrl(rawLogo, fallbackLogo, isFut7ProSponsor(name, link));
 
   return {
     id: String(raw?.id ?? name),
     name,
     logoUrl,
-    link: raw?.link ?? null,
+    link,
     ramo: raw?.ramo ?? raw?.categoria ?? null,
     about: raw?.about ?? raw?.descricao ?? null,
     benefit: raw?.benefit ?? raw?.beneficio ?? null,
@@ -77,15 +86,7 @@ export function usePublicSponsors(slug?: string) {
     revalidateOnFocus: false,
   });
 
-  const sponsors = Array.isArray(data)
-    ? (() => {
-        const realSponsors = data.filter((sponsor) => !isDefaultSponsor(sponsor));
-        if (data.length === 0 || realSponsors.length === 0) {
-          return buildFallbackSponsors();
-        }
-        return realSponsors.filter((sponsor) => sponsor.showOnFooter !== false);
-      })()
-    : [];
+  const sponsors = Array.isArray(data) && data.length > 0 ? data : buildFallbackSponsors();
 
   return {
     sponsors,

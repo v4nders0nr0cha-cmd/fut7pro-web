@@ -60,8 +60,11 @@ export default function TabelaPatrocinadores({
                 {p.status.toUpperCase()}
               </span>
               <span className="bg-gray-800 text-xs text-gray-300 px-2 py-1 rounded">
-                {new Date(p.periodoInicio).toLocaleDateString()} ~{" "}
-                {new Date(p.periodoFim).toLocaleDateString()}
+                {p.periodoInicio && p.periodoFim
+                  ? `${new Date(p.periodoInicio).toLocaleDateString()} ~ ${new Date(
+                      p.periodoFim
+                    ).toLocaleDateString()}`
+                  : "Periodo nao informado"}
               </span>
               {p.link && (
                 <a

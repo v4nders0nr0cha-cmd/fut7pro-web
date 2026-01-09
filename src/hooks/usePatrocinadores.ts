@@ -20,6 +20,7 @@ type SponsorApiItem = {
 };
 
 const DEFAULT_LOGO = "/images/patrocinadores/patrocinador_01.png";
+const FUT7PRO_LOGO = "/images/logos/logo_fut7pro.png";
 
 const fetcher = async (url: string): Promise<SponsorApiItem[]> => {
   const res = await fetch(url);
@@ -53,16 +54,27 @@ const computeStatus = (inicio?: string, fim?: string): StatusPatrocinador => {
   return "ativo";
 };
 
+const resolveLogoUrl = (rawLogo: string, fallbackLogo: string, isFut7Pro: boolean) => {
+  const trimmed = rawLogo.trim();
+  if (!trimmed) return isFut7Pro ? FUT7PRO_LOGO : fallbackLogo;
+  if (trimmed.toLowerCase().includes("logo_fut7pro")) return FUT7PRO_LOGO;
+  return trimmed;
+};
+
 const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => {
   const periodoInicio = normalizeDate(item.periodStart);
   const periodoFim = normalizeDate(item.periodEnd);
   const descricao = item.about ?? item.benefit ?? item.coupon ?? undefined;
   const valor = typeof item.value === "number" ? item.value : Number(item.value ?? 0);
-  const logo = item.logoUrl && item.logoUrl.trim().length > 0 ? item.logoUrl : DEFAULT_LOGO;
+  const nome = String(item.name ?? "Patrocinador");
+  const link = item.link ?? "";
+  const isFut7Pro =
+    nome.toLowerCase().includes("fut7pro") || link.toLowerCase().includes("fut7pro.com.br");
+  const logo = resolveLogoUrl(item.logoUrl ?? "", DEFAULT_LOGO, isFut7Pro);
 
   return {
     id: String(item.id ?? `patrocinador-${index}`),
-    nome: String(item.name ?? "Patrocinador"),
+    nome,
     valor: Number.isFinite(valor) ? valor : 0,
     periodoInicio,
     periodoFim,
