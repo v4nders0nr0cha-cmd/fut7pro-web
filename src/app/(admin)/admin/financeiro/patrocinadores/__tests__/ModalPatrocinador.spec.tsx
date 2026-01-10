@@ -20,8 +20,9 @@ describe("ModalPatrocinador", () => {
     );
 
     const inputs = container.querySelectorAll("input");
-    const [nome, valor, inicio, fim] = inputs;
+    const [nome, ramo, valor, inicio, fim] = inputs;
     fireEvent.change(nome!, { target: { value: "Academia X" } });
+    fireEvent.change(ramo!, { target: { value: "Academia e Bem-estar" } });
     fireEvent.change(valor!, { target: { value: "750" } });
     fireEvent.change(inicio!, { target: { value: "2025-02-01" } });
     fireEvent.change(fim!, { target: { value: "2025-06-30" } });
@@ -38,6 +39,7 @@ describe("ModalPatrocinador", () => {
     expect(baseProps.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         nome: "Academia X",
+        ramo: "Academia e Bem-estar",
         valor: 750,
         periodoInicio: "2025-02-01",
         periodoFim: "2025-06-30",

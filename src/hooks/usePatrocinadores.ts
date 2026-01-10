@@ -105,6 +105,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     periodoInicio,
     periodoFim,
     descricao,
+    ramo: item.ramo ?? undefined,
     logo,
     status: computeStatus(periodoInicio, periodoFim),
     comprovantes: [],
@@ -119,6 +120,7 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
   const nome = input.nome?.trim() || "";
   const logo = input.logo?.trim() || "";
   const descricao = input.observacoes?.trim() || input.descricao?.trim() || "";
+  const ramo = input.ramo?.trim() || undefined;
   const link = normalizeLink(input.link);
   const valor = typeof input.valor === "number" ? input.valor : Number(input.valor ?? 0);
 
@@ -126,6 +128,7 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
     name: nome,
     logoUrl: logo,
     link,
+    ramo,
     value: Number.isFinite(valor) ? valor : 0,
     about: descricao || undefined,
     periodStart: normalizePayloadDate(input.periodoInicio),

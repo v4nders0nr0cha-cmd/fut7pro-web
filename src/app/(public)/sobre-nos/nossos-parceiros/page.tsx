@@ -27,7 +27,7 @@ export default function NossosParceiros() {
         id: sponsor.id,
         nome: sponsor.name,
         logo: sponsor.logoUrl,
-        categoria: sponsor.ramo || (sponsor.tier ? `Plano ${sponsor.tier}` : "Parceiro"),
+        categoria: sponsor.ramo?.trim() || "Parceiro do racha",
         descricao:
           sponsor.about || sponsor.benefit || sponsor.coupon || "Patrocinador parceiro do racha.",
         link: sponsor.link,

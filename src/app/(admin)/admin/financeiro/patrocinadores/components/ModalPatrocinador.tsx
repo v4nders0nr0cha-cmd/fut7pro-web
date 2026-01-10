@@ -136,6 +136,14 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
           />
+          <label className="text-sm text-gray-200 font-semibold">Subtitulo/Categoria</label>
+          <input
+            type="text"
+            value={form.ramo || ""}
+            maxLength={80}
+            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            onChange={(e) => setForm((f) => ({ ...f, ramo: e.target.value }))}
+          />
           <label className="text-sm text-gray-200 font-semibold">Valor *</label>
           <input
             type="number"

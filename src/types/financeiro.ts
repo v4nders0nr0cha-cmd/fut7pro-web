@@ -61,6 +61,7 @@ export interface Patrocinador {
   periodoInicio: string;
   periodoFim: string;
   descricao?: string;
+  ramo?: string;
   logo: string;
   status: StatusPatrocinador;
   comprovantes: string[];
