@@ -1,6 +1,7 @@
 "use client";
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import CardResumoPatrocinio from "./components/CardResumoPatrocinio";
 import TabelaPatrocinadores from "./components/TabelaPatrocinadores";
@@ -18,6 +19,10 @@ const formatDateInput = (date: Date) => {
 export default function PaginaPatrocinadores() {
   const { patrocinadores, isLoading, addPatrocinador, updatePatrocinador, deletePatrocinador } =
     usePatrocinadores();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const handledQueryRef = useRef(false);
+  const editId = searchParams.get("edit");
   const [modalOpen, setModalOpen] = useState(false);
   const [editPatrocinador, setEditPatrocinador] = useState<Partial<Patrocinador> | undefined>(
     undefined
@@ -60,8 +65,26 @@ export default function PaginaPatrocinadores() {
   };
 
   const handleSalvar = async (p: Partial<Patrocinador>) => {
-    if (!p.nome || !p.valor || !p.periodoInicio || !p.periodoFim || !p.status || !p.logo) {
+    if (
+      !p.nome ||
+      !p.valor ||
+      !p.periodoInicio ||
+      !p.periodoFim ||
+      !p.status ||
+      !p.logo ||
+      !p.billingPlan
+    ) {
       toast.error("Preencha todos os campos obrigatorios.");
+      return;
+    }
+    const inicio = new Date(p.periodoInicio);
+    const fim = new Date(p.periodoFim);
+    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fim.getTime())) {
+      toast.error("Datas de inicio e fim invalidas.");
+      return;
+    }
+    if (fim.getTime() < inicio.getTime()) {
+      toast.error("A data fim nao pode ser menor que a data inicio.");
       return;
     }
     const displayOrder = p.displayOrder ?? selectedSlot ?? 1;
@@ -105,6 +128,22 @@ export default function PaginaPatrocinadores() {
       toast.error(message);
     }
   };
+
+  useEffect(() => {
+    if (!editId || handledQueryRef.current) return;
+    const sponsor = patrocinadores.find((item) => item.id === editId);
+    if (!sponsor) return;
+    handledQueryRef.current = true;
+    setEditPatrocinador(sponsor);
+    setSelectedSlot(sponsor.displayOrder ?? null);
+    setModalOpen(true);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("edit");
+    const query = params.toString();
+    router.replace(
+      query ? `/admin/financeiro/patrocinadores?${query}` : "/admin/financeiro/patrocinadores"
+    );
+  }, [editId, patrocinadores, router, searchParams]);
 
   return (
     <>

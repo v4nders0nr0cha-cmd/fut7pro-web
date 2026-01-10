@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import useSWR from "swr";
-import type { Patrocinador, StatusPatrocinador } from "@/types/financeiro";
+import type { Patrocinador, PlanoPatrocinio, StatusPatrocinador } from "@/types/financeiro";
 
 type SponsorApiItem = {
   id?: string;
@@ -14,6 +14,7 @@ type SponsorApiItem = {
   value?: number | null;
   periodStart?: string | null;
   periodEnd?: string | null;
+  billingPlan?: PlanoPatrocinio | null;
   displayOrder?: number | null;
   tier?: string | null;
   showOnFooter?: boolean | null;
@@ -79,6 +80,15 @@ const resolveDisplayOrder = (rawOrder: unknown, fallback: number) => {
   return Math.min(Math.max(order, 1), SLOT_LIMIT);
 };
 
+const normalizeBillingPlan = (value?: PlanoPatrocinio | string | null): PlanoPatrocinio => {
+  if (!value) return "MENSAL";
+  const normalized = String(value).toUpperCase();
+  if (normalized === "MENSAL" || normalized === "QUADRIMESTRAL" || normalized === "ANUAL") {
+    return normalized as PlanoPatrocinio;
+  }
+  return "MENSAL";
+};
+
 const normalizeLink = (value?: string) => {
   const trimmed = value?.trim();
   if (!trimmed) return undefined;
@@ -97,6 +107,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     nome.toLowerCase().includes("fut7pro") || link.toLowerCase().includes("fut7pro.com.br");
   const logo = resolveLogoUrl(item.logoUrl ?? "", DEFAULT_LOGO, isFut7Pro);
   const displayOrder = resolveDisplayOrder(item.displayOrder, index + 1);
+  const billingPlan = normalizeBillingPlan(item.billingPlan ?? undefined);
 
   return {
     id: String(item.id ?? `patrocinador-${index}`),
@@ -108,6 +119,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     ramo: item.ramo ?? undefined,
     logo,
     status: computeStatus(periodoInicio, periodoFim),
+    billingPlan,
     comprovantes: [],
     observacoes: descricao,
     link: item.link ?? undefined,
@@ -123,6 +135,7 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
   const ramo = input.ramo?.trim() || undefined;
   const link = normalizeLink(input.link);
   const valor = typeof input.valor === "number" ? input.valor : Number(input.valor ?? 0);
+  const billingPlan = normalizeBillingPlan(input.billingPlan);
 
   return {
     name: nome,
@@ -133,6 +146,7 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
     about: descricao || undefined,
     periodStart: normalizePayloadDate(input.periodoInicio),
     periodEnd: normalizePayloadDate(input.periodoFim),
+    billingPlan,
     showOnFooter: input.visivel ?? true,
     displayOrder:
       typeof input.displayOrder === "number"

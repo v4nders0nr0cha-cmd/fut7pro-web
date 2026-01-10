@@ -14,6 +14,23 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 
+const resolveCategoria = (ramo?: string | null) => {
+  const trimmed = ramo?.trim();
+  if (!trimmed) return "Parceiro do racha";
+  const normalized = trimmed.toLowerCase();
+  if (
+    normalized === "plano basic" ||
+    normalized === "plano plus" ||
+    normalized === "plano pro" ||
+    normalized === "basic" ||
+    normalized === "plus" ||
+    normalized === "pro"
+  ) {
+    return "Parceiro do racha";
+  }
+  return trimmed;
+};
+
 export default function NossosParceiros() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
@@ -27,7 +44,7 @@ export default function NossosParceiros() {
         id: sponsor.id,
         nome: sponsor.name,
         logo: sponsor.logoUrl,
-        categoria: sponsor.ramo?.trim() || "Parceiro do racha",
+        categoria: resolveCategoria(sponsor.ramo),
         descricao:
           sponsor.about || sponsor.benefit || sponsor.coupon || "Patrocinador parceiro do racha.",
         link: sponsor.link,

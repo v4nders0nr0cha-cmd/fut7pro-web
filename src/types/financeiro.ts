@@ -53,6 +53,7 @@ export interface ResumoFinanceiro {
 }
 
 export type StatusPatrocinador = "ativo" | "inativo" | "encerrado";
+export type PlanoPatrocinio = "MENSAL" | "QUADRIMESTRAL" | "ANUAL";
 
 export interface Patrocinador {
   id: string;
@@ -64,6 +65,7 @@ export interface Patrocinador {
   ramo?: string;
   logo: string;
   status: StatusPatrocinador;
+  billingPlan?: PlanoPatrocinio;
   comprovantes: string[];
   observacoes?: string;
   link?: string;

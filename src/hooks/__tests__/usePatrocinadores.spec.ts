@@ -43,6 +43,7 @@ describe("usePatrocinadores", () => {
       visivel: true,
       comprovantes: [],
       status: "ativo",
+      billingPlan: "MENSAL",
     });
     expect(result.current.isLoading).toBe(false);
     expect(result.current.isError).toBe(false);
@@ -79,6 +80,7 @@ describe("usePatrocinadores", () => {
       logoUrl: "/logo.png",
       showOnFooter: false,
       value: 100,
+      billingPlan: "MENSAL",
     });
     expect(payload.periodStart).toContain("2025-01-01");
     expect(payload.periodEnd).toContain("2025-12-31");

@@ -27,7 +27,9 @@ describe("ModalPatrocinador", () => {
     fireEvent.change(inicio!, { target: { value: "2025-02-01" } });
     fireEvent.change(fim!, { target: { value: "2025-06-30" } });
 
-    fireEvent.change(container.querySelector("select")!, { target: { value: "encerrado" } });
+    const selects = container.querySelectorAll("select");
+    fireEvent.change(selects[0]!, { target: { value: "encerrado" } });
+    fireEvent.change(selects[1]!, { target: { value: "ANUAL" } });
 
     fireEvent.change(container.querySelector("textarea")!, {
       target: { value: "Plano trimestral" },
@@ -46,6 +48,7 @@ describe("ModalPatrocinador", () => {
         status: "encerrado",
         observacoes: "Plano trimestral",
         link: "https://exemplo.com",
+        billingPlan: "ANUAL",
       })
     );
   });

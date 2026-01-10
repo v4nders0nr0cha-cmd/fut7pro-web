@@ -17,10 +17,17 @@ const statusOptions = [
   { value: "encerrado", label: "Encerrado" },
 ] as const;
 
+const billingPlanOptions = [
+  { value: "MENSAL", label: "Mensal" },
+  { value: "QUADRIMESTRAL", label: "Quadrimestral" },
+  { value: "ANUAL", label: "Anual" },
+] as const;
+
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const normalizeInitial = (input?: Partial<Patrocinador>) => ({
     status: "ativo" as const,
+    billingPlan: "MENSAL" as const,
     ...input,
   });
   const [form, setForm] = useState<Partial<Patrocinador>>(normalizeInitial(initial));
@@ -56,6 +63,16 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
       document.head.appendChild(style);
     }
   }
+
+  const isExpired = (() => {
+    if (!form.periodoFim) return false;
+    const end = new Date(form.periodoFim);
+    if (Number.isNaN(end.getTime())) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    return end.getTime() < today.getTime();
+  })();
 
   const uploadLogo = async (file: File) => {
     const formData = new FormData();
@@ -119,6 +136,12 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         <h2 className="text-xl font-bold text-yellow-400 mb-4 pt-3 pr-8">
           {form.id ? "Editar Patrocinador" : "Novo Patrocinador"}
         </h2>
+        {form.id && isExpired && (
+          <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            Este patrocinio esta expirado. A logo continua no site publico, renove ajustando a data
+            Fim ou exclua manualmente.
+          </div>
+        )}
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
@@ -187,6 +210,23 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               </option>
             ))}
           </select>
+          <label className="text-sm text-gray-200 font-semibold">Plano do Patrocinador *</label>
+          <select
+            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            value={form.billingPlan || "MENSAL"}
+            required
+            onChange={(e) => setForm((f) => ({ ...f, billingPlan: e.target.value as any }))}
+          >
+            {billingPlanOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">
+            Define a frequencia de lancamento automatico na Prestacao de Contas. A vigencia do
+            patrocinio continua sendo controlada pelas datas Inicio e Fim.
+          </span>
           <label className="text-sm text-gray-200 font-semibold">Logo *</label>
           <div className="flex items-center gap-3">
             <input
