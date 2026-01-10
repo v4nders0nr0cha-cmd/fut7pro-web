@@ -23,17 +23,51 @@ const billingPlanOptions = [
   { value: "ANUAL", label: "Anual" },
 ] as const;
 
+const billingPlanValueLabels: Record<string, string> = {
+  MENSAL: "Quanto este patrocinador paga por mes?",
+  QUADRIMESTRAL: "Quanto este patrocinador paga a cada quatro meses?",
+  ANUAL: "Quanto este patrocinador paga por ano?",
+};
+
+const billingPlanMonths: Record<string, number> = {
+  MENSAL: 1,
+  QUADRIMESTRAL: 4,
+  ANUAL: 12,
+};
+
+const formatLocalDate = (input: Date) => {
+  const year = input.getFullYear();
+  const month = String(input.getMonth() + 1).padStart(2, "0");
+  const day = String(input.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const addMonthsLocal = (input: Date, months: number) => {
+  const year = input.getFullYear();
+  const month = input.getMonth();
+  const day = input.getDate();
+  const targetMonth = month + months;
+  const targetYear = year + Math.floor(targetMonth / 12);
+  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
+  const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate();
+  const safeDay = Math.min(day, lastDay);
+  return new Date(targetYear, normalizedMonth, safeDay);
+};
+
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const normalizeInitial = (input?: Partial<Patrocinador>) => ({
     status: "ativo" as const,
-    billingPlan: "MENSAL" as const,
+    billingPlan: input?.billingPlan ?? undefined,
     ...input,
   });
   const [form, setForm] = useState<Partial<Patrocinador>>(normalizeInitial(initial));
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const planValueLabel = form.billingPlan ? billingPlanValueLabels[form.billingPlan] : "";
+  const planMonths = form.billingPlan ? billingPlanMonths[form.billingPlan] : null;
+  const shouldShowValue = Boolean(planMonths);
 
   useEffect(() => {
     if (!open) return;
@@ -42,7 +76,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     setLogoError(null);
   }, [initial, open]);
 
-  // Custom scrollbar dark (executa só no client)
+  // Custom scrollbar dark (executa so no client)
   if (typeof window !== "undefined") {
     const id = "modal-scrollbar-dark";
     if (!document.getElementById(id)) {
@@ -123,7 +157,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           scrollbarWidth: "thin",
         }}
       >
-        {/* Botão de fechar sempre fixo no topo direito */}
+        {/* Botao de fechar sempre fixo no topo direito */}
         <button
           className="absolute top-2 right-2 text-gray-400 hover:text-red-400 z-10"
           style={{ zIndex: 10 }}
@@ -138,19 +172,30 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         </h2>
         {form.id && isExpired && (
           <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Este patrocinio esta expirado. A logo continua no site publico, renove ajustando a data
-            Fim ou exclua manualmente.
+            Este patrocinio esta vencido. A logo continua no site publico. Ao salvar, o vencimento
+            sera recalculado automaticamente ou voce pode excluir manualmente.
           </div>
         )}
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
-            onSave(form);
+            const payload = { ...form };
+            if (planMonths) {
+              const today = new Date();
+              const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              const end = addMonthsLocal(start, planMonths);
+              payload.periodoInicio = formatLocalDate(start);
+              payload.periodoFim = formatLocalDate(end);
+            }
+            onSave(payload);
           }}
         >
-          <label className="text-sm text-gray-200 font-semibold">Nome *</label>
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-nome">
+            Nome *
+          </label>
           <input
+            id="patrocinador-nome"
             type="text"
             value={form.nome || ""}
             required
@@ -159,47 +204,71 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
           />
-          <label className="text-sm text-gray-200 font-semibold">Subtitulo/Categoria</label>
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-ramo">
+            Subtitulo/Categoria
+          </label>
           <input
+            id="patrocinador-ramo"
             type="text"
             value={form.ramo || ""}
             maxLength={80}
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             onChange={(e) => setForm((f) => ({ ...f, ramo: e.target.value }))}
           />
-          <label className="text-sm text-gray-200 font-semibold">Valor *</label>
-          <input
-            type="number"
-            value={form.valor || ""}
-            required
-            min={0}
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, valor: parseFloat(e.target.value) }))}
-          />
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Início *</label>
-              <input
-                type="date"
-                value={form.periodoInicio || ""}
-                required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoInicio: e.target.value }))}
-              />
-            </div>
-            <div className="flex-1">
-              <label className="text-sm text-gray-200 font-semibold">Fim *</label>
-              <input
-                type="date"
-                value={form.periodoFim || ""}
-                required
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-2 py-2 text-white w-full"
-                onChange={(e) => setForm((f) => ({ ...f, periodoFim: e.target.value }))}
-              />
-            </div>
-          </div>
-          <label className="text-sm text-gray-200 font-semibold">Status *</label>
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-plan">
+            Plano do Patrocinador *
+          </label>
           <select
+            id="patrocinador-plan"
+            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+            value={form.billingPlan ?? ""}
+            required
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                billingPlan: e.target.value ? (e.target.value as any) : undefined,
+              }))
+            }
+          >
+            <option value="" disabled>
+              Selecione
+            </option>
+            {billingPlanOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-gray-400">
+            Define a frequencia de lancamento automatico na Prestacao de Contas e o vencimento do
+            patrocinio.
+          </span>
+          {shouldShowValue && (
+            <>
+              <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-valor">
+                {planValueLabel}
+              </label>
+              <input
+                id="patrocinador-valor"
+                type="number"
+                value={form.valor ?? ""}
+                required
+                min={0}
+                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    valor: e.target.value === "" ? undefined : parseFloat(e.target.value),
+                  }))
+                }
+              />
+            </>
+          )}
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-status">
+            Status *
+          </label>
+          <select
+            id="patrocinador-status"
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             value={form.status || "ativo"}
             onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
@@ -210,23 +279,6 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               </option>
             ))}
           </select>
-          <label className="text-sm text-gray-200 font-semibold">Plano do Patrocinador *</label>
-          <select
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.billingPlan || "MENSAL"}
-            required
-            onChange={(e) => setForm((f) => ({ ...f, billingPlan: e.target.value as any }))}
-          >
-            {billingPlanOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <span className="text-xs text-gray-400">
-            Define a frequencia de lancamento automatico na Prestacao de Contas. A vigencia do
-            patrocinio continua sendo controlada pelas datas Inicio e Fim.
-          </span>
           <label className="text-sm text-gray-200 font-semibold">Logo *</label>
           <div className="flex items-center gap-3">
             <input
@@ -255,15 +307,21 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             )}
           </div>
           {logoError && <div className="text-xs text-red-400">{logoError}</div>}
-          <label className="text-sm text-gray-200 font-semibold">Descrição/Observações</label>
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-descricao">
+            Descricao/Observacoes
+          </label>
           <textarea
+            id="patrocinador-descricao"
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             rows={2}
             value={form.observacoes || ""}
             onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
           />
-          <label className="text-sm text-gray-200 font-semibold">Link (opcional)</label>
+          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-link">
+            Link (opcional)
+          </label>
           <input
+            id="patrocinador-link"
             type="text"
             inputMode="url"
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"

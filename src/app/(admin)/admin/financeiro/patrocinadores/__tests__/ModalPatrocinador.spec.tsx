@@ -14,27 +14,28 @@ const baseProps = {
 };
 
 describe("ModalPatrocinador", () => {
-  it("preenche campos obrigatórios e envia dados via onSave", () => {
-    const { container } = render(
-      <ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />
-    );
+  it("preenche campos obrigatorios e envia dados via onSave", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-01-10T12:00:00Z"));
 
-    const inputs = container.querySelectorAll("input");
-    const [nome, ramo, valor, inicio, fim] = inputs;
-    fireEvent.change(nome!, { target: { value: "Academia X" } });
-    fireEvent.change(ramo!, { target: { value: "Academia e Bem-estar" } });
-    fireEvent.change(valor!, { target: { value: "750" } });
-    fireEvent.change(inicio!, { target: { value: "2025-02-01" } });
-    fireEvent.change(fim!, { target: { value: "2025-06-30" } });
+    render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
 
-    const selects = container.querySelectorAll("select");
-    fireEvent.change(selects[0]!, { target: { value: "encerrado" } });
-    fireEvent.change(selects[1]!, { target: { value: "ANUAL" } });
-
-    fireEvent.change(container.querySelector("textarea")!, {
+    fireEvent.change(screen.getByLabelText("Nome *"), { target: { value: "Academia X" } });
+    fireEvent.change(screen.getByLabelText("Subtitulo/Categoria"), {
+      target: { value: "Academia e Bem-estar" },
+    });
+    fireEvent.change(screen.getByLabelText("Plano do Patrocinador *"), {
+      target: { value: "ANUAL" },
+    });
+    fireEvent.change(screen.getByLabelText(/Quanto este patrocinador paga por ano/i), {
+      target: { value: "750" },
+    });
+    fireEvent.change(screen.getByLabelText("Status *"), { target: { value: "encerrado" } });
+    fireEvent.change(screen.getByLabelText("Descricao/Observacoes"), {
       target: { value: "Plano trimestral" },
     });
-    fireEvent.change(inputs[inputs.length - 1]!, { target: { value: "https://exemplo.com" } });
+    fireEvent.change(screen.getByLabelText("Link (opcional)"), {
+      target: { value: "https://exemplo.com" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
 
@@ -43,17 +44,19 @@ describe("ModalPatrocinador", () => {
         nome: "Academia X",
         ramo: "Academia e Bem-estar",
         valor: 750,
-        periodoInicio: "2025-02-01",
-        periodoFim: "2025-06-30",
+        periodoInicio: "2026-01-10",
+        periodoFim: "2027-01-10",
         status: "encerrado",
         observacoes: "Plano trimestral",
         link: "https://exemplo.com",
         billingPlan: "ANUAL",
       })
     );
+
+    jest.useRealTimers();
   });
 
-  it("renderiza dados iniciais ao editar e fecha no botão de fechar", () => {
+  it("renderiza dados iniciais ao editar e fecha no botao de fechar", () => {
     const initial: (typeof baseProps)["onSave"] extends (arg: infer T) => void ? T : never = {
       id: "p-1",
       nome: "Loja",
@@ -61,6 +64,7 @@ describe("ModalPatrocinador", () => {
       periodoInicio: "2025-01-10",
       periodoFim: "2025-03-10",
       status: "ativo" as const,
+      billingPlan: "MENSAL",
       logo: "/logo.png",
       observacoes: "Obs",
       link: "https://loja.com",
@@ -69,9 +73,12 @@ describe("ModalPatrocinador", () => {
 
     expect(screen.getByDisplayValue("Loja")).toBeInTheDocument();
     expect(screen.getByDisplayValue("500")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("2025-01-10")).toBeInTheDocument();
     expect(screen.getByDisplayValue("https://loja.com")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("2025-01-10")).not.toBeInTheDocument();
     expect(screen.getByAltText(/Logo patrocinador/i)).toBeInTheDocument();
+    expect((screen.getByLabelText("Plano do Patrocinador *") as HTMLSelectElement).value).toBe(
+      "MENSAL"
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /Fechar modal/i }));
     expect(baseProps.onClose).toHaveBeenCalled();
