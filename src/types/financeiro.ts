@@ -59,8 +59,10 @@ export interface Patrocinador {
   id: string;
   nome: string;
   valor: number;
-  periodoInicio: string;
-  periodoFim: string;
+  periodoInicio?: string;
+  periodoFim?: string;
+  lastPaidAt?: string;
+  nextDueAt?: string;
   descricao?: string;
   ramo?: string;
   logo: string;

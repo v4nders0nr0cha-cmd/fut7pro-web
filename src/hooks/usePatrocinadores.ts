@@ -14,6 +14,8 @@ type SponsorApiItem = {
   value?: number | null;
   periodStart?: string | null;
   periodEnd?: string | null;
+  lastPaidAt?: string | null;
+  nextDueAt?: string | null;
   billingPlan?: PlanoPatrocinio | null;
   displayOrder?: number | null;
   tier?: string | null;
@@ -58,14 +60,7 @@ const normalizePayloadDate = (value?: string | null) => {
   return parsed.toISOString();
 };
 
-const computeStatus = (inicio?: string, fim?: string): StatusPatrocinador => {
-  const now = new Date();
-  const start = inicio ? new Date(inicio) : null;
-  const end = fim ? new Date(fim) : null;
-  if (end && end.getTime() < now.getTime()) return "encerrado";
-  if (start && start.getTime() > now.getTime()) return "inativo";
-  return "ativo";
-};
+const computeStatus = (): StatusPatrocinador => "ativo";
 
 const resolveLogoUrl = (rawLogo: string, fallbackLogo: string, isFut7Pro: boolean) => {
   const trimmed = rawLogo.trim();
@@ -99,6 +94,8 @@ const normalizeLink = (value?: string) => {
 const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => {
   const periodoInicio = normalizeDate(item.periodStart);
   const periodoFim = normalizeDate(item.periodEnd);
+  const lastPaidAt = normalizeDate(item.lastPaidAt);
+  const nextDueAt = normalizeDate(item.nextDueAt);
   const descricao = item.about ?? item.benefit ?? item.coupon ?? undefined;
   const valor = typeof item.value === "number" ? item.value : Number(item.value ?? 0);
   const nome = String(item.name ?? "Patrocinador");
@@ -115,10 +112,12 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     valor: Number.isFinite(valor) ? valor : 0,
     periodoInicio,
     periodoFim,
+    lastPaidAt,
+    nextDueAt,
     descricao,
     ramo: item.ramo ?? undefined,
     logo,
-    status: computeStatus(periodoInicio, periodoFim),
+    status: computeStatus(),
     billingPlan,
     comprovantes: [],
     observacoes: descricao,
@@ -205,6 +204,17 @@ export function usePatrocinadores() {
     mutate();
   }
 
+  async function confirmarRecebimento(id: string) {
+    const res = await fetch(`/api/admin/patrocinadores/${id}/confirm-payment`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+      throw new Error(await parseErrorMessage(res, "Erro ao confirmar recebimento"));
+    }
+    mutate();
+    return res.json().catch(() => null);
+  }
+
   return {
     patrocinadores,
     isLoading,
@@ -212,6 +222,7 @@ export function usePatrocinadores() {
     addPatrocinador,
     updatePatrocinador,
     deletePatrocinador,
+    confirmarRecebimento,
     mutate,
   };
 }

@@ -31,8 +31,14 @@ export default function PaginaPatrocinadores() {
 }
 
 function PaginaPatrocinadoresClient() {
-  const { patrocinadores, isLoading, addPatrocinador, updatePatrocinador, deletePatrocinador } =
-    usePatrocinadores();
+  const {
+    patrocinadores,
+    isLoading,
+    addPatrocinador,
+    updatePatrocinador,
+    deletePatrocinador,
+    confirmarRecebimento,
+  } = usePatrocinadores();
   const searchParams = useSearchParams();
   const router = useRouter();
   const handledQueryRef = useRef(false);
@@ -42,6 +48,7 @@ function PaginaPatrocinadoresClient() {
     undefined
   );
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
 
   const hoje = new Date();
   const inicioPadraoDate = new Date(hoje);
@@ -79,26 +86,8 @@ function PaginaPatrocinadoresClient() {
   };
 
   const handleSalvar = async (p: Partial<Patrocinador>) => {
-    if (
-      !p.nome ||
-      !p.valor ||
-      !p.periodoInicio ||
-      !p.periodoFim ||
-      !p.status ||
-      !p.logo ||
-      !p.billingPlan
-    ) {
+    if (!p.nome || !p.valor || !p.status || !p.logo || !p.billingPlan) {
       toast.error("Preencha todos os campos obrigatorios.");
-      return;
-    }
-    const inicio = new Date(p.periodoInicio);
-    const fim = new Date(p.periodoFim);
-    if (Number.isNaN(inicio.getTime()) || Number.isNaN(fim.getTime())) {
-      toast.error("Datas de inicio e fim invalidas.");
-      return;
-    }
-    if (fim.getTime() < inicio.getTime()) {
-      toast.error("A data fim nao pode ser menor que a data inicio.");
       return;
     }
     const displayOrder = p.displayOrder ?? selectedSlot ?? 1;
@@ -140,6 +129,21 @@ function PaginaPatrocinadoresClient() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar patrocinador.";
       toast.error(message);
+    }
+  };
+
+  const handleConfirmarRecebimento = async (patrocinador: Patrocinador) => {
+    if (confirmandoId) return;
+    setConfirmandoId(patrocinador.id);
+    try {
+      await confirmarRecebimento(patrocinador.id);
+      toast.success("Recebimento confirmado e ciclo renovado.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Erro ao confirmar recebimento do patrocinador.";
+      toast.error(message);
+    } finally {
+      setConfirmandoId(null);
     }
   };
 
@@ -207,6 +211,8 @@ function PaginaPatrocinadoresClient() {
             onExcluir={handleExcluir}
             onToggleVisivel={handleToggleVisivelCard}
             onNovo={handleNovo}
+            onConfirmarRecebimento={handleConfirmarRecebimento}
+            confirmandoId={confirmandoId}
           />
         )}
 

@@ -17,6 +17,8 @@ interface Props {
   onExcluir: (id: string) => void;
   onToggleVisivel: (id: string) => void;
   onNovo: (slot: number) => void;
+  onConfirmarRecebimento: (p: Patrocinador) => void;
+  confirmandoId?: string | null;
 }
 
 export default function TabelaPatrocinadores({
@@ -25,6 +27,8 @@ export default function TabelaPatrocinadores({
   onExcluir,
   onToggleVisivel,
   onNovo,
+  onConfirmarRecebimento,
+  confirmandoId,
 }: Props) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -40,22 +44,22 @@ export default function TabelaPatrocinadores({
       {slots.map(({ order, sponsor }) =>
         sponsor ? (
           (() => {
-            const endDate = sponsor.periodoFim ? new Date(sponsor.periodoFim) : null;
-            const startDate = sponsor.periodoInicio ? new Date(sponsor.periodoInicio) : null;
             const planLabel = PLAN_LABELS[sponsor.billingPlan || "MENSAL"] || "Mensal";
-            const endLabel =
-              endDate && !Number.isNaN(endDate.getTime()) ? endDate.toLocaleDateString() : null;
-            let diasParaFim: number | null = null;
-            let expirado = false;
+            const dueDateRaw = sponsor.nextDueAt || sponsor.periodoFim || "";
+            const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
+            const dueLabel =
+              dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate.toLocaleDateString() : null;
+            let diasParaVencer: number | null = null;
+            let vencido = false;
 
-            if (endDate && !Number.isNaN(endDate.getTime())) {
-              endDate.setHours(0, 0, 0, 0);
-              const diff = Math.ceil((endDate.getTime() - today.getTime()) / MS_PER_DAY);
-              if (diff < 0) {
-                expirado = true;
-                diasParaFim = Math.abs(diff);
+            if (dueDate && !Number.isNaN(dueDate.getTime())) {
+              dueDate.setHours(0, 0, 0, 0);
+              const diff = Math.ceil((dueDate.getTime() - today.getTime()) / MS_PER_DAY);
+              if (diff <= 0) {
+                vencido = true;
+                diasParaVencer = Math.abs(diff);
               } else {
-                diasParaFim = diff;
+                diasParaVencer = diff;
               }
             }
 
@@ -63,7 +67,7 @@ export default function TabelaPatrocinadores({
               <div
                 key={sponsor.id}
                 className={`bg-[#232323] rounded-xl shadow p-4 flex flex-col gap-2 items-start relative hover:shadow-lg transition h-[320px] overflow-hidden border border-transparent ${
-                  expirado ? "border-red-500/50" : ""
+                  vencido ? "border-red-500/50" : ""
                 }`}
               >
                 <span className="text-xs text-gray-500 font-semibold">
@@ -103,27 +107,6 @@ export default function TabelaPatrocinadores({
                   <span className="bg-gray-800 text-xs text-gray-200 px-2 py-1 rounded">
                     {planLabel}
                   </span>
-                  <span className="bg-gray-800 text-xs text-gray-300 px-2 py-1 rounded">
-                    {startDate && endDate && !Number.isNaN(startDate.getTime()) && endLabel
-                      ? `${startDate.toLocaleDateString()} ~ ${endLabel}`
-                      : "Periodo nao informado"}
-                  </span>
-                  {endLabel && diasParaFim !== null && (
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        expirado ? "bg-red-500/20 text-red-300" : "bg-gray-900 text-gray-200"
-                      }`}
-                    >
-                      {expirado
-                        ? `Expirado ha ${diasParaFim} dia(s)`
-                        : `Faltam ${diasParaFim} dia(s)`}
-                    </span>
-                  )}
-                  {expirado && (
-                    <span className="bg-red-500/20 text-red-300 text-xs px-2 py-1 rounded">
-                      EXPIRADO
-                    </span>
-                  )}
                   {sponsor.link && (
                     <a
                       href={sponsor.link}
@@ -137,17 +120,26 @@ export default function TabelaPatrocinadores({
                   )}
                 </div>
                 <div className="flex-1 w-full">
-                  {sponsor.descricao && (
-                    <div
-                      className="mt-2 text-sm text-gray-300 overflow-hidden"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitBoxOrient: "vertical",
-                        WebkitLineClamp: 3,
-                      }}
-                    >
-                      {sponsor.descricao}
+                  {dueLabel ? (
+                    <div className="mt-2 text-sm text-gray-300">
+                      {vencido
+                        ? "Plano vencido. O patrocinador ja renovou este ciclo?"
+                        : `Vence em ${dueLabel} (faltam ${diasParaVencer} dia(s))`}
                     </div>
+                  ) : (
+                    <div className="mt-2 text-sm text-gray-400">Vencimento nao informado.</div>
+                  )}
+                  {vencido && (
+                    <button
+                      type="button"
+                      onClick={() => onConfirmarRecebimento(sponsor)}
+                      className="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 rounded-lg disabled:opacity-60 disabled:pointer-events-none"
+                      disabled={confirmandoId === sponsor.id}
+                    >
+                      {confirmandoId === sponsor.id
+                        ? "Confirmando..."
+                        : "Confirmar recebimento e renovar"}
+                    </button>
                   )}
                 </div>
                 <div className="flex gap-3 mt-2 w-full justify-end">

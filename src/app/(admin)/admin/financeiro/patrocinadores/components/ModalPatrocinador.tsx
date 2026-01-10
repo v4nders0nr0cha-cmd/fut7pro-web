@@ -29,31 +29,6 @@ const billingPlanValueLabels: Record<string, string> = {
   ANUAL: "Quanto este patrocinador paga por ano?",
 };
 
-const billingPlanMonths: Record<string, number> = {
-  MENSAL: 1,
-  QUADRIMESTRAL: 4,
-  ANUAL: 12,
-};
-
-const formatLocalDate = (input: Date) => {
-  const year = input.getFullYear();
-  const month = String(input.getMonth() + 1).padStart(2, "0");
-  const day = String(input.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const addMonthsLocal = (input: Date, months: number) => {
-  const year = input.getFullYear();
-  const month = input.getMonth();
-  const day = input.getDate();
-  const targetMonth = month + months;
-  const targetYear = year + Math.floor(targetMonth / 12);
-  const normalizedMonth = ((targetMonth % 12) + 12) % 12;
-  const lastDay = new Date(targetYear, normalizedMonth + 1, 0).getDate();
-  const safeDay = Math.min(day, lastDay);
-  return new Date(targetYear, normalizedMonth, safeDay);
-};
-
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const normalizeInitial = (input?: Partial<Patrocinador>) => ({
@@ -66,8 +41,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
   const planValueLabel = form.billingPlan ? billingPlanValueLabels[form.billingPlan] : "";
-  const planMonths = form.billingPlan ? billingPlanMonths[form.billingPlan] : null;
-  const shouldShowValue = Boolean(planMonths);
+  const shouldShowValue = Boolean(form.billingPlan);
 
   useEffect(() => {
     if (!open) return;
@@ -99,8 +73,9 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   }
 
   const isExpired = (() => {
-    if (!form.periodoFim) return false;
-    const end = new Date(form.periodoFim);
+    const dueRaw = form.nextDueAt || form.periodoFim;
+    if (!dueRaw) return false;
+    const end = new Date(dueRaw);
     if (Number.isNaN(end.getTime())) return false;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -172,22 +147,15 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         </h2>
         {form.id && isExpired && (
           <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Este patrocinio esta vencido. A logo continua no site publico. Ao salvar, o vencimento
-            sera recalculado automaticamente ou voce pode excluir manualmente.
+            Este plano esta vencido. A logo continua no site publico. Confirme o recebimento quando
+            renovar o ciclo ou exclua manualmente.
           </div>
         )}
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
-            const payload = { ...form };
-            if (planMonths) {
-              const today = new Date();
-              const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-              const end = addMonthsLocal(start, planMonths);
-              payload.periodoInicio = formatLocalDate(start);
-              payload.periodoFim = formatLocalDate(end);
-            }
+            const { periodoInicio, periodoFim, lastPaidAt, nextDueAt, ...payload } = form;
             onSave(payload);
           }}
         >
@@ -240,8 +208,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             ))}
           </select>
           <span className="text-xs text-gray-400">
-            Define a frequencia de lancamento automatico na Prestacao de Contas e o vencimento do
-            patrocinio.
+            Define a frequencia do ciclo e dos alertas. O lancamento no caixa so ocorre apos a
+            confirmacao do recebimento.
           </span>
           {shouldShowValue && (
             <>

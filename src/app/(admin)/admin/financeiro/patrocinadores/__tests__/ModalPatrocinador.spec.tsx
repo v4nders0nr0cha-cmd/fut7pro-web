@@ -15,8 +15,6 @@ const baseProps = {
 
 describe("ModalPatrocinador", () => {
   it("preenche campos obrigatorios e envia dados via onSave", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2026-01-10T12:00:00Z"));
-
     render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
 
     fireEvent.change(screen.getByLabelText("Nome *"), { target: { value: "Academia X" } });
@@ -44,16 +42,12 @@ describe("ModalPatrocinador", () => {
         nome: "Academia X",
         ramo: "Academia e Bem-estar",
         valor: 750,
-        periodoInicio: "2026-01-10",
-        periodoFim: "2027-01-10",
         status: "encerrado",
         observacoes: "Plano trimestral",
         link: "https://exemplo.com",
         billingPlan: "ANUAL",
       })
     );
-
-    jest.useRealTimers();
   });
 
   it("renderiza dados iniciais ao editar e fecha no botao de fechar", () => {

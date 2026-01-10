@@ -16,17 +16,24 @@ interface Props {
 }
 
 export default function CardResumoPatrocinio({ patrocinadores, periodo }: Props) {
+  const resolveInicio = (p: Patrocinador) => p.periodoInicio || p.lastPaidAt || "";
+  const resolveFim = (p: Patrocinador) => p.periodoFim || p.nextDueAt || "";
+
   const ativos = patrocinadores.filter(
     (p) =>
       (p.status === "ativo" || p.status === "encerrado") &&
-      p.periodoInicio <= periodo.fim &&
-      p.periodoFim >= periodo.inicio
+      resolveInicio(p) &&
+      resolveFim(p) &&
+      resolveInicio(p) <= periodo.fim &&
+      resolveFim(p) >= periodo.inicio
   );
   const total = ativos.reduce((acc, p) => acc + p.valor, 0);
 
   const meses: Record<string, number> = {};
   ativos.forEach((p) => {
-    const mes = p.periodoInicio.slice(0, 7); // ex: "2025-06"
+    const inicio = resolveInicio(p);
+    if (!inicio) return;
+    const mes = inicio.slice(0, 7); // ex: "2025-06"
     meses[mes] = (meses[mes] || 0) + p.valor;
   });
   const dadosGrafico = Object.keys(meses)
