@@ -79,6 +79,13 @@ const resolveDisplayOrder = (rawOrder: unknown, fallback: number) => {
   return Math.min(Math.max(order, 1), SLOT_LIMIT);
 };
 
+const normalizeLink = (value?: string) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return undefined;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+};
+
 const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => {
   const periodoInicio = normalizeDate(item.periodStart);
   const periodoFim = normalizeDate(item.periodEnd);
@@ -112,7 +119,7 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
   const nome = input.nome?.trim() || "";
   const logo = input.logo?.trim() || "";
   const descricao = input.observacoes?.trim() || input.descricao?.trim() || "";
-  const link = input.link?.trim() || undefined;
+  const link = normalizeLink(input.link);
   const valor = typeof input.valor === "number" ? input.valor : Number(input.valor ?? 0);
 
   return {

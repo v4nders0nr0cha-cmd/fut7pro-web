@@ -216,7 +216,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           />
           <label className="text-sm text-gray-200 font-semibold">Link (opcional)</label>
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
             value={form.link || ""}
             onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}

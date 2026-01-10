@@ -8,7 +8,12 @@ import ModalPatrocinador from "./components/ModalPatrocinador";
 import { usePatrocinadores } from "@/hooks/usePatrocinadores";
 import type { Patrocinador } from "@/types/financeiro";
 
-const DATA_ATUAL = new Date().toISOString().slice(0, 10);
+const formatDateInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
 
 export default function PaginaPatrocinadores() {
   const { patrocinadores, isLoading, addPatrocinador, updatePatrocinador, deletePatrocinador } =
@@ -19,10 +24,13 @@ export default function PaginaPatrocinadores() {
   );
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
 
-  const inicioPadrao = new Date(new Date().setMonth(new Date().getMonth() - 11))
-    .toISOString()
-    .slice(0, 10);
-  const [periodo] = useState({ inicio: inicioPadrao, fim: DATA_ATUAL });
+  const hoje = new Date();
+  const inicioPadraoDate = new Date(hoje);
+  inicioPadraoDate.setFullYear(inicioPadraoDate.getFullYear() - 1);
+  const [periodo] = useState({
+    inicio: formatDateInput(inicioPadraoDate),
+    fim: formatDateInput(hoje),
+  });
 
   const visiveis = useMemo(
     () => patrocinadores.filter((p) => p.visivel !== false),

@@ -31,7 +31,7 @@ export default function TabelaPatrocinadores({
         sponsor ? (
           <div
             key={sponsor.id}
-            className="bg-[#232323] rounded-xl shadow p-4 flex flex-col gap-2 items-start relative hover:shadow-lg transition"
+            className="bg-[#232323] rounded-xl shadow p-4 flex flex-col gap-2 items-start relative hover:shadow-lg transition min-h-[320px] h-full"
           >
             <span className="text-xs text-gray-500 font-semibold">
               Patrocinador {String(order).padStart(2, "0")}
@@ -84,9 +84,20 @@ export default function TabelaPatrocinadores({
                 </a>
               )}
             </div>
-            {sponsor.descricao && (
-              <div className="mt-2 text-sm text-gray-300">{sponsor.descricao}</div>
-            )}
+            <div className="flex-1 w-full">
+              {sponsor.descricao && (
+                <div
+                  className="mt-2 text-sm text-gray-300 overflow-hidden"
+                  style={{
+                    display: "-webkit-box",
+                    WebkitBoxOrient: "vertical",
+                    WebkitLineClamp: 4,
+                  }}
+                >
+                  {sponsor.descricao}
+                </div>
+              )}
+            </div>
             <div className="flex gap-3 mt-2 w-full justify-end">
               <button
                 onClick={() => onEditar(sponsor)}
@@ -109,7 +120,7 @@ export default function TabelaPatrocinadores({
             key={`adicionar-${order}`}
             type="button"
             onClick={() => onNovo(order)}
-            className="flex flex-col justify-center items-center gap-2 border-2 border-dashed border-yellow-500 rounded-xl min-h-[160px] bg-[#181818] hover:bg-[#232323] hover:shadow-lg transition group w-full h-full"
+            className="flex flex-col justify-center items-center gap-2 border-2 border-dashed border-yellow-500 rounded-xl min-h-[320px] bg-[#181818] hover:bg-[#232323] hover:shadow-lg transition group w-full h-full"
             aria-label={`Adicionar patrocinador (${String(order).padStart(2, "0")})`}
           >
             <FaPlus size={32} className="text-yellow-400 group-hover:text-yellow-300" />
