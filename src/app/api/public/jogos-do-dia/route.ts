@@ -6,6 +6,7 @@ export const revalidate = 60;
 export const preferredRegion = "gru1";
 
 import { diagHeaders } from "@/lib/api-headers";
+import { getApiBase } from "@/lib/get-api-base";
 
 // 3) HEAD não chama upstream (evita 5xx desnecessário)
 export async function HEAD() {
@@ -16,8 +17,19 @@ export async function HEAD() {
 }
 
 export async function GET() {
-  const base = process.env.BACKEND_URL?.replace(/\/+$/, "");
+  const base = getApiBase();
   const path = (process.env.JOGOS_DIA_PATH || "/partidas/jogos-do-dia").replace(/^\/?/, "/");
+  const isBuild = process.env.NEXT_PHASE === "phase-production-build";
+  const isLocalBase = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base);
+  if (isBuild && isLocalBase) {
+    return new Response("[]", {
+      status: 200,
+      headers: {
+        ...diagHeaders("build"),
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    });
+  }
   if (!base) {
     // Loga e devolve falha "limpa"
     console.error("BACKEND_URL ausente");
@@ -37,6 +49,16 @@ export async function GET() {
     });
 
     if (!r.ok) {
+      if (r.status === 404) {
+        return new Response("[]", {
+          status: 200,
+          headers: {
+            ...diagHeaders("backend"),
+            "Content-Type": "application/json; charset=utf-8",
+            "x-upstream-status": String(r.status),
+          },
+        });
+      }
       const body = await r.text().catch(() => "");
       console.error("Upstream non-OK", r.status, body.slice(0, 300));
       // pode repassar o status do upstream se preferir
@@ -55,6 +77,15 @@ export async function GET() {
       },
     });
   } catch (err: any) {
+    if (isBuild) {
+      return new Response("[]", {
+        status: 200,
+        headers: {
+          ...diagHeaders("build"),
+          "Content-Type": "application/json; charset=utf-8",
+        },
+      });
+    }
     console.error("proxy jogos-do-dia fetch failed", { message: err?.message, cause: err?.cause });
     return new Response("proxy_fetch_failed", {
       status: 502,

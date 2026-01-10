@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { authOptions as superAdminAuthOptions } from "@/app/api/superadmin-auth/[...nextauth]/route";
+import { authOptions } from "@/server/auth/admin-options";
+import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
 
 type UserLike = {
   id: string;

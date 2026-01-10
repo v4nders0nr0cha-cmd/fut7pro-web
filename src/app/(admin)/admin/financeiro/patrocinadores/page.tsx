@@ -1,6 +1,6 @@
 "use client";
 import Head from "next/head";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import CardResumoPatrocinio from "./components/CardResumoPatrocinio";
@@ -17,6 +17,20 @@ const formatDateInput = (date: Date) => {
 };
 
 export default function PaginaPatrocinadores() {
+  return (
+    <Suspense
+      fallback={
+        <section className="max-w-5xl mx-auto pt-20 pb-24 md:pt-6 md:pb-8 px-2">
+          <div className="text-gray-300 py-6">Carregando patrocinadores...</div>
+        </section>
+      }
+    >
+      <PaginaPatrocinadoresClient />
+    </Suspense>
+  );
+}
+
+function PaginaPatrocinadoresClient() {
   const { patrocinadores, isLoading, addPatrocinador, updatePatrocinador, deletePatrocinador } =
     usePatrocinadores();
   const searchParams = useSearchParams();
