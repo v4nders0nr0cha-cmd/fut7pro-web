@@ -55,6 +55,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   const [firstPaymentDate, setFirstPaymentDate] = useState<string>("");
   const [firstPaymentTouched, setFirstPaymentTouched] = useState(false);
   const [firstPaymentError, setFirstPaymentError] = useState<string | null>(null);
+  const initialFirstPaymentStatusRef = useRef<"received" | "pending" | "">("");
+  const initialFirstPaymentDateRef = useRef<string>("");
   const planValueLabel = form.billingPlan ? billingPlanValueLabels[form.billingPlan] : "";
   const shouldShowValue = Boolean(form.billingPlan);
   const shouldShowFirstPayment =
@@ -68,16 +70,19 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     setLogoError(null);
     const initialReceived = normalizeDateValue(initial?.lastPaidAt);
     const initialDue = normalizeDateValue(initial?.firstDueAt || initial?.nextDueAt);
+    let initialStatus: "received" | "pending" | "" = "";
+    let initialDate = "";
     if (initialReceived) {
-      setFirstPaymentStatus("received");
-      setFirstPaymentDate(initialReceived);
+      initialStatus = "received";
+      initialDate = initialReceived;
     } else if (initialDue) {
-      setFirstPaymentStatus("pending");
-      setFirstPaymentDate(initialDue);
-    } else {
-      setFirstPaymentStatus("");
-      setFirstPaymentDate("");
+      initialStatus = "pending";
+      initialDate = initialDue;
     }
+    setFirstPaymentStatus(initialStatus);
+    setFirstPaymentDate(initialDate);
+    initialFirstPaymentStatusRef.current = initialStatus;
+    initialFirstPaymentDateRef.current = initialDate;
     setFirstPaymentTouched(false);
     setFirstPaymentError(null);
   }, [initial, open]);
@@ -189,7 +194,11 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             e.preventDefault();
             setFirstPaymentError(null);
             const isEdit = Boolean(form.id);
-            const shouldValidateFirstPayment = !isEdit || firstPaymentTouched;
+            const hasFirstPaymentChange =
+              firstPaymentStatus !== initialFirstPaymentStatusRef.current ||
+              firstPaymentDate !== initialFirstPaymentDateRef.current;
+            const shouldValidateFirstPayment =
+              !isEdit || hasFirstPaymentChange || firstPaymentTouched;
             if (shouldValidateFirstPayment) {
               if (!firstPaymentStatus) {
                 setFirstPaymentError("Informe se o primeiro recebimento ja ocorreu.");
@@ -304,6 +313,10 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                       ? "bg-yellow-500 text-black border-yellow-500"
                       : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
                   }`}
+                  onClick={() => {
+                    setFirstPaymentTouched(true);
+                    setFirstPaymentError(null);
+                  }}
                 >
                   <input
                     type="radio"
@@ -314,7 +327,6 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                     onChange={() => {
                       const today = new Date().toISOString().slice(0, 10);
                       setFirstPaymentStatus("received");
-                      setFirstPaymentTouched(true);
                       setFirstPaymentError(null);
                       if (!firstPaymentDate) setFirstPaymentDate(today);
                     }}
@@ -327,6 +339,10 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                       ? "bg-yellow-500 text-black border-yellow-500"
                       : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
                   }`}
+                  onClick={() => {
+                    setFirstPaymentTouched(true);
+                    setFirstPaymentError(null);
+                  }}
                 >
                   <input
                     type="radio"
@@ -337,7 +353,6 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                     onChange={() => {
                       const today = new Date().toISOString().slice(0, 10);
                       setFirstPaymentStatus("pending");
-                      setFirstPaymentTouched(true);
                       setFirstPaymentError(null);
                       if (!firstPaymentDate) setFirstPaymentDate(today);
                     }}
