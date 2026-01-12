@@ -27,6 +27,10 @@ describe("ModalPatrocinador", () => {
     fireEvent.change(screen.getByLabelText(/Quanto este patrocinador paga por ano/i), {
       target: { value: "750" },
     });
+    fireEvent.click(screen.getByLabelText("Ja recebi"));
+    fireEvent.change(screen.getByLabelText("Data do recebimento *"), {
+      target: { value: "2026-01-12" },
+    });
     fireEvent.change(screen.getByLabelText("Status *"), { target: { value: "encerrado" } });
     fireEvent.change(screen.getByLabelText("Descricao/Observacoes"), {
       target: { value: "Plano trimestral" },
@@ -46,6 +50,7 @@ describe("ModalPatrocinador", () => {
         observacoes: "Plano trimestral",
         link: "https://exemplo.com",
         billingPlan: "ANUAL",
+        firstReceivedAt: "2026-01-12",
       })
     );
   });

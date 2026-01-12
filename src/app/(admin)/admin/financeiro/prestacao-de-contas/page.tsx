@@ -2,6 +2,7 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
+import { toast } from "react-hot-toast";
 import { useFinanceiro } from "@/hooks/useFinanceiro";
 import { useMe } from "@/hooks/useMe";
 import type { LancamentoFinanceiro } from "@/types/financeiro";
@@ -129,6 +130,7 @@ export default function PrestacaoDeContasAdmin() {
     isError,
     addLancamento,
     updateLancamento,
+    deleteLancamento,
   } = useFinanceiro();
 
   const [visivel, setVisivel] = useState(true);
@@ -137,6 +139,7 @@ export default function PrestacaoDeContasAdmin() {
   const [editData, setEditData] = useState<LancamentoFinanceiro | null>(null);
   const [erroLancamento, setErroLancamento] = useState<string | null>(null);
   const [salvandoLancamento, setSalvandoLancamento] = useState(false);
+  const [deletandoLancamento, setDeletandoLancamento] = useState(false);
 
   const hoje = useMemo(() => new Date(), []);
   const [periodo, setPeriodo] = useState<"mes" | "quadrimestre" | "ano">("ano");
@@ -262,6 +265,27 @@ export default function PrestacaoDeContasAdmin() {
       throw error;
     } finally {
       setSalvandoLancamento(false);
+    }
+  }
+
+  async function handleDeleteLancamento(id: string) {
+    if (!id) return;
+    setErroLancamento(null);
+    setDeletandoLancamento(true);
+    try {
+      await deleteLancamento(id);
+      toast.success("Lancamento excluido.");
+    } catch (error: unknown) {
+      if (process.env.NODE_ENV === "development") {
+        console.log("Erro ao excluir lancamento:", error);
+      }
+      const message =
+        error instanceof Error ? error.message : "Nao foi possivel excluir o lancamento.";
+      setErroLancamento(message);
+      toast.error(message);
+      throw error;
+    } finally {
+      setDeletandoLancamento(false);
     }
   }
 
@@ -612,9 +636,11 @@ export default function PrestacaoDeContasAdmin() {
           open={modalOpen}
           onClose={fecharModal}
           onSave={handleSaveLancamento}
+          onDelete={handleDeleteLancamento}
           initialData={editData}
           serverError={erroLancamento}
           isSaving={salvandoLancamento}
+          isDeleting={deletandoLancamento}
           categorias={categoriasDisponiveis}
         />
         {erroLancamento && <div className="mt-2 text-xs text-red-400">{erroLancamento}</div>}

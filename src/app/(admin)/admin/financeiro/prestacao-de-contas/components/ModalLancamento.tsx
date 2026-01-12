@@ -11,9 +11,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onSave?: (data: LancamentoFinanceiro) => void | Promise<void>;
+  onDelete?: (id: string) => void | Promise<void>;
   initialData?: LancamentoFinanceiro | null;
   serverError?: string | null;
   isSaving?: boolean;
+  isDeleting?: boolean;
   categorias?: string[];
 };
 
@@ -59,9 +61,11 @@ export default function ModalLancamento({
   open,
   onClose,
   onSave,
+  onDelete,
   initialData,
   serverError,
   isSaving,
+  isDeleting,
   categorias,
 }: Props) {
   const isEdit = !!initialData;
@@ -97,6 +101,8 @@ export default function ModalLancamento({
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>("");
   const [categoriaCustom, setCategoriaCustom] = useState<string>("");
   const [dragActive, setDragActive] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const categoriasOpcoes = useMemo(
     () => buildCategoriasList(form.tipo, categoriasDisponiveis),
@@ -167,6 +173,8 @@ export default function ModalLancamento({
     }
     setFile(null);
     setError("");
+    setShowDeleteConfirm(false);
+    setDeleteError("");
   }, [open, initialData, categoriasDisponiveis]);
 
   useEffect(() => {
@@ -291,6 +299,18 @@ export default function ModalLancamento({
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Nao foi possivel salvar.";
       setError(message);
+    }
+  }
+
+  async function handleDelete() {
+    if (!initialData?.id || !onDelete) return;
+    setDeleteError("");
+    try {
+      await onDelete(initialData.id);
+      onClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Nao foi possivel excluir.";
+      setDeleteError(message);
     }
   }
 
@@ -478,6 +498,42 @@ export default function ModalLancamento({
         >
           {isEdit ? "Salvar Alteracoes" : "Adicionar Lancamento"}
         </button>
+        {isEdit && onDelete && (
+          <div className="mt-4 border border-red-500/60 bg-red-950/40 rounded-lg p-3">
+            <p className="text-xs font-semibold text-red-200">Atencao</p>
+            <p className="text-xs text-red-200 mt-1">
+              Excluir este lancamento e irreversivel e removera o registro da prestacao de contas.
+            </p>
+            {!showDeleteConfirm ? (
+              <button
+                type="button"
+                className="mt-3 w-full py-2 rounded border border-red-500/70 text-red-200 font-bold text-xs hover:bg-red-500/10 transition"
+                onClick={() => setShowDeleteConfirm(true)}
+              >
+                Excluir lancamento
+              </button>
+            ) : (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  className="flex-1 py-2 rounded border border-neutral-600 text-gray-200 text-xs hover:bg-neutral-800 transition"
+                  onClick={() => setShowDeleteConfirm(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 py-2 rounded bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition disabled:opacity-60"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  Excluir definitivamente
+                </button>
+              </div>
+            )}
+            {deleteError && <div className="mt-2 text-xs text-red-300">{deleteError}</div>}
+          </div>
+        )}
       </form>
     </div>
   );

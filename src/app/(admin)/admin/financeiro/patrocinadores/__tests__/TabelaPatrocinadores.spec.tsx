@@ -55,6 +55,7 @@ describe("TabelaPatrocinadores", () => {
 
     expect(screen.getByText("Patrocinador 1")).toBeInTheDocument();
     expect(screen.getByText("Patrocinador 2")).toBeInTheDocument();
+    expect(screen.getByText(/Renovacao pendente desde/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Confirmar recebimento/i })).toBeInTheDocument();
     expect(screen.getAllByLabelText(/Adicionar patrocinador/i)).toHaveLength(8);
   });

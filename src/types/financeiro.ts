@@ -63,6 +63,8 @@ export interface Patrocinador {
   periodoFim?: string;
   lastPaidAt?: string;
   nextDueAt?: string;
+  firstDueAt?: string;
+  firstReceivedAt?: string;
   descricao?: string;
   ramo?: string;
   logo: string;

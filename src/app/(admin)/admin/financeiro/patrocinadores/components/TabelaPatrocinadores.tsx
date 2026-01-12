@@ -45,7 +45,7 @@ export default function TabelaPatrocinadores({
         sponsor ? (
           (() => {
             const planLabel = PLAN_LABELS[sponsor.billingPlan || "MENSAL"] || "Mensal";
-            const dueDateRaw = sponsor.nextDueAt || sponsor.periodoFim || "";
+            const dueDateRaw = sponsor.nextDueAt || sponsor.firstDueAt || sponsor.periodoFim || "";
             const dueDate = dueDateRaw ? new Date(dueDateRaw) : null;
             const dueLabel =
               dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate.toLocaleDateString() : null;
@@ -123,8 +123,8 @@ export default function TabelaPatrocinadores({
                   {dueLabel ? (
                     <div className="mt-2 text-sm text-gray-300">
                       {vencido
-                        ? "Plano vencido. O patrocinador ja renovou este ciclo?"
-                        : `Vence em ${dueLabel} (faltam ${diasParaVencer} dia(s))`}
+                        ? `Renovacao pendente desde ${dueLabel}`
+                        : `Proxima renovacao em ${dueLabel} (faltam ${diasParaVencer} dia(s))`}
                     </div>
                   ) : (
                     <div className="mt-2 text-sm text-gray-400">Vencimento nao informado.</div>
@@ -136,9 +136,7 @@ export default function TabelaPatrocinadores({
                       className="mt-3 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 rounded-lg disabled:opacity-60 disabled:pointer-events-none"
                       disabled={confirmandoId === sponsor.id}
                     >
-                      {confirmandoId === sponsor.id
-                        ? "Confirmando..."
-                        : "Confirmar recebimento e renovar"}
+                      {confirmandoId === sponsor.id ? "Confirmando..." : "Confirmar recebimento"}
                     </button>
                   )}
                 </div>

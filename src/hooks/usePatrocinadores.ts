@@ -16,6 +16,7 @@ type SponsorApiItem = {
   periodEnd?: string | null;
   lastPaidAt?: string | null;
   nextDueAt?: string | null;
+  firstDueAt?: string | null;
   billingPlan?: PlanoPatrocinio | null;
   displayOrder?: number | null;
   tier?: string | null;
@@ -96,6 +97,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
   const periodoFim = normalizeDate(item.periodEnd);
   const lastPaidAt = normalizeDate(item.lastPaidAt);
   const nextDueAt = normalizeDate(item.nextDueAt);
+  const firstDueAt = normalizeDate(item.firstDueAt);
   const descricao = item.about ?? item.benefit ?? item.coupon ?? undefined;
   const valor = typeof item.value === "number" ? item.value : Number(item.value ?? 0);
   const nome = String(item.name ?? "Patrocinador");
@@ -114,6 +116,7 @@ const normalizeSponsor = (item: SponsorApiItem, index: number): Patrocinador => 
     periodoFim,
     lastPaidAt,
     nextDueAt,
+    firstDueAt,
     descricao,
     ramo: item.ramo ?? undefined,
     logo,
@@ -135,6 +138,8 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
   const link = normalizeLink(input.link);
   const valor = typeof input.valor === "number" ? input.valor : Number(input.valor ?? 0);
   const billingPlan = normalizeBillingPlan(input.billingPlan);
+  const firstDueAt = normalizePayloadDate(input.firstDueAt ?? undefined);
+  const firstReceivedAt = normalizePayloadDate(input.firstReceivedAt ?? undefined);
 
   return {
     name: nome,
@@ -146,6 +151,8 @@ const buildSponsorPayload = (input: Partial<Patrocinador>) => {
     periodStart: normalizePayloadDate(input.periodoInicio),
     periodEnd: normalizePayloadDate(input.periodoFim),
     billingPlan,
+    firstDueAt,
+    firstReceivedAt,
     showOnFooter: input.visivel ?? true,
     displayOrder:
       typeof input.displayOrder === "number"

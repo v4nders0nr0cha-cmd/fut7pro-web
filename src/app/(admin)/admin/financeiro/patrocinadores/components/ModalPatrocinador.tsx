@@ -29,6 +29,12 @@ const billingPlanValueLabels: Record<string, string> = {
   ANUAL: "Quanto este patrocinador paga por ano?",
 };
 
+const billingPlanFirstPaymentQuestions: Record<string, string> = {
+  MENSAL: "Voce ja recebeu o 1o pagamento mensal deste patrocinador?",
+  QUADRIMESTRAL: "Voce ja recebeu o 1o pagamento quadrimestral deste patrocinador?",
+  ANUAL: "Voce ja recebeu o pagamento do plano anual deste patrocinador?",
+};
+
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const normalizeInitial = (input?: Partial<Patrocinador>) => ({
@@ -36,18 +42,44 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     billingPlan: input?.billingPlan ?? undefined,
     ...input,
   });
+  const normalizeDateValue = (value?: string) => {
+    if (!value) return "";
+    if (value.includes("T")) return value.slice(0, 10);
+    return value;
+  };
   const [form, setForm] = useState<Partial<Patrocinador>>(normalizeInitial(initial));
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [firstPaymentStatus, setFirstPaymentStatus] = useState<"received" | "pending" | "">("");
+  const [firstPaymentDate, setFirstPaymentDate] = useState<string>("");
+  const [firstPaymentTouched, setFirstPaymentTouched] = useState(false);
+  const [firstPaymentError, setFirstPaymentError] = useState<string | null>(null);
   const planValueLabel = form.billingPlan ? billingPlanValueLabels[form.billingPlan] : "";
   const shouldShowValue = Boolean(form.billingPlan);
+  const shouldShowFirstPayment =
+    Boolean(form.billingPlan) && form.valor !== undefined && !Number.isNaN(form.valor);
+  const questionText = form.billingPlan ? billingPlanFirstPaymentQuestions[form.billingPlan] : "";
 
   useEffect(() => {
     if (!open) return;
     setForm(normalizeInitial(initial));
     setLogoPreview(initial?.logo);
     setLogoError(null);
+    const initialReceived = normalizeDateValue(initial?.lastPaidAt);
+    const initialDue = normalizeDateValue(initial?.firstDueAt || initial?.nextDueAt);
+    if (initialReceived) {
+      setFirstPaymentStatus("received");
+      setFirstPaymentDate(initialReceived);
+    } else if (initialDue) {
+      setFirstPaymentStatus("pending");
+      setFirstPaymentDate(initialDue);
+    } else {
+      setFirstPaymentStatus("");
+      setFirstPaymentDate("");
+    }
+    setFirstPaymentTouched(false);
+    setFirstPaymentError(null);
   }, [initial, open]);
 
   // Custom scrollbar dark (executa so no client)
@@ -155,8 +187,37 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault();
-            const { periodoInicio, periodoFim, lastPaidAt, nextDueAt, ...payload } = form;
-            onSave(payload);
+            setFirstPaymentError(null);
+            const isEdit = Boolean(form.id);
+            const shouldValidateFirstPayment = !isEdit || firstPaymentTouched;
+            if (shouldValidateFirstPayment) {
+              if (!firstPaymentStatus) {
+                setFirstPaymentError("Informe se o primeiro recebimento ja ocorreu.");
+                return;
+              }
+              if (!firstPaymentDate) {
+                setFirstPaymentError("Informe a data do primeiro recebimento.");
+                return;
+              }
+            }
+            const {
+              periodoInicio,
+              periodoFim,
+              lastPaidAt,
+              nextDueAt,
+              firstDueAt,
+              firstReceivedAt,
+              ...payload
+            } = form;
+            const result: Partial<Patrocinador> = { ...payload };
+            if (shouldValidateFirstPayment) {
+              if (firstPaymentStatus === "received") {
+                result.firstReceivedAt = firstPaymentDate;
+              } else if (firstPaymentStatus === "pending") {
+                result.firstDueAt = firstPaymentDate;
+              }
+            }
+            onSave(result);
           }}
         >
           <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-nome">
@@ -231,6 +292,104 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                 }
               />
             </>
+          )}
+          {shouldShowFirstPayment && (
+            <div className="rounded-lg border border-gray-700 bg-[#151515] p-3">
+              <p className="text-sm font-semibold text-gray-100">Primeiro recebimento</p>
+              <p className="text-xs text-gray-400 mt-1">{questionText}</p>
+              <div className="mt-3 flex gap-2">
+                <label
+                  className={`flex-1 text-center text-xs font-semibold rounded px-2 py-2 cursor-pointer border transition ${
+                    firstPaymentStatus === "received"
+                      ? "bg-yellow-500 text-black border-yellow-500"
+                      : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="first-payment-status"
+                    value="received"
+                    className="hidden"
+                    checked={firstPaymentStatus === "received"}
+                    onChange={() => {
+                      const today = new Date().toISOString().slice(0, 10);
+                      setFirstPaymentStatus("received");
+                      setFirstPaymentTouched(true);
+                      setFirstPaymentError(null);
+                      if (!firstPaymentDate) setFirstPaymentDate(today);
+                    }}
+                  />
+                  Ja recebi
+                </label>
+                <label
+                  className={`flex-1 text-center text-xs font-semibold rounded px-2 py-2 cursor-pointer border transition ${
+                    firstPaymentStatus === "pending"
+                      ? "bg-yellow-500 text-black border-yellow-500"
+                      : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="first-payment-status"
+                    value="pending"
+                    className="hidden"
+                    checked={firstPaymentStatus === "pending"}
+                    onChange={() => {
+                      const today = new Date().toISOString().slice(0, 10);
+                      setFirstPaymentStatus("pending");
+                      setFirstPaymentTouched(true);
+                      setFirstPaymentError(null);
+                      if (!firstPaymentDate) setFirstPaymentDate(today);
+                    }}
+                  />
+                  Ainda nao
+                </label>
+              </div>
+              {firstPaymentStatus === "received" && (
+                <div className="mt-3">
+                  <label className="text-xs text-gray-200 font-semibold" htmlFor="first-paid-at">
+                    Data do recebimento *
+                  </label>
+                  <input
+                    id="first-paid-at"
+                    type="date"
+                    value={firstPaymentDate}
+                    className="mt-1 w-full input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                    onChange={(e) => {
+                      setFirstPaymentDate(e.target.value);
+                      setFirstPaymentTouched(true);
+                      setFirstPaymentError(null);
+                    }}
+                    required={!form.id}
+                  />
+                </div>
+              )}
+              {firstPaymentStatus === "pending" && (
+                <div className="mt-3">
+                  <label className="text-xs text-gray-200 font-semibold" htmlFor="first-due-at">
+                    Data combinada para o 1o pagamento *
+                  </label>
+                  <input
+                    id="first-due-at"
+                    type="date"
+                    value={firstPaymentDate}
+                    className="mt-1 w-full input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
+                    onChange={(e) => {
+                      setFirstPaymentDate(e.target.value);
+                      setFirstPaymentTouched(true);
+                      setFirstPaymentError(null);
+                    }}
+                    required={!form.id}
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    O sistema so vai lancar na Prestacao de Contas quando esta data chegar.
+                  </p>
+                </div>
+              )}
+              {firstPaymentError && (
+                <div className="mt-2 text-xs text-red-400">{firstPaymentError}</div>
+              )}
+            </div>
           )}
           <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-status">
             Status *

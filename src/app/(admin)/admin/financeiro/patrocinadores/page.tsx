@@ -90,6 +90,10 @@ function PaginaPatrocinadoresClient() {
       toast.error("Preencha todos os campos obrigatorios.");
       return;
     }
+    if (!p.id && !p.firstDueAt && !p.firstReceivedAt) {
+      toast.error("Informe o primeiro recebimento do patrocinador.");
+      return;
+    }
     const displayOrder = p.displayOrder ?? selectedSlot ?? 1;
     try {
       if (p.id) {
