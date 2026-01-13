@@ -40,6 +40,7 @@ export default function SponsorLogoCropperModal({
   const [saving, setSaving] = useState(false);
   const previewTimerRef = useRef<number | null>(null);
   const lastPreviewRequestRef = useRef(0);
+  const didInitZoomRef = useRef(false);
 
   const handleCropComplete = useCallback((_: any, croppedPixels: any) => {
     setCroppedAreaPixels(croppedPixels);
@@ -59,16 +60,21 @@ export default function SponsorLogoCropperModal({
     setMediaSize(null);
     setCropSize(null);
     setPreviewUrl(null);
+    didInitZoomRef.current = false;
   }, [open, imageSrc]);
 
   useEffect(() => {
     if (!mediaSize || !cropSize) return;
     const nextMin = Math.max(
-      1,
-      cropSize.width / mediaSize.width,
-      cropSize.height / mediaSize.height
+      0.2,
+      Math.min(1, cropSize.width / mediaSize.width, cropSize.height / mediaSize.height)
     );
     setMinZoom(nextMin);
+    if (!didInitZoomRef.current) {
+      didInitZoomRef.current = true;
+      setZoom(nextMin);
+      return;
+    }
     setZoom((prev) => (prev < nextMin ? nextMin : prev));
   }, [cropSize, mediaSize]);
 
