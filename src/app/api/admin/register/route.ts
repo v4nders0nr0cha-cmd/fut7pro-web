@@ -51,6 +51,13 @@ function safeJsonParse(text: string) {
   }
 }
 
+function resolveAvatarUrl(value?: string) {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 2048) return undefined;
+  return trimmed;
+}
+
 function shouldUseExisting(payload: RegisterPayload) {
   return Boolean(payload.existingTenantId || payload.existingRachaSlug || payload.skipTenantCreate);
 }
@@ -74,6 +81,12 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
       autoJoinEnabled: true,
       autoApproveAthletes: false,
     }),
+  });
+}
+
+async function deleteTenant(baseUrl: string, id: string) {
+  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`), {
+    method: "DELETE",
   });
 }
 
@@ -117,7 +130,7 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
       rachaSlug: data.rachaSlug?.trim(),
       apelido: data.adminApelido?.trim() || undefined,
       posicao: data.adminPosicao,
-      avatarUrl: data.adminAvatarBase64 || undefined,
+      avatarUrl: resolveAvatarUrl(data.adminAvatarBase64),
     }),
   });
 }
@@ -243,6 +256,7 @@ export async function POST(req: NextRequest) {
   }
 
   let tenantInfo: TenantInfo | null = null;
+  let createdTenantId: string | null = null;
 
   if (useExistingTenant) {
     const existingRes = await resolveExistingTenant(baseUrl, payload, superAdminUser?.accessToken);
@@ -280,6 +294,7 @@ export async function POST(req: NextRequest) {
       );
     }
     tenantInfo = tenantBodyText ? safeJsonParse(tenantBodyText) : null;
+    createdTenantId = tenantInfo?.id || null;
   }
 
   if (!payload.rachaSlug?.trim()) {
@@ -291,6 +306,13 @@ export async function POST(req: NextRequest) {
   const adminBodyText = await adminRes.text();
   const adminJson: any = adminBodyText ? safeJsonParse(adminBodyText) : null;
   if (!adminRes.ok) {
+    if (createdTenantId) {
+      try {
+        await deleteTenant(baseUrl, createdTenantId);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
     return jsonResponse(
       adminJson?.message || adminBodyText || "Erro ao criar administrador",
       adminRes.status

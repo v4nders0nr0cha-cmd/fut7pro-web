@@ -118,10 +118,28 @@ function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
   return value || "ATIVO";
 }
 
-function resolvePlanLabel(planKey?: string | null, status?: string | null) {
+function resolveTrialDays(trialStart?: string | null, trialEnd?: string | null) {
+  if (!trialStart || !trialEnd) return null;
+  const start = new Date(trialStart);
+  const end = new Date(trialEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  // Date-only diff to avoid DST drift
+  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  const diffDays = Math.round((endUtc - startUtc) / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : null;
+}
+
+function resolvePlanLabel(
+  planKey?: string | null,
+  status?: string | null,
+  trialStart?: string | null,
+  trialEnd?: string | null
+) {
   const key = (planKey || "").toLowerCase();
   if (status && status.toUpperCase() === "TRIAL") {
-    return "Trial (30 dias)";
+    const trialDays = resolveTrialDays(trialStart, trialEnd) ?? 20;
+    return `Trial (${trialDays} dias)`;
   }
   if (!key) return "Plano n/d";
   if (key.includes("marketing")) {
@@ -305,7 +323,9 @@ export default function RachasCadastradosPage() {
         const status = normalizeStatus(subscription?.status ?? t.status, t.blocked);
         const planLabel = resolvePlanLabel(
           subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
-          status
+          status,
+          subscription?.trialStart ?? null,
+          subscription?.trialEnd ?? null
         );
         const owner = resolveTenantOwner(t);
         const admin = owner.name || owner.email || "--";

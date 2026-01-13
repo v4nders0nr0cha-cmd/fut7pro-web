@@ -62,6 +62,13 @@ function safeJsonParse(text: string) {
   }
 }
 
+function resolveAvatarUrl(value?: string) {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed.length > 2048) return undefined;
+  return trimmed;
+}
+
 async function primeBranding(
   baseUrl: string,
   data: RegisterGooglePayload,
@@ -179,7 +186,7 @@ export async function POST(req: NextRequest) {
       adminApelido: payload.adminApelido?.trim() || undefined,
       adminPosicao: payload.adminPosicao,
       adminSenha: payload.adminSenha?.trim() || undefined,
-      adminAvatarUrl: payload.adminAvatarBase64 || undefined,
+      adminAvatarUrl: resolveAvatarUrl(payload.adminAvatarBase64),
     }),
   });
 
