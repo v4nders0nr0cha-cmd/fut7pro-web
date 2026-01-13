@@ -205,14 +205,14 @@ export default function Footer() {
                     alt={`Logo do patrocinador ${patro.name} - sistema de racha ${tema.nome}`}
                     width={160}
                     height={96}
-                    className="h-24 w-40 object-contain opacity-80 hover:opacity-100 transition duration-300"
+                    className="h-16 w-auto max-w-[160px] object-contain opacity-80 hover:opacity-100 transition duration-300"
                   />
                 );
 
                 return (
                   <div
                     key={`${patro.id}-${index}`}
-                    className="min-w-[180px] flex justify-center items-center"
+                    className="min-w-[160px] flex justify-center items-center"
                   >
                     {patro.link ? (
                       <a

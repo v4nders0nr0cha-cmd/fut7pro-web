@@ -14,7 +14,9 @@ export default async function getCroppedImg(
   imageSrc: string,
   croppedAreaPixels: { x: number; y: number; width: number; height: number },
   outputWidth = croppedAreaPixels.width,
-  outputHeight = croppedAreaPixels.height
+  outputHeight = croppedAreaPixels.height,
+  outputType: "image/jpeg" | "image/png" | "image/webp" = "image/jpeg",
+  quality = 0.92
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -32,6 +34,7 @@ export default async function getCroppedImg(
         return;
       }
 
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(
         image,
         croppedAreaPixels.x,
@@ -44,7 +47,7 @@ export default async function getCroppedImg(
         outputHeight
       );
 
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const dataUrl = canvas.toDataURL(outputType, quality);
       resolve(dataUrl);
     };
 

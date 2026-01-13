@@ -30,9 +30,9 @@ export default function Sponsors() {
                 key={p.id}
                 src={p.logoUrl}
                 alt={p.name}
-                width={100}
-                height={50}
-                className="object-contain h-12 opacity-80 hover:opacity-100 transition duration-300 ease-in-out"
+                width={106}
+                height={64}
+                className="object-contain h-14 w-auto max-w-[140px] opacity-80 hover:opacity-100 transition duration-300 ease-in-out"
               />
             ))}
           </div>

@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Patrocinador } from "@/types/financeiro";
 import Image from "next/image";
 import { FaUpload, FaTimes } from "react-icons/fa";
+import SponsorLogoCropperModal from "./SponsorLogoCropperModal";
 
 interface Props {
   open: boolean;
@@ -35,6 +36,9 @@ const billingPlanFirstPaymentQuestions: Record<string, string> = {
   ANUAL: "Voce ja recebeu o pagamento do plano anual deste patrocinador?",
 };
 
+const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_LOGO_SIZE = 10 * 1024 * 1024;
+
 export default function ModalPatrocinador({ open, onClose, onSave, initial }: Props) {
   const fileLogoRef = useRef<HTMLInputElement>(null);
   const normalizeInitial = (input?: Partial<Patrocinador>) => ({
@@ -51,6 +55,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   const [logoPreview, setLogoPreview] = useState<string | undefined>(form.logo);
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [cropImage, setCropImage] = useState<string | null>(null);
   const [firstPaymentStatus, setFirstPaymentStatus] = useState<"received" | "pending" | "">("");
   const [firstPaymentDate, setFirstPaymentDate] = useState<string>("");
   const [firstPaymentTouched, setFirstPaymentTouched] = useState(false);
@@ -86,6 +91,12 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     setFirstPaymentTouched(false);
     setFirstPaymentError(null);
   }, [initial, open]);
+
+  useEffect(() => {
+    if (!open) {
+      setCropImage(null);
+    }
+  }, [open]);
 
   // Custom scrollbar dark (executa so no client)
   if (typeof window !== "undefined") {
@@ -136,21 +147,64 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
     return data?.url || data?.path || data?.publicUrl || null;
   };
 
+  const dataUrlToFile = (dataUrl: string) => {
+    const [header, base64Data] = dataUrl.split(",");
+    if (!base64Data) {
+      throw new Error("Imagem invalida.");
+    }
+    const match = header?.match(/data:(.*);base64/);
+    const mime = match?.[1] || "image/png";
+    const binary = atob(base64Data);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: mime });
+    if (blob.size > MAX_LOGO_SIZE) {
+      throw new Error("Arquivo muito grande. Envie uma imagem menor para sua logo.");
+    }
+    const ext = mime.split("/")[1] || "png";
+    return new File([blob], `logo-patrocinador-${Date.now()}.${ext}`, { type: mime });
+  };
+
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    setLogoPreview(previewUrl);
+    setLogoError(null);
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      setLogoError("Envie uma imagem JPEG, PNG ou WebP.");
+      return;
+    }
+    if (file.size > MAX_LOGO_SIZE) {
+      setLogoError("Arquivo muito grande. Envie uma imagem menor para sua logo.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(String(reader.result));
+    };
+    reader.onerror = () => {
+      setLogoError("Falha ao ler a imagem.");
+    };
+    reader.readAsDataURL(file);
+    if (fileLogoRef.current) {
+      fileLogoRef.current.value = "";
+    }
+  };
+
+  const handleCropApply = async (cropped: string) => {
     setLogoUploading(true);
     setLogoError(null);
-
+    setLogoPreview(cropped);
     try {
+      const file = dataUrlToFile(cropped);
       const uploadedUrl = await uploadLogo(file);
       if (!uploadedUrl) {
         throw new Error("URL nao retornada");
       }
       setForm((f) => ({ ...f, logo: uploadedUrl }));
       setLogoPreview(uploadedUrl);
+      setCropImage(null);
     } catch (err) {
       setLogoError("Falha ao enviar logo. Tente novamente.");
     } finally {
@@ -425,7 +479,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           <div className="flex items-center gap-3">
             <input
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/webp"
               ref={fileLogoRef}
               className="hidden"
               onChange={handleLogoChange}
@@ -481,6 +535,12 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           </div>
         </form>
       </div>
+      <SponsorLogoCropperModal
+        open={Boolean(cropImage)}
+        imageSrc={cropImage || ""}
+        onCancel={() => setCropImage(null)}
+        onApply={handleCropApply}
+      />
     </div>
   );
 }

@@ -122,13 +122,13 @@ export default function NossosParceiros() {
                   key={p.id}
                   className="flex flex-col items-center bg-neutral-800 rounded-2xl border border-neutral-700 p-5 text-center h-full transition hover:border-yellow-400"
                 >
-                  <div className="w-16 h-16 flex items-center justify-center mb-2">
+                  <div className="w-full h-24 flex items-center justify-center mb-3 rounded-xl bg-neutral-900 border border-neutral-700">
                     <Image
                       src={p.logo}
                       alt={`Logo de ${p.nome}`}
-                      width={64}
-                      height={64}
-                      className="rounded-full object-contain"
+                      width={160}
+                      height={96}
+                      className="h-16 w-full object-contain"
                       loading="lazy"
                     />
                   </div>
