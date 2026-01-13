@@ -14,6 +14,8 @@ type RegisterGooglePayload = {
   adminEmail?: string;
   adminSenha?: string;
   adminAvatarBase64?: string;
+  planKey?: string;
+  couponCode?: string;
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,30}$/;
@@ -98,6 +100,30 @@ async function primeBranding(
   });
 }
 
+async function createSubscription(
+  baseUrl: string,
+  data: RegisterGooglePayload,
+  tenantId: string,
+  accessToken: string
+) {
+  const planKey = data.planKey?.trim();
+  if (!planKey) return null;
+
+  return fetch(resolvePath(baseUrl, "/billing/subscription"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      tenantId,
+      planKey,
+      payerEmail: data.adminEmail?.trim()?.toLowerCase(),
+      couponCode: data.couponCode?.trim() || undefined,
+    }),
+  });
+}
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -123,6 +149,7 @@ export async function POST(req: NextRequest) {
     return jsonResponse("Use apenas o primeiro nome (sem sobrenome).", 400);
   if (!payload.adminPosicao) return jsonResponse("Selecione a posicao do administrador.", 400);
   if (!adminEmail) return jsonResponse("E-mail do administrador nao encontrado.", 400);
+  if (!payload.planKey?.trim()) return jsonResponse("Selecione um plano para continuar.", 400);
 
   if (!payload.rachaNome?.trim() || payload.rachaNome.trim().length < 3)
     return jsonResponse("O nome do racha deve ter ao menos 3 caracteres.", 400);
@@ -164,6 +191,23 @@ export async function POST(req: NextRequest) {
 
   const accessToken = body?.accessToken || user.accessToken;
   await primeBranding(baseUrl, payload, accessToken);
+
+  if (!accessToken || !body?.tenantId) {
+    return jsonResponse("Nao foi possivel iniciar o teste gratis.", 500);
+  }
+
+  const subscriptionRes = await createSubscription(baseUrl, payload, body.tenantId, accessToken);
+  if (subscriptionRes) {
+    const subscriptionText = await subscriptionRes.text();
+    if (!subscriptionRes.ok) {
+      return jsonResponse(
+        (safeJsonParse(subscriptionText) as any)?.message ||
+          subscriptionText ||
+          "Erro ao criar assinatura",
+        subscriptionRes.status
+      );
+    }
+  }
 
   return new Response(
     JSON.stringify({

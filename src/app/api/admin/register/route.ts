@@ -15,6 +15,8 @@ type RegisterPayload = {
   adminEmail: string;
   adminSenha?: string;
   adminAvatarBase64?: string;
+  planKey?: string;
+  couponCode?: string;
   existingTenantId?: string;
   existingRachaSlug?: string;
   skipTenantCreate?: boolean;
@@ -170,6 +172,30 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
   });
 }
 
+async function createSubscription(
+  baseUrl: string,
+  data: RegisterPayload,
+  tenantId: string,
+  accessToken: string
+) {
+  const planKey = data.planKey?.trim();
+  if (!planKey) return null;
+
+  return fetch(resolvePath(baseUrl, "/billing/subscription"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      tenantId,
+      planKey,
+      payerEmail: data.adminEmail.trim().toLowerCase(),
+      couponCode: data.couponCode?.trim() || undefined,
+    }),
+  });
+}
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
@@ -199,6 +225,8 @@ export async function POST(req: NextRequest) {
     return jsonResponse("Use apenas o primeiro nome (sem sobrenome).", 400);
   if (!payload.adminPosicao) return jsonResponse("Selecione a posicao do administrador.", 400);
   if (!payload.adminEmail?.trim()) return jsonResponse("Informe o e-mail.", 400);
+  if (!useExistingTenant && !payload.planKey?.trim())
+    return jsonResponse("Selecione um plano para continuar.", 400);
 
   let generatedPassword: string | null = null;
   if (!payload.adminSenha) {
@@ -273,7 +301,26 @@ export async function POST(req: NextRequest) {
   if (!useExistingTenant) {
     const tokenFromRegister = adminJson?.accessToken || null;
     const token = tokenFromRegister || (await loginForToken(baseUrl, payload));
+    if (!token) {
+      return jsonResponse("Nao foi possivel iniciar o teste gratis.", 500);
+    }
     await primeBranding(baseUrl, payload, token);
+
+    if (!tenantInfo?.id) {
+      return jsonResponse("Tenant nao encontrado para criar assinatura.", 500);
+    }
+
+    const subscriptionRes = await createSubscription(baseUrl, payload, tenantInfo.id, token);
+    if (subscriptionRes) {
+      const subscriptionText = await subscriptionRes.text();
+      if (!subscriptionRes.ok) {
+        const body = safeJsonParse(subscriptionText);
+        return jsonResponse(
+          body?.message || subscriptionText || "Erro ao criar assinatura",
+          subscriptionRes.status
+        );
+      }
+    }
   }
 
   return new Response(

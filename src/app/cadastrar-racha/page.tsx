@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import ImageCropperModal from "@/components/ImageCropperModal";
+import type { PlanCatalog } from "@/lib/api/billing";
 import { slugify } from "@/utils/slugify";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -83,8 +84,10 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 type UploadTarget = "logo" | "avatar";
-type Step = 1 | 2;
+type Step = 1 | 2 | 3;
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid" | "error";
+type BillingInterval = "month" | "year";
+type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error";
 
 type FieldErrors = Partial<{
   adminNome: string;
@@ -136,6 +139,18 @@ export default function CadastroRachaPage() {
   const [slugEdited, setSlugEdited] = useState(false);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
 
+  const [planCatalog, setPlanCatalog] = useState<PlanCatalog | null>(null);
+  const [planInterval, setPlanInterval] = useState<BillingInterval>("month");
+  const [selectedPlanKey, setSelectedPlanKey] = useState("");
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponStatus, setCouponStatus] = useState<CouponStatus>("idle");
+  const [couponBenefits, setCouponBenefits] = useState<{
+    extraTrialDays: number;
+    firstPaymentDiscountPercent: number;
+  } | null>(null);
+
   const slugSugerido = useMemo(() => {
     if (!rachaNome) return "";
     return slugify(rachaNome).slice(0, 30);
@@ -184,6 +199,43 @@ export default function CadastroRachaPage() {
   }, [rachaSlug]);
 
   useEffect(() => {
+    let active = true;
+    setPlanLoading(true);
+    setPlanError("");
+
+    const loadPlans = async () => {
+      try {
+        const res = await fetch("/api/public/plans/catalog", { cache: "no-store" });
+        if (!res.ok) {
+          const text = await res.text();
+          if (active) {
+            setPlanError(text || "Nao foi possivel carregar os planos.");
+          }
+          return;
+        }
+        const data = (await res.json()) as PlanCatalog;
+        if (active) {
+          setPlanCatalog(data);
+        }
+      } catch (error) {
+        if (active) {
+          setPlanError("Nao foi possivel carregar os planos.");
+        }
+      } finally {
+        if (active) {
+          setPlanLoading(false);
+        }
+      }
+    };
+
+    void loadPlans();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!isGoogle) return;
     const googleEmail = (session?.user as any)?.email as string | undefined;
     const googleName = (session?.user as any)?.name as string | undefined;
@@ -224,6 +276,55 @@ export default function CadastroRachaPage() {
     return { text: "", tone: "muted" };
   }, [rachaSlug, slugStatus]);
 
+  const priceFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+        maximumFractionDigits: 0,
+      }),
+    []
+  );
+
+  const availablePlans = useMemo(() => {
+    if (!planCatalog?.plans?.length) return [];
+    return planCatalog.plans
+      .filter((plan) => plan.interval === planInterval)
+      .filter((plan) => plan.active !== false && plan.ctaType !== "contact")
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [planCatalog, planInterval]);
+
+  const selectedPlan = useMemo(() => {
+    if (!availablePlans.length) return null;
+    return availablePlans.find((plan) => plan.key === selectedPlanKey) ?? availablePlans[0];
+  }, [availablePlans, selectedPlanKey]);
+
+  const baseTrialDays = useMemo(() => {
+    if (selectedPlan?.trialDays !== undefined) return selectedPlan.trialDays;
+    return planCatalog?.meta?.trialDaysDefault ?? 20;
+  }, [planCatalog, selectedPlan]);
+
+  const totalTrialDays = useMemo(() => {
+    const extra = couponBenefits?.extraTrialDays ?? 0;
+    return baseTrialDays + extra;
+  }, [baseTrialDays, couponBenefits]);
+
+  const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
+
+  useEffect(() => {
+    if (!availablePlans.length) return;
+    if (availablePlans.some((plan) => plan.key === selectedPlanKey)) return;
+    const preferred = availablePlans.find((plan) => plan.highlight) ?? availablePlans[0];
+    setSelectedPlanKey(preferred.key);
+  }, [availablePlans, selectedPlanKey]);
+
+  useEffect(() => {
+    if (couponStatus === "valid") {
+      setCouponStatus("idle");
+      setCouponBenefits(null);
+    }
+  }, [selectedPlanKey, couponStatus]);
+
   async function toBase64(file: File) {
     return new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
@@ -249,6 +350,45 @@ export default function CadastroRachaPage() {
       setFormError("");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao processar a imagem");
+    }
+  }
+
+  async function handleApplyCoupon() {
+    const code = couponCode.trim();
+    if (!code) {
+      setCouponStatus("invalid");
+      setCouponBenefits(null);
+      return;
+    }
+
+    setCouponStatus("loading");
+    setCouponBenefits(null);
+
+    try {
+      const res = await fetch("/api/public/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          planKey: selectedPlanKey || undefined,
+        }),
+      });
+
+      const data = await res.json().catch(() => null);
+      if (data?.valid) {
+        setCouponStatus("valid");
+        setCouponBenefits({
+          extraTrialDays: Number(data.extraTrialDays || 0),
+          firstPaymentDiscountPercent: Number(
+            data.firstPaymentDiscountPercent || data.discountPct || 0
+          ),
+        });
+        return;
+      }
+
+      setCouponStatus("invalid");
+    } catch {
+      setCouponStatus("error");
     }
   }
 
@@ -311,6 +451,8 @@ export default function CadastroRachaPage() {
         adminEmail: adminEmail.trim(),
         adminSenha: adminSenha || undefined,
         adminAvatarBase64: adminAvatar,
+        planKey: selectedPlanKey,
+        couponCode: couponStatus === "valid" ? couponCode.trim() : undefined,
       };
 
       const res = await fetch(endpoint, {
@@ -343,6 +485,18 @@ export default function CadastroRachaPage() {
         return;
       }
 
+      const loginResult = await signIn("credentials", {
+        redirect: false,
+        email: adminEmail.trim(),
+        password: adminSenha,
+      });
+
+      if (loginResult?.ok) {
+        setSucesso("Racha criado! Redirecionando para o painel...");
+        setTimeout(() => router.push("/admin/dashboard"), 800);
+        return;
+      }
+
       setSucesso("Cadastro realizado! Agora faca login para acessar o painel.");
       setTimeout(() => router.push("/admin/login"), 1200);
     } catch (err) {
@@ -367,12 +521,43 @@ export default function CadastroRachaPage() {
       return;
     }
 
+    if (step === 2) {
+      const stepErrors = buildStep2Errors();
+      if (Object.keys(stepErrors).length > 0) {
+        setErrors(stepErrors);
+        return;
+      }
+      setErrors({});
+      setStep(3);
+      return;
+    }
+
     const step1Errors = buildStep1Errors();
     const step2Errors = buildStep2Errors();
     const nextErrors = { ...step1Errors, ...step2Errors };
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       setStep(Object.keys(step1Errors).length > 0 ? 1 : 2);
+      return;
+    }
+
+    if (planLoading) {
+      setFormError("Aguarde carregar os planos.");
+      return;
+    }
+
+    if (planError) {
+      setFormError(planError);
+      return;
+    }
+
+    if (!selectedPlanKey) {
+      setFormError("Selecione um plano para continuar.");
+      return;
+    }
+
+    if (couponStatus === "loading") {
+      setFormError("Aguarde a validacao do cupom.");
       return;
     }
 
@@ -401,15 +586,15 @@ export default function CadastroRachaPage() {
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <div className="text-xs uppercase tracking-[0.25em] text-yellow-300 font-semibold">
-                Etapa {step} de 2
+                Etapa {step} de 3
               </div>
               <h1 className="text-2xl font-bold text-white lg:hidden">Cadastre seu racha</h1>
               <p className="text-sm text-gray-400 lg:hidden">Leva menos de 2 min.</p>
             </div>
-            {step === 2 && (
+            {step > 1 && (
               <button
                 type="button"
-                onClick={() => setStep(1)}
+                onClick={() => setStep((prev) => (prev === 2 ? 1 : 2))}
                 className="text-xs text-yellow-300 underline"
               >
                 Voltar
@@ -420,7 +605,7 @@ export default function CadastroRachaPage() {
           <div className="mt-4 h-1 w-full rounded-full bg-white/10">
             <div
               className={`h-full rounded-full bg-yellow-400 transition-all ${
-                step === 1 ? "w-1/2" : "w-full"
+                step === 1 ? "w-1/3" : step === 2 ? "w-2/3" : "w-full"
               }`}
             />
           </div>
@@ -781,6 +966,203 @@ export default function CadastroRachaPage() {
               </>
             )}
 
+            {step === 3 && (
+              <>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold text-white">Escolha seu plano</h2>
+                    <p className="text-xs text-gray-400">
+                      Teste gratis por {baseTrialDays} dias: use todas as funcoes do Fut7Pro sem
+                      compromisso. Voce decide assinar depois.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 rounded-full border border-[#23283a] bg-[#10131b] p-1 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setPlanInterval("month")}
+                      className={`rounded-full px-4 py-2 font-semibold transition ${
+                        planInterval === "month"
+                          ? "bg-yellow-400 text-black"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      Mensal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPlanInterval("year")}
+                      className={`rounded-full px-4 py-2 font-semibold transition ${
+                        planInterval === "year"
+                          ? "bg-yellow-400 text-black"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      Anual (2 meses gratis)
+                    </button>
+                  </div>
+                  {planCatalog?.meta?.annualNote && (
+                    <p className="text-[11px] text-gray-500">{planCatalog.meta.annualNote}</p>
+                  )}
+
+                  {planLoading && (
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
+                      Carregando planos...
+                    </div>
+                  )}
+                  {planError && (
+                    <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-xs text-red-200">
+                      {planError}
+                    </div>
+                  )}
+
+                  <div
+                    role="radiogroup"
+                    aria-label="Escolha do plano"
+                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+                  >
+                    {availablePlans.map((plan) => {
+                      const isSelected = plan.key === selectedPlanKey;
+                      const allItems = [...(plan.features ?? []), ...(plan.limits ?? [])];
+                      const highlights = allItems.slice(0, 4);
+                      if (allItems.length > highlights.length) {
+                        highlights.push("E muito mais para o seu racha.");
+                      }
+                      const monthlyEquivalent =
+                        plan.interval === "year" ? Math.round(plan.amount / 12) : null;
+
+                      return (
+                        <button
+                          key={plan.key}
+                          type="button"
+                          role="radio"
+                          aria-checked={isSelected}
+                          onClick={() => setSelectedPlanKey(plan.key)}
+                          className={`rounded-xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
+                            isSelected
+                              ? "border-yellow-400 bg-[#1a1d2a] shadow-lg"
+                              : "border-[#23283a] bg-[#151821] hover:border-yellow-400/60"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-sm font-semibold text-white">{plan.label}</div>
+                              {plan.description && (
+                                <p className="mt-1 text-[11px] text-gray-400">{plan.description}</p>
+                              )}
+                            </div>
+                            {plan.badge && (
+                              <span className="rounded-full bg-yellow-400/20 px-2 py-1 text-[10px] font-semibold text-yellow-300">
+                                {plan.badge}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mt-3 flex items-end gap-2">
+                            <span className="text-2xl font-bold text-white">
+                              {priceFormatter.format(plan.amount)}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              /{plan.interval === "month" ? "mes" : "ano"}
+                            </span>
+                          </div>
+                          {monthlyEquivalent !== null && (
+                            <div className="text-[11px] text-gray-500">
+                              equivalente a {priceFormatter.format(monthlyEquivalent)}/mes
+                            </div>
+                          )}
+
+                          <ul className="mt-3 space-y-1 text-[11px] text-gray-300">
+                            {highlights.map((item, index) => (
+                              <li key={`${plan.key}-${index}`}>• {item}</li>
+                            ))}
+                          </ul>
+
+                          {plan.marketingStartsAfterFirstPayment && (
+                            <p className="mt-3 text-[11px] text-gray-400">
+                              Servicos de marketing comecam apos o primeiro pagamento.
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {!planLoading && availablePlans.length === 0 && !planError && (
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
+                      Nenhum plano disponivel no momento.
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-white">
+                      Cupom de embaixador ou influencer
+                    </p>
+                    <p className="text-[11px] text-gray-400">
+                      Tem um cupom de parceiro do Fut7Pro? Aplique para ganhar +10 dias de teste e
+                      35% de desconto na primeira cobranca.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => {
+                        setCouponCode(e.target.value.toUpperCase());
+                        if (couponStatus !== "idle") {
+                          setCouponStatus("idle");
+                          setCouponBenefits(null);
+                        }
+                      }}
+                      placeholder="Digite seu cupom (ex: FUT7VIP)"
+                      className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleApplyCoupon()}
+                      disabled={couponStatus === "loading" || !couponCode.trim()}
+                      className="rounded-lg bg-[#23283a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c3146] disabled:opacity-70"
+                    >
+                      {couponStatus === "loading" ? "Aplicando..." : "Aplicar cupom"}
+                    </button>
+                  </div>
+
+                  {couponStatus === "valid" && (
+                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                      Cupom aplicado. Voce ganhou +{couponBenefits?.extraTrialDays ?? 0} dias de
+                      teste e {discountPercent}% de desconto na primeira cobranca.
+                    </div>
+                  )}
+                  {couponStatus === "invalid" && (
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
+                      Nao encontramos esse cupom. Voce pode continuar sem cupom e ativar o teste
+                      gratis normalmente.
+                    </div>
+                  )}
+                  {couponStatus === "error" && (
+                    <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
+                      Nao foi possivel validar o cupom agora. Tente novamente em alguns segundos.
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span>Seu teste gratis: {totalTrialDays} dias.</span>
+                    {discountPercent > 0 && (
+                      <span>{discountPercent}% de desconto na primeira cobranca.</span>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[11px] text-gray-400">
+                    Voce podera assinar ou trocar de plano depois, direto no painel do seu racha.
+                  </p>
+                </div>
+              </>
+            )}
+
             {formError && (
               <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-sm text-red-200">
                 {formError}
@@ -793,10 +1175,10 @@ export default function CadastroRachaPage() {
             )}
 
             <div className="hidden sm:flex items-center gap-3">
-              {step === 2 && (
+              {step > 1 && (
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
+                  onClick={() => setStep((prev) => (prev === 2 ? 1 : 2))}
                   className="flex-1 rounded-lg border border-white/10 px-4 py-3 text-sm text-gray-300 hover:text-white"
                 >
                   Voltar
@@ -807,7 +1189,13 @@ export default function CadastroRachaPage() {
                 disabled={isLoading}
                 className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {step === 1 ? "Continuar" : isLoading ? "Cadastrando..." : "Criar racha"}
+                {step === 1
+                  ? "Continuar"
+                  : step === 2
+                    ? "Continuar"
+                    : isLoading
+                      ? "Finalizando..."
+                      : "Comecar teste gratis"}
               </button>
             </div>
 
@@ -865,7 +1253,13 @@ export default function CadastroRachaPage() {
           disabled={isLoading}
           className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {step === 1 ? "Continuar" : isLoading ? "Cadastrando..." : "Criar racha"}
+          {step === 1
+            ? "Continuar"
+            : step === 2
+              ? "Continuar"
+              : isLoading
+                ? "Finalizando..."
+                : "Comecar teste gratis"}
         </button>
       </div>
 
