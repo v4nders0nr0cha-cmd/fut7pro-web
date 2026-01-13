@@ -2,6 +2,8 @@
 
 const API_BASE_URL = "/api/admin/billing";
 
+export type PlanCtaType = "checkout" | "contact";
+
 export interface Plan {
   key: string;
   label: string;
@@ -12,6 +14,31 @@ export interface Plan {
   requiresUpfront?: boolean;
   upfrontAmount?: number;
   recurringAmount?: number;
+  description?: string;
+  features?: string[];
+  limits?: string[];
+  badge?: string;
+  highlight?: boolean;
+  ctaLabel?: string;
+  ctaType?: PlanCtaType;
+  contactEmail?: string;
+  order?: number;
+  active?: boolean;
+  paymentNote?: string;
+}
+
+export interface PlanCatalogMeta {
+  bannerTitle?: string;
+  bannerSubtitle?: string;
+  annualNote?: string;
+  trialDaysDefault?: number;
+}
+
+export interface PlanCatalog {
+  version?: number;
+  updatedAt?: string;
+  meta?: PlanCatalogMeta;
+  plans: Plan[];
 }
 
 export interface Subscription {
@@ -61,8 +88,8 @@ export class BillingAPI {
   }
 
   // Buscar todos os planos disponiveis
-  static async getPlans(): Promise<{ plans: Plan[] }> {
-    return this.request<{ plans: Plan[] }>("/plans");
+  static async getPlans(): Promise<PlanCatalog> {
+    return this.request<PlanCatalog>("/plans");
   }
 
   // Buscar assinatura por tenant
@@ -108,24 +135,40 @@ export class BillingAPI {
     payerEmail: string;
     payerName: string;
   }): Promise<{
-    subscriptionId: string;
-    preapprovalUrl: string;
+    subscription: Subscription;
+    preapproval: {
+      id: string;
+      url: string;
+    };
     pix: {
+      id: string;
       qrCode: string;
       qrCodeBase64: string;
       ticketUrl: string;
     };
-    invoiceId: string;
+    upfrontInvoice: {
+      id: string;
+      amount: number;
+      status: string;
+    };
   }> {
     return this.request<{
-      subscriptionId: string;
-      preapprovalUrl: string;
+      subscription: Subscription;
+      preapproval: {
+        id: string;
+        url: string;
+      };
       pix: {
+        id: string;
         qrCode: string;
         qrCodeBase64: string;
         ticketUrl: string;
       };
-      invoiceId: string;
+      upfrontInvoice: {
+        id: string;
+        amount: number;
+        status: string;
+      };
     }>("/subscription/enterprise-monthly/start", {
       method: "POST",
       body: JSON.stringify(data),

@@ -8,12 +8,14 @@ interface SubscriptionStatusCardProps {
   subscription: Subscription;
   status: SubscriptionStatus | null;
   onRefresh: () => void;
+  planLabel?: string;
 }
 
 export default function SubscriptionStatusCard({
   subscription,
   status,
   onRefresh,
+  planLabel,
 }: SubscriptionStatusCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -99,7 +101,9 @@ export default function SubscriptionStatusCard({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium text-gray-500">Plano</label>
-            <p className="text-lg font-semibold text-gray-900">{subscription.planKey}</p>
+            <p className="text-lg font-semibold text-gray-900">
+              {planLabel || subscription.planKey}
+            </p>
           </div>
 
           <div>

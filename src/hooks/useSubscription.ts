@@ -3,11 +3,13 @@ import BillingAPI, {
   type Subscription,
   type Plan,
   type SubscriptionStatus,
+  type PlanCatalogMeta,
 } from "@/lib/api/billing";
 
 interface UseSubscriptionReturn {
   subscription: Subscription | null;
   plans: Plan[];
+  planMeta: PlanCatalogMeta | null;
   subscriptionStatus: SubscriptionStatus | null;
   loading: boolean;
   error: string | null;
@@ -19,6 +21,7 @@ interface UseSubscriptionReturn {
 export function useSubscription(tenantId?: string): UseSubscriptionReturn {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [planMeta, setPlanMeta] = useState<PlanCatalogMeta | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +48,8 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     try {
       setError(null);
       const data = await BillingAPI.getPlans();
-      setPlans(data.plans);
+      setPlans(data.plans || []);
+      setPlanMeta(data.meta ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar planos");
     }
@@ -76,6 +80,7 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
   return {
     subscription,
     plans,
+    planMeta,
     subscriptionStatus,
     loading,
     error,

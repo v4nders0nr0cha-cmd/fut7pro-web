@@ -1,282 +1,525 @@
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
 import Head from "next/head";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
+import { FaSave, FaSpinner } from "react-icons/fa";
+import toast, { Toaster } from "react-hot-toast";
 import { useBranding } from "@/hooks/useBranding";
+import type { Plan, PlanCatalog } from "@/lib/api/billing";
 
-type Plano = {
-  nome: string;
-  preco: string;
-  destaque?: boolean;
-  badge?: string;
-  descricao: string;
-  recursos: string[];
-  limites: string[];
-  botao: string;
-};
+const fetcher = (url: string) => fetch(url, { cache: "no-store" }).then((res) => res.json());
 
-const BRAND_TOKEN = "__BRAND__";
-const ARMAZENAMENTO =
-  "Armazenamento ilimitado: todos os dados, rankings, atletas e partidas ficam salvos para sempre, sem custo extra e sem limite de memoria. Nunca perca seu historico e nunca precisar migrar de plano por falta de memoria!";
-const PERSONALIZACAO_VISUAL =
-  "Personalizacao visual: escolha entre temas de cores e deixe seu racha com a identidade que mais combina com o grupo.";
+function splitLines(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
 
-const PLANOS_BASE: Record<"mensal" | "anual", Plano[]> = {
-  mensal: [
-    {
-      nome: "Mensal Essencial",
-      preco: "R$ 150/mes",
-      destaque: true,
-      badge: "Mais escolhido",
-      descricao:
-        "Ideal para grupos que querem controle total, profissionalizacao e monetizacao do racha com valor acessivel.",
-      recursos: [
-        `Acesso completo ao ${BRAND_TOKEN} (todas as funcionalidades)`,
-        PERSONALIZACAO_VISUAL,
-        ARMAZENAMENTO,
-        "Teste gratis por 30 dias - experimente sem compromisso",
-        "Cadastro ilimitado de atletas e jogos",
-        "Gestao financeira completa do racha (opcionalmente visivel no site para transparencia ou privado para admins)",
-        "Pagina dedicada e carrossel no rodape exclusivo para patrocinadores - gere receita e valorize seus apoiadores",
-        "Sorteio inteligente de times, ranking automatico, feed de conquistas, estatisticas, tira-teima e mais",
-        `Manual de Monetizacao: \"Aprenda como fechar patrocinio, deixar o patrocinador pagar pelo ${BRAND_TOKEN} e ainda colocar dinheiro no caixa do seu racha.\"`,
-        "Ate 4 administradores (presidente, vice-presidente, diretor de futebol e diretor financeiro)",
-        "Suporte basico por e-mail",
-        "Painel administrativo completo",
-        "Feed de notificacoes e conquistas",
-      ],
-      limites: ["1 racha por assinatura"],
-      botao: "Assinar Mensal Essencial",
-    },
-    {
-      nome: "Mensal + Marketing",
-      preco: "R$ 220/mes",
-      badge: "Plano com Marketing",
-      descricao:
-        "Para rachas que querem crescer, atrair patrocinadores e se destacar nas redes sociais.",
-      recursos: [
-        "Tudo do Mensal Essencial",
-        "Designer dedicado para criacao de kit patrocinador personalizado",
-        "Especialista para estruturar e turbinar o Instagram do racha",
-        "Seu site pronto entregue com layout, logo, textos, imagens e videos",
-        "Suporte prioritario via WhatsApp",
-      ],
-      limites: ["1 racha por assinatura"],
-      botao: "Assinar Mensal + Marketing",
-    },
-    {
-      nome: "Enterprise White Label",
-      preco: "R$ 990/mes",
-      badge: "Exclusivo",
-      descricao: `Plano para clubes, ligas e grandes organizacoes que exigem exclusividade total. Nenhuma referencia ao ${BRAND_TOKEN}, sistema 100% com sua marca, dominio proprio, PDFs e e-mails personalizados, suporte premium e limites ampliados.`,
-      recursos: [
-        `Nenhuma referencia ao ${BRAND_TOKEN} (logo, frase, links, PDF, e-mails, favicon, etc)`,
-        ARMAZENAMENTO,
-        "Dominio proprio e e-mails personalizados",
-        "Design, cores, frases e icones com personalizacao exclusiva",
-        "PDFs e relatorios com a marca do cliente",
-        "Powered by exclusivo para sua marca",
-        "Suporte premium e SLA diferenciado",
-        "Consultoria e onboarding exclusivo",
-        "Limites ampliados (administradores, uploads)",
-        "Contrato, nota fiscal e recursos especiais sob demanda",
-        "Acesso antecipado a novas funcionalidades",
-      ],
-      limites: ["Racha, liga ou clube ilimitado"],
-      botao: "Solicitar Enterprise",
-    },
-  ],
-  anual: [
-    {
-      nome: "Anual Essencial",
-      preco: "R$ 1.500/ano",
-      destaque: true,
-      badge: "Mais vantajoso",
-      descricao:
-        "Todos os recursos do plano Mensal Essencial, com economia maxima e acesso anual sem preocupacao.",
-      recursos: [
-        `Acesso completo ao ${BRAND_TOKEN} (todas as funcionalidades)`,
-        PERSONALIZACAO_VISUAL,
-        ARMAZENAMENTO,
-        "1 mes de teste gratis na primeira assinatura + 2 meses gratis todo ano (economize R$ 450,00 no primeiro ano e R$ 300,00 nos anos seguintes)",
-        "Cadastro ilimitado de atletas e jogos",
-        "Gestao financeira completa do racha (controle de visibilidade publico ou privado)",
-        "Pagina dedicada e carrossel no rodape exclusivo para patrocinadores - gere receita e valorize seus apoiadores",
-        `Manual de Monetizacao: \"Aprenda como fechar patrocinio, deixar o patrocinador pagar pelo ${BRAND_TOKEN} e ainda colocar dinheiro no caixa do seu racha.\"`,
-        "Painel administrativo, ranking, sorteios, feed de conquistas e muito mais",
-        "Ate 4 administradores (presidente, vice-presidente, diretor de futebol e diretor financeiro)",
-        "Suporte basico por e-mail",
-      ],
-      limites: ["1 racha por assinatura"],
-      botao: "Assinar Anual Essencial",
-    },
-    {
-      nome: "Anual + Marketing",
-      preco: "R$ 2.200/ano",
-      badge: "Plano mais completo",
-      descricao:
-        "Plano premium para grupos que querem profissionalizar, atrair patrocinadores e crescer rapido.",
-      recursos: [
-        "Tudo do Anual Essencial",
-        "Designer dedicado para criacao de kit patrocinador personalizado",
-        "Especialista em Instagram",
-        "Site pronto entregue com layout, logo, textos, imagens e videos",
-        "Bonus: 1 hora de consultoria com especialista em monetizacao de rachas",
-        "Suporte prioritario via WhatsApp",
-      ],
-      limites: ["1 racha por assinatura"],
-      botao: "Assinar Anual + Marketing",
-    },
-    {
-      nome: "Enterprise White Label",
-      preco: "R$ 9.900/ano",
-      badge: "Exclusivo",
-      descricao: `Plano para clubes, ligas e grandes organizacoes que exigem exclusividade total. Nenhuma referencia ao ${BRAND_TOKEN}, sistema 100% com sua marca, dominio proprio, PDFs e e-mails personalizados, suporte premium e limites ampliados.`,
-      recursos: [
-        `Nenhuma referencia ao ${BRAND_TOKEN} (logo, frase, links, PDF, e-mails, favicon, etc)`,
-        ARMAZENAMENTO,
-        "Dominio proprio e e-mails personalizados",
-        "Design, cores, frases e icones com personalizacao exclusiva",
-        "PDFs e relatorios com a marca do cliente",
-        "Powered by exclusivo para sua marca",
-        "Sem teste gratis. 2 meses gratis todo ano no plano anual (R$ 1.980,00/ano de economia). Onboarding e setup personalizado inclusos.",
-        "Suporte premium e SLA diferenciado",
-        "Consultoria e onboarding exclusivo",
-        "Limites ampliados (administradores, uploads)",
-        "Contrato, nota fiscal e recursos especiais sob demanda",
-        "Acesso antecipado a novas funcionalidades",
-      ],
-      limites: ["Racha, liga ou clube ilimitado"],
-      botao: "Solicitar Enterprise",
-    },
-  ],
-};
+function PlanPreviewCard({ plan, brand }: { plan: Plan; brand: string }) {
+  const isHighlight = Boolean(plan.highlight);
+  const intervalLabel = plan.interval === "year" ? "ano" : "mes";
+  const title = plan.label.replace(/fut7pro/gi, brand);
+  const description = plan.description?.replace(/fut7pro/gi, brand);
+  const paymentNote = plan.paymentNote?.replace(/fut7pro/gi, brand);
+  const features = (plan.features || []).map((item) => item.replace(/fut7pro/gi, brand));
+  const limits = (plan.limits || []).map((item) => item.replace(/fut7pro/gi, brand));
+  const ctaLabel =
+    plan.ctaLabel || (plan.interval === "year" ? "Assinar plano anual" : "Assinar plano mensal");
 
-export default function PlanosLimitesPage() {
+  return (
+    <div
+      className={`relative rounded-2xl p-6 flex flex-col shadow-xl border-2 ${isHighlight ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800"}`}
+    >
+      {plan.badge && (
+        <span
+          className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
+        >
+          {plan.badge}
+        </span>
+      )}
+      <div className="text-xl font-extrabold mb-1">{title}</div>
+      <div className="text-lg font-bold mb-1">
+        {plan.amount.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+          minimumFractionDigits: 2,
+        })}
+        <span className="text-xs text-neutral-400">/{intervalLabel}</span>
+      </div>
+      {paymentNote && (
+        <p className={`mb-2 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}>
+          {paymentNote}
+        </p>
+      )}
+      {description && (
+        <p className={`mb-3 text-sm ${isHighlight ? "text-black/80" : "text-neutral-300"}`}>
+          {description}
+        </p>
+      )}
+      <ul className="mb-4 space-y-1">
+        {features.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm">
+            <span className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}>
+              V
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {limits.map((limite, i) => (
+          <span
+            key={i}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold ${isHighlight ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+          >
+            {limite}
+          </span>
+        ))}
+      </div>
+      <button
+        type="button"
+        className={`mt-auto px-5 py-2 rounded-xl font-bold ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-400 text-black"}`}
+        disabled
+      >
+        {ctaLabel}
+      </button>
+    </div>
+  );
+}
+
+export default function PlanosSuperAdminPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
   const applyBrand = useCallback(
     (text: string) => text.replace(/(__BRAND__|fut7pro)/gi, () => brand),
     [brand]
   );
-  const planos = useMemo(() => {
-    const mapPlan = (plano: Plano) => ({
-      ...plano,
-      nome: applyBrand(plano.nome),
-      preco: applyBrand(plano.preco),
-      descricao: applyBrand(plano.descricao),
-      recursos: plano.recursos.map(applyBrand),
-      limites: plano.limites.map(applyBrand),
-      botao: applyBrand(plano.botao),
-      badge: plano.badge ? applyBrand(plano.badge) : plano.badge,
-    });
-    return {
-      mensal: PLANOS_BASE.mensal.map(mapPlan),
-      anual: PLANOS_BASE.anual.map(mapPlan),
-    };
-  }, [applyBrand]);
+
+  const { data, error } = useSWR<PlanCatalog>("/api/superadmin/planos", fetcher);
+  const isLoading = !data && !error;
+  const [catalog, setCatalog] = useState<PlanCatalog | null>(null);
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (data) {
+      setCatalog(data);
+    }
+  }, [data]);
+
+  const meta = catalog?.meta || {};
+
+  const plansByInterval = useMemo(() => {
+    if (!catalog?.plans) return [];
+    const interval = planoAtivo === "anual" ? "year" : "month";
+    return [...catalog.plans]
+      .filter((plan) => plan.interval === interval)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }, [catalog, planoAtivo]);
+
+  const updateMeta = (field: keyof NonNullable<PlanCatalog["meta"]>, value: string | number) => {
+    setCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        meta: {
+          ...(prev.meta || {}),
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const updatePlan = (key: string, patch: Partial<Plan>) => {
+    setCatalog((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        plans: prev.plans.map((plan) => (plan.key === key ? { ...plan, ...patch } : plan)),
+      };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!catalog) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/superadmin/planos", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planosCatalogo: catalog }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.message || "Falha ao salvar catalogo de planos");
+      }
+
+      const updated = (await res.json()) as PlanCatalog;
+      setCatalog(updated);
+      toast.success("Catalogo de planos atualizado");
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao salvar catalogo de planos");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
       <Head>
-        <title>{applyBrand("Planos & Precos | __BRAND__")}</title>
+        <title>{applyBrand("Planos & Precos | __BRAND__ SuperAdmin")}</title>
         <meta
           name="description"
           content={applyBrand(
-            "Compare os planos __BRAND__ e escolha o melhor para seu racha. Controle, estatisticas, gestao financeira, patrocinadores, marketing, painel completo e suporte especializado."
+            "Edite planos, precos, limites e beneficios do __BRAND__. Tudo o que for salvo aqui aparece no painel dos rachas."
           )}
         />
       </Head>
-      <main className="max-w-7xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">Planos & Precos</h1>
-        <div className="mb-6 flex justify-center">
-          <div className="bg-green-600/90 text-white font-semibold rounded-xl px-6 py-3 shadow-lg text-lg text-center w-full md:w-auto">
-            Teste gratis por 30 dias:{" "}
-            <span className="font-bold">acesse todas as funcoes sem compromisso</span> e descubra{" "}
+      <Toaster />
+      <main className="max-w-6xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
+        <div className="flex flex-col gap-2 mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400">Planos & Precos</h1>
+          <p className="text-sm text-neutral-300 max-w-2xl">
             {applyBrand(
-              "porque o __BRAND__ e o sistema mais completo para rachas e futebol entre amigos!"
+              "Edite textos, precos, limites, destaques e CTAs. As alteracoes sao aplicadas no painel dos rachas apos salvar."
             )}
-          </div>
-        </div>
-        <div className="mb-6 flex justify-center">
-          <p className="max-w-md mx-auto text-sm text-neutral-300 text-center leading-relaxed">
-            {applyBrand("Gerencie os planos e limites do __BRAND__.")}
           </p>
         </div>
-        <div className="flex justify-center mb-10">
-          <button
-            className={`px-6 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-            onClick={() => setPlanoAtivo("mensal")}
-          >
-            Pagamento Mensal
-          </button>
-          <button
-            className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-            onClick={() => setPlanoAtivo("anual")}
-          >
-            Pagamento Anual <span className="ml-1 text-xs">(2 meses gratis)</span>
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {planos[planoAtivo].map((plano) => (
-            <div
-              key={plano.nome}
-              className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${plano.destaque ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
-            >
-              {plano.badge && (
-                <span
-                  className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
-                >
-                  {plano.badge}
-                </span>
-              )}
-              <div className="text-2xl font-extrabold mb-1">{plano.nome}</div>
-              <div className="text-xl font-bold mb-2">{plano.preco}</div>
-              <div
-                className={`mb-4 text-base ${plano.destaque ? "text-black/80" : "text-neutral-300"}`}
-              >
-                {plano.descricao}
+
+        {isLoading && (
+          <div className="flex items-center gap-3 text-yellow-400">
+            <FaSpinner className="animate-spin" />
+            <span>Carregando catalogo...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
+            Erro ao carregar catalogo. Tente novamente.
+          </div>
+        )}
+
+        {catalog && (
+          <>
+            <section className="mb-8 rounded-2xl border border-[#2b2b2b] bg-[#151515] p-6">
+              <h2 className="text-lg font-bold text-yellow-300 mb-4">Texto e regras globais</h2>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                  Banner principal
+                  <input
+                    className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                    value={meta.bannerTitle || ""}
+                    onChange={(e) => updateMeta("bannerTitle", e.target.value)}
+                    placeholder="Texto principal do banner"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                  Subtitulo do banner
+                  <input
+                    className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                    value={meta.bannerSubtitle || ""}
+                    onChange={(e) => updateMeta("bannerSubtitle", e.target.value)}
+                    placeholder="Complemento do banner"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                  Observacao do anual
+                  <input
+                    className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                    value={meta.annualNote || ""}
+                    onChange={(e) => updateMeta("annualNote", e.target.value)}
+                    placeholder="Ex: 2 meses gratis ja embutidos no valor anual"
+                  />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                  Dias de teste padrao
+                  <input
+                    type="number"
+                    min={0}
+                    className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                    value={meta.trialDaysDefault ?? 0}
+                    onChange={(e) => updateMeta("trialDaysDefault", Number(e.target.value))}
+                  />
+                </label>
               </div>
-              <ul className="mb-4 space-y-1">
-                {plano.recursos.map((item, i) => (
-                  <li key={i} className="flex items-start gap-2 text-base">
-                    <span
-                      className={`font-bold ${plano.destaque ? "text-yellow-900" : "text-yellow-400"}`}
-                    >
-                      V
-                    </span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-              <div className="mb-4 flex flex-wrap gap-2">
-                {plano.limites.map((limite, i) => (
-                  <span
-                    key={i}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
-                  >
-                    {limite}
-                  </span>
-                ))}
-                {plano.nome === "Enterprise White Label" ? (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
-                    Admins ilimitados
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold bg-green-400 text-black">
-                    4 administradores
-                  </span>
-                )}
+            </section>
+
+            <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <button
+                  className={`px-5 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+                  onClick={() => setPlanoAtivo("mensal")}
+                >
+                  Planos Mensais
+                </button>
+                <button
+                  className={`px-5 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+                  onClick={() => setPlanoAtivo("anual")}
+                >
+                  Planos Anuais
+                </button>
               </div>
               <button
-                className={`mt-auto px-6 py-2 rounded-xl font-bold ${plano.destaque ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black" : "bg-yellow-400 text-black hover:bg-yellow-500"} transition`}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl px-6 py-2 flex items-center gap-2 font-bold transition shadow-lg"
+                onClick={handleSave}
+                disabled={isSaving}
               >
-                {plano.botao}
+                {isSaving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                Salvar alteracoes
               </button>
             </div>
-          ))}
-        </div>
+
+            <div className="grid gap-8">
+              {plansByInterval.map((plan) => {
+                const isContact = plan.ctaType === "contact";
+                return (
+                  <div
+                    key={plan.key}
+                    className="rounded-2xl border border-[#2b2b2b] bg-[#111111] p-6 grid gap-6 lg:grid-cols-[1fr_1.2fr]"
+                  >
+                    <PlanPreviewCard plan={plan} brand={brand} />
+
+                    <div className="grid gap-4">
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Nome do plano
+                          <input
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.label}
+                            onChange={(e) => updatePlan(plan.key, { label: e.target.value })}
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Preco (BRL)
+                          <input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.amount}
+                            onChange={(e) =>
+                              updatePlan(plan.key, { amount: Number(e.target.value) })
+                            }
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Badge
+                          <input
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.badge || ""}
+                            onChange={(e) => updatePlan(plan.key, { badge: e.target.value })}
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Ordem de exibicao
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.order ?? 0}
+                            onChange={(e) =>
+                              updatePlan(plan.key, { order: Number(e.target.value) })
+                            }
+                          />
+                        </label>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Intervalo
+                          <input
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white/60"
+                            value={plan.interval === "year" ? "Anual" : "Mensal"}
+                            readOnly
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Dias de teste
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.trialDays ?? 0}
+                            onChange={(e) =>
+                              updatePlan(plan.key, { trialDays: Number(e.target.value) })
+                            }
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          CTA (texto do botao)
+                          <input
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.ctaLabel || ""}
+                            onChange={(e) => updatePlan(plan.key, { ctaLabel: e.target.value })}
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          Tipo de CTA
+                          <select
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.ctaType || "checkout"}
+                            onChange={(e) =>
+                              updatePlan(plan.key, { ctaType: e.target.value as Plan["ctaType"] })
+                            }
+                          >
+                            <option value="checkout">Checkout</option>
+                            <option value="contact">Contato comercial</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      {isContact && (
+                        <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                          E-mail de contato
+                          <input
+                            className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                            value={plan.contactEmail || ""}
+                            onChange={(e) => updatePlan(plan.key, { contactEmail: e.target.value })}
+                          />
+                        </label>
+                      )}
+
+                      <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                        Descricao
+                        <textarea
+                          rows={3}
+                          className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          value={plan.description || ""}
+                          onChange={(e) => updatePlan(plan.key, { description: e.target.value })}
+                        />
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                        Recursos (1 por linha)
+                        <textarea
+                          rows={6}
+                          className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          value={(plan.features || []).join("\n")}
+                          onChange={(e) =>
+                            updatePlan(plan.key, { features: splitLines(e.target.value) })
+                          }
+                        />
+                      </label>
+
+                      <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                        Limites (1 por linha)
+                        <textarea
+                          rows={4}
+                          className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          value={(plan.limits || []).join("\n")}
+                          onChange={(e) =>
+                            updatePlan(plan.key, { limits: splitLines(e.target.value) })
+                          }
+                        />
+                      </label>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex items-center gap-2 text-sm text-neutral-300">
+                          <input
+                            type="checkbox"
+                            className="accent-yellow-500"
+                            checked={plan.active !== false}
+                            onChange={(e) => updatePlan(plan.key, { active: e.target.checked })}
+                          />
+                          Plano ativo
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-neutral-300">
+                          <input
+                            type="checkbox"
+                            className="accent-yellow-500"
+                            checked={Boolean(plan.highlight)}
+                            onChange={(e) => updatePlan(plan.key, { highlight: e.target.checked })}
+                          />
+                          Destacar plano
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-neutral-300">
+                          <input
+                            type="checkbox"
+                            className="accent-yellow-500"
+                            checked={Boolean(plan.marketingStartsAfterFirstPayment)}
+                            onChange={(e) =>
+                              updatePlan(plan.key, {
+                                marketingStartsAfterFirstPayment: e.target.checked,
+                              })
+                            }
+                          />
+                          Marketing apos primeiro pagamento
+                        </label>
+                        <label className="flex items-center gap-2 text-sm text-neutral-300">
+                          <input
+                            type="checkbox"
+                            className="accent-yellow-500"
+                            checked={Boolean(plan.requiresUpfront)}
+                            onChange={(e) =>
+                              updatePlan(plan.key, { requiresUpfront: e.target.checked })
+                            }
+                          />
+                          Exige entrada (upfront)
+                        </label>
+                      </div>
+
+                      {plan.requiresUpfront && (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                            Valor de entrada (BRL)
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                              value={plan.upfrontAmount ?? 0}
+                              onChange={(e) =>
+                                updatePlan(plan.key, { upfrontAmount: Number(e.target.value) })
+                              }
+                            />
+                          </label>
+                          <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                            Valor recorrente (BRL)
+                            <input
+                              type="number"
+                              min={0}
+                              step="0.01"
+                              className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                              value={plan.recurringAmount ?? 0}
+                              onChange={(e) =>
+                                updatePlan(plan.key, {
+                                  recurringAmount: Number(e.target.value),
+                                })
+                              }
+                            />
+                          </label>
+                        </div>
+                      )}
+
+                      <label className="flex flex-col gap-2 text-sm text-neutral-300">
+                        Nota de pagamento
+                        <input
+                          className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
+                          value={plan.paymentNote || ""}
+                          onChange={(e) => updatePlan(plan.key, { paymentNote: e.target.value })}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-8 flex justify-end">
+              <button
+                className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl px-6 py-2 flex items-center gap-2 font-bold transition shadow-lg"
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving ? <FaSpinner className="animate-spin" /> : <FaSave />}
+                Salvar alteracoes
+              </button>
+            </div>
+          </>
+        )}
       </main>
     </>
   );

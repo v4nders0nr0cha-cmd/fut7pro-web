@@ -5,84 +5,8 @@ import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaSpinner } from "react-icons/fa";
 import SubscriptionStatusCard from "@/components/billing/SubscriptionStatusCard";
-import BillingAPI from "@/lib/api/billing";
+import BillingAPI, { type Plan } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
-
-const FEATURE_MAP: Record<
-  string,
-  { recursos: string[]; limites: string[]; badge?: string; destaque?: boolean }
-> = {
-  monthly_essential: {
-    destaque: true,
-    badge: "Mais escolhido",
-    recursos: [
-      "Acesso completo ao sistema Fut7Pro (todas as funcionalidades)",
-      "Personalizacao Visual (cores/temas)",
-      "Armazenamento ilimitado e historico preservado",
-      "Teste gratis por 30 dias",
-      "Cadastro ilimitado de atletas e jogos",
-      "Gestao financeira (publica ou privada)",
-      "Carrossel e pagina de patrocinadores",
-      "Sorteio inteligente, ranking automatico e feed de conquistas",
-      "Manual de monetizacao incluso",
-    ],
-    limites: ["1 racha por assinatura", "Ate 4 administradores"],
-  },
-  monthly_marketing: {
-    badge: "Plano com Marketing",
-    recursos: [
-      "Tudo do Mensal Essencial",
-      "Designer dedicado para kit patrocinador",
-      "Especialista para turbinar Instagram",
-      "Site pronto com layout/texto/imagem",
-      "Suporte prioritario via WhatsApp",
-    ],
-    limites: ["1 racha por assinatura"],
-  },
-  monthly_enterprise: {
-    badge: "Exclusivo",
-    recursos: [
-      "Suporte prioritario 24/7",
-      "Personalizacao completa (logo, cores, fontes)",
-      "Integracoes externas e relatorios avancados",
-      "Treinamento e consultoria de monetizacao",
-      "Ate 10 administradores e multiplos rachas",
-    ],
-    limites: ["Ate 5 rachas por assinatura", "Dominio proprio opcional"],
-  },
-  yearly_essential: {
-    destaque: true,
-    badge: "Mais vantajoso",
-    recursos: [
-      "Tudo do Mensal Essencial",
-      "1 mes de teste gratis + 2 meses por ano",
-      "Gestao financeira com controle de visibilidade",
-      "Ranking, sorteios e feed de conquistas",
-      "Suporte por e-mail",
-    ],
-    limites: ["1 racha por assinatura"],
-  },
-  yearly_marketing: {
-    badge: "Plano completo",
-    recursos: [
-      "Tudo do Anual Essencial",
-      "Designer dedicado para patrocinadores",
-      "Consultoria de marketing e monetizacao",
-      "Suporte prioritario via WhatsApp",
-    ],
-    limites: ["1 racha por assinatura"],
-  },
-  yearly_enterprise: {
-    badge: "White Label",
-    recursos: [
-      "Branding 100% white-label (logo/links/PDFs/e-mails)",
-      "Dominio proprio e e-mails personalizados",
-      "SLA diferenciado e suporte premium",
-      "Limites ampliados e acesso antecipado a features",
-    ],
-    limites: ["Racha/ligas ilimitados"],
-  },
-};
 
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
@@ -91,28 +15,24 @@ export default function PlanosLimitesPage() {
   const payerEmail = user?.email;
   const payerName = user?.name || payerEmail || "Administrador";
 
-  const { subscription, plans, subscriptionStatus, loading, error, refreshSubscription } =
+  const { subscription, plans, planMeta, subscriptionStatus, loading, error, refreshSubscription } =
     useSubscription(tenantId);
 
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
   const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
 
   const planosDisponiveis = useMemo(() => {
-    return plans.map((plan) => {
-      const feature = FEATURE_MAP[plan.key] || { recursos: [], limites: [] };
-      return {
-        key: plan.key,
-        nome: plan.label,
-        preco: plan.amount / 100,
-        intervalo: plan.interval,
-        badge: feature.badge,
-        destaque: feature.destaque,
-        recursos: feature.recursos,
-        limites: feature.limites.length ? feature.limites : ["Limites conforme contrato"],
-        botao: plan.interval === "year" ? "Assinar plano anual" : "Assinar plano mensal",
-      };
-    });
+    return [...plans]
+      .filter((plan) => plan.active !== false)
+      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }, [plans]);
+
+  const planoAtual = useMemo(
+    () => plans.find((plan) => plan.key === subscription?.planKey),
+    [plans, subscription?.planKey]
+  );
+  const annualNoteLabel =
+    planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses gratis";
 
   useEffect(() => {
     if (subscription?.planKey) {
@@ -122,28 +42,44 @@ export default function PlanosLimitesPage() {
     }
   }, [subscription]);
 
-  const handleAssinarPlano = async (planKey: string) => {
+  const handleAssinarPlano = async (plan: Plan) => {
     if (!tenantId || !payerEmail) {
       alert("Dados da conta ausentes. Refaca login ou complete seu perfil para assinar.");
       return;
     }
 
     try {
+      if (plan.ctaType === "contact") {
+        const email = plan.contactEmail || "social@fut7pro.com.br";
+        const subject = `Solicitar ${plan.label} - ${tenantId || "Fut7Pro"}`;
+        const body =
+          `Ola, quero solicitar o plano ${plan.label} para o racha ${tenantId || ""}.` +
+          `\n\nNome: ${payerName || "Administrador"}` +
+          `\nE-mail: ${payerEmail}`;
+        window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        return;
+      }
+
+      if (plan.requiresUpfront && plan.key !== "monthly_enterprise") {
+        alert("Este plano exige contato comercial para ativacao.");
+        return;
+      }
+
       setIsCreatingSubscription(true);
 
-      if (planKey === "monthly_enterprise") {
+      if (plan.requiresUpfront && plan.key === "monthly_enterprise") {
         const result = await BillingAPI.startEnterpriseMonthly({
           tenantId,
           payerEmail,
           payerName,
         });
 
-        window.open(result.preapprovalUrl, "_blank");
+        window.open(result.preapproval?.url, "_blank");
         alert(`PIX gerado! QR Code: ${result.pix.qrCode}`);
       } else {
         const result = await BillingAPI.createSubscription({
           tenantId,
-          planKey,
+          planKey: plan.key,
           payerEmail,
         });
 
@@ -176,6 +112,14 @@ export default function PlanosLimitesPage() {
           Compare recursos, limites e vantagens dos planos Fut7Pro. Tenha sempre o melhor para o seu
           racha!
         </p>
+        {planMeta?.bannerTitle && (
+          <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-yellow-100">
+            <p className="text-sm md:text-base font-semibold">{planMeta.bannerTitle}</p>
+            {planMeta.bannerSubtitle && (
+              <p className="text-xs text-yellow-100/70 mt-1">{planMeta.bannerSubtitle}</p>
+            )}
+          </div>
+        )}
 
         {!tenantId && (
           <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
@@ -189,6 +133,7 @@ export default function PlanosLimitesPage() {
               subscription={subscription}
               status={subscriptionStatus}
               onRefresh={refreshSubscription}
+              planLabel={planoAtual?.label}
             />
           </div>
         )}
@@ -227,48 +172,69 @@ export default function PlanosLimitesPage() {
             className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
             onClick={() => setPlanoAtivo("anual")}
           >
-            Pagamento Anual <span className="ml-1 text-xs">(2 meses gratis)</span>
+            Pagamento Anual{" "}
+            {annualNoteLabel ? <span className="ml-1 text-xs">({annualNoteLabel})</span> : null}
           </button>
         </div>
 
         {!loading && !error && planosDisponiveis.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {planosDisponiveis
-              .filter((plano) =>
-                planoAtivo === "anual" ? plano.intervalo === "year" : plano.intervalo === "month"
+              .filter((plan) =>
+                planoAtivo === "anual" ? plan.interval === "year" : plan.interval === "month"
               )
-              .map((plano) => {
-                const planKey = plano.key;
-                const isCurrentPlan = subscription?.planKey === planKey;
+              .map((plan) => {
+                const isCurrentPlan = subscription?.planKey === plan.key;
+                const features = plan.features?.length ? plan.features : [];
+                const limits = plan.limits?.length ? plan.limits : ["Limites conforme contrato"];
+                const isHighlight = Boolean(plan.highlight);
+                const isContact = plan.ctaType === "contact";
+                const buttonLabel =
+                  plan.ctaLabel ||
+                  (plan.interval === "year" ? "Assinar plano anual" : "Assinar plano mensal");
 
                 return (
                   <div
-                    key={plano.nome}
-                    className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${plano.destaque ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
+                    key={plan.key}
+                    className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${isHighlight ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
                   >
-                    {plano.badge && (
+                    {plan.badge && (
                       <span
-                        className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${plano.destaque ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
+                        className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
                       >
-                        {plano.badge}
+                        {plan.badge}
                       </span>
                     )}
-                    <div className="text-2xl font-extrabold mb-1">{plano.nome}</div>
-                    <div className="text-xl font-bold mb-2">
-                      {plano.preco.toLocaleString("pt-BR", {
+                    <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
+                    <div className="text-xl font-bold mb-1">
+                      {plan.amount.toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                         minimumFractionDigits: 2,
                       })}
                       <span className="text-sm text-neutral-400">
-                        /{plano.intervalo === "year" ? "ano" : "mes"}
+                        /{plan.interval === "year" ? "ano" : "mes"}
                       </span>
                     </div>
+                    {plan.paymentNote && (
+                      <p
+                        className={`mb-3 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
+                      >
+                        {plan.paymentNote}
+                      </p>
+                    )}
+                    {plan.description && (
+                      <p
+                        className={`mb-4 text-sm ${isHighlight ? "text-black/80" : "text-neutral-300"}`}
+                      >
+                        {plan.description}
+                      </p>
+                    )}
                     <ul className="mb-4 space-y-1">
-                      {plano.recursos.map((item, i) => (
+                      {features.map((item, i) => (
                         <li key={i} className="flex items-start gap-2 text-base">
                           <span
-                            className={`font-bold ${plano.destaque ? "text-yellow-900" : "text-yellow-400"}`}
+                            className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}
                           >
                             V
                           </span>
@@ -277,24 +243,26 @@ export default function PlanosLimitesPage() {
                       ))}
                     </ul>
                     <div className="mb-4 flex flex-wrap gap-2">
-                      {plano.limites.map((limite, i) => (
+                      {limits.map((limite, i) => (
                         <span
                           key={i}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${plano.destaque ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${isHighlight ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
                         >
                           {limite}
                         </span>
                       ))}
                     </div>
                     <button
-                      onClick={() => handleAssinarPlano(planKey)}
+                      onClick={() => handleAssinarPlano(plan)}
                       disabled={isCreatingSubscription || isCurrentPlan}
                       className={`mt-auto px-6 py-2 rounded-xl font-bold ${
                         isCurrentPlan
                           ? "bg-green-500 text-white cursor-not-allowed"
-                          : plano.destaque
+                          : isHighlight
                             ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black"
-                            : "bg-yellow-400 text-black hover:bg-yellow-500"
+                            : isContact
+                              ? "bg-neutral-800 text-yellow-200 hover:bg-neutral-700 border border-yellow-400"
+                              : "bg-yellow-400 text-black hover:bg-yellow-500"
                       } transition disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {isCreatingSubscription ? (
@@ -308,7 +276,7 @@ export default function PlanosLimitesPage() {
                           Plano Atual
                         </>
                       ) : (
-                        plano.botao
+                        buttonLabel
                       )}
                     </button>
                   </div>
