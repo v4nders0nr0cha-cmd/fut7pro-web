@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
-import getCroppedImg from "@/utils/cropperUtil";
+import getLogoCroppedImage from "@/utils/logoCropperUtil";
 
 type SponsorLogoCropperModalProps = {
   open: boolean;
@@ -14,8 +14,8 @@ type SponsorLogoCropperModalProps = {
 const OUTPUT_WIDTH = 1200;
 const OUTPUT_HEIGHT = 400;
 const ASPECT = OUTPUT_WIDTH / OUTPUT_HEIGHT;
-const PREVIEW_WIDTH = 520;
-const PREVIEW_HEIGHT = Math.round(PREVIEW_WIDTH / ASPECT);
+const PREVIEW_HEIGHT = 180;
+const PREVIEW_WIDTH = PREVIEW_HEIGHT * ASPECT;
 const MIN_ZOOM = 0.6;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
@@ -28,6 +28,13 @@ export default function SponsorLogoCropperModal({
 }: SponsorLogoCropperModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [mediaSize, setMediaSize] = useState<{
+    width: number;
+    height: number;
+    naturalWidth: number;
+    naturalHeight: number;
+  } | null>(null);
+  const [cropSize, setCropSize] = useState<{ width: number; height: number } | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
     x: number;
     y: number;
@@ -38,23 +45,50 @@ export default function SponsorLogoCropperModal({
   const [saving, setSaving] = useState(false);
   const previewTimerRef = useRef<number | null>(null);
   const lastPreviewRequestRef = useRef(0);
+  const didInitZoomRef = useRef(false);
 
   const handleCropComplete = useCallback((_: any, croppedPixels: any) => {
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
+  const fitZoom = useMemo(() => {
+    if (!mediaSize || !cropSize) return 1;
+    const ratioX = cropSize.width / mediaSize.width;
+    const ratioY = cropSize.height / mediaSize.height;
+    const nextZoom = Math.min(ratioX, ratioY);
+    if (!Number.isFinite(nextZoom) || nextZoom <= 0) return 1;
+    return nextZoom;
+  }, [cropSize, mediaSize]);
+
+  const minZoom = useMemo(() => Math.min(MIN_ZOOM, fitZoom), [fitZoom]);
+
   const clampZoom = useCallback(
-    (value: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value)),
-    []
+    (value: number) => Math.min(MAX_ZOOM, Math.max(minZoom, value)),
+    [minZoom]
   );
 
   useEffect(() => {
     if (!open) return;
     setCrop({ x: 0, y: 0 });
     setZoom(1);
+    setMediaSize(null);
+    setCropSize(null);
     setCroppedAreaPixels(null);
     setPreviewUrl(null);
+    didInitZoomRef.current = false;
   }, [open, imageSrc]);
+
+  useEffect(() => {
+    if (!open || !mediaSize || !cropSize) return;
+    if (didInitZoomRef.current) return;
+    didInitZoomRef.current = true;
+    setZoom(clampZoom(fitZoom));
+  }, [open, mediaSize, cropSize, fitZoom, clampZoom]);
+
+  useEffect(() => {
+    if (!open) return;
+    setZoom((prev) => clampZoom(prev));
+  }, [clampZoom, open]);
 
   useEffect(() => {
     if (!open || !croppedAreaPixels || !imageSrc) return;
@@ -66,7 +100,7 @@ export default function SponsorLogoCropperModal({
     previewTimerRef.current = window.setTimeout(() => {
       const buildPreview = async () => {
         try {
-          const preview = await getCroppedImg(
+          const preview = await getLogoCroppedImage(
             imageSrc,
             croppedAreaPixels,
             PREVIEW_WIDTH,
@@ -94,7 +128,7 @@ export default function SponsorLogoCropperModal({
     if (!croppedAreaPixels || !imageSrc) return;
     setSaving(true);
     try {
-      const normalized = await getCroppedImg(
+      const normalized = await getLogoCroppedImage(
         imageSrc,
         croppedAreaPixels,
         OUTPUT_WIDTH,
@@ -111,8 +145,8 @@ export default function SponsorLogoCropperModal({
 
   const handleCenter = useCallback(() => {
     setCrop({ x: 0, y: 0 });
-    setZoom(1);
-  }, []);
+    setZoom(clampZoom(fitZoom));
+  }, [clampZoom, fitZoom]);
 
   const zoomPercent = useMemo(() => Math.round(zoom * 100), [zoom]);
 
@@ -151,14 +185,18 @@ export default function SponsorLogoCropperModal({
                   image={imageSrc}
                   crop={crop}
                   zoom={zoom}
-                  minZoom={MIN_ZOOM}
+                  minZoom={minZoom}
                   maxZoom={MAX_ZOOM}
                   aspect={ASPECT}
                   cropShape="rect"
                   showGrid={false}
+                  objectFit="contain"
+                  restrictPosition={false}
                   onCropChange={setCrop}
                   onZoomChange={(value) => setZoom(clampZoom(value))}
                   onCropComplete={handleCropComplete}
+                  onMediaLoaded={(media) => setMediaSize(media)}
+                  onCropSizeChange={(size) => setCropSize(size)}
                 />
               </div>
 
@@ -168,7 +206,7 @@ export default function SponsorLogoCropperModal({
                   onClick={() => setZoom((prev) => clampZoom(prev - ZOOM_STEP))}
                   className="h-9 w-9 rounded-full bg-[#2b2b2b] text-white hover:bg-[#3a3a3a]"
                   aria-label="Reduzir zoom"
-                  disabled={zoom <= MIN_ZOOM}
+                  disabled={zoom <= minZoom}
                 >
                   -
                 </button>
@@ -179,7 +217,7 @@ export default function SponsorLogoCropperModal({
                   </div>
                   <input
                     type="range"
-                    min={MIN_ZOOM}
+                    min={minZoom}
                     max={MAX_ZOOM}
                     step={0.02}
                     value={zoom}
