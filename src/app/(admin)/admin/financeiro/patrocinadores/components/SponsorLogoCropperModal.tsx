@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cropper from "react-easy-crop";
-import getCroppedImg from "@/utils/cropperUtil";
+import { getNormalizedLogo } from "@/utils/cropperUtil";
 
 type SponsorLogoCropperModalProps = {
   open: boolean;
@@ -14,8 +14,10 @@ type SponsorLogoCropperModalProps = {
 const OUTPUT_WIDTH = 1024;
 const OUTPUT_HEIGHT = 617;
 const ASPECT = OUTPUT_WIDTH / OUTPUT_HEIGHT;
-const PREVIEW_WIDTH = 512;
+const PREVIEW_WIDTH = 520;
 const PREVIEW_HEIGHT = Math.round(PREVIEW_WIDTH / ASPECT);
+const MAX_ZOOM = 4;
+const ZOOM_STEP = 0.1;
 
 export default function SponsorLogoCropperModal({
   open,
@@ -24,7 +26,10 @@ export default function SponsorLogoCropperModal({
   onApply,
 }: SponsorLogoCropperModalProps) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1.1);
+  const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
+  const [mediaSize, setMediaSize] = useState<{ width: number; height: number } | null>(null);
+  const [cropSize, setCropSize] = useState<{ width: number; height: number } | null>(null);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
     x: number;
     y: number;
@@ -33,55 +38,84 @@ export default function SponsorLogoCropperModal({
   } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const previewTimerRef = useRef<number | null>(null);
+  const lastPreviewRequestRef = useRef(0);
 
   const handleCropComplete = useCallback((_: any, croppedPixels: any) => {
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
+  const maxZoom = useMemo(() => Math.max(MAX_ZOOM, minZoom + 0.5), [minZoom]);
+  const clampZoom = useCallback(
+    (value: number) => Math.min(maxZoom, Math.max(minZoom, value)),
+    [maxZoom, minZoom]
+  );
+
   useEffect(() => {
     if (!open) return;
     setCrop({ x: 0, y: 0 });
-    setZoom(1.1);
+    setZoom(1);
+    setMinZoom(1);
+    setMediaSize(null);
+    setCropSize(null);
     setPreviewUrl(null);
   }, [open, imageSrc]);
 
   useEffect(() => {
-    if (!croppedAreaPixels || !imageSrc) return;
+    if (!mediaSize || !cropSize) return;
+    const nextMin = Math.max(
+      1,
+      cropSize.width / mediaSize.width,
+      cropSize.height / mediaSize.height
+    );
+    setMinZoom(nextMin);
+    setZoom((prev) => (prev < nextMin ? nextMin : prev));
+  }, [cropSize, mediaSize]);
+
+  useEffect(() => {
+    if (!open || !croppedAreaPixels || !imageSrc) return;
     let active = true;
-    const buildPreview = async () => {
-      try {
-        const cropped = await getCroppedImg(
-          imageSrc,
-          croppedAreaPixels,
-          PREVIEW_WIDTH,
-          PREVIEW_HEIGHT,
-          "image/webp",
-          0.9
-        );
-        if (active) setPreviewUrl(cropped);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    void buildPreview();
+    const requestId = (lastPreviewRequestRef.current += 1);
+    if (previewTimerRef.current) {
+      window.clearTimeout(previewTimerRef.current);
+    }
+    previewTimerRef.current = window.setTimeout(() => {
+      const buildPreview = async () => {
+        try {
+          const preview = await getNormalizedLogo(
+            imageSrc,
+            croppedAreaPixels,
+            PREVIEW_WIDTH,
+            PREVIEW_HEIGHT
+          );
+          if (active && requestId === lastPreviewRequestRef.current) {
+            setPreviewUrl(preview);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      void buildPreview();
+    }, 140);
     return () => {
       active = false;
+      if (previewTimerRef.current) {
+        window.clearTimeout(previewTimerRef.current);
+      }
     };
-  }, [croppedAreaPixels, imageSrc]);
+  }, [croppedAreaPixels, imageSrc, open]);
 
   const handleApply = useCallback(async () => {
     if (!croppedAreaPixels || !imageSrc) return;
     setSaving(true);
     try {
-      const cropped = await getCroppedImg(
+      const normalized = await getNormalizedLogo(
         imageSrc,
         croppedAreaPixels,
         OUTPUT_WIDTH,
-        OUTPUT_HEIGHT,
-        "image/webp",
-        0.9
+        OUTPUT_HEIGHT
       );
-      onApply(cropped);
+      onApply(normalized);
     } catch (err) {
       console.error(err);
     } finally {
@@ -89,78 +123,122 @@ export default function SponsorLogoCropperModal({
     }
   }, [croppedAreaPixels, imageSrc, onApply]);
 
+  const zoomPercent = useMemo(() => Math.round(zoom * 100), [zoom]);
+
   if (!open) return null;
 
   const previewImage = previewUrl || imageSrc;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center px-3">
-      <div className="bg-[#1a1a1a] rounded-2xl p-5 max-w-3xl w-full shadow-2xl">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-bold text-yellow-300">Ajustar logo do patrocinador</h2>
+    <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center px-3 py-4">
+      <div className="bg-[#1a1a1a] rounded-2xl w-full max-w-5xl shadow-2xl border border-[#2b2b2b] flex flex-col max-h-[92vh]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#2b2b2b]">
+          <div>
+            <h2 className="text-lg font-bold text-yellow-300">Ajustar logo do patrocinador</h2>
+            <p className="text-xs text-gray-400">
+              Arraste a imagem e ajuste o zoom. O resultado ja fica padronizado.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onCancel}
-            className="text-gray-300 hover:text-white text-xl leading-none"
+            className="text-gray-300 hover:text-white text-2xl leading-none"
             aria-label="Fechar ajuste de logo"
           >
             x
           </button>
         </div>
 
-        <div className="relative w-full h-[340px] bg-[#0f0f0f] rounded-xl overflow-hidden border border-[#2b2b2b]">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={ASPECT}
-            cropShape="rect"
-            showGrid={false}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={handleCropComplete}
-          />
-        </div>
+        <div className="flex-1 overflow-y-auto px-5 py-4 custom-scrollbar">
+          <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
+            <div className="flex flex-col gap-4">
+              <div className="relative w-full h-[260px] sm:h-[320px] lg:h-[380px] bg-[#0f0f0f] rounded-xl overflow-hidden border border-[#2b2b2b]">
+                <Cropper
+                  image={imageSrc}
+                  crop={crop}
+                  zoom={zoom}
+                  minZoom={minZoom}
+                  maxZoom={maxZoom}
+                  aspect={ASPECT}
+                  cropShape="rect"
+                  showGrid={false}
+                  onCropChange={setCrop}
+                  onZoomChange={(value) => setZoom(clampZoom(value))}
+                  onCropComplete={handleCropComplete}
+                  onMediaLoaded={(media) =>
+                    setMediaSize({ width: media.width, height: media.height })
+                  }
+                  onCropSizeChange={(size) =>
+                    setCropSize({ width: size.width, height: size.height })
+                  }
+                />
+              </div>
 
-        <div className="mt-4">
-          <label className="text-xs text-gray-300">Zoom</label>
-          <input
-            type="range"
-            min={1}
-            max={3}
-            step={0.05}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="w-full accent-yellow-400 cursor-pointer"
-          />
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-[#2b2b2b] bg-[#151515] p-3">
-            <p className="text-xs text-gray-400 mb-2">Preview card parceiro</p>
-            <div className="h-24 w-full rounded-lg bg-[#101010] border border-[#2b2b2b] flex items-center justify-center">
-              <img
-                src={previewImage}
-                alt="Preview card parceiro"
-                className="h-14 w-full object-contain"
-              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setZoom((prev) => clampZoom(prev - ZOOM_STEP))}
+                  className="h-9 w-9 rounded-full bg-[#2b2b2b] text-white hover:bg-[#3a3a3a]"
+                  aria-label="Reduzir zoom"
+                  disabled={zoom <= minZoom}
+                >
+                  -
+                </button>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
+                    <span>Zoom</span>
+                    <span>{zoomPercent}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={minZoom}
+                    max={maxZoom}
+                    step={0.02}
+                    value={zoom}
+                    onChange={(e) => setZoom(clampZoom(Number(e.target.value)))}
+                    className="w-full accent-yellow-400 cursor-pointer"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setZoom((prev) => clampZoom(prev + ZOOM_STEP))}
+                  className="h-9 w-9 rounded-full bg-[#2b2b2b] text-white hover:bg-[#3a3a3a]"
+                  aria-label="Aumentar zoom"
+                  disabled={zoom >= maxZoom}
+                >
+                  +
+                </button>
+              </div>
             </div>
-            <p className="mt-2 text-[11px] text-gray-500">Exemplo de exibicao no card.</p>
-          </div>
-          <div className="rounded-xl border border-[#2b2b2b] bg-[#151515] p-3">
-            <p className="text-xs text-gray-400 mb-2">Preview carrossel rodape</p>
-            <div className="h-16 w-full rounded-lg bg-[#101010] border border-[#2b2b2b] flex items-center justify-center">
-              <img
-                src={previewImage}
-                alt="Preview carrossel rodape"
-                className="h-10 w-auto max-w-[160px] object-contain"
-              />
+
+            <div className="flex flex-col gap-4">
+              <div className="rounded-xl border border-[#2b2b2b] bg-[#151515] p-4">
+                <p className="text-xs text-gray-400 mb-2">Preview card parceiro</p>
+                <div className="h-24 w-full rounded-xl bg-[#101010] border border-[#2b2b2b] flex items-center justify-center">
+                  <img
+                    src={previewImage}
+                    alt="Preview card parceiro"
+                    className="h-16 w-full object-contain"
+                  />
+                </div>
+                <p className="mt-2 text-[11px] text-gray-500">Exemplo de exibicao no card.</p>
+              </div>
+              <div className="rounded-xl border border-[#2b2b2b] bg-[#151515] p-4">
+                <p className="text-xs text-gray-400 mb-2">Preview carrossel rodape</p>
+                <div className="h-16 w-full rounded-xl bg-[#101010] border border-[#2b2b2b] flex items-center justify-center">
+                  <img
+                    src={previewImage}
+                    alt="Preview carrossel rodape"
+                    className="h-16 w-auto max-w-[160px] object-contain"
+                  />
+                </div>
+                <p className="mt-2 text-[11px] text-gray-500">Exemplo de exibicao no rodape.</p>
+              </div>
             </div>
-            <p className="mt-2 text-[11px] text-gray-500">Exemplo de exibicao no rodape.</p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-5">
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-[#2b2b2b] bg-[#141414]">
           <button
             type="button"
             onClick={onCancel}
@@ -172,7 +250,7 @@ export default function SponsorLogoCropperModal({
           <button
             type="button"
             onClick={handleApply}
-            className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-70"
+            className="px-5 py-2 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-70"
             disabled={saving}
           >
             {saving ? "Aplicando..." : "Aplicar logo"}
