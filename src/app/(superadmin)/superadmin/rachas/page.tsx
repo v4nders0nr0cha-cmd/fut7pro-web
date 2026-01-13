@@ -10,6 +10,7 @@ import {
   FaInfoCircle,
   FaHistory,
   FaUserShield,
+  FaTrash,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
@@ -447,6 +448,34 @@ export default function RachasCadastradosPage() {
       .finally(() => setPendingAction(null));
   }
 
+  async function handleDelete(selected: string[]) {
+    if (!selected.length) return;
+    const label = selected.length === 1 ? "este racha" : `${selected.length} rachas`;
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha.`
+    );
+    if (!confirmed) return;
+    setPendingAction("Excluir");
+    try {
+      await Promise.all(
+        selected.map(async (id) => {
+          const resp = await fetch(`/api/superadmin/tenants/${id}`, { method: "DELETE" });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            throw new Error((data as any)?.error || (data as any)?.message || "Falha ao excluir.");
+          }
+        })
+      );
+      setSelectedIds([]);
+      mutate();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Falha ao excluir racha(s).";
+      alert(msg);
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
   async function handleImpersonate(tenant: any) {
     if (!tenant?.id) return;
     const popup = window.open("", "_blank", "noopener");
@@ -580,6 +609,13 @@ export default function RachasCadastradosPage() {
           >
             Enviar Aviso
           </button>
+          <button
+            className="bg-rose-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedIds.length === 0 || Boolean(pendingAction)}
+            onClick={() => selectedIds.length && handleDelete(selectedIds)}
+          >
+            Excluir
+          </button>
         </div>
 
         {/* TABELA */}
@@ -671,6 +707,14 @@ export default function RachasCadastradosPage() {
                         onClick={() => handleBlock([r.id])}
                       >
                         <FaLock /> Bloquear
+                      </button>
+                      <button
+                        className="bg-rose-800 px-3 py-1 rounded text-xs font-bold hover:bg-rose-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Excluir Racha"
+                        disabled={Boolean(pendingAction)}
+                        onClick={() => handleDelete([r.id])}
+                      >
+                        <FaTrash /> Excluir
                       </button>
                     </td>
                     <td className="p-3 text-center">

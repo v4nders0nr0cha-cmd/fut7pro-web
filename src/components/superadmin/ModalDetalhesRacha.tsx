@@ -40,7 +40,7 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
           ? "bg-red-800 text-red-200"
           : "bg-green-900 text-green-200";
 
-  const plano = racha.plano || (racha.status === "TRIAL" ? "Trial (30 dias)" : "Plano n/d");
+  const plano = racha.plano || (racha.status === "TRIAL" ? "Trial" : "Plano n/d");
   const criadoEm = racha.criadoEm ? format(new Date(racha.criadoEm), "dd/MM/yyyy") : "--";
   const ativo = racha.ativo ?? (racha.status === "ATIVO" || racha.status === "TRIAL");
 

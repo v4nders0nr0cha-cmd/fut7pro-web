@@ -40,3 +40,24 @@ export async function GET(_req: NextRequest, { params }: { params: { id?: string
 
   return forwardResponse(response.status, body);
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: { id?: string } }) {
+  const user = await requireSuperAdminUser();
+  if (!user) {
+    return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
+  }
+
+  const id = params?.id;
+  if (!id) {
+    return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
+  }
+
+  const targetUrl = `${getApiBase()}/superadmin/tenants/${encodeURIComponent(id)}`;
+
+  const { response, body } = await proxyBackend(targetUrl, {
+    method: "DELETE",
+    headers: buildHeaders(user),
+  });
+
+  return forwardResponse(response.status, body);
+}
