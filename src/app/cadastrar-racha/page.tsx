@@ -64,14 +64,11 @@ const PLAN_MICRO_COPY: Record<
 > = {
   monthly_essential: {
     title: "Mensal Essencial",
-    blurb: "Organizacao profissional do racha, com menos esforco e mais controle.",
+    blurb: "Controle total do racha, com menos esforco e mais organizacao.",
     bullets: [
-      "Sorteio inteligente de times",
-      "Resultados viram rankings e estatisticas",
-      "Financas organizadas (publico ou privado)",
-      "Patrocinadores no site (carrossel e vitrine)",
-      "Feed de conquistas e motivacao dos atletas",
-      "Ate 4 administradores no racha",
+      "Sorteio inteligente e rankings automaticos",
+      "Financas e patrocinios organizados no site",
+      "Painel completo para administrar o racha",
     ],
   },
   monthly_marketing: {
@@ -79,33 +76,27 @@ const PLAN_MICRO_COPY: Record<
     blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
     bullets: [
       "Tudo do Essencial",
-      "Designers Fut7Pro para kit de patrocinador e artes",
-      "Apoio para estruturar e turbinar o Instagram",
-      "Identidade visual pronta (logo, textos e ajustes)",
-      "Suporte prioritario",
+      "Designers Fut7Pro para artes e kit patrocinador",
+      "Apoio profissional para Instagram e identidade visual",
     ],
     marketingNote: "Servicos de marketing comecam apos o primeiro pagamento.",
   },
   yearly_essential: {
     title: "Anual Essencial",
-    blurb: "O Essencial com economia anual, sem preocupacao mensal.",
+    blurb: "Controle total do racha, com menos esforco e mais organizacao.",
     bullets: [
-      "Tudo do Mensal Essencial",
-      "Economia anual (2 meses gratis embutidos)",
-      "Acesso anual sem renovacao mensal",
       "Sorteio inteligente e rankings automaticos",
-      "Ate 4 administradores no racha",
+      "Financas e patrocinios organizados no site",
+      "Painel completo para administrar o racha",
     ],
   },
   yearly_marketing: {
     title: "Anual + Marketing",
-    blurb: "O pacote mais completo, com economia anual e suporte premium.",
+    blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
     bullets: [
-      "Tudo do Anual Essencial",
-      "Designers Fut7Pro para materiais do racha",
-      "Apoio profissional no Instagram",
-      "Site e identidade visual estruturados",
-      "Suporte prioritario",
+      "Tudo do Essencial",
+      "Designers Fut7Pro para artes e kit patrocinador",
+      "Apoio profissional para Instagram e identidade visual",
     ],
     marketingNote: "Servicos de marketing comecam apos o primeiro pagamento.",
   },
@@ -270,7 +261,7 @@ export default function CadastroRachaPage() {
         if (active) {
           setPlanCatalog(data);
         }
-      } catch (error) {
+      } catch {
         if (active) {
           setPlanError("Nao foi possivel carregar os planos.");
         }
@@ -290,10 +281,10 @@ export default function CadastroRachaPage() {
 
   useEffect(() => {
     if (!isGoogle) return;
-    const googleEmail = (session?.user as any)?.email as string | undefined;
+    const googleEmailInner = (session?.user as any)?.email as string | undefined;
     const googleName = (session?.user as any)?.name as string | undefined;
-    if (googleEmail && adminEmail !== googleEmail) {
-      setAdminEmail(googleEmail);
+    if (googleEmailInner && adminEmail !== googleEmailInner) {
+      setAdminEmail(googleEmailInner);
     }
     if (googleName && !adminNome) {
       setAdminNome(googleName.split(" ")[0]);
@@ -1021,21 +1012,21 @@ export default function CadastroRachaPage() {
 
             {step === 3 && (
               <>
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-white/10 bg-[#12151f] p-4 space-y-2">
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-white/10 bg-[#12151f] p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold text-white">Escolha seu plano</h2>
                       <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-[11px] font-semibold text-yellow-300">
-                        {baseTrialDays} dias gratis para testar tudo
+                        {baseTrialDays} dias gratis
                       </span>
                     </div>
-                    <p className="text-xs text-gray-300">
-                      Teste gratis por {baseTrialDays} dias: use todas as funcoes do Fut7Pro sem
-                      compromisso. Voce decide assinar depois.
+                    <p className="mt-2 text-xs text-gray-300">
+                      Teste gratis por {baseTrialDays} dias. O plano escolhido define apenas o valor
+                      apos o teste.
                     </p>
-                    <p className="text-[11px] text-gray-400">
-                      O plano escolhido define apenas o valor apos o teste, para manter o painel do
-                      seu racha ativo.
+                    <p className="mt-2 text-[11px] text-gray-400">
+                      Apos o periodo gratis, sera solicitada a confirmacao da assinatura para manter
+                      o painel do racha ativo.
                     </p>
                   </div>
 
@@ -1063,9 +1054,6 @@ export default function CadastroRachaPage() {
                       Anual (2 meses gratis)
                     </button>
                   </div>
-                  {planCatalog?.meta?.annualNote && (
-                    <p className="text-[11px] text-gray-500">{planCatalog.meta.annualNote}</p>
-                  )}
 
                   {planLoading && (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
@@ -1090,8 +1078,6 @@ export default function CadastroRachaPage() {
                         blurb: "Plano Fut7Pro para o seu racha.",
                         bullets: [],
                       };
-                      const monthlyEquivalent =
-                        plan.interval === "year" ? Math.round(plan.amount / 12) : null;
                       const priceSuffix = plan.interval === "month" ? "mes" : "ano";
 
                       return (
@@ -1121,20 +1107,17 @@ export default function CadastroRachaPage() {
                             )}
                           </div>
 
-                          <div className="mt-3 text-xs text-gray-300">
-                            Apos o teste gratis: {priceFormatter.format(plan.amount)}/{priceSuffix}
+                          <div className="mt-3 text-[11px] text-gray-400">
+                            Apos o teste: {priceFormatter.format(plan.amount)}/{priceSuffix}
                           </div>
-                          {monthlyEquivalent !== null && (
-                            <div className="text-[11px] text-gray-500">
-                              equivalente a {priceFormatter.format(monthlyEquivalent)}/mes
-                            </div>
-                          )}
 
-                          <ul className="mt-3 list-disc list-inside space-y-1 text-[11px] text-gray-300">
-                            {copy.bullets.map((item, index) => (
-                              <li key={`${plan.key}-${index}`}>{item}</li>
-                            ))}
-                          </ul>
+                          {copy.bullets.length > 0 && (
+                            <ul className="mt-3 list-disc list-inside space-y-1 text-[11px] text-gray-300">
+                              {copy.bullets.slice(0, 3).map((item, index) => (
+                                <li key={`${plan.key}-${index}`}>{item}</li>
+                              ))}
+                            </ul>
+                          )}
 
                           {(copy.marketingNote || plan.marketingStartsAfterFirstPayment) && (
                             <p className="mt-3 text-[11px] text-gray-400">
@@ -1151,18 +1134,13 @@ export default function CadastroRachaPage() {
                                   : "bg-white/10 text-gray-200"
                               }`}
                             >
-                              {isSelected ? "Plano selecionado" : "Selecionar"}
+                              {isSelected ? "Selecionado" : "Selecionar"}
                             </span>
                           </div>
                         </button>
                       );
                     })}
                   </div>
-
-                  <p className="text-[11px] text-gray-400">
-                    Apos o periodo gratis, o Fut7Pro solicitara a confirmacao da assinatura para
-                    continuar usando o painel administrativo do racha, conforme o plano escolhido.
-                  </p>
 
                   {!planLoading && availablePlans.length === 0 && !planError && (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
@@ -1177,8 +1155,8 @@ export default function CadastroRachaPage() {
                       Cupom de embaixador ou influencer
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Tem um cupom de parceiro do Fut7Pro? Aplique para ganhar +10 dias de teste e
-                      35% de desconto na primeira cobranca.
+                      Aplique um cupom para ganhar +10 dias de teste e 35% de desconto na primeira
+                      cobranca.
                     </p>
                   </div>
 
@@ -1202,25 +1180,24 @@ export default function CadastroRachaPage() {
                       disabled={couponStatus === "loading" || !couponCode.trim()}
                       className="rounded-lg bg-[#23283a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c3146] disabled:opacity-70"
                     >
-                      {couponStatus === "loading" ? "Aplicando..." : "Aplicar cupom"}
+                      {couponStatus === "loading" ? "Aplicando..." : "Aplicar"}
                     </button>
                   </div>
 
                   {couponStatus === "valid" && (
                     <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-                      Cupom aplicado. Voce ganhou +{couponBenefits?.extraTrialDays ?? 0} dias de
-                      teste e {discountPercent}% de desconto na primeira cobranca.
+                      Cupom aplicado. +{couponBenefits?.extraTrialDays ?? 0} dias e{" "}
+                      {discountPercent}% na primeira cobranca.
                     </div>
                   )}
                   {couponStatus === "invalid" && (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
-                      Nao encontramos esse cupom. Voce pode continuar sem cupom e ativar o teste
-                      gratis normalmente.
+                      Cupom nao encontrado. Voce pode continuar sem cupom.
                     </div>
                   )}
                   {couponStatus === "error" && (
                     <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-                      Nao foi possivel validar o cupom agora. Tente novamente em alguns segundos.
+                      Nao foi possivel validar agora. Tente novamente.
                     </div>
                   )}
                 </div>
@@ -1228,13 +1205,8 @@ export default function CadastroRachaPage() {
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span>Seu teste gratis: {totalTrialDays} dias.</span>
-                    {discountPercent > 0 && (
-                      <span>{discountPercent}% de desconto na primeira cobranca.</span>
-                    )}
+                    {discountPercent > 0 && <span>{discountPercent}% na primeira cobranca.</span>}
                   </div>
-                  <p className="mt-1 text-[11px] text-gray-400">
-                    Voce podera assinar ou trocar de plano depois, direto no painel do seu racha.
-                  </p>
                 </div>
               </>
             )}
@@ -1276,7 +1248,7 @@ export default function CadastroRachaPage() {
             </div>
 
             <div className="text-center text-sm text-gray-300">
-              Ja tem painel?{" "}
+              Ja tem cadastro?{" "}
               <a href="/admin/login" className="text-yellow-300 underline hover:text-yellow-200">
                 Entrar
               </a>
