@@ -219,7 +219,7 @@ export default function AdminLoginPage() {
 
             <div className="mt-5 flex flex-col gap-2 text-center text-sm text-gray-300">
               <a
-                href={`mailto:${contactEmail}?subject=Recuperar%20acesso%20ao%20painel%20Fut7Pro`}
+                href="/admin/esqueci-senha"
                 className="text-yellow-300 underline hover:text-yellow-200"
               >
                 Esqueci minha senha
