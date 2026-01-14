@@ -25,13 +25,13 @@ export async function POST(req: NextRequest, { params }: { params: { subscriptio
   }
 
   const payload = await req.json().catch(() => null);
-  if (!payload?.backUrl) {
-    return jsonResponse({ error: "backUrl obrigatorio" }, { status: 400 });
+  if (!payload?.planKey) {
+    return jsonResponse({ error: "planKey obrigatorio" }, { status: 400 });
   }
 
   const tenantSlug = resolveTenantSlug(user);
   const { response, body } = await proxyBackend(
-    `${getApiBase()}/billing/subscription/${subscriptionId}/activate`,
+    `${getApiBase()}/billing/subscription/${subscriptionId}/change-plan`,
     {
       method: "POST",
       headers: buildHeaders(user, tenantSlug, { includeContentType: true }),

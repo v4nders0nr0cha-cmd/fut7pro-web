@@ -4,9 +4,64 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaSpinner } from "react-icons/fa";
-import SubscriptionStatusCard from "@/components/billing/SubscriptionStatusCard";
 import BillingAPI, { type Plan } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
+
+function formatDate(value?: string | null) {
+  if (!value) return "N/D";
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return "N/D";
+  return dt.toLocaleDateString("pt-BR");
+}
+
+function formatCurrencyFromCents(value?: number | null) {
+  if (value === null || value === undefined) return "N/D";
+  return (value / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+function resolveIntervalLabel(planKey?: string | null, interval?: string | null) {
+  if (interval === "year") return "Anual";
+  if (interval === "month") return "Mensal";
+  const key = (planKey || "").toLowerCase();
+  if (key.includes("year") || key.includes("anual")) return "Anual";
+  return "Mensal";
+}
+
+function resolveStatusMeta(status?: string | null) {
+  const normalized = (status || "").toLowerCase();
+  if (normalized === "trialing") {
+    return { label: "Teste ativo", className: "bg-blue-500/15 text-blue-200 border-blue-500/30" };
+  }
+  if (normalized === "active") {
+    return { label: "Ativa", className: "bg-green-500/15 text-green-200 border-green-500/30" };
+  }
+  if (normalized === "past_due") {
+    return {
+      label: "Pagamento pendente",
+      className: "bg-yellow-500/15 text-yellow-200 border-yellow-500/30",
+    };
+  }
+  if (normalized === "paused") {
+    return { label: "Pausada", className: "bg-orange-500/15 text-orange-200 border-orange-500/30" };
+  }
+  if (normalized === "canceled") {
+    return { label: "Cancelada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
+  }
+  if (normalized === "expired") {
+    return { label: "Expirada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
+  }
+  return { label: "Indefinido", className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30" };
+}
+
+function calcDaysRemaining(target?: string | null) {
+  if (!target) return null;
+  const diff = new Date(target).getTime() - Date.now();
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+}
 
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
@@ -19,7 +74,12 @@ export default function PlanosLimitesPage() {
     useSubscription(tenantId);
 
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
-  const [isCreatingSubscription, setIsCreatingSubscription] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<"switch" | "payment" | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
+  const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
+  const [showInvoicesModal, setShowInvoicesModal] = useState(false);
 
   const planosDisponiveis = useMemo(() => {
     return [...plans]
@@ -31,6 +91,7 @@ export default function PlanosLimitesPage() {
     () => plans.find((plan) => plan.key === subscription?.planKey),
     [plans, subscription?.planKey]
   );
+
   const annualNoteLabel =
     planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses gratis";
 
@@ -42,54 +103,96 @@ export default function PlanosLimitesPage() {
     }
   }, [subscription]);
 
-  const handleAssinarPlano = async (plan: Plan) => {
-    if (!tenantId || !payerEmail) {
-      alert("Dados da conta ausentes. Refaca login ou complete seu perfil para assinar.");
+  const statusMeta = resolveStatusMeta(subscription?.status);
+  const isTrial = subscription?.status === "trialing";
+  const pendingPayment =
+    subscription?.status === "past_due" ||
+    subscriptionStatus?.preapproval === "pending" ||
+    subscriptionStatus?.upfront === "pending";
+  const canSwitchPlan = subscription?.status === "trialing";
+
+  const planLabel = planoAtual?.label || subscription?.planKey || "Plano nao definido";
+  const intervalLabel = resolveIntervalLabel(subscription?.planKey, subscription?.interval);
+
+  const periodStart = isTrial ? subscription?.trialStart : subscription?.currentPeriodStart;
+  const periodEnd = isTrial
+    ? subscription?.trialEnd
+    : subscription?.currentPeriodEnd || subscription?.trialEnd;
+  const periodLabel =
+    periodStart && periodEnd ? `${formatDate(periodStart)} - ${formatDate(periodEnd)}` : "N/D";
+
+  const cycleEnd = subscription?.trialEnd || subscription?.currentPeriodEnd || null;
+  const daysRemaining = calcDaysRemaining(cycleEnd);
+  const cycleLabel = daysRemaining !== null ? `${daysRemaining}` : "--";
+
+  const invoices = subscription?.invoices ?? [];
+
+  const handleUpdatePayment = async () => {
+    if (!subscription?.id) {
+      setActionError("Assinatura nao encontrada para este racha.");
       return;
     }
 
+    if (subscription.status !== "trialing") {
+      setActionError("Atualizacao automatica disponivel apenas durante o periodo de teste.");
+      return;
+    }
+
+    setActionLoading("payment");
+    setActionError(null);
+
     try {
-      if (plan.ctaType === "contact") {
-        const email = plan.contactEmail || "social@fut7pro.com.br";
-        const subject = `Solicitar ${plan.label} - ${tenantId || "Fut7Pro"}`;
-        const body =
-          `Ola, quero solicitar o plano ${plan.label} para o racha ${tenantId || ""}.` +
-          `\n\nNome: ${payerName || "Administrador"}` +
-          `\nE-mail: ${payerEmail}`;
-        window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-        return;
-      }
-
-      if (plan.requiresUpfront && plan.key !== "monthly_enterprise") {
-        alert("Este plano exige contato comercial para ativacao.");
-        return;
-      }
-
-      setIsCreatingSubscription(true);
-
-      if (plan.requiresUpfront && plan.key === "monthly_enterprise") {
-        const result = await BillingAPI.startEnterpriseMonthly({
-          tenantId,
-          payerEmail,
-          payerName,
-        });
-
-        window.open(result.preapproval?.url, "_blank");
-        alert(`PIX gerado! QR Code: ${result.pix.qrCode}`);
-      } else {
-        const result = await BillingAPI.createSubscription({
-          tenantId,
-          planKey: plan.key,
-          payerEmail,
-        });
-
+      const backUrl = window.location.href;
+      const result = await BillingAPI.activateSubscription(subscription.id, backUrl);
+      if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
+        return;
       }
+      setActionError("Nao foi possivel gerar o link de pagamento. Tente novamente.");
     } catch (err) {
-      console.error("Erro ao criar assinatura:", err);
-      alert("Erro ao criar assinatura. Tente novamente.");
+      console.error(err);
+      setActionError("Erro ao atualizar pagamento. Tente novamente.");
     } finally {
-      setIsCreatingSubscription(false);
+      setActionLoading(null);
+    }
+  };
+
+  const handleOpenPlan = (plan: Plan) => {
+    setActionError(null);
+    setSelectedPlan(plan);
+    if (plan.ctaType === "contact") {
+      setShowEnterpriseModal(true);
+      return;
+    }
+    setShowSwitchModal(true);
+  };
+
+  const handleConfirmSwitch = async () => {
+    if (!subscription?.id || !selectedPlan) {
+      setActionError("Assinatura nao encontrada para esta troca.");
+      return;
+    }
+
+    if (!canSwitchPlan) {
+      setActionError("Troca automatica disponivel apenas durante o periodo de teste.");
+      return;
+    }
+
+    setActionLoading("switch");
+    setActionError(null);
+
+    try {
+      await BillingAPI.changeSubscriptionPlan(subscription.id, selectedPlan.key);
+      await refreshSubscription();
+      setShowSwitchModal(false);
+      setSelectedPlan(null);
+    } catch (err) {
+      console.error(err);
+      setActionError(
+        err instanceof Error ? err.message : "Nao foi possivel trocar o plano. Tente novamente."
+      );
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -99,44 +202,121 @@ export default function PlanosLimitesPage() {
         <title>Planos & Limites | Fut7Pro</title>
         <meta
           name="description"
-          content="Compare os planos Fut7Pro e escolha o melhor para seu racha. Controle, estatisticas, gestao financeira, patrocinadores, marketing, painel completo e suporte especializado."
+          content="Central de assinatura do Fut7Pro. Acompanhe seu plano atual, ciclo, pagamentos e atualize quando precisar."
         />
         <meta
           name="keywords"
-          content="planos, limites, Fut7, racha, SaaS, futebol, gestao, assinatura, clube, admin, painel"
+          content="assinatura fut7, planos fut7pro, ciclo, faturas, pagamento, admin racha"
         />
       </Head>
       <main className="max-w-7xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3">Planos & Limites</h1>
-        <p className="text-base text-neutral-300 mb-6 max-w-xl">
-          Compare recursos, limites e vantagens dos planos Fut7Pro. Tenha sempre o melhor para o seu
-          racha!
+        <p className="text-base text-neutral-300 mb-6 max-w-2xl">
+          Central de assinatura do seu racha. Confira o plano atual, ciclo, pagamentos e troque
+          quando quiser.
         </p>
-        {planMeta?.bannerTitle && (
-          <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 px-5 py-4 text-yellow-100">
-            <p className="text-sm md:text-base font-semibold">{planMeta.bannerTitle}</p>
-            {planMeta.bannerSubtitle && (
-              <p className="text-xs text-yellow-100/70 mt-1">{planMeta.bannerSubtitle}</p>
-            )}
-          </div>
-        )}
 
         {!tenantId && (
           <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
-            Nao foi possivel identificar seu tenant. Refaça login para selecionar um plano.
+            Nao foi possivel identificar seu tenant. Refaca login para visualizar a assinatura.
           </div>
         )}
 
-        {subscription && (
-          <div className="mb-8">
-            <SubscriptionStatusCard
-              subscription={subscription}
-              status={subscriptionStatus}
-              onRefresh={refreshSubscription}
-              planLabel={planoAtual?.label}
-            />
+        {actionError && (
+          <div className="mb-6 rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-100">
+            {actionError}
           </div>
         )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+          <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
+                <p className="text-sm text-gray-400">
+                  O plano escolhido define o valor apos o teste e mantem o painel ativo.
+                </p>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.className}`}
+              >
+                {statusMeta.label}
+              </span>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+              <div>
+                <span className="text-xs text-gray-500">Plano atual</span>
+                <p className="text-base font-semibold text-white">
+                  {planLabel} · {intervalLabel}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Periodo</span>
+                <p className="text-base font-semibold text-white">{periodLabel}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Valor de referencia</span>
+                <p className="text-base font-semibold text-white">
+                  {formatCurrencyFromCents(subscription?.amount)}
+                </p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Status do pagamento</span>
+                <p className="text-base font-semibold text-white">
+                  {pendingPayment ? "Pendente" : "Em dia"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={handleUpdatePayment}
+                disabled={actionLoading !== null}
+                className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {actionLoading === "payment" ? "Atualizando..." : "Atualizar pagamento"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowInvoicesModal(true)}
+                className="px-4 py-2 rounded-lg bg-[#1f2937] text-white border border-[#384152] hover:border-yellow-400"
+              >
+                Ver faturas
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
+                <p className="text-sm text-gray-400">
+                  {isTrial ? "Periodo de teste ativo" : "Ciclo atual de assinatura"}
+                </p>
+              </div>
+              <span className="text-2xl font-extrabold text-yellow-300">{cycleLabel} dias</span>
+            </div>
+
+            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+              <div>
+                <span className="text-xs text-gray-500">Proximo vencimento</span>
+                <p className="text-base font-semibold text-white">{formatDate(cycleEnd)}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-500">Mensagem</span>
+                <p className="text-base font-semibold text-white">
+                  {pendingPayment
+                    ? "Pagamento pendente, regularize para manter o painel desbloqueado."
+                    : isTrial
+                      ? `Teste gratis ativo, termina em ${formatDate(cycleEnd)}.`
+                      : "Ciclo em andamento. Tudo certo por aqui."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {loading && (
           <div className="flex justify-center items-center py-8">
@@ -189,9 +369,11 @@ export default function PlanosLimitesPage() {
                 const limits = plan.limits?.length ? plan.limits : ["Limites conforme contrato"];
                 const isHighlight = Boolean(plan.highlight);
                 const isContact = plan.ctaType === "contact";
-                const buttonLabel =
-                  plan.ctaLabel ||
-                  (plan.interval === "year" ? "Assinar plano anual" : "Assinar plano mensal");
+                const buttonLabel = isCurrentPlan
+                  ? "Plano atual"
+                  : isContact
+                    ? plan.ctaLabel || "Solicitar Enterprise"
+                    : "Trocar para este plano";
 
                 return (
                   <div
@@ -203,6 +385,11 @@ export default function PlanosLimitesPage() {
                         className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
                       >
                         {plan.badge}
+                      </span>
+                    )}
+                    {isCurrentPlan && (
+                      <span className="absolute top-4 left-4 px-3 py-1 rounded-xl text-xs font-bold bg-green-500 text-white shadow-sm">
+                        Plano atual
                       </span>
                     )}
                     <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
@@ -253,8 +440,9 @@ export default function PlanosLimitesPage() {
                       ))}
                     </div>
                     <button
-                      onClick={() => handleAssinarPlano(plan)}
-                      disabled={isCreatingSubscription || isCurrentPlan}
+                      type="button"
+                      onClick={() => handleOpenPlan(plan)}
+                      disabled={actionLoading !== null || isCurrentPlan}
                       className={`mt-auto px-6 py-2 rounded-xl font-bold ${
                         isCurrentPlan
                           ? "bg-green-500 text-white cursor-not-allowed"
@@ -265,7 +453,7 @@ export default function PlanosLimitesPage() {
                               : "bg-yellow-400 text-black hover:bg-yellow-500"
                       } transition disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
-                      {isCreatingSubscription ? (
+                      {actionLoading === "switch" && selectedPlan?.key === plan.key ? (
                         <>
                           <FaSpinner className="animate-spin inline mr-2" />
                           Processando...
@@ -273,7 +461,7 @@ export default function PlanosLimitesPage() {
                       ) : isCurrentPlan ? (
                         <>
                           <FaCheckCircle className="inline mr-2" />
-                          Plano Atual
+                          Plano atual
                         </>
                       ) : (
                         buttonLabel
@@ -285,6 +473,138 @@ export default function PlanosLimitesPage() {
           </div>
         )}
       </main>
+
+      {showSwitchModal && selectedPlan && (
+        <Modal onClose={() => setShowSwitchModal(false)}>
+          <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Confirmar troca de plano</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              Voce esta trocando de <b>{planLabel}</b> para <b>{selectedPlan.label}</b>.
+            </p>
+            <div className="text-sm text-gray-300 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b]">
+              {subscription?.status === "trialing" ? (
+                <span>
+                  A troca e imediata e nao altera a data final do teste. Seu teste termina em{" "}
+                  <b>{formatDate(subscription?.trialEnd)}</b>.
+                </span>
+              ) : (
+                <span>
+                  Troca automatica disponivel apenas durante o periodo de teste. Fale com o suporte
+                  para ajustar o plano.
+                </span>
+              )}
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowSwitchModal(false)}
+                className="px-4 py-2 rounded-lg bg-[#2b2b2b] text-gray-200 hover:bg-[#3a3a3a]"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmSwitch}
+                disabled={!canSwitchPlan || actionLoading === "switch"}
+                className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-300 disabled:opacity-60"
+              >
+                {actionLoading === "switch"
+                  ? "Trocando..."
+                  : canSwitchPlan
+                    ? "Confirmar troca"
+                    : "Troca indisponivel"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showEnterpriseModal && selectedPlan && (
+        <Modal onClose={() => setShowEnterpriseModal(false)}>
+          <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Solicitar Enterprise</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              Esse plano e liberado mediante contato com nosso time. Envie um e-mail para iniciar a
+              conversa.
+            </p>
+            <div className="text-sm text-gray-200 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b] mb-4">
+              <div>
+                <span className="text-gray-400">Plano:</span> {selectedPlan.label}
+              </div>
+              <div>
+                <span className="text-gray-400">E-mail:</span>{" "}
+                <a
+                  className="text-yellow-300 underline"
+                  href={`mailto:${selectedPlan.contactEmail || "social@fut7pro.com.br"}?subject=${encodeURIComponent(
+                    `Solicitar ${selectedPlan.label} - ${payerName || "Fut7Pro"}`
+                  )}`}
+                >
+                  {selectedPlan.contactEmail || "social@fut7pro.com.br"}
+                </a>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowEnterpriseModal(false)}
+              className="w-full px-4 py-2 rounded-lg bg-yellow-400 text-black font-bold hover:bg-yellow-300"
+            >
+              Entendi
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showInvoicesModal && (
+        <Modal onClose={() => setShowInvoicesModal(false)}>
+          <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Faturas do racha</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              Historico recente das suas cobrancas e pagamentos.
+            </p>
+            <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
+              {invoices.length === 0 && (
+                <div className="text-sm text-gray-400">
+                  Nenhuma fatura encontrada ate o momento.
+                </div>
+              )}
+              {invoices.map((invoice) => (
+                <div
+                  key={invoice.id}
+                  className="flex flex-wrap items-center justify-between gap-3 bg-[#111418] rounded-lg border border-[#2b2b2b] p-3"
+                >
+                  <div>
+                    <div className="text-sm text-white font-semibold">
+                      {formatDate(invoice.paidAt || invoice.periodStart || invoice.createdAt)}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Status: {invoice.status || "pendente"}
+                    </div>
+                  </div>
+                  <div className="text-sm font-semibold text-yellow-300">
+                    {formatCurrencyFromCents(invoice.amount)}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowInvoicesModal(false)}
+              className="mt-5 w-full px-4 py-2 rounded-lg bg-[#2b2b2b] text-gray-200 hover:bg-[#3a3a3a]"
+            >
+              Fechar
+            </button>
+          </div>
+        </Modal>
+      )}
     </>
+  );
+}
+
+function Modal({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/70 px-3 py-6">
+      <div className="absolute inset-0" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-3xl">{children}</div>
+    </div>
   );
 }

@@ -41,10 +41,24 @@ export interface PlanCatalog {
   plans: Plan[];
 }
 
+export interface Invoice {
+  id: string;
+  amount: number;
+  status?: string | null;
+  paidAt?: string | null;
+  periodStart?: string | null;
+  periodEnd?: string | null;
+  createdAt: string;
+  mpPaymentId?: string | null;
+  metadata?: Record<string, any> | null;
+}
+
 export interface Subscription {
   id: string;
   tenantId: string;
   planKey: string;
+  interval?: "month" | "year";
+  amount?: number;
   status: "trialing" | "active" | "past_due" | "canceled" | "paused" | "expired";
   trialStart?: string;
   trialEnd?: string;
@@ -59,6 +73,7 @@ export interface Subscription {
   couponCode?: string;
   discountPct?: number;
   extraTrialDays?: number;
+  invoices?: Invoice[];
 }
 
 export interface SubscriptionStatus {
@@ -116,9 +131,13 @@ export class BillingAPI {
   }
 
   // Ativar assinatura
-  static async activateSubscription(subscriptionId: string): Promise<{ success: boolean }> {
-    return this.request<{ success: boolean }>(`/subscription/${subscriptionId}/activate`, {
+  static async activateSubscription(
+    subscriptionId: string,
+    backUrl: string
+  ): Promise<{ checkoutUrl?: string }> {
+    return this.request<{ checkoutUrl?: string }>(`/subscription/${subscriptionId}/activate`, {
       method: "POST",
+      body: JSON.stringify({ backUrl }),
     });
   }
 
@@ -172,6 +191,16 @@ export class BillingAPI {
     }>("/subscription/enterprise-monthly/start", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  }
+
+  static async changeSubscriptionPlan(
+    subscriptionId: string,
+    planKey: string
+  ): Promise<Subscription> {
+    return this.request<Subscription>(`/subscription/${subscriptionId}/change-plan`, {
+      method: "POST",
+      body: JSON.stringify({ planKey }),
     });
   }
 
