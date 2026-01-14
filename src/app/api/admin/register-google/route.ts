@@ -19,6 +19,7 @@ type RegisterGooglePayload = {
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,30}$/;
+const MAX_INLINE_IMAGE_LENGTH = 1_500_000;
 const RESERVED_SLUGS = new Set([
   "admin",
   "superadmin",
@@ -65,7 +66,7 @@ function safeJsonParse(text: string) {
 function resolveAvatarUrl(value?: string) {
   if (!value) return undefined;
   const trimmed = value.trim();
-  if (!trimmed || trimmed.length > 2048) return undefined;
+  if (!trimmed || trimmed.length > MAX_INLINE_IMAGE_LENGTH) return undefined;
   return trimmed;
 }
 
@@ -76,8 +77,10 @@ async function primeBranding(
 ) {
   if (!accessToken || !data.rachaSlug) return;
 
-  const logoTooLarge = data.rachaLogoBase64 && data.rachaLogoBase64.length > 1_500_000;
-  const avatarTooLarge = data.adminAvatarBase64 && data.adminAvatarBase64.length > 1_500_000;
+  const logoTooLarge =
+    data.rachaLogoBase64 && data.rachaLogoBase64.length > MAX_INLINE_IMAGE_LENGTH;
+  const avatarTooLarge =
+    data.adminAvatarBase64 && data.adminAvatarBase64.length > MAX_INLINE_IMAGE_LENGTH;
   if (logoTooLarge || avatarTooLarge) return;
 
   const aboutPayload = {

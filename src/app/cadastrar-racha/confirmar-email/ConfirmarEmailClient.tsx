@@ -95,7 +95,9 @@ export default function ConfirmarEmailClient() {
         </div>
 
         <div className="mt-5 space-y-2 text-xs text-gray-400">
-          <p>Se nao encontrou, verifique as pastas de spam e promocoes.</p>
+          <p>
+            Nao encontrou o e-mail? Verifique tambem as pastas Spam, Lixo eletronico ou Promocoes.
+          </p>
           <button
             type="button"
             onClick={() => router.push(`/cadastrar-racha${slug ? `?slug=${slug}` : ""}`)}

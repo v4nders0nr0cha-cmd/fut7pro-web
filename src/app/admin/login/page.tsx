@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const HIGHLIGHTS = [
   {
@@ -26,6 +27,7 @@ const HIGHLIGHTS = [
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
   const [blocked, setBlocked] = useState(false);
   const [notVerified, setNotVerified] = useState(false);
@@ -185,15 +187,26 @@ export default function AdminLoginPage() {
               </label>
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 Senha
-                <input
-                  type="password"
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  placeholder="Digite sua senha"
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                />
+                <div className="relative mt-2">
+                  <input
+                    type={senhaVisivel ? "text" : "password"}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                    placeholder="Digite sua senha"
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSenhaVisivel((prev) => !prev)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-yellow-300"
+                    aria-label={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
+                    title={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {senhaVisivel ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
               </label>
               <button
                 type="submit"
