@@ -216,16 +216,19 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const requiresEmailVerification = body?.requiresEmailVerification ?? false;
+  const verificationSent = body?.verificationSent ?? false;
+  const tenantSlug = body?.tenantSlug || payload.rachaSlug?.trim() || null;
+
   return new Response(
     JSON.stringify({
       ok: true,
       message: "Racha criado com sucesso.",
       tenant: body?.tenant,
-      accessToken: body?.accessToken,
-      refreshToken: body?.refreshToken,
       tenantId: body?.tenantId,
-      tenantSlug: body?.tenantSlug,
-      role: body?.role,
+      tenantSlug,
+      requiresEmailVerification,
+      verificationSent,
       email: adminEmail,
       name: payload.adminNome?.trim(),
     }),

@@ -8,7 +8,6 @@ export default withAuth(
     // @ts-ignore
     const token = req.nextauth.token as any;
 
-    // Páginas públicas de autenticação/cadastro do admin
     if (
       pathname.startsWith("/admin/login") ||
       pathname.startsWith("/admin/register") ||
@@ -17,7 +16,19 @@ export default withAuth(
       return NextResponse.next();
     }
 
-    // Bloquear /superadmin para quem não for SUPERADMIN
+    if (pathname.startsWith("/admin") && token && token.role !== "SUPERADMIN") {
+      if (!token.emailVerified) {
+        const redirectUrl = new URL("/cadastrar-racha/confirmar-email", req.url);
+        if (token.email) {
+          redirectUrl.searchParams.set("email", token.email);
+        }
+        if (token.tenantSlug) {
+          redirectUrl.searchParams.set("slug", token.tenantSlug);
+        }
+        return NextResponse.redirect(redirectUrl);
+      }
+    }
+
     if (pathname.startsWith("/superadmin")) {
       if (!token || token.role !== "SUPERADMIN") {
         return NextResponse.redirect(new URL("/login", req.url));

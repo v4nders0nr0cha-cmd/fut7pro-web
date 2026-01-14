@@ -28,6 +28,7 @@ export default function AdminLoginPage() {
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState("");
   const [blocked, setBlocked] = useState(false);
+  const [notVerified, setNotVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setErro("");
     setBlocked(false);
+    setNotVerified(false);
     setIsSubmitting(true);
 
     try {
@@ -63,6 +65,15 @@ export default function AdminLoginPage() {
 
         const body = await resp.json().catch(() => ({}) as any);
         const message = (body as any)?.message?.toString?.() ?? "";
+        const errorCode = (body as any)?.code || (body as any)?.error?.code || "";
+        const isEmailNotVerified =
+          errorCode === "EMAIL_NOT_VERIFIED" ||
+          message.toLowerCase().includes("confirme") ||
+          message.toLowerCase().includes("verifique");
+        if (isEmailNotVerified) {
+          setNotVerified(true);
+          return;
+        }
         const isBlocked =
           message.toLowerCase().includes("bloque") ||
           message.toLowerCase().includes("blocked") ||
@@ -117,6 +128,32 @@ export default function AdminLoginPage() {
               </div>
             )}
 
+            {notVerified && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="mt-4 rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-3 text-sm text-yellow-100"
+              >
+                <p className="font-semibold text-yellow-200">
+                  Confirme seu e-mail para ativar o painel.
+                </p>
+                <p className="mt-1 text-xs text-yellow-100/80">
+                  Enviamos um link de confirmacao para {email}. Verifique sua caixa de entrada ou
+                  spam.
+                </p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push(
+                      `/cadastrar-racha/confirmar-email?email=${encodeURIComponent(email)}`
+                    )
+                  }
+                  className="mt-3 inline-flex items-center justify-center rounded-lg border border-yellow-300/50 px-3 py-2 text-xs font-semibold text-yellow-200 hover:border-yellow-200 hover:text-yellow-100"
+                >
+                  Ir para confirmacao
+                </button>
+              </div>
+            )}
             <div className="mt-4 space-y-3">
               <button
                 type="button"

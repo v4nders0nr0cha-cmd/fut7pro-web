@@ -512,32 +512,17 @@ export default function CadastroRachaPage() {
         return;
       }
 
-      if (isGoogle && body?.accessToken) {
-        await signIn("credentials", {
-          redirect: false,
-          accessToken: body.accessToken,
-          refreshToken: body.refreshToken,
-          tenantSlug: body.tenantSlug,
-          tenantId: body.tenantId,
-          role: body.role,
-          name: adminNome.trim(),
-          email: adminEmail.trim(),
-          authProvider: "google",
-        });
-        setSucesso("Racha criado! Redirecionando para o painel...");
-        setTimeout(() => router.push("/admin/dashboard"), 800);
-        return;
-      }
+      const emailParaConfirmar = (body?.email || adminEmail.trim()).toLowerCase();
+      const slugParaConfirmar = body?.tenantSlug || rachaSlug.trim();
+      const requiresEmailVerification = body?.requiresEmailVerification ?? true;
 
-      const loginResult = await signIn("credentials", {
-        redirect: false,
-        email: adminEmail.trim(),
-        password: adminSenha,
-      });
-
-      if (loginResult?.ok) {
-        setSucesso("Racha criado! Redirecionando para o painel...");
-        setTimeout(() => router.push("/admin/dashboard"), 800);
+      if (requiresEmailVerification) {
+        setSucesso("Cadastro realizado! Enviamos um e-mail para confirmacao.");
+        const query = new URLSearchParams({
+          email: emailParaConfirmar,
+          slug: slugParaConfirmar,
+        }).toString();
+        router.push(`/cadastrar-racha/confirmar-email?${query}`);
         return;
       }
 

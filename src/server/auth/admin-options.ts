@@ -98,6 +98,9 @@ export const authOptions: NextAuthOptionsLike = {
             const resolvedTenantId =
               userData?.tenantId || userData?.tenant?.id || (credentials as any).tenantId || null;
 
+            const emailVerified = Boolean(userData?.emailVerified);
+            const emailVerifiedAt = userData?.emailVerifiedAt ?? null;
+
             return {
               id: userData.id,
               name: userData.name,
@@ -109,6 +112,8 @@ export const authOptions: NextAuthOptionsLike = {
               refreshToken: credentials.refreshToken || null,
               image: userData.image || userData.avatar || null,
               authProvider,
+              emailVerified,
+              emailVerifiedAt,
             };
           } catch (error) {
             if (process.env.NODE_ENV === "development") {
@@ -171,6 +176,9 @@ export const authOptions: NextAuthOptionsLike = {
           const resolvedImage =
             userData?.image || userData?.avatar || userData?.avatarUrl || userData?.foto || null;
 
+          const emailVerified = Boolean(userData?.emailVerified);
+          const emailVerifiedAt = userData?.emailVerifiedAt ?? null;
+
           return {
             id: userData.id,
             name: userData.name,
@@ -182,6 +190,8 @@ export const authOptions: NextAuthOptionsLike = {
             refreshToken: data.refreshToken,
             image: resolvedImage,
             authProvider: "credentials",
+            emailVerified,
+            emailVerifiedAt,
           };
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
@@ -222,6 +232,22 @@ export const authOptions: NextAuthOptionsLike = {
           (user as any).tenantId = data.tenantId;
           (user as any).tenantSlug = data.tenantSlug ?? null;
           (user as any).authProvider = "google";
+
+          if (data?.accessToken) {
+            try {
+              const meResponse = await fetch(`${API_BASE_URL}${ME_PATH}`, {
+                headers: { Authorization: `Bearer ${data.accessToken}` },
+              });
+              if (meResponse.ok) {
+                const meData = await meResponse.json();
+                (user as any).emailVerified = Boolean(meData?.emailVerified);
+                (user as any).emailVerifiedAt = meData?.emailVerifiedAt ?? null;
+              }
+            } catch {
+              (user as any).emailVerified = false;
+              (user as any).emailVerifiedAt = null;
+            }
+          }
         } catch (error) {
           if (process.env.NODE_ENV === "development") {
             console.log("Erro no login Google:", error);
@@ -242,6 +268,8 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).refreshToken = token.refreshToken as string;
         (session.user as any).accessTokenExp = (token as any).accessTokenExp ?? null;
         (session.user as any).authProvider = (token as any).authProvider ?? null;
+        (session.user as any).emailVerified = (token as any).emailVerified ?? false;
+        (session.user as any).emailVerifiedAt = (token as any).emailVerifiedAt ?? null;
       }
       return session;
     },
@@ -249,6 +277,8 @@ export const authOptions: NextAuthOptionsLike = {
     async jwt({ token, user }: { token: JWT; user?: any }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
         token.role = (user as any).role;
         token.tenantId = (user as any).tenantId;
         (token as any).tenantSlug = (user as any).tenantSlug ?? null;
@@ -256,6 +286,8 @@ export const authOptions: NextAuthOptionsLike = {
         token.refreshToken = (user as any).refreshToken;
         (token as any).accessTokenExp = decodeExp(token.accessToken as string);
         (token as any).authProvider = (user as any).authProvider ?? null;
+        (token as any).emailVerified = (user as any).emailVerified ?? false;
+        (token as any).emailVerifiedAt = (user as any).emailVerifiedAt ?? null;
       }
 
       if (token.accessToken && token.refreshToken) {

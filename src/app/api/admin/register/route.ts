@@ -30,8 +30,6 @@ type TenantInfo = {
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
-const LOGIN_PATH = process.env.AUTH_LOGIN_PATH || "/auth/login";
-
 const normalizeBase = (url: string) => url.replace(/\/+$/, "");
 const resolvePath = (base: string, path: string) =>
   `${normalizeBase(base)}${path.startsWith("/") ? path : `/${path}`}`;
@@ -133,21 +131,6 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
       avatarUrl: resolveAvatarUrl(data.adminAvatarBase64),
     }),
   });
-}
-
-async function loginForToken(baseUrl: string, data: RegisterPayload) {
-  const loginUrl = resolvePath(baseUrl, LOGIN_PATH);
-  const res = await fetch(loginUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: data.adminEmail.trim().toLowerCase(),
-      password: data.adminSenha,
-    }),
-  });
-  if (!res.ok) return null;
-  const json = await res.json().catch(() => null);
-  return (json as any)?.accessToken || null;
 }
 
 async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken?: string | null) {
@@ -320,19 +303,23 @@ export async function POST(req: NextRequest) {
   }
 
   // 3) Faz login se necessario para obter token e salva nome/logo/localizacao via /admin/about
+  const accessToken = adminJson?.accessToken || null;
+  const requiresEmailVerification = adminJson?.requiresEmailVerification ?? false;
+  const verificationSent = adminJson?.verificationSent ?? false;
+  const adminEmail = adminJson?.email || payload.adminEmail?.trim().toLowerCase();
+  const tenantSlug = tenantInfo?.slug || payload.rachaSlug?.trim();
+
   if (!useExistingTenant) {
-    const tokenFromRegister = adminJson?.accessToken || null;
-    const token = tokenFromRegister || (await loginForToken(baseUrl, payload));
-    if (!token) {
+    if (!accessToken) {
       return jsonResponse("Nao foi possivel iniciar o teste gratis.", 500);
     }
-    await primeBranding(baseUrl, payload, token);
+    await primeBranding(baseUrl, payload, accessToken);
 
     if (!tenantInfo?.id) {
       return jsonResponse("Tenant nao encontrado para criar assinatura.", 500);
     }
 
-    const subscriptionRes = await createSubscription(baseUrl, payload, tenantInfo.id, token);
+    const subscriptionRes = await createSubscription(baseUrl, payload, tenantInfo.id, accessToken);
     if (subscriptionRes) {
       const subscriptionText = await subscriptionRes.text();
       if (!subscriptionRes.ok) {
@@ -352,6 +339,10 @@ export async function POST(req: NextRequest) {
         ? "Presidente criado para racha existente."
         : "Racha e administrador criados com sucesso.",
       tenant: tenantInfo,
+      tenantSlug: tenantSlug || undefined,
+      requiresEmailVerification,
+      verificationSent,
+      email: adminEmail,
       temporaryPassword: generatedPassword || undefined,
     }),
     { status: 201, headers: { "Content-Type": "application/json" } }
