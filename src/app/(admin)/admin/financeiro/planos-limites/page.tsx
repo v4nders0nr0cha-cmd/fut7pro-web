@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaSpinner } from "react-icons/fa";
-import BillingAPI, { type Plan } from "@/lib/api/billing";
+import BillingAPI, { type Plan, type PixChargeResponse } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
 
 function formatDate(value?: string | null) {
@@ -75,11 +75,16 @@ export default function PlanosLimitesPage() {
 
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<"switch" | "payment" | null>(null);
+  const [actionLoading, setActionLoading] = useState<"switch" | "payment" | "pix" | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
   const [showInvoicesModal, setShowInvoicesModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPixModal, setShowPixModal] = useState(false);
+  const [pixCharge, setPixCharge] = useState<PixChargeResponse | null>(null);
+  const [recurringAccepted, setRecurringAccepted] = useState(false);
+  const [pixCopied, setPixCopied] = useState(false);
 
   const planosDisponiveis = useMemo(() => {
     return [...plans]
@@ -117,10 +122,24 @@ export default function PlanosLimitesPage() {
     subscription?.status === "past_due" ||
     subscriptionStatus?.preapproval === "pending" ||
     subscriptionStatus?.upfront === "pending";
+  const now = new Date();
+  const trialExpired =
+    isTrial && subscription?.trialEnd ? new Date(subscription.trialEnd) < now : false;
+  const periodExpired =
+    !isTrial && subscription?.currentPeriodEnd
+      ? new Date(subscription.currentPeriodEnd) < now
+      : false;
+  const billingBlocked =
+    Boolean(subscription) &&
+    (trialExpired ||
+      periodExpired ||
+      subscription?.status === "past_due" ||
+      subscription?.status === "expired");
   const canSwitchPlan = subscription?.status === "trialing";
 
   const planLabel = planoAtual?.label || subscription?.planKey || "Plano nao definido";
   const intervalLabel = resolveIntervalLabel(subscription?.planKey, subscription?.interval);
+  const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 
   const periodStart = isTrial ? subscription?.trialStart : subscription?.currentPeriodStart;
   const periodEnd = isTrial
@@ -135,14 +154,23 @@ export default function PlanosLimitesPage() {
 
   const invoices = subscription?.invoices ?? [];
 
-  const handleUpdatePayment = async () => {
+  const openPaymentModal = () => {
     if (!subscription?.id) {
       setActionError("Assinatura nao encontrada para este racha.");
       return;
     }
 
-    if (subscription.status !== "trialing") {
-      setActionError("Atualizacao automatica disponivel apenas durante o periodo de teste.");
+    setActionError(null);
+    setRecurringAccepted(false);
+    setPixCopied(false);
+    setPixCharge(null);
+    setShowPixModal(false);
+    setShowPaymentModal(true);
+  };
+
+  const handleRecurringPayment = async () => {
+    if (!subscription?.id) {
+      setActionError("Assinatura nao encontrada para este racha.");
       return;
     }
 
@@ -162,6 +190,40 @@ export default function PlanosLimitesPage() {
       setActionError("Erro ao atualizar pagamento. Tente novamente.");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleCreatePixCharge = async () => {
+    if (!subscription?.id) {
+      setActionError("Assinatura nao encontrada para este racha.");
+      return;
+    }
+
+    setActionLoading("pix");
+    setActionError(null);
+    setPixCopied(false);
+
+    try {
+      const result = await BillingAPI.createPixCharge(subscription.id, payerName);
+      setPixCharge(result);
+      setShowPaymentModal(false);
+      setShowPixModal(true);
+    } catch (err) {
+      console.error(err);
+      setActionError("Erro ao gerar PIX. Tente novamente.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleCopyPix = async () => {
+    if (!pixCharge?.pix?.qrCode) return;
+    try {
+      await navigator.clipboard.writeText(pixCharge.pix.qrCode);
+      setPixCopied(true);
+      window.setTimeout(() => setPixCopied(false), 2000);
+    } catch {
+      setPixCopied(false);
     }
   };
 
@@ -236,6 +298,24 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
+        {billingBlocked && (
+          <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-4 text-yellow-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">Acesso ao painel bloqueado por pagamento.</p>
+              <p className="text-xs text-yellow-100/80">
+                Regularize o pagamento para liberar todas as funcionalidades do painel.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={openPaymentModal}
+              className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300"
+            >
+              Regularizar pagamento
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
           <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
             <div className="flex items-start justify-between gap-4">
@@ -280,7 +360,7 @@ export default function PlanosLimitesPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={handleUpdatePayment}
+                onClick={openPaymentModal}
                 disabled={actionLoading !== null}
                 className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
               >
@@ -481,6 +561,147 @@ export default function PlanosLimitesPage() {
           </div>
         )}
       </main>
+
+      {showPaymentModal && subscription && (
+        <Modal onClose={() => setShowPaymentModal(false)}>
+          <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Como deseja pagar?</h3>
+            <p className="text-sm text-gray-300 mb-5">
+              Escolha a forma de pagamento para liberar o painel do seu racha.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
+                <h4 className="text-sm font-bold text-white mb-1">Cartao ou boleto (recorrente)</h4>
+                <p className="text-xs text-gray-400 mb-3">
+                  O pagamento sera recorrente no Mercado Pago. Voce autoriza a cobranca automatica
+                  conforme o plano escolhido.
+                </p>
+                <label className="flex items-start gap-2 text-xs text-gray-300 mb-3">
+                  <input
+                    type="checkbox"
+                    checked={recurringAccepted}
+                    onChange={(e) => setRecurringAccepted(e.target.checked)}
+                    className="mt-0.5 accent-yellow-400"
+                  />
+                  <span>Li e concordo com a politica de cobranca recorrente.</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRecurringPayment}
+                  disabled={!recurringAccepted || actionLoading === "payment"}
+                  className="w-full px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60"
+                >
+                  {actionLoading === "payment"
+                    ? "Abrindo checkout..."
+                    : "Continuar no Mercado Pago"}
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
+                <h4 className="text-sm font-bold text-white mb-1">PIX</h4>
+                <p className="text-xs text-gray-400 mb-3">
+                  Geramos um PIX avulso para o ciclo <b>{intervalLabel.toLowerCase()}</b> do seu
+                  plano.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleCreatePixCharge}
+                  disabled={!canUsePix || actionLoading === "pix"}
+                  className="w-full px-4 py-2 rounded-lg bg-[#2b2b2b] text-white border border-[#384152] hover:border-yellow-400 disabled:opacity-60"
+                >
+                  {actionLoading === "pix" ? "Gerando PIX..." : "Gerar PIX"}
+                </button>
+                {!canUsePix && (
+                  <p className="mt-2 text-[11px] text-gray-500">
+                    PIX indisponivel para este plano no momento.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4 text-xs text-gray-400">
+              Plano atual: <b className="text-gray-200">{planLabel}</b> | Valor:{" "}
+              <b className="text-gray-200">{formatCurrencyFromCents(subscription.amount)}</b>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {showPixModal && pixCharge && (
+        <Modal onClose={() => setShowPixModal(false)}>
+          <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-2">Pagamento via PIX</h3>
+            <p className="text-sm text-gray-300 mb-4">
+              Escaneie o QR Code ou copie o codigo. A liberacao do painel ocorre apos a confirmacao
+              do pagamento.
+            </p>
+
+            <div className="bg-[#111418] rounded-xl border border-[#2b2b2b] p-4 flex flex-col items-center gap-3">
+              {pixCharge.pix.qrCodeBase64 ? (
+                <img
+                  src={`data:image/png;base64,${pixCharge.pix.qrCodeBase64}`}
+                  alt="QR Code PIX"
+                  className="w-52 h-52 rounded-lg bg-white p-2"
+                />
+              ) : (
+                <div className="text-xs text-gray-400">QR Code indisponivel.</div>
+              )}
+              {pixCharge.pix.qrCode && (
+                <div className="w-full">
+                  <div className="text-[11px] text-gray-400 mb-1">Codigo PIX</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={pixCharge.pix.qrCode}
+                      className="flex-1 rounded-lg bg-[#0f1318] border border-[#2b2b2b] px-3 py-2 text-xs text-gray-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCopyPix}
+                      className="px-3 py-2 rounded-lg bg-yellow-400 text-black text-xs font-semibold hover:bg-yellow-300"
+                    >
+                      {pixCopied ? "Copiado" : "Copiar"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {pixCharge.pix.ticketUrl && (
+                <a
+                  href={pixCharge.pix.ticketUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-yellow-300 underline"
+                >
+                  Abrir link do PIX
+                </a>
+              )}
+            </div>
+
+            <div className="mt-4 text-xs text-gray-400">
+              Periodo:{" "}
+              <b className="text-gray-200">
+                {formatDate(pixCharge.invoice.periodStart)} -{" "}
+                {formatDate(pixCharge.invoice.periodEnd)}
+              </b>
+            </div>
+            {pixCharge.pix.expiresAt && (
+              <div className="mt-2 text-xs text-gray-400">
+                Valido ate: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowPixModal(false)}
+              className="mt-5 w-full px-4 py-2 rounded-lg bg-[#2b2b2b] text-gray-200 hover:bg-[#3a3a3a]"
+            >
+              Fechar
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {showSwitchModal && selectedPlan && (
         <Modal onClose={() => setShowSwitchModal(false)}>

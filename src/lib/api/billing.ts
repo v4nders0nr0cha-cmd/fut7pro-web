@@ -82,6 +82,17 @@ export interface SubscriptionStatus {
   active: boolean;
 }
 
+export interface PixChargeResponse {
+  invoice: Invoice;
+  pix: {
+    id?: string;
+    qrCode?: string;
+    qrCodeBase64?: string;
+    ticketUrl?: string;
+    expiresAt?: string | null;
+  };
+}
+
 export class BillingAPI {
   private static async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -138,6 +149,16 @@ export class BillingAPI {
     return this.request<{ checkoutUrl?: string }>(`/subscription/${subscriptionId}/activate`, {
       method: "POST",
       body: JSON.stringify({ backUrl }),
+    });
+  }
+
+  static async createPixCharge(
+    subscriptionId: string,
+    payerName?: string
+  ): Promise<PixChargeResponse> {
+    return this.request<PixChargeResponse>(`/subscription/${subscriptionId}/pix`, {
+      method: "POST",
+      body: JSON.stringify({ payerName }),
     });
   }
 
