@@ -148,7 +148,7 @@ export default function PlanosLimitesPage() {
   const periodLabel =
     periodStart && periodEnd ? `${formatDate(periodStart)} - ${formatDate(periodEnd)}` : "N/D";
 
-  const cycleEnd = subscription?.trialEnd || subscription?.currentPeriodEnd || null;
+  const cycleEnd = subscription?.currentPeriodEnd || subscription?.trialEnd || null;
   const daysRemaining = calcDaysRemaining(cycleEnd);
   const cycleLabel = daysRemaining !== null ? `${daysRemaining}` : "--";
 
@@ -395,10 +395,10 @@ export default function PlanosLimitesPage() {
               <div>
                 <span className="text-xs text-gray-500">Mensagem</span>
                 <p className="text-base font-semibold text-white">
-                  {pendingPayment
-                    ? "Pagamento pendente, regularize para manter o painel desbloqueado."
-                    : isTrial
-                      ? `Teste gratis ativo, termina em ${formatDate(cycleEnd)}.`
+                  {isTrial
+                    ? "Pagando agora, voce nao perde o teste, o tempo comprado e acumulado."
+                    : pendingPayment
+                      ? "Pagamento pendente, regularize para manter o painel desbloqueado."
                       : "Ciclo em andamento. Tudo certo por aqui."}
                 </p>
               </div>
