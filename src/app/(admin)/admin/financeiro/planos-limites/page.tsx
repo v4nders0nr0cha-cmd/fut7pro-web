@@ -569,6 +569,11 @@ export default function PlanosLimitesPage() {
             <p className="text-sm text-gray-300 mb-5">
               Escolha a forma de pagamento para liberar o painel do seu racha.
             </p>
+            {actionError && (
+              <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+                {actionError}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
