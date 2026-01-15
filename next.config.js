@@ -2,6 +2,10 @@ const { withSentryConfig } = require("@sentry/nextjs");
 
 const isProd = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const defaultRachaSlug = (process.env.NEXT_PUBLIC_DEFAULT_RACHA_SLUG || "vitrine")
+  .trim()
+  .replace(/^\/+/, "")
+  .toLowerCase();
 let supabaseHost = null;
 try {
   supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : null;
@@ -126,6 +130,11 @@ const nextConfig = {
         ],
         destination: "https://app.fut7pro.com.br/:path*",
         permanent: true,
+      },
+      {
+        source: "/",
+        destination: `/${defaultRachaSlug}`,
+        permanent: false,
       },
     ];
   },
