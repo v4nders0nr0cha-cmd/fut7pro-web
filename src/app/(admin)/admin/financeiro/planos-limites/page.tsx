@@ -322,7 +322,7 @@ export default function PlanosLimitesPage() {
               <div>
                 <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
                 <p className="text-sm text-gray-400">
-                  O plano escolhido define o valor apos o teste e mantem o painel ativo.
+                  O plano escolhido define o valor após o teste e mantem o painel ativo.
                 </p>
               </div>
               <span
@@ -396,7 +396,7 @@ export default function PlanosLimitesPage() {
                 <span className="text-xs text-gray-500">Mensagem</span>
                 <p className="text-base font-semibold text-white">
                   {isTrial
-                    ? "Pagando agora, voce nao perde o teste, o tempo comprado e acumulado."
+                    ? "Pagando agora, voce nao perde o teste, o tempo comprado é acumulado."
                     : pendingPayment
                       ? "Pagamento pendente, regularize para manter o painel desbloqueado."
                       : "Ciclo em andamento. Tudo certo por aqui."}
