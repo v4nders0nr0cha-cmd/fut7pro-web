@@ -103,8 +103,10 @@ export default function CardPlanoAtual({
     mensagem = "Nenhum plano ativo. Clique para escolher um plano e destravar os recursos premium.";
   }
 
-  const ctaHref = isAtivo ? "/admin/financeiro/faturas" : "/admin/financeiro/upgrade";
-  const ctaLabel = isAtivo ? "Ver faturas" : isTrial ? "Ativar plano" : "Subir plano";
+  const ctaHref = isAtivo
+    ? "/admin/financeiro/planos-limites?faturas=1"
+    : "/admin/financeiro/planos-limites";
+  const ctaLabel = isAtivo ? "Ver faturas" : isTrial ? "Ativar plano" : "Gerenciar plano";
 
   const statusBadge = isPendente ? "PENDENTE" : isTrial ? "TRIAL" : isAtivo ? "ATIVO" : "SEM PLANO";
 

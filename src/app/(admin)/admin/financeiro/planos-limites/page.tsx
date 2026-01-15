@@ -103,6 +103,14 @@ export default function PlanosLimitesPage() {
     }
   }, [subscription]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("faturas") === "1") {
+      setShowInvoicesModal(true);
+    }
+  }, []);
+
   const statusMeta = resolveStatusMeta(subscription?.status);
   const isTrial = subscription?.status === "trialing";
   const pendingPayment =

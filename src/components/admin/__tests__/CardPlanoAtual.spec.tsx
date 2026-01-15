@@ -35,7 +35,7 @@ describe("CardPlanoAtual", () => {
     expect(screen.getByText(/Teste valido ate/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ativar plano/i })).toHaveAttribute(
       "href",
-      "/admin/financeiro/upgrade"
+      "/admin/financeiro/planos-limites"
     );
   });
 
@@ -50,7 +50,7 @@ describe("CardPlanoAtual", () => {
     expect(screen.getByText(/Mensal Essencial/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver faturas/i })).toHaveAttribute(
       "href",
-      "/admin/financeiro/faturas"
+      "/admin/financeiro/planos-limites?faturas=1"
     );
   });
 });
