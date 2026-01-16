@@ -52,6 +52,34 @@ type HighlightPlayer = {
   partidas: number;
   presencas: number;
   status?: "titular" | "substituto" | "ausente";
+  highlightText?: string;
+  highlightDescription?: string;
+};
+
+type HighlightMeta = {
+  description: string;
+  statKey?: keyof Pick<PlayerStats, "goals" | "assists">;
+  statLabel?: string;
+};
+
+const HIGHLIGHT_META: Record<"atacante" | "meia" | "zagueiro" | "goleiro", HighlightMeta> = {
+  atacante: {
+    description: "Atacante do Time Campeao do Dia com mais gols",
+    statKey: "goals",
+    statLabel: "gols",
+  },
+  meia: {
+    description: "Meia do Time Campeao do Dia com mais assistencias",
+    statKey: "assists",
+    statLabel: "assistencias",
+  },
+  zagueiro: {
+    description:
+      "Escolha manual entre os zagueiros do Time Campeao do Dia (o sistema nao calcula desarmes)",
+  },
+  goleiro: {
+    description: "Goleiro do Time Campeao do Dia",
+  },
 };
 
 function parseMatchDate(value?: string | null) {
@@ -131,8 +159,19 @@ function pickTop(
   })[0];
 }
 
-function buildHighlight(stat: PlayerStats | null, title: string): HighlightPlayer | null {
+function buildHighlightText(value: number, meta?: HighlightMeta) {
+  if (!meta?.statKey) return undefined;
+  const label = meta.statLabel || (meta.statKey === "goals" ? "gols" : "assistencias");
+  return `${value} ${label}`;
+}
+
+function buildHighlight(
+  stat: PlayerStats | null,
+  title: string,
+  meta?: HighlightMeta
+): HighlightPlayer | null {
   if (!stat) return null;
+  const highlightText = meta?.statKey ? buildHighlightText(stat[meta.statKey], meta) : undefined;
   return {
     id: stat.id,
     name: stat.name,
@@ -142,11 +181,18 @@ function buildHighlight(stat: PlayerStats | null, title: string): HighlightPlaye
     assistencias: stat.assists,
     partidas: stat.games,
     presencas: stat.presences,
+    highlightText,
+    highlightDescription: meta?.description,
   };
 }
 
-function buildBotHighlight(title: string, role: "atacante" | "meia" | "zagueiro" | "goleiro") {
+function buildBotHighlight(
+  title: string,
+  role: "atacante" | "meia" | "zagueiro" | "goleiro",
+  meta?: HighlightMeta
+) {
   const isGoalkeeper = role === "goleiro";
+  const highlightText = meta?.statKey ? "Nao compareceu" : undefined;
   return {
     id: `bot-${role}`,
     name: isGoalkeeper ? "Goleiro Reserva BOT" : "Jogador Reserva BOT",
@@ -156,6 +202,8 @@ function buildBotHighlight(title: string, role: "atacante" | "meia" | "zagueiro"
     assistencias: 0,
     partidas: 0,
     presencas: 0,
+    highlightText,
+    highlightDescription: meta?.description,
     status: "ausente" as const,
   };
 }
@@ -316,17 +364,17 @@ export default function Home() {
 
   const highlightCards = [
     destaqueFaltou?.atacante
-      ? buildBotHighlight("Atacante do Dia", "atacante")
-      : buildHighlight(highlights.atacante, "Atacante do Dia"),
+      ? buildBotHighlight("Atacante do Dia", "atacante", HIGHLIGHT_META.atacante)
+      : buildHighlight(highlights.atacante, "Atacante do Dia", HIGHLIGHT_META.atacante),
     destaqueFaltou?.meia
-      ? buildBotHighlight("Meia do Dia", "meia")
-      : buildHighlight(highlights.meia, "Meia do Dia"),
+      ? buildBotHighlight("Meia do Dia", "meia", HIGHLIGHT_META.meia)
+      : buildHighlight(highlights.meia, "Meia do Dia", HIGHLIGHT_META.meia),
     destaqueFaltou?.zagueiro
-      ? buildBotHighlight("Zagueiro do Dia", "zagueiro")
-      : buildHighlight(highlights.zagueiro, "Zagueiro do Dia"),
+      ? buildBotHighlight("Zagueiro do Dia", "zagueiro", HIGHLIGHT_META.zagueiro)
+      : buildHighlight(highlights.zagueiro, "Zagueiro do Dia", HIGHLIGHT_META.zagueiro),
     destaqueFaltou?.goleiro
-      ? buildBotHighlight("Goleiro do Dia", "goleiro")
-      : buildHighlight(highlights.goleiro, "Goleiro do Dia"),
+      ? buildBotHighlight("Goleiro do Dia", "goleiro", HIGHLIGHT_META.goleiro)
+      : buildHighlight(highlights.goleiro, "Goleiro do Dia", HIGHLIGHT_META.goleiro),
   ].filter(Boolean) as HighlightPlayer[];
 
   const modalDestaques = [
@@ -334,13 +382,18 @@ export default function Home() {
       ? {
           title: "Atacante do Dia",
           name: "Jogador Reserva BOT",
+          description: HIGHLIGHT_META.atacante.description,
           image: BOT_PLAYER_IMAGE,
         }
       : highlights.atacante
         ? {
             title: "Atacante do Dia",
             name: highlights.atacante.name,
-            value: highlights.atacante.goals ? `${highlights.atacante.goals} gols` : undefined,
+            description: HIGHLIGHT_META.atacante.description,
+            value:
+              typeof highlights.atacante.goals === "number"
+                ? `${highlights.atacante.goals} gols`
+                : undefined,
             image: highlights.atacante.photoUrl || DEFAULT_PLAYER_IMAGE,
           }
         : null,
@@ -348,13 +401,18 @@ export default function Home() {
       ? {
           title: "Meia do Dia",
           name: "Jogador Reserva BOT",
+          description: HIGHLIGHT_META.meia.description,
           image: BOT_PLAYER_IMAGE,
         }
       : highlights.meia
         ? {
             title: "Meia do Dia",
             name: highlights.meia.name,
-            value: highlights.meia.assists ? `${highlights.meia.assists} assistencias` : undefined,
+            description: HIGHLIGHT_META.meia.description,
+            value:
+              typeof highlights.meia.assists === "number"
+                ? `${highlights.meia.assists} assistencias`
+                : undefined,
             image: highlights.meia.photoUrl || DEFAULT_PLAYER_IMAGE,
           }
         : null,
@@ -362,12 +420,14 @@ export default function Home() {
       ? {
           title: "Zagueiro do Dia",
           name: "Jogador Reserva BOT",
+          description: HIGHLIGHT_META.zagueiro.description,
           image: BOT_PLAYER_IMAGE,
         }
       : highlights.zagueiro
         ? {
             title: "Zagueiro do Dia",
             name: highlights.zagueiro.name,
+            description: HIGHLIGHT_META.zagueiro.description,
             image: highlights.zagueiro.photoUrl || DEFAULT_PLAYER_IMAGE,
           }
         : null,
@@ -375,16 +435,24 @@ export default function Home() {
       ? {
           title: "Goleiro do Dia",
           name: "Goleiro Reserva BOT",
+          description: HIGHLIGHT_META.goleiro.description,
           image: BOT_GOALKEEPER_IMAGE,
         }
       : highlights.goleiro
         ? {
             title: "Goleiro do Dia",
             name: highlights.goleiro.name,
+            description: HIGHLIGHT_META.goleiro.description,
             image: highlights.goleiro.photoUrl || DEFAULT_PLAYER_IMAGE,
           }
         : null,
-  ].filter(Boolean) as Array<{ title: string; name: string; value?: string; image?: string }>;
+  ].filter(Boolean) as Array<{
+    title: string;
+    name: string;
+    value?: string;
+    image?: string;
+    description?: string;
+  }>;
 
   const modalArtilheiroMaestro = [
     highlights.artilheiro

@@ -22,6 +22,8 @@ interface PlayerCardProps {
     partidas?: number;
     presencas?: number;
     status?: PlayerStatus;
+    highlightText?: string;
+    highlightDescription?: string;
   };
   racha?: {
     id: string;
@@ -58,6 +60,7 @@ export default function PlayerCard({
       name: name || "Jogador",
       posicao: title,
       foto: image,
+      highlightText: value,
     } as PlayerCardProps["player"]);
 
   const {
@@ -69,6 +72,8 @@ export default function PlayerCard({
     partidas = 0,
     presencas = 0,
     status = "titular",
+    highlightText,
+    highlightDescription,
   } = normalizedPlayer;
 
   const imagePath = foto && foto.length > 0 ? foto : "/images/jogadores/jogador_padrao_01.jpg";
@@ -76,7 +81,46 @@ export default function PlayerCard({
 
   const attendancePercent = partidas > 0 ? `${Math.round((presencas / partidas) * 100)}%` : "0%";
 
-  const content = (
+  const isHighlight = Boolean(highlightText || highlightDescription);
+
+  const content = isHighlight ? (
+    <article
+      className="bg-[#1a1a1a] rounded-xl px-4 py-3 flex gap-4 items-center justify-between mb-4 shadow-md transition-all duration-300 hover:bg-[#222] w-full max-w-full"
+      aria-label={`CartÆo do jogador ${safeName}`}
+    >
+      <div className="flex items-center gap-4 w-full">
+        <div className="w-[64px] h-[64px] sm:w-[80px] sm:h-[80px] relative rounded-md overflow-hidden flex-shrink-0 bg-[#111]">
+          <Image
+            src={imagePath}
+            alt={safeName}
+            fill
+            className="object-cover rounded-md"
+            sizes="(max-width: 640px) 64px, 80px"
+            priority
+          />
+        </div>
+        <div className="flex flex-col justify-center w-full">
+          <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">
+            {posicao || "Jogador"}
+          </p>
+          <p className="text-base font-semibold text-white leading-tight break-words">
+            {playerName}
+          </p>
+          {highlightText ? (
+            <p className="text-sm font-semibold text-yellow-300 mt-1">{highlightText}</p>
+          ) : null}
+          {highlightDescription ? (
+            <p className="text-xs text-gray-400 mt-1 leading-snug">{highlightDescription}</p>
+          ) : null}
+        </div>
+      </div>
+      {status !== "titular" ? (
+        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(status)}`}>
+          {status}
+        </div>
+      ) : null}
+    </article>
+  ) : (
     <article
       className="bg-[#1a1a1a] rounded-xl px-4 py-3 flex gap-4 items-center justify-between mb-4 shadow-md transition-all duration-300 hover:bg-[#222] w-full max-w-full"
       aria-label={`Cartão do jogador ${safeName}`}

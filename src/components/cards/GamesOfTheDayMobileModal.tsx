@@ -10,6 +10,7 @@ type DestaqueItem = {
   name: string;
   value?: string;
   image?: string;
+  description?: string;
 };
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
@@ -29,12 +30,12 @@ function BoxRegras() {
           <b>time campeao</b>, quem deu mais assistencias.
         </li>
         <li>
-          <span className="font-semibold text-zinc-900">Zagueiro do Dia:</span> Eleito por votacao
-          dos proprios jogadores do racha (sem estatisticas exatas).
+          <span className="font-semibold text-zinc-900">Zagueiro do Dia:</span> Escolha manual entre
+          os zagueiros do <b>time campeao</b> do dia (o sistema nao calcula desarmes).
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Goleiro do Dia:</span> O goleiro do{" "}
-          <b>time campeao</b> do dia (nao computa defesas).
+          <b>time campeao</b> do dia.
         </li>
       </ul>
       <div className="h-2" />
@@ -92,6 +93,9 @@ export default function GamesOfTheDayMobileModal({
         <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">{item.title}</p>
         <p className="font-semibold text-[15px] text-white">{item.name}</p>
         {item.value && <p className="text-yellow-300 text-sm">{item.value}</p>}
+        {item.description && (
+          <p className="text-xs text-zinc-300 leading-snug mt-0.5">{item.description}</p>
+        )}
       </div>
     </div>
   );
