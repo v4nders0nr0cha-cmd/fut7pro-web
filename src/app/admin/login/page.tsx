@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -162,7 +163,15 @@ export default function AdminLoginPage() {
                 onClick={() => signIn("google", { callbackUrl: "/admin/dashboard" })}
                 className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
               >
-                Continuar com Google
+                <span className="flex items-center justify-center gap-2">
+                  <Image
+                    src="/images/Google-Logo.png"
+                    alt="Logo do Google"
+                    width={18}
+                    height={18}
+                  />
+                  Continuar com Google
+                </span>
               </button>
               <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-gray-500">
                 <span className="h-px flex-1 bg-white/10" />
