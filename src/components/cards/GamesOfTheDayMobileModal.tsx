@@ -10,7 +10,7 @@ type DestaqueItem = {
   name: string;
   value?: string;
   image?: string;
-  description?: string;
+  criteria?: string;
 };
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
@@ -93,8 +93,8 @@ export default function GamesOfTheDayMobileModal({
         <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">{item.title}</p>
         <p className="font-semibold text-[15px] text-white">{item.name}</p>
         {item.value && <p className="text-yellow-300 text-sm">{item.value}</p>}
-        {item.description && (
-          <p className="text-xs text-zinc-300 leading-snug mt-0.5">{item.description}</p>
+        {item.criteria && (
+          <p className="text-xs text-zinc-300 leading-snug mt-0.5 truncate">{item.criteria}</p>
         )}
       </div>
     </div>

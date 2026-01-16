@@ -2,16 +2,25 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useState, type MouseEvent } from "react";
+import { Info } from "lucide-react";
 import { useTema } from "@/hooks/useTema";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const BADGE_AUTOMATICO = "Automatico";
+const CRITERIA_DIA = {
+  artilheiro: "Mais gols no dia (qualquer time)",
+  maestro: "Mais assistencias no dia (qualquer time)",
+};
 
 export default function Sidebar() {
   const { logo, nome } = useTema();
   const { publicHref, publicSlug } = usePublicLinks();
+  const [regrasOpen, setRegrasOpen] = useState(false);
   const currentYear = new Date().getFullYear();
   const { rankings: topGeral } = usePublicPlayerRankings({
     slug: publicSlug,
@@ -39,6 +48,8 @@ export default function Sidebar() {
   const maestro = topAssist?.[0];
   const melhorDoAno = topGeral?.[0];
   const goleiro = resolveGoleiro(topGeral);
+  const artilheiroGols = typeof artilheiro?.gols === "number" ? artilheiro.gols : null;
+  const maestroAssists = typeof maestro?.assistencias === "number" ? maestro.assistencias : null;
 
   const maioresPontuadores = topGeral?.slice(0, 5);
 
@@ -92,6 +103,11 @@ export default function Sidebar() {
         href={artilheiroData.href}
         image={artilheiroData.image}
         icon="/images/icons/bola-de-ouro.png"
+        badge={BADGE_AUTOMATICO}
+        criteria={CRITERIA_DIA.artilheiro}
+        footerValue={artilheiroGols}
+        footerLabel="gols"
+        onRulesClick={() => setRegrasOpen(true)}
       />
 
       <SidebarPlayerCard
@@ -101,6 +117,11 @@ export default function Sidebar() {
         href={maestroData.href}
         image={maestroData.image}
         icon="/images/icons/chuteira-de-ouro.png"
+        badge={BADGE_AUTOMATICO}
+        criteria={CRITERIA_DIA.maestro}
+        footerValue={maestroAssists}
+        footerLabel="assistencias"
+        onRulesClick={() => setRegrasOpen(true)}
       />
 
       <SidebarPlayerCard
@@ -158,6 +179,7 @@ export default function Sidebar() {
               ]
         }
       />
+      <DestaquesRegrasModal open={regrasOpen} onClose={() => setRegrasOpen(false)} />
     </aside>
   );
 }
@@ -169,6 +191,12 @@ function SidebarPlayerCard({
   href,
   image,
   icon,
+  badge,
+  criteria,
+  footerValue,
+  footerLabel,
+  footerText,
+  onRulesClick,
 }: {
   title: string;
   name: string;
@@ -176,18 +204,99 @@ function SidebarPlayerCard({
   href: string;
   image: string;
   icon?: string;
+  badge?: string;
+  criteria?: string;
+  footerValue?: number | null;
+  footerLabel?: string;
+  footerText?: string;
+  onRulesClick?: () => void;
 }) {
-  return (
-    <Link
-      href={href}
-      className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer"
-    >
+  const hasFooterValue = typeof footerValue === "number";
+  const isHighlight = Boolean(criteria || badge || onRulesClick || hasFooterValue || footerText);
+  const badgeStyle =
+    badge?.toLowerCase().includes("manual") === true
+      ? "bg-red-500/20 text-red-200 border-red-500/40"
+      : "bg-yellow-400/15 text-yellow-200 border-yellow-400/40";
+  const footerLabelText = footerLabel || "";
+  const footerDisplayText = footerText || value;
+
+  const handleRulesClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onRulesClick?.();
+  };
+
+  const content = isHighlight ? (
+    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1 truncate">{title}</p>
+          {badge ? (
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${badgeStyle}`}
+            >
+              {badge}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          {icon ? (
+            icon.startsWith("/") ? (
+              <Image
+                src={icon}
+                alt={`Icone ${title}`}
+                width={24}
+                height={24}
+                className="object-contain"
+              />
+            ) : (
+              <span className="text-xl">{icon}</span>
+            )
+          ) : null}
+          {onRulesClick ? (
+            <button
+              type="button"
+              onClick={handleRulesClick}
+              aria-label="Regras dos Destaques do Dia"
+              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-yellow-300"
+            >
+              <Info size={12} />
+            </button>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-2 min-w-0">
+        <Image
+          src={image}
+          alt={`Foto de ${name}`}
+          width={38}
+          height={38}
+          className="rounded-md object-cover"
+        />
+        <div className="flex flex-col min-w-0">
+          <p className="font-semibold text-sm truncate">{name}</p>
+          {criteria ? <p className="text-[11px] text-gray-400 truncate">{criteria}</p> : null}
+        </div>
+      </div>
+      <div className="mt-2 flex items-end justify-between border-t border-white/10 pt-2">
+        {hasFooterValue ? (
+          <div className="flex items-baseline gap-1 text-yellow-300">
+            <span className="text-lg font-bold text-yellow-400">{footerValue}</span>
+            <span className="text-[10px] uppercase">{footerLabelText}</span>
+          </div>
+        ) : (
+          <span className="text-xs font-semibold text-yellow-300">{footerDisplayText}</span>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
       {icon && (
         <div className="absolute top-2 right-3">
           {icon.startsWith("/") ? (
             <Image
               src={icon}
-              alt={`Ícone ${title}`}
+              alt={`Icone ${title}`}
               width={28}
               height={28}
               className="object-contain"
@@ -212,10 +321,15 @@ function SidebarPlayerCard({
           <p className="text-yellow-400 text-xs">{value}</p>
         </div>
       </div>
+    </div>
+  );
+
+  return (
+    <Link href={href} className="relative block">
+      {content}
     </Link>
   );
 }
-
 function SidebarRankingCard({
   title,
   label,

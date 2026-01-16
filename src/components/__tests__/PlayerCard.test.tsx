@@ -45,9 +45,9 @@ describe("PlayerCard", () => {
     expect(screen.getByText("João Silva")).toBeInTheDocument();
     expect(screen.getByText("Atacante")).toBeInTheDocument();
     expect(screen.getByTitle("Gols")).toHaveTextContent("15");
-    expect(screen.getByTitle("Assistências")).toHaveTextContent("8");
+    expect(screen.getByTitle("Assistencias")).toHaveTextContent("8");
     expect(screen.getByTitle("Partidas")).toHaveTextContent("25");
-    expect(screen.getByTitle("Presenças")).toHaveTextContent("20");
+    expect(screen.getByTitle("Presencas")).toHaveTextContent("20");
   });
 
   it("should display player image with alt text", () => {
@@ -85,9 +85,9 @@ describe("PlayerCard", () => {
 
     // Verificar se as estatísticas estão sendo exibidas corretamente
     expect(screen.getByText("Gols")).toBeInTheDocument();
-    expect(screen.getByText("Assistências")).toBeInTheDocument();
+    expect(screen.getByText("Assistencias")).toBeInTheDocument();
     expect(screen.getByText("Partidas")).toBeInTheDocument();
-    expect(screen.getByText("Presenças")).toBeInTheDocument();
+    expect(screen.getByText("Presencas")).toBeInTheDocument();
   });
 
   it("should handle different player statuses", () => {
@@ -139,9 +139,9 @@ describe("PlayerCard", () => {
     render(<PlayerCard player={playerWithZeroStats} racha={mockRacha} />);
 
     expect(screen.getByTitle("Gols")).toHaveTextContent("0");
-    expect(screen.getByTitle("Assistências")).toHaveTextContent("0");
+    expect(screen.getByTitle("Assistencias")).toHaveTextContent("0");
     expect(screen.getByTitle("Partidas")).toHaveTextContent("0");
-    expect(screen.getByTitle("Presenças")).toHaveTextContent("0");
+    expect(screen.getByTitle("Presencas")).toHaveTextContent("0");
   });
 
   it("should be accessible with proper ARIA labels", () => {
