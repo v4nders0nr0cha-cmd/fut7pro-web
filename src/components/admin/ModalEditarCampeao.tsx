@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function ModalEditarCampeao({
-  fotoUrl = "/images/times/time_campeao_padrao_01.png",
+  fotoUrl = "/images/times/time_padrao_01.png",
   nomeTime = "Time Campeão do Dia",
   jogadores = ["Jogador 01", "Jogador 02", "Jogador 03", "Jogador 04"],
   onClose,

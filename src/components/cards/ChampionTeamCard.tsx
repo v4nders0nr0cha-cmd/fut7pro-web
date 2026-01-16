@@ -10,7 +10,7 @@ type ChampionTeamCardProps = {
 };
 
 const ChampionTeamCard = ({ teamName, image }: ChampionTeamCardProps) => {
-  const teamImage = image && image.length > 0 ? image : "/images/times/time_campeao_padrao_01.png";
+  const teamImage = image && image.length > 0 ? image : "/images/times/time_padrao_01.png";
   const { publicHref } = usePublicLinks();
 
   return (

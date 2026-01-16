@@ -163,7 +163,7 @@ export default function AdminDashboard() {
     if (!vencedor) return null;
     return {
       nome: vencedor.name || "Time campeao do dia",
-      logo: vencedor.logoUrl || "/images/times/time_campeao_padrao_01.png",
+      logo: vencedor.logoUrl || "/images/times/time_padrao_01.png",
     };
   }, [recentMatches]);
 

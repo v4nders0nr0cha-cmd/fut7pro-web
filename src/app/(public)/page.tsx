@@ -24,7 +24,7 @@ import { resolvePublicTenantSlug } from "@/utils/public-links";
 import type { PublicMatch } from "@/types/partida";
 
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
-const DEFAULT_TEAM_IMAGE = "/images/times/time_campeao_padrao_01.png";
+const DEFAULT_TEAM_IMAGE = "/images/times/time_padrao_01.png";
 const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
 const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";
 

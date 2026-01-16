@@ -52,7 +52,7 @@ export default function DestaquesFuncionalidades() {
       >
         <div className="relative w-28 h-20 mb-2">
           <Image
-            src="/images/times/time_campeao_padrao_01.png"
+            src="/images/times/time_padrao_01.png"
             alt="Foto do Time Campeão do Dia"
             fill
             className="rounded-xl object-cover border-4 border-[#ffd600]"

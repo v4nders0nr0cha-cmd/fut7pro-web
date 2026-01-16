@@ -28,7 +28,7 @@ type Props = {
 };
 
 export default function CardTimeCampeaoDoDia({
-  fotoUrl = "/images/times/time_campeao_padrao_01.png",
+  fotoUrl = "/images/times/time_padrao_01.png",
   nomeTime = "Time Campeao do Dia",
   editLink = "/admin/partidas/time-campeao-do-dia",
   matches,
