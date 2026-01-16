@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { PlanCatalog } from "@/lib/api/billing";
@@ -647,13 +648,22 @@ export default function CadastroRachaPage() {
                     type="button"
                     onClick={() => signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })}
                     disabled={sessionStatus === "loading" || isGoogle}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold ${
+                    className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold flex items-center justify-center gap-2 ${
                       isGoogle
                         ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200"
                         : "border-white/10 bg-white/5 text-white hover:border-white/20"
                     }`}
                   >
-                    {isGoogle ? "Google conectado" : "Continuar com Google"}
+                    <Image
+                      src="/images/Google-Logo.png"
+                      alt="Logo do Google"
+                      width={20}
+                      height={20}
+                      className="h-5 w-5"
+                    />
+                    <span className="whitespace-nowrap">
+                      {isGoogle ? "Google conectado" : "Cadastrar com Google"}
+                    </span>
                   </button>
                   {isGoogle ? (
                     <p className="text-xs text-emerald-200 text-center">
