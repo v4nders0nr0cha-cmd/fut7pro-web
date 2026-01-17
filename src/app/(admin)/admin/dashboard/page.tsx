@@ -19,6 +19,7 @@ import { useRacha } from "@/context/RachaContext";
 import { useFinanceiro } from "@/hooks/useFinanceiro";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 import useSubscription from "@/hooks/useSubscription";
 import { rachaConfig } from "@/config/racha.config";
 import FinanceiroChart from "@/components/admin/FinanceiroChart";
@@ -54,29 +55,6 @@ function isSameMonth(date: Date, compare: Date) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
 
-function parseBirthDate(raw?: string | null) {
-  if (!raw) return null;
-  const iso = new Date(raw);
-  if (!Number.isNaN(iso.getTime())) return iso;
-  const parts = raw.split("/").map((p) => Number(p));
-  if (parts.length === 3 && !parts.some((p) => Number.isNaN(p))) {
-    const [dia, mes, ano] = parts;
-    const year = ano < 100 ? 2000 + ano : ano;
-    const dt = new Date(year, mes - 1, dia);
-    if (!Number.isNaN(dt.getTime())) return dt;
-  }
-  return null;
-}
-
-function nextBirthday(base: Date, today: Date) {
-  const currentYear = today.getFullYear();
-  const candidate = new Date(currentYear, base.getMonth(), base.getDate());
-  if (candidate < today) {
-    candidate.setFullYear(currentYear + 1);
-  }
-  return candidate;
-}
-
 export default function AdminDashboard() {
   const { data: session } = useSession();
   const { rachaId, tenantSlug: contextTenantSlug, setRachaId, setTenantSlug } = useRacha();
@@ -109,6 +87,10 @@ export default function AdminDashboard() {
     limit: 3,
   });
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
+  const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
+    rangeDays: 30,
+    limit: 3,
+  });
   const {
     subscription,
     subscriptionStatus,
@@ -172,32 +154,6 @@ export default function AdminDashboard() {
     return [...jogadores]
       .sort((a, b) => (b.presencas ?? b.partidas ?? 0) - (a.presencas ?? a.partidas ?? 0))
       .slice(0, 3);
-  }, [jogadores]);
-
-  const aniversariantes = useMemo(() => {
-    if (!jogadores?.length) return [];
-    const hoje = new Date();
-    const proximos = jogadores
-      .map((jogador) => {
-        const dataBase =
-          parseBirthDate(jogador.dataNascimento) ||
-          parseBirthDate(jogador.birthDate) ||
-          parseBirthDate(jogador.nascimento);
-        if (!dataBase) return null;
-        const proximo = nextBirthday(dataBase, hoje);
-        return {
-          id: jogador.id,
-          nome: jogador.nome,
-          data: proximo,
-          foto:
-            jogador.avatar ||
-            jogador.foto ||
-            jogador.photoUrl ||
-            "/images/jogadores/jogador_padrao_01.jpg",
-        };
-      })
-      .filter(Boolean) as { id: string; nome: string; data: Date; foto: string }[];
-    return proximos.sort((a, b) => a.data.getTime() - b.data.getTime()).slice(0, 3);
   }, [jogadores]);
 
   return (
@@ -365,7 +321,7 @@ export default function AdminDashboard() {
                 <FaBirthdayCake className="text-blue-400 w-6 h-6" />
                 <span className="text-lg font-bold text-gray-100">Aniversariantes</span>
               </div>
-              {loadingJogadores ? (
+              {loadingAniversariantes ? (
                 <div className="flex flex-col gap-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <div key={idx} className="h-5 bg-neutral-700 rounded w-5/6 animate-pulse" />
@@ -376,15 +332,17 @@ export default function AdminDashboard() {
                   {aniversariantes.map((a) => (
                     <div key={a.id} className="flex items-center gap-3">
                       <Image
-                        src={a.foto}
-                        alt={`Aniversariante ${a.nome}`}
+                        src={a.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                        alt={`Aniversariante ${a.name}`}
                         width={32}
                         height={32}
                         className="rounded-full border border-gray-500"
                       />
-                      <span className="text-gray-100 font-semibold truncate">{a.nome}</span>
+                      <span className="text-gray-100 font-semibold truncate">
+                        {a.nickname || a.name}
+                      </span>
                       <span className="ml-auto text-yellow-300 font-bold">
-                        {`${String(a.data.getDate()).padStart(2, "0")}/${String(a.data.getMonth() + 1).padStart(2, "0")}`}
+                        {`${String(a.birthDay).padStart(2, "0")}/${String(a.birthMonth).padStart(2, "0")}`}
                       </span>
                     </div>
                   ))}

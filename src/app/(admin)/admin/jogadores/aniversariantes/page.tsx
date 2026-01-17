@@ -3,14 +3,12 @@
 import Head from "next/head";
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { useJogadores } from "@/hooks/useJogadores";
-import { useRacha } from "@/context/RachaContext";
-import type { Jogador } from "@/types/jogador";
+import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 
 const meses = [
   "Janeiro",
   "Fevereiro",
-  "Março",
+  "Marco",
   "Abril",
   "Maio",
   "Junho",
@@ -22,49 +20,41 @@ const meses = [
   "Dezembro",
 ];
 
-function calcularIdade(data: string) {
+function calcularIdade(day: number, month: number, year: number) {
   const hoje = new Date();
-  const nasc = new Date(data);
-  let idade = hoje.getFullYear() - nasc.getFullYear();
-  const m = hoje.getMonth() - nasc.getMonth();
-  if (m < 0 || (m === 0 && hoje.getDate() < nasc.getDate())) idade--;
+  let idade = hoje.getFullYear() - year;
+  const mesAtual = hoje.getMonth() + 1;
+  if (mesAtual < month || (mesAtual === month && hoje.getDate() < day)) {
+    idade -= 1;
+  }
   return idade;
 }
 
-function formatarData(data: string) {
-  const dt = new Date(data);
-  return dt.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+function formatarData(day: number, month: number, year?: number | null) {
+  const dia = String(day).padStart(2, "0");
+  const mes = String(month).padStart(2, "0");
+  if (year) {
+    return `${dia}/${mes}/${year}`;
+  }
+  return `${dia}/${mes}`;
 }
 
-function isAniversarioHoje(data: string) {
+function isAniversarioHoje(day: number, month: number) {
   const hoje = new Date();
-  const d = new Date(data);
-  return hoje.getDate() === d.getDate() && hoje.getMonth() === d.getMonth();
-}
-
-function getNascimento(j: Jogador) {
-  return j.dataNascimento || j.birthDate || j.nascimento || null;
+  return hoje.getDate() === day && hoje.getMonth() + 1 === month;
 }
 
 export default function AniversariantesAdminPage() {
-  const { rachaId } = useRacha();
-  const { jogadores, isLoading } = useJogadores(rachaId || "");
   const [mesFiltro, setMesFiltro] = useState<number>(new Date().getMonth());
+  const { birthdays, isLoading } = useAdminBirthdays({ month: mesFiltro + 1 });
 
   const aniversariantesDoMes = useMemo(() => {
-    return jogadores
-      .map((j) => ({
-        id: j.id,
-        nome: j.nome || j.apelido || j.nickname || "Atleta",
-        foto: j.foto || j.avatar || "/images/jogadores/jogador_padrao_01.jpg",
-        dataNascimento: getNascimento(j),
-      }))
-      .filter((aniv) => aniv.dataNascimento)
-      .filter((aniv) => new Date(aniv.dataNascimento as string).getMonth() === mesFiltro);
-  }, [jogadores, mesFiltro]);
+    return [...birthdays].sort((a, b) => a.birthDay - b.birthDay);
+  }, [birthdays]);
 
-  const seoTitle = `Aniversariantes do mês | Painel Admin - Fut7Pro`;
-  const seoDescription = `Veja quem são os aniversariantes do mês do seu racha. O sistema envia parabéns automático no dia do aniversário.`;
+  const seoTitle = "Aniversariantes do mes | Painel Admin - Fut7Pro";
+  const seoDescription =
+    "Veja quem sao os aniversariantes do mes do seu racha. O sistema envia parabens automatico no dia do aniversario.";
 
   return (
     <>
@@ -73,13 +63,13 @@ export default function AniversariantesAdminPage() {
         <meta name="description" content={seoDescription} />
         <meta
           name="keywords"
-          content="fut7pro, aniversariantes, parabéns, futebol, racha, aniversário, admin, painel, futebol 7"
+          content="fut7pro, aniversariantes, parabens, futebol, racha, aniversario, admin, painel, futebol 7"
         />
       </Head>
       <main className="min-h-screen bg-[#181A1B] text-white pt-20 px-2 md:px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-3">
-            Aniversariantes do Mês
+            Aniversariantes do Mes
           </h1>
           <div className="flex flex-col gap-2 mb-6">
             <div className="flex flex-wrap justify-center gap-2">
@@ -123,14 +113,17 @@ export default function AniversariantesAdminPage() {
 
             {!isLoading && aniversariantesDoMes.length === 0 && (
               <div className="col-span-full text-center text-gray-400 text-lg py-8">
-                <span>Nenhum aniversariante neste mês ainda! 🎈</span>
+                <span>Nenhum aniversariante neste mes ainda!</span>
               </div>
             )}
 
             {!isLoading &&
               aniversariantesDoMes.map((aniv) => {
-                const ehHoje = isAniversarioHoje(aniv.dataNascimento as string);
-                const idade = calcularIdade(aniv.dataNascimento as string);
+                const ehHoje = isAniversarioHoje(aniv.birthDay, aniv.birthMonth);
+                const idade =
+                  typeof aniv.birthYear === "number"
+                    ? calcularIdade(aniv.birthDay, aniv.birthMonth, aniv.birthYear)
+                    : null;
 
                 return (
                   <div
@@ -141,32 +134,30 @@ export default function AniversariantesAdminPage() {
                         : "border-zinc-700"
                     }`}
                   >
-                    <div className="absolute top-2 right-2 text-2xl" title="Bolo de aniversário">
-                      🎂
-                    </div>
                     {ehHoje && (
                       <div className="absolute top-2 left-2 text-xs bg-orange-400 text-white px-2 py-0.5 rounded-full font-bold animate-bounce">
                         HOJE!
                       </div>
                     )}
                     <Image
-                      src={aniv.foto}
-                      alt={`Foto de ${aniv.nome} - aniversariante do racha`}
+                      src={aniv.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                      alt={`Foto de ${aniv.name} - aniversariante do racha`}
                       width={74}
                       height={74}
                       className="rounded-full border-2 border-yellow-400 object-cover"
                     />
                     <div className="flex flex-col items-center text-center">
                       <span className="font-bold text-lg md:text-xl text-yellow-200">
-                        {aniv.nome}
+                        {aniv.nickname || aniv.name}
                       </span>
                       <span className="text-gray-300 text-sm">
-                        {formatarData(aniv.dataNascimento as string)} • {idade} anos
+                        {formatarData(aniv.birthDay, aniv.birthMonth, aniv.birthYear)}
+                        {idade !== null ? ` - ${idade} anos` : ""}
                       </span>
                     </div>
                     {ehHoje && (
                       <div className="w-full mt-2 bg-orange-100 text-orange-700 text-center rounded px-2 py-1 text-xs font-semibold shadow">
-                        Parabéns, {aniv.nome}! 🎉
+                        Parabens, {aniv.nickname || aniv.name}!
                       </div>
                     )}
                   </div>
@@ -174,8 +165,8 @@ export default function AniversariantesAdminPage() {
               })}
           </section>
           <div className="text-xs text-gray-400 mt-8 text-center">
-            As mensagens de parabéns são enviadas automaticamente para o aniversariante, às 8h do
-            dia, sem exposição de dados pessoais.
+            As mensagens de parabens sao enviadas automaticamente para o aniversariante as 8h do
+            dia, sem exposicao de dados pessoais.
           </div>
         </div>
       </main>

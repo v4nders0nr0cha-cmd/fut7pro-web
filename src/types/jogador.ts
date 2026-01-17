@@ -19,6 +19,10 @@ export type Jogador = {
   dataNascimento?: string;
   birthDate?: string;
   nascimento?: string;
+  birthDay?: number;
+  birthMonth?: number;
+  birthYear?: number | null;
+  birthPublic?: boolean | null;
   posicao: PosicaoJogador;
   position?: PosicaoJogador;
   posicaoSecundaria?: PosicaoJogador | null;

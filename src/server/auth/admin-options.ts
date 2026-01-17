@@ -126,15 +126,21 @@ export const authOptions: NextAuthOptionsLike = {
         if (!credentials?.email || !credentials?.password) return null;
 
         try {
+          const rachaSlug =
+            (credentials as any)?.rachaSlug || (credentials as any)?.tenantSlug || undefined;
+          const loginPayload: Record<string, unknown> = {
+            email: credentials.email,
+            password: credentials.password,
+          };
+          if (rachaSlug) {
+            loginPayload.rachaSlug = rachaSlug;
+          }
           const response = await fetch(`${API_BASE_URL}${LOGIN_PATH}`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
+            body: JSON.stringify(loginPayload),
           });
 
           if (!response.ok) {

@@ -11,6 +11,8 @@ import { slugify } from "@/utils/slugify";
 interface PerfilContextType {
   usuario: Atleta | null;
   roleLabel: string | null;
+  membershipStatus: string | null;
+  isPendingApproval: boolean;
   isLoading: boolean;
   isError: boolean;
   error: string | null;
@@ -146,6 +148,8 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     if (!me?.membership?.role) return null;
     return ROLE_LABELS[me.membership.role] ?? me.membership.role;
   }, [me?.membership?.role]);
+  const membershipStatus = me?.membership?.status ?? null;
+  const isPendingApproval = membershipStatus === "PENDENTE";
 
   const tenantId = me?.tenant?.tenantId ?? null;
   const tenantSlug = me?.tenant?.tenantSlug ?? sessionUser?.tenantSlug ?? null;
@@ -154,6 +158,9 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     async (dados: PerfilUpdatePayload) => {
       if (!tenantId) {
         throw new Error("Perfil nao carregado.");
+      }
+      if (isPendingApproval) {
+        throw new Error("Aguardando aprovacao do admin.");
       }
 
       let avatarUrl: string | undefined;
@@ -204,7 +211,7 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
 
       await mutate();
     },
-    [tenantId, tenantSlug, mutate]
+    [tenantId, tenantSlug, mutate, isPendingApproval]
   );
 
   const isLoading = status === "loading" || (isAuthenticated && isLoadingMe);
@@ -215,6 +222,8 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
       value={{
         usuario,
         roleLabel,
+        membershipStatus,
+        isPendingApproval,
         isLoading,
         isError: Boolean(errorMessage),
         error: errorMessage,

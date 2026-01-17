@@ -17,6 +17,10 @@ export type MeAthlete = {
   avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
+  birthDay?: number | null;
+  birthMonth?: number | null;
+  birthYear?: number | null;
+  birthPublic?: boolean | null;
 };
 
 export type MeResponse = {
@@ -31,6 +35,7 @@ export type MeResponse = {
   } | null;
   membership: {
     role: MembershipRole | string;
+    status?: string | null;
   } | null;
   athlete: MeAthlete | null;
 };

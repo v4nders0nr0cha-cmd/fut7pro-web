@@ -176,7 +176,8 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
-  const { usuario, roleLabel, isLoading, isError, isAuthenticated } = usePerfil();
+  const { usuario, roleLabel, isLoading, isError, isAuthenticated, isPendingApproval } =
+    usePerfil();
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
@@ -224,6 +225,12 @@ export default function PerfilUsuarioPage() {
   return (
     <div className="p-6 text-white w-full">
       <h1 className="sr-only">Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro</h1>
+      {isPendingApproval && (
+        <div className="mb-6 rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
+          <strong className="block text-yellow-200">Aguardando aprovacao do admin.</strong>
+          Seu cadastro foi recebido e o acesso completo sera liberado em breve.
+        </div>
+      )}
       <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
         {/* Dados do usuário logado */}
         <div className="flex-1 flex flex-col md:flex-row gap-6 items-center">
@@ -266,16 +273,25 @@ export default function PerfilUsuarioPage() {
 
             {/* Botão Editar Perfil */}
             <button
-              className="mt-4 px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded transition w-max"
+              className="mt-4 px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded transition w-max disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => setModalEditarOpen(true)}
+              disabled={isPendingApproval}
             >
-              Editar Perfil
+              {isPendingApproval ? "Cadastro em aprovacao" : "Editar Perfil"}
             </button>
           </div>
         </div>
         {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
         <div className="w-full md:w-auto flex-shrink-0 flex justify-center">
-          {usuario.mensalista ? (
+          {isPendingApproval ? (
+            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-yellow-900/40 border-4 border-yellow-500/60 rounded-2xl shadow-md text-center text-yellow-100 font-semibold text-lg">
+              Cadastro em analise.
+              <br />
+              <span className="text-sm font-normal text-yellow-200">
+                Aguarde a aprovacao para liberar as acoes do perfil.
+              </span>
+            </div>
+          ) : usuario.mensalista ? (
             <CartaoMensalistaPremium
               nome={usuario.nome}
               logoRacha="/images/logos/logo_fut7pro.png"
