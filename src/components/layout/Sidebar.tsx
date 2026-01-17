@@ -124,6 +124,14 @@ export default function Sidebar() {
         onRulesClick={() => setRegrasOpen(true)}
       />
 
+      <div className="my-2 flex items-center gap-2 px-1">
+        <div className="h-px flex-1 bg-white/10" />
+        <span className="text-[10px] uppercase tracking-[0.2em] text-yellow-300/70">
+          Melhores do Ano
+        </span>
+        <div className="h-px flex-1 bg-white/10" />
+      </div>
+
       <SidebarPlayerCard
         title="Artilheiro do Ano"
         name={artilheiroData.name}
