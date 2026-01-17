@@ -460,7 +460,7 @@ export default function RegisterClient() {
                 value={posicao}
                 onChange={(event) => setPosicao(event.target.value)}
                 required
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
                 <option value="">Selecione</option>
                 {POSICOES.map((item) => (
@@ -475,7 +475,7 @@ export default function RegisterClient() {
               <select
                 value={posicaoSecundaria}
                 onChange={(event) => setPosicaoSecundaria(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
                 <option value="">Nenhuma</option>
                 {POSICOES.map((item) => (
