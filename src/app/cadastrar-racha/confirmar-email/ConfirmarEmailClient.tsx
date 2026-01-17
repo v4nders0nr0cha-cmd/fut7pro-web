@@ -87,7 +87,12 @@ export default function ConfirmarEmailClient() {
           </button>
           <button
             type="button"
-            onClick={() => router.push("/admin/login")}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (email) params.set("email", email);
+              params.set("verified", "1");
+              router.push(`/admin/login?${params.toString()}`);
+            }}
             className="w-full rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black shadow-lg hover:bg-yellow-300"
           >
             Ja confirmei

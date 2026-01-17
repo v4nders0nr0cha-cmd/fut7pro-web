@@ -12,11 +12,13 @@ export default function VerificarEmailClient() {
 
   const [status, setStatus] = useState<VerifyStatus>("loading");
   const [message, setMessage] = useState("");
+  const [confirmedEmail, setConfirmedEmail] = useState("");
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState<"idle" | "loading">("idle");
 
   useEffect(() => {
     let active = true;
+    let redirectTimer: ReturnType<typeof setTimeout> | null = null;
 
     const verify = async () => {
       if (!token) {
@@ -41,6 +43,16 @@ export default function VerificarEmailClient() {
 
         setStatus("success");
         setMessage("E-mail confirmado com sucesso.");
+        const verifiedEmail = (data?.email || "").toString().trim();
+        if (verifiedEmail) {
+          setConfirmedEmail(verifiedEmail);
+        }
+        const params = new URLSearchParams();
+        if (verifiedEmail) params.set("email", verifiedEmail);
+        params.set("verified", "1");
+        redirectTimer = setTimeout(() => {
+          router.replace(`/admin/login?${params.toString()}`);
+        }, 1200);
       } catch {
         if (!active) return;
         setStatus("error");
@@ -52,8 +64,11 @@ export default function VerificarEmailClient() {
 
     return () => {
       active = false;
+      if (redirectTimer) {
+        clearTimeout(redirectTimer);
+      }
     };
-  }, [token]);
+  }, [router, token]);
 
   const handleResend = async () => {
     const email = resendEmail.trim().toLowerCase();
@@ -112,7 +127,12 @@ export default function VerificarEmailClient() {
           <div className="mt-6 flex flex-col gap-3">
             <button
               type="button"
-              onClick={() => router.push("/admin/login")}
+              onClick={() => {
+                const params = new URLSearchParams();
+                if (confirmedEmail) params.set("email", confirmedEmail);
+                params.set("verified", "1");
+                router.push(`/admin/login?${params.toString()}`);
+              }}
               className="w-full rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black shadow-lg hover:bg-yellow-300"
             >
               Ir para o login do painel

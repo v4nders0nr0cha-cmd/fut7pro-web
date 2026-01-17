@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const HIGHLIGHTS = [
@@ -30,19 +30,33 @@ export default function AdminLoginPage() {
   const [senha, setSenha] = useState("");
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
+  const [verifiedMessage, setVerifiedMessage] = useState("");
   const [blocked, setBlocked] = useState(false);
   const [notVerified, setNotVerified] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
   const contactEmail = "social@fut7pro.com.br";
 
+  useEffect(() => {
+    const emailParam = (searchParams.get("email") || "").trim();
+    const verifiedParam = (searchParams.get("verified") || "").trim();
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    if (verifiedParam === "1" || verifiedParam.toLowerCase() === "true") {
+      setVerifiedMessage("E-mail confirmado! Agora entre para acessar seu painel.");
+    }
+  }, [searchParams]);
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setErro("");
+    setVerifiedMessage("");
     setBlocked(false);
     setNotVerified(false);
     setIsSubmitting(true);
@@ -128,6 +142,16 @@ export default function AdminLoginPage() {
                 className="mt-4 rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-sm text-red-200"
               >
                 {erro}
+              </div>
+            )}
+
+            {verifiedMessage && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100"
+              >
+                {verifiedMessage}
               </div>
             )}
 

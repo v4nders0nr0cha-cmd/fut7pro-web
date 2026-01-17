@@ -200,6 +200,7 @@ export async function POST(req: NextRequest) {
   }
 
   const accessToken = body?.accessToken || user.accessToken;
+  const refreshToken = body?.refreshToken || null;
   await primeBranding(baseUrl, payload, accessToken);
 
   if (!accessToken || !body?.tenantId) {
@@ -234,6 +235,8 @@ export async function POST(req: NextRequest) {
       verificationSent,
       email: adminEmail,
       name: payload.adminNome?.trim(),
+      accessToken,
+      refreshToken,
     }),
     { status: 201, headers: { "Content-Type": "application/json" } }
   );

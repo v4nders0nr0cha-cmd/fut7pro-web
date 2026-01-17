@@ -515,15 +515,35 @@ export default function CadastroRachaPage() {
 
       const emailParaConfirmar = (body?.email || adminEmail.trim()).toLowerCase();
       const slugParaConfirmar = body?.tenantSlug || rachaSlug.trim();
-      const requiresEmailVerification = body?.requiresEmailVerification ?? true;
+      const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
 
-      if (requiresEmailVerification) {
+      if (!isGoogle && requiresEmailVerification) {
         setSucesso("Cadastro realizado! Enviamos um e-mail para confirmacao.");
         const query = new URLSearchParams({
           email: emailParaConfirmar,
           slug: slugParaConfirmar,
         }).toString();
         router.push(`/cadastrar-racha/confirmar-email?${query}`);
+        return;
+      }
+
+      if (isGoogle) {
+        setSucesso("Cadastro realizado! Redirecionando para o painel.");
+        const accessToken = body?.accessToken;
+        const refreshToken = body?.refreshToken;
+        if (accessToken && refreshToken) {
+          const signInResult = await signIn("credentials", {
+            redirect: false,
+            accessToken,
+            refreshToken,
+            authProvider: "google",
+          });
+          if (signInResult?.error) {
+            setFormError("Nao foi possivel finalizar o acesso. Tente novamente.");
+            return;
+          }
+        }
+        router.push("/admin/dashboard");
         return;
       }
 
