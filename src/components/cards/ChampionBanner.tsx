@@ -11,8 +11,7 @@ type ChampionBannerProps = {
 };
 
 const ChampionBanner = ({ image, date, players, href }: ChampionBannerProps) => {
-  const bannerImage =
-    image && image.length > 0 ? image : "/images/timecampeao/time-campeao-do-dia.png";
+  const bannerImage = image && image.length > 0 ? image : "/images/torneios/torneio-matador.jpg";
 
   const altText = `Imagem do Time Campeão do Dia - ${date}`;
 
