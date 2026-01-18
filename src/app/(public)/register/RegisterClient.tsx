@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
+import ImageCropperModal from "@/components/ImageCropperModal";
+import { Switch } from "@/components/ui/Switch";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const ALLOWED_AVATAR_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
+const MAX_INLINE_AVATAR_LENGTH = 1_500_000;
 const MESES = [
   { value: "1", label: "Janeiro" },
   { value: "2", label: "Fevereiro" },
@@ -95,6 +101,10 @@ export default function RegisterClient() {
   const [mes, setMes] = useState("");
   const [ano, setAno] = useState("");
   const [ocultarNascimento, setOcultarNascimento] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState(DEFAULT_AVATAR);
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(null);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [avatarError, setAvatarError] = useState("");
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -212,6 +222,42 @@ export default function RegisterClient() {
     return null;
   };
 
+  const handleAvatarUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    setAvatarError("");
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      setAvatarError("Envie uma imagem JPEG, PNG ou WebP.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_SIZE) {
+      setAvatarError("Envie uma imagem com ate 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setCropImage(String(reader.result));
+    reader.onerror = () => setAvatarError("Falha ao ler a imagem.");
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropApply = (cropped: string) => {
+    if (cropped.length > MAX_INLINE_AVATAR_LENGTH) {
+      setAvatarError("A imagem ficou grande demais. Escolha outra menor.");
+      setCropImage(null);
+      return;
+    }
+    setAvatarDataUrl(cropped);
+    setAvatarPreview(cropped);
+    setAvatarError("");
+    setCropImage(null);
+  };
+
+  const handleAvatarRemove = () => {
+    setAvatarDataUrl(null);
+    setAvatarPreview(DEFAULT_AVATAR);
+    setAvatarError("");
+  };
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setErro("");
@@ -242,7 +288,7 @@ export default function RegisterClient() {
       }
     }
 
-    const basePayload = {
+    const basePayload: Record<string, unknown> = {
       name: trimmedNome,
       nickname: trimmedApelido ? trimmedApelido : undefined,
       position: posicao,
@@ -252,6 +298,9 @@ export default function RegisterClient() {
       birthYear: toNumberOrNull(ano),
       birthPublic: !ocultarNascimento,
     };
+    if (!needsCompletion && avatarDataUrl) {
+      basePayload.avatarUrl = avatarDataUrl;
+    }
 
     const payload = needsCompletion
       ? basePayload
@@ -425,6 +474,49 @@ export default function RegisterClient() {
           </div>
 
           {!needsCompletion && (
+            <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={avatarPreview || DEFAULT_AVATAR}
+                    alt="Foto do atleta"
+                    width={64}
+                    height={64}
+                    className="h-16 w-16 rounded-full border border-white/10 object-cover"
+                    onError={() => setAvatarPreview(DEFAULT_AVATAR)}
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-white">Foto do atleta (opcional)</p>
+                    <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WebP, ate 2MB.</p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="cursor-pointer rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:border-white/20">
+                    {avatarDataUrl ? "Trocar foto" : "Adicionar foto"}
+                    <input
+                      type="file"
+                      accept={ALLOWED_AVATAR_TYPES.join(",")}
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                      disabled={isSubmitting}
+                    />
+                  </label>
+                  {avatarDataUrl ? (
+                    <button
+                      type="button"
+                      onClick={handleAvatarRemove}
+                      className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-gray-300 hover:text-white"
+                    >
+                      Remover
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+              {avatarError ? <p className="mt-2 text-xs text-red-300">{avatarError}</p> : null}
+            </div>
+          )}
+
+          {!needsCompletion && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 E-mail
@@ -538,15 +630,23 @@ export default function RegisterClient() {
             </label>
           </div>
 
-          <label className="flex items-center gap-2 text-xs text-gray-300">
-            <input
-              type="checkbox"
-              checked={ocultarNascimento}
-              onChange={(event) => setOcultarNascimento(event.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-white/5 text-yellow-400 focus:ring-yellow-400"
-            />
-            Nao exibir meu aniversario na lista publica
-          </label>
+          <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-white">
+                  Aparecer na lista de aniversariantes do racha
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Se desligar, seu nome nao aparece na pagina publica de aniversariantes do racha.
+                </p>
+              </div>
+              <Switch
+                checked={!ocultarNascimento}
+                onCheckedChange={(checked) => setOcultarNascimento(!checked)}
+                ariaLabel="Aparecer na lista de aniversariantes do racha"
+              />
+            </div>
+          </div>
 
           <button
             type="submit"
@@ -572,6 +672,16 @@ export default function RegisterClient() {
             </a>
           </div>
         )}
+
+        <ImageCropperModal
+          open={!!cropImage}
+          imageSrc={cropImage || ""}
+          aspect={1}
+          shape="round"
+          title="Ajustar foto do atleta"
+          onCancel={() => setCropImage(null)}
+          onApply={handleCropApply}
+        />
       </div>
     </section>
   );

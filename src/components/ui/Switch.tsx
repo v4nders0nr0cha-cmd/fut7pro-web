@@ -25,12 +25,10 @@ export function Switch({
         aria-label={ariaLabel}
         {...props}
       />
-      <div
-        className={`w-11 h-6 bg-zinc-700 peer-checked:bg-amarelo rounded-full transition-colors duration-200 relative`}
-      >
+      <div className="w-11 h-6 bg-zinc-700 peer-checked:bg-yellow-400 rounded-full transition-colors duration-200 relative">
         <div
-          className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow transition-all duration-200 ${
-            checked ? "translate-x-5 bg-amarelo" : ""
+          className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow transition-transform duration-200 ${
+            checked ? "translate-x-5" : ""
           }`}
         />
       </div>
