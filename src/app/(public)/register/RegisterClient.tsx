@@ -83,6 +83,11 @@ export default function RegisterClient() {
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/perfil")),
     [searchParams, publicHref]
   );
+  const loginHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("callbackUrl", redirectTo);
+    return `${publicHref("/login")}?${params.toString()}`;
+  }, [publicHref, redirectTo]);
 
   const isAuthenticated = status === "authenticated";
   const isGoogleSession = sessionUser?.authProvider === "google";
@@ -107,6 +112,7 @@ export default function RegisterClient() {
   const [avatarError, setAvatarError] = useState("");
   const [erro, setErro] = useState("");
   const [sucesso, setSucesso] = useState("");
+  const [accountExists, setAccountExists] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const profileComplete = Boolean(
@@ -116,10 +122,7 @@ export default function RegisterClient() {
       me?.athlete?.birthMonth
   );
   const needsCompletion =
-    isAuthenticated &&
-    isGoogleSession &&
-    !isDifferentTenant &&
-    (!hasTenantSlug || !profileComplete);
+    isAuthenticated && isGoogleSession && (!hasTenantSlug || !profileComplete);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -262,11 +265,7 @@ export default function RegisterClient() {
     event.preventDefault();
     setErro("");
     setSucesso("");
-
-    if (isDifferentTenant) {
-      setErro("Seu acesso esta vinculado a outro racha.");
-      return;
-    }
+    setAccountExists(false);
 
     const baseError = validateBaseFields();
     if (baseError) {
@@ -323,7 +322,18 @@ export default function RegisterClient() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const message = body?.message || body?.error || "Erro ao concluir cadastro.";
+        const message = Array.isArray(body?.message)
+          ? body.message.join(" ")
+          : body?.message || body?.error || "Erro ao concluir cadastro.";
+        const errorCode =
+          typeof body?.code === "string"
+            ? body.code
+            : typeof body?.error?.code === "string"
+              ? body.error.code
+              : null;
+        const isAccountIssue =
+          errorCode === "ACCOUNT_EXISTS" || errorCode === "ATHLETE_ALREADY_REGISTERED";
+        setAccountExists(isAccountIssue);
         setErro(message);
         return;
       }
@@ -354,6 +364,7 @@ export default function RegisterClient() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao concluir cadastro.";
       setErro(message);
+      setAccountExists(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -379,24 +390,23 @@ export default function RegisterClient() {
           Participe dos rankings, partidas e conquistas do seu racha.
         </p>
 
-        {isDifferentTenant && sessionUser?.tenantSlug ? (
-          <div
-            role="alert"
-            aria-live="polite"
-            className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200"
-          >
-            Voce ja esta vinculado ao racha {sessionUser.tenantSlug}. Acesse o link correto para
-            continuar.
-          </div>
-        ) : null}
-
         {erro ? (
           <div
             role="alert"
             aria-live="polite"
             className="mt-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200"
           >
-            {erro}
+            <p>{erro}</p>
+            {accountExists ? (
+              <div className="mt-3">
+                <a
+                  href={loginHref}
+                  className="inline-flex items-center justify-center rounded-lg border border-red-300/50 px-3 py-2 text-xs font-semibold text-red-100 hover:border-red-200 hover:text-white"
+                >
+                  Entrar para vincular ao racha
+                </a>
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -650,7 +660,7 @@ export default function RegisterClient() {
 
           <button
             type="submit"
-            disabled={isSubmitting || isDifferentTenant}
+            disabled={isSubmitting}
             className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting
