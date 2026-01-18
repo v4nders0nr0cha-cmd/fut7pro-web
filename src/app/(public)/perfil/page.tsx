@@ -1,11 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import ModalEditarPerfil from "@/components/atletas/ModalEditarPerfil";
 import { usePerfil } from "@/components/atletas/PerfilContext";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const temporadaAtual = 2025;
 
@@ -178,9 +180,18 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 export default function PerfilUsuarioPage() {
   const { usuario, roleLabel, isLoading, isError, isAuthenticated, isPendingApproval } =
     usePerfil();
+  const router = useRouter();
+  const { publicHref } = usePublicLinks();
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) return;
+    if (isPendingApproval) {
+      router.replace(publicHref("/aguardando-aprovacao"));
+    }
+  }, [isAuthenticated, isLoading, isPendingApproval, router, publicHref]);
 
   if (isLoading) {
     return <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil...</div>;
@@ -198,6 +209,14 @@ export default function PerfilUsuarioPage() {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-red-200">
         Nao foi possivel carregar o perfil. Tente novamente mais tarde.
+      </div>
+    );
+  }
+
+  if (isPendingApproval) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">
+        Redirecionando para a tela de aguardando aprovacao...
       </div>
     );
   }

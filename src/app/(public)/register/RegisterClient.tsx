@@ -123,6 +123,8 @@ export default function RegisterClient() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [accountModalMessage, setAccountModalMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [pendingRachaName, setPendingRachaName] = useState("");
 
   const profileComplete = Boolean(
     me?.athlete?.firstName &&
@@ -199,6 +201,11 @@ export default function RegisterClient() {
   const handleGoogle = async () => {
     setErro("");
     await signIn("google", { callbackUrl: publicHref("/register") });
+  };
+
+  const handlePendingClose = () => {
+    setPendingModalOpen(false);
+    router.replace(publicHref("/aguardando-aprovacao"));
   };
 
   const validateBaseFields = () => {
@@ -353,6 +360,10 @@ export default function RegisterClient() {
 
       const accessToken = body?.accessToken;
       const refreshToken = body?.refreshToken;
+      const rawStatus = typeof body?.status === "string" ? body.status.toUpperCase() : "";
+      const requiresApproval = rawStatus === "PENDENTE" || body?.requiresApproval === true;
+      const resolvedRachaName =
+        typeof body?.rachaName === "string" && body.rachaName ? body.rachaName : nomeDoRacha;
 
       if (accessToken && refreshToken) {
         const signInResult = await signIn("credentials", {
@@ -368,11 +379,13 @@ export default function RegisterClient() {
         }
       }
 
-      setSucesso(
-        body?.requiresApproval
-          ? "Cadastro enviado! Aguarde a aprovacao do admin."
-          : "Cadastro concluido com sucesso."
-      );
+      if (requiresApproval) {
+        setPendingRachaName(resolvedRachaName);
+        setPendingModalOpen(true);
+        return;
+      }
+
+      setSucesso("Cadastro concluido com sucesso.");
       router.replace(redirectTo);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erro ao concluir cadastro.";
@@ -394,7 +407,7 @@ export default function RegisterClient() {
             Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Seu acesso sera liberado apos aprovacao do admin.
+            Seu acesso pode depender da aprovacao do admin.
           </p>
         </div>
 
@@ -747,6 +760,58 @@ export default function RegisterClient() {
                   >
                     Entrar para vincular ao racha
                   </a>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition.Root>
+
+      <Transition.Root show={pendingModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={handlePendingClose}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 flex items-center justify-center px-3 py-6">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 translate-y-6"
+              enterTo="opacity-100 translate-y-0"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 translate-y-0"
+              leaveTo="opacity-0 translate-y-6"
+            >
+              <Dialog.Panel className="relative w-full max-w-md rounded-2xl border border-yellow-500/30 bg-[#111827] px-6 pb-6 pt-6 text-white shadow-2xl">
+                <Dialog.Title className="text-lg font-semibold text-yellow-300">
+                  Solicitacao enviada
+                </Dialog.Title>
+                <p className="mt-3 text-sm text-gray-200">
+                  Sua solicitacao foi enviada para o administrador do{" "}
+                  <strong>{pendingRachaName || nomeDoRacha}</strong>. Assim que for aprovada, voce
+                  podera entrar e ver seu perfil completo.
+                </p>
+                <p className="mt-2 text-xs text-gray-400">
+                  Enquanto aguarda, voce pode navegar pelas paginas publicas do racha.
+                </p>
+
+                <div className="mt-5 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handlePendingClose}
+                    className="rounded-lg bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
+                  >
+                    Entendi
+                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

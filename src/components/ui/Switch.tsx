@@ -1,7 +1,7 @@
 "use client";
 import * as React from "react";
 
-interface SwitchProps extends React.HTMLAttributes<HTMLInputElement> {
+interface SwitchProps extends React.InputHTMLAttributes<HTMLInputElement> {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
   className?: string;

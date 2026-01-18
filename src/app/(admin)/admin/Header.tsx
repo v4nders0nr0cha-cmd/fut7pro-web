@@ -25,7 +25,7 @@ const menu: MenuItem[] = [
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/solicitacoes",
+    href: "/admin/jogadores/listar-cadastrar#solicitacoes",
     badgeKey: "solicitacoes",
   },
 ];
@@ -81,7 +81,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
       {/* AÇÕES ALINHADAS À DIREITA */}
       <div className="flex items-center gap-6 ml-auto">
         {menu.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const baseHref = item.href.split("#")[0];
+          const isActive = pathname.startsWith(baseHref);
           const badgeValue = badges[item.badgeKey] ?? 0;
 
           return (

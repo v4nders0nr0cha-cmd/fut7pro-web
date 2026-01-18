@@ -22,7 +22,7 @@ const menu: MenuItem[] = [
   {
     label: "Solicitações",
     icon: FaUserPlus,
-    href: "/admin/jogadores/solicitacoes",
+    href: "/admin/jogadores/listar-cadastrar#solicitacoes",
     badgeKey: "solicitacoes",
   },
   { label: "Perfil", icon: FaUser, href: "/admin/perfil", badgeKey: "perfil" },
@@ -56,7 +56,8 @@ export default function BottomMenuAdmin() {
   return (
     <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 py-2 md:hidden animate-slide-down">
       {menu.map((item) => {
-        const isActive = pathname.startsWith(item.href);
+        const baseHref = item.href.split("#")[0];
+        const isActive = pathname.startsWith(baseHref);
         const badgeValue = badges[item.badgeKey] ?? 0;
 
         return (

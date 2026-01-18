@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import useSWR from "swr";
 
 // Tipos dos badges por item do menu
 type Badges = {
@@ -10,17 +10,36 @@ type Badges = {
   perfil: number;
 };
 
-// Mock inicial para testar badges no menu admin
-const initialBadges: Badges = {
+const emptyBadges: Badges = {
   dashboard: 0,
-  notificacoes: 2,
-  mensagens: 1,
-  solicitacoes: 3,
+  notificacoes: 0,
+  mensagens: 0,
+  solicitacoes: 0,
   perfil: 0,
 };
 
+const fetcher = async (url: string) => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    return null;
+  }
+  return res.json();
+};
+
 export function useAdminBadges() {
-  // Futuramente, trocar por fetch, socket ou contexto global
-  const [badges] = useState<Badges>(initialBadges);
+  const { data } = useSWR<{ count?: number }>(
+    "/api/admin/solicitacoes?status=PENDENTE&count=1",
+    fetcher,
+    {
+      refreshInterval: 30000,
+      revalidateOnFocus: false,
+    }
+  );
+
+  const solicitacoes = typeof data?.count === "number" ? data.count : 0;
+  const badges: Badges = {
+    ...emptyBadges,
+    solicitacoes,
+  };
   return { badges };
 }

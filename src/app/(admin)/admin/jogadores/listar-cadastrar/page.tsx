@@ -1,7 +1,8 @@
 "use client";
 
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSession } from "next-auth/react";
 import {
   FaUserPlus,
   FaSearch,
@@ -9,13 +10,20 @@ import {
   FaTrash,
   FaExclamationTriangle,
   FaLink,
+  FaCheck,
+  FaTimes,
 } from "react-icons/fa";
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useAthleteRequests } from "@/hooks/useAthleteRequests";
+import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
+import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import type { Jogador } from "@/types/jogador";
+import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
+import { Switch } from "@/components/ui/Switch";
 
 // --- MODAL EXCLUSÃO ---
 function ModalExcluirJogador({
@@ -285,6 +293,262 @@ function ModalVincularJogador({
   );
 }
 
+function ModalAutoApproveConfirm({
+  open,
+  onClose,
+  onConfirm,
+  loading,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
+        <h2 className="text-lg text-yellow-400 font-bold">Liberar auto-aceite?</h2>
+        <p className="text-sm text-gray-200 leading-relaxed">
+          Apito inicial: ao ligar o auto-aceite, todo atleta novo entra no racha sem aprovacao
+          manual. Use somente nos primeiros dias.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded-md"
+            disabled={loading}
+          >
+            {loading ? "Ativando..." : "Ativar auto-aceite"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalRejeitarSolicitacao({
+  open,
+  solicitacao,
+  motivo,
+  onMotivoChange,
+  onClose,
+  onConfirm,
+  loading,
+  error,
+}: {
+  open: boolean;
+  solicitacao?: AthleteRequest | null;
+  motivo: string;
+  onMotivoChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open || !solicitacao) return null;
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-red-700 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
+        <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitacao</h2>
+        <p className="text-sm text-gray-200">
+          Voce esta recusando <strong>{solicitacao.name}</strong>. A conta continua global, mas nao
+          entra no racha.
+        </p>
+        <div className="flex flex-col gap-2">
+          <label className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+            Motivo (opcional)
+            <textarea
+              value={motivo}
+              onChange={(e) => onMotivoChange(e.target.value)}
+              rows={3}
+              placeholder="Ex: cadastro duplicado ou dados incompletos."
+              className="mt-2 w-full rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 focus:border-red-400"
+            />
+          </label>
+        </div>
+        {error && <div className="text-sm text-red-300">{error}</div>}
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
+            disabled={loading}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-md"
+            disabled={loading}
+          >
+            {loading ? "Rejeitando..." : "Rejeitar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalVincularSolicitacao({
+  open,
+  solicitacao,
+  npcs,
+  busca,
+  onBuscaChange,
+  npcId,
+  onNpcChange,
+  confirmacao,
+  onConfirmacaoChange,
+  onClose,
+  onConfirm,
+  loading,
+  error,
+}: {
+  open: boolean;
+  solicitacao?: AthleteRequest | null;
+  npcs: Jogador[];
+  busca: string;
+  onBuscaChange: (value: string) => void;
+  npcId: string;
+  onNpcChange: (value: string) => void;
+  confirmacao: string;
+  onConfirmacaoChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+  error?: string | null;
+}) {
+  if (!open || !solicitacao) return null;
+  const confirmacaoOk = confirmacao.trim().toUpperCase() === "VINCULAR";
+  const confirmDisabled =
+    !confirmacaoOk || !npcId || loading || !solicitacao.userId || npcs.length === 0;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
+      <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <Image
+            src={solicitacao.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+            alt={solicitacao.name}
+            width={56}
+            height={56}
+            className="rounded-full object-cover"
+          />
+          <div>
+            <h2 className="text-lg text-yellow-400 font-bold">Vincular solicitacao</h2>
+            <p className="text-sm text-gray-300">
+              Conta com login: <span className="text-white font-semibold">{solicitacao.name}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="text-sm text-gray-300 leading-relaxed">
+          Este fluxo conecta o atleta pendente a um jogador NPC existente, mantendo historico,
+          rankings e estatisticas do NPC.
+        </div>
+
+        {!solicitacao.userId && (
+          <div className="text-xs text-red-300">
+            Conta do atleta ainda nao localizada. Aguarde a criacao ou aprove a solicitacao.
+          </div>
+        )}
+
+        <div className="flex flex-col gap-3">
+          <label className="text-sm text-gray-200 font-semibold">Jogador NPC existente</label>
+          <input
+            type="text"
+            value={busca}
+            onChange={(e) => onBuscaChange(e.target.value)}
+            placeholder="Buscar por nome, apelido ou email..."
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
+          />
+          <select
+            value={npcId}
+            onChange={(e) => onNpcChange(e.target.value)}
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
+          >
+            <option value="">Selecione o NPC para vincular</option>
+            {npcs.map((npc) => (
+              <option key={npc.id} value={npc.id}>
+                {npc.nome}
+                {npc.apelido ? ` (${npc.apelido})` : ""} - {npc.posicao || npc.position}
+              </option>
+            ))}
+          </select>
+          {npcs.length === 0 && (
+            <div className="text-xs text-yellow-300">Nenhum jogador NPC disponivel.</div>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm text-gray-200 font-semibold">
+            Para confirmar, digite <span className="text-yellow-400">VINCULAR</span>
+          </label>
+          <input
+            type="text"
+            value={confirmacao}
+            onChange={(e) => onConfirmacaoChange(e.target.value)}
+            placeholder="VINCULAR"
+            className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-yellow-400"
+          />
+        </div>
+
+        {error && <div className="text-sm text-red-300">{error}</div>}
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+            className={`px-4 py-2 rounded-md font-bold ${
+              confirmDisabled
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-yellow-500 hover:bg-yellow-600 text-black"
+            }`}
+          >
+            {loading ? "Vinculando..." : "Vincular"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const POSICAO_LABEL: Record<string, string> = {
+  goleiro: "Goleiro",
+  zagueiro: "Zagueiro",
+  meia: "Meia",
+  atacante: "Atacante",
+};
+
+function formatPosicao(value?: string | null) {
+  if (!value) return "-";
+  const key = value.toLowerCase();
+  return POSICAO_LABEL[key] || value;
+}
+
+function formatDateTime(value?: string | Date | null) {
+  if (!value) return "-";
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
 // --- BADGE DE STATUS ---
 function StatusBadge({ status }: { status: Jogador["status"] }) {
   const color =
@@ -302,9 +566,49 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
-  const rachaId = rachaConfig.slug;
-  const { jogadores, isLoading, isError, error, deleteJogador, mutate, addJogador, updateJogador } =
-    useJogadores(rachaId);
+  const { data: session } = useSession();
+  const { rachaId: contextRachaId, tenantSlug, setRachaId, setTenantSlug } = useRacha();
+  const sessionUser = session?.user as { tenantId?: string; tenantSlug?: string } | undefined;
+  const resolvedRachaId = sessionUser?.tenantId || contextRachaId || rachaConfig.slug;
+  const resolvedSlug = sessionUser?.tenantSlug || tenantSlug || rachaConfig.slug;
+
+  useEffect(() => {
+    if (sessionUser?.tenantId) {
+      setRachaId(sessionUser.tenantId);
+    }
+    if (sessionUser?.tenantSlug) {
+      setTenantSlug(sessionUser.tenantSlug);
+    }
+  }, [sessionUser?.tenantId, sessionUser?.tenantSlug, setRachaId, setTenantSlug]);
+
+  const allowRequests = Boolean(resolvedSlug);
+
+  const {
+    jogadores,
+    isLoading,
+    isError,
+    error,
+    deleteJogador,
+    mutate: mutateJogadores,
+    addJogador,
+    updateJogador,
+  } = useJogadores(resolvedRachaId);
+  const {
+    solicitacoes,
+    isLoading: solicitacoesLoading,
+    isError: solicitacoesError,
+    error: solicitacoesErrorMessage,
+    approve: approveSolicitacao,
+    reject: rejectSolicitacao,
+  } = useAthleteRequests({ status: "PENDENTE", enabled: allowRequests });
+  const {
+    autoApproveAthletes,
+    isLoading: autoApproveLoading,
+    isUpdating: autoApproveUpdating,
+    isError: autoApproveError,
+    error: autoApproveErrorMessage,
+    toggleAutoApprove,
+  } = useAutoApproveAthletes({ enabled: allowRequests });
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
@@ -323,6 +627,20 @@ export default function Page() {
   const [confirmacaoVinculo, setConfirmacaoVinculo] = useState("");
   const [vincularErro, setVincularErro] = useState<string | null>(null);
   const [vinculando, setVinculando] = useState(false);
+  const [autoApproveConfirmOpen, setAutoApproveConfirmOpen] = useState(false);
+  const [autoApproveLocalError, setAutoApproveLocalError] = useState<string | null>(null);
+  const [solicitacaoActionId, setSolicitacaoActionId] = useState<string | null>(null);
+  const [solicitacaoActionError, setSolicitacaoActionError] = useState<string | null>(null);
+  const [rejeitarSolicitacao, setRejeitarSolicitacao] = useState<AthleteRequest | null>(null);
+  const [rejeitarMotivo, setRejeitarMotivo] = useState("");
+  const [rejeitarErro, setRejeitarErro] = useState<string | null>(null);
+  const [rejeitando, setRejeitando] = useState(false);
+  const [vincularSolicitacao, setVincularSolicitacao] = useState<AthleteRequest | null>(null);
+  const [npcBusca, setNpcBusca] = useState("");
+  const [npcSelecionado, setNpcSelecionado] = useState("");
+  const [confirmacaoVincularSolicitacao, setConfirmacaoVincularSolicitacao] = useState("");
+  const [vincularSolicitacaoErro, setVincularSolicitacaoErro] = useState<string | null>(null);
+  const [vincularSolicitacaoLoading, setVincularSolicitacaoLoading] = useState(false);
 
   const jogadoresFiltrados = jogadores.filter((j) => {
     const termo = busca.toLowerCase();
@@ -332,6 +650,19 @@ export default function Page() {
     const posicao = String(j.posicao || j.position || "").toLowerCase();
     return posicao === posicaoFiltro;
   });
+
+  const solicitacoesPendentes = useMemo(
+    () => solicitacoes.filter((item) => String(item.status || "").toUpperCase() === "PENDENTE"),
+    [solicitacoes]
+  );
+  const solicitacoesCount = solicitacoesPendentes.length;
+  const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
+  const autoApproveErrorResolved =
+    autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
+  const npcsDisponiveis = useMemo(
+    () => jogadores.filter((j) => !j.userId && !j.isBot),
+    [jogadores]
+  );
 
   const contasComLogin = useMemo(() => jogadores.filter((j) => j.userId), [jogadores]);
   const podeVincular = contasComLogin.length > 0;
@@ -351,6 +682,21 @@ export default function Page() {
       })
       .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
   }, [buscaConta, contasComLogin, jogadorVinculo?.id, showModalVincular]);
+
+  const npcsFiltrados = useMemo(() => {
+    if (!vincularSolicitacao) return [];
+    const termo = npcBusca.trim().toLowerCase();
+    return npcsDisponiveis
+      .filter((npc) => {
+        if (!termo) return true;
+        return (
+          npc.nome.toLowerCase().includes(termo) ||
+          npc.apelido.toLowerCase().includes(termo) ||
+          (npc.email || "").toLowerCase().includes(termo)
+        );
+      })
+      .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+  }, [npcBusca, npcsDisponiveis, vincularSolicitacao]);
 
   const abrirModalCadastro = () => {
     setCadastroErro(null);
@@ -396,6 +742,142 @@ export default function Page() {
     setContaSelecionada("");
     setConfirmacaoVinculo("");
     setVincularErro(null);
+  };
+
+  const handleAutoApproveChange = async (enabledNext: boolean) => {
+    if (autoApproveBusy) return;
+    setAutoApproveLocalError(null);
+    if (enabledNext) {
+      setAutoApproveConfirmOpen(true);
+      return;
+    }
+
+    try {
+      await toggleAutoApprove(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao atualizar auto-aceite.";
+      setAutoApproveLocalError(message);
+    }
+  };
+
+  const confirmAutoApprove = async () => {
+    if (autoApproveBusy) return;
+    setAutoApproveLocalError(null);
+    try {
+      await toggleAutoApprove(true);
+      setAutoApproveConfirmOpen(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao atualizar auto-aceite.";
+      setAutoApproveLocalError(message);
+    }
+  };
+
+  const abrirModalRejeitarSolicitacao = (solicitacao: AthleteRequest) => {
+    setRejeitarSolicitacao(solicitacao);
+    setRejeitarMotivo("");
+    setRejeitarErro(null);
+  };
+
+  const fecharModalRejeitarSolicitacao = () => {
+    if (rejeitando) return;
+    setRejeitarSolicitacao(null);
+    setRejeitarMotivo("");
+    setRejeitarErro(null);
+  };
+
+  const confirmarRejeicao = async () => {
+    if (!rejeitarSolicitacao || rejeitando) return;
+    setRejeitando(true);
+    setRejeitarErro(null);
+
+    try {
+      await rejectSolicitacao(rejeitarSolicitacao.id, rejeitarMotivo);
+      await mutateJogadores();
+      setRejeitarSolicitacao(null);
+      setRejeitarMotivo("");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao rejeitar solicitacao.";
+      setRejeitarErro(message);
+    } finally {
+      setRejeitando(false);
+    }
+  };
+
+  const abrirModalVincularSolicitacao = (solicitacao: AthleteRequest) => {
+    setVincularSolicitacao(solicitacao);
+    setNpcBusca("");
+    setNpcSelecionado("");
+    setConfirmacaoVincularSolicitacao("");
+    setVincularSolicitacaoErro(null);
+  };
+
+  const fecharModalVincularSolicitacao = () => {
+    if (vincularSolicitacaoLoading) return;
+    setVincularSolicitacao(null);
+    setNpcBusca("");
+    setNpcSelecionado("");
+    setConfirmacaoVincularSolicitacao("");
+    setVincularSolicitacaoErro(null);
+  };
+
+  const confirmarVincularSolicitacao = async () => {
+    if (!vincularSolicitacao || !npcSelecionado || !vincularSolicitacao.userId) return;
+    setVincularSolicitacaoLoading(true);
+    setVincularSolicitacaoErro(null);
+
+    try {
+      const response = await fetch("/api/jogadores/vincular", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jogadorId: npcSelecionado,
+          userId: vincularSolicitacao.userId,
+        }),
+      });
+
+      const text = await response.text();
+      let body: unknown = undefined;
+      if (text) {
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      }
+
+      if (!response.ok) {
+        const message =
+          (body as { message?: string; error?: string } | undefined)?.message ||
+          (body as { error?: string } | undefined)?.error ||
+          "Falha ao vincular jogador.";
+        throw new Error(message);
+      }
+
+      await approveSolicitacao(vincularSolicitacao.id);
+      await mutateJogadores();
+      fecharModalVincularSolicitacao();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Falha ao vincular solicitacao.";
+      setVincularSolicitacaoErro(message);
+    } finally {
+      setVincularSolicitacaoLoading(false);
+    }
+  };
+
+  const aprovarSolicitacao = async (solicitacao: AthleteRequest) => {
+    if (solicitacaoActionId) return;
+    setSolicitacaoActionId(solicitacao.id);
+    setSolicitacaoActionError(null);
+
+    try {
+      await approveSolicitacao(solicitacao.id);
+      await mutateJogadores();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao aprovar solicitacao.";
+      setSolicitacaoActionError(message);
+    } finally {
+      setSolicitacaoActionId(null);
+    }
   };
 
   const uploadAvatar = async (file: File) => {
@@ -534,7 +1016,7 @@ export default function Page() {
         throw new Error(message);
       }
 
-      await mutate();
+      await mutateJogadores();
       fecharModalVinculo();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao vincular jogador.";
@@ -553,6 +1035,9 @@ export default function Page() {
     }),
     exit: { opacity: 0, y: 14, transition: { duration: 0.2 } },
   };
+  const showSolicitacoesLista = solicitacoesCount > 0;
+  const showSolicitacoesEmpty =
+    !solicitacoesLoading && !solicitacoesError && solicitacoesCount === 0 && !autoApproveAthletes;
 
   return (
     <>
@@ -584,6 +1069,161 @@ export default function Page() {
             <li>Casos excepcionais onde o administrador precisa intervir manualmente.</li>
           </ul>
         </div>
+
+        <section id="solicitacoes" className="mb-8 scroll-mt-28">
+          <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+              <div>
+                <h2 className="text-base font-bold text-yellow-400">Solicitacoes de atletas</h2>
+                <p className="text-sm text-gray-300">
+                  Cadastros feitos no site publico aguardam aprovacao para liberar ranking, jogos e
+                  perfil completo.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-xs text-gray-300 font-semibold">
+                  Aceitar solicitacoes automaticamente
+                </div>
+                <Switch
+                  checked={autoApproveAthletes}
+                  onCheckedChange={handleAutoApproveChange}
+                  ariaLabel="Aceitar solicitacoes automaticamente"
+                  disabled={autoApproveBusy}
+                />
+              </div>
+            </div>
+            <div className="mt-3 text-xs text-gray-400">
+              <span className="text-yellow-300 font-semibold">Ligado:</span> aprova automaticamente.
+              <span className="ml-2 text-gray-300 font-semibold">Desligado:</span> exige aprovacao
+              manual.
+            </div>
+            {autoApproveBusy && (
+              <div className="mt-2 text-xs text-gray-400">Atualizando configuracao...</div>
+            )}
+            {autoApproveErrorResolved && (
+              <div className="mt-2 text-xs text-red-300">{autoApproveErrorResolved}</div>
+            )}
+          </div>
+
+          {autoApproveAthletes && !solicitacoesCount && (
+            <div className="mt-3 rounded-lg border border-yellow-500/40 bg-[#1f1a10] px-4 py-3 text-sm text-yellow-200">
+              Auto-aceite ligado: novas solicitacoes entram aprovadas automaticamente.
+            </div>
+          )}
+
+          <div className="mt-5">
+            <div className="flex items-center gap-2 text-yellow-400 font-bold text-sm mb-2">
+              Solicitacoes pendentes ({solicitacoesCount})
+            </div>
+
+            {solicitacaoActionError && (
+              <div className="text-xs text-red-300 mb-2">{solicitacaoActionError}</div>
+            )}
+
+            {solicitacoesLoading ? (
+              <div className="text-center text-gray-400 py-6">Carregando solicitacoes...</div>
+            ) : solicitacoesError ? (
+              <div className="text-center text-red-400 py-6">
+                Nao foi possivel carregar as solicitacoes.
+                {solicitacoesErrorMessage && (
+                  <div className="text-xs text-red-300 mt-2">{solicitacoesErrorMessage}</div>
+                )}
+              </div>
+            ) : showSolicitacoesLista ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <AnimatePresence>
+                  {solicitacoesPendentes.map((solicitacao, index) => {
+                    const isActionLoading = solicitacaoActionId === solicitacao.id;
+                    const canVincular = Boolean(solicitacao.userId) && npcsDisponiveis.length > 0;
+                    const approveDisabled = isActionLoading;
+                    const vincularDisabled = !canVincular || isActionLoading;
+                    const rejeitarDisabled = isActionLoading;
+
+                    return (
+                      <motion.div
+                        key={solicitacao.id}
+                        custom={index}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        variants={cardVariants}
+                        layout
+                        className="bg-[#23272f] border border-yellow-600/60 rounded-xl p-4 shadow-xl"
+                      >
+                        <div className="flex items-center">
+                          <Image
+                            src={solicitacao.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                            alt={solicitacao.name}
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
+                          />
+                          <div className="pl-4 flex-1">
+                            <div className="font-bold text-white">
+                              {solicitacao.name}
+                              {solicitacao.nickname ? (
+                                <span className="text-gray-400"> ({solicitacao.nickname})</span>
+                              ) : null}
+                            </div>
+                            <div className="text-sm text-gray-300">
+                              {formatPosicao(solicitacao.position)}
+                            </div>
+                            <div className="text-xs text-gray-400">{solicitacao.email}</div>
+                            <div className="text-xs mt-2 flex flex-wrap gap-2 items-center">
+                              <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5">
+                                Solicitacao pendente
+                              </span>
+                              <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5">
+                                Criado {formatDateTime(solicitacao.createdAt)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="border-t border-yellow-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                          <button
+                            className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                              approveDisabled
+                                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                                : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                            }`}
+                            disabled={approveDisabled}
+                            onClick={() => aprovarSolicitacao(solicitacao)}
+                          >
+                            <FaCheck /> {approveDisabled ? "Aprovando..." : "Aprovar"}
+                          </button>
+                          <button
+                            className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                              vincularDisabled
+                                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                                : "bg-indigo-700 hover:bg-indigo-800 text-white"
+                            }`}
+                            disabled={vincularDisabled}
+                            onClick={() => abrirModalVincularSolicitacao(solicitacao)}
+                          >
+                            <FaLink /> Vincular
+                          </button>
+                          <button
+                            className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                              rejeitarDisabled
+                                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                                : "bg-red-700 hover:bg-red-800 text-white"
+                            }`}
+                            disabled={rejeitarDisabled}
+                            onClick={() => abrirModalRejeitarSolicitacao(solicitacao)}
+                          >
+                            <FaTimes /> Rejeitar
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </div>
+            ) : showSolicitacoesEmpty ? (
+              <div className="text-center text-gray-400 py-6">Sem solicitacoes pendentes.</div>
+            ) : null}
+          </div>
+        </section>
 
         {/* BARRA DE BUSCA */}
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center mb-6">
@@ -757,6 +1397,40 @@ export default function Page() {
         onConfirm={confirmarVinculo}
         loading={vinculando}
         error={vincularErro}
+      />
+
+      <ModalAutoApproveConfirm
+        open={autoApproveConfirmOpen}
+        onClose={() => setAutoApproveConfirmOpen(false)}
+        onConfirm={confirmAutoApprove}
+        loading={autoApproveUpdating}
+      />
+
+      <ModalRejeitarSolicitacao
+        open={Boolean(rejeitarSolicitacao)}
+        solicitacao={rejeitarSolicitacao}
+        motivo={rejeitarMotivo}
+        onMotivoChange={setRejeitarMotivo}
+        onClose={fecharModalRejeitarSolicitacao}
+        onConfirm={confirmarRejeicao}
+        loading={rejeitando}
+        error={rejeitarErro}
+      />
+
+      <ModalVincularSolicitacao
+        open={Boolean(vincularSolicitacao)}
+        solicitacao={vincularSolicitacao}
+        npcs={npcsFiltrados}
+        busca={npcBusca}
+        onBuscaChange={setNpcBusca}
+        npcId={npcSelecionado}
+        onNpcChange={setNpcSelecionado}
+        confirmacao={confirmacaoVincularSolicitacao}
+        onConfirmacaoChange={setConfirmacaoVincularSolicitacao}
+        onClose={fecharModalVincularSolicitacao}
+        onConfirm={confirmarVincularSolicitacao}
+        loading={vincularSolicitacaoLoading}
+        error={vincularSolicitacaoErro}
       />
     </>
   );

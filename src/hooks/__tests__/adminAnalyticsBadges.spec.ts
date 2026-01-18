@@ -50,12 +50,28 @@ describe("useAdminAnalytics", () => {
 });
 
 describe("useAdminBadges", () => {
-  it("retorna badges iniciais do menu admin", () => {
+  beforeEach(() => mockSWR.mockReset());
+
+  it("retorna badges com solicitacoes pendentes", () => {
+    mockSWR.mockReturnValue({
+      data: { count: 3 },
+      error: undefined,
+      mutate: jest.fn(),
+      isValidating: false,
+    });
+
     const { result } = renderHook(() => useAdminBadges());
-    expect(result.current.badges).toMatchObject({
-      notificacoes: 2,
-      mensagens: 1,
+    expect(mockSWR).toHaveBeenCalledWith(
+      "/api/admin/solicitacoes?status=PENDENTE&count=1",
+      expect.any(Function),
+      expect.any(Object)
+    );
+    expect(result.current.badges).toEqual({
+      dashboard: 0,
+      notificacoes: 0,
+      mensagens: 0,
       solicitacoes: 3,
+      perfil: 0,
     });
   });
 });

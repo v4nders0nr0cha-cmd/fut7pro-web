@@ -1,5 +1,6 @@
 const PUBLIC_ROUTE_SEGMENTS = new Set([
   "atletas",
+  "aguardando-aprovacao",
   "comunicacao",
   "contato",
   "estatisticas",
