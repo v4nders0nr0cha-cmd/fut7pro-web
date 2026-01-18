@@ -495,7 +495,7 @@ export default function RegisterClient() {
                 onChange={(event) => setDia(event.target.value)}
                 required
                 autoComplete="bday-day"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
                 <option value="">Dia</option>
                 {DIAS.map((item) => (
@@ -512,7 +512,7 @@ export default function RegisterClient() {
                 onChange={(event) => setMes(event.target.value)}
                 required
                 autoComplete="bday-month"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
                 <option value="">Mes</option>
                 {MESES.map((item) => (
