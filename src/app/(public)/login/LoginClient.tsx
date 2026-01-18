@@ -53,16 +53,22 @@ export default function LoginClient() {
   );
 
   const shouldCheckProfile =
-    status === "authenticated" &&
-    sessionUser?.authProvider === "google" &&
-    Boolean(sessionUser?.tenantSlug);
-  const { me, isLoading: isLoadingMe } = useMe({ enabled: shouldCheckProfile });
+    status === "authenticated" && sessionUser?.authProvider === "google" && Boolean(publicSlug);
+  const {
+    me,
+    isLoading: isLoadingMe,
+    isError: isErrorMe,
+  } = useMe({
+    enabled: shouldCheckProfile,
+    tenantSlug: publicSlug,
+    context: "athlete",
+  });
 
   useEffect(() => {
     if (status !== "authenticated") return;
 
     if (sessionUser?.authProvider === "google") {
-      if (!sessionUser?.tenantSlug) {
+      if (!publicSlug) {
         router.replace(publicHref("/register"));
         return;
       }
@@ -72,14 +78,25 @@ export default function LoginClient() {
       const profileComplete = Boolean(
         me?.athlete?.birthDay && me?.athlete?.birthMonth && me?.athlete?.position
       );
-      if (shouldCheckProfile && !profileComplete) {
+      if (shouldCheckProfile && (isErrorMe || !profileComplete)) {
         router.replace(publicHref("/register"));
         return;
       }
     }
 
     router.replace(redirectTo);
-  }, [status, sessionUser, redirectTo, router, publicHref, shouldCheckProfile, isLoadingMe, me]);
+  }, [
+    status,
+    sessionUser,
+    redirectTo,
+    router,
+    publicHref,
+    publicSlug,
+    shouldCheckProfile,
+    isLoadingMe,
+    isErrorMe,
+    me,
+  ]);
 
   const handleEmailLogin = async (event: FormEvent) => {
     event.preventDefault();

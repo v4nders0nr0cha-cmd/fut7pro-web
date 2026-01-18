@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useComunicacao } from "@/hooks/useComunicacao";
+import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
@@ -19,14 +20,16 @@ export default function BottomMenu() {
   const router = useRouter();
   const { data: session } = useSession();
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const sessionSlug =
-    typeof (session?.user as any)?.tenantSlug === "string"
-      ? (session?.user as any).tenantSlug.trim().toLowerCase()
-      : "";
-  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
-  const isLoggedIn = Boolean(session?.user && isTenantSession);
+  const { publicHref, publicSlug } = usePublicLinks();
+  const tenantSlug = slugFromPath || publicSlug || "";
+  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const { me } = useMe({
+    enabled: shouldCheckMe,
+    tenantSlug,
+    context: "athlete",
+  });
+  const isLoggedIn = Boolean(me?.athlete?.id);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
-  const { publicHref } = usePublicLinks();
 
   function handleClick(href: string, label: string) {
     if (label === "Perfil" && !isLoggedIn) {

@@ -12,15 +12,26 @@ const fetcher = async (url: string): Promise<MeResponse> => {
   return res.json();
 };
 
-export function useMe(options?: { enabled?: boolean }) {
+export function useMe(options?: {
+  enabled?: boolean;
+  tenantSlug?: string | null;
+  context?: "athlete" | "admin";
+}) {
   const enabled = options?.enabled ?? true;
-  const { data, error, isLoading, mutate } = useSWR<MeResponse>(
-    enabled ? "/api/me" : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
+  const params = new URLSearchParams();
+  if (options?.tenantSlug) {
+    const slug = options.tenantSlug.trim().toLowerCase();
+    if (slug) {
+      params.set("slug", slug);
     }
-  );
+  }
+  if (options?.context === "athlete") {
+    params.set("context", "athlete");
+  }
+  const url = params.toString() ? `/api/me?${params.toString()}` : "/api/me";
+  const { data, error, isLoading, mutate } = useSWR<MeResponse>(enabled ? url : null, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   return {
     me: data ?? null,

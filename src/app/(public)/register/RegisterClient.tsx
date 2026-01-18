@@ -92,10 +92,17 @@ export default function RegisterClient() {
 
   const isAuthenticated = status === "authenticated";
   const isGoogleSession = sessionUser?.authProvider === "google";
-  const hasTenantSlug = Boolean(sessionUser?.tenantSlug);
-  const isDifferentTenant = hasTenantSlug && sessionUser?.tenantSlug !== publicSlug;
-  const shouldLoadMe = isAuthenticated && isGoogleSession && hasTenantSlug && !isDifferentTenant;
-  const { me, isLoading: isLoadingMe } = useMe({ enabled: shouldLoadMe });
+  const hasPublicSlug = Boolean(publicSlug);
+  const shouldLoadMe = isAuthenticated && isGoogleSession && hasPublicSlug;
+  const {
+    me,
+    isLoading: isLoadingMe,
+    isError: isErrorMe,
+  } = useMe({
+    enabled: shouldLoadMe,
+    tenantSlug: publicSlug,
+    context: "athlete",
+  });
 
   const [nomeCompleto, setNomeCompleto] = useState("");
   const [apelido, setApelido] = useState("");
@@ -124,26 +131,25 @@ export default function RegisterClient() {
       me?.athlete?.birthMonth
   );
   const needsCompletion =
-    isAuthenticated && isGoogleSession && (!hasTenantSlug || !profileComplete);
+    isAuthenticated && isGoogleSession && hasPublicSlug && (isErrorMe || !profileComplete);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    if (isDifferentTenant) return;
 
     if (!isGoogleSession) {
       router.replace(redirectTo);
       return;
     }
 
-    if (shouldLoadMe && !isLoadingMe && profileComplete) {
+    if (shouldLoadMe && !isLoadingMe && !isErrorMe && profileComplete) {
       router.replace(redirectTo);
     }
   }, [
     isAuthenticated,
     isGoogleSession,
-    isDifferentTenant,
     shouldLoadMe,
     isLoadingMe,
+    isErrorMe,
     profileComplete,
     redirectTo,
     router,

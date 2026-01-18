@@ -29,14 +29,15 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const sessionSlug =
-    typeof (session?.user as any)?.tenantSlug === "string"
-      ? (session?.user as any).tenantSlug.trim().toLowerCase()
-      : "";
-  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
-  const isLoggedIn = Boolean(session?.user && isTenantSession);
-  const { me } = useMe({ enabled: isLoggedIn });
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
+  const tenantSlug = slugFromPath || publicSlug || "";
+  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const { me } = useMe({
+    enabled: shouldCheckMe,
+    tenantSlug,
+    context: "athlete",
+  });
+  const isLoggedIn = Boolean(me?.athlete?.id);
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const userName = me?.athlete?.firstName || session?.user?.name || "Usuario";

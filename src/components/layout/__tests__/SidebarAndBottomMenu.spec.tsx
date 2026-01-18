@@ -21,6 +21,10 @@ jest.mock("@/hooks/useComunicacao", () => ({
   })),
 }));
 
+jest.mock("@/hooks/useMe", () => ({
+  useMe: jest.fn(() => ({ me: null })),
+}));
+
 describe("Sidebar", () => {
   it("renderiza nome do racha", () => {
     render(<Sidebar />);
@@ -32,9 +36,11 @@ describe("BottomMenu", () => {
   const useSession = require("next-auth/react").useSession as jest.Mock;
   const useComunicacao = require("@/hooks/useComunicacao").useComunicacao as jest.Mock;
   const usePathname = require("next/navigation").usePathname as jest.Mock;
+  const useMe = require("@/hooks/useMe").useMe as jest.Mock;
 
   it("mostra CTA de login quando não autenticado", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    useMe.mockReturnValue({ me: null });
     const { rerender } = render(<BottomMenu />);
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
     rerender(<BottomMenu />);
@@ -50,6 +56,9 @@ describe("BottomMenu", () => {
       badge: 2,
       badgeMensagem: 1,
       badgeSugestoes: 0,
+    });
+    useMe.mockReturnValue({
+      me: { athlete: { id: "athlete-1" } },
     });
 
     render(<BottomMenu />);

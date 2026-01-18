@@ -3,9 +3,11 @@
 import { createContext, useCallback, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import type { Atleta, PosicaoAtleta, StatusAtleta } from "@/types/atletas";
 import type { MeResponse } from "@/types/me";
 import { useMe } from "@/hooks/useMe";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { slugify } from "@/utils/slugify";
 
 interface PerfilContextType {
@@ -97,10 +99,7 @@ function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): At
   const nome = me?.athlete?.firstName || sessionUser?.name || "Atleta";
   const apelido = me?.athlete?.nickname ?? null;
   const foto = me?.athlete?.avatarUrl || sessionUser?.image || DEFAULT_AVATAR;
-  const mensalista =
-    typeof me?.athlete?.mensalista === "boolean"
-      ? me.athlete.mensalista
-      : me?.membership?.role === "PRESIDENTE";
+  const mensalista = typeof me?.athlete?.mensalista === "boolean" ? me.athlete.mensalista : false;
 
   return {
     id: me?.athlete?.id || sessionUser?.id || "usuario-autenticado",
@@ -133,6 +132,8 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
   const sessionUser = session?.user as SessionUser | undefined;
+  const pathname = usePathname() ?? "";
+  const slugFromPath = resolvePublicTenantSlug(pathname);
   const {
     me,
     isLoading: isLoadingMe,
@@ -141,18 +142,21 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     mutate,
   } = useMe({
     enabled: isAuthenticated,
+    tenantSlug: slugFromPath ?? undefined,
+    context: slugFromPath ? "athlete" : undefined,
   });
 
   const usuario = useMemo(() => buildAtletaFromMe(me, sessionUser), [me, sessionUser]);
   const roleLabel = useMemo(() => {
-    if (!me?.membership?.role) return null;
-    return ROLE_LABELS[me.membership.role] ?? me.membership.role;
+    const rawRole = String(me?.membership?.role || "").toUpperCase();
+    if (!rawRole || rawRole === "ATLETA") return null;
+    return ROLE_LABELS[rawRole] ?? me?.membership?.role ?? null;
   }, [me?.membership?.role]);
   const membershipStatus = me?.membership?.status ?? null;
   const isPendingApproval = membershipStatus === "PENDENTE";
 
   const tenantId = me?.tenant?.tenantId ?? null;
-  const tenantSlug = me?.tenant?.tenantSlug ?? sessionUser?.tenantSlug ?? null;
+  const tenantSlug = me?.tenant?.tenantSlug ?? slugFromPath ?? sessionUser?.tenantSlug ?? null;
 
   const atualizarPerfil = useCallback(
     async (dados: PerfilUpdatePayload) => {
