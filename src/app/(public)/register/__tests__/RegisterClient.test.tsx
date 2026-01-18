@@ -86,9 +86,10 @@ describe("RegisterClient", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText(/Esse e-mail ja tem conta Fut7Pro/i)).toBeInTheDocument();
-    });
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeInTheDocument();
+    expect(screen.getByText(/Esse e-mail ja tem conta Fut7Pro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Seus dados ficam separados por racha/i)).toBeInTheDocument();
 
     const loginCta = screen.getByRole("link", { name: /Entrar para vincular ao racha/i });
     expect(loginCta.getAttribute("href")).toBe(
