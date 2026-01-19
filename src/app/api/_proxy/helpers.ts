@@ -1,4 +1,6 @@
 import { getServerSession } from "next-auth/next";
+import { getToken } from "next-auth/jwt";
+import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
 
@@ -10,19 +12,59 @@ type UserLike = {
   tenantId?: string;
   tenantSlug?: string | null;
   accessToken?: string;
+  refreshToken?: string | null;
+  accessTokenExp?: number | null;
 };
+
+async function mergeTokenUser(sessionUser: UserLike | null): Promise<UserLike | null> {
+  if (!sessionUser) return null;
+  if (sessionUser.accessToken) return sessionUser;
+
+  try {
+    const token = await getToken({
+      req: {
+        cookies: nextCookies(),
+        headers: nextHeaders(),
+      } as any,
+    });
+
+    if (!token) return sessionUser;
+
+    return {
+      ...sessionUser,
+      id: token.id ? String(token.id) : sessionUser.id,
+      email: (token as any).email ?? sessionUser.email ?? null,
+      name: (token as any).name ?? sessionUser.name ?? null,
+      role: (token as any).role ?? sessionUser.role,
+      tenantId: (token as any).tenantId ?? sessionUser.tenantId,
+      tenantSlug: (token as any).tenantSlug ?? sessionUser.tenantSlug ?? null,
+      accessToken: (token as any).accessToken ?? sessionUser.accessToken,
+      refreshToken: (token as any).refreshToken ?? sessionUser.refreshToken ?? null,
+      accessTokenExp: (token as any).accessTokenExp ?? sessionUser.accessTokenExp ?? null,
+    };
+  } catch {
+    return sessionUser;
+  }
+}
+
+async function resolveSessionUser(session: unknown): Promise<UserLike | null> {
+  const sessionUser = (session as any)?.user ?? null;
+  const merged = await mergeTokenUser(sessionUser);
+  if (!merged?.accessToken) return null;
+  return merged;
+}
 
 export async function requireUser(): Promise<UserLike | null> {
   let session = await getServerSession?.(authOptions as any);
   if (!session) {
     session = await getServerSession?.(superAdminAuthOptions as any);
   }
-  return (session as any)?.user ?? null;
+  return resolveSessionUser(session);
 }
 
 export async function requireSuperAdminUser(): Promise<UserLike | null> {
   const session = await getServerSession?.(superAdminAuthOptions as any);
-  return (session as any)?.user ?? null;
+  return resolveSessionUser(session);
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
@@ -34,9 +76,11 @@ export function buildHeaders(
   tenantSlug?: string,
   options?: { includeContentType?: boolean }
 ) {
-  const headers: Record<string, string> = {
-    Authorization: user.accessToken ? `Bearer ${user.accessToken}` : "",
-  };
+  const headers: Record<string, string> = {};
+
+  if (user.accessToken) {
+    headers.Authorization = `Bearer ${user.accessToken}`;
+  }
 
   if (tenantSlug) {
     headers["x-tenant-slug"] = tenantSlug;

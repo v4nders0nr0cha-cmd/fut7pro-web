@@ -7,7 +7,14 @@ const fetcher = async (url: string): Promise<AthleteRequest[]> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || "Erro ao carregar solicitacoes.");
+    let message = text || "Erro ao carregar solicitacoes.";
+    try {
+      const body = JSON.parse(text);
+      message = body?.message || body?.error || message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
   }
   const data = await res.json();
   return Array.isArray(data) ? data : [];

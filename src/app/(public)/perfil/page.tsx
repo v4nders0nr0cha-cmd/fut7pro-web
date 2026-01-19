@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
@@ -182,6 +182,11 @@ export default function PerfilUsuarioPage() {
     usePerfil();
   const router = useRouter();
   const { publicHref } = usePublicLinks();
+  const loginHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("callbackUrl", publicHref("/perfil"));
+    return `${publicHref("/login")}?${params.toString()}`;
+  }, [publicHref]);
   const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
@@ -193,6 +198,13 @@ export default function PerfilUsuarioPage() {
     }
   }, [isAuthenticated, isLoading, isPendingApproval, router, publicHref]);
 
+  useEffect(() => {
+    if (isLoading) return;
+    if (!isAuthenticated) {
+      router.replace(loginHref);
+    }
+  }, [isAuthenticated, isLoading, router, loginHref]);
+
   if (isLoading) {
     return <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil...</div>;
   }
@@ -200,7 +212,7 @@ export default function PerfilUsuarioPage() {
   if (!isAuthenticated) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">
-        Voce precisa fazer login para acessar o seu perfil.
+        Redirecionando para o login...
       </div>
     );
   }

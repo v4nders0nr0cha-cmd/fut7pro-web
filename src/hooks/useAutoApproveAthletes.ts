@@ -9,7 +9,14 @@ const fetcher = async (url: string): Promise<AutoApproveResponse> => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(text || "Erro ao carregar configuracao.");
+    let message = text || "Erro ao carregar configuracao.";
+    try {
+      const body = JSON.parse(text);
+      message = body?.message || body?.error || message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
   }
   return res.json();
 };

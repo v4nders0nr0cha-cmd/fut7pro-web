@@ -52,14 +52,13 @@ export default function LoginClient() {
     [searchParams, publicHref]
   );
 
-  const shouldCheckProfile =
-    status === "authenticated" && sessionUser?.authProvider === "google" && Boolean(publicSlug);
+  const shouldLoadMe = status === "authenticated" && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
     isError: isErrorMe,
   } = useMe({
-    enabled: shouldCheckProfile,
+    enabled: shouldLoadMe,
     tenantSlug: publicSlug,
     context: "athlete",
   });
@@ -73,15 +72,23 @@ export default function LoginClient() {
         return;
       }
 
-      if (shouldCheckProfile && isLoadingMe) return;
+      if (shouldLoadMe && isLoadingMe) return;
 
       const profileComplete = Boolean(
         me?.athlete?.birthDay && me?.athlete?.birthMonth && me?.athlete?.position
       );
-      if (shouldCheckProfile && (isErrorMe || !profileComplete)) {
+      if (shouldLoadMe && (isErrorMe || !profileComplete)) {
         router.replace(publicHref("/register"));
         return;
       }
+    }
+
+    if (shouldLoadMe && isLoadingMe) return;
+
+    const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+    if (membershipStatus === "PENDENTE") {
+      router.replace(publicHref("/aguardando-aprovacao"));
+      return;
     }
 
     router.replace(redirectTo);
@@ -92,7 +99,7 @@ export default function LoginClient() {
     router,
     publicHref,
     publicSlug,
-    shouldCheckProfile,
+    shouldLoadMe,
     isLoadingMe,
     isErrorMe,
     me,
@@ -112,7 +119,6 @@ export default function LoginClient() {
       });
 
       if (res?.ok) {
-        router.replace(redirectTo);
         return;
       }
 
