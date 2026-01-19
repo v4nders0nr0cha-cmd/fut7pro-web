@@ -8,8 +8,115 @@ import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import ModalEditarPerfil from "@/components/atletas/ModalEditarPerfil";
 import { usePerfil } from "@/components/atletas/PerfilContext";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { usePublicAthlete } from "@/hooks/usePublicAthlete";
+import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import type { PublicMatch } from "@/types/partida";
 
-const temporadaAtual = 2025;
+const FORTALEZA_TZ = "America/Fortaleza";
+
+function formatDateYMD(date: Date, timeZone: string) {
+  if (Number.isNaN(date.getTime())) return "";
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) return "";
+  return `${year}-${month}-${day}`;
+}
+
+function getCurrentYear() {
+  const year = new Intl.DateTimeFormat("en-US", {
+    timeZone: FORTALEZA_TZ,
+    year: "numeric",
+  }).format(new Date());
+  const parsed = Number.parseInt(year, 10);
+  return Number.isNaN(parsed) ? new Date().getFullYear() : parsed;
+}
+
+function resolveTeamKey(team: PublicMatch["teamA"] | null | undefined, fallback?: string | null) {
+  const key = team?.id ?? fallback ?? team?.name ?? "";
+  if (!key) return "";
+  return String(key);
+}
+
+function getMatchScore(match: PublicMatch) {
+  const scoreA = match.score?.teamA ?? match.scoreA;
+  const scoreB = match.score?.teamB ?? match.scoreB;
+  if (typeof scoreA !== "number" || typeof scoreB !== "number") return null;
+  return { scoreA, scoreB };
+}
+
+function countChampionDays(matches: PublicMatch[], athleteId?: string | null) {
+  if (!athleteId) return 0;
+  const matchesByDay = new Map<string, PublicMatch[]>();
+
+  matches.forEach((match) => {
+    const key = formatDateYMD(new Date(match.date), FORTALEZA_TZ);
+    if (!key) return;
+    const list = matchesByDay.get(key);
+    if (list) {
+      list.push(match);
+    } else {
+      matchesByDay.set(key, [match]);
+    }
+  });
+
+  let total = 0;
+  matchesByDay.forEach((dayMatches) => {
+    const points = new Map<string, number>();
+
+    dayMatches.forEach((match) => {
+      const score = getMatchScore(match);
+      if (!score) return;
+      const teamAKey = resolveTeamKey(match.teamA, match.teamA?.id ?? null);
+      const teamBKey = resolveTeamKey(match.teamB, match.teamB?.id ?? null);
+      if (!teamAKey || !teamBKey) return;
+
+      if (score.scoreA > score.scoreB) {
+        points.set(teamAKey, (points.get(teamAKey) ?? 0) + 3);
+        points.set(teamBKey, points.get(teamBKey) ?? 0);
+      } else if (score.scoreB > score.scoreA) {
+        points.set(teamBKey, (points.get(teamBKey) ?? 0) + 3);
+        points.set(teamAKey, points.get(teamAKey) ?? 0);
+      } else {
+        points.set(teamAKey, (points.get(teamAKey) ?? 0) + 1);
+        points.set(teamBKey, (points.get(teamBKey) ?? 0) + 1);
+      }
+    });
+
+    if (!points.size) return;
+    const [championKey] = Array.from(points.entries()).sort((a, b) => b[1] - a[1])[0];
+    if (!championKey) return;
+
+    const atletaNoTimeCampeao = dayMatches.some((match) =>
+      (match.presences ?? []).some((presence) => {
+        if (presence.status === "AUSENTE") return false;
+        if (presence.athleteId !== athleteId) return false;
+        const teamKey = resolveTeamKey(presence.team, presence.teamId ?? null);
+        return teamKey === championKey;
+      })
+    );
+
+    if (atletaNoTimeCampeao) total += 1;
+  });
+
+  return total;
+}
+
+function resolveAssiduidadeLevel(jogos: number) {
+  if (jogos >= 100) return "Lenda";
+  if (jogos >= 50) return "Veterano";
+  if (jogos >= 20) return "Destaque";
+  if (jogos >= 10) return "Titular";
+  if (jogos >= 3) return "Juvenil";
+  return "Novato";
+}
 
 // --- Card Mensalista Premium ---
 function CartaoMensalistaPremium({
@@ -169,15 +276,88 @@ export default function PerfilUsuarioPage() {
   const { usuario, roleLabel, isLoading, isError, isAuthenticated, isPendingApproval } =
     usePerfil();
   const router = useRouter();
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("callbackUrl", publicHref("/perfil"));
     return `${publicHref("/login")}?${params.toString()}`;
   }, [publicHref]);
-  const [filtroStats, setFiltroStats] = useState<"temporada" | "historico">("temporada");
+  const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
   const [modalEditarOpen, setModalEditarOpen] = useState(false);
+  const currentYear = useMemo(() => getCurrentYear(), []);
+  const rangeFrom = statsPeriod === "all" ? "2000-01-01" : `${currentYear}-01-01`;
+  const rangeTo =
+    statsPeriod === "all" ? formatDateYMD(new Date(), FORTALEZA_TZ) : `${currentYear}-12-31`;
+  const athleteSlug = usuario?.slug;
+
+  const { athlete, conquistas } = usePublicAthlete({
+    tenantSlug: publicSlug,
+    athleteSlug,
+    enabled: Boolean(publicSlug && athleteSlug && isAuthenticated && !isPendingApproval),
+  });
+
+  const {
+    rankings,
+    isLoading: isLoadingRankings,
+    isError: isErrorRankings,
+  } = usePublicPlayerRankings({
+    slug: publicSlug,
+    type: "geral",
+    period: statsPeriod === "all" ? "all" : "year",
+    year: statsPeriod === "all" ? undefined : currentYear,
+  });
+
+  const {
+    matches,
+    isLoading: isLoadingMatches,
+    isError: isErrorMatches,
+  } = usePublicMatches({
+    slug: publicSlug,
+    from: rangeFrom,
+    to: rangeTo,
+    enabled: Boolean(publicSlug && isAuthenticated && !isPendingApproval),
+  });
+
+  const atletaRanking = useMemo(() => {
+    if (!rankings.length) return null;
+    return (
+      rankings.find(
+        (item) => item.slug === athleteSlug || item.id === athlete?.id || item.id === usuario?.id
+      ) ?? null
+    );
+  }, [rankings, athleteSlug, athlete?.id, usuario?.id]);
+
+  const athleteId = athlete?.id || atletaRanking?.id || usuario?.id || null;
+  const campeaoDia = useMemo(() => countChampionDays(matches, athleteId), [matches, athleteId]);
+  const stats = useMemo(() => {
+    if (isLoadingRankings || isErrorRankings) return null;
+    const jogos = atletaRanking?.jogos ?? 0;
+    const vitorias = atletaRanking?.vitorias ?? 0;
+    const mediaVitorias = jogos > 0 ? vitorias / jogos : 0;
+    const campeaoDiaValue = isLoadingMatches || isErrorMatches ? null : campeaoDia;
+    return {
+      jogos,
+      gols: atletaRanking?.gols ?? 0,
+      assistencias: atletaRanking?.assistencias ?? 0,
+      campeaoDia: campeaoDiaValue,
+      mediaVitorias,
+      pontuacao: atletaRanking?.pontos ?? 0,
+    };
+  }, [
+    isLoadingRankings,
+    isErrorRankings,
+    atletaRanking,
+    campeaoDia,
+    isLoadingMatches,
+    isErrorMatches,
+  ]);
+
+  const nivelAssiduidade = stats
+    ? resolveAssiduidadeLevel(stats.jogos)
+    : isErrorRankings
+      ? "Indisponivel"
+      : "Carregando";
 
   useEffect(() => {
     if (!isAuthenticated || isLoading) return;
@@ -221,26 +401,13 @@ export default function PerfilUsuarioPage() {
     );
   }
 
-  const stats =
-    filtroStats === "temporada"
-      ? (usuario.estatisticas.anual?.[temporadaAtual] ?? usuario.estatisticas.historico)
-      : usuario.estatisticas.historico;
-
-  const nivelAssiduidade = (jogos: number) => {
-    if (jogos >= 100) return "🐐 Lenda";
-    if (jogos >= 50) return "🦾 Veterano";
-    if (jogos >= 20) return "✨ Destaque";
-    if (jogos >= 10) return "🧢 Titular";
-    if (jogos >= 3) return "🔄 Juvenil";
-    return "🎓 Novato";
-  };
+  const athleteSlugForLinks = athlete?.slug || usuario.slug;
 
   const {
     titulosGrandesTorneios = [],
     titulosAnuais = [],
     titulosQuadrimestrais = [],
-  } = usuario.conquistas ?? {};
-
+  } = conquistas ?? {};
   return (
     <div className="p-6 text-white w-full">
       <h1 className="sr-only">Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro</h1>
@@ -281,14 +448,12 @@ export default function PerfilUsuarioPage() {
             </p>
             <p className="text-sm mt-1">
               {usuario.mensalista ? (
-                <span className="text-green-400 font-semibold">💰 MENSALISTA ATIVO</span>
+                <span className="text-green-400 font-semibold">MENSALISTA ATIVO</span>
               ) : (
-                <span className="text-zinc-400">NÃO É MENSALISTA</span>
+                <span className="text-zinc-400">NAO E MENSALISTA</span>
               )}
             </p>
-            <p className="text-sm mt-1">
-              🔁 Nível de Assiduidade: {nivelAssiduidade(usuario.totalJogos)}
-            </p>
+            <p className="text-sm mt-1">Nivel de Assiduidade: {nivelAssiduidade}</p>
 
             {/* Botão Editar Perfil */}
             <button
@@ -342,21 +507,21 @@ export default function PerfilUsuarioPage() {
         <span className="font-semibold text-yellow-400">Estatísticas:</span>
         <button
           className={`px-3 py-1 rounded font-semibold border transition ${
-            filtroStats === "temporada"
+            statsPeriod === "current"
               ? "bg-yellow-400 text-black border-yellow-400"
               : "bg-zinc-900 text-yellow-300 border-yellow-400"
           }`}
-          onClick={() => setFiltroStats("temporada")}
+          onClick={() => setStatsPeriod("current")}
         >
           Temporada atual
         </button>
         <button
           className={`px-3 py-1 rounded font-semibold border transition ${
-            filtroStats === "historico"
+            statsPeriod === "all"
               ? "bg-yellow-400 text-black border-yellow-400"
               : "bg-zinc-900 text-yellow-300 border-yellow-400"
           }`}
-          onClick={() => setFiltroStats("historico")}
+          onClick={() => setStatsPeriod("all")}
         >
           Todas as Temporadas
         </button>
@@ -366,15 +531,16 @@ export default function PerfilUsuarioPage() {
       <section>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
           {[
-            { label: "Jogos", valor: stats.jogos ?? "-" },
-            { label: "Gols", valor: stats.gols ?? "-" },
-            { label: "Assistências", valor: stats.assistencias ?? "-" },
-            { label: "Campeão do Dia", valor: stats.campeaoDia ?? "-" },
+            { label: "Jogos", valor: stats?.jogos ?? "-" },
+            { label: "Gols", valor: stats?.gols ?? "-" },
+            { label: "Assistências", valor: stats?.assistencias ?? "-" },
+            { label: "Campeão do Dia", valor: stats?.campeaoDia ?? "-" },
             {
               label: "Média Vitórias",
-              valor: typeof stats.mediaVitorias === "number" ? stats.mediaVitorias.toFixed(2) : "-",
+              valor:
+                typeof stats?.mediaVitorias === "number" ? stats?.mediaVitorias.toFixed(2) : "-",
             },
-            { label: "Pontuação", valor: stats.pontuacao ?? "-" },
+            { label: "Pontuação", valor: stats?.pontuacao ?? "-" },
           ].map((item) => (
             <div key={item.label} className="bg-zinc-800 p-4 rounded text-center shadow-md">
               <p className="text-xl font-bold text-yellow-400">{item.valor}</p>
@@ -387,7 +553,7 @@ export default function PerfilUsuarioPage() {
       {/* Conquistas */}
       <section className="mt-12">
         <ConquistasDoAtleta
-          slug={usuario.slug}
+          slug={athleteSlugForLinks}
           titulosGrandesTorneios={titulosGrandesTorneios}
           titulosAnuais={titulosAnuais}
           titulosQuadrimestrais={titulosQuadrimestrais}
