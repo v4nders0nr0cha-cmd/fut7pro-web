@@ -144,9 +144,12 @@ function resolveAssiduidadeLevel(jogos: number) {
 }
 
 export default function PerfilAtletaPage() {
-  const { slug } = useParams() as { slug: string };
+  const params = useParams() as { slug?: string; athleteSlug?: string };
   const { tenantSlug } = useRacha();
   const { publicHref, publicSlug } = usePublicLinks();
+  const tenantFromParams = params.athleteSlug ? params.slug : undefined;
+  const athleteSlug = params.athleteSlug || params.slug || "";
+  const resolvedTenantSlug = publicSlug || tenantFromParams || tenantSlug;
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const currentYear = useMemo(() => getCurrentYear(), []);
   const rangeFrom = statsPeriod === "all" ? "2000-01-01" : `${currentYear.toString()}-01-01`;
@@ -158,8 +161,8 @@ export default function PerfilAtletaPage() {
     isLoading: isLoadingAthlete,
     isError: isErrorAthlete,
   } = usePublicAthlete({
-    tenantSlug: publicSlug || tenantSlug,
-    athleteSlug: slug,
+    tenantSlug: resolvedTenantSlug,
+    athleteSlug,
   });
 
   const {
@@ -167,7 +170,7 @@ export default function PerfilAtletaPage() {
     isLoading: isLoadingRankings,
     isError: isErrorRankings,
   } = usePublicPlayerRankings({
-    slug: publicSlug || tenantSlug,
+    slug: resolvedTenantSlug,
     type: "geral",
     period: statsPeriod === "all" ? "all" : "year",
     year: statsPeriod === "all" ? undefined : currentYear,
@@ -178,14 +181,14 @@ export default function PerfilAtletaPage() {
     isLoading: isLoadingMatches,
     isError: isErrorMatches,
   } = usePublicMatches({
-    slug: publicSlug || tenantSlug,
+    slug: resolvedTenantSlug,
     from: rangeFrom,
     to: rangeTo,
-    enabled: Boolean(publicSlug || tenantSlug),
+    enabled: Boolean(resolvedTenantSlug),
   });
 
   const atletaRanking = rankings.find(
-    (item) => item.slug === slug || item.id === slug || item.id === athlete?.id
+    (item) => item.slug === athleteSlug || item.id === athleteSlug || item.id === athlete?.id
   );
   const athleteId = athlete?.id || atletaRanking?.id;
   const campeaoDia = useMemo(() => countChampionDays(matches, athleteId), [matches, athleteId]);
