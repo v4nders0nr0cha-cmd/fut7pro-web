@@ -45,39 +45,36 @@ function CartaoMensalistaPremium({
     <div
       ref={cardRef as any}
       className={`
-        relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl
-        border-4 flex
+        relative w-[340px] h-[160px] rounded-2xl overflow-hidden
+        border flex
         bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center
         transition
-        ${ativo ? "border-green-400 shadow-green-400/50 cursor-pointer hover:brightness-110" : "border-gray-400 shadow-gray-700/30"}
+        ${exportando ? "shadow-none" : "shadow-[0_12px_28px_rgba(0,0,0,0.45)]"}
+        ${ativo ? "border-emerald-400/40 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(0,0,0,0.5)]" : "border-white/10 opacity-90"}
       `}
-      style={{
-        boxShadow: exportando
-          ? "none"
-          : ativo
-            ? "0 0 18px 2px #38ff00, 0 2px 22px #0008"
-            : "0 0 10px #6668",
-      }}
       title={ativo ? "Clique para salvar seu Cartão Mensalista" : ""}
       onClick={ativo ? handleDownload : undefined}
     >
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-transparent to-black/40" />
+      <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-emerald-400/70 via-emerald-200/30 to-transparent" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/10" />
       {/* Lado esquerdo */}
-      <div className="flex flex-col justify-between pl-5 py-4 flex-1">
+      <div className="relative flex flex-col justify-between pl-5 py-4 flex-1">
         <div>
-          <div className="text-green-400 font-extrabold text-base drop-shadow-sm tracking-wide">
+          <div className="text-emerald-200 font-extrabold text-base drop-shadow-sm tracking-wide">
             MENSALISTA
           </div>
         </div>
       </div>
       {/* Lado direito */}
-      <div className="flex flex-col items-center justify-between w-[140px] py-3 pr-5">
-        <div className="text-green-400 font-semibold text-xs mb-1 mt-1">Ativo no mês</div>
+      <div className="relative flex flex-col items-center justify-between w-[140px] py-3 pr-5">
+        <div className="text-emerald-200 font-semibold text-xs mb-1 mt-1">Ativo no mês</div>
         <Image
           src={logoRacha}
           alt="Logo do Racha"
           width={54}
           height={54}
-          className="rounded-lg border border-white mb-1"
+          className="rounded-lg border border-white/20 mb-1 bg-black/20"
           draggable={false}
         />
         <div
@@ -91,18 +88,9 @@ function CartaoMensalistaPremium({
       </div>
       {/* Tooltip - canto inferior esquerdo */}
       {ativo && !exportando && (
-        <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-green-300 pointer-events-none select-none">
+        <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-emerald-200 pointer-events-none select-none">
           Clique para baixar seu cartão!
         </div>
-      )}
-      {/* Neon premium (não exporta!) */}
-      {!exportando && (
-        <div
-          className="pointer-events-none absolute inset-0 rounded-2xl border-4 border-green-400 opacity-70"
-          style={{
-            boxShadow: "0 0 18px 3px #38ff00, 0 0 18px #38ff0050 inset",
-          }}
-        />
       )}
     </div>
   );
