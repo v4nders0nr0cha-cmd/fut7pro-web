@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -93,6 +94,7 @@ export default function RegisterClient() {
   const isAuthenticated = status === "authenticated";
   const isGoogleSession = sessionUser?.authProvider === "google";
   const hasPublicSlug = Boolean(publicSlug);
+  const isRegistrationBlocked = publicSlug?.toLowerCase() === "vitrine";
   const shouldLoadMe = isAuthenticated && isGoogleSession && hasPublicSlug;
   const {
     me,
@@ -200,6 +202,10 @@ export default function RegisterClient() {
 
   const handleGoogle = async () => {
     setErro("");
+    if (isRegistrationBlocked) {
+      setErro("Cadastro de atletas desabilitado no racha vitrine.");
+      return;
+    }
     await signIn("google", { callbackUrl: publicHref("/register") });
   };
 
@@ -282,6 +288,10 @@ export default function RegisterClient() {
     setSucesso("");
     setAccountModalOpen(false);
     setAccountModalMessage("");
+    if (isRegistrationBlocked) {
+      setErro("Cadastro de atletas desabilitado no racha vitrine.");
+      return;
+    }
 
     const baseError = validateBaseFields();
     if (baseError) {
@@ -410,6 +420,19 @@ export default function RegisterClient() {
             Seu acesso pode depender da aprovacao do admin.
           </p>
         </div>
+        {isRegistrationBlocked ? (
+          <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+            Este racha e apenas demonstrativo. Cadastros de atletas estao desabilitados.
+            <div className="mt-2">
+              <Link
+                href="/cadastrar-racha"
+                className="text-amber-200 underline underline-offset-2 hover:text-amber-100"
+              >
+                Criar seu racha
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <h1 className="text-xl font-bold text-white text-center">Criar conta de atleta</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
@@ -449,7 +472,8 @@ export default function RegisterClient() {
               type="button"
               onClick={handleGoogle}
               aria-label="Continuar com Google"
-              className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
+              disabled={isRegistrationBlocked}
+              className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="flex items-center justify-center gap-2">
                 <Image src="/images/Google-Logo.png" alt="Logo do Google" width={18} height={18} />
@@ -676,7 +700,7 @@ export default function RegisterClient() {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isRegistrationBlocked}
             className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting

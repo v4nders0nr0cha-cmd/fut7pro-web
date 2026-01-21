@@ -30,6 +30,9 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   if (!slug) {
     return json({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
+  if (slug === "vitrine") {
+    return json({ error: "Cadastro de atletas desabilitado no racha vitrine." }, { status: 403 });
+  }
 
   try {
     const res = await fetch(`${backendBase}/auth/register-athlete`, {
