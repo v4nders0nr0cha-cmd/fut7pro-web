@@ -135,18 +135,18 @@ export default function AdminsTable({
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl shadow-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[980px] text-sm text-left">
-          <thead className="text-xs text-gray-300 uppercase bg-gray-800">
+    <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-lg">
+      <div className="overflow-x-auto overflow-y-visible">
+        <table className="w-full min-w-[900px] text-sm text-left">
+          <thead className="bg-gray-800 text-xs uppercase text-gray-300">
             <tr>
-              <th className="px-6 py-3">Nome</th>
-              <th className="px-6 py-3">Email</th>
-              <th className="px-6 py-3">Role</th>
-              <th className="px-6 py-3 text-center">Status</th>
-              <th className="px-6 py-3 text-center">Permissoes</th>
-              <th className="px-6 py-3 text-center">Criado em</th>
-              <th className="px-6 py-3 text-right">Acoes</th>
+              <th className="px-4 py-3 sm:px-6">Nome</th>
+              <th className="px-4 py-3 sm:px-6">Email</th>
+              <th className="px-4 py-3 sm:px-6">Role</th>
+              <th className="px-4 py-3 text-center sm:px-6">Status</th>
+              <th className="px-4 py-3 text-center sm:px-6">Permissoes</th>
+              <th className="px-4 py-3 text-center sm:px-6">Criado em</th>
+              <th className="px-4 py-3 text-right sm:px-6">Acoes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-700">
@@ -155,7 +155,7 @@ export default function AdminsTable({
               const isLocked = admin.superadmin;
               return (
                 <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap sm:px-6 sm:py-4">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-8 w-8">
                         <div className="h-8 w-8 rounded-full bg-yellow-400 flex items-center justify-center">
@@ -170,8 +170,10 @@ export default function AdminsTable({
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{admin.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-300 sm:px-6 sm:py-4">
+                    {admin.email}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap sm:px-6 sm:py-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         admin.role === Role.SUPERADMIN
@@ -186,7 +188,7 @@ export default function AdminsTable({
                       {roleLabels[admin.role]}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <td className="px-4 py-3 whitespace-nowrap text-center sm:px-6 sm:py-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         admin.active ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
@@ -195,7 +197,7 @@ export default function AdminsTable({
                       {admin.active ? "Ativo" : "Inativo"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center relative">
+                  <td className="relative px-4 py-3 whitespace-nowrap text-center sm:px-6 sm:py-4">
                     <button
                       onClick={() =>
                         setShowPermissions(showPermissions === admin.id ? null : admin.id)
@@ -205,7 +207,7 @@ export default function AdminsTable({
                       {admin.permissions.length} permissoes
                     </button>
                     {showPermissions === admin.id && (
-                      <div className="absolute right-0 z-10 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg border border-gray-700 p-4">
+                      <div className="absolute left-1/2 z-20 mt-2 w-[90vw] max-w-[90vw] -translate-x-1/2 rounded-lg border border-gray-700 bg-gray-800 p-4 shadow-lg sm:left-auto sm:right-0 sm:w-80 sm:translate-x-0">
                         <div className="text-sm font-medium text-white mb-2">
                           Permissoes de {admin.name}
                         </div>
@@ -219,11 +221,11 @@ export default function AdminsTable({
                       </div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300 text-center">
+                  <td className="px-4 py-3 whitespace-nowrap text-center text-gray-300 sm:px-6 sm:py-4">
                     {formatDate(admin.createdAt)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                    <div className="flex justify-end space-x-2">
+                  <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium sm:px-6 sm:py-4">
+                    <div className="flex flex-wrap justify-end gap-2">
                       <button
                         onClick={() => handleAction("view", admin)}
                         className="text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"

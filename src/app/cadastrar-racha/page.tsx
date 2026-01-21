@@ -687,7 +687,8 @@ export default function CadastroRachaPage() {
                   </button>
                   {isGoogle ? (
                     <p className="text-xs text-emerald-200 text-center">
-                      Conectado como {googleEmail}
+                      Conectado como {googleEmail}. Agora complete seus dados abaixo para seguir
+                      para a proxima etapa.
                     </p>
                   ) : (
                     <p className="text-xs text-gray-400 text-center">

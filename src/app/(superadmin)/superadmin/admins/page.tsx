@@ -383,8 +383,8 @@ export default function SuperAdminAdminsPage() {
         />
       </Head>
       <div className="w-full min-h-screen">
-        <div className="flex flex-wrap items-center gap-3 mb-5">
-          <h1 className="text-2xl font-bold text-white flex-1 min-w-[240px]">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <h1 className="flex-1 min-w-0 text-2xl font-bold text-white">
             Admins/Presidentes de Racha
           </h1>
           <button

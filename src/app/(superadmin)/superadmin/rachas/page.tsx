@@ -523,7 +523,7 @@ export default function RachasCadastradosPage() {
           content={`gestao de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha, ${brandLabel}`}
         />
       </Head>
-      <div className="w-full min-h-screen p-0 m-0">
+      <div className="w-full min-h-screen">
         {error && (
           <div className="mb-4 rounded border border-red-500 bg-red-900/40 px-4 py-2 text-sm text-red-100">
             Falha ao carregar rachas. Verifique a API /superadmin/tenants.
@@ -531,7 +531,7 @@ export default function RachasCadastradosPage() {
         )}
 
         {/* RESUMO NO TOPO */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-2 w-full mb-6">
+        <div className="mb-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           <ResumoCard title="Total" value={total} />
           <ResumoCard title="Ativos" value={ativos} badge="bg-green-700" />
           <ResumoCard title="Trials" value={trials} badge="bg-yellow-700" />
@@ -541,11 +541,11 @@ export default function RachasCadastradosPage() {
         </div>
 
         {/* BUSCA E FILTRO */}
-        <div className="flex flex-col md:flex-row items-start md:items-center gap-2 mb-4">
-          <div className="flex items-center w-full md:w-auto bg-zinc-900 rounded-lg px-3 py-2">
+        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex w-full min-w-0 items-center rounded-lg bg-zinc-900 px-3 py-2 lg:w-auto lg:min-w-[280px]">
             <FaSearch className="text-zinc-500 mr-2" />
             <input
-              className="bg-transparent outline-none w-full text-zinc-100"
+              className="min-w-0 w-full bg-transparent text-sm text-zinc-100 outline-none"
               placeholder="Buscar por nome, presidente ou status..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -553,7 +553,7 @@ export default function RachasCadastradosPage() {
             />
           </div>
           <select
-            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg ml-0 md:ml-2"
+            className="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-100 sm:w-auto"
             value={filtroStatus}
             onChange={(e) => setFiltroStatus(e.target.value)}
             aria-label="Filtrar status"
@@ -565,7 +565,7 @@ export default function RachasCadastradosPage() {
             <option value="Bloqueado">Bloqueados</option>
           </select>
           <select
-            className="bg-zinc-800 text-zinc-100 px-4 py-2 rounded-lg ml-0 md:ml-2"
+            className="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-100 sm:w-auto"
             value={filtroInatividade}
             onChange={(e) => setFiltroInatividade(e.target.value)}
             aria-label="Filtrar por inatividade"
@@ -579,7 +579,7 @@ export default function RachasCadastradosPage() {
             <option value="1095">Inativos ha 36+ meses</option>
           </select>
           <button
-            className="bg-yellow-500 text-black px-4 py-2 rounded-lg ml-0 md:ml-2 flex items-center gap-2 font-bold shadow opacity-60 cursor-not-allowed"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-yellow-500 px-4 py-2 text-sm font-bold text-black shadow opacity-60 cursor-not-allowed sm:w-auto"
             disabled
             title="Export em desenvolvimento (aguarda endpoint oficial)"
           >
@@ -588,7 +588,7 @@ export default function RachasCadastradosPage() {
         </div>
 
         {/* ACOES EM MASSA */}
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           <button
             className="bg-blue-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={selectedIds.length === 0}
@@ -619,11 +619,11 @@ export default function RachasCadastradosPage() {
         </div>
 
         {/* TABELA */}
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-zinc-900 rounded-xl shadow text-zinc-100">
-            <thead>
+        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 shadow-sm">
+          <table className="min-w-[980px] w-full text-sm text-zinc-100">
+            <thead className="bg-zinc-950/60">
               <tr>
-                <th className="p-3 text-left">
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
                   <input
                     type="checkbox"
                     checked={
@@ -632,21 +632,39 @@ export default function RachasCadastradosPage() {
                     onChange={handleSelecionarTodos}
                   />
                 </th>
-                <th className="p-3 text-left">Nome</th>
-                <th className="p-3 text-left">Presidente</th>
-                <th className="p-3 text-left">Plano</th>
-                <th className="p-3 text-left">Status</th>
-                <th className="p-3 text-center">Atletas</th>
-                <th className="p-3 text-center">Criado em</th>
-                <th className="p-3 text-center">Ultima atividade</th>
-                <th className="p-3 text-center">Acoes</th>
-                <th className="p-3 text-center">Bloqueio</th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Nome
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Presidente
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Plano
+                </th>
+                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Status
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Atletas
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Criado em
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Ultima atividade
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Acoes
+                </th>
+                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                  Bloqueio
+                </th>
               </tr>
             </thead>
             <tbody>
               {isLoading && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-zinc-400">
+                  <td colSpan={10} className="p-6 text-center text-zinc-400">
                     Carregando rachas...
                   </td>
                 </tr>
@@ -654,17 +672,17 @@ export default function RachasCadastradosPage() {
               {!isLoading &&
                 rachasFiltrados.map((r) => (
                   <tr key={r.id} className="hover:bg-zinc-800 duration-100">
-                    <td className="p-3">
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(r.id)}
                         onChange={() => handleSelecionar(r.id)}
                       />
                     </td>
-                    <td className="p-3 font-semibold">{r.nome}</td>
-                    <td className="p-3">{r.presidente}</td>
-                    <td className="p-3">{r.plano}</td>
-                    <td className="p-3">
+                    <td className="px-3 py-2 font-semibold sm:px-4 sm:py-3">{r.nome}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">{r.presidente}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">{r.plano}</td>
+                    <td className="px-3 py-2 sm:px-4 sm:py-3">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-bold cursor-default ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
                         title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
@@ -672,11 +690,11 @@ export default function RachasCadastradosPage() {
                         {statusLabel(r.status)}
                       </span>
                     </td>
-                    <td className="p-3 text-center">{r.atletas ?? 0}</td>
-                    <td className="p-3 text-center">
+                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">{r.atletas ?? 0}</td>
+                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
                       {r.criadoEm ? formatDate(r.criadoEm) : "--"}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
                       {r.ultimaAtividade ? formatDate(r.ultimaAtividade) : "--"}
                       {typeof r.diasInativo === "number" ? (
                         <span className="block text-xs text-zinc-400">
@@ -684,40 +702,42 @@ export default function RachasCadastradosPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="p-3 text-center flex gap-2">
-                      <button
-                        className="bg-blue-700 px-3 py-1 rounded text-xs font-bold hover:bg-blue-900 flex items-center gap-1"
-                        onClick={() => setModalRacha(r)}
-                        title="Detalhes e Acoes"
-                      >
-                        <FaInfoCircle /> Detalhes
-                      </button>
-                      <button
-                        className="bg-green-800 px-3 py-1 rounded text-xs font-bold hover:bg-green-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                        onClick={() => handleImpersonate(r)}
-                        title="Acessar Painel Admin como Presidente"
-                        disabled={Boolean(pendingAction)}
-                      >
-                        <FaUserShield /> Login como Admin
-                      </button>
-                      <button
-                        className="bg-red-700 px-3 py-1 rounded text-xs font-bold hover:bg-red-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Bloquear Racha"
-                        disabled={Boolean(pendingAction)}
-                        onClick={() => handleBlock([r.id])}
-                      >
-                        <FaLock /> Bloquear
-                      </button>
-                      <button
-                        className="bg-rose-800 px-3 py-1 rounded text-xs font-bold hover:bg-rose-900 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Excluir Racha"
-                        disabled={Boolean(pendingAction)}
-                        onClick={() => handleDelete([r.id])}
-                      >
-                        <FaTrash /> Excluir
-                      </button>
+                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <button
+                          className="flex items-center gap-1 rounded bg-blue-700 px-3 py-1 text-[11px] font-bold hover:bg-blue-900 sm:text-xs"
+                          onClick={() => setModalRacha(r)}
+                          title="Detalhes e Acoes"
+                        >
+                          <FaInfoCircle /> Detalhes
+                        </button>
+                        <button
+                          className="flex items-center gap-1 rounded bg-green-800 px-3 py-1 text-[11px] font-bold hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                          onClick={() => handleImpersonate(r)}
+                          title="Acessar Painel Admin como Presidente"
+                          disabled={Boolean(pendingAction)}
+                        >
+                          <FaUserShield /> Login como Admin
+                        </button>
+                        <button
+                          className="flex items-center gap-1 rounded bg-red-700 px-3 py-1 text-[11px] font-bold hover:bg-red-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                          title="Bloquear Racha"
+                          disabled={Boolean(pendingAction)}
+                          onClick={() => handleBlock([r.id])}
+                        >
+                          <FaLock /> Bloquear
+                        </button>
+                        <button
+                          className="flex items-center gap-1 rounded bg-rose-800 px-3 py-1 text-[11px] font-bold hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                          title="Excluir Racha"
+                          disabled={Boolean(pendingAction)}
+                          onClick={() => handleDelete([r.id])}
+                        >
+                          <FaTrash /> Excluir
+                        </button>
+                      </div>
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
                       {r.status === "BLOQUEADO" || r.bloqueado ? (
                         <span className="flex items-center gap-1 text-red-400 font-bold">
                           <FaLock /> Bloqueado
@@ -730,7 +750,7 @@ export default function RachasCadastradosPage() {
                 ))}
               {!isLoading && rachasFiltrados.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="p-6 text-center text-zinc-400">
+                  <td colSpan={10} className="p-6 text-center text-zinc-400">
                     Nenhum racha encontrado.
                   </td>
                 </tr>
@@ -754,9 +774,7 @@ export default function RachasCadastradosPage() {
 
 function ResumoCard({ title, value, badge }: { title: string; value: number; badge?: string }) {
   return (
-    <div
-      className={`flex flex-col bg-zinc-800 p-3 rounded-lg items-center justify-center text-center min-w-[85px]`}
-    >
+    <div className="flex min-w-[90px] flex-col items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900/90 px-3 py-3 text-center shadow-sm sm:min-w-[110px] sm:px-4 sm:py-4">
       <span className="text-zinc-400 text-xs uppercase">{title}</span>
       <span className={`text-2xl font-bold ${badge || ""}`}>{value}</span>
     </div>
