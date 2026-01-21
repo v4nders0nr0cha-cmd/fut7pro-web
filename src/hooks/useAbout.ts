@@ -22,8 +22,9 @@ export function useAboutPublic(slug?: string) {
   };
 }
 
-export function useAboutAdmin() {
-  const { data, error, mutate, isLoading } = useSWR(`/api/admin/about`, fetcher, {
+export function useAboutAdmin(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled !== false;
+  const { data, error, mutate, isLoading } = useSWR(enabled ? `/api/admin/about` : null, fetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: true,
     dedupingInterval: 30000,

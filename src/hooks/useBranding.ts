@@ -23,30 +23,32 @@ export function useBranding(options?: BrandingOptions) {
   const resolvedSlug = options?.slug || tenantSlug || rachaConfig.slug;
 
   const publicAbout = useAboutPublic(scope === "public" ? resolvedSlug : undefined);
-  const adminAbout = useAboutAdmin();
+  const adminAbout = useAboutAdmin({ enabled: scope === "admin" });
   const shouldLoadRacha = scope !== "superadmin" && Boolean(resolvedSlug);
   const { racha, isLoading: isLoadingRacha } = useRachaPublic(shouldLoadRacha ? resolvedSlug : "");
 
-  const about = scope === "admin" || scope === "superadmin" ? adminAbout.about : publicAbout.about;
+  const about = scope === "admin" ? adminAbout.about : publicAbout.about;
   const isLoading =
-    scope === "admin" || scope === "superadmin"
-      ? adminAbout.isLoading
-      : publicAbout.isLoading || isLoadingRacha;
+    scope === "admin" ? adminAbout.isLoading : publicAbout.isLoading || isLoadingRacha;
   const aboutNome = about?.nome?.trim() || "";
   const aboutLogo = about?.logoUrl?.trim() || "";
   const rachaNome = racha?.nome?.trim() || "";
   const rachaLogo = racha?.logoUrl?.trim() || "";
 
   const branding = useMemo(() => {
+    if (scope === "superadmin") {
+      return {
+        nome: rachaConfig.nome || "Fut7Pro",
+        logo: rachaConfig.logo || "/images/logos/logo_fut7pro.png",
+      };
+    }
     const slugLabel = resolvedSlug ? formatSlugName(resolvedSlug) : "";
     const isDefaultAboutName =
-      scope !== "superadmin" &&
       aboutNome &&
       resolvedSlug &&
       resolvedSlug !== rachaConfig.slug &&
       aboutNome.toLowerCase() === rachaConfig.nome.toLowerCase();
     const isDefaultRachaName =
-      scope !== "superadmin" &&
       rachaNome &&
       resolvedSlug &&
       resolvedSlug !== rachaConfig.slug &&
@@ -54,9 +56,7 @@ export function useBranding(options?: BrandingOptions) {
     const nome =
       (!isDefaultAboutName && aboutNome) ||
       (!isDefaultRachaName && rachaNome) ||
-      (scope !== "superadmin" && resolvedSlug && resolvedSlug !== rachaConfig.slug
-        ? slugLabel
-        : "") ||
+      (resolvedSlug && resolvedSlug !== rachaConfig.slug ? slugLabel : "") ||
       rachaConfig.nome ||
       "Fut7Pro";
     const isDefaultAboutLogo =
