@@ -9,21 +9,78 @@ import {
   FaQuestionCircle,
   FaLock,
 } from "react-icons/fa";
-
-// Mock do usuário logado (troque para integração real)
-type Cargo = "Presidente" | "Vice" | "Diretor de Futebol" | "Diretor Financeiro";
-const cargoLogado: Cargo = "Vice"; // Troque para "Presidente" para simular acesso liberado
+import { useAuth } from "@/hooks/useAuth";
+import { useMe } from "@/hooks/useMe";
+import { useRacha } from "@/context/RachaContext";
 
 export default function CancelarContaPage() {
-  const isPresidente = cargoLogado === "Presidente";
+  const { user } = useAuth();
+  const { tenantSlug } = useRacha();
+  const { me, isLoading } = useMe({ context: "admin" });
+  const membershipRole = (me?.membership?.role || "").toString().toUpperCase();
+  const isPresidente = membershipRole === "PRESIDENTE";
   const [motivo, setMotivo] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [erroEnvio, setErroEnvio] = useState<string | null>(null);
 
-  const handleCancelar = () => {
-    if (!motivo || !confirmado) return;
-    setEnviado(true);
-    setTimeout(() => setEnviado(false), 8000);
+  if (isLoading) {
+    return (
+      <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-2xl mx-auto w-full text-center">
+        <div className="bg-[#232323] rounded-lg p-6 text-gray-200 shadow">
+          Carregando permissões...
+        </div>
+      </div>
+    );
+  }
+
+  const handleCancelar = async () => {
+    if (!confirmado) {
+      setErroEnvio("Confirme a ci\u00eancia antes de enviar a solicita\u00e7\u00e3o.");
+      return;
+    }
+    if (!user?.email) {
+      setErroEnvio("Email do administrador n\u00e3o encontrado.");
+      return;
+    }
+
+    const slug = tenantSlug || me?.tenant?.tenantSlug || user?.tenantId || "";
+    if (!slug) {
+      setErroEnvio("Slug do racha n\u00e3o encontrado.");
+      return;
+    }
+
+    setEnviando(true);
+    setErroEnvio(null);
+
+    try {
+      const response = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          name: user?.name || "Admin",
+          email: user.email,
+          phone: "",
+          subject: "Cancelamento de conta",
+          message: `Solicita\u00e7\u00e3o de cancelamento do racha.\n\nMotivo: ${motivo || "N\u00e3o informado"}\nSolicitante: ${user?.name || "-"} (${user?.email || "-"})\nRacha: ${slug}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || data?.message || "Erro ao enviar solicita\u00e7\u00e3o.");
+      }
+
+      setEnviado(true);
+      setMotivo("");
+      setConfirmado(false);
+    } catch (err) {
+      setErroEnvio(err instanceof Error ? err.message : "Erro ao enviar solicita\u00e7\u00e3o.");
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -117,15 +174,17 @@ export default function CancelarContaPage() {
               </div>
               <button
                 className={`bg-red-500 hover:bg-red-600 text-white font-bold px-6 py-2 rounded transition w-fit flex items-center gap-2 disabled:opacity-60`}
-                disabled={!confirmado || enviado}
+                disabled={!confirmado || enviado || enviando}
                 onClick={handleCancelar}
                 type="button"
               >
-                <FaUserSlash /> Cancelar Conta
+                <FaUserSlash /> {enviando ? "Enviando..." : "Cancelar Conta"}
               </button>
+              {erroEnvio && <div className="mt-3 text-red-400 text-sm">{erroEnvio}</div>}
               {enviado && (
                 <div className="mt-4 text-green-400 flex items-center gap-2 font-bold">
-                  <FaCheckCircle /> Solicitação enviada! Sua conta será excluída em até 48h úteis.
+                  <FaCheckCircle /> Solicitaçao enviada ao suporte. Entraremos em contato em até 48h
+                  úteis.
                   <span className="text-xs text-gray-300 ml-2">
                     (Em caso de dúvidas,{" "}
                     <a href="/admin/comunicacao/suporte" className="underline text-yellow-400">

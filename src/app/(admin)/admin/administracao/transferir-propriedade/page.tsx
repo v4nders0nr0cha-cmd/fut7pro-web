@@ -4,57 +4,98 @@ import Head from "next/head";
 
 // Forçar renderização no cliente para evitar problemas de template
 export const dynamic = "force-dynamic";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import RestrictAccess from "@/components/admin/RestrictAccess";
-
-// MOCK DE ATLETAS (substitua por fetch real depois)
-const atletas = [
-  {
-    id: "j1",
-    nome: "Bruno Santos",
-    email: "bruno@fut7.com",
-    avatar: "/images/jogadores/jogador_padrao_05.jpg",
-  },
-  {
-    id: "j2",
-    nome: "Felipe Souza",
-    email: "felipe@fut7.com",
-    avatar: "/images/jogadores/jogador_padrao_06.jpg",
-  },
-  {
-    id: "j3",
-    nome: "André Silva",
-    email: "andre@fut7.com",
-    avatar: "/images/jogadores/jogador_padrao_07.jpg",
-  },
-];
-
-const cargoLogado = "Presidente"; // só presidente pode acessar
+import { useAuth } from "@/hooks/useAuth";
+import { useJogadores } from "@/hooks/useJogadores";
+import { useMe } from "@/hooks/useMe";
+import { useRacha } from "@/context/RachaContext";
+import type { Jogador } from "@/types/jogador";
 
 export default function TransferirPropriedadePage() {
+  const { user } = useAuth();
+  const { rachaId, tenantSlug } = useRacha();
+  const { me, isLoading: isLoadingMe } = useMe({ context: "admin" });
+  const {
+    jogadores,
+    isLoading: isLoadingJogadores,
+    isError: isErrorJogadores,
+    error: errorJogadores,
+  } = useJogadores(rachaId);
   const [busca, setBusca] = useState("");
-  const [atleta, setAtleta] = useState<(typeof atletas)[0] | null>(null);
+  const [atleta, setAtleta] = useState<Jogador | null>(null);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmado, setConfirmado] = useState(false);
   const [error, setError] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  const atletasFiltrados = atletas.filter(
-    (a) =>
-      a.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      a.email.toLowerCase().includes(busca.toLowerCase())
-  );
+  const isPresidente = (me?.membership?.role || "").toString().toUpperCase() === "PRESIDENTE";
+  const carregando = isLoadingMe || isLoadingJogadores;
 
-  function handleTransferir(e: React.FormEvent) {
+  const atletasFiltrados = useMemo(() => {
+    const query = busca.trim().toLowerCase();
+    const disponiveis = jogadores.filter((j) => !j.isBot);
+    if (!query) return disponiveis;
+    return disponiveis.filter((j) => {
+      const nome = (j.nome || "").toLowerCase();
+      const apelido = (j.apelido || "").toLowerCase();
+      const emailJogador = (j.email || "").toLowerCase();
+      return nome.includes(query) || apelido.includes(query) || emailJogador.includes(query);
+    });
+  }, [busca, jogadores]);
+
+  async function handleTransferir(e: React.FormEvent) {
     e.preventDefault();
     if (!atleta) return setError("Selecione o novo presidente.");
     if (!senha || !email) return setError("Preencha todos os campos.");
-    // Aqui faria request real de transferência
-    setConfirmado(true);
+    if (!user?.email) return setError("Email do administrador nÆo encontrado.");
+
+    const slug = tenantSlug || me?.tenant?.tenantSlug || user?.tenantId || "";
+    if (!slug) return setError("Slug do racha nÆo encontrado.");
+
+    setEnviando(true);
     setError("");
+
+    try {
+      const response = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          name: user?.name || "Admin",
+          email: user.email,
+          phone: "",
+          subject: `Transferˆncia de Propriedade - ${atleta.nome || "Atleta"}`,
+          message: `Solicita‡Æo de transferˆncia de propriedade.\n\nNovo presidente: ${atleta.nome || "-"}\nEmail informado: ${email}\nID do atleta: ${atleta.id}\nSolicitante: ${user?.name || "-"} (${user?.email || "-"})\nRacha: ${slug}`,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || data?.message || "Erro ao enviar solicita‡Æo.");
+      }
+
+      setConfirmado(true);
+      setSenha("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao enviar solicita‡Æo.");
+    } finally {
+      setEnviando(false);
+    }
   }
 
-  if (cargoLogado !== "Presidente") {
+  if (carregando) {
+    return (
+      <div className="pt-20 pb-24 md:pt-10 md:pb-12 max-w-lg mx-auto w-full text-center">
+        <div className="bg-[#232323] rounded-lg p-6 text-gray-200 shadow">
+          Carregando permissäes e atletas...
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPresidente) {
     return <RestrictAccess msg="Apenas o presidente pode transferir a propriedade do racha." />;
   }
 
@@ -76,7 +117,7 @@ export default function TransferirPropriedadePage() {
         </p>
         {confirmado ? (
           <div className="bg-green-700 text-white rounded p-4 text-center font-bold mt-8">
-            Propriedade transferida com sucesso!
+            Solicita‡Æo enviada ao suporte. Entraremos em contato para confirmar a transferˆncia.
           </div>
         ) : (
           <form className="flex flex-col gap-4" onSubmit={handleTransferir}>
@@ -97,6 +138,11 @@ export default function TransferirPropriedadePage() {
               />
               {busca && (
                 <div className="max-h-36 overflow-y-auto mt-1 border border-zinc-700 rounded bg-zinc-900">
+                  {isErrorJogadores && (
+                    <div className="text-xs text-red-400 px-3 py-2">
+                      {errorJogadores || "Erro ao carregar atletas."}
+                    </div>
+                  )}
                   {atletasFiltrados.length === 0 && (
                     <div className="text-xs text-zinc-400 px-3 py-2">Nenhum atleta encontrado.</div>
                   )}
@@ -106,17 +152,21 @@ export default function TransferirPropriedadePage() {
                       className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-zinc-700 ${
                         atleta?.id === a.id ? "bg-zinc-800" : ""
                       }`}
-                      onClick={() => setAtleta(a)}
+                      onClick={() => {
+                        setAtleta(a);
+                        setEmail(a.email || "");
+                        setError("");
+                      }}
                     >
                       <img
-                        src={a.avatar}
+                        src={a.avatar || "/images/jogadores/jogador_padrao_05.jpg"}
                         width={32}
                         height={32}
                         alt={a.nome}
                         className="rounded-full"
                       />
                       <span className="text-sm text-zinc-100">{a.nome}</span>
-                      <span className="text-xs text-zinc-400">{a.email}</span>
+                      <span className="text-xs text-zinc-400">{a.email || "Sem e-mail"}</span>
                     </div>
                   ))}
                 </div>
@@ -124,14 +174,14 @@ export default function TransferirPropriedadePage() {
               {atleta && (
                 <div className="mt-3 flex items-center gap-3 bg-zinc-900 border border-zinc-800 rounded p-2">
                   <img
-                    src={atleta.avatar}
+                    src={atleta.avatar || "/images/jogadores/jogador_padrao_05.jpg"}
                     width={32}
                     height={32}
                     alt={atleta.nome}
                     className="rounded-full"
                   />
                   <span className="text-sm text-zinc-100">{atleta.nome}</span>
-                  <span className="text-xs text-zinc-400">{atleta.email}</span>
+                  <span className="text-xs text-zinc-400">{atleta.email || "Sem e-mail"}</span>
                   <button
                     onClick={() => setAtleta(null)}
                     type="button"
@@ -170,9 +220,9 @@ export default function TransferirPropriedadePage() {
             <button
               type="submit"
               className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold rounded px-6 py-2 mt-2"
-              disabled={!atleta || !email || !senha}
+              disabled={!atleta || !email || !senha || enviando}
             >
-              Confirmar Transferência
+              {enviando ? "Enviando..." : "Confirmar Transferˆncia"}
             </button>
           </form>
         )}
