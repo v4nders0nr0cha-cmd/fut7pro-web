@@ -263,6 +263,16 @@ const notificacoesRequest = async <T>(
 export const notificacoesApi = {
   getAll: () => notificacoesRequest("/api/notificacoes", { method: "GET" }),
   getById: (id: string) => notificacoesRequest(`/api/notificacoes/${id}`, { method: "GET" }),
+  create: (data: ApiRequestData) =>
+    notificacoesRequest("/api/notificacoes", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  update: (id: string, data: ApiRequestData) =>
+    notificacoesRequest(`/api/notificacoes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
   markAsRead: (id: string) =>
     notificacoesRequest(`/api/notificacoes/${id}`, {
       method: "PUT",

@@ -1,91 +1,180 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
-import type { ChangeEvent } from "react";
-import {
-  FaHeadset,
-  FaPlus,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaClock,
-  FaReply,
-  FaTrash,
-} from "react-icons/fa";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { FaHeadset, FaPlus, FaCheckCircle, FaTimesCircle, FaClock, FaReply } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useRacha } from "@/context/RachaContext";
 
 type Status = "aguardando" | "respondido" | "finalizado";
 
 type Chamado = {
-  id: number;
+  id: string;
   assunto: string;
   mensagem: string;
-  tipo: "Problema Técnico" | "Financeiro" | "Dúvida" | "Sugestão" | "Outro";
+  tipo: "Problema Tecnico" | "Financeiro" | "Duvida" | "Sugestao" | "Outro";
   status: Status;
   data: string;
   resposta?: string;
-  imagem?: string; // base64
 };
 
-const chamadosMock: Chamado[] = [
-  {
-    id: 1,
-    assunto: "Erro ao cadastrar jogador",
-    mensagem: "Ao tentar cadastrar um novo jogador, aparece uma mensagem de erro.",
-    tipo: "Problema Técnico",
-    status: "respondido",
-    data: "2025-07-12T10:00:00Z",
-    resposta:
-      "Olá! Esse erro já foi corrigido na última atualização. Por favor, tente novamente e nos avise se persistir.",
-    imagem: "",
-  },
-  {
-    id: 2,
-    assunto: "Como alterar a identidade visual?",
-    mensagem: "Gostaria de trocar as cores do meu racha, como faço?",
-    tipo: "Dúvida",
-    status: "aguardando",
-    data: "2025-07-13T16:30:00Z",
-  },
+type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  createdAt?: string;
+};
+
+const tiposChamado: Chamado["tipo"][] = [
+  "Problema Tecnico",
+  "Financeiro",
+  "Duvida",
+  "Sugestao",
+  "Outro",
 ];
 
-const tiposChamado = ["Problema Técnico", "Financeiro", "Dúvida", "Sugestão", "Outro"];
+const parseSubject = (subject: string) => {
+  const normalized = subject.replace(/\s+/g, " ").trim();
+  const cleaned = normalized.replace(/^suporte\s*[-:]*\s*/i, "");
+  const parts = cleaned
+    .split("-")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const tipo = parts.length > 0 ? parts[0] : "Outro";
+  const assunto = parts.length > 1 ? parts.slice(1).join(" - ") : normalized || "Suporte";
+
+  return { tipo, assunto };
+};
 
 export default function SuportePage() {
-  const [chamados, setChamados] = useState<Chamado[]>(chamadosMock);
+  const { user } = useAuth();
+  const { tenantSlug } = useRacha();
+  const [chamados, setChamados] = useState<Chamado[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [novo, setNovo] = useState({
     assunto: "",
     mensagem: "",
-    tipo: "Problema Técnico" as Chamado["tipo"],
-    imagem: "" as string,
+    tipo: "Problema Tecnico" as Chamado["tipo"],
   });
-  const [imagemPreview, setImagemPreview] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [enviando, setEnviando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
-  function handleNovoChamado() {
+  const carregarChamados = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/admin/contact/messages?limit=200", {
+        cache: "no-store",
+      });
+      if (!response.ok) {
+        throw new Error("Erro ao carregar chamados");
+      }
+      const data = await response.json();
+      const list: ContactMessage[] = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.results)
+          ? data.results
+          : [];
+
+      const chamadosNormalizados: Chamado[] = list
+        .filter((msg) => (msg.subject || "").toLowerCase().includes("suporte"))
+        .map((msg) => {
+          const { tipo, assunto } = parseSubject(msg.subject || "");
+          const tipoNormalizado = tiposChamado.includes(tipo as Chamado["tipo"])
+            ? (tipo as Chamado["tipo"])
+            : "Outro";
+          return {
+            id: msg.id,
+            assunto,
+            mensagem: msg.message,
+            tipo: tipoNormalizado,
+            status: "aguardando",
+            data: msg.createdAt || "",
+          };
+        });
+
+      setChamados(chamadosNormalizados);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar chamados");
+      setChamados([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarChamados();
+  }, [carregarChamados]);
+
+  const chamadosOrdenados = useMemo(() => {
+    return [...chamados].sort((a, b) => {
+      const aTime = a.data ? new Date(a.data).getTime() : 0;
+      const bTime = b.data ? new Date(b.data).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [chamados]);
+
+  async function handleNovoChamado() {
     if (!novo.assunto.trim() || !novo.mensagem.trim()) {
       setFeedback({ success: false, message: "Preencha todos os campos." });
       return;
     }
-    setChamados((prev) => [
-      {
-        id: Math.max(...prev.map((c) => c.id)) + 1,
-        assunto: novo.assunto,
-        mensagem: novo.mensagem,
-        tipo: novo.tipo,
-        status: "aguardando",
-        data: new Date().toISOString(),
-        imagem: novo.imagem || "",
-      },
-      ...prev,
-    ]);
-    setNovo({ assunto: "", mensagem: "", tipo: "Problema Técnico", imagem: "" });
-    setImagemPreview("");
-    setShowForm(false);
-    setFeedback({
-      success: true,
-      message: "Chamado aberto com sucesso! Nossa equipe vai te responder em breve.",
-    });
+
+    const slug = tenantSlug || user?.tenantId || "";
+    if (!slug) {
+      setFeedback({ success: false, message: "Racha sem identificacao." });
+      return;
+    }
+
+    if (!user?.email) {
+      setFeedback({ success: false, message: "Email do administrador nao encontrado." });
+      return;
+    }
+
+    setEnviando(true);
+    setFeedback(null);
+
+    try {
+      const response = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug,
+          name: user?.name || "Admin",
+          email: user.email,
+          phone: "",
+          subject: `Suporte - ${novo.tipo} - ${novo.assunto}`,
+          message: novo.mensagem.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data?.error || "Erro ao enviar chamado.");
+      }
+
+      setNovo({ assunto: "", mensagem: "", tipo: "Problema Tecnico" as Chamado["tipo"] });
+      setShowForm(false);
+      setFeedback({
+        success: true,
+        message: "Chamado aberto com sucesso! Nossa equipe vai te responder em breve.",
+      });
+      await carregarChamados();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao enviar chamado.",
+      });
+    } finally {
+      setEnviando(false);
+    }
   }
 
   function statusColor(status: Status) {
@@ -112,30 +201,6 @@ export default function SuportePage() {
     );
   }
 
-  function handleImagem(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setFeedback({ success: false, message: "Envie apenas imagens (png, jpg, jpeg, gif, webp)." });
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setFeedback({ success: false, message: "Imagem deve ter até 5MB." });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setNovo((v) => ({ ...v, imagem: ev.target?.result as string }));
-      setImagemPreview(ev.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removerImagem() {
-    setNovo((v) => ({ ...v, imagem: "" }));
-    setImagemPreview("");
-  }
-
   return (
     <>
       <Head>
@@ -157,10 +222,6 @@ export default function SuportePage() {
           responderá diretamente por aqui, e você pode acompanhar o status de cada atendimento. O
           suporte do Fut7Pro é 100% dedicado ao administrador.
           <br />
-          <span className="text-gray-300">
-            Você pode anexar uma imagem/print para facilitar o atendimento (formatos aceitos: png,
-            jpg, jpeg, gif, webp, até 5MB).
-          </span>
         </div>
 
         {/* Botão Novo Chamado */}
@@ -215,51 +276,17 @@ export default function SuportePage() {
                 onChange={(e) => setNovo((v) => ({ ...v, mensagem: e.target.value }))}
               />
             </div>
-            {/* Upload de imagem */}
-            <div className="mt-5">
-              <label className="text-gray-300 font-semibold mb-2 block">
-                Anexar imagem (opcional)
-              </label>
-              {!imagemPreview && (
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="block w-full text-gray-300"
-                  onChange={handleImagem}
-                />
-              )}
-              {imagemPreview && (
-                <div className="flex items-center gap-4 mt-2">
-                  <img
-                    src={imagemPreview}
-                    alt="Preview do anexo"
-                    className="max-h-32 rounded border border-yellow-400"
-                    style={{ maxWidth: 160 }}
-                  />
-                  <button
-                    onClick={removerImagem}
-                    type="button"
-                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded transition flex items-center gap-1 font-bold"
-                    title="Remover imagem"
-                  >
-                    <FaTrash /> Remover
-                  </button>
-                </div>
-              )}
-            </div>
             <div className="flex gap-3 mt-5">
               <button
                 onClick={handleNovoChamado}
+                disabled={enviando || !novo.assunto.trim() || !novo.mensagem.trim()}
                 className="bg-yellow-400 text-black font-bold px-5 py-2 rounded hover:bg-yellow-300 transition"
               >
                 Enviar chamado
               </button>
               <button
-                onClick={() => {
-                  setShowForm(false);
-                  setImagemPreview("");
-                  setNovo((v) => ({ ...v, imagem: "" }));
-                }}
+                onClick={() => setShowForm(false)}
+                disabled={enviando}
                 className="bg-[#333] text-gray-300 px-5 py-2 rounded hover:bg-[#222] transition"
               >
                 Cancelar
@@ -288,44 +315,44 @@ export default function SuportePage() {
             <FaHeadset /> Histórico de chamados
           </div>
           <div className="space-y-4">
-            {chamados.length === 0 && (
-              <div className="text-gray-400 text-center py-10">Nenhum chamado aberto ainda.</div>
-            )}
-            {chamados.map((ch) => (
-              <div
-                key={ch.id}
-                className="bg-[#181818] rounded-lg p-4 shadow border-l-4 border-yellow-400 animate-fadeIn"
-              >
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <div className="font-bold text-yellow-300">{ch.assunto}</div>
-                    <div className="text-xs text-gray-400">
-                      {ch.tipo} • {new Date(ch.data).toLocaleString()}
-                    </div>
-                    <div className="mt-1 text-gray-200">{ch.mensagem}</div>
-                    {ch.imagem && (
-                      <div className="mt-2">
-                        <img
-                          src={ch.imagem}
-                          alt="Anexo"
-                          className="max-h-32 rounded border border-yellow-400"
-                          style={{ maxWidth: 160 }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  <div className={`mt-3 md:mt-0 md:text-right font-bold ${statusColor(ch.status)}`}>
-                    {statusLabel(ch.status)}
-                  </div>
-                </div>
-                {ch.resposta && (
-                  <div className="mt-4 bg-[#232323] p-3 rounded-lg border-l-4 border-green-400">
-                    <div className="text-green-400 font-semibold mb-1">Resposta Fut7Pro:</div>
-                    <div className="text-gray-100">{ch.resposta}</div>
-                  </div>
-                )}
+            {loading ? (
+              <div className="text-gray-400 text-center py-10">Carregando...</div>
+            ) : error ? (
+              <div className="text-red-400 text-center py-10">
+                Falha ao carregar chamados.
+                {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
               </div>
-            ))}
+            ) : chamadosOrdenados.length === 0 ? (
+              <div className="text-gray-400 text-center py-10">Nenhum chamado aberto ainda.</div>
+            ) : (
+              chamadosOrdenados.map((ch) => (
+                <div
+                  key={ch.id}
+                  className="bg-[#181818] rounded-lg p-4 shadow border-l-4 border-yellow-400 animate-fadeIn"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="font-bold text-yellow-300">{ch.assunto}</div>
+                      <div className="text-xs text-gray-400">
+                        {ch.tipo} • {ch.data ? new Date(ch.data).toLocaleString() : "--"}
+                      </div>
+                      <div className="mt-1 text-gray-200">{ch.mensagem}</div>
+                    </div>
+                    <div
+                      className={`mt-3 md:mt-0 md:text-right font-bold ${statusColor(ch.status)}`}
+                    >
+                      {statusLabel(ch.status)}
+                    </div>
+                  </div>
+                  {ch.resposta && (
+                    <div className="mt-4 bg-[#232323] p-3 rounded-lg border-l-4 border-green-400">
+                      <div className="text-green-400 font-semibold mb-1">Resposta Fut7Pro:</div>
+                      <div className="text-gray-100">{ch.resposta}</div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -1,32 +1,78 @@
 "use client";
-import { useState } from "react";
-import { FaCommentDots } from "react-icons/fa";
 
-type Mensagem = {
-  id: number;
-  autor: string;
-  mensagem: string;
-  data: string;
+import { useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { FaCommentDots } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import type { Notificacao } from "@/types/notificacao";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
+
+const isMensagem = (notif: Notificacao) => {
+  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const category = (meta.category || meta.categoria || "").toString().toLowerCase();
+  const templateId = (notif.templateId || (meta.templateId as string | undefined) || "")
+    .toString()
+    .toLowerCase();
+
+  if (rawType.includes("mensagem") || rawType.includes("message")) return true;
+  if (category.includes("mensagem") || category.includes("message")) return true;
+  if (templateId.includes("direct-message") || templateId.includes("admin-message")) return true;
+  return false;
 };
 
-const MENSAGENS_ADMIN: Mensagem[] = [
-  {
-    id: 1,
-    autor: "Admin",
-    mensagem:
-      "Seu time para o próximo racha já está disponível! Confira os detalhes na área de jogos.",
-    data: "2025-07-18T09:01:00Z",
-  },
-  {
-    id: 2,
-    autor: "Admin",
-    mensagem: "O pagamento da sua mensalidade vence dia 10.",
-    data: "2025-07-10T18:30:00Z",
-  },
-];
+const resolveAuthor = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  return (
+    (notif.remetente as string) ||
+    (meta.autor as string) ||
+    (meta.nomeResponsavel as string) ||
+    "Administracao"
+  );
+};
 
 export default function MensagensPage() {
-  const [mensagens] = useState(MENSAGENS_ADMIN);
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { publicHref } = usePublicLinks();
+  const { notificacoes, isLoading, isError, error, markAsRead } = useNotifications({
+    enabled: isAuthenticated,
+  });
+
+  const mensagens = useMemo(() => notificacoes.filter(isMensagem), [notificacoes]);
+
+  const handleClick = async (notif: Notificacao) => {
+    if (!notif.lida) {
+      await markAsRead(notif.id);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+        <div className="text-center text-gray-400">Carregando...</div>
+      </main>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
+        <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
+          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Mensagens do Admin</h1>
+          <p className="text-gray-300 mb-4">Entre para ver as mensagens do seu racha.</p>
+          <button
+            type="button"
+            onClick={() => router.push(publicHref("/login"))}
+            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+          >
+            Fazer login
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
@@ -34,18 +80,44 @@ export default function MensagensPage() {
         <FaCommentDots /> Mensagens do Admin
       </h1>
       <div className="flex flex-col gap-4">
-        {mensagens.map((msg) => (
-          <div
-            key={msg.id}
-            className="bg-zinc-900 rounded-lg p-4 shadow border-l-4 border-yellow-400"
-          >
-            <div className="font-bold text-yellow-300 mb-1">{msg.autor}</div>
-            <div className="text-gray-200">{msg.mensagem}</div>
-            <div className="text-xs text-gray-400 mt-2">
-              {new Date(msg.data).toLocaleString("pt-BR")}
-            </div>
+        {isLoading ? (
+          <div className="text-center text-gray-400">Carregando...</div>
+        ) : isError ? (
+          <div className="text-center text-red-400">
+            Falha ao carregar mensagens.
+            {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
           </div>
-        ))}
+        ) : mensagens.length === 0 ? (
+          <div className="text-center text-gray-400">Nenhuma mensagem encontrada.</div>
+        ) : (
+          mensagens.map((msg) => {
+            const dataLabel = msg.data ? new Date(msg.data).toLocaleString("pt-BR") : "";
+            const title = msg.assunto || msg.titulo || msg.title || "Mensagem";
+            const message = msg.mensagem || msg.message || "";
+            const author = resolveAuthor(msg);
+
+            return (
+              <div
+                key={msg.id}
+                className={`rounded-lg p-4 shadow border-l-4 transition cursor-pointer ${
+                  msg.lida
+                    ? "bg-zinc-900 border-zinc-700 opacity-70"
+                    : "bg-zinc-900 border-yellow-400"
+                }`}
+                onClick={() => handleClick(msg)}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="font-bold text-yellow-300">{title}</div>
+                  <span className="text-xs text-gray-400">{dataLabel}</span>
+                </div>
+                <div className="text-gray-200">{message}</div>
+                <div className="text-xs text-gray-400 mt-2">
+                  Enviado por <span className="font-semibold">{author}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </main>
   );

@@ -7,15 +7,13 @@ import {
   proxyBackend,
   requireUser,
   resolveTenantSlug,
-} from "../_proxy/helpers";
-
-const BASE_PATH = "/notificacoes";
+} from "../../../_proxy/helpers";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const dynamic = "force-dynamic";
 
-async function forwardToBackend(req: NextRequest, init: RequestInit, includeContentType: boolean) {
+export async function GET(req: NextRequest) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
@@ -26,43 +24,16 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, includeCont
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
-  const headers = buildHeaders(user, tenantSlug, {
-    includeContentType,
-  });
-
-  const targetUrl = new URL(`${getApiBase()}${BASE_PATH}`);
+  const targetUrl = new URL(`${getApiBase()}/contact/messages`);
   req.nextUrl.searchParams.forEach((value, key) => {
     targetUrl.searchParams.set(key, value);
   });
 
   const { response, body } = await proxyBackend(targetUrl.toString(), {
-    ...init,
-    headers,
+    method: "GET",
+    headers: buildHeaders(user, tenantSlug),
+    cache: "no-store",
   });
 
   return forwardResponse(response.status, body);
-}
-
-export async function GET(req: NextRequest) {
-  return forwardToBackend(
-    req,
-    {
-      method: "GET",
-      cache: "no-store",
-    },
-    false
-  );
-}
-
-export async function POST(req: NextRequest) {
-  const payload = await req.text();
-  return forwardToBackend(
-    req,
-    {
-      method: "POST",
-      body: payload,
-      cache: "no-store",
-    },
-    true
-  );
 }

@@ -1,20 +1,14 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
-import {
-  FaPaperPlane,
-  FaCheckCircle,
-  FaTimesCircle,
-  FaUsers,
-  FaFilter,
-  FaEnvelope,
-  FaBell,
-  FaWhatsapp,
-} from "react-icons/fa";
+import { useMemo, useState } from "react";
+import { FaPaperPlane, FaCheckCircle, FaTimesCircle, FaUsers, FaFilter } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { notificacoesApi } from "@/lib/api";
 
-type Notificacao = {
-  id: number;
+type HistoryEntry = {
+  id: string;
   destinatario: string;
   grupo: string;
   mensagem: string;
@@ -58,27 +52,6 @@ const gruposPorCategoria = [
   },
 ];
 
-const notificacoesMock: Notificacao[] = [
-  {
-    id: 1,
-    destinatario: "Todos os Jogadores",
-    grupo: "todos",
-    mensagem: "Lembrete: confirme sua presença para o jogo de sábado!",
-    canais: ["badge", "push"],
-    data: "2025-07-13T14:00:00Z",
-    status: "enviado",
-  },
-  {
-    id: 2,
-    destinatario: "Mensalistas",
-    grupo: "mensalistas",
-    mensagem: "Atenção: prazo final para pagamento da mensalidade é dia 10.",
-    canais: ["badge"],
-    data: "2025-07-10T17:40:00Z",
-    status: "enviado",
-  },
-];
-
 const canaisExplicacao = [
   {
     value: "badge",
@@ -103,7 +76,8 @@ const canaisExplicacao = [
 ];
 
 export default function NotificacoesPage() {
-  const [notificacoes, setNotificacoes] = useState<Notificacao[]>(notificacoesMock);
+  const { user } = useAuth();
+  const { notificacoes, isLoading, isError, error, mutate } = useNotifications({});
   const [grupo, setGrupo] = useState("todos");
   const [mensagem, setMensagem] = useState("");
   const [canais, setCanais] = useState<string[]>(["badge", "push"]);
@@ -118,13 +92,51 @@ export default function NotificacoesPage() {
     return "Personalizado";
   }
 
+  const historico = useMemo<HistoryEntry[]>(() => {
+    return notificacoes
+      .filter((notif) => {
+        const meta = (notif.metadata || {}) as Record<string, unknown>;
+        const category = (meta.category || meta.categoria || "").toString().toLowerCase();
+        const kind = (meta.kind || meta.tipo || "").toString().toLowerCase();
+        return (
+          category.includes("notificacao") || category.includes("mensagem") || kind.includes("mass")
+        );
+      })
+      .map((notif) => {
+        const meta = (notif.metadata || {}) as Record<string, unknown>;
+        const badge =
+          meta.badge === true || meta.badge === "true" || meta.badge === "1" || meta.badge === 1;
+        const channels = (notif.channels || [])
+          .map((channel) => channel.toString().toLowerCase())
+          .filter(Boolean);
+        if (badge) {
+          channels.unshift("badge");
+        }
+        const statusValue = (meta.status || meta.statusEnvio || "").toString().toLowerCase();
+        return {
+          id: notif.id,
+          destinatario: (meta.audienceLabel || meta.audience || "Todos os Jogadores").toString(),
+          grupo: (meta.audience || meta.grupo || "todos").toString(),
+          mensagem: (notif.mensagem || notif.message || "").toString(),
+          canais: channels,
+          data: notif.data || "",
+          status: statusValue === "erro" ? "erro" : "enviado",
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.data ? new Date(a.data).getTime() : 0;
+        const bTime = b.data ? new Date(b.data).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [notificacoes]);
+
   function handleCanalToggle(canal: string) {
     setCanais((prev) =>
       prev.includes(canal) ? prev.filter((c) => c !== canal) : [...prev, canal]
     );
   }
 
-  function handleEnviarNotificacao() {
+  async function handleEnviarNotificacao() {
     if (!mensagem.trim()) {
       setFeedback({ success: false, message: "Digite uma mensagem para enviar." });
       return;
@@ -133,25 +145,54 @@ export default function NotificacoesPage() {
       setFeedback({ success: false, message: "Selecione ao menos um canal de envio." });
       return;
     }
+
     setEnviando(true);
-    setTimeout(() => {
-      setNotificacoes((prev) => [
-        {
-          id: Math.max(...prev.map((n) => n.id)) + 1,
-          destinatario: getGrupoLabel(grupo),
-          grupo,
-          mensagem,
-          canais,
-          data: new Date().toISOString(),
-          status: "enviado",
+    setFeedback(null);
+
+    try {
+      const badgeEnabled = canais.includes("badge");
+      const channelMap: Record<string, string> = {
+        push: "PUSH",
+        email: "EMAIL",
+        whatsapp: "WHATSAPP",
+      };
+      const channelsPayload = canais
+        .filter((canal) => canal !== "badge")
+        .map((canal) => channelMap[canal])
+        .filter(Boolean);
+      const groupLabel = getGrupoLabel(grupo);
+
+      const response = await notificacoesApi.create({
+        title: `Mensagem para ${groupLabel}`,
+        message: mensagem.trim(),
+        type: "PERSONALIZADA",
+        channels: channelsPayload,
+        metadata: {
+          category: "notificacao",
+          kind: "mass",
+          badge: badgeEnabled,
+          audience: grupo,
+          audienceLabel: groupLabel,
+          autor: user?.name || "Administracao",
         },
-        ...prev,
-      ]);
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
       setMensagem("");
       setCanais(["badge", "push"]);
-      setFeedback({ success: true, message: "Notificação enviada com sucesso!" });
+      setFeedback({ success: true, message: "Notificacao enviada com sucesso!" });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao enviar notificacao.",
+      });
+    } finally {
       setEnviando(false);
-    }, 1100);
+    }
   }
 
   return (
@@ -299,52 +340,60 @@ export default function NotificacoesPage() {
             <FaUsers /> Histórico de notificações
           </div>
           <div className="space-y-4">
-            {notificacoes.length === 0 && (
-              <div className="text-gray-400 text-center py-10">
-                Nenhuma notificação enviada ainda.
+            {isLoading ? (
+              <div className="text-gray-400 text-center py-10">Carregando...</div>
+            ) : isError ? (
+              <div className="text-red-400 text-center py-10">
+                Falha ao carregar notificacoes.
+                {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
               </div>
-            )}
-            {notificacoes.map((notif) => (
-              <div
-                key={notif.id}
-                className="bg-[#181818] rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between shadow border-l-4 border-yellow-400 animate-fadeIn"
-              >
-                <div className="flex-1">
-                  <div className="font-bold text-yellow-300">{notif.destinatario}</div>
-                  <div className="text-gray-200">{notif.mensagem}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Enviado em {new Date(notif.data).toLocaleString()} •
-                    <span className="ml-1">
-                      Canais:{" "}
-                      {notif.canais
-                        .map((c) =>
-                          c === "badge"
-                            ? "🛎️"
-                            : c === "push"
-                              ? "📱"
-                              : c === "email"
-                                ? "✉️"
-                                : c === "whatsapp"
-                                  ? "💬"
-                                  : c
-                        )
-                        .join(" ")}
-                    </span>
+            ) : historico.length === 0 ? (
+              <div className="text-gray-400 text-center py-10">
+                Nenhuma notificacao enviada ainda.
+              </div>
+            ) : (
+              historico.map((notif) => (
+                <div
+                  key={notif.id}
+                  className="bg-[#181818] rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between shadow border-l-4 border-yellow-400 animate-fadeIn"
+                >
+                  <div className="flex-1">
+                    <div className="font-bold text-yellow-300">{notif.destinatario}</div>
+                    <div className="text-gray-200">{notif.mensagem}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Enviado em {notif.data ? new Date(notif.data).toLocaleString() : "--"}
+                      <span className="ml-1">
+                        Canais:{" "}
+                        {notif.canais
+                          .map((c) =>
+                            c === "badge"
+                              ? "???"
+                              : c === "push"
+                                ? "??"
+                                : c === "email"
+                                  ? "??"
+                                  : c === "whatsapp"
+                                    ? "??"
+                                    : c
+                          )
+                          .join(" ")}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 md:mt-0">
+                    {notif.status === "enviado" ? (
+                      <span className="flex items-center gap-1 text-green-400 font-semibold text-sm">
+                        <FaCheckCircle /> Enviado
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-red-400 font-semibold text-sm">
+                        <FaTimesCircle /> Erro
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 mt-2 md:mt-0">
-                  {notif.status === "enviado" ? (
-                    <span className="flex items-center gap-1 text-green-400 font-semibold text-sm">
-                      <FaCheckCircle /> Enviado
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 text-red-400 font-semibold text-sm">
-                      <FaTimesCircle /> Erro
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>

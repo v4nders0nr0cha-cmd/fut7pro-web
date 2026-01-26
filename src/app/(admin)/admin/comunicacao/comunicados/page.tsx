@@ -1,80 +1,206 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FaPlus, FaEdit, FaArchive, FaCheck, FaTimes } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { notificacoesApi } from "@/lib/api";
+import type { Notificacao } from "@/types/notificacao";
 
-type Comunicado = {
-  id: number;
+type ComunicadoEntry = {
+  id: string;
   titulo: string;
   mensagem: string;
   data: string; // ISO date
   autor: string;
   ativo: boolean;
+  notificacao: Notificacao;
 };
 
-const comunicadosMock: Comunicado[] = [
-  {
-    id: 1,
-    titulo: "Pagamento da Mensalidade",
-    mensagem: "Lembrete: O vencimento da mensalidade é dia 10. Não deixe de regularizar!",
-    data: "2025-07-10T10:00:00Z",
-    autor: "Presidente",
-    ativo: true,
-  },
-  {
-    id: 2,
-    titulo: "Novo Horário de Jogo",
-    mensagem: "Atenção: O racha desta semana será às 19h. Fique atento ao novo horário!",
-    data: "2025-07-08T15:30:00Z",
-    autor: "Diretor de Futebol",
-    ativo: true,
-  },
-];
+const isComunicado = (notif: Notificacao) => {
+  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const templateId = (notif.templateId || (meta.templateId as string | undefined) || "")
+    .toString()
+    .toLowerCase();
+  const category = (meta.category || meta.categoria || "").toString().toLowerCase();
+
+  if (rawType.includes("comunicado")) return true;
+  if (templateId.includes("official-communication") || templateId.includes("system-release"))
+    return true;
+  if (category.includes("comunic")) return true;
+  return false;
+};
+
+const resolveAuthor = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  return (
+    (notif.remetente as string) ||
+    (meta.nomeResponsavel as string) ||
+    (meta.autor as string) ||
+    "Administracao"
+  );
+};
 
 export default function ComunicadosPage() {
-  const [comunicados, setComunicados] = useState<Comunicado[]>(comunicadosMock);
+  const { user } = useAuth();
+  const { notificacoes, isLoading, isError, error, mutate } = useNotifications({});
   const [showForm, setShowForm] = useState(false);
   const [novo, setNovo] = useState<{ titulo: string; mensagem: string }>({
     titulo: "",
     mensagem: "",
   });
-  const [editando, setEditando] = useState<number | null>(null);
+  const [editando, setEditando] = useState<string | null>(null);
   const [edicao, setEdicao] = useState<{ titulo: string; mensagem: string }>({
     titulo: "",
     mensagem: "",
   });
-  const [confirmarArquivar, setConfirmarArquivar] = useState<number | null>(null);
+  const [confirmarArquivar, setConfirmarArquivar] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [salvando, setSalvando] = useState(false);
 
-  function handleNovoComunicado() {
+  const comunicados = useMemo<ComunicadoEntry[]>(() => {
+    return notificacoes
+      .filter(isComunicado)
+      .map((notif) => {
+        const meta = (notif.metadata || {}) as Record<string, unknown>;
+        const status = (meta.status || meta.situacao || meta.state || "").toString().toLowerCase();
+        const ativo = !["arquivado", "archived", "inativo", "inactive"].includes(status);
+        return {
+          id: notif.id,
+          titulo: notif.titulo || notif.title || "Comunicado",
+          mensagem: notif.mensagem || notif.message || "",
+          data: notif.data || "",
+          autor: resolveAuthor(notif),
+          ativo,
+          notificacao: notif,
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.data ? new Date(a.data).getTime() : 0;
+        const bTime = b.data ? new Date(b.data).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [notificacoes]);
+
+  const comunicadosAtivos = useMemo(() => comunicados.filter((item) => item.ativo), [comunicados]);
+
+  async function handleNovoComunicado() {
     if (!novo.titulo.trim() || !novo.mensagem.trim()) return;
-    setComunicados((prev) => [
-      {
-        id: Math.max(...prev.map((c) => c.id)) + 1,
-        titulo: novo.titulo,
-        mensagem: novo.mensagem,
-        data: new Date().toISOString(),
-        autor: "Você",
-        ativo: true,
-      },
-      ...prev,
-    ]);
-    setNovo({ titulo: "", mensagem: "" });
-    setShowForm(false);
+
+    setSalvando(true);
+    setFeedback(null);
+
+    try {
+      const response = await notificacoesApi.create({
+        title: novo.titulo.trim(),
+        message: novo.mensagem.trim(),
+        type: "PERSONALIZADA",
+        channels: [],
+        metadata: {
+          category: "comunicado",
+          status: "ativo",
+          autor: user?.name || "Administracao",
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setNovo({ titulo: "", mensagem: "" });
+      setShowForm(false);
+      setFeedback({ success: true, message: "Comunicado publicado com sucesso." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao publicar comunicado.",
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
 
-  function handleEditarComunicado(id: number) {
-    setComunicados((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, titulo: edicao.titulo, mensagem: edicao.mensagem } : c
-      )
-    );
-    setEditando(null);
+  async function handleEditarComunicado(id: string) {
+    const comunicado = comunicados.find((item) => item.id === id);
+    if (!comunicado) return;
+
+    setSalvando(true);
+    setFeedback(null);
+
+    try {
+      const meta = (comunicado.notificacao.metadata || {}) as Record<string, unknown>;
+      const autor =
+        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administracao";
+      const status = (meta.status || meta.situacao || "ativo").toString();
+
+      const response = await notificacoesApi.update(id, {
+        title: edicao.titulo.trim(),
+        message: edicao.mensagem.trim(),
+        type: "PERSONALIZADA",
+        metadata: {
+          ...meta,
+          category: "comunicado",
+          status,
+          autor,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setEditando(null);
+      setFeedback({ success: true, message: "Comunicado atualizado." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao atualizar comunicado.",
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
 
-  function handleArquivarComunicado(id: number) {
-    setComunicados((prev) => prev.map((c) => (c.id === id ? { ...c, ativo: false } : c)));
-    setConfirmarArquivar(null);
+  async function handleArquivarComunicado(id: string) {
+    const comunicado = comunicados.find((item) => item.id === id);
+    if (!comunicado) return;
+
+    setSalvando(true);
+    setFeedback(null);
+
+    try {
+      const meta = (comunicado.notificacao.metadata || {}) as Record<string, unknown>;
+      const autor =
+        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administracao";
+
+      const response = await notificacoesApi.update(id, {
+        metadata: {
+          ...meta,
+          category: "comunicado",
+          status: "arquivado",
+          autor,
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setConfirmarArquivar(null);
+      setFeedback({ success: true, message: "Comunicado arquivado." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao arquivar comunicado.",
+      });
+    } finally {
+      setSalvando(false);
+    }
   }
 
   return (
@@ -142,12 +268,14 @@ export default function ComunicadosPage() {
             <div className="flex gap-3">
               <button
                 onClick={handleNovoComunicado}
+                disabled={salvando || !novo.titulo.trim() || !novo.mensagem.trim()}
                 className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-300 transition"
               >
                 Publicar
               </button>
               <button
                 onClick={() => setShowForm(false)}
+                disabled={salvando}
                 className="bg-[#333] text-gray-300 px-4 py-2 rounded hover:bg-[#222] transition"
               >
                 Cancelar
@@ -156,14 +284,33 @@ export default function ComunicadosPage() {
           </div>
         )}
 
+        {feedback && (
+          <div
+            className={`mb-6 flex items-center gap-2 px-4 py-3 rounded font-bold shadow ${
+              feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"
+            }`}
+          >
+            {feedback.success ? <FaCheck /> : <FaTimes />}
+            {feedback.message}
+            <button className="ml-4 text-white text-lg" onClick={() => setFeedback(null)}>
+              x
+            </button>
+          </div>
+        )}
+
         {/* Lista de Comunicados */}
         <div className="space-y-4">
-          {comunicados.filter((c) => c.ativo).length === 0 && (
+          {isLoading ? (
+            <div className="text-gray-400 text-center py-12">Carregando...</div>
+          ) : isError ? (
+            <div className="text-red-400 text-center py-12">
+              Falha ao carregar comunicados.
+              {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
+            </div>
+          ) : comunicadosAtivos.length === 0 ? (
             <div className="text-gray-400 text-center py-12">Nenhum comunicado ativo.</div>
-          )}
-          {comunicados
-            .filter((c) => c.ativo)
-            .map((com) =>
+          ) : (
+            comunicadosAtivos.map((com) =>
               editando === com.id ? (
                 <div
                   key={com.id}
@@ -185,6 +332,7 @@ export default function ComunicadosPage() {
                   <div className="flex gap-3 mt-2">
                     <button
                       onClick={() => handleEditarComunicado(com.id)}
+                      disabled={salvando || !edicao.titulo.trim() || !edicao.mensagem.trim()}
                       className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-300 transition"
                     >
                       <FaCheck /> Salvar
@@ -206,7 +354,7 @@ export default function ComunicadosPage() {
                     <div className="text-lg font-bold text-yellow-300">{com.titulo}</div>
                     <div className="text-gray-200 mt-1">{com.mensagem}</div>
                     <div className="text-xs text-gray-500 mt-2">
-                      Publicado em {new Date(com.data).toLocaleDateString()} por{" "}
+                      Publicado em {com.data ? new Date(com.data).toLocaleDateString() : "--"} por{" "}
                       <span className="font-semibold">{com.autor}</span>
                     </div>
                   </div>
@@ -236,12 +384,13 @@ export default function ComunicadosPage() {
                           Arquivar comunicado?
                         </div>
                         <div className="text-gray-400 text-sm">
-                          Deseja realmente arquivar este comunicado? Jogadores não verão mais este
+                          Deseja realmente arquivar este comunicado? Jogadores nÆo verÆo mais este
                           aviso.
                         </div>
                         <div className="flex gap-3 mt-2">
                           <button
                             onClick={() => handleArquivarComunicado(com.id)}
+                            disabled={salvando}
                             className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition font-bold"
                           >
                             Arquivar
@@ -258,7 +407,8 @@ export default function ComunicadosPage() {
                   )}
                 </div>
               )
-            )}
+            )
+          )}
         </div>
       </div>
       <style>{`

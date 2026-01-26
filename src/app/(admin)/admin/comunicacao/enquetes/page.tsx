@@ -1,25 +1,27 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   FaPoll,
   FaSearch,
   FaPlus,
   FaCalendarCheck,
-  FaUserCheck,
-  FaUser,
   FaTimesCircle,
   FaCheckCircle,
   FaChartBar,
   FaTrashAlt,
   FaTrophy,
 } from "react-icons/fa";
+import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
+import { notificacoesApi } from "@/lib/api";
+import type { Notificacao } from "@/types/notificacao";
 
 type Opcao = { texto: string; votos: number };
 
 type Enquete = {
-  id: number;
+  id: string;
   titulo: string;
   descricao: string;
   criadaEm: string;
@@ -29,42 +31,33 @@ type Enquete = {
   totalVotos: number;
   publico: string;
   encerradaEm?: string;
+  notificacao: Notificacao;
 };
 
-const MOCK_ENQUETES: Enquete[] = [
-  {
-    id: 1,
-    titulo: "Qual melhor horário para o próximo racha?",
-    descricao:
-      "Escolha o melhor horário para a maioria dos jogadores. Enquete válida até sexta-feira.",
-    criadaEm: "15/07/2025",
-    criadaPor: "Admin",
-    opcoes: [
-      { texto: "19:00", votos: 8 },
-      { texto: "20:00", votos: 14 },
-      { texto: "21:00", votos: 2 },
-    ],
-    status: "Aberta",
-    totalVotos: 24,
-    publico: "Todos os jogadores",
-  },
-  {
-    id: 2,
-    titulo: "Quem foi o melhor jogador do último jogo?",
-    descricao: "Vote no destaque da última partida!",
-    criadaEm: "10/07/2025",
-    criadaPor: "Carlos Silva",
-    opcoes: [
-      { texto: "Marcos Souza", votos: 7 },
-      { texto: "Lucas Tavares", votos: 3 },
-      { texto: "Gustavo Nunes", votos: 5 },
-    ],
-    status: "Fechada",
-    encerradaEm: "12/07/2025",
-    totalVotos: 15,
-    publico: "Jogadores ativos",
-  },
-];
+const isEnquete = (notif: Notificacao) => {
+  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const category = (meta.category || meta.categoria || "").toString().toLowerCase();
+
+  if (rawType.includes("enquete") || rawType.includes("poll")) return true;
+  if ("opcoes" in meta || "options" in meta || "pollOptions" in meta) return true;
+  if ((meta.kind as string | undefined)?.toLowerCase() === "enquete") return true;
+  if (category.includes("enquete")) return true;
+  return false;
+};
+
+const resolveStatusLabel = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const status = (meta.status || meta.situacao || "").toString().toLowerCase();
+  if (status === "fechada" || status === "encerrada" || status === "closed") return "Fechada";
+  if (status === "aberta" || status === "open") return "Aberta";
+  return "Aberta";
+};
+
+const resolveAudienceLabel = (notif: Notificacao) => {
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  return (meta.audienceLabel || meta.audience || "Todos os jogadores").toString();
+};
 
 const SEGMENTACOES = [
   "Todos os jogadores",
@@ -81,7 +74,8 @@ const SEGMENTACOES = [
 ];
 
 export default function EnquetesPage() {
-  const [enquetes, setEnquetes] = useState<Enquete[]>(MOCK_ENQUETES);
+  const { user } = useAuth();
+  const { notificacoes, isLoading, isError, error, mutate } = useNotifications({});
   const [busca, setBusca] = useState("");
   const [modalNova, setModalNova] = useState(false);
   const [titulo, setTitulo] = useState("");
@@ -92,13 +86,62 @@ export default function EnquetesPage() {
   const [filtroStatus, setFiltroStatus] = useState<"Todas" | "Aberta" | "Fechada">("Todas");
   const [modalDetalhe, setModalDetalhe] = useState<Enquete | null>(null);
   const [modalExcluir, setModalExcluir] = useState<Enquete | null>(null);
+  const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
+  const [processandoId, setProcessandoId] = useState<string | null>(null);
 
-  const enquetesFiltradas = enquetes.filter(
-    (e) =>
-      (filtroStatus === "Todas" || e.status === filtroStatus) &&
-      (e.titulo.toLowerCase().includes(busca.toLowerCase()) ||
-        e.descricao.toLowerCase().includes(busca.toLowerCase()))
-  );
+  const enquetes = useMemo<Enquete[]>(() => {
+    return notificacoes
+      .filter(isEnquete)
+      .map((notif) => {
+        const meta = (notif.metadata || {}) as Record<string, unknown>;
+        const options =
+          (meta.opcoes as Opcao[] | undefined) ||
+          (meta.options as { text?: string; votes?: number }[] | undefined) ||
+          (meta.pollOptions as { text?: string; votes?: number }[] | undefined) ||
+          [];
+        const opcoesNormalizadas = options.map((op) => ({
+          texto: (op as any).texto || (op as any).text || "",
+          votos: Number((op as any).votos ?? (op as any).votes ?? 0),
+        }));
+        const totalVotos = Number(
+          meta.totalVotos ||
+            meta.totalVotes ||
+            opcoesNormalizadas.reduce((sum, op) => sum + op.votos, 0)
+        );
+        const createdLabel = notif.data ? new Date(notif.data).toLocaleDateString() : "";
+        const encerradaEm = (meta.encerradaEm || meta.closedAt || "") as string | undefined;
+        const encerradaLabel = encerradaEm ? new Date(encerradaEm).toLocaleDateString() : undefined;
+
+        return {
+          id: notif.id,
+          titulo: notif.titulo || notif.title || "Enquete",
+          descricao: notif.mensagem || notif.message || "",
+          criadaEm: createdLabel,
+          criadaPor:
+            (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Admin",
+          opcoes: opcoesNormalizadas,
+          status: resolveStatusLabel(notif),
+          totalVotos,
+          publico: resolveAudienceLabel(notif),
+          encerradaEm: encerradaLabel,
+          notificacao: notif,
+        };
+      })
+      .sort((a, b) => {
+        const aTime = a.notificacao.data ? new Date(a.notificacao.data).getTime() : 0;
+        const bTime = b.notificacao.data ? new Date(b.notificacao.data).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [notificacoes, user?.name]);
+
+  const enquetesFiltradas = useMemo(() => {
+    return enquetes.filter(
+      (e) =>
+        (filtroStatus === "Todas" || e.status === filtroStatus) &&
+        (e.titulo.toLowerCase().includes(busca.toLowerCase()) ||
+          e.descricao.toLowerCase().includes(busca.toLowerCase()))
+    );
+  }, [enquetes, filtroStatus, busca]);
 
   function abrirModalNova() {
     setTitulo("");
@@ -120,39 +163,108 @@ export default function EnquetesPage() {
     if (opcoes.length > 2) setOpcoes(opcoes.filter((_, idx) => idx !== i));
   }
 
-  function criarEnquete() {
+  async function criarEnquete() {
+    if (!titulo.trim() || opcoes.some((op) => !op.trim())) return;
+
     setCriando(true);
-    setTimeout(() => {
-      setEnquetes([
-        {
-          id: enquetes.length + 1,
-          titulo,
-          descricao,
-          criadaEm: new Date().toLocaleDateString(),
-          criadaPor: "Admin",
-          opcoes: opcoes.map((op) => ({ texto: op, votos: 0 })),
-          status: "Aberta",
+    setFeedback(null);
+
+    try {
+      const enqueteId = `enquete-${Date.now()}`;
+      const response = await notificacoesApi.create({
+        title: titulo.trim(),
+        message: descricao.trim(),
+        type: "PERSONALIZADA",
+        channels: [],
+        metadata: {
+          category: "enquete",
+          kind: "enquete",
+          status: "aberta",
           totalVotos: 0,
-          publico,
+          opcoes: opcoes.map((op) => ({ texto: op.trim(), votos: 0 })),
+          audience: publico,
+          audienceLabel: publico,
+          enqueteId,
+          autor: user?.name || "Admin",
         },
-        ...enquetes,
-      ]);
-      setCriando(false);
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
       setModalNova(false);
-    }, 800);
+      setTitulo("");
+      setDescricao("");
+      setOpcoes(["", ""]);
+      setPublico("Todos os jogadores");
+      setFeedback({ success: true, message: "Enquete criada com sucesso." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao criar enquete.",
+      });
+    } finally {
+      setCriando(false);
+    }
   }
 
-  function fecharEnquete(id: number) {
-    setEnquetes((enquetes) =>
-      enquetes.map((e) =>
-        e.id === id ? { ...e, status: "Fechada", encerradaEm: new Date().toLocaleDateString() } : e
-      )
-    );
+  async function fecharEnquete(id: string) {
+    const enquete = enquetes.find((item) => item.id === id);
+    if (!enquete) return;
+
+    setProcessandoId(id);
+    setFeedback(null);
+
+    try {
+      const meta = (enquete.notificacao.metadata || {}) as Record<string, unknown>;
+      const response = await notificacoesApi.update(id, {
+        metadata: {
+          ...meta,
+          category: "enquete",
+          kind: "enquete",
+          status: "fechada",
+          encerradaEm: new Date().toISOString(),
+        },
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setFeedback({ success: true, message: "Enquete encerrada." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao encerrar enquete.",
+      });
+    } finally {
+      setProcessandoId(null);
+    }
   }
 
-  function excluirEnquete(id: number) {
-    setEnquetes((enquetes) => enquetes.filter((e) => e.id !== id));
-    setModalExcluir(null);
+  async function excluirEnquete(id: string) {
+    setProcessandoId(id);
+    setFeedback(null);
+
+    try {
+      const response = await notificacoesApi.delete(id);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      setModalExcluir(null);
+      setFeedback({ success: true, message: "Enquete excluida." });
+      await mutate();
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: err instanceof Error ? err.message : "Erro ao excluir enquete.",
+      });
+    } finally {
+      setProcessandoId(null);
+    }
   }
 
   return (
@@ -207,103 +319,132 @@ export default function EnquetesPage() {
           </button>
         </div>
 
+        {feedback && (
+          <div
+            className={`mb-6 flex items-center gap-2 px-4 py-3 rounded font-bold shadow ${
+              feedback.success ? "bg-green-500 text-white" : "bg-red-500 text-white"
+            }`}
+          >
+            {feedback.success ? <FaCheckCircle /> : <FaTimesCircle />}
+            {feedback.message}
+            <button className="ml-4 text-white text-lg" onClick={() => setFeedback(null)}>
+              x
+            </button>
+          </div>
+        )}
+
         {/* Listagem de enquetes */}
         <div>
-          {enquetesFiltradas.length === 0 && (
+          {isLoading ? (
+            <div className="text-gray-400 py-10 flex flex-col items-center">Carregando...</div>
+          ) : isError ? (
+            <div className="text-red-400 py-10 text-center">
+              Falha ao carregar enquetes.
+              {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
+            </div>
+          ) : enquetesFiltradas.length === 0 ? (
             <div className="text-gray-400 py-10 flex flex-col items-center">
               <FaCalendarCheck className="text-5xl mb-2" />
               Nenhuma enquete encontrada para este filtro.
             </div>
-          )}
-          <div className="grid grid-cols-1 gap-6">
-            {enquetesFiltradas.map((e) => (
-              <div
-                key={e.id}
-                className={`bg-[#232323] rounded-lg p-4 shadow border-l-4 animate-fadeIn ${e.status === "Aberta" ? "border-yellow-400" : "border-green-600"}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-bold text-yellow-300 text-lg flex gap-2 items-center">
-                    {e.titulo}
-                    {e.status === "Fechada" && (
-                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-green-800 text-green-300 text-xs font-bold gap-1">
-                        <FaCheckCircle /> Fechada
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {enquetesFiltradas.map((e) => (
+                <div
+                  key={e.id}
+                  className={`bg-[#232323] rounded-lg p-4 shadow border-l-4 animate-fadeIn ${e.status === "Aberta" ? "border-yellow-400" : "border-green-600"}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-bold text-yellow-300 text-lg flex gap-2 items-center">
+                      {e.titulo}
+                      {e.status === "Fechada" && (
+                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-green-800 text-green-300 text-xs font-bold gap-1">
+                          <FaCheckCircle /> Fechada
+                        </span>
+                      )}
+                      {e.status === "Aberta" && (
+                        <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-yellow-800 text-yellow-300 text-xs font-bold gap-1">
+                          <FaPoll /> Aberta
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-400 flex flex-col items-end">
+                      <span>
+                        {e.criadaPor} &bull; {e.criadaEm}
                       </span>
-                    )}
-                    {e.status === "Aberta" && (
-                      <span className="ml-2 inline-flex items-center px-2 py-1 rounded bg-yellow-800 text-yellow-300 text-xs font-bold gap-1">
-                        <FaPoll /> Aberta
-                      </span>
-                    )}
+                      <span className="text-yellow-300 font-semibold">{e.publico}</span>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-400 flex flex-col items-end">
-                    <span>
-                      {e.criadaPor} &bull; {e.criadaEm}
-                    </span>
-                    <span className="text-yellow-300 font-semibold">{e.publico}</span>
-                  </div>
-                </div>
-                <div className="text-gray-200 text-sm mb-4">{e.descricao}</div>
-                {/* Resultados */}
-                <div className="mb-3">
-                  <div className="flex flex-col gap-1">
-                    {e.opcoes.map((op, idx) => {
-                      const percent = e.totalVotos
-                        ? Math.round((op.votos / e.totalVotos) * 100)
-                        : 0;
-                      const maiorVoto = e.opcoes.reduce(
-                        (max, cur) => (cur.votos > max ? cur.votos : max),
-                        0
-                      );
-                      return (
-                        <div key={idx} className="flex items-center gap-2">
-                          <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs flex items-center gap-1">
-                            {op.texto}
-                            {e.status === "Fechada" && op.votos === maiorVoto && maiorVoto > 0 && (
-                              <FaTrophy className="text-yellow-300 ml-1" title="Opção vencedora" />
-                            )}
-                          </span>
-                          <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
-                            <div
-                              className="bg-yellow-400 h-4 rounded-full transition-all"
-                              style={{ width: `${percent}%` }}
-                            ></div>
-                            <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
-                              {percent}%
+                  <div className="text-gray-200 text-sm mb-4">{e.descricao}</div>
+                  {/* Resultados */}
+                  <div className="mb-3">
+                    <div className="flex flex-col gap-1">
+                      {e.opcoes.map((op, idx) => {
+                        const percent = e.totalVotos
+                          ? Math.round((op.votos / e.totalVotos) * 100)
+                          : 0;
+                        const maiorVoto = e.opcoes.reduce(
+                          (max, cur) => (cur.votos > max ? cur.votos : max),
+                          0
+                        );
+                        return (
+                          <div key={idx} className="flex items-center gap-2">
+                            <span className="bg-[#181818] text-gray-200 rounded px-2 py-1 min-w-[80px] text-xs flex items-center gap-1">
+                              {op.texto}
+                              {e.status === "Fechada" &&
+                                op.votos === maiorVoto &&
+                                maiorVoto > 0 && (
+                                  <FaTrophy
+                                    className="text-yellow-300 ml-1"
+                                    title="Op‡Æo vencedora"
+                                  />
+                                )}
                             </span>
+                            <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
+                              <div
+                                className="bg-yellow-400 h-4 rounded-full transition-all"
+                                style={{ width: `${percent}%` }}
+                              ></div>
+                              <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">
+                                {percent}%
+                              </span>
+                            </div>
+                            <span className="text-gray-400 text-xs">{op.votos} votos</span>
                           </div>
-                          <span className="text-gray-400 text-xs">{op.votos} votos</span>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-2">
+                    {e.status === "Aberta" && (
+                      <button
+                        className="bg-green-700 hover:bg-green-600 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                        onClick={() => fecharEnquete(e.id)}
+                        disabled={processandoId === e.id}
+                      >
+                        <FaTimesCircle /> Fechar enquete
+                      </button>
+                    )}
+                    <button
+                      className="bg-[#181818] hover:bg-gray-700 text-yellow-400 font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                      onClick={() => setModalDetalhe(e)}
+                      disabled={processandoId === e.id}
+                    >
+                      <FaChartBar /> Ver detalhes
+                    </button>
+                    <button
+                      className="bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
+                      onClick={() => setModalExcluir(e)}
+                      disabled={processandoId === e.id}
+                    >
+                      <FaTrashAlt /> Excluir
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-3 mt-2">
-                  {e.status === "Aberta" && (
-                    <button
-                      className="bg-green-700 hover:bg-green-600 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
-                      onClick={() => fecharEnquete(e.id)}
-                    >
-                      <FaTimesCircle /> Fechar enquete
-                    </button>
-                  )}
-                  <button
-                    className="bg-[#181818] hover:bg-gray-700 text-yellow-400 font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
-                    onClick={() => setModalDetalhe(e)}
-                  >
-                    <FaChartBar /> Ver detalhes
-                  </button>
-                  <button
-                    className="bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-1 rounded text-xs flex items-center gap-1"
-                    onClick={() => setModalExcluir(e)}
-                  >
-                    <FaTrashAlt /> Excluir
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-
         {/* Modal nova enquete */}
         {modalNova && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 animate-fadeIn">
@@ -476,6 +617,7 @@ export default function EnquetesPage() {
                 <button
                   className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-1 rounded"
                   onClick={() => excluirEnquete(modalExcluir.id)}
+                  disabled={processandoId === modalExcluir.id}
                 >
                   Excluir
                 </button>
