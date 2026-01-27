@@ -6,8 +6,13 @@ import LayoutClient from "@/components/layout/LayoutClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
+import { headers } from "next/headers";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 const inter = Inter({ subsets: ["latin"] });
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata = {
   title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
@@ -75,6 +80,43 @@ async function resolvePublicThemeKey(slug?: string | null) {
   }
 }
 
+function resolveSlugFromHeaders() {
+  const hdrs = headers();
+  const candidates = [
+    hdrs.get("x-forwarded-uri"),
+    hdrs.get("x-next-url"),
+    hdrs.get("x-pathname"),
+    hdrs.get("x-matched-path"),
+    hdrs.get("x-nextjs-matched-path"),
+    hdrs.get("x-invoke-path"),
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const path = candidate.startsWith("http")
+      ? (() => {
+          try {
+            return new URL(candidate).pathname;
+          } catch {
+            return candidate;
+          }
+        })()
+      : candidate;
+    const slug = resolvePublicTenantSlug(path);
+    if (slug) return slug;
+  }
+
+  const ref = hdrs.get("referer");
+  if (ref) {
+    try {
+      const slug = resolvePublicTenantSlug(new URL(ref).pathname);
+      if (slug) return slug;
+    } catch {}
+  }
+
+  return null;
+}
+
 export default async function PublicLayout({
   children,
   params,
@@ -82,7 +124,9 @@ export default async function PublicLayout({
   children: ReactNode;
   params?: { slug?: string };
 }) {
-  const themeKey = await resolvePublicThemeKey(params?.slug ?? null);
+  const slugFromHeaders = resolveSlugFromHeaders();
+  const resolvedSlug = params?.slug ?? slugFromHeaders ?? null;
+  const themeKey = await resolvePublicThemeKey(resolvedSlug);
   return (
     <div
       data-theme={themeKey}
