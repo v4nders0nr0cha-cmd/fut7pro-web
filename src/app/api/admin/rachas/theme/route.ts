@@ -25,7 +25,19 @@ export async function PUT(req: NextRequest) {
     return jsonResponse({ error: "Payload invalido" }, { status: 400 });
   }
 
-  const tenantSlug = resolveTenantSlug(user);
+  const themeKey =
+    typeof (payload as { themeKey?: unknown }).themeKey === "string"
+      ? String((payload as { themeKey?: unknown }).themeKey)
+      : "";
+  if (!themeKey) {
+    return jsonResponse({ error: "themeKey obrigatorio" }, { status: 400 });
+  }
+
+  const requestedSlug =
+    typeof (payload as { tenantSlug?: unknown }).tenantSlug === "string"
+      ? String((payload as { tenantSlug?: unknown }).tenantSlug).trim()
+      : "";
+  const tenantSlug = resolveTenantSlug(user, requestedSlug || undefined);
   if (!tenantSlug) {
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
@@ -35,7 +47,7 @@ export async function PUT(req: NextRequest) {
   const { response, body } = await proxyBackend(`${base}/rachas/theme`, {
     method: "PUT",
     headers,
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ themeKey }),
   });
 
   if (response.ok) {

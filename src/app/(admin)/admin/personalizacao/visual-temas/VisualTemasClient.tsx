@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FaCheckCircle } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { useMe } from "@/hooks/useMe";
-import { useRacha } from "@/context/RachaContext";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
-import { rachaConfig } from "@/config/racha.config";
 import {
   DEFAULT_RACHA_THEME_KEY,
   getRachaTheme,
@@ -33,9 +31,13 @@ const THEME_PREVIEWS: Record<RachaThemeKey, ThemePreview> = {
 export default function VisualTemasClient() {
   const router = useRouter();
   const { me, isLoading: isLoadingMe } = useMe();
-  const { tenantSlug: contextSlug } = useRacha();
-  const tenantSlug = me?.tenant?.tenantSlug || contextSlug || rachaConfig.slug || "";
-  const { racha, isLoading: isLoadingRacha, mutate } = useRachaPublic(tenantSlug);
+  const tenantSlug = me?.tenant?.tenantSlug?.trim() || "";
+  const shouldLoadRacha = Boolean(tenantSlug);
+  const {
+    racha,
+    isLoading: isLoadingRacha,
+    mutate,
+  } = useRachaPublic(shouldLoadRacha ? tenantSlug : "");
 
   const [selectedKey, setSelectedKey] = useState<RachaThemeKey>(DEFAULT_RACHA_THEME_KEY);
   const [savedKey, setSavedKey] = useState<RachaThemeKey>(DEFAULT_RACHA_THEME_KEY);
@@ -43,12 +45,34 @@ export default function VisualTemasClient() {
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (initialized || isLoadingMe || isLoadingRacha) return;
+    if (initialized || isLoadingMe || isLoadingRacha || !shouldLoadRacha) return;
     const resolved = getRachaTheme(racha?.themeKey ?? null).key;
     setSelectedKey(resolved);
     setSavedKey(resolved);
     setInitialized(true);
-  }, [initialized, isLoadingMe, isLoadingRacha, racha?.themeKey]);
+  }, [initialized, isLoadingMe, isLoadingRacha, racha?.themeKey, shouldLoadRacha]);
+
+  const applyThemePreview = useCallback((key: RachaThemeKey) => {
+    if (typeof document === "undefined") return;
+    const root = document.querySelector<HTMLElement>("[data-theme]");
+    if (root) {
+      root.setAttribute("data-theme", key);
+      return;
+    }
+    document.documentElement.setAttribute("data-theme", key);
+  }, []);
+
+  useEffect(() => {
+    if (!initialized) return;
+    applyThemePreview(selectedKey);
+  }, [applyThemePreview, initialized, selectedKey]);
+
+  useEffect(() => {
+    if (!initialized) return;
+    return () => {
+      applyThemePreview(savedKey);
+    };
+  }, [applyThemePreview, initialized, savedKey]);
 
   const hasChanges = selectedKey !== savedKey;
   const disableActions = saving || isLoadingMe || isLoadingRacha;
@@ -71,14 +95,29 @@ export default function VisualTemasClient() {
 
     setSaving(true);
     try {
+      const payload: { themeKey: RachaThemeKey; tenantSlug?: string } = {
+        themeKey: selectedKey,
+      };
+      if (tenantSlug) {
+        payload.tenantSlug = tenantSlug;
+      }
       const response = await fetch("/api/admin/rachas/theme", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ themeKey: selectedKey }),
+        body: JSON.stringify(payload),
       });
       if (!response.ok) {
         const body = await response.text();
-        throw new Error(body || "Erro ao salvar tema.");
+        let message = "Erro ao salvar tema.";
+        if (body) {
+          try {
+            const parsed = JSON.parse(body) as { message?: string; error?: string };
+            message = parsed.message || parsed.error || body;
+          } catch {
+            message = body;
+          }
+        }
+        throw new Error(message);
       }
 
       setSavedKey(selectedKey);
