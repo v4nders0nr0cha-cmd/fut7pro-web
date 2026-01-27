@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FaCheckCircle } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { useMe } from "@/hooks/useMe";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
+import ThemeSavedModal from "@/components/modals/ThemeSavedModal";
 import {
   DEFAULT_RACHA_THEME_KEY,
   getRachaTheme,
@@ -31,6 +33,7 @@ const THEME_PREVIEWS: Record<RachaThemeKey, ThemePreview> = {
 export default function VisualTemasClient() {
   const router = useRouter();
   const { me, isLoading: isLoadingMe } = useMe();
+  const { publicHref } = usePublicLinks();
   const tenantSlug = me?.tenant?.tenantSlug?.trim() || "";
   const shouldLoadRacha = Boolean(tenantSlug);
   const {
@@ -43,6 +46,9 @@ export default function VisualTemasClient() {
   const [savedKey, setSavedKey] = useState<RachaThemeKey>(DEFAULT_RACHA_THEME_KEY);
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [isThemeSavedModalOpen, setIsThemeSavedModalOpen] = useState(false);
+  const [savedThemeName, setSavedThemeName] = useState("");
+  const closeTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (initialized || isLoadingMe || isLoadingRacha || !shouldLoadRacha) return;
@@ -83,6 +89,22 @@ export default function VisualTemasClient() {
     setSelectedKey(key);
   };
 
+  const handleCloseModal = useCallback(() => {
+    setIsThemeSavedModalOpen(false);
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
   const handleSalvar = async () => {
     if (!tenantSlug) {
       toast.error("Nao foi possivel identificar o racha. Refaca o login.");
@@ -121,7 +143,13 @@ export default function VisualTemasClient() {
       }
 
       setSavedKey(selectedKey);
-      toast.success("Tema salvo com sucesso!");
+      setSavedThemeName(getRachaTheme(selectedKey).name);
+      setIsThemeSavedModalOpen(true);
+      if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = window.setTimeout(() => {
+        setIsThemeSavedModalOpen(false);
+        closeTimerRef.current = null;
+      }, 2500);
       await mutate();
       router.refresh();
     } catch (error) {
@@ -141,6 +169,12 @@ export default function VisualTemasClient() {
 
   return (
     <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-4xl mx-auto px-4">
+      <ThemeSavedModal
+        open={isThemeSavedModalOpen}
+        onClose={handleCloseModal}
+        themeName={savedThemeName || selectedTheme.name}
+        publicUrl={tenantSlug ? publicHref("/") : undefined}
+      />
       <h1 className="text-2xl md:text-3xl font-bold text-white mb-6 text-center">
         Visual & Temas do Racha
       </h1>
