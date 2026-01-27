@@ -75,7 +75,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
             height={64}
             className="object-contain"
           />
-          <span className="text-yellow-400 font-extrabold text-xl text-center">{nome}</span>
+          <span className="text-brand font-extrabold text-xl text-center">{nome}</span>
         </div>
 
         {/* Navegação */}
@@ -95,8 +95,8 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
                 onClick={onClose}
                 className={`flex items-center gap-4 px-2 py-2 rounded transition-all duration-200 ${
                   isActive
-                    ? "text-yellow-400 font-extrabold scale-[1.02]"
-                    : "text-zinc-200 hover:text-yellow-300"
+                    ? "text-brand font-extrabold scale-[1.02]"
+                    : "text-zinc-200 hover:text-brand-soft"
                 }`}
               >
                 <Icon size={22} />
@@ -112,7 +112,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
             <Link
               href={publicHref("/perfil")}
               onClick={onClose}
-              className="flex items-center gap-3 text-yellow-400 font-semibold hover:underline"
+              className="flex items-center gap-3 text-brand font-semibold hover:underline"
             >
               <Image
                 src={profileImage}

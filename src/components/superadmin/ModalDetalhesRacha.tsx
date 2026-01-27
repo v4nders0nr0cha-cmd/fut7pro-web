@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { FaInfoCircle, FaLock, FaHistory } from "react-icons/fa";
 import { format } from "date-fns";
+import { getRachaTheme } from "@/config/rachaThemes";
 
 interface RachaDetalhes {
   id: string;
@@ -12,6 +13,7 @@ interface RachaDetalhes {
   status: string;
   ativo?: boolean;
   criadoEm?: string | null;
+  themeKey?: string | null;
   ultimoLogBloqueio?: {
     detalhes?: string | null;
     criadoEm?: string | null;
@@ -43,6 +45,7 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
   const plano = racha.plano || (racha.status === "TRIAL" ? "Trial" : "Plano n/d");
   const criadoEm = racha.criadoEm ? format(new Date(racha.criadoEm), "dd/MM/yyyy") : "--";
   const ativo = racha.ativo ?? (racha.status === "ATIVO" || racha.status === "TRIAL");
+  const themeLabel = getRachaTheme(racha.themeKey ?? undefined).name;
 
   async function handleUnblock() {
     if (isUnblocking) return;
@@ -95,6 +98,9 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
           </span>
           <span>
             <b>Ativo:</b> {ativo ? "Sim" : "Nao"}
+          </span>
+          <span>
+            <b>Tema:</b> {themeLabel}
           </span>
           <span>
             <b>Criado em:</b> {criadoEm}

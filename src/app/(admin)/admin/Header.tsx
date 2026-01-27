@@ -52,11 +52,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
       : null;
 
   return (
-    <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-yellow-400 shadow-[0_2px_12px_rgba(255,215,0,0.25)] flex items-center px-4 py-2 h-[56px] fixed">
+    <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-brand shadow-md flex items-center px-4 py-2 h-[56px] fixed">
       {/* MOBILE: Botão hamburguer */}
       <button
         onClick={onMenuClick}
-        className="md:hidden flex items-center justify-center mr-2 text-yellow-400 hover:bg-zinc-800 p-2 rounded-full"
+        className="md:hidden flex items-center justify-center mr-2 text-brand hover:bg-zinc-800 p-2 rounded-full"
         aria-label="Abrir menu"
         tabIndex={0}
       >
@@ -71,9 +71,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
       >
         <span className="text-white font-extrabold text-xl md:text-2xl tracking-tight leading-none">
           Fut
-          <span className="text-yellow-400 animate-pulse drop-shadow-[0_0_12px_rgba(250,204,21,0.75)]">
-            7
-          </span>
+          <span className="text-brand animate-pulse drop-shadow">7</span>
           Pro
         </span>
       </Link>
@@ -92,7 +90,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
               tabIndex={0}
             >
-              <item.icon size={20} className="text-yellow-400" />
+              <item.icon size={20} className="text-brand" />
               <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>
               {badgeValue > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-1.5 font-bold">
@@ -106,10 +104,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
         {/* LOGIN OU PERFIL */}
         {!isLoggedIn ? (
           <button
-            className="flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-4 py-1.5 rounded-full font-bold text-sm uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+            className="flex items-center gap-2 border border-brand bg-[#222] text-brand px-4 py-1.5 rounded-full font-bold text-sm uppercase shadow-md hover:bg-brand hover:text-black transition-all"
             onClick={() => router.push("/admin/login")}
           >
-            <FaUser size={16} className="text-yellow-400" />
+            <FaUser size={16} className="text-brand" />
             Entrar ou Cadastrar-se
           </button>
         ) : (
@@ -123,12 +121,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
               alt={displayName}
               width={38}
               height={38}
-              className="rounded-full border-2 border-yellow-400"
+              className="rounded-full border-2 border-brand"
               onError={(event) => {
                 event.currentTarget.src = "/images/avatar_padrao_admin.png";
               }}
             />
-            <span className="text-yellow-300 font-bold text-base hidden md:inline">
+            <span className="text-brand-soft font-bold text-base hidden md:inline">
               {displayName}
             </span>
             {dropdownOpen && (

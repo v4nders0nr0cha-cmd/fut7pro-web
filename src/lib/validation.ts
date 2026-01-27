@@ -8,6 +8,7 @@ export const rachaSchema = z.object({
   descricao: z.string().optional(),
   logoUrl: z.string().optional(),
   tema: z.string().optional(),
+  themeKey: z.string().optional(),
   regras: z.string().optional(),
   ownerId: z.string(),
   ativo: z.boolean(),

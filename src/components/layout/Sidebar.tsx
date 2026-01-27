@@ -93,7 +93,7 @@ export default function Sidebar() {
             className="object-contain"
           />
         )}
-        <span className="text-xl font-bold text-yellow-400">{nome}</span>
+        <span className="text-xl font-bold text-brand">{nome}</span>
       </div>
 
       <SidebarPlayerCard
@@ -126,7 +126,7 @@ export default function Sidebar() {
 
       <div className="my-2 flex items-center gap-2 px-1">
         <div className="h-px flex-1 bg-white/10" />
-        <span className="text-[10px] uppercase tracking-[0.2em] text-yellow-300/70">
+        <span className="text-[10px] uppercase tracking-[0.2em] text-brand-soft opacity-70">
           Melhores do Ano
         </span>
         <div className="h-px flex-1 bg-white/10" />
@@ -224,7 +224,7 @@ function SidebarPlayerCard({
   const badgeStyle =
     badge?.toLowerCase().includes("manual") === true
       ? "bg-red-500/20 text-red-200 border-red-500/40"
-      : "bg-yellow-400/15 text-yellow-200 border-yellow-400/40";
+      : "bg-brand-soft text-black border-brand";
   const footerLabelText = footerLabel || "";
   const footerDisplayText = footerText || value;
 
@@ -235,10 +235,10 @@ function SidebarPlayerCard({
   };
 
   const content = isHighlight ? (
-    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
+    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-brand transition-shadow cursor-pointer">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1 truncate">{title}</p>
+          <p className="text-[10px] uppercase font-bold text-brand mb-1 truncate">{title}</p>
           {badge ? (
             <span
               className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${badgeStyle}`}
@@ -266,7 +266,7 @@ function SidebarPlayerCard({
               type="button"
               onClick={handleRulesClick}
               aria-label="Regras dos Destaques do Dia"
-              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-yellow-300"
+              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-brand-soft"
             >
               <Info size={12} />
             </button>
@@ -288,17 +288,17 @@ function SidebarPlayerCard({
       </div>
       <div className="mt-2 flex items-end justify-between border-t border-white/10 pt-2">
         {hasFooterValue ? (
-          <div className="flex items-baseline gap-1 text-yellow-300">
-            <span className="text-lg font-bold text-yellow-400">{footerValue}</span>
+          <div className="flex items-baseline gap-1 text-brand-soft">
+            <span className="text-lg font-bold text-brand">{footerValue}</span>
             <span className="text-[10px] uppercase">{footerLabelText}</span>
           </div>
         ) : (
-          <span className="text-xs font-semibold text-yellow-300">{footerDisplayText}</span>
+          <span className="text-xs font-semibold text-brand-soft">{footerDisplayText}</span>
         )}
       </div>
     </div>
   ) : (
-    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-[0_0_10px_2px_#FFCC00] transition-shadow cursor-pointer">
+    <div className="relative block bg-[#1A1A1A] rounded-xl p-3 mb-4 hover:shadow-brand transition-shadow cursor-pointer">
       {icon && (
         <div className="absolute top-2 right-3">
           {icon.startsWith("/") ? (
@@ -315,7 +315,7 @@ function SidebarPlayerCard({
         </div>
       )}
 
-      <p className="text-[10px] uppercase font-bold text-yellow-400 mb-1">{title}</p>
+      <p className="text-[10px] uppercase font-bold text-brand mb-1">{title}</p>
       <div className="flex items-center gap-3">
         <Image
           src={image}
@@ -326,7 +326,7 @@ function SidebarPlayerCard({
         />
         <div className="flex flex-col">
           <p className="font-semibold text-sm">{name}</p>
-          <p className="text-yellow-400 text-xs">{value}</p>
+          <p className="text-brand text-xs">{value}</p>
         </div>
       </div>
     </div>
@@ -350,7 +350,7 @@ function SidebarRankingCard({
   return (
     <div className="bg-[#1A1A1A] rounded-xl p-3 mb-4">
       <div className="flex justify-between items-center mb-2">
-        <p className="text-[10px] uppercase font-bold text-yellow-400">{title}</p>
+        <p className="text-[10px] uppercase font-bold text-brand">{title}</p>
         <span className="text-[10px] uppercase text-gray-400">{label}</span>
       </div>
       <ul className="space-y-1 text-sm text-white">
@@ -358,7 +358,7 @@ function SidebarRankingCard({
           const content = (
             <>
               <span>{item.name}</span>
-              <span className="text-yellow-400 font-semibold">{item.value}</span>
+              <span className="text-brand font-semibold">{item.value}</span>
             </>
           );
 
@@ -367,7 +367,7 @@ function SidebarRankingCard({
               {item.href ? (
                 <Link
                   href={item.href}
-                  className="flex justify-between w-full hover:text-yellow-300"
+                  className="flex justify-between w-full hover:text-brand-soft"
                 >
                   {content}
                 </Link>

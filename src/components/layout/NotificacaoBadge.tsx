@@ -18,7 +18,7 @@ export default function NotificacaoBadge({ onClick }: NotificacaoBadgeProps) {
       className="relative focus:outline-none"
       onClick={onClick}
     >
-      <FaBell className="text-yellow-400 text-2xl" />
+      <FaBell className="text-brand text-2xl" />
       {unreadCount > 0 && (
         <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-xs text-white rounded-full px-2 py-0.5 shadow font-bold z-10">
           {unreadCount}

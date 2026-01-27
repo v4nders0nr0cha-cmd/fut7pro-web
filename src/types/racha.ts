@@ -32,6 +32,7 @@ export interface Racha {
   descricao?: string;
   logoUrl?: string;
   tema?: string;
+  themeKey?: string;
   regras?: string;
   ownerId?: string;
   admins?: Admin[];

@@ -46,12 +46,12 @@ export default function BottomMenu() {
         <button
           type="button"
           onClick={() => router.push(publicHref("/login"))}
-          className="flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+          className="flex items-center gap-2 border border-brand bg-[#222] text-brand px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-brand hover:text-black transition-all"
           style={{ letterSpacing: 1 }}
           title="Area do atleta"
           aria-label="Entrar - area do atleta"
         >
-          <FaUser size={20} className="text-yellow-400" />
+          <FaUser size={20} className="text-brand" />
           Entrar
         </button>
       </nav>
@@ -83,10 +83,10 @@ export default function BottomMenu() {
           >
             <item.icon
               size={24}
-              className={`mb-0.5 transition ${isActive ? "text-yellow-400" : "text-zinc-300 group-hover:text-yellow-300"}`}
+              className={`mb-0.5 transition ${isActive ? "text-brand" : "text-zinc-300 group-hover:text-brand-soft"}`}
             />
             <span
-              className={`${isActive ? "text-yellow-400 font-semibold" : "text-zinc-300"} group-hover:text-yellow-300`}
+              className={`${isActive ? "text-brand font-semibold" : "text-zinc-300"} group-hover:text-brand-soft`}
             >
               {item.label}
             </span>

@@ -24,6 +24,7 @@ type BackendTenant = {
   trialEndsAt?: string | null;
   planKey?: string | null;
   plan?: string | null;
+  themeKey?: string | null;
   subscription?: {
     status?: string | null;
     planKey?: string | null;
@@ -68,6 +69,7 @@ function mapTenant(tenant: BackendTenant) {
     trialExpiraEm: subscription?.trialEnd ?? tenant.trialEndsAt ?? undefined,
     criadoEm: tenant.createdAt ?? undefined,
     atualizadoEm: tenant.updatedAt ?? undefined,
+    themeKey: tenant.themeKey ?? undefined,
     adminsCount: adminsCount ?? undefined,
     jogadoresCount,
   };

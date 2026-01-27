@@ -4,6 +4,8 @@ import { Providers } from "../providers";
 import { ThemeProvider } from "@/context/ThemeContext";
 import LayoutClient from "@/components/layout/LayoutClient";
 import JsonLd from "@/components/seo/JsonLd";
+import { getApiBase } from "@/lib/get-api-base";
+import { getRachaTheme } from "@/config/rachaThemes";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -56,9 +58,36 @@ export const metadata = {
   },
 };
 
-export default function PublicLayout({ children }: { children: ReactNode }) {
+async function resolvePublicThemeKey(slug?: string | null) {
+  if (!slug) return getRachaTheme(null).key;
+  try {
+    const base = getApiBase().replace(/\/+$/, "");
+    const res = await fetch(`${base}/public/${encodeURIComponent(slug)}/tenant`, {
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return getRachaTheme(null).key;
+    }
+    const data = await res.json().catch(() => null);
+    return getRachaTheme(data?.themeKey ?? data?.theme_key).key;
+  } catch {
+    return getRachaTheme(null).key;
+  }
+}
+
+export default async function PublicLayout({
+  children,
+  params,
+}: {
+  children: ReactNode;
+  params?: { slug?: string };
+}) {
+  const themeKey = await resolvePublicThemeKey(params?.slug ?? null);
   return (
-    <div className={`${inter.className} bg-fundo text-white break-words min-h-screen`}>
+    <div
+      data-theme={themeKey}
+      className={`${inter.className} bg-fundo text-white break-words min-h-screen`}
+    >
       <ThemeProvider>
         <Providers>
           <LayoutClient>{children}</LayoutClient>

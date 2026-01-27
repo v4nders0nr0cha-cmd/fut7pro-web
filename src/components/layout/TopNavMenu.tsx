@@ -13,14 +13,14 @@ const PartidasIcon = (props: React.SVGProps<SVGSVGElement>) => (
     height="20"
     viewBox="0 0 24 24"
     fill="currentColor"
-    className={`mr-2 text-yellow-400 ${props.className || ""}`}
+    className={`mr-2 text-brand ${props.className || ""}`}
   >
     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10s10-4.48 10-10S17.52 2 12 2m1 3.3l1.35-.95a8 8 0 0 1 4.38 3.34l-.39 1.34l-1.35.46L13 6.7zm-3.35-.95L11 5.3v1.4L7.01 9.49l-1.35-.46l-.39-1.34a8.1 8.1 0 0 1 4.38-3.34M7.08 17.11l-1.14.1A7.94 7.94 0 0 1 4 12c0-.12.01-.23.02-.35l1-.73l1.38.48l1.46 4.34zm7.42 2.48c-.79.26-1.63.41-2.5.41s-1.71-.15-2.5-.41l-.69-1.49l.64-1.1h5.11l.64 1.11zM14.27 15H9.73l-1.35-4.02L12 8.44l3.63 2.54zm3.79 2.21l-1.14-.1l-.79-1.37l1.46-4.34l1.39-.47l1 .73c.01.11.02.22.02.34c0 1.99-.73 3.81-1.94 5.21" />
   </svg>
 );
 
 const iconProps = {
-  className: "mr-2 text-yellow-400",
+  className: "mr-2 text-brand",
 };
 
 const pages = [
@@ -28,23 +28,23 @@ const pages = [
   {
     href: "/estatisticas",
     label: "Estatísticas",
-    icon: <BarChart size={20} className="mr-2 text-yellow-400" />,
+    icon: <BarChart size={20} className="mr-2 text-brand" />,
   },
   {
     href: "/os-campeoes",
     label: "Campeões",
-    icon: <Medal size={20} className="mr-2 text-yellow-400" />,
+    icon: <Medal size={20} className="mr-2 text-brand" />,
   },
   {
     href: "/grandes-torneios",
     label: "Grandes Torneios",
-    icon: <Trophy size={20} className="mr-2 text-yellow-400" />,
+    icon: <Trophy size={20} className="mr-2 text-brand" />,
   },
-  { href: "/atletas", label: "Atletas", icon: <User size={20} className="mr-2 text-yellow-400" /> },
+  { href: "/atletas", label: "Atletas", icon: <User size={20} className="mr-2 text-brand" /> },
   {
     href: "/sobre-nos",
     label: "Sobre Nós",
-    icon: <Info size={20} className="mr-2 text-yellow-400" />,
+    icon: <Info size={20} className="mr-2 text-brand" />,
   },
 ];
 
@@ -71,8 +71,8 @@ export default function TopNavMenu() {
                 href={resolvedHref}
                 className={`flex items-center px-2 transition-all duration-300 ${
                   isActive
-                    ? "text-yellow-400 font-extrabold"
-                    : "text-zinc-200 hover:text-yellow-400 font-semibold"
+                    ? "text-brand font-extrabold"
+                    : "text-zinc-200 hover:text-brand font-semibold"
                 }`}
                 tabIndex={0}
                 aria-current={isActive ? "page" : undefined}
@@ -81,7 +81,7 @@ export default function TopNavMenu() {
                 <span className="text-base uppercase">{label}</span>
               </Link>
               {isActive && (
-                <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-yellow-400 rounded animate-pulse" />
+                <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-brand rounded animate-pulse" />
               )}
             </li>
           );

@@ -9,13 +9,16 @@ function mapTenantToRacha(data: any): Racha {
     (data?.criadoEm ?? data?.createdAt ?? data?.atualizadoEm ?? data?.updatedAt) ||
     new Date().toISOString();
 
+  const rawThemeKey = data?.themeKey ?? data?.theme_key ?? data?.tema ?? undefined;
+
   return {
     id: data?.id ?? data?.tenantId ?? data?.slug ?? "",
     nome: data?.nome ?? data?.name ?? "",
     slug: data?.slug ?? "",
     descricao: data?.descricao ?? undefined,
     logoUrl: data?.logoUrl ?? data?.logo ?? undefined,
-    tema: data?.tema ?? undefined,
+    tema: data?.tema ?? rawThemeKey,
+    themeKey: rawThemeKey,
     regras: data?.regras ?? undefined,
     ownerId: data?.ownerId ?? "",
     ativo: typeof data?.ativo === "boolean" ? data.ativo : true,

@@ -28,10 +28,10 @@ export default function BottomMenuSuperAdmin() {
           >
             <item.icon
               size={22}
-              className={`mb-0.5 transition ${isActive ? "text-yellow-400" : "text-zinc-300 group-hover:text-yellow-300"}`}
+              className={`mb-0.5 transition ${isActive ? "text-brand" : "text-zinc-300 group-hover:text-brand-soft"}`}
             />
             <span
-              className={`${isActive ? "text-yellow-400 font-semibold" : "text-zinc-300"} group-hover:text-yellow-300`}
+              className={`${isActive ? "text-brand font-semibold" : "text-zinc-300"} group-hover:text-brand-soft`}
             >
               {item.label}
             </span>

@@ -15,6 +15,7 @@ export interface Racha {
   planoStatus?: string;
   planoExpiraEm?: string;
   trialExpiraEm?: string;
+  themeKey?: string;
   cnpj?: string;
   telefone?: string;
   cidade?: string;

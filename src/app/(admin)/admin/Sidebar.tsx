@@ -145,7 +145,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             className="rounded"
             priority
           />
-          <span className="font-bold text-xl text-yellow-400">{nome}</span>
+          <span className="font-bold text-xl text-brand">{nome}</span>
         </div>
         {mobile && (
           <button onClick={onClose} aria-label="Fechar menu">
@@ -163,7 +163,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                   onClick={() => handleToggle(item.label)}
                   aria-expanded={open === item.label}
                 >
-                  <item.icon className="text-yellow-400 text-lg mr-3" />
+                  <item.icon className="text-brand text-lg mr-3" />
                   <span className="flex-1 font-semibold">{item.label}</span>
                   <span
                     className={`transition-transform transform duration-200 ${open === item.label ? "rotate-90" : ""}`}
@@ -172,14 +172,14 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                   </span>
                 </button>
                 {open === item.label && (
-                  <ul className="ml-6 mt-1 space-y-1 border-l border-yellow-700 pl-3">
+                  <ul className="ml-6 mt-1 space-y-1 border-l border-brand-strong pl-3">
                     {item.children.map((child, index) => {
                       if ("href" in child) {
                         return (
                           <li key={child.href}>
                             <Link
                               href={child.href}
-                              className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
+                              className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-brand-soft" : "text-gray-200"}`}
                               onClick={onClose}
                             >
                               {child.label}
@@ -191,7 +191,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                       return (
                         <li
                           key={`${child.label}-${index}`}
-                          className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-yellow-200/80"
+                          className="pt-2 text-[11px] font-semibold uppercase tracking-wide text-brand-soft opacity-80"
                         >
                           {child.label}
                         </li>
@@ -204,10 +204,10 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center px-3 py-2 rounded-lg hover:bg-[#232323] transition ${pathname === item.href ? "bg-[#232323] text-yellow-300" : "text-gray-200"}`}
+                  className={`flex items-center px-3 py-2 rounded-lg hover:bg-[#232323] transition ${pathname === item.href ? "bg-[#232323] text-brand-soft" : "text-gray-200"}`}
                   onClick={onClose}
                 >
-                  <item.icon className="text-yellow-400 text-lg mr-3" />
+                  <item.icon className="text-brand text-lg mr-3" />
                   <span className="font-semibold">{item.label}</span>
                 </Link>
               </li>
@@ -215,16 +215,16 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
           )}
         </ul>
         <div className="px-4 mt-3">
-          <div className="bg-[#1a1a1a] border border-yellow-500 rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
+          <div className="bg-[#1a1a1a] border border-brand rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
             <a
               href={sitePublicoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 font-bold text-yellow-300"
+              className="flex items-center gap-2 font-bold text-brand-soft"
               title="Abrir site público do seu racha"
             >
               Ver o Site
-              <FaExternalLinkAlt className="text-yellow-400 ml-1" />
+              <FaExternalLinkAlt className="text-brand ml-1" />
             </a>
           </div>
           <div className="text-xs text-gray-400 mt-1 pl-1">

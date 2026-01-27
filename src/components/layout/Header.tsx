@@ -62,7 +62,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             className="object-contain rounded"
             priority
           />
-          <span className="text-2xl font-bold text-yellow-400 truncate max-w-[140px] md:max-w-none">
+          <span className="text-2xl font-bold text-brand truncate max-w-[140px] md:max-w-none">
             {nome}
           </span>
         </Link>
@@ -91,7 +91,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                 aria-label={item.label}
                 onClick={handleClick}
               >
-                <item.icon size={22} className="text-yellow-400 drop-shadow" />
+                <item.icon size={22} className="text-brand drop-shadow" />
                 <span className="text-[15px] font-semibold text-white">{item.label}</span>
                 {badgeValue > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-1.5 min-w-[18px] h-5 flex items-center justify-center shadow-lg border-2 border-[#121212] font-bold">
@@ -106,13 +106,13 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           {!isLoggedIn ? (
             <Link
               href={loginHref}
-              className="ml-2 flex items-center gap-2 border border-yellow-400 bg-[#222] text-yellow-400 px-3 py-1.5 rounded-full shadow-md hover:bg-yellow-400 hover:text-black transition-all"
+              className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
               style={{ letterSpacing: 1 }}
             >
-              <FaUser size={18} className="text-yellow-400 shrink-0" />
+              <FaUser size={18} className="text-brand shrink-0" />
               <span className="flex flex-col leading-tight text-left">
                 <span className="text-[13px] font-bold uppercase">Entrar</span>
-                <span className="text-[10px] font-semibold text-yellow-200 normal-case truncate max-w-[140px]">
+                <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
                   Atletas do {nome}
                 </span>
               </span>
@@ -128,9 +128,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                   alt={displayName}
                   width={32}
                   height={32}
-                  className="rounded-full border-2 border-yellow-400"
+                  className="rounded-full border-2 border-brand"
                 />
-                <span className="text-yellow-400 font-bold text-[15px] uppercase truncate max-w-[90px]">
+                <span className="text-brand font-bold text-[15px] uppercase truncate max-w-[90px]">
                   {displayName}
                 </span>
               </Link>
@@ -164,9 +164,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           className="absolute left-0 right-0 -bottom-2 h-[6px] pointer-events-none z-50"
           style={{
             background:
-              "radial-gradient(ellipse at center, #FFD700 0%, rgba(255,215,0,0.08) 70%, rgba(18,18,18,0.7) 100%)",
+              "radial-gradient(ellipse at center, var(--brand) 0%, transparent 70%, rgba(18,18,18,0.7) 100%)",
             opacity: 0.55,
-            boxShadow: "0 3px 16px 0 #FFD70088, 0 1px 0 0 #FFD70044",
+            boxShadow: "0 3px 16px 0 var(--brand), 0 1px 0 0 var(--brand)",
           }}
         />
       </div>

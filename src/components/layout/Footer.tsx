@@ -162,10 +162,10 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-[#0e0e0e] text-white mt-t border-t border-yellow-400">
+    <footer className="bg-[#0e0e0e] text-white mt-t border-t border-brand">
       <div className="max-w-7xl mx-auto px-4 py-12">
-        <h2 className="text-center text-xl font-bold text-yellow-400 mb-6 animate-pulse">
-          <span className="bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-300 bg-clip-text text-transparent">
+        <h2 className="text-center text-xl font-bold text-brand mb-6 animate-pulse">
+          <span className="bg-gradient-to-r from-[var(--brand-soft)] via-[var(--brand)] to-[var(--brand-soft)] bg-clip-text text-transparent">
             NOSSOS PATROCINADORES
           </span>
         </h2>
@@ -174,14 +174,14 @@ export default function Footer() {
           <button
             onClick={() => handleManualScroll("left")}
             aria-label="Scroll left"
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-yellow-400 hover:bg-yellow-500 hover:text-black"
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-brand hover:bg-brand hover:text-black"
           >
             &#9664;
           </button>
           <button
             onClick={() => handleManualScroll("right")}
             aria-label="Scroll right"
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-yellow-400 hover:bg-yellow-500 hover:text-black"
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10 bg-black/60 p-2 rounded-full text-brand hover:bg-brand hover:text-black"
           >
             &#9654;
           </button>
@@ -246,7 +246,7 @@ export default function Footer() {
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] lg:grid-cols-3 gap-10 items-start">
           <div>
-            <p className="text-yellow-400 font-bold mb-2">NOSSO CAMPO OFICIAL</p>
+            <p className="text-brand font-bold mb-2">NOSSO CAMPO OFICIAL</p>
             {campoNome ? <p className="text-gray-100 font-semibold mb-1">{campoNome}</p> : null}
             <p className="text-gray-300 mb-3">{campoEndereco || "Endereco nao informado"}</p>
             <iframe
@@ -262,20 +262,20 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col items-center justify-start gap-2">
-            <p className="text-yellow-400 font-bold mb-2">Siga - nos</p>
+            <p className="text-brand font-bold mb-2">Siga - nos</p>
             <div className="flex gap-3">
               <Link
                 href="https://www.facebook.com/profile.php?id=61581917656941"
                 target="_blank"
                 aria-label="Facebook"
               >
-                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
-                  <FaFacebookF className="text-yellow-400 hover:text-black text-lg" />
+                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
+                  <FaFacebookF className="text-brand hover:text-black text-lg" />
                 </div>
               </Link>
               <Link href="https://wa.me/seuNumero" target="_blank" aria-label="WhatsApp">
-                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
-                  <FaWhatsapp className="text-yellow-400 hover:text-black text-lg" />
+                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
+                  <FaWhatsapp className="text-brand hover:text-black text-lg" />
                 </div>
               </Link>
               <Link
@@ -283,8 +283,8 @@ export default function Footer() {
                 target="_blank"
                 aria-label="Instagram"
               >
-                <div className="border border-yellow-400 p-2 rounded-md hover:bg-yellow-400 transition cursor-pointer">
-                  <FaInstagram className="text-yellow-400 hover:text-black text-lg" />
+                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
+                  <FaInstagram className="text-brand hover:text-black text-lg" />
                 </div>
               </Link>
             </div>
