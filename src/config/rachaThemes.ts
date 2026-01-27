@@ -90,10 +90,10 @@ export const RACHA_THEMES: RachaTheme[] = [
     subtitle: "Roxo profundo, lilas e preto",
     swatches: ["#6D28D9", "#C4B5FD", "#191C22"],
     tokens: {
-      brand: "#6D28D9",
-      brandSoft: "#B59BFF",
-      brandStrong: "#4A1AA2",
-      brandRing: "#CDB9FF",
+      brand: "#C026D3",
+      brandSoft: "#F5D0FE",
+      brandStrong: "#A21CAF",
+      brandRing: "#E879F9",
     },
   },
 ];
