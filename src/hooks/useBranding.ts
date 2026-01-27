@@ -20,12 +20,14 @@ function formatSlugName(slug: string) {
 export function useBranding(options?: BrandingOptions) {
   const { tenantSlug } = useRacha();
   const scope = options?.scope ?? "public";
-  const resolvedSlug = options?.slug || tenantSlug || rachaConfig.slug;
+  const resolvedSlug = options?.slug || tenantSlug || "";
+  const publicSlug = resolvedSlug || rachaConfig.slug || "";
 
-  const publicAbout = useAboutPublic(scope === "public" ? resolvedSlug : undefined);
+  const publicAbout = useAboutPublic(scope === "public" ? publicSlug : undefined);
   const adminAbout = useAboutAdmin({ enabled: scope === "admin" });
-  const shouldLoadRacha = scope !== "superadmin" && Boolean(resolvedSlug);
-  const { racha, isLoading: isLoadingRacha } = useRachaPublic(shouldLoadRacha ? resolvedSlug : "");
+  const shouldLoadRacha = scope === "public" ? Boolean(publicSlug) : Boolean(resolvedSlug);
+  const rachaSlug = scope === "public" ? publicSlug : resolvedSlug;
+  const { racha, isLoading: isLoadingRacha } = useRachaPublic(shouldLoadRacha ? rachaSlug : "");
 
   const about = scope === "admin" ? adminAbout.about : publicAbout.about;
   const isLoading =

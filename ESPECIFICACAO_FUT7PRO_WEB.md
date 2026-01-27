@@ -8,6 +8,13 @@
 - Arquitetura: Next.js App Router (14.x), NextAuth integrado ao backend (`/auth/*` do Nest), proxies server-side para todas as rotas admin/públicas.
 - Público-alvo: presidente/vice/diretores (painel), atletas (acessos restritos) e visitantes (site público).
 
+## Nota critica - Painel admin sem slug na URL
+
+- Rotas admin ficam em `/admin/*` (sem slug no path). O tenant e resolvido pela sessao.
+- Sempre carregar `tenantSlug`/`tenantId` via `/api/me` e setar no `RachaContext` no layout admin.
+- Evitar fallback para `rachaConfig.slug` no admin ao chamar endpoints publicos (risco de 404 "Racha nao encontrado").
+- Se `tenantSlug` nao estiver na sessao, bloquear acoes sensiveis e orientar relogin.
+
 ## Ambiente & Integração
 
 - Deploy: Vercel (`https://app.fut7pro.com.br`).
