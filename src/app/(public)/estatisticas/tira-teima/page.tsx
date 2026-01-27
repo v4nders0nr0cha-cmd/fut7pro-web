@@ -140,8 +140,8 @@ function AthletePicker({
                   type="button"
                   className={`w-full px-3 py-2 flex items-center gap-2 text-left transition ${
                     isSelected
-                      ? "bg-yellow-100 text-black"
-                      : "text-white hover:bg-yellow-100 hover:text-black"
+                      ? "bg-brand-soft text-black"
+                      : "text-white hover:bg-brand-soft hover:text-black"
                   }`}
                   onClick={() => {
                     onChange(athlete.slug || athlete.id);
@@ -158,9 +158,7 @@ function AthletePicker({
                   />
                   <span className="flex-1 truncate">{athlete.nome}</span>
                   {athlete.posicao && (
-                    <span
-                      className={isSelected ? "text-xs text-black/70" : "text-xs text-yellow-400"}
-                    >
+                    <span className={isSelected ? "text-xs text-black/70" : "text-xs text-brand"}>
                       {athlete.posicao}
                     </span>
                   )}
@@ -228,7 +226,7 @@ function ConquistasColuna({
       <div className="flex items-center justify-between mb-3">
         <div>
           <p className="text-xs text-gray-400">{titulo}</p>
-          <p className="text-lg font-bold text-yellow-400">{nome || "-"}</p>
+          <p className="text-lg font-bold text-brand">{nome || "-"}</p>
         </div>
         <div className="text-right">
           <p className="text-xs text-gray-400">Total titulos</p>
@@ -256,10 +254,10 @@ function ConquistasColuna({
                   {lista.map((item, idx) => (
                     <span
                       key={`${item.descricao}-${item.ano}-${idx}`}
-                      className="bg-neutral-900 rounded-lg px-2 py-1 text-xs text-yellow-100 flex items-center gap-2"
+                      className="bg-neutral-900 rounded-lg px-2 py-1 text-xs text-brand-soft flex items-center gap-2"
                       title={`${item.descricao} - ${item.ano}`}
                     >
-                      <span className="text-[10px] text-yellow-400">{resolveIcon(item.icone)}</span>
+                      <span className="text-[10px] text-brand">{resolveIcon(item.icone)}</span>
                       <span>
                         {item.descricao} <span className="text-gray-400">{item.ano}</span>
                       </span>
@@ -450,7 +448,7 @@ export default function TiraTeimaPage() {
         />
       </Head>
       <main className="max-w-5xl mx-auto px-2 py-10">
-        <h1 className="text-3xl font-bold text-yellow-400 mb-2 text-center">Tira Teima</h1>
+        <h1 className="text-3xl font-bold text-brand mb-2 text-center">Tira Teima</h1>
         <p className="text-center text-gray-300 mb-6">
           Selecione dois atletas para comparar estatísticas oficiais do seu racha.
         </p>
@@ -508,7 +506,7 @@ export default function TiraTeimaPage() {
                       />
                       <div className="min-w-0">
                         <p className="text-sm text-gray-400">Atleta A</p>
-                        <p className="text-lg sm:text-xl font-bold text-yellow-400 leading-tight break-words">
+                        <p className="text-lg sm:text-xl font-bold text-brand leading-tight break-words">
                           {atletaA?.nome || "-"}
                         </p>
                       </div>
@@ -523,7 +521,7 @@ export default function TiraTeimaPage() {
                       />
                       <div className="min-w-0">
                         <p className="text-sm text-gray-400">Atleta B</p>
-                        <p className="text-lg sm:text-xl font-bold text-yellow-400 leading-tight break-words">
+                        <p className="text-lg sm:text-xl font-bold text-brand leading-tight break-words">
                           {atletaB?.nome || "-"}
                         </p>
                       </div>
@@ -539,7 +537,7 @@ export default function TiraTeimaPage() {
                         <p className="text-gray-400 text-xs">{item.label}</p>
                         <div className="flex justify-between text-lg font-bold mt-1">
                           <span>{item.a ?? "-"}</span>
-                          <span className="text-yellow-400">vs</span>
+                          <span className="text-brand">vs</span>
                           <span>{item.b ?? "-"}</span>
                         </div>
                       </div>
@@ -548,7 +546,7 @@ export default function TiraTeimaPage() {
 
                   <div className="mt-8 border-t border-neutral-800 pt-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
-                      <h2 className="text-lg font-bold text-yellow-400">Minhas Conquistas</h2>
+                      <h2 className="text-lg font-bold text-brand">Minhas Conquistas</h2>
                       <span className="text-xs text-gray-400">
                         Periodo: {periodo === "all" ? "Todas as temporadas" : "Temporada atual"}
                       </span>
@@ -587,7 +585,7 @@ export default function TiraTeimaPage() {
                 <div className="mt-6 flex flex-col items-center gap-2">
                   <button
                     type="button"
-                    className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-60"
+                    className="w-full sm:w-auto bg-brand-strong hover:bg-brand-strong text-black font-bold px-5 py-2 rounded-lg text-sm transition disabled:opacity-60"
                     onClick={handleShareImage}
                     disabled={isSharing}
                   >

@@ -31,7 +31,7 @@ export default function AjudaClient() {
         canal oficial no&nbsp;
         <a
           href="https://youtube.com/@fut7pro"
-          className="text-yellow-400 font-semibold underline"
+          className="text-brand font-semibold underline"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -43,7 +43,7 @@ export default function AjudaClient() {
         {videos.map((v, idx) => (
           <li
             key={(v as any).id ?? idx}
-            className="bg-zinc-800 rounded-lg p-4 flex flex-col items-start border-l-4 border-yellow-400"
+            className="bg-zinc-800 rounded-lg p-4 flex flex-col items-start border-l-4 border-brand"
           >
             <span className="font-bold text-zinc-200 mb-2">{v.titulo}</span>
             <div className="w-full aspect-[16/9] rounded overflow-hidden">

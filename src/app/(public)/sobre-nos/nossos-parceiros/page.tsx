@@ -93,7 +93,7 @@ export default function NossosParceiros() {
 
       <main className="w-full pt-20 pb-10">
         <div className="max-w-6xl mx-auto px-4 flex flex-col items-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 text-center mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-brand text-center mb-2">
             Nossos Parceiros
           </h1>
           <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
@@ -120,7 +120,7 @@ export default function NossosParceiros() {
               {parceiros.map((p) => (
                 <div
                   key={p.id}
-                  className="flex flex-col items-center bg-neutral-800 rounded-2xl border border-neutral-700 p-5 text-center h-full transition hover:border-yellow-400"
+                  className="flex flex-col items-center bg-neutral-800 rounded-2xl border border-neutral-700 p-5 text-center h-full transition hover:border-brand"
                 >
                   <div className="w-full h-24 flex items-center justify-center mb-3 rounded-xl bg-neutral-900 border border-neutral-700">
                     <Image
@@ -132,7 +132,7 @@ export default function NossosParceiros() {
                       loading="lazy"
                     />
                   </div>
-                  <span className="text-lg font-bold text-yellow-300 mb-1">{p.nome}</span>
+                  <span className="text-lg font-bold text-brand-soft mb-1">{p.nome}</span>
                   <span className="text-sm text-neutral-400 mb-2">{p.categoria}</span>
                   <p className="text-sm text-neutral-200 mb-2">{p.descricao}</p>
                   {p.link ? (
@@ -141,8 +141,8 @@ export default function NossosParceiros() {
                       target="_blank"
                       className={`inline-block mt-auto px-3 py-1 rounded-full text-sm font-semibold ${
                         p.destaque
-                          ? "bg-yellow-400 text-neutral-900 hover:bg-yellow-300"
-                          : "bg-neutral-900 text-yellow-300 border border-yellow-400 hover:bg-yellow-400 hover:text-neutral-900"
+                          ? "bg-brand text-neutral-900 hover:bg-brand-soft"
+                          : "bg-neutral-900 text-brand-soft border border-brand hover:bg-brand hover:text-neutral-900"
                       } transition`}
                       rel="noopener noreferrer"
                       onClick={() =>

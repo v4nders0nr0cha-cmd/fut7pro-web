@@ -80,7 +80,7 @@ export default function ContatosPage() {
       <main className="w-full pt-20 pb-10">
         <div className="max-w-2xl mx-auto px-4">
           {/* TÍTULO AMARELO */}
-          <h1 className="text-2xl md:text-4xl font-bold text-center text-yellow-400 mb-3">
+          <h1 className="text-2xl md:text-4xl font-bold text-center text-brand mb-3">
             Fale Conosco
           </h1>
           <p className="text-center text-zinc-300 mb-6">
@@ -176,15 +176,15 @@ export default function ContatosPage() {
                 required
               />
             </div>
-            {erro && <span className="text-yellow-400 text-sm">{erro}</span>}
+            {erro && <span className="text-brand text-sm">{erro}</span>}
             <button
               type="submit"
-              className="bg-yellow-400 hover:bg-yellow-500 text-black rounded-lg p-2 font-bold transition mt-2"
+              className="bg-brand hover:bg-brand-strong text-black rounded-lg p-2 font-bold transition mt-2"
               disabled={enviando || enviado}
             >
               {enviando ? (
                 <span className="flex items-center gap-2 justify-center animate-pulse">
-                  <FaCheckCircle className="text-yellow-500" /> Enviando...
+                  <FaCheckCircle className="text-brand-strong" /> Enviando...
                 </span>
               ) : enviado ? (
                 <span className="flex items-center gap-2 justify-center">
@@ -202,7 +202,7 @@ export default function ContatosPage() {
             <div className="flex flex-col gap-2 md:flex-row md:gap-6">
               <a
                 href="mailto:contato@fut7pro.com.br"
-                className="flex items-center gap-2 text-yellow-400 hover:underline"
+                className="flex items-center gap-2 text-brand hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Enviar e-mail"
@@ -211,7 +211,7 @@ export default function ContatosPage() {
               </a>
               <a
                 href="https://wa.me/5599999999999"
-                className="flex items-center gap-2 text-yellow-400 hover:underline"
+                className="flex items-center gap-2 text-brand hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Falar no WhatsApp"
@@ -225,7 +225,7 @@ export default function ContatosPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="text-yellow-400 hover:text-white text-2xl"
+                className="text-brand hover:text-white text-2xl"
               >
                 <FaInstagram />
               </a>
@@ -234,7 +234,7 @@ export default function ContatosPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Facebook"
-                className="text-yellow-400 hover:text-white text-2xl"
+                className="text-brand hover:text-white text-2xl"
               >
                 <FaFacebook />
               </a>
@@ -242,10 +242,10 @@ export default function ContatosPage() {
           </div>
 
           {/* Bloco Patrocínio e Mídia */}
-          <div className="bg-neutral-950 border border-yellow-400 rounded-2xl shadow p-4 flex flex-col gap-3 mb-6">
+          <div className="bg-neutral-950 border border-brand rounded-2xl shadow p-4 flex flex-col gap-3 mb-6">
             <div className="flex items-center gap-2 mb-1">
-              <FaBuilding className="text-yellow-400" />
-              <h3 className="font-bold text-yellow-400 text-base md:text-lg">
+              <FaBuilding className="text-brand" />
+              <h3 className="font-bold text-brand text-base md:text-lg">
                 Sua marca em destaque no nosso Racha
               </h3>
             </div>

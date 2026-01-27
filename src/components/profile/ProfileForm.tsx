@@ -147,10 +147,10 @@ export default function ProfileForm({
             alt="Avatar do perfil"
             width={120}
             height={120}
-            className="rounded-full border-2 border-yellow-400 object-cover"
+            className="rounded-full border-2 border-brand object-cover"
             onError={() => setAvatarPreview(DEFAULT_AVATAR)}
           />
-          <label className="absolute -bottom-2 right-0 cursor-pointer rounded-full bg-yellow-400 px-2 py-1 text-[10px] font-bold text-black shadow">
+          <label className="absolute -bottom-2 right-0 cursor-pointer rounded-full bg-brand px-2 py-1 text-[10px] font-bold text-black shadow">
             Alterar foto
             <input
               type="file"
@@ -177,7 +177,7 @@ export default function ProfileForm({
                 onChange={(e) => setFirstName(e.target.value)}
                 maxLength={10}
                 disabled={saving}
-                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
               />
             </label>
             <label className="text-sm text-zinc-300">
@@ -188,7 +188,7 @@ export default function ProfileForm({
                 onChange={(e) => setNickname(e.target.value)}
                 maxLength={10}
                 disabled={saving}
-                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
               />
             </label>
             <label className="text-sm text-zinc-300">
@@ -197,7 +197,7 @@ export default function ProfileForm({
                 value={position}
                 onChange={(e) => setPosition(e.target.value as Posicao)}
                 disabled={saving}
-                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
               >
                 <option value="">Selecione</option>
                 {POSICOES.map((item) => (
@@ -213,7 +213,7 @@ export default function ProfileForm({
                 value={positionSecondary}
                 onChange={(e) => setPositionSecondary(e.target.value as Posicao | "")}
                 disabled={saving}
-                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
               >
                 <option value="">Nenhuma</option>
                 {POSICOES.map((item) => (
@@ -248,7 +248,7 @@ export default function ProfileForm({
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
+          className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black hover:bg-brand-soft disabled:opacity-60"
         >
           {saving ? "Salvando..." : submitLabel}
         </button>

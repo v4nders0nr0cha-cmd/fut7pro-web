@@ -8,7 +8,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const cards = [
   {
     label: "Atacantes",
-    icon: <FaFutbol className="text-yellow-400 text-4xl" aria-label="Atacante" />,
+    icon: <FaFutbol className="text-brand text-4xl" aria-label="Atacante" />,
     href: "/estatisticas/melhores-por-posicao/atacantes",
   },
   {
@@ -49,7 +49,7 @@ export default function MelhoresPorPosicaoPage() {
         />
       </Head>
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold text-brand text-center mb-6">
           Melhores por Posição
         </h1>
 
@@ -66,7 +66,7 @@ export default function MelhoresPorPosicaoPage() {
             <Link
               key={card.label}
               href={publicHref(card.href)}
-              className="bg-[#232323] flex flex-col items-center gap-3 rounded-2xl py-8 px-2 shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all cursor-pointer text-center"
+              className="bg-[#232323] flex flex-col items-center gap-3 rounded-2xl py-8 px-2 shadow-md hover:shadow-[0_0_12px_2px_var(--brand)] transition-all cursor-pointer text-center"
             >
               {card.icon}
               <span className="font-bold text-lg">{card.label}</span>

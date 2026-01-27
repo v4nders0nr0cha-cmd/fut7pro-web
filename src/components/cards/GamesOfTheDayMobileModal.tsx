@@ -18,8 +18,10 @@ const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 // Componente institucional do box de regras
 function BoxRegras() {
   return (
-    <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-xl p-3 mt-2 text-[15px] text-zinc-900 font-normal flex flex-col gap-2 shadow-sm">
-      <div className="font-bold text-yellow-700 mb-2">Como sao escolhidos os destaques do dia?</div>
+    <div className="bg-brand-soft border-l-4 border-brand-strong rounded-xl p-3 mt-2 text-[15px] text-zinc-900 font-normal flex flex-col gap-2 shadow-sm">
+      <div className="font-bold text-brand-strong mb-2">
+        Como sao escolhidos os destaques do dia?
+      </div>
       <ul className="list-disc pl-5 mb-1">
         <li>
           <span className="font-semibold text-zinc-900">Atacante do Dia:</span> Entre os atacantes
@@ -50,7 +52,7 @@ function BoxRegras() {
         </li>
       </ul>
       <div className="text-[14px] text-zinc-800 font-medium mt-1">
-        <span className="text-yellow-600 font-bold">Obs:</span> Esses criterios valorizam quem
+        <span className="text-brand-strong font-bold">Obs:</span> Esses criterios valorizam quem
         ajudou o time a ser campeao, mesmo que nao seja o maior artilheiro ou assistente geral do
         racha.
       </div>
@@ -87,12 +89,12 @@ export default function GamesOfTheDayMobileModal({
         alt={item.name || item.title}
         width={52}
         height={52}
-        className="rounded-md object-cover border-2 border-yellow-400"
+        className="rounded-md object-cover border-2 border-brand"
       />
       <div>
-        <p className="uppercase text-xs font-bold text-yellow-400 mb-0.5">{item.title}</p>
+        <p className="uppercase text-xs font-bold text-brand mb-0.5">{item.title}</p>
         <p className="font-semibold text-[15px] text-white">{item.name}</p>
-        {item.value && <p className="text-yellow-300 text-sm">{item.value}</p>}
+        {item.value && <p className="text-brand-soft text-sm">{item.value}</p>}
         {item.criteria && (
           <p className="text-xs text-zinc-300 leading-snug mt-0.5 truncate">{item.criteria}</p>
         )}
@@ -140,7 +142,7 @@ export default function GamesOfTheDayMobileModal({
               {/* Titulo fixo */}
               <Dialog.Title
                 as="h2"
-                className="text-xl font-bold text-yellow-400 mb-5 text-center pt-1 pb-2"
+                className="text-xl font-bold text-brand mb-5 text-center pt-1 pb-2"
                 style={{ letterSpacing: "-0.5px" }}
               >
                 Todos os Destaques do Dia
@@ -162,7 +164,7 @@ export default function GamesOfTheDayMobileModal({
 
               {hasDestaques && hasArtilheiroMaestro && (
                 <div className="flex justify-center my-2">
-                  <div className="h-1 w-24 rounded-full bg-yellow-400 opacity-70" />
+                  <div className="h-1 w-24 rounded-full bg-brand opacity-70" />
                 </div>
               )}
 
@@ -174,7 +176,7 @@ export default function GamesOfTheDayMobileModal({
               <div className="flex justify-center my-2">
                 <button
                   onClick={() => setShowInfo((v) => !v)}
-                  className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-black font-semibold px-4 py-2 rounded-full shadow transition active:scale-95"
+                  className="flex items-center gap-2 bg-brand hover:bg-brand-soft text-black font-semibold px-4 py-2 rounded-full shadow transition active:scale-95"
                   style={{ fontSize: 15 }}
                 >
                   <Info size={18} /> Entenda as regras dos destaques do dia

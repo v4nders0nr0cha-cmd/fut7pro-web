@@ -24,7 +24,7 @@ const ChampionTeamCard = ({ teamName, image }: ChampionTeamCardProps) => {
           className="rounded-lg w-[64px] h-[64px] object-cover"
         />
         <div className="text-sm">
-          <p className="text-[10px] font-bold uppercase text-yellow-400">Time Campeão do Dia</p>
+          <p className="text-[10px] font-bold uppercase text-brand">Time Campeão do Dia</p>
           <p className="font-semibold text-white">{teamName}</p>
         </div>
       </div>

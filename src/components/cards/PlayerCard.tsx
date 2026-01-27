@@ -46,7 +46,7 @@ interface PlayerCardProps {
 }
 
 function getStatusStyle(status?: PlayerStatus) {
-  if (status === "substituto") return "bg-yellow-500 text-black";
+  if (status === "substituto") return "bg-brand-strong text-black";
   if (status === "ausente") return "bg-red-500 text-white";
   return "bg-green-500 text-white";
 }
@@ -100,7 +100,7 @@ export default function PlayerCard({
   const badgeStyle =
     highlightBadge?.toLowerCase().includes("manual") === true
       ? "bg-red-500/20 text-red-200 border-red-500/40"
-      : "bg-yellow-400/15 text-yellow-200 border-yellow-400/40";
+      : "bg-brand/15 text-brand-soft border-brand/40";
   const footerText = highlightFooterText || highlightBadge || "";
 
   const handleRulesClick = (event: MouseEvent<HTMLButtonElement>) => {
@@ -116,7 +116,7 @@ export default function PlayerCard({
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] uppercase font-bold text-yellow-400 tracking-wide truncate">
+          <p className="text-[11px] uppercase font-bold text-brand tracking-wide truncate">
             {posicao || "Jogador"}
           </p>
           {highlightBadge ? (
@@ -142,7 +142,7 @@ export default function PlayerCard({
               type="button"
               onClick={handleRulesClick}
               aria-label="Regras dos Destaques do Dia"
-              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-yellow-300"
+              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-brand-soft"
             >
               <Info size={14} />
             </button>
@@ -169,12 +169,12 @@ export default function PlayerCard({
       </div>
       <div className="flex items-end justify-between border-t border-white/10 pt-2">
         {hasHighlightValue ? (
-          <div className="flex items-baseline gap-1 text-yellow-300">
-            <span className="text-2xl font-bold text-yellow-400">{highlightValue}</span>
+          <div className="flex items-baseline gap-1 text-brand-soft">
+            <span className="text-2xl font-bold text-brand">{highlightValue}</span>
             <span className="text-xs uppercase">{highlightValueLabel}</span>
           </div>
         ) : footerText ? (
-          <span className="text-sm font-semibold text-yellow-300">{footerText}</span>
+          <span className="text-sm font-semibold text-brand-soft">{footerText}</span>
         ) : (
           <span className="text-xs text-gray-500">Sem destaque</span>
         )}
@@ -197,7 +197,7 @@ export default function PlayerCard({
           />
         </div>
         <div className="flex flex-col justify-center w-full">
-          <p className="text-[12px] text-[#FFCC00] font-bold uppercase leading-none">
+          <p className="text-[12px] text-brand font-bold uppercase leading-none">
             {posicao || "Jogador"}
           </p>
           <p className="text-base font-semibold text-white leading-tight break-words">

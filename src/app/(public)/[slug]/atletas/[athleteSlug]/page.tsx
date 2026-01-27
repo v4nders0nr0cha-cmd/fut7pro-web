@@ -229,7 +229,7 @@ export default function PerfilAtletaSlugPage() {
         />
       </Head>
       <main className="max-w-5xl mx-auto px-3 py-10">
-        <Link href={backToListHref} className="text-yellow-400 underline text-sm">
+        <Link href={backToListHref} className="text-brand underline text-sm">
           Voltar para lista de atletas
         </Link>
 
@@ -246,21 +246,21 @@ export default function PerfilAtletaSlugPage() {
               }}
             />
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-2xl font-bold text-yellow-400">{displayName}</h1>
+              <h1 className="text-2xl font-bold text-brand">{displayName}</h1>
               {displayNickname && (
-                <p className="text-yellow-200 font-semibold mt-1">Apelido: {displayNickname}</p>
+                <p className="text-brand-soft font-semibold mt-1">Apelido: {displayNickname}</p>
               )}
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 {adminBadgeLabel && (
-                  <span className="inline-flex items-center rounded-full bg-yellow-400 px-3 py-1 text-xs font-bold text-black">
+                  <span className="inline-flex items-center rounded-full bg-brand px-3 py-1 text-xs font-bold text-black">
                     {adminBadgeLabel}
                   </span>
                 )}
-                <span className="inline-flex items-center rounded-full border border-yellow-400 px-3 py-1 text-xs text-yellow-300">
+                <span className="inline-flex items-center rounded-full border border-brand px-3 py-1 text-xs text-brand-soft">
                   Posicao: {formatPosition(athlete.position)}
                 </span>
                 {athlete.positionSecondary && (
-                  <span className="inline-flex items-center rounded-full border border-yellow-400 px-3 py-1 text-xs text-yellow-300">
+                  <span className="inline-flex items-center rounded-full border border-brand px-3 py-1 text-xs text-brand-soft">
                     Posicao secundaria: {formatPosition(athlete.positionSecondary)}
                   </span>
                 )}
@@ -285,8 +285,8 @@ export default function PerfilAtletaSlugPage() {
                 type="button"
                 className={`px-3 py-1 rounded-full border transition ${
                   statsPeriod === period.value
-                    ? "bg-yellow-400 text-black border-yellow-400"
-                    : "bg-neutral-900 text-yellow-300 border-yellow-400"
+                    ? "bg-brand text-black border-brand"
+                    : "bg-neutral-900 text-brand-soft border-brand"
                 }`}
                 onClick={() => setStatsPeriod(period.value as "current" | "all")}
               >
@@ -308,7 +308,7 @@ export default function PerfilAtletaSlugPage() {
                 <p className="text-gray-400">{item.label}</p>
                 <p
                   className={`text-lg font-bold ${
-                    item.label === "Pontuacao" ? "text-yellow-300" : ""
+                    item.label === "Pontuacao" ? "text-brand-soft" : ""
                   }`}
                 >
                   {item.value}

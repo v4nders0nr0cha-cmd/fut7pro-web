@@ -58,7 +58,7 @@ export default function RankingAnualPage() {
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">
+            <h2 className="text-2xl md:text-3xl font-bold text-brand mb-2">
               Ranking Anual de Pontos
             </h2>
             <p className="text-sm text-gray-400 max-w-xl mx-auto md:mx-0">
@@ -69,7 +69,7 @@ export default function RankingAnualPage() {
           <select
             value={anoSelecionado}
             onChange={(e) => setAno(Number(e.target.value))}
-            className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+            className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm focus:outline-none"
             aria-label="Selecionar ano"
           >
             {anosDisponiveis.map((anoOpt) => (
@@ -107,7 +107,7 @@ export default function RankingAnualPage() {
                 <tr>
                   <th className="p-2 text-left">#</th>
                   <th className="p-2 text-left">Atleta</th>
-                  <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
+                  <th className="p-2 text-right text-brand text-base">Pontos</th>
                   <th className="p-2 text-right">Jogos</th>
                   <th className="p-2 text-right">Vitórias</th>
                   <th className="p-2 text-right">Empates</th>
@@ -118,7 +118,7 @@ export default function RankingAnualPage() {
               <tbody>
                 {rankingFiltrado.map((atleta, idx) => {
                   let rowClass = "";
-                  if (idx === 0) rowClass = "border-2 border-yellow-400 bg-[#232100]";
+                  if (idx === 0) rowClass = "border-2 border-brand bg-[#232100]";
                   if (idx === 1) rowClass = "border-2 border-gray-400 bg-[#1e1e1e]";
                   if (idx === 2) rowClass = "border-2 border-orange-600 bg-[#231c00]";
 
@@ -127,7 +127,7 @@ export default function RankingAnualPage() {
                       key={atleta.id}
                       className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
                     >
-                      <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
+                      <td className="p-2 font-bold text-brand">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
                         <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
@@ -135,18 +135,18 @@ export default function RankingAnualPage() {
                             alt={`Foto de ${atleta.nome}`}
                             width={32}
                             height={32}
-                            className="rounded-full border border-yellow-400"
+                            className="rounded-full border border-brand"
                           />
                         </Link>
                         <Link
                           href={publicHref(`/atletas/${atleta.slug}`)}
-                          className="text-yellow-300 hover:underline font-semibold"
+                          className="text-brand-soft hover:underline font-semibold"
                           title={`Ver perfil de ${atleta.nome}`}
                         >
                           <span className="break-words">{atleta.nome}</span>
                         </Link>
                       </td>
-                      <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                      <td className="text-right p-2 font-extrabold text-brand text-base">
                         {atleta.pontos}
                       </td>
                       <td className="text-right p-2">{atleta.jogos}</td>

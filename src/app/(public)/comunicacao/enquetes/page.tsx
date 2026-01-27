@@ -68,12 +68,12 @@ export default function EnquetesPage() {
     return (
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Enquetes</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Enquetes</h1>
           <p className="text-gray-300 mb-4">Entre para participar das enquetes do seu racha.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login
           </button>
@@ -109,11 +109,11 @@ export default function EnquetesPage() {
               return (
                 <li
                   key={notificacao.id}
-                  className="bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400"
+                  className="bg-zinc-800 rounded-lg p-4 border-l-4 border-brand"
                 >
                   <div className="flex justify-between items-center mb-2 gap-2 flex-wrap">
-                    <span className="text-lg font-bold text-yellow-300">{title}</span>
-                    <span className="px-2 py-1 rounded text-xs font-bold bg-yellow-800 text-yellow-300">
+                    <span className="text-lg font-bold text-brand-soft">{title}</span>
+                    <span className="px-2 py-1 rounded text-xs font-bold bg-brand-strong text-brand-soft">
                       {statusLabel}
                     </span>
                   </div>
@@ -125,7 +125,7 @@ export default function EnquetesPage() {
                         onClick={() =>
                           router.push(publicHref(`/comunicacao/enquetes/${enqueteId}`))
                         }
-                        className="bg-yellow-400 text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-yellow-500 transition"
+                        className="bg-brand text-zinc-900 rounded px-3 py-1 font-semibold hover:bg-brand-strong transition"
                       >
                         Ver detalhes
                       </button>

@@ -20,9 +20,7 @@ export default function HistoricoPage() {
 
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
         <div className="text-center mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">
-            Historico de Partidas
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-bold text-brand mb-2">Historico de Partidas</h1>
           <p className="text-textoSuave text-base md:text-lg">
             Consulte datas, locais, placares e detalhes das partidas do racha.
           </p>

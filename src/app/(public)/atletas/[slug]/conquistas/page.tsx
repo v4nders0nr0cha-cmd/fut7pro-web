@@ -34,10 +34,7 @@ export default function ConquistasAtletaPage() {
         <title>Conquistas | {athlete.firstName || "Atleta"} | Fut7Pro</title>
       </Head>
       <main className="max-w-4xl mx-auto px-2 py-10">
-        <Link
-          href={publicHref(`/atletas/${athleteSlug}`)}
-          className="text-yellow-400 underline text-sm"
-        >
+        <Link href={publicHref(`/atletas/${athleteSlug}`)} className="text-brand underline text-sm">
           Voltar para o perfil
         </Link>
 

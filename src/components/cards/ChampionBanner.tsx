@@ -28,7 +28,7 @@ const ChampionBanner = ({ image, date, players, href }: ChampionBannerProps) => 
           />
         </div>
         <div className="w-full md:w-1/3 flex flex-col justify-center items-center md:items-start p-6 text-center md:text-left">
-          <p className="text-yellow-400 text-xl sm:text-2xl md:text-3xl uppercase font-extrabold mb-2 drop-shadow-[0_0_5px_#FFD700]">
+          <p className="text-brand text-xl sm:text-2xl md:text-3xl uppercase font-extrabold mb-2 drop-shadow-[0_0_5px_var(--brand)]">
             Time Campeão do Dia
           </p>
           <p className="text-white text-base sm:text-lg md:text-xl font-semibold mb-2">{date}</p>

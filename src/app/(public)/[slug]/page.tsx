@@ -47,7 +47,7 @@ export default function RachaPublicPage() {
   if (isLoading) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
         <p className="mt-4 text-gray-300">Carregando racha...</p>
       </div>
     );

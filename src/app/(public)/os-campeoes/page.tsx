@@ -274,7 +274,7 @@ export default function CampeoesPage() {
         </h1>
 
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-yellow-400 mb-2">Os Campeoes</h2>
+          <h2 className="text-3xl font-bold text-brand mb-2">Os Campeoes</h2>
           <p className="text-textoSuave">
             Hall da Fama do racha, com os campeoes do ano e de cada quadrimestre, baseados em
             desempenho real nos jogos, rankings e estatisticas oficiais.
@@ -283,7 +283,7 @@ export default function CampeoesPage() {
             <button
               type="button"
               onClick={() => setSaibaMaisOpen(true)}
-              className="text-yellow-300 hover:text-yellow-200 font-semibold text-sm underline underline-offset-4"
+              className="text-brand-soft hover:text-brand-soft font-semibold text-sm underline underline-offset-4"
             >
               Saiba mais
             </button>
@@ -291,14 +291,14 @@ export default function CampeoesPage() {
         </div>
 
         <div className="flex flex-col items-center gap-4 mb-10">
-          <label htmlFor="ano-campeoes" className="text-yellow-400 font-semibold">
+          <label htmlFor="ano-campeoes" className="text-brand font-semibold">
             Selecione o ano
           </label>
           <select
             id="ano-campeoes"
             value={anoBase}
             onChange={(event) => setAnoSelecionado(Number(event.target.value))}
-            className="bg-[#1A1A1A] text-white border border-yellow-400 px-4 py-2 rounded"
+            className="bg-[#1A1A1A] text-white border border-brand px-4 py-2 rounded"
           >
             {anosDisponiveis.map((ano) => (
               <option key={ano} value={ano}>
@@ -309,7 +309,7 @@ export default function CampeoesPage() {
         </div>
 
         <section className="mb-12">
-          <h3 className="text-2xl font-bold text-yellow-400 text-center mb-6">Campeoes do Ano</h3>
+          <h3 className="text-2xl font-bold text-brand text-center mb-6">Campeoes do Ano</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {campeoesAno.map((card) => (
               <ChampionHighlightCard key={card.titulo} {...card} />
@@ -318,7 +318,7 @@ export default function CampeoesPage() {
         </section>
 
         <section className="mb-12">
-          <h3 className="text-2xl font-bold text-yellow-400 text-center mb-6">
+          <h3 className="text-2xl font-bold text-brand text-center mb-6">
             Melhores por Posicao no Ano
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -329,7 +329,7 @@ export default function CampeoesPage() {
         </section>
 
         <section className="mb-4">
-          <h3 className="text-2xl font-bold text-yellow-400 text-center mb-6">
+          <h3 className="text-2xl font-bold text-brand text-center mb-6">
             Campeoes por Quadrimestre
           </h3>
           <QuadrimestreGrid
@@ -364,7 +364,7 @@ export default function CampeoesPage() {
               leaveFrom="opacity-100 translate-y-0"
               leaveTo="opacity-0 translate-y-6"
             >
-              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-yellow-400/10 max-h-[85vh] overflow-y-auto">
+              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-brand/10 max-h-[85vh] overflow-y-auto">
                 <button
                   onClick={() => setSaibaMaisOpen(false)}
                   className="absolute right-4 top-4 bg-black/70 rounded-full px-3 py-1 text-white text-sm"
@@ -373,7 +373,7 @@ export default function CampeoesPage() {
                   X
                 </button>
 
-                <Dialog.Title className="text-2xl font-bold text-yellow-400 mb-4 text-center">
+                <Dialog.Title className="text-2xl font-bold text-brand mb-4 text-center">
                   Como funciona a pagina Os Campeoes
                 </Dialog.Title>
 
@@ -387,7 +387,7 @@ export default function CampeoesPage() {
                   </p>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">Escolha do Ano</h4>
+                    <h4 className="text-brand-soft font-semibold mb-2">Escolha do Ano</h4>
                     <p>
                       Voce pode selecionar o ano desejado para visualizar os campeoes daquele
                       periodo. Os anos disponiveis comecam a partir do ano de criacao do racha e
@@ -396,7 +396,7 @@ export default function CampeoesPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">Campeoes do Ano</h4>
+                    <h4 className="text-brand-soft font-semibold mb-2">Campeoes do Ano</h4>
                     <p className="mb-2">
                       Nesta secao sao exibidos os principais destaques da temporada:
                     </p>
@@ -415,7 +415,7 @@ export default function CampeoesPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">
+                    <h4 className="text-brand-soft font-semibold mb-2">
                       Melhores por Posicao no Ano
                     </h4>
                     <p className="mb-2">
@@ -435,7 +435,7 @@ export default function CampeoesPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">
+                    <h4 className="text-brand-soft font-semibold mb-2">
                       Campeoes por Quadrimestre
                     </h4>
                     <p className="mb-2">O ano e dividido em tres quadrimestres:</p>
@@ -463,7 +463,7 @@ export default function CampeoesPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">
+                    <h4 className="text-brand-soft font-semibold mb-2">
                       Conquistas e Icones no Perfil
                     </h4>
                     <p className="mb-2">
@@ -481,7 +481,7 @@ export default function CampeoesPage() {
                   </div>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-2">Observacao Importante</h4>
+                    <h4 className="text-brand-soft font-semibold mb-2">Observacao Importante</h4>
                     <p>
                       Se um racha for criado no meio do ano, apenas os quadrimestres a partir da
                       data de criacao passam a ser considerados. Quadrimestres ja encerrados antes
@@ -518,8 +518,8 @@ function ChampionHighlightCard({
   highlight?: boolean;
 }) {
   const highlightClasses = highlight
-    ? "shadow-[0_0_18px_2px_rgba(255,204,0,0.28)] ring-1 ring-yellow-400/30 hover:shadow-[0_0_24px_4px_rgba(255,204,0,0.45)]"
-    : "hover:shadow-[0_0_10px_2px_#FFCC00]";
+    ? "shadow-[0_0_18px_2px_var(--brand)] ring-1 ring-brand hover:shadow-[0_0_24px_4px_var(--brand)]"
+    : "hover:shadow-[0_0_10px_2px_var(--brand)]";
   const paddingClass = temporario ? "pt-7" : "";
   return (
     <Link
@@ -527,7 +527,7 @@ function ChampionHighlightCard({
       className={`relative block bg-[#1A1A1A] rounded-xl p-4 ${paddingClass} transition-shadow ${highlightClasses}`}
     >
       {highlight && (
-        <span className="pointer-events-none absolute -top-10 left-1/2 h-20 w-40 -translate-x-1/2 rounded-full bg-yellow-400/20 blur-2xl" />
+        <span className="pointer-events-none absolute -top-10 left-1/2 h-20 w-40 -translate-x-1/2 rounded-full bg-brand/20 blur-2xl" />
       )}
       {temporario && (
         <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full z-10">
@@ -543,7 +543,7 @@ function ChampionHighlightCard({
           )}
         </div>
       )}
-      <p className="text-[11px] uppercase font-bold text-yellow-400 mb-2 pr-10">{titulo}</p>
+      <p className="text-[11px] uppercase font-bold text-brand mb-2 pr-10">{titulo}</p>
       <div className="flex items-center gap-3">
         <Image
           src={image}
@@ -554,7 +554,7 @@ function ChampionHighlightCard({
         />
         <div className="flex flex-col">
           <p className="font-semibold text-sm text-white">{nome}</p>
-          <p className="text-yellow-400 text-xs">{valor}</p>
+          <p className="text-brand text-xs">{valor}</p>
         </div>
       </div>
     </Link>

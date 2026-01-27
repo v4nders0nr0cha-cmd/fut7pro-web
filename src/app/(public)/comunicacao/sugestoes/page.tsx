@@ -77,8 +77,8 @@ export default function SugestoesPage() {
     <div className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-xl mx-auto w-full px-4">
       <h1 className="text-xl font-bold text-zinc-100 mb-4">Sugestoes & Feedback</h1>
 
-      <div className="mb-6 bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
-        <p className="text-yellow-300 font-bold mb-1">
+      <div className="mb-6 bg-zinc-800 rounded-lg p-4 border-l-4 border-brand">
+        <p className="text-brand-soft font-bold mb-1">
           Envie suas ideias e sugestoes ao administrador do racha!
         </p>
         <p className="text-zinc-300 text-sm">
@@ -89,7 +89,7 @@ export default function SugestoesPage() {
 
       <div className="mb-8 space-y-2">
         <input
-          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 outline-none"
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-brand outline-none"
           placeholder="Seu nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
@@ -97,7 +97,7 @@ export default function SugestoesPage() {
           disabled={enviando}
         />
         <input
-          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 outline-none"
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-brand outline-none"
           placeholder="Seu email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -106,7 +106,7 @@ export default function SugestoesPage() {
           type="email"
         />
         <textarea
-          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-yellow-400 min-h-[80px] outline-none"
+          className="w-full p-3 rounded bg-zinc-900 text-gray-100 border border-brand min-h-[80px] outline-none"
           placeholder="Digite sua sugestao ou ideia (minimo 6 caracteres)..."
           value={mensagem}
           onChange={(e) => setMensagem(e.target.value)}
@@ -114,7 +114,7 @@ export default function SugestoesPage() {
           disabled={enviando}
         />
         <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded shadow disabled:bg-gray-500 transition"
+          className="bg-brand hover:bg-brand-strong text-black font-bold px-4 py-2 rounded shadow disabled:bg-gray-500 transition"
           onClick={enviarSugestao}
           disabled={enviando}
         >
@@ -128,16 +128,16 @@ export default function SugestoesPage() {
         </div>
       </div>
 
-      <h2 className="text-lg font-bold text-yellow-300 mb-3">Sugestoes enviadas nesta sessao</h2>
+      <h2 className="text-lg font-bold text-brand-soft mb-3">Sugestoes enviadas nesta sessao</h2>
       <ul className="space-y-5">
         {sugestoes.length === 0 && (
           <li className="text-zinc-400">Nenhuma sugestao enviada ainda.</li>
         )}
         {sugestoes.map((s) => (
-          <li key={s.id} className="bg-zinc-800 rounded-lg p-4 border-l-4 border-yellow-400">
+          <li key={s.id} className="bg-zinc-800 rounded-lg p-4 border-l-4 border-brand">
             <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-yellow-200">{s.data}</span>
-              <span className="px-2 py-0.5 rounded text-xs font-bold bg-yellow-800 text-yellow-300">
+              <span className="font-bold text-brand-soft">{s.data}</span>
+              <span className="px-2 py-0.5 rounded text-xs font-bold bg-brand-strong text-brand-soft">
                 {s.status}
               </span>
             </div>

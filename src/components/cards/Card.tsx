@@ -35,7 +35,7 @@ export default function Card({
       {/* Título com ícone alinhado */}
       <div className="flex items-center justify-center mb-2 gap-2">
         {icon}
-        <h3 className="text-xl font-semibold text-[#FFCC00]">{title}</h3>
+        <h3 className="text-xl font-semibold text-brand">{title}</h3>
       </div>
       <p className="text-gray-300 text-center">{description}</p>
 

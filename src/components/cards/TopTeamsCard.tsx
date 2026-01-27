@@ -23,9 +23,9 @@ export default function TopTeamsCard() {
 
   return (
     <Link href={publicHref("/estatisticas/classificacao-dos-times")} className="block">
-      <div className="bg-[#1a1a1a] rounded-2xl p-5 text-white shadow-md hover:shadow-[0_0_12px_2px_#FFCC00] transition-all cursor-pointer w-full min-h-[290px] flex flex-col justify-between">
+      <div className="bg-[#1a1a1a] rounded-2xl p-5 text-white shadow-md hover:shadow-[0_0_12px_2px_var(--brand)] transition-all cursor-pointer w-full min-h-[290px] flex flex-col justify-between">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-bold uppercase text-yellow-400">Classificação dos Times</h2>
+          <h2 className="text-base font-bold uppercase text-brand">Classificação dos Times</h2>
           <span className="text-xs text-gray-400 underline">Ver todos</span>
         </div>
 

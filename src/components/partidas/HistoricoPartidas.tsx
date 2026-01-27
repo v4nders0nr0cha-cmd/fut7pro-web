@@ -83,20 +83,18 @@ export default function HistoricoPartidas() {
               setCurrentMonth((prev) => addMonths(prev, -1));
               setSelectedDate(undefined);
             }}
-            className="text-sm text-neutral-300 hover:text-yellow-400 transition"
+            className="text-sm text-neutral-300 hover:text-brand transition"
           >
             {"<"}
           </button>
-          <div className="text-sm font-semibold text-yellow-400">
-            {format(currentMonth, "MM/yyyy")}
-          </div>
+          <div className="text-sm font-semibold text-brand">{format(currentMonth, "MM/yyyy")}</div>
           <button
             type="button"
             onClick={() => {
               setCurrentMonth((prev) => addMonths(prev, 1));
               setSelectedDate(undefined);
             }}
-            className="text-sm text-neutral-300 hover:text-yellow-400 transition"
+            className="text-sm text-neutral-300 hover:text-brand transition"
           >
             {">"}
           </button>
@@ -125,14 +123,14 @@ export default function HistoricoPartidas() {
                 }}
                 className={`h-9 rounded-lg text-xs flex flex-col items-center justify-center transition ${
                   isSelected
-                    ? "bg-yellow-400 text-black font-semibold"
+                    ? "bg-brand text-black font-semibold"
                     : isCurrent
                       ? "text-neutral-200 hover:bg-neutral-800"
                       : "text-neutral-600"
                 }`}
               >
                 <span>{format(day, "d")}</span>
-                {hasMatch && <span className="mt-1 h-1 w-1 rounded-full bg-yellow-400" />}
+                {hasMatch && <span className="mt-1 h-1 w-1 rounded-full bg-brand" />}
               </button>
             );
           })}
@@ -144,7 +142,7 @@ export default function HistoricoPartidas() {
             <button
               type="button"
               onClick={() => setSelectedDate(undefined)}
-              className="text-yellow-400 hover:text-yellow-300 transition"
+              className="text-brand hover:text-brand-soft transition"
             >
               Limpar
             </button>
@@ -202,7 +200,7 @@ export default function HistoricoPartidas() {
                       />
                       <span className="text-sm font-semibold">{match.teamA.name}</span>
                     </div>
-                    <span className="text-lg font-bold text-yellow-400">
+                    <span className="text-lg font-bold text-brand">
                       {hasScore ? `${scoreA} x ${scoreB}` : "-- x --"}
                     </span>
                     <div className="flex items-center gap-2">
@@ -223,7 +221,7 @@ export default function HistoricoPartidas() {
                     </span>
                     <Link
                       href={publicHref(`/partidas/detalhes/${match.id}`)}
-                      className="text-xs text-yellow-400 hover:text-yellow-300 transition underline"
+                      className="text-xs text-brand hover:text-brand-soft transition underline"
                     >
                       Ver detalhes
                     </Link>

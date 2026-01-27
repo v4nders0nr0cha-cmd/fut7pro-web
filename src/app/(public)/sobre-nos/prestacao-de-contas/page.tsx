@@ -28,7 +28,7 @@ export default function PrestacaoDeContasPage() {
   if (isLoadingFinanceiro) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
         <p className="mt-4 text-gray-300">Carregando prestação de contas...</p>
       </div>
     );
@@ -63,7 +63,7 @@ export default function PrestacaoDeContasPage() {
       </Head>
       <main className="w-full pt-20 pb-10">
         <section className="max-w-3xl mx-auto px-4">
-          <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500 mb-2 break-words">
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-strong mb-2 break-words">
             Prestação de Contas
           </h1>
           <p className="mb-4 text-gray-400 text-xs sm:text-sm max-w-xl">

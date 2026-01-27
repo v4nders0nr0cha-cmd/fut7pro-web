@@ -23,7 +23,7 @@ export default function GameCard({
         />
         <span className="text-white text-sm">{teamA.name}</span>
       </div>
-      <span className="text-yellow-400 text-lg font-bold">{score}</span>
+      <span className="text-brand text-lg font-bold">{score}</span>
       <div className="flex items-center gap-2">
         <span className="text-white text-sm">{teamB.name}</span>
         <Image

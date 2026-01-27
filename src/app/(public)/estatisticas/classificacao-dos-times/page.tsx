@@ -58,13 +58,13 @@ export default function ClassificacaoTimesPage() {
         </h1>
 
         <div className="mb-4 mt-8 flex flex-col items-center gap-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center">
+          <h2 className="text-2xl md:text-3xl font-bold text-brand text-center">
             Classificação dos Times
           </h2>
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+            className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm focus:outline-none"
             aria-label="Selecionar periodo da classificacao"
           >
             {periodos.map((opcao) => (
@@ -108,7 +108,7 @@ export default function ClassificacaoTimesPage() {
                 <tr>
                   <th className="p-2 text-left">#</th>
                   <th className="p-2 text-left">Time</th>
-                  <th className="p-2 text-right text-yellow-400 text-base">Pontos</th>
+                  <th className="p-2 text-right text-brand text-base">Pontos</th>
                   <th className="p-2 text-right">Jogos</th>
                   <th className="p-2 text-right">Vitórias</th>
                   <th className="p-2 text-right">Empates</th>
@@ -117,13 +117,13 @@ export default function ClassificacaoTimesPage() {
               </thead>
               <tbody>
                 {teams.map((time, idx: number) => {
-                  const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
+                  const rowClass = idx === 0 ? "border-2 border-brand bg-[#232100]" : "";
                   return (
                     <tr
                       key={time.id}
                       className={`border-t border-gray-700 hover:bg-[#232323] transition-all ${rowClass}`}
                     >
-                      <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
+                      <td className="p-2 font-bold text-brand">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap font-semibold text-white">
                         {time.logo && (
                           <img
@@ -134,7 +134,7 @@ export default function ClassificacaoTimesPage() {
                         )}
                         <span>{time.nome}</span>
                       </td>
-                      <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                      <td className="text-right p-2 font-extrabold text-brand text-base">
                         {time.pontos}
                       </td>
                       <td className="text-right p-2">{time.jogos}</td>

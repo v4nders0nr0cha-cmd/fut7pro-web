@@ -15,37 +15,37 @@ const items = [
   {
     label: "Notificações",
     href: "/comunicacao/notificacoes",
-    icon: <FaRegBell className="text-yellow-400" size={22} />,
+    icon: <FaRegBell className="text-brand" size={22} />,
     description: "Alertas importantes sobre jogos, times e novidades do racha.",
   },
   {
     label: "Mensagens do Admin",
     href: "/comunicacao/mensagens",
-    icon: <FaCommentDots className="text-yellow-400" size={22} />,
+    icon: <FaCommentDots className="text-brand" size={22} />,
     description: "Mensagens diretas enviadas pela administração do racha.",
   },
   {
     label: "Comunicados",
     href: "/comunicacao/comunicados",
-    icon: <FaClipboardList className="text-yellow-400" size={22} />,
+    icon: <FaClipboardList className="text-brand" size={22} />,
     description: "Comunicados gerais, regras e avisos oficiais do racha.",
   },
   {
     label: "Sugestões",
     href: "/comunicacao/sugestoes",
-    icon: <FaLightbulb className="text-yellow-400" size={22} />,
+    icon: <FaLightbulb className="text-brand" size={22} />,
     description: "Envie ideias e sugestões para melhorar o racha.",
   },
   {
     label: "Enquetes",
     href: "/comunicacao/enquetes",
-    icon: <FaClipboardList className="text-yellow-400" size={22} />,
+    icon: <FaClipboardList className="text-brand" size={22} />,
     description: "Participe das enquetes e ajude nas decisões do grupo.",
   },
   {
     label: "Ajuda",
     href: "/comunicacao/ajuda",
-    icon: <FaQuestionCircle className="text-yellow-400" size={22} />,
+    icon: <FaQuestionCircle className="text-brand" size={22} />,
     description: "Dúvidas frequentes, tutoriais e como utilizar a plataforma.",
   },
 ];
@@ -66,7 +66,7 @@ export default function ComunicacaoPage() {
           content="fut7, comunicação, notificações, mensagens, comunicados, enquetes, suporte, racha, futebol 7"
         />
       </Head>
-      <h1 className="text-3xl font-bold text-yellow-400 text-center mt-8 mb-6">
+      <h1 className="text-3xl font-bold text-brand text-center mt-8 mb-6">
         Central de Comunicação
       </h1>
       <p className="text-center text-sm text-gray-300 mb-10 max-w-2xl mx-auto">
@@ -78,11 +78,11 @@ export default function ComunicacaoPage() {
           <Link
             href={publicHref(item.href)}
             key={item.href}
-            className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-yellow-400 transition-all border border-zinc-800 hover:border-yellow-400 flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
+            className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-yellow-400 transition-all border border-zinc-800 hover:border-brand flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
           >
             <div className="flex items-center gap-3 mb-1">
               {item.icon}
-              <span className="font-bold text-base text-yellow-300 group-hover:text-yellow-400">
+              <span className="font-bold text-base text-brand-soft group-hover:text-brand">
                 {item.label}
               </span>
             </div>

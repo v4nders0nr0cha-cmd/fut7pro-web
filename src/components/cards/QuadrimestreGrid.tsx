@@ -84,7 +84,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
               </span>{" "}
               <span className="uppercase">{label}</span>
             </h3>
-            <h4 className="text-center text-yellow-400 text-sm font-bold mb-4 uppercase">
+            <h4 className="text-center text-brand text-sm font-bold mb-4 uppercase">
               CAMPEOES DO QUADRIMESTRE
             </h4>
             <ul className="space-y-2 flex-1">
@@ -117,7 +117,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
                           {item.slug ? (
                             <Link
                               href={publicHref(`/atletas/${item.slug}`)}
-                              className="hover:text-yellow-400 transition underline underline-offset-2"
+                              className="hover:text-brand transition underline underline-offset-2"
                               title={`Ver perfil de ${item.nome} - ${item.titulo}`}
                             >
                               {item.nome}
@@ -126,7 +126,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
                             <span>{item.nome}</span>
                           )}
                           {isFinished && !item.nome.toLowerCase().includes("processamento") && (
-                            <span className="text-[9px] uppercase tracking-wide text-yellow-200 border border-yellow-400/40 bg-yellow-400/10 px-2 py-0.5 rounded-full">
+                            <span className="text-[9px] uppercase tracking-wide text-brand-soft border border-brand/40 bg-brand/10 px-2 py-0.5 rounded-full">
                               campeao
                             </span>
                           )}

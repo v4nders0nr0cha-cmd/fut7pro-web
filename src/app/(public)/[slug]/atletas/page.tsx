@@ -47,7 +47,7 @@ export default function ListaAtletasSlugPage() {
         />
       </Head>
 
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
         Perfis dos Atletas
       </h1>
       <p className="mb-7 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
@@ -61,7 +61,7 @@ export default function ListaAtletasSlugPage() {
         placeholder="Digite o nome do atleta..."
         value={busca}
         onChange={(e) => setBusca(e.target.value)}
-        className="w-full p-2 rounded bg-zinc-800 text-white mb-6 outline-none focus:ring-2 focus:ring-yellow-400"
+        className="w-full p-2 rounded bg-zinc-800 text-white mb-6 outline-none focus:ring-2 focus:ring-brand"
         maxLength={20}
         aria-label="Buscar atleta"
       />
@@ -78,7 +78,7 @@ export default function ListaAtletasSlugPage() {
             return (
               <div
                 key={atleta.slug || atleta.id}
-                className="bg-neutral-900 rounded-xl p-4 shadow-md border border-neutral-800 hover:border-yellow-400 transition"
+                className="bg-neutral-900 rounded-xl p-4 shadow-md border border-neutral-800 hover:border-brand transition"
               >
                 <div className="flex items-center gap-3 mb-3">
                   <Image
@@ -89,25 +89,25 @@ export default function ListaAtletasSlugPage() {
                     className="rounded-full border border-neutral-700"
                   />
                   <div>
-                    <h2 className="text-lg font-bold text-yellow-400">{atleta.nome}</h2>
+                    <h2 className="text-lg font-bold text-brand">{atleta.nome}</h2>
                     {slugLabel && <p className="text-sm text-gray-400">{slugLabel}</p>}
                   </div>
                 </div>
                 <div className="text-sm text-gray-300 space-y-1 mb-3">
                   <p>
-                    <span className="font-bold text-yellow-400">Jogos:</span> {atleta.jogos}
+                    <span className="font-bold text-brand">Jogos:</span> {atleta.jogos}
                   </p>
                   <p>
-                    <span className="font-bold text-yellow-400">Gols:</span> {atleta.gols} |{" "}
-                    <span className="font-bold text-yellow-400">Assist:</span> {atleta.assistencias}
+                    <span className="font-bold text-brand">Gols:</span> {atleta.gols} |{" "}
+                    <span className="font-bold text-brand">Assist:</span> {atleta.assistencias}
                   </p>
                   <p>
-                    <span className="font-bold text-yellow-400">Ranking:</span> {atleta.pontos} pts
+                    <span className="font-bold text-brand">Ranking:</span> {atleta.pontos} pts
                   </p>
                 </div>
                 <Link
                   href={publicHref(`/atletas/${profileSlug}`)}
-                  className="inline-block w-full text-center bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-3 py-2 rounded-lg text-sm transition"
+                  className="inline-block w-full text-center bg-brand-strong hover:bg-brand-strong text-black font-bold px-3 py-2 rounded-lg text-sm transition"
                 >
                   Ver Perfil
                 </Link>

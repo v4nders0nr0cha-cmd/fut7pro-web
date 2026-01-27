@@ -16,7 +16,7 @@ export default function SugestaoClient() {
   return !enviado ? (
     <form
       onSubmit={handleSubmit}
-      className="bg-zinc-800 rounded-lg p-4 flex flex-col gap-3 border-l-4 border-yellow-400"
+      className="bg-zinc-800 rounded-lg p-4 flex flex-col gap-3 border-l-4 border-brand"
     >
       <label htmlFor="sugestao" className="text-zinc-200 font-semibold">
         Envie sua sugestão para os administradores:
@@ -32,7 +32,7 @@ export default function SugestaoClient() {
       />
       <button
         type="submit"
-        className="bg-yellow-400 text-zinc-900 rounded px-4 py-1 font-semibold hover:bg-yellow-500 transition mt-2"
+        className="bg-brand text-zinc-900 rounded px-4 py-1 font-semibold hover:bg-brand-strong transition mt-2"
       >
         Enviar
       </button>

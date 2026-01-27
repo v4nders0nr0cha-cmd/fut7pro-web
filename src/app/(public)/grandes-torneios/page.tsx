@@ -105,7 +105,7 @@ export default function GrandesTorneiosPage() {
 
       <main className="min-h-screen bg-fundo text-white pt-8 pb-20">
         <div className="max-w-5xl mx-auto w-full">
-          <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+          <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
             Grandes Torneios
           </h1>
 
@@ -128,7 +128,7 @@ export default function GrandesTorneiosPage() {
               </label>
               <select
                 id="torneios-ano"
-                className="bg-zinc-900 border border-yellow-600 text-white rounded px-3 py-2 text-sm"
+                className="bg-zinc-900 border border-brand-strong text-white rounded px-3 py-2 text-sm"
                 value={selectedYear}
                 onChange={(event) => {
                   const value = event.target.value;
@@ -169,7 +169,7 @@ export default function GrandesTorneiosPage() {
                 return (
                   <div
                     key={torneio.slug}
-                    className="bg-zinc-900 border border-yellow-600 rounded-xl overflow-hidden shadow-lg"
+                    className="bg-zinc-900 border border-brand-strong rounded-xl overflow-hidden shadow-lg"
                   >
                     <div className="relative h-48 sm:h-64 md:h-72 lg:h-80 w-full">
                       <Image
@@ -184,7 +184,7 @@ export default function GrandesTorneiosPage() {
                       />
                       <div className="absolute inset-0 bg-black/60 flex items-end">
                         <div className="p-4">
-                          <h3 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-1">
+                          <h3 className="text-xl sm:text-2xl font-bold text-brand mb-1">
                             ?? {torneio.nome}
                           </h3>
                           <p className="text-sm text-gray-300 mb-2">
@@ -193,7 +193,7 @@ export default function GrandesTorneiosPage() {
                           </p>
                           <Link
                             href={publicHref(`/grandes-torneios/${torneio.slug}`)}
-                            className="inline-block mt-1 text-sm font-semibold text-yellow-400 hover:underline"
+                            className="inline-block mt-1 text-sm font-semibold text-brand hover:underline"
                           >
                             Ver detalhes
                           </Link>
@@ -201,7 +201,7 @@ export default function GrandesTorneiosPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3 p-4 border-t border-zinc-800">
-                      <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden border border-yellow-500/70 bg-zinc-950">
+                      <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden border border-brand-strong/70 bg-zinc-950">
                         <Image
                           src={logo}
                           alt={`Escudo do time campeao ${torneio.campeao || "A definir"}`}
@@ -214,7 +214,7 @@ export default function GrandesTorneiosPage() {
                         <p className="text-xs uppercase tracking-wide text-gray-500">
                           Time campeao
                         </p>
-                        <p className="text-sm font-semibold text-yellow-300">
+                        <p className="text-sm font-semibold text-brand-soft">
                           {torneio.campeao || "A definir"}
                         </p>
                         <p className="text-xs text-gray-400">{dateLabel}</p>

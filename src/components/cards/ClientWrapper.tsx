@@ -111,7 +111,7 @@ export default function ClientWrapper() {
   return (
     <div className="min-h-screen bg-fundo text-white px-4 pt-4 pb-10">
       <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold text-yellow-400 mb-2">Os Campeões do Racha</h1>
+        <h1 className="text-3xl font-bold text-brand mb-2">Os Campeões do Racha</h1>
         <p className="text-gray-300 max-w-2xl mx-auto mb-4">
           Dados reais do ranking anual do racha. Escolha o ano para ver quem liderou.
         </p>
@@ -125,7 +125,7 @@ export default function ClientWrapper() {
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">Campeões do Ano</h2>
+      <h2 className="text-2xl font-bold text-brand mb-4 text-center">Campeões do Ano</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-8 justify-center">
         {loadingGeral && (
           <div className="text-center text-gray-400 col-span-full">Carregando ranking...</div>
@@ -134,7 +134,7 @@ export default function ClientWrapper() {
           campeoesDoAno.map((item, idx) => <CampeaoAnoCard key={item.slug || idx} {...item} />)}
       </div>
 
-      <h2 className="text-2xl font-bold text-yellow-400 mb-4 text-center">Melhores por Posição</h2>
+      <h2 className="text-2xl font-bold text-brand mb-4 text-center">Melhores por Posição</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8 justify-center">
         {posicaoRankings.every((r) => r.isLoading) && (
           <div className="text-center text-gray-400 col-span-full">Carregando posições...</div>

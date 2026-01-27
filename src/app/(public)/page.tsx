@@ -557,7 +557,7 @@ export default function Home() {
           <div className="block lg:hidden my-6">
             <button
               onClick={() => setModalOpen(true)}
-              className="w-full bg-yellow-400 hover:bg-yellow-500 transition text-black font-bold rounded-xl py-3 text-base shadow-lg"
+              className="w-full bg-brand hover:bg-brand-strong transition text-black font-bold rounded-xl py-3 text-base shadow-lg"
             >
               Ver todos os destaques do dia
             </button>
@@ -596,7 +596,7 @@ export default function Home() {
                 <Card
                   title="Sorteio Inteligente"
                   description="Equipes equilibradas com base no historico."
-                  icon={<Shuffle size={22} className="text-[#FFCC00] -ml-1" />}
+                  icon={<Shuffle size={22} className="text-brand -ml-1" />}
                   restricted={true}
                   isAdmin={isAdmin}
                 />
@@ -605,7 +605,7 @@ export default function Home() {
               <Card
                 title="Sorteio Inteligente"
                 description="Equipes equilibradas com base no historico."
-                icon={<Shuffle size={22} className="text-[#FFCC00] -ml-1" />}
+                icon={<Shuffle size={22} className="text-brand -ml-1" />}
                 restricted={true}
                 isAdmin={isAdmin}
               />

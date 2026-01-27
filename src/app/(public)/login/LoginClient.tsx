@@ -131,12 +131,12 @@ export default function LoginClient() {
   return (
     <section className="w-full px-4">
       <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
-        <div className="mb-4 rounded-lg border border-yellow-400/30 bg-[#141824] px-3 py-2 text-center">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
+        <div className="mb-4 rounded-lg border border-brand/30 bg-[#141824] px-3 py-2 text-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-soft">
             Acesso exclusivo
           </p>
           <p className="text-sm text-gray-200">
-            Atletas do <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
+            Atletas do <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">Visitantes podem navegar pelo site.</p>
         </div>
@@ -186,7 +186,7 @@ export default function LoginClient() {
               autoComplete="email"
               autoFocus
               placeholder="email@exemplo.com"
-              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </label>
           <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -199,13 +199,13 @@ export default function LoginClient() {
                 required
                 autoComplete="current-password"
                 placeholder="Digite sua senha"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
               />
               <button
                 type="button"
                 onClick={() => setSenhaVisivel((visivel) => !visivel)}
                 aria-label={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 transition hover:text-yellow-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 transition hover:text-brand-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
               >
                 {senhaVisivel ? <FaEyeSlash /> : <FaEye />}
               </button>
@@ -214,7 +214,7 @@ export default function LoginClient() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
+            className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
@@ -224,7 +224,7 @@ export default function LoginClient() {
           Ainda nao tem conta?{" "}
           <a
             href={publicHref("/register")}
-            className="text-yellow-300 underline hover:text-yellow-200"
+            className="text-brand-soft underline hover:text-brand-soft"
           >
             Cadastre-se
           </a>

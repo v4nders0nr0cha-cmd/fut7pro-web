@@ -31,11 +31,11 @@ export function CardTimeDoDia({ time }: Props) {
           height={42}
           className="rounded-lg"
         />
-        <h2 className="text-lg md:text-xl font-bold text-yellow-400">
+        <h2 className="text-lg md:text-xl font-bold text-brand">
           {time.nome}
           {time.ehTimeCampeao && (
             <span
-              className="ml-3 px-3 py-1 rounded bg-yellow-400 text-neutral-900 text-sm font-semibold align-middle"
+              className="ml-3 px-3 py-1 rounded bg-brand text-neutral-900 text-sm font-semibold align-middle"
               title="Time Campeão do Dia"
               aria-label="Time Campeão do Dia"
             >

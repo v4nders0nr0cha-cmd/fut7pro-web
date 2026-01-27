@@ -68,7 +68,7 @@ export default function RankingArtilheirosPage() {
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-brand mb-2 text-center">
               Ranking dos Artilheiros
             </h2>
             <p className="text-sm text-gray-400 max-w-xl mb-3 text-center">
@@ -81,7 +81,7 @@ export default function RankingArtilheirosPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
-                className="bg-zinc-900 text-yellow-400 border border-yellow-400 rounded px-3 py-2 text-sm focus:outline-none"
+                className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm focus:outline-none"
                 aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (
@@ -123,19 +123,19 @@ export default function RankingArtilheirosPage() {
                 <tr>
                   <th className="p-2 text-left">#</th>
                   <th className="p-2 text-left">Atleta</th>
-                  <th className="p-2 text-right text-yellow-400 text-base">Gols</th>
+                  <th className="p-2 text-right text-brand text-base">Gols</th>
                   <th className="p-2 text-right">Jogos</th>
                 </tr>
               </thead>
               <tbody>
                 {rankingFiltrado.map((atleta, idx) => {
-                  const rowClass = idx === 0 ? "border-2 border-yellow-400 bg-[#232100]" : "";
+                  const rowClass = idx === 0 ? "border-2 border-brand bg-[#232100]" : "";
                   return (
                     <tr
                       key={atleta.id}
                       className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
                     >
-                      <td className="p-2 font-bold text-yellow-400">{idx + 1}</td>
+                      <td className="p-2 font-bold text-brand">{idx + 1}</td>
                       <td className="flex items-center gap-2 p-2 whitespace-nowrap">
                         <Link href={publicHref(`/atletas/${atleta.slug}`)}>
                           <Image
@@ -143,18 +143,18 @@ export default function RankingArtilheirosPage() {
                             alt={`Foto do atleta ${atleta.nome} - Ranking Artilheiros Fut7Pro`}
                             width={32}
                             height={32}
-                            className="rounded-full border border-yellow-400"
+                            className="rounded-full border border-brand"
                           />
                         </Link>
                         <Link
                           href={publicHref(`/atletas/${atleta.slug}`)}
-                          className="text-yellow-300 hover:underline font-semibold"
+                          className="text-brand-soft hover:underline font-semibold"
                           title={`Ver perfil de ${atleta.nome}`}
                         >
                           <span className="break-words">{atleta.nome}</span>
                         </Link>
                       </td>
-                      <td className="text-right p-2 font-extrabold text-yellow-400 text-base">
+                      <td className="text-right p-2 font-extrabold text-brand text-base">
                         {atleta.gols}
                       </td>
                       <td className="text-right p-2">{atleta.jogos}</td>

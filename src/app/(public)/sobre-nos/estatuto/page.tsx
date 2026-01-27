@@ -57,7 +57,7 @@ export default function EstatutoPage() {
 
       <main className="max-w-3xl mx-auto px-4 pt-20 flex flex-col gap-8">
         <section>
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">
             Estatuto do Racha Fut7Pro
           </h1>
           <p className="text-white text-base md:text-lg mb-4">
@@ -66,7 +66,7 @@ export default function EstatutoPage() {
           </p>
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition mb-4"
+            className="flex items-center gap-2 bg-brand text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition mb-4"
           >
             <FaDownload /> Baixar PDF do Estatuto
           </button>
@@ -80,7 +80,7 @@ export default function EstatutoPage() {
           )}
         </section>
         <section>
-          <h2 className="text-2xl font-bold text-yellow-300 mb-4">
+          <h2 className="text-2xl font-bold text-brand-soft mb-4">
             Perguntas Frequentes do Estatuto (FAQ)
           </h2>
           <div className="flex flex-col gap-3">
@@ -88,7 +88,7 @@ export default function EstatutoPage() {
               <div key={idx} className="bg-neutral-900 rounded-xl shadow-md overflow-hidden">
                 <button
                   className={`flex justify-between items-center w-full px-5 py-4 text-left focus:outline-none transition ${
-                    aberto === idx ? "bg-yellow-400 text-black" : "text-yellow-300"
+                    aberto === idx ? "bg-brand text-black" : "text-brand-soft"
                   }`}
                   aria-expanded={aberto === idx}
                   onClick={() => setAberto(aberto === idx ? null : idx)}
@@ -97,7 +97,7 @@ export default function EstatutoPage() {
                   <span className="flex items-center gap-2 text-lg font-semibold">
                     {topico.titulo}
                     {topico.atualizado && (
-                      <span className="ml-2 text-xs bg-white text-yellow-500 font-bold px-2 py-0.5 rounded">
+                      <span className="ml-2 text-xs bg-white text-brand-strong font-bold px-2 py-0.5 rounded">
                         NOVA
                       </span>
                     )}

@@ -60,12 +60,12 @@ export default function MensagensPage() {
     return (
       <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Mensagens do Admin</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Mensagens do Admin</h1>
           <p className="text-gray-300 mb-4">Entre para ver as mensagens do seu racha.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login
           </button>
@@ -76,7 +76,7 @@ export default function MensagensPage() {
 
   return (
     <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
-      <h1 className="text-2xl font-bold text-yellow-400 mb-5 flex items-center gap-2">
+      <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
         <FaCommentDots /> Mensagens do Admin
       </h1>
       <div className="flex flex-col gap-4">
@@ -100,14 +100,12 @@ export default function MensagensPage() {
               <div
                 key={msg.id}
                 className={`rounded-lg p-4 shadow border-l-4 transition cursor-pointer ${
-                  msg.lida
-                    ? "bg-zinc-900 border-zinc-700 opacity-70"
-                    : "bg-zinc-900 border-yellow-400"
+                  msg.lida ? "bg-zinc-900 border-zinc-700 opacity-70" : "bg-zinc-900 border-brand"
                 }`}
                 onClick={() => handleClick(msg)}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <div className="font-bold text-yellow-300">{title}</div>
+                  <div className="font-bold text-brand-soft">{title}</div>
                   <span className="text-xs text-gray-400">{dataLabel}</span>
                 </div>
                 <div className="text-gray-200">{message}</div>

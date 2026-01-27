@@ -15,7 +15,7 @@ export default function SorteioInteligentePage() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center">
         <div className="bg-[#23272F] px-8 py-12 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold text-yellow-400 mb-4">Carregando...</h2>
+          <h2 className="text-2xl font-bold text-brand mb-4">Carregando...</h2>
         </div>
       </main>
     );
@@ -25,14 +25,14 @@ export default function SorteioInteligentePage() {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center bg-fundo text-center">
         <div className="bg-[#23272F] px-8 py-12 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold text-yellow-400 mb-4">Acesso Restrito</h2>
+          <h2 className="text-2xl font-bold text-brand mb-4">Acesso Restrito</h2>
           <p className="text-gray-200 mb-4">
             Apenas administradores podem acessar esta funcionalidade.
           </p>
           {!isAuthenticated && (
             <Link
               href={publicHref("/login")}
-              className="inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+              className="inline-block bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
             >
               Fazer login
             </Link>

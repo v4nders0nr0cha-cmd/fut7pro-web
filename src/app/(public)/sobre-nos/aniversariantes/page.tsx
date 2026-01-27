@@ -75,7 +75,7 @@ export default function AniversariantesPage() {
       </Head>
       <main className="w-full pt-20 pb-10">
         <div className="max-w-3xl mx-auto px-4">
-          <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-brand text-center mb-3">
             Aniversariantes do Mes
           </h1>
           <div className="flex flex-col gap-2 mb-6">
@@ -86,8 +86,8 @@ export default function AniversariantesPage() {
                   onClick={() => setMesFiltro(idx)}
                   className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition ${
                     mesFiltro === idx
-                      ? "bg-yellow-400 text-black shadow"
-                      : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
+                      ? "bg-brand text-black shadow"
+                      : "bg-zinc-800 text-gray-300 hover:bg-brand-soft hover:text-black"
                   }`}
                 >
                   {mes}
@@ -101,8 +101,8 @@ export default function AniversariantesPage() {
                   onClick={() => setMesFiltro(idx + 6)}
                   className={`px-3 py-1 rounded-full text-xs md:text-sm font-semibold transition ${
                     mesFiltro === idx + 6
-                      ? "bg-yellow-400 text-black shadow"
-                      : "bg-zinc-800 text-gray-300 hover:bg-yellow-200 hover:text-black"
+                      ? "bg-brand text-black shadow"
+                      : "bg-zinc-800 text-gray-300 hover:bg-brand-soft hover:text-black"
                   }`}
                 >
                   {mes}
@@ -151,10 +151,10 @@ export default function AniversariantesPage() {
                       alt={`Foto de ${aniv.name}`}
                       width={74}
                       height={74}
-                      className="rounded-full border-2 border-yellow-400 object-cover"
+                      className="rounded-full border-2 border-brand object-cover"
                     />
                     <div className="flex flex-col items-center text-center">
-                      <span className="font-bold text-lg md:text-xl text-yellow-200">
+                      <span className="font-bold text-lg md:text-xl text-brand-soft">
                         {aniv.nickname || aniv.name}
                       </span>
                       <span className="text-gray-300 text-sm">

@@ -394,10 +394,10 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
   return (
     <>
       {(dataLabel || horaPartidaLabel || localInfo || observacoes) && (
-        <div className="mb-6 rounded-lg border border-yellow-500/20 bg-[#1c1c1c] px-4 py-3 text-sm text-neutral-200">
+        <div className="mb-6 rounded-lg border border-brand-strong/20 bg-[#1c1c1c] px-4 py-3 text-sm text-neutral-200">
           {dataLabel && (
             <div className="mb-1">
-              {dataLabelPrefix}: <span className="text-yellow-300">{dataLabel}</span>
+              {dataLabelPrefix}: <span className="text-brand-soft">{dataLabel}</span>
             </div>
           )}
           {horaPartidaLabel && (
@@ -424,9 +424,7 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
         </section>
       </div>
       <div className="mt-8">
-        <h3 className="text-lg font-semibold text-yellow-400 mb-3 text-center">
-          Confrontos do dia
-        </h3>
+        <h3 className="text-lg font-semibold text-brand mb-3 text-center">Confrontos do dia</h3>
         <ConfrontosDoDia confrontos={confrontosDetalhados} />
       </div>
       {source === "public" && publicacaoId && (
@@ -457,7 +455,7 @@ export default function TimesDoDiaClient({ slug, source = "public" }: TimesDoDia
               }
             }}
             className={`px-5 py-2 rounded-full font-semibold transition ${
-              curtido ? "bg-green-500 text-white" : "bg-yellow-400 text-black hover:bg-yellow-300"
+              curtido ? "bg-green-500 text-white" : "bg-brand text-black hover:bg-brand-soft"
             }`}
             disabled={curtindo || curtido}
           >

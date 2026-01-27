@@ -16,7 +16,7 @@ export default function CampeaoCard({ titulo, nome, image, valor, icone }: Campe
       className="bg-[#1A1A1A] rounded-2xl p-4 shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all"
       title={`Melhor ${titulo} do ano: ${nome}`}
     >
-      <span className="text-yellow-400 text-lg font-semibold mb-2 flex items-center gap-1">
+      <span className="text-brand text-lg font-semibold mb-2 flex items-center gap-1">
         {icone.startsWith("/") ? (
           <Image
             src={icone}

@@ -29,7 +29,7 @@ export default function NossaHistoriaPage() {
     ...camposHistoricos.map((campo) => ({
       ...campo,
       tipo: "Historico",
-      cor: "text-yellow-300",
+      cor: "text-brand-soft",
       tag: "text-xs text-neutral-400",
     })),
     ...(campoAtual ? [campoAtual] : []),
@@ -53,7 +53,7 @@ export default function NossaHistoriaPage() {
       </Head>
       <main className="w-full flex flex-col gap-10 pt-20">
         <section className="w-full max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">Nossa Historia</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Nossa Historia</h1>
           <p className="text-white text-base md:text-lg mb-4">
             {data.descricao ||
               "Conte sua origem, missao e marcos do racha. Edite no painel para personalizar por tenant."}
@@ -63,7 +63,7 @@ export default function NossaHistoriaPage() {
         <section className="w-full max-w-5xl mx-auto px-4 flex flex-wrap gap-4 mb-2">
           <button
             onClick={handleDownload}
-            className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition"
+            className="flex items-center gap-2 bg-brand text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition"
           >
             <FaDownload /> Baixar Linha do Tempo
           </button>
@@ -73,7 +73,7 @@ export default function NossaHistoriaPage() {
                 ? navigator.share({ title: "Nossa Historia - Fut7Pro", url: window.location.href })
                 : handleDownload()
             }
-            className="flex items-center gap-2 bg-neutral-800 text-yellow-400 font-bold px-4 py-2 rounded-xl hover:bg-neutral-700 transition"
+            className="flex items-center gap-2 bg-neutral-800 text-brand font-bold px-4 py-2 rounded-xl hover:bg-neutral-700 transition"
           >
             <FaShareAlt /> Compartilhar Historia
           </button>
@@ -81,14 +81,14 @@ export default function NossaHistoriaPage() {
 
         {marcos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4">Linha do Tempo</h2>
-            <div className="space-y-6 relative border-l-4 border-yellow-400 pl-8">
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Linha do Tempo</h2>
+            <div className="space-y-6 relative border-l-4 border-brand pl-8">
               {marcos.map((marco, idx) => (
                 <div
                   key={`${marco.ano}-${idx}`}
                   className="relative flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-4 group"
                 >
-                  <div className="absolute -left-9 md:-left-11 bg-yellow-400 text-black rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg shadow-md border-4 border-black">
+                  <div className="absolute -left-9 md:-left-11 bg-brand text-black rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg shadow-md border-4 border-black">
                     {marco.ano?.substring(2)}
                   </div>
                   <div>
@@ -106,7 +106,7 @@ export default function NossaHistoriaPage() {
 
         {categoriasFotos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4">Galeria de Fotos</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Galeria de Fotos</h2>
             <div className="flex flex-wrap gap-6">
               {categoriasFotos.map((cat, idx) => (
                 <div key={idx} className="flex flex-col items-center">
@@ -136,7 +136,7 @@ export default function NossaHistoriaPage() {
 
         {videos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4">Videos Historicos</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Videos Historicos</h2>
             <div className="flex flex-wrap gap-6">
               {videos.map((video, idx) => (
                 <div
@@ -157,7 +157,7 @@ export default function NossaHistoriaPage() {
 
         {curiosidades.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4">Curiosidades do Racha</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Curiosidades do Racha</h2>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {curiosidades
                 .slice()
@@ -171,7 +171,7 @@ export default function NossaHistoriaPage() {
                     <span className="text-white flex-1">{item.texto}</span>
                     <button
                       title="Curtir curiosidade"
-                      className="flex items-center gap-1 text-yellow-400 hover:text-yellow-300"
+                      className="flex items-center gap-1 text-brand hover:text-brand-soft"
                     >
                       <FaRegThumbsUp /> {item.curtidas ?? 0}
                     </button>
@@ -183,12 +183,12 @@ export default function NossaHistoriaPage() {
 
         {depoimentos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4">Depoimentos</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Depoimentos</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {depoimentos.map((dep, idx) => (
                 <div
                   key={idx}
-                  className={`bg-neutral-900 rounded-2xl p-4 flex flex-col items-center ${dep.destaque ? "border-2 border-yellow-400" : ""}`}
+                  className={`bg-neutral-900 rounded-2xl p-4 flex flex-col items-center ${dep.destaque ? "border-2 border-brand" : ""}`}
                 >
                   {dep.foto && (
                     <Image
@@ -196,11 +196,11 @@ export default function NossaHistoriaPage() {
                       alt={dep.nome}
                       width={64}
                       height={64}
-                      className="rounded-full mb-2 border-2 border-yellow-400"
+                      className="rounded-full mb-2 border-2 border-brand"
                     />
                   )}
                   <div className="italic text-neutral-200 text-center mb-2">{dep.texto}</div>
-                  <div className="text-yellow-300 font-semibold">{dep.nome}</div>
+                  <div className="text-brand-soft font-semibold">{dep.nome}</div>
                   <div className="text-neutral-400 text-xs">{dep.cargo}</div>
                 </div>
               ))}
@@ -210,7 +210,7 @@ export default function NossaHistoriaPage() {
 
         {todosCampos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-brand-soft mb-4 flex items-center gap-2">
               <FaMapMarkedAlt /> Campos Historicos e Atual
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -239,7 +239,7 @@ export default function NossaHistoriaPage() {
 
         {membrosAntigos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-300 mb-4 flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-brand-soft mb-4 flex items-center gap-2">
               <FaMedal /> Membros Mais Antigos
             </h2>
             <div className="flex flex-wrap gap-4">
@@ -247,7 +247,7 @@ export default function NossaHistoriaPage() {
                 <Link
                   href={publicHref(`/atletas/${membro.nome.toLowerCase().replace(/\s/g, "-")}`)}
                   key={idx}
-                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-36 hover:border-yellow-400 border border-neutral-700"
+                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-36 hover:border-brand border border-neutral-700"
                 >
                   {membro.foto && (
                     <Image
@@ -255,11 +255,11 @@ export default function NossaHistoriaPage() {
                       alt={membro.nome}
                       width={60}
                       height={60}
-                      className="rounded-full border-2 border-yellow-400 mb-2"
+                      className="rounded-full border-2 border-brand mb-2"
                     />
                   )}
                   <div className="font-semibold text-white text-center">{membro.nome}</div>
-                  <div className="text-yellow-400 text-xs">{membro.status}</div>
+                  <div className="text-brand text-xs">{membro.status}</div>
                   <div className="text-neutral-300 text-xs">Desde {membro.desde}</div>
                 </Link>
               ))}
@@ -269,30 +269,30 @@ export default function NossaHistoriaPage() {
 
         {campeoesHistoricos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
-              <FaMedal className="text-yellow-400" /> Campeoes Historicos (Top 5 Pontuadores de
-              todos os tempos)
+            <h2 className="text-2xl font-bold text-brand mb-4 flex items-center gap-2">
+              <FaMedal className="text-brand" /> Campeoes Historicos (Top 5 Pontuadores de todos os
+              tempos)
             </h2>
             <div className="flex flex-wrap gap-4">
               {campeoesHistoricos.map((jogador, idx) => (
                 <Link
                   href={publicHref(`/atletas/${jogador.slug}`)}
                   key={idx}
-                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-40 hover:border-yellow-400 border border-neutral-700 transition"
+                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-40 hover:border-brand border border-neutral-700 transition"
                 >
-                  <div className="text-yellow-300 text-lg font-extrabold mb-1">#{idx + 1}</div>
+                  <div className="text-brand-soft text-lg font-extrabold mb-1">#{idx + 1}</div>
                   {jogador.foto && (
                     <Image
                       src={jogador.foto}
                       alt={jogador.nome}
                       width={64}
                       height={64}
-                      className="rounded-full border-2 border-yellow-400 mb-2"
+                      className="rounded-full border-2 border-brand mb-2"
                     />
                   )}
                   <div className="font-semibold text-white text-center">{jogador.nome}</div>
-                  <div className="text-yellow-400 text-xs mb-1">{jogador.posicao}</div>
-                  <div className="text-yellow-300 text-base font-bold">{jogador.pontos} pts</div>
+                  <div className="text-brand text-xs mb-1">{jogador.posicao}</div>
+                  <div className="text-brand-soft text-base font-bold">{jogador.pontos} pts</div>
                 </Link>
               ))}
             </div>
@@ -301,14 +301,14 @@ export default function NossaHistoriaPage() {
 
         {diretoria.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-yellow-400 mb-4 mt-10 flex items-center gap-2">
-              <FaMedal className="text-yellow-400" /> Presidencia e Diretoria
+            <h2 className="text-2xl font-bold text-brand mb-4 mt-10 flex items-center gap-2">
+              <FaMedal className="text-brand" /> Presidencia e Diretoria
             </h2>
             <div className="flex flex-wrap gap-4">
               {diretoria.map((membro, idx) => (
                 <div
                   key={idx}
-                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-48 hover:border-yellow-400 border border-neutral-700 transition"
+                  className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-48 hover:border-brand border border-neutral-700 transition"
                 >
                   {membro.foto && (
                     <Image
@@ -316,13 +316,11 @@ export default function NossaHistoriaPage() {
                       alt={membro.nome}
                       width={64}
                       height={64}
-                      className="rounded-full border-2 border-yellow-400 mb-2"
+                      className="rounded-full border-2 border-brand mb-2"
                     />
                   )}
                   <div className="font-semibold text-white text-center">{membro.nome}</div>
-                  <div className="text-yellow-400 text-sm font-bold text-center">
-                    {membro.cargo}
-                  </div>
+                  <div className="text-brand text-sm font-bold text-center">{membro.cargo}</div>
                 </div>
               ))}
             </div>

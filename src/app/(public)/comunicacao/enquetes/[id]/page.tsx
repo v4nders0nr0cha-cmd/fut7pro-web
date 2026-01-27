@@ -64,12 +64,12 @@ export default function EnquetePage() {
     return (
       <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Enquete</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Enquete</h1>
           <p className="text-gray-300 mb-4">Entre para acessar esta enquete.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login
           </button>
@@ -123,7 +123,7 @@ export default function EnquetePage() {
         <title>{`Enquete | ${title}`}</title>
       </Head>
       <main className="max-w-xl mx-auto px-4 pt-20 pb-24">
-        <h1 className="text-2xl font-bold text-yellow-400 mb-4 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-brand mb-4 flex items-center gap-2">
           <FaPoll /> {title}
         </h1>
         {description && <div className="mb-4 text-gray-200">{description}</div>}
@@ -144,7 +144,7 @@ export default function EnquetePage() {
                   </span>
                   <div className="flex-1 bg-[#181818] rounded-full h-4 mx-2 relative">
                     <div
-                      className="bg-yellow-400 h-4 rounded-full transition-all"
+                      className="bg-brand h-4 rounded-full transition-all"
                       style={{ width: `${percent}%` }}
                     ></div>
                     <span className="absolute left-1/2 -translate-x-1/2 top-0 text-xs text-black font-bold">

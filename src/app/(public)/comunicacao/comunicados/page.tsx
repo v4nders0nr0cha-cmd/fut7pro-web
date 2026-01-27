@@ -55,12 +55,12 @@ export default function ComunicadosPage() {
     return (
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Comunicados Oficiais</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Comunicados Oficiais</h1>
           <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu racha.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login
           </button>
@@ -102,10 +102,10 @@ export default function ComunicadosPage() {
               return (
                 <li
                   key={comunicado.id}
-                  className="bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 border-yellow-400"
+                  className="bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 border-brand"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-yellow-300">{title}</span>
+                    <span className="text-lg font-bold text-brand-soft">{title}</span>
                     <span className="text-xs text-gray-400">{dataLabel}</span>
                   </div>
                   <div className="mt-1">{message}</div>

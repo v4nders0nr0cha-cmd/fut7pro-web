@@ -35,7 +35,7 @@ export default function CampeaoAnoCard({
 
   // Renderiza o ícone do card de forma flexível
   const renderTitulo = () => (
-    <span className="text-yellow-400 text-lg font-semibold mt-4 mb-2 flex items-center justify-center gap-1">
+    <span className="text-brand text-lg font-semibold mt-4 mb-2 flex items-center justify-center gap-1">
       {icone && typeof icone === "string" && icone.startsWith("/") ? (
         <Image
           src={icone}

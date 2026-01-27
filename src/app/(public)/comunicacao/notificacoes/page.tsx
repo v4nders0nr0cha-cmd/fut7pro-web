@@ -70,12 +70,12 @@ export default function NotificacoesPage() {
     return (
       <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Notificacoes do Racha</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Notificacoes do Racha</h1>
           <p className="text-gray-300 mb-4">Entre para ver notificacoes e avisos do seu racha.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login
           </button>
@@ -86,7 +86,7 @@ export default function NotificacoesPage() {
 
   return (
     <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
-      <h1 className="text-2xl font-bold text-yellow-400 mb-5 flex items-center gap-2">
+      <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
         <FaBell /> Notificacoes do Racha
       </h1>
       <div className="flex flex-col gap-5">
@@ -116,23 +116,23 @@ export default function NotificacoesPage() {
                     notificacao.lida
                       ? "bg-zinc-900 border-zinc-700 opacity-70"
                       : kind === "enquete"
-                        ? "bg-zinc-900 border-yellow-400 animate-pulse"
+                        ? "bg-zinc-900 border-brand animate-pulse"
                         : kind === "cobranca"
                           ? "bg-zinc-900 border-red-400"
-                          : "bg-zinc-900 border-yellow-700"
+                          : "bg-zinc-900 border-brand-strong"
                   }`}
                 onClick={() => handleClick(entry)}
               >
                 <div className="flex items-center gap-2 mb-2">
-                  {kind === "enquete" && <FaPoll className="text-yellow-400" />}
-                  <span className="font-bold text-yellow-300">{title}</span>
+                  {kind === "enquete" && <FaPoll className="text-brand" />}
+                  <span className="font-bold text-brand-soft">{title}</span>
                   <span className="ml-auto text-xs text-gray-400">{dataLabel}</span>
                 </div>
                 <div className="text-gray-200">{message}</div>
                 {!notificacao.lida && kind === "enquete" && enqueteId && (
                   <button
                     type="button"
-                    className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded text-xs"
+                    className="mt-2 bg-brand hover:bg-brand-strong text-black font-bold px-4 py-1 rounded text-xs"
                     onClick={(event) => {
                       event.stopPropagation();
                       handleClick(entry);

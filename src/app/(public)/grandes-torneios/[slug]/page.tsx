@@ -25,7 +25,7 @@ export default function DetalheTorneioPage() {
   return (
     <main className="min-h-screen bg-fundo text-white pt-6 pb-20">
       <div className="max-w-5xl mx-auto w-full">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-2 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold text-brand mb-2 text-center">
           {torneio?.nome || "Torneio"}
         </h1>
         <p className="text-center text-gray-400 mb-6 text-sm md:text-base">
@@ -38,13 +38,13 @@ export default function DetalheTorneioPage() {
             src={torneio?.bannerUrl || torneio?.banner || "/images/torneios/placeholder.jpg"}
             alt={`Banner do torneio ${torneio?.nome || ""}`}
             fill
-            className="object-cover rounded-xl border border-yellow-600"
+            className="object-cover rounded-xl border border-brand-strong"
             priority
           />
         </div>
 
         <div className="text-center mb-8">
-          <h2 className="text-yellow-400 font-bold text-lg mb-2">TIME CAMPEÃO</h2>
+          <h2 className="text-brand font-bold text-lg mb-2">TIME CAMPEÃO</h2>
           <Image
             src={torneio?.logoUrl || torneio?.logo || "/images/torneios/placeholder.jpg"}
             alt={`Logo do time campeão ${torneio?.campeao || ""}`}

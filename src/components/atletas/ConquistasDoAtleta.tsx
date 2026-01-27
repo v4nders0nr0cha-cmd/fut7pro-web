@@ -86,7 +86,7 @@ export default function ConquistasDoAtleta({
 
     return (
       <div className="mb-4">
-        <h3 className="text-lg text-yellow-300 font-semibold mb-1">{titulo}</h3>
+        <h3 className="text-lg text-brand-soft font-semibold mb-1">{titulo}</h3>
         <div className="flex flex-col gap-1">
           {grupos.map((linha, idx) => (
             <div key={idx} className="flex flex-wrap gap-2 mb-1">
@@ -99,7 +99,7 @@ export default function ConquistasDoAtleta({
                 return (
                   <span
                     key={i}
-                    className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-yellow-100"
+                    className="bg-[#222] rounded-xl px-3 py-1 text-sm flex items-center gap-1 text-brand-soft"
                     title={`${tituloItem.descricao} - ${tituloItem.ano}`}
                     aria-label={`${tituloItem.descricao} ${tituloItem.ano}`}
                   >
@@ -132,7 +132,7 @@ export default function ConquistasDoAtleta({
 
   return (
     <section className="w-full max-w-4xl mx-auto mb-6">
-      <h2 className="text-2xl text-yellow-400 font-bold flex items-center gap-2 mb-2 justify-center text-center">
+      <h2 className="text-2xl text-brand font-bold flex items-center gap-2 mb-2 justify-center text-center">
         <Image src={ICON_PATHS["trofeu-de-ouro"]} alt="Icone conquistas" width={22} height={22} />
         Minhas Conquistas
       </h2>
@@ -145,7 +145,7 @@ export default function ConquistasDoAtleta({
         <div className="mt-2 text-center">
           <Link
             href={publicHref(`/atletas/${slug}/conquistas`)}
-            className="text-yellow-400 hover:underline font-semibold"
+            className="text-brand hover:underline font-semibold"
           >
             Ver todas as conquistas &rarr;
           </Link>

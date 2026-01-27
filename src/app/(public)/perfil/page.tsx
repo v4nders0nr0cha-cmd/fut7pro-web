@@ -210,17 +210,17 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
   return (
     <>
       <div
-        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-yellow-400 flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-yellow-200/60 via-yellow-100/80 to-yellow-300/50 hover:scale-105 transition"
+        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-brand flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-yellow-200/60 via-yellow-100/80 to-yellow-300/50 hover:scale-105 transition"
         onClick={() => setModalOpen(true)}
         title="Quero ser Mensalista"
         tabIndex={0}
       >
-        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-yellow-400 opacity-60 shadow-yellow-300"></div>
+        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-brand opacity-60 shadow-yellow-300"></div>
         <div className="flex flex-col items-center justify-center z-10 px-6 py-3 h-full w-full">
-          <div className="text-yellow-700 font-extrabold text-lg text-center drop-shadow-sm mb-2">
+          <div className="text-brand-strong font-extrabold text-lg text-center drop-shadow-sm mb-2">
             Torne-se um Mensalista!
           </div>
-          <div className="text-yellow-800 text-[15px] text-center font-medium leading-snug">
+          <div className="text-brand-strong text-[15px] text-center font-medium leading-snug">
             Garanta sua vaga como mensalista
             <br />
             e aproveite sua vaga garantida
@@ -233,14 +233,14 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
       </div>
       {modalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
-          <div className="bg-zinc-900 p-8 rounded-xl max-w-sm w-full shadow-xl border border-yellow-600 flex flex-col items-center">
-            <div className="text-lg font-semibold text-yellow-400 mb-2 text-center">
+          <div className="bg-zinc-900 p-8 rounded-xl max-w-sm w-full shadow-xl border border-brand-strong flex flex-col items-center">
+            <div className="text-lg font-semibold text-brand mb-2 text-center">
               Solicitar vaga de Mensalista
             </div>
             <div className="text-sm text-zinc-100 text-center mb-6">
               Ao confirmar, seu pedido para se tornar mensalista será enviado ao administrador.
               <br />
-              <span className="text-yellow-200">
+              <span className="text-brand-soft">
                 Caso todas as vagas já estejam ocupadas, você entrará automaticamente em uma lista
                 de espera por ordem de solicitação.
               </span>
@@ -249,7 +249,7 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
             </div>
             <div className="flex gap-4 mt-2">
               <button
-                className="px-5 py-2 rounded bg-yellow-500 text-black font-semibold hover:bg-yellow-400 transition"
+                className="px-5 py-2 rounded bg-brand-strong text-black font-semibold hover:bg-brand transition"
                 onClick={() => {
                   setModalOpen(false);
                   onConfirm();
@@ -412,8 +412,8 @@ export default function PerfilUsuarioPage() {
     <div className="p-6 text-white w-full">
       <h1 className="sr-only">Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro</h1>
       {isPendingApproval && (
-        <div className="mb-6 rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
-          <strong className="block text-yellow-200">Aguardando aprovacao do admin.</strong>
+        <div className="mb-6 rounded-xl border border-brand/40 bg-brand/10 px-4 py-3 text-sm text-brand-soft">
+          <strong className="block text-brand-soft">Aguardando aprovacao do admin.</strong>
           Seu cadastro foi recebido e o acesso completo sera liberado em breve.
         </div>
       )}
@@ -425,14 +425,14 @@ export default function PerfilUsuarioPage() {
             alt={`Foto de ${usuario.nome}`}
             width={160}
             height={160}
-            className="rounded-full border-4 border-yellow-400"
+            className="rounded-full border-4 border-brand"
           />
 
           <div className="flex flex-col gap-1">
             <h2 className="text-3xl font-bold mb-1">{usuario.nome}</h2>
-            {usuario.apelido && <p className="text-yellow-300 mb-1">Apelido: {usuario.apelido}</p>}
+            {usuario.apelido && <p className="text-brand-soft mb-1">Apelido: {usuario.apelido}</p>}
             {roleLabel && (
-              <span className="inline-block bg-yellow-400 text-black rounded px-3 py-1 text-xs font-bold mt-1">
+              <span className="inline-block bg-brand text-black rounded px-3 py-1 text-xs font-bold mt-1">
                 {roleLabel}
               </span>
             )}
@@ -457,7 +457,7 @@ export default function PerfilUsuarioPage() {
 
             {/* Botão Editar Perfil */}
             <button
-              className="mt-4 px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-semibold rounded transition w-max disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-4 px-4 py-2 bg-brand-strong hover:bg-brand text-black font-semibold rounded transition w-max disabled:cursor-not-allowed disabled:opacity-60"
               onClick={() => setModalEditarOpen(true)}
               disabled={isPendingApproval}
             >
@@ -468,10 +468,10 @@ export default function PerfilUsuarioPage() {
         {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
         <div className="w-full md:w-auto flex-shrink-0 flex justify-center">
           {isPendingApproval ? (
-            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-yellow-900/40 border-4 border-yellow-500/60 rounded-2xl shadow-md text-center text-yellow-100 font-semibold text-lg">
+            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-brand-soft border-4 border-brand-strong/60 rounded-2xl shadow-md text-center text-brand-strong font-semibold text-lg">
               Cadastro em analise.
               <br />
-              <span className="text-sm font-normal text-yellow-200">
+              <span className="text-sm font-normal text-brand-soft">
                 Aguarde a aprovacao para liberar as acoes do perfil.
               </span>
             </div>
@@ -504,12 +504,12 @@ export default function PerfilUsuarioPage() {
 
       {/* Filtro de estatísticas */}
       <div className="flex gap-4 mt-8 mb-2 items-center">
-        <span className="font-semibold text-yellow-400">Estatísticas:</span>
+        <span className="font-semibold text-brand">Estatísticas:</span>
         <button
           className={`px-3 py-1 rounded font-semibold border transition ${
             statsPeriod === "current"
-              ? "bg-yellow-400 text-black border-yellow-400"
-              : "bg-zinc-900 text-yellow-300 border-yellow-400"
+              ? "bg-brand text-black border-brand"
+              : "bg-zinc-900 text-brand-soft border-brand"
           }`}
           onClick={() => setStatsPeriod("current")}
         >
@@ -518,8 +518,8 @@ export default function PerfilUsuarioPage() {
         <button
           className={`px-3 py-1 rounded font-semibold border transition ${
             statsPeriod === "all"
-              ? "bg-yellow-400 text-black border-yellow-400"
-              : "bg-zinc-900 text-yellow-300 border-yellow-400"
+              ? "bg-brand text-black border-brand"
+              : "bg-zinc-900 text-brand-soft border-brand"
           }`}
           onClick={() => setStatsPeriod("all")}
         >
@@ -543,7 +543,7 @@ export default function PerfilUsuarioPage() {
             { label: "Pontuação", valor: stats?.pontuacao ?? "-" },
           ].map((item) => (
             <div key={item.label} className="bg-zinc-800 p-4 rounded text-center shadow-md">
-              <p className="text-xl font-bold text-yellow-400">{item.valor}</p>
+              <p className="text-xl font-bold text-brand">{item.valor}</p>
               <p className="text-sm text-zinc-400 mt-1">{item.label}</p>
             </div>
           ))}
@@ -565,7 +565,7 @@ export default function PerfilUsuarioPage() {
         <section className="mt-12">
           <HistoricoJogos historico={usuario.historico} />
           <div className="text-center mt-4">
-            <span className="inline-block text-yellow-400 text-sm opacity-70 cursor-not-allowed">
+            <span className="inline-block text-brand text-sm opacity-70 cursor-not-allowed">
               Ver histórico completo (apenas admin)
             </span>
           </div>

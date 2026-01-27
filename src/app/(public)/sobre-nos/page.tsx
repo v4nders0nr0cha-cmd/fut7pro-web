@@ -23,31 +23,31 @@ export default function SobreNosPage() {
   const cards = [
     {
       href: "/sobre-nos/nossa-historia",
-      icon: <FaBookOpen className="text-3xl text-yellow-400" />,
+      icon: <FaBookOpen className="text-3xl text-brand" />,
       title: "Nossa Historia",
       desc: "Conheca nossa origem, missao e os principais marcos.",
     },
     {
       href: "/sobre-nos/estatuto",
-      icon: <FaGavel className="text-3xl text-yellow-400" />,
+      icon: <FaGavel className="text-3xl text-brand" />,
       title: "Estatuto",
       desc: "Regras e diretrizes internas que norteiam o nosso racha.",
     },
     {
       href: "/sobre-nos/aniversariantes",
-      icon: <FaBirthdayCake className="text-3xl text-yellow-400" />,
+      icon: <FaBirthdayCake className="text-3xl text-brand" />,
       title: "Aniversariantes",
       desc: "Veja quem faz aniversario no mes e acesse o perfil dos atletas.",
     },
     {
       href: "/sobre-nos/nossos-parceiros",
-      icon: <FaHandshake className="text-3xl text-yellow-400" />,
+      icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
       desc: "Conheca nossos patrocinadores e apoiadores.",
     },
     {
       href: "/sobre-nos/contatos",
-      icon: <FaPhoneAlt className="text-3xl text-yellow-400" />,
+      icon: <FaPhoneAlt className="text-3xl text-brand" />,
       title: "Contatos",
       desc: "Entre em contato com nossos administradores.",
     },
@@ -56,7 +56,7 @@ export default function SobreNosPage() {
   if (mostrarPrestacaoDeContas) {
     cards.push({
       href: "/sobre-nos/prestacao-de-contas",
-      icon: <FaFileInvoiceDollar className="text-3xl text-yellow-400" />,
+      icon: <FaFileInvoiceDollar className="text-3xl text-brand" />,
       title: "Prestacao de Contas",
       desc: "Transparencia financeira: entradas e despesas do racha.",
     });
@@ -76,7 +76,7 @@ export default function SobreNosPage() {
         />
       </Head>
       <main className="w-full min-h-screen flex flex-col items-center py-10 pb-8 bg-fundo">
-        <h1 className="mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+        <h1 className="mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
           Sobre Nos
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
@@ -89,10 +89,10 @@ export default function SobreNosPage() {
               <Link
                 key={card.href}
                 href={publicHref(card.href)}
-                className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 flex flex-col items-start hover:border-yellow-400 hover:shadow-lg hover:scale-[1.03] transition-all"
+                className="bg-neutral-900 border border-neutral-700 rounded-2xl p-6 flex flex-col items-start hover:border-brand hover:shadow-lg hover:scale-[1.03] transition-all"
               >
                 <div className="mb-3">{card.icon}</div>
-                <div className="font-bold text-yellow-300 text-xl mb-1 break-words">
+                <div className="font-bold text-brand-soft text-xl mb-1 break-words">
                   {card.title}
                 </div>
                 <div className="text-white text-sm break-words">{card.desc}</div>

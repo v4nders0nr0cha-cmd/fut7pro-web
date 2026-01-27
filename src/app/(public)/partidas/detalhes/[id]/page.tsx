@@ -117,7 +117,7 @@ export default function PartidaDetalhesPage() {
           <p className="text-red-300 text-sm break-all">{String(error)}</p>
           <button
             onClick={() => router.back()}
-            className="mt-4 bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
+            className="mt-4 bg-brand text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-brand-strong transition"
           >
             Voltar
           </button>
@@ -129,11 +129,11 @@ export default function PartidaDetalhesPage() {
   if (!match) {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <h1 className="text-2xl text-yellow-400 font-bold mb-4">Partida nao encontrada</h1>
+        <h1 className="text-2xl text-brand font-bold mb-4">Partida nao encontrada</h1>
         <p className="text-textoSuave">Verifique o ID da partida ou volte ao historico.</p>
         <Link
           href={publicHref("/partidas/historico")}
-          className="mt-4 inline-block bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
+          className="mt-4 inline-block bg-brand text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-brand-strong transition"
         >
           Voltar ao historico
         </Link>
@@ -157,7 +157,7 @@ export default function PartidaDetalhesPage() {
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-      <h1 className="text-3xl font-bold text-yellow-400 mb-4">Detalhes da Partida</h1>
+      <h1 className="text-3xl font-bold text-brand mb-4">Detalhes da Partida</h1>
 
       <div className="bg-[#1A1A1A] rounded-2xl p-6 shadow-lg border border-neutral-800">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
@@ -173,7 +173,7 @@ export default function PartidaDetalhesPage() {
             <p className="text-sm text-neutral-400">Status</p>
             <span
               className={`px-3 py-1 rounded-xl text-xs w-fit ${
-                hasScore ? "bg-green-700 text-white" : "bg-yellow-500/20 text-yellow-200"
+                hasScore ? "bg-green-700 text-white" : "bg-brand-strong/20 text-brand-soft"
               }`}
             >
               {hasScore ? "Finalizado" : "Aguardando resultado"}
@@ -199,7 +199,7 @@ export default function PartidaDetalhesPage() {
             </div>
             <span className="text-4xl font-extrabold">
               {hasScore ? scoreA : "--"}
-              <span className="mx-2 text-yellow-400 font-bold">x</span>
+              <span className="mx-2 text-brand font-bold">x</span>
               {hasScore ? scoreB : "--"}
             </span>
             <div className="flex flex-col items-center gap-1">
@@ -217,7 +217,7 @@ export default function PartidaDetalhesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h2 className="text-lg font-bold text-yellow-400 mb-2">Artilheiro (gols)</h2>
+            <h2 className="text-lg font-bold text-brand mb-2">Artilheiro (gols)</h2>
             {highlights.artilheiro ? (
               <div className="flex items-center gap-3">
                 <Image
@@ -238,7 +238,7 @@ export default function PartidaDetalhesPage() {
           </div>
 
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h2 className="text-lg font-bold text-yellow-400 mb-2">Maestro (assistencias)</h2>
+            <h2 className="text-lg font-bold text-brand mb-2">Maestro (assistencias)</h2>
             {highlights.maestro ? (
               <div className="flex items-center gap-3">
                 <Image
@@ -263,7 +263,7 @@ export default function PartidaDetalhesPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h2 className="text-lg font-bold text-yellow-400 mb-2">Time {match.teamA.name}</h2>
+            <h2 className="text-lg font-bold text-brand mb-2">Time {match.teamA.name}</h2>
             {lineups.timeA.length ? (
               <ul className="space-y-2 text-sm text-neutral-200">
                 {lineups.timeA.map((jogador) => (
@@ -285,7 +285,7 @@ export default function PartidaDetalhesPage() {
           </div>
 
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h2 className="text-lg font-bold text-yellow-400 mb-2">Time {match.teamB.name}</h2>
+            <h2 className="text-lg font-bold text-brand mb-2">Time {match.teamB.name}</h2>
             {lineups.timeB.length ? (
               <ul className="space-y-2 text-sm text-neutral-200">
                 {lineups.timeB.map((jogador) => (
@@ -310,19 +310,19 @@ export default function PartidaDetalhesPage() {
         <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <Link
             href={publicHref("/partidas/historico")}
-            className="text-sm text-yellow-400 underline hover:text-yellow-300 transition"
+            className="text-sm text-brand underline hover:text-brand-soft transition"
           >
             Voltar ao historico
           </Link>
           <Link
             href={publicHref("/partidas/times-do-dia")}
-            className="text-sm text-yellow-400 underline hover:text-yellow-300 transition"
+            className="text-sm text-brand underline hover:text-brand-soft transition"
           >
             Ver Time Campeao do Dia
           </Link>
           <button
             onClick={() => router.back()}
-            className="bg-yellow-400 text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-yellow-500 transition"
+            className="bg-brand text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-brand-strong transition"
           >
             Voltar
           </button>

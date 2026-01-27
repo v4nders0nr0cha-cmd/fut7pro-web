@@ -40,7 +40,7 @@ export default function CampeaoPosicaoCard({
           🕓 Temporário
         </span>
       )}
-      <span className="text-yellow-400 text-base font-medium mt-4 mb-1 flex items-center gap-1">
+      <span className="text-brand text-base font-medium mt-4 mb-1 flex items-center gap-1">
         {icone.startsWith("/") ? (
           <Image
             src={icone}

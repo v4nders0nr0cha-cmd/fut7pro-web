@@ -56,7 +56,7 @@ export default function EstatisticasPage() {
       </Head>
 
       {/* TÍTULO PRINCIPAL PADRÃO */}
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-yellow-400 text-center leading-tight drop-shadow-sm">
+      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
         Estatísticas
       </h1>
       {/* DESCRIÇÃO PADRÃO — MAIS HORIZONTAL NO DESKTOP */}
@@ -82,13 +82,11 @@ export default function EstatisticasPage() {
             <Link
               key={link.href}
               href={publicHref(link.href)}
-              className="bg-[#1a1a1a] hover:bg-[#222] border border-gray-700 hover:border-yellow-400 p-6 rounded-xl shadow transition-all flex flex-col justify-between min-h-[140px] break-words"
+              className="bg-[#1a1a1a] hover:bg-[#222] border border-gray-700 hover:border-brand p-6 rounded-xl shadow transition-all flex flex-col justify-between min-h-[140px] break-words"
               tabIndex={0}
               aria-label={link.title}
             >
-              <div className="text-yellow-400 font-semibold text-base sm:text-sm mb-2">
-                {link.title}
-              </div>
+              <div className="text-brand font-semibold text-base sm:text-sm mb-2">{link.title}</div>
               <p className="text-sm text-gray-400">{link.description}</p>
             </Link>
           ))}

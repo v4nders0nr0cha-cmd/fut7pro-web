@@ -93,21 +93,21 @@ export default function ChatClient() {
 
   return (
     <>
-      <div className="flex flex-col gap-2 bg-zinc-900 rounded-lg p-4 border-l-4 border-yellow-400 min-h-[360px] max-h-[520px] overflow-y-auto mb-4">
+      <div className="flex flex-col gap-2 bg-zinc-900 rounded-lg p-4 border-l-4 border-brand min-h-[360px] max-h-[520px] overflow-y-auto mb-4">
         {messages.map((msg) => (
           <div
             key={msg.id}
             className={`flex flex-col mb-2 ${msg.autor === "admin" ? "items-start" : "items-end"}`}
           >
             <span
-              className={`text-xs mb-1 ${msg.autor === "admin" ? "text-yellow-400" : "text-zinc-300"}`}
+              className={`text-xs mb-1 ${msg.autor === "admin" ? "text-brand" : "text-zinc-300"}`}
             >
               {msg.autor === "admin" ? "Admin" : "Voce"}
             </span>
             <span
               className={`inline-block px-3 py-2 rounded-xl text-sm ${
                 msg.autor === "admin"
-                  ? "bg-yellow-800 text-yellow-100"
+                  ? "bg-brand-strong text-brand-soft"
                   : "bg-zinc-700 text-zinc-100"
               }`}
             >
@@ -153,7 +153,7 @@ export default function ChatClient() {
           />
           <button
             type="submit"
-            className="bg-yellow-400 text-zinc-900 rounded px-4 py-2 font-bold hover:bg-yellow-500 transition disabled:opacity-60"
+            className="bg-brand text-zinc-900 rounded px-4 py-2 font-bold hover:bg-brand-strong transition disabled:opacity-60"
             disabled={enviando}
           >
             {enviando ? "Enviando..." : "Enviar"}

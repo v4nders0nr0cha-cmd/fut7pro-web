@@ -33,15 +33,12 @@ export default function HistoricoAtletaPage() {
         <title>Historico | {athlete.firstName || "Atleta"} | Fut7Pro</title>
       </Head>
       <main className="max-w-4xl mx-auto px-2 py-10">
-        <Link
-          href={publicHref(`/atletas/${athleteSlug}`)}
-          className="text-yellow-400 underline text-sm"
-        >
+        <Link href={publicHref(`/atletas/${athleteSlug}`)} className="text-brand underline text-sm">
           Voltar para o perfil
         </Link>
 
         <div className="mt-4 bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-          <h1 className="text-2xl font-bold text-yellow-400 mb-2">Historico do atleta</h1>
+          <h1 className="text-2xl font-bold text-brand mb-2">Historico do atleta</h1>
           <p className="text-gray-300 text-sm">
             Historico detalhado sera exibido quando as partidas e presencas estiverem publicadas
             para este atleta.

@@ -61,9 +61,7 @@ export default function TimesDoDiaPage({ params }: TimesDoDiaPageProps) {
     <main className="min-h-screen bg-fundo pt-6 px-2 pb-10">
       <h1 className="sr-only">Times do Dia - Sistema Fut7Pro</h1>
       <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-4 text-center">
-          Times do Dia
-        </h2>
+        <h2 className="text-2xl md:text-3xl font-bold text-brand mb-4 text-center">Times do Dia</h2>
         <p className="text-center text-neutral-300 mb-8">
           Veja como ficaram as escalacoes dos times do racha de hoje. Os confrontos e a ordem dos
           jogos estao logo abaixo.

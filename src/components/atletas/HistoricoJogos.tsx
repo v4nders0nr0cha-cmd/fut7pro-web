@@ -24,7 +24,7 @@ export default function HistoricoJogos({ historico }: Props) {
 
   return (
     <section className="mt-10 max-w-screen-xl mx-auto px-4">
-      <h2 className="text-xl font-bold text-yellow-400 mb-4 text-center">
+      <h2 className="text-xl font-bold text-brand mb-4 text-center">
         🎮 Histórico de Participações
       </h2>
 
@@ -70,7 +70,7 @@ export default function HistoricoJogos({ historico }: Props) {
                   <td className="p-2 border">{jogo.campeao ? "🏆" : ""}</td>
                   <td className="p-2 border">{jogo.pontuacao}</td>
                   <td className="p-2 border">
-                    <button className="text-yellow-400 hover:underline">Ver Detalhes</button>
+                    <button className="text-brand hover:underline">Ver Detalhes</button>
                   </td>
                 </tr>
               ))

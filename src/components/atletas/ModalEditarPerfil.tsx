@@ -114,16 +114,16 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-zinc-900 p-6 rounded-2xl w-full max-w-md relative border-2 border-yellow-400 shadow-xl flex flex-col gap-4">
+      <div className="bg-zinc-900 p-6 rounded-2xl w-full max-w-md relative border-2 border-brand shadow-xl flex flex-col gap-4">
         <button
-          className="absolute right-4 top-4 text-yellow-400 text-xl"
+          className="absolute right-4 top-4 text-brand text-xl"
           onClick={onClose}
           aria-label="Fechar"
           disabled={salvando}
         >
           X
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-2">Editar Perfil</h2>
+        <h2 className="text-xl font-bold text-brand mb-2">Editar Perfil</h2>
 
         <div className="flex flex-col items-center mb-2 gap-2">
           <div className="relative">
@@ -132,11 +132,11 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               alt="Avatar"
               width={80}
               height={80}
-              className="rounded-full border-2 border-yellow-400 object-cover"
+              className="rounded-full border-2 border-brand object-cover"
             />
             <label
               htmlFor="upload-foto"
-              className="absolute bottom-0 right-0 bg-yellow-400 rounded-full p-1 cursor-pointer border-2 border-white shadow text-xs"
+              className="absolute bottom-0 right-0 bg-brand rounded-full p-1 cursor-pointer border-2 border-white shadow text-xs"
               title="Alterar foto"
             >
               <svg width={18} height={18} fill="black" viewBox="0 0 24 24">
@@ -152,11 +152,11 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               />
             </label>
           </div>
-          <span className="text-xs text-yellow-300">Clique no icone para alterar a foto</span>
+          <span className="text-xs text-brand-soft">Clique no icone para alterar a foto</span>
         </div>
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm text-yellow-300">
+          <label className="text-sm text-brand-soft">
             Nome (max. 10 letras)
             <input
               type="text"
@@ -164,10 +164,10 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               value={nome}
               onChange={(e) => setNome(e.target.value)}
               disabled={salvando}
-              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
+              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
             />
           </label>
-          <label className="text-sm text-yellow-300">
+          <label className="text-sm text-brand-soft">
             Apelido (max. 10 letras)
             <input
               type="text"
@@ -175,16 +175,16 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               value={apelido}
               onChange={(e) => setApelido(e.target.value)}
               disabled={salvando}
-              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
+              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
             />
           </label>
-          <label className="text-sm text-yellow-300">
+          <label className="text-sm text-brand-soft">
             Posicao
             <select
               value={posicao}
               onChange={(e) => setPosicao(e.target.value as PosicaoAtleta | "")}
               disabled={salvando}
-              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
+              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
             >
               <option value="">Selecione</option>
               <option value="Goleiro">Goleiro</option>
@@ -193,13 +193,13 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               <option value="Atacante">Atacante</option>
             </select>
           </label>
-          <label className="text-sm text-yellow-300">
+          <label className="text-sm text-brand-soft">
             Posicao secundaria (opcional)
             <select
               value={posicaoSecundaria}
               onChange={(e) => setPosicaoSecundaria(e.target.value as PosicaoAtleta | "")}
               disabled={salvando}
-              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-yellow-400 text-white"
+              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
             >
               <option value="">Nenhuma</option>
               <option value="Goleiro">Goleiro</option>
@@ -216,14 +216,14 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
 
         <div className="flex justify-end gap-3 mt-4">
           <button
-            className="px-4 py-2 bg-zinc-700 text-yellow-200 rounded hover:bg-zinc-800"
+            className="px-4 py-2 bg-zinc-700 text-brand-soft rounded hover:bg-zinc-800"
             onClick={onClose}
             disabled={salvando}
           >
             Cancelar
           </button>
           <button
-            className="px-4 py-2 bg-yellow-500 text-black rounded font-bold hover:bg-yellow-400"
+            className="px-4 py-2 bg-brand-strong text-black rounded font-bold hover:bg-brand"
             onClick={handleSalvar}
             disabled={salvando}
           >

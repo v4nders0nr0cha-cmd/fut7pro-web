@@ -16,9 +16,9 @@ export default function DestaquesDoDiaMobile() {
           className="rounded-md object-cover"
         />
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-bold text-yellow-400">Artilheiro do Dia</span>
+          <span className="text-[10px] uppercase font-bold text-brand">Artilheiro do Dia</span>
           <span className="font-semibold text-sm text-white">Jogador XPTO</span>
-          <span className="text-yellow-400 text-xs">3 gols</span>
+          <span className="text-brand text-xs">3 gols</span>
         </div>
       </div>
       {/* Maestro do Dia */}
@@ -31,9 +31,9 @@ export default function DestaquesDoDiaMobile() {
           className="rounded-md object-cover"
         />
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-bold text-yellow-400">Maestro do Dia</span>
+          <span className="text-[10px] uppercase font-bold text-brand">Maestro do Dia</span>
           <span className="font-semibold text-sm text-white">Camisa 10</span>
-          <span className="text-yellow-400 text-xs">4 assistências</span>
+          <span className="text-brand text-xs">4 assistências</span>
         </div>
       </div>
     </div>

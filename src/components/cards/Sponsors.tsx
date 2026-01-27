@@ -16,9 +16,9 @@ export default function Sponsors() {
   }, [slots]);
 
   return (
-    <section className="bg-[#111] py-8 border-t border-yellow-400 px-4">
+    <section className="bg-[#111] py-8 border-t border-brand px-4">
       <div className="mx-auto w-full max-w-md text-center">
-        <h3 className="text-lg font-bold text-yellow-400 mb-4">NOSSOS PATROCINADORES</h3>
+        <h3 className="text-lg font-bold text-brand mb-4">NOSSOS PATROCINADORES</h3>
         {isLoading && list.length === 0 ? (
           <div className="text-gray-400">Carregando patrocinadores...</div>
         ) : list.length === 0 ? (
