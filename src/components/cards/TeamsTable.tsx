@@ -10,7 +10,7 @@ export default function TeamsTable() {
 
   return (
     <section
-      className="bg-[#1a1a1a] rounded-xl p-4 mb-6 shadow-md hover:shadow-[0_0_20px_#FFD700] hover:bg-[#2a2a2a] cursor-pointer transition-all w-full"
+      className="bg-[#1a1a1a] rounded-xl p-4 mb-6 shadow-md hover:shadow-[0_0_20px_2px_var(--brand)] hover:bg-[#2a2a2a] cursor-pointer transition-all w-full"
       aria-labelledby="titulo-vitorias"
     >
       <h2 id="titulo-vitorias" className="text-brand text-sm font-bold uppercase mb-3">

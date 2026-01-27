@@ -59,7 +59,7 @@ export default function CampeaoAnoCard({
           ? `Ver ranking anual relacionado a ${titulo}`
           : `Ver perfil de ${nome} - ${titulo}`
       }
-      className={`bg-[#1A1A1A] rounded-2xl p-4 ${paddingClass} shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative`}
+      className={`bg-[#1A1A1A] rounded-2xl p-4 ${paddingClass} shadow-md w-full max-w-xs flex flex-col items-center text-white hover:shadow-brand transition-all cursor-pointer relative`}
     >
       {temporario && (
         <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full">

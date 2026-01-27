@@ -210,12 +210,12 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
   return (
     <>
       <div
-        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-brand flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-yellow-200/60 via-yellow-100/80 to-yellow-300/50 hover:scale-105 transition"
+        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-brand flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-[var(--brand-soft)] via-[var(--brand)] to-[var(--brand-strong)] hover:scale-105 transition"
         onClick={() => setModalOpen(true)}
         title="Quero ser Mensalista"
         tabIndex={0}
       >
-        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-brand opacity-60 shadow-yellow-300"></div>
+        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-brand opacity-60 shadow-[0_0_12px_2px_var(--brand)]"></div>
         <div className="flex flex-col items-center justify-center z-10 px-6 py-3 h-full w-full">
           <div className="text-brand-strong font-extrabold text-lg text-center drop-shadow-sm mb-2">
             Torne-se um Mensalista!

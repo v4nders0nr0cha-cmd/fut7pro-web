@@ -39,45 +39,45 @@ export default function DestaquesRegrasModal({ open, onClose }: Props) {
               <button
                 type="button"
                 onClick={onClose}
-                className="absolute right-4 top-4 rounded-full bg-black/40 p-1.5 text-white hover:text-yellow-300"
+                className="absolute right-4 top-4 rounded-full bg-black/40 p-1.5 text-white hover:text-brand-soft"
                 aria-label="Fechar"
               >
                 <X size={22} />
               </button>
 
-              <Dialog.Title as="h2" className="text-xl font-bold text-yellow-400 text-center mb-4">
+              <Dialog.Title as="h2" className="text-xl font-bold text-brand text-center mb-4">
                 Regras dos Destaques do Dia
               </Dialog.Title>
 
               <ul className="space-y-3 text-sm text-gray-200">
                 <li>
-                  <span className="font-semibold text-yellow-300">Time Campeao do Dia:</span>{" "}
+                  <span className="font-semibold text-brand-soft">Time Campeao do Dia:</span>{" "}
                   somatoria de pontos nas partidas finalizadas (3 vitoria, 1 empate, 0 derrota).
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Atacante do Dia:</span> atacante
+                  <span className="font-semibold text-brand-soft">Atacante do Dia:</span> atacante
                   do Time Campeao do Dia com mais gols. Desempate: mais assistencias, depois a
                   primeira ordem do sistema.
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Meia do Dia:</span> meia do Time
+                  <span className="font-semibold text-brand-soft">Meia do Dia:</span> meia do Time
                   Campeao do Dia com mais assistencias. Desempate: mais gols, depois a primeira
                   ordem do sistema.
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Goleiro do Dia:</span> goleiro do
+                  <span className="font-semibold text-brand-soft">Goleiro do Dia:</span> goleiro do
                   Time Campeao do Dia.
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Zagueiro do Dia:</span> escolha
+                  <span className="font-semibold text-brand-soft">Zagueiro do Dia:</span> escolha
                   manual entre os zagueiros do Time Campeao do Dia (o sistema nao calcula desarmes).
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Artilheiro do Dia:</span> jogador
+                  <span className="font-semibold text-brand-soft">Artilheiro do Dia:</span> jogador
                   de qualquer time com mais gols no dia.
                 </li>
                 <li>
-                  <span className="font-semibold text-yellow-300">Maestro do Dia:</span> jogador de
+                  <span className="font-semibold text-brand-soft">Maestro do Dia:</span> jogador de
                   qualquer time com mais assistencias no dia.
                 </li>
               </ul>

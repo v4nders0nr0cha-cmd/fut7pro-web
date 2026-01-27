@@ -64,13 +64,13 @@ export default function ModalDestaquesDoDia({
         {/* Botão Fechar */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-yellow-400 hover:text-yellow-300 text-3xl"
+          className="absolute top-4 right-4 text-brand hover:text-brand-soft text-3xl"
           aria-label="Fechar"
         >
           <IoClose />
         </button>
         {/* Título */}
-        <h2 className="text-2xl md:text-3xl font-bold text-yellow-400 text-center mb-6 mt-2">
+        <h2 className="text-2xl md:text-3xl font-bold text-brand text-center mb-6 mt-2">
           Todos os Destaques do Dia
         </h2>
 
@@ -86,16 +86,16 @@ export default function ModalDestaquesDoDia({
                 className="rounded-md object-cover"
               />
               <div>
-                <span className="uppercase text-yellow-400 font-bold text-[13px]">{d.title}</span>
+                <span className="uppercase text-brand font-bold text-[13px]">{d.title}</span>
                 <p className="text-white font-semibold text-lg leading-5">{d.name}</p>
-                <p className="text-yellow-300 text-[15px] font-medium">{d.info}</p>
+                <p className="text-brand-soft text-[15px] font-medium">{d.info}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Linha divisória */}
-        <div className="w-1/2 mx-auto my-5 h-[2.5px] rounded-full bg-yellow-400 opacity-80" />
+        <div className="w-1/2 mx-auto my-5 h-[2.5px] rounded-full bg-brand opacity-80" />
 
         {/* Cards dos Destaques Gerais */}
         <div className="flex flex-col gap-4 mb-2">
@@ -109,9 +109,9 @@ export default function ModalDestaquesDoDia({
                 className="rounded-md object-cover"
               />
               <div>
-                <span className="uppercase text-yellow-400 font-bold text-[13px]">{d.title}</span>
+                <span className="uppercase text-brand font-bold text-[13px]">{d.title}</span>
                 <p className="text-white font-semibold text-lg leading-5">{d.name}</p>
-                <p className="text-yellow-300 text-[15px] font-medium">{d.info}</p>
+                <p className="text-brand-soft text-[15px] font-medium">{d.info}</p>
               </div>
             </div>
           ))}
@@ -119,7 +119,7 @@ export default function ModalDestaquesDoDia({
 
         {/* Botão para regras */}
         <button
-          className="block mx-auto mt-6 mb-2 text-yellow-400 underline text-[15px] font-semibold"
+          className="block mx-auto mt-6 mb-2 text-brand underline text-[15px] font-semibold"
           onClick={() => setShowRegras(true)}
         >
           Entenda as regras dos destaques do dia
@@ -128,14 +128,14 @@ export default function ModalDestaquesDoDia({
         {/* Modal Regras */}
         {showRegras && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-neutral-900 p-5 rounded-xl max-w-xs w-full shadow-xl border border-yellow-600 text-white relative">
+            <div className="bg-neutral-900 p-5 rounded-xl max-w-xs w-full shadow-xl border border-brand-strong text-white relative">
               <button
-                className="absolute top-2 right-3 text-yellow-400 text-xl"
+                className="absolute top-2 right-3 text-brand text-xl"
                 onClick={() => setShowRegras(false)}
               >
                 <IoClose />
               </button>
-              <h3 className="text-lg font-bold text-yellow-400 mb-2 text-center">
+              <h3 className="text-lg font-bold text-brand mb-2 text-center">
                 Como são escolhidos os Destaques do Dia?
               </h3>
               <ul className="text-sm mb-3 space-y-2">
@@ -164,7 +164,7 @@ export default function ModalDestaquesDoDia({
                 time campeão, não apenas quem fez mais gols na rodada.
               </div>
               <button
-                className="w-full mt-3 bg-yellow-400 text-black rounded font-bold py-2 hover:bg-yellow-300"
+                className="w-full mt-3 bg-brand text-black rounded font-bold py-2 hover:bg-brand-soft"
                 onClick={() => setShowRegras(false)}
               >
                 Fechar

@@ -33,7 +33,7 @@ export default function CampeaoPosicaoCard({
     <Link
       href={resolvedHref}
       title={`Ver perfil de ${nome} - ${posicao}`}
-      className="bg-[#1A1A1A] rounded-xl p-4 shadow-sm w-full max-w-xs flex flex-col items-center text-white hover:shadow-yellow-400 transition-all cursor-pointer relative"
+      className="bg-[#1A1A1A] rounded-xl p-4 shadow-sm w-full max-w-xs flex flex-col items-center text-white hover:shadow-brand transition-all cursor-pointer relative"
     >
       {temporario && (
         <span className="absolute top-2 left-1/2 -translate-x-1/2 text-xs text-gray-300">

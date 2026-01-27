@@ -78,7 +78,7 @@ export default function ComunicacaoPage() {
           <Link
             href={publicHref(item.href)}
             key={item.href}
-            className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-yellow-400 transition-all border border-zinc-800 hover:border-brand flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
+            className="group bg-zinc-900 rounded-xl p-5 shadow hover:shadow-brand transition-all border border-zinc-800 hover:border-brand flex flex-col gap-2 items-start cursor-pointer min-h-[138px]"
           >
             <div className="flex items-center gap-3 mb-1">
               {item.icon}

@@ -100,7 +100,7 @@ describe("PlayerCard", () => {
 
     const statusBadge = screen.getByText("substituto");
     expect(statusBadge).toBeInTheDocument();
-    expect(statusBadge).toHaveClass("bg-yellow-500");
+    expect(statusBadge).toHaveClass("bg-brand-strong");
   });
 
   it("should handle absent player status", () => {

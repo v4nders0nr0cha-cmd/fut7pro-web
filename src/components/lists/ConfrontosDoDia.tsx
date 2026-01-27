@@ -45,7 +45,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
     <div className={`grid grid-cols-1 gap-6 ${gridCols} md:gap-8 items-start`}>
       {secoes.map((secao) => (
         <div key={secao.titulo} className="min-w-0">
-          <h4 className="text-lg md:text-xl text-yellow-400 font-bold mb-3 text-center">
+          <h4 className="text-lg md:text-xl text-brand font-bold mb-3 text-center">
             {secao.titulo}
           </h4>
 
@@ -53,7 +53,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
             <div className="w-full overflow-hidden rounded-2xl border border-zinc-800 bg-[#0f1522] shadow">
               <table className="w-full table-fixed text-sm text-white">
                 <thead>
-                  <tr className="bg-[#1b2436] text-yellow-300 text-xs uppercase tracking-wide">
+                  <tr className="bg-[#1b2436] text-brand-soft text-xs uppercase tracking-wide">
                     <th className="w-20 px-3 py-3 text-left">Rodada</th>
                     <th className="px-3 py-3 text-center">Confronto</th>
                     <th className="w-24 px-3 py-3 text-right">Tempo</th>
@@ -81,7 +81,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                                 style={{ objectFit: "cover" }}
                               />
                             </div>
-                            <span className="text-yellow-400 font-bold text-base">x</span>
+                            <span className="text-brand font-bold text-base">x</span>
                             <div className="flex items-center justify-start gap-2 min-w-0">
                               <Image
                                 src={jogo.logoB || DEFAULT_LOGO}
@@ -95,7 +95,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-right text-yellow-200 font-semibold">
+                        <td className="px-3 py-3 text-right text-brand-soft font-semibold">
                           {tempoLabel}
                           {jogo.hora && (
                             <span className="mt-1 block text-xs text-gray-400">{jogo.hora}</span>
@@ -137,7 +137,7 @@ export default function ConfrontosDoDia({ confrontos = [] }: ConfrontosDoDiaProp
                       />
                       <span className="truncate text-sm font-semibold">{jogo.timeA}</span>
                     </div>
-                    <span className="text-yellow-400 font-bold text-sm">x</span>
+                    <span className="text-brand font-bold text-sm">x</span>
                     <div className="flex items-center gap-2 min-w-0 justify-end">
                       <span className="truncate text-sm font-semibold text-right">
                         {jogo.timeB}
