@@ -50,38 +50,38 @@
 }
 
 [data-theme="azul_royal"] {
-  --brand: #0a5fb5;
-  --brand-soft: #7cc4ff;
-  --brand-strong: #073f78;
-  --brand-ring: #9bd4ff;
+  --brand: #1e90ff;
+  --brand-soft: #7dd3fc;
+  --brand-strong: #1a6fe0;
+  --brand-ring: #a6e1ff;
 }
 
 [data-theme="vermelho_rubi"] {
-  --brand: #c1121f;
-  --brand-soft: #f28b92;
-  --brand-strong: #8b0d16;
-  --brand-ring: #f6a7ac;
+  --brand: #ff2d2d;
+  --brand-soft: #ffd54a;
+  --brand-strong: #d91f1f;
+  --brand-ring: #ff7a7a;
 }
 
 [data-theme="verde_esmeralda"] {
-  --brand: #129e57;
-  --brand-soft: #7fe3b1;
-  --brand-strong: #0c6f3d;
-  --brand-ring: #9af0c5;
+  --brand: #00e676;
+  --brand-soft: #b9ffd2;
+  --brand-strong: #00c965;
+  --brand-ring: #7cffb0;
 }
 
 [data-theme="laranja_flame"] {
-  --brand: #ff8500;
-  --brand-soft: #ffc07a;
-  --brand-strong: #c76600;
-  --brand-ring: #ffd0a3;
+  --brand: #ff8a00;
+  --brand-soft: #ffd54a;
+  --brand-strong: #e67600;
+  --brand-ring: #ffe08a;
 }
 
 [data-theme="roxo_galaxy"] {
-  --brand: #c026d3;
-  --brand-soft: #f5d0fe;
-  --brand-strong: #a21caf;
-  --brand-ring: #e879f9;
+  --brand: #b12cff;
+  --brand-soft: #e2b7ff;
+  --brand-strong: #8f1fe0;
+  --brand-ring: #d58bff;
 }
 
 * {
@@ -348,6 +348,25 @@ a {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-secondary);
+}
+
+/* Scrollbar com cor do tema (usar em elementos específicos) */
+.scrollbar-theme {
+  scrollbar-color: var(--brand) var(--color-surface);
+  scrollbar-width: thin;
+}
+
+.scrollbar-theme::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+.scrollbar-theme::-webkit-scrollbar-thumb {
+  background: var(--brand);
+  border-radius: 4px;
+}
+
+.scrollbar-theme::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-strong);
 }
 
 /* Seleção de texto */

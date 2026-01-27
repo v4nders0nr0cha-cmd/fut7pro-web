@@ -187,7 +187,7 @@ export default function Footer() {
           </button>
           <div
             ref={carouselRef}
-            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide"
+            className="w-full flex gap-12 overflow-x-auto whitespace-nowrap scrollbar-hide scrollbar-theme"
           >
             {isLoading && patrocinadoresLoop.length === 0 ? (
               <div className="w-full text-center text-gray-400 py-8">
