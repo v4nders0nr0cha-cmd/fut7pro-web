@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -9,7 +10,17 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const res = NextResponse.next();
+  const requestHeaders = new Headers(req.headers);
+  const publicSlug = resolvePublicTenantSlug(pathname);
+  if (publicSlug) {
+    requestHeaders.set("x-public-tenant-slug", publicSlug);
+  }
+
+  const res = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   // Aplicar X-Robots-Tag apenas em rotas privadas (não em APIs públicas)
   if (pathname.startsWith("/admin") || pathname.startsWith("/superadmin")) {
