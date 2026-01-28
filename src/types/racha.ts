@@ -12,6 +12,9 @@ export interface Admin {
   usuarioId: string;
   nome?: string;
   email?: string;
+  apelido?: string;
+  foto?: string;
+  posicao?: string;
   role: RoleAdmin;
   status?: "ativo" | "inativo" | "pendente";
   criadoEm?: string;

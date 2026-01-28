@@ -100,31 +100,25 @@ export default function NossaHistoriaPage() {
     const admins = (racha?.admins ?? []).filter((admin) => admin.status !== "inativo");
     const resolveName = (admin: (typeof admins)[number]) =>
       admin.nome?.trim() || admin.email?.trim() || "Administrador";
-    const resolvePhoto = () => DEFAULT_AVATAR;
+    const resolvePhoto = (admin: (typeof admins)[number]) => admin.foto || DEFAULT_AVATAR;
     const byRole = (role: string) => admins.find((admin) => admin.role === role);
-    const presidenteAdmin = byRole("presidente") ?? admins[0];
-    const presidenteFromCadastro = data.presidente?.nome
-      ? {
-          nome: data.presidente.nome,
-          cargo: "Presidente",
-          foto: data.presidente.avatarUrl || DEFAULT_AVATAR,
-        }
-      : null;
-
+    const presidenteAdmin = byRole("presidente") ?? null;
     const mapped: { nome: string; cargo: string; foto?: string }[] = [];
-    if (presidenteFromCadastro) {
-      mapped.push(presidenteFromCadastro);
-    } else if (presidenteAdmin) {
+    if (presidenteAdmin) {
       mapped.push({
         nome: resolveName(presidenteAdmin),
         cargo: "Presidente",
-        foto: resolvePhoto(),
+        foto: resolvePhoto(presidenteAdmin),
       });
     }
 
     const vice = byRole("vicepresidente");
     if (vice) {
-      mapped.push({ nome: resolveName(vice), cargo: "Vice-Presidente", foto: resolvePhoto() });
+      mapped.push({
+        nome: resolveName(vice),
+        cargo: "Vice-Presidente",
+        foto: resolvePhoto(vice),
+      });
     }
 
     const diretorFutebol = byRole("diretorfutebol");
@@ -132,7 +126,7 @@ export default function NossaHistoriaPage() {
       mapped.push({
         nome: resolveName(diretorFutebol),
         cargo: "Diretor de Futebol",
-        foto: resolvePhoto(),
+        foto: resolvePhoto(diretorFutebol),
       });
     }
 
@@ -141,16 +135,8 @@ export default function NossaHistoriaPage() {
       mapped.push({
         nome: resolveName(diretorFinanceiro),
         cargo: "Diretor Financeiro",
-        foto: resolvePhoto(),
+        foto: resolvePhoto(diretorFinanceiro),
       });
-    }
-
-    if (!mapped.length && data.diretoria?.length) {
-      return data.diretoria.map((item) => ({
-        nome: item.nome,
-        cargo: item.cargo,
-        foto: item.foto || DEFAULT_AVATAR,
-      }));
     }
 
     return mapped;
@@ -358,7 +344,7 @@ export default function NossaHistoriaPage() {
         {membrosAntigos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4 flex items-center gap-2">
-              <FaMedal /> Ranking de Assiduidade
+              <FaMedal /> Top 5 Mais Assíduos
             </h2>
             <div className="flex flex-wrap gap-4">
               {membrosAntigos.map((membro, idx) => (
