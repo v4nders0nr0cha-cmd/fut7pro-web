@@ -5,15 +5,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
 import { useAboutPublic } from "@/hooks/useAbout";
+import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
 export default function NossaHistoriaPage() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug || rachaConfig.slug;
   const { publicHref } = usePublicLinks();
   const { about } = useAboutPublic(slug);
+  const { racha } = useRachaPublic(slug);
+  const { rankings: rankingGeral } = usePublicPlayerRankings({
+    slug,
+    type: "geral",
+    period: "all",
+    limit: 50,
+  });
   const data = about || {};
 
   const marcos = data.marcos || [];
@@ -34,9 +45,52 @@ export default function NossaHistoriaPage() {
     })),
     ...(campoAtual ? [campoAtual] : []),
   ];
-  const membrosAntigos = data.membrosAntigos || [];
-  const campeoesHistoricos = data.campeoesHistoricos || [];
-  const diretoria = data.diretoria || [];
+  const membrosAntigos = [...rankingGeral]
+    .sort((a, b) => (b.jogos ?? 0) - (a.jogos ?? 0) || (b.pontos ?? 0) - (a.pontos ?? 0))
+    .slice(0, 5);
+  const campeoesHistoricos = [...rankingGeral]
+    .sort((a, b) => (b.pontos ?? 0) - (a.pontos ?? 0) || (b.jogos ?? 0) - (a.jogos ?? 0))
+    .slice(0, 5);
+
+  const diretoria = (() => {
+    const admins = (racha?.admins ?? []).filter((admin) => admin.status !== "inativo");
+    if (!admins.length) return [];
+    const resolveName = (admin: (typeof admins)[number]) =>
+      admin.nome?.trim() || admin.email?.trim() || "Administrador";
+    const resolvePhoto = () => DEFAULT_AVATAR;
+    const byRole = (role: string) => admins.find((admin) => admin.role === role);
+    const presidente = byRole("presidente") ?? admins[0];
+
+    const mapped: { nome: string; cargo: string; foto?: string }[] = [];
+    if (presidente) {
+      mapped.push({ nome: resolveName(presidente), cargo: "Presidente", foto: resolvePhoto() });
+    }
+
+    const vice = byRole("vicepresidente");
+    if (vice) {
+      mapped.push({ nome: resolveName(vice), cargo: "Vice-Presidente", foto: resolvePhoto() });
+    }
+
+    const diretorFutebol = byRole("diretorfutebol");
+    if (diretorFutebol) {
+      mapped.push({
+        nome: resolveName(diretorFutebol),
+        cargo: "Diretor de Futebol",
+        foto: resolvePhoto(),
+      });
+    }
+
+    const diretorFinanceiro = byRole("diretorfinanceiro");
+    if (diretorFinanceiro) {
+      mapped.push({
+        nome: resolveName(diretorFinanceiro),
+        cargo: "Diretor Financeiro",
+        foto: resolvePhoto(),
+      });
+    }
+
+    return mapped;
+  })();
 
   const handleDownload = () => {
     alert("Funcao de download/compartilhar ainda nao implementada.");
@@ -243,24 +297,22 @@ export default function NossaHistoriaPage() {
               <FaMedal /> Membros Mais Antigos
             </h2>
             <div className="flex flex-wrap gap-4">
-              {membrosAntigos.slice(0, 5).map((membro, idx) => (
+              {membrosAntigos.map((membro, idx) => (
                 <Link
-                  href={publicHref(`/atletas/${membro.nome.toLowerCase().replace(/\s/g, "-")}`)}
+                  href={publicHref(`/atletas/${membro.slug}`)}
                   key={idx}
                   className="bg-neutral-800 rounded-xl p-4 flex flex-col items-center w-36 hover:border-brand border border-neutral-700"
                 >
-                  {membro.foto && (
-                    <Image
-                      src={membro.foto}
-                      alt={membro.nome}
-                      width={60}
-                      height={60}
-                      className="rounded-full border-2 border-brand mb-2"
-                    />
-                  )}
+                  <Image
+                    src={membro.foto || DEFAULT_AVATAR}
+                    alt={membro.nome}
+                    width={60}
+                    height={60}
+                    className="rounded-full border-2 border-brand mb-2"
+                  />
                   <div className="font-semibold text-white text-center">{membro.nome}</div>
-                  <div className="text-brand text-xs">{membro.status}</div>
-                  <div className="text-neutral-300 text-xs">Desde {membro.desde}</div>
+                  <div className="text-brand text-xs">Assiduidade</div>
+                  <div className="text-neutral-300 text-xs">{membro.jogos} jogos</div>
                 </Link>
               ))}
             </div>

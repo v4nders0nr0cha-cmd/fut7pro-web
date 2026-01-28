@@ -16,9 +16,6 @@ import type {
   NossaHistoriaFoto,
   NossaHistoriaVideo,
   NossaHistoriaCampo,
-  NossaHistoriaMembroAntigo,
-  NossaHistoriaCampeaoHistorico,
-  NossaHistoriaDiretoria,
 } from "@/types/paginasInstitucionais";
 import type { AboutData } from "@/types/about";
 
@@ -433,32 +430,6 @@ export default function NossaHistoriaEditor() {
     setField("camposHistoricos", next);
   };
 
-  const updateMembroAntigo = (index: number, patch: Partial<NossaHistoriaMembroAntigo>) => {
-    const next = [...(formData.membrosAntigos ?? [])];
-    next[index] = { ...next[index], ...patch };
-    setField("membrosAntigos", next);
-  };
-
-  const updateCampeao = (index: number, patch: Partial<NossaHistoriaCampeaoHistorico>) => {
-    const next = [...(formData.campeoesHistoricos ?? [])];
-    next[index] = { ...next[index], ...patch };
-    setField("campeoesHistoricos", next);
-  };
-
-  const updateDiretoria = (index: number, patch: Partial<NossaHistoriaDiretoria>) => {
-    const next = [...(formData.diretoria ?? [])];
-    next[index] = { ...next[index], ...patch };
-    setField("diretoria", next);
-  };
-
-  const duplicatedDiretoria = useMemo(() => {
-    const names = (formData.diretoria ?? [])
-      .map((item) => item.nome?.trim().toLowerCase())
-      .filter(Boolean);
-    const duplicates = names.filter((name, idx) => name && names.indexOf(name) !== idx);
-    return Array.from(new Set(duplicates));
-  }, [formData.diretoria]);
-
   const buildPayload = () => {
     const marcos = (formData.marcos ?? []).filter((item) => {
       return Boolean(
@@ -492,23 +463,6 @@ export default function NossaHistoriaEditor() {
           sanitizeText(campo.descricao)
       );
     });
-    const membrosAntigos = (formData.membrosAntigos ?? []).filter((membro) => {
-      return Boolean(
-        sanitizeText(membro.nome) ||
-          sanitizeText(membro.desde) ||
-          sanitizeText(membro.status) ||
-          sanitizeUrl(membro.foto)
-      );
-    });
-    const campeoesHistoricos = (formData.campeoesHistoricos ?? []).filter((campeao) => {
-      return Boolean(
-        sanitizeText(campeao.nome) ||
-          sanitizeText(campeao.slug) ||
-          sanitizeText(campeao.posicao) ||
-          sanitizeUrl(campeao.foto)
-      );
-    });
-
     const cleaned: NossaHistoriaData = {
       titulo: sanitizeText(formData.titulo),
       descricao: sanitizeText(formData.descricao),
@@ -561,24 +515,9 @@ export default function NossaHistoriaEditor() {
               descricao: sanitizeText(formData.campoAtual.descricao),
             }
           : undefined,
-      membrosAntigos: membrosAntigos.map((membro) => ({
-        nome: sanitizeText(membro.nome),
-        status: sanitizeText(membro.status),
-        desde: sanitizeText(membro.desde),
-        foto: sanitizeUrl(membro.foto),
-      })),
-      campeoesHistoricos: campeoesHistoricos.map((jogador) => ({
-        nome: sanitizeText(jogador.nome),
-        slug: sanitizeText(jogador.slug),
-        pontos: typeof jogador.pontos === "number" ? jogador.pontos : undefined,
-        posicao: sanitizeText(jogador.posicao),
-        foto: sanitizeUrl(jogador.foto),
-      })),
-      diretoria: (formData.diretoria ?? []).map((membro) => ({
-        cargo: sanitizeText(membro.cargo),
-        nome: sanitizeText(membro.nome),
-        foto: sanitizeUrl(membro.foto),
-      })),
+      membrosAntigos: undefined,
+      campeoesHistoricos: undefined,
+      diretoria: undefined,
     };
 
     const parsed = nossaHistoriaSchema.safeParse(cleaned);
@@ -1469,260 +1408,15 @@ export default function NossaHistoriaEditor() {
           </section>
 
           <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Membros mais antigos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("membrosAntigos", [
-                    ...(formData.membrosAntigos ?? []),
-                    { nome: "", desde: "", foto: "", status: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar membro
-              </button>
-            </div>
-            <div className="grid gap-4">
-              {(formData.membrosAntigos ?? []).map((membro, idx) => (
-                <div key={`membro-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Membro #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "membrosAntigos",
-                            moveItem(formData.membrosAntigos ?? [], idx, -1)
-                          )
-                        }
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "membrosAntigos",
-                            moveItem(formData.membrosAntigos ?? [], idx, 1)
-                          )
-                        }
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "membrosAntigos",
-                            (formData.membrosAntigos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Nome</label>
-                      <input
-                        className={inputClass}
-                        value={membro.nome || ""}
-                        onChange={(event) => updateMembroAntigo(idx, { nome: event.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Desde</label>
-                      <input
-                        className={inputClass}
-                        value={membro.desde || ""}
-                        onChange={(event) => updateMembroAntigo(idx, { desde: event.target.value })}
-                        placeholder="2012"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <ImageField
-                      label="Foto"
-                      value={membro.foto}
-                      onChange={(value) => updateMembroAntigo(idx, { foto: value })}
-                      onUpload={uploadImage}
-                    />
-                    <div>
-                      <label className={labelClass}>Status (opcional)</label>
-                      <input
-                        className={inputClass}
-                        value={membro.status || ""}
-                        onChange={(event) =>
-                          updateMembroAntigo(idx, { status: event.target.value })
-                        }
-                        placeholder="Ex: Fundador"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Campeoes historicos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("campeoesHistoricos", [
-                    ...(formData.campeoesHistoricos ?? []),
-                    { nome: "", slug: "", pontos: 0, posicao: "", foto: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar campeao
-              </button>
-            </div>
-            <div className="grid gap-4">
-              {(formData.campeoesHistoricos ?? []).map((campeao, idx) => (
-                <div key={`campeao-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Campeao #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "campeoesHistoricos",
-                            moveItem(formData.campeoesHistoricos ?? [], idx, -1)
-                          )
-                        }
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "campeoesHistoricos",
-                            moveItem(formData.campeoesHistoricos ?? [], idx, 1)
-                          )
-                        }
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "campeoesHistoricos",
-                            (formData.campeoesHistoricos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Nome</label>
-                      <input
-                        className={inputClass}
-                        value={campeao.nome || ""}
-                        onChange={(event) => updateCampeao(idx, { nome: event.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Slug (opcional)</label>
-                      <input
-                        className={inputClass}
-                        value={campeao.slug || ""}
-                        onChange={(event) => updateCampeao(idx, { slug: event.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Pontos</label>
-                      <input
-                        type="number"
-                        className={inputClass}
-                        value={campeao.pontos ?? 0}
-                        onChange={(event) =>
-                          updateCampeao(idx, { pontos: Number(event.target.value) })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Posicao</label>
-                      <input
-                        className={inputClass}
-                        value={campeao.posicao || ""}
-                        onChange={(event) => updateCampeao(idx, { posicao: event.target.value })}
-                        placeholder="#1"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <ImageField
-                      label="Foto"
-                      value={campeao.foto}
-                      onChange={(value) => updateCampeao(idx, { foto: value })}
-                      onUpload={uploadImage}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <h2 className="text-xl font-bold text-brand">Diretoria</h2>
-            {duplicatedDiretoria.length ? (
-              <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-3 text-xs text-yellow-100">
-                Evite repetir a mesma pessoa nos cargos: {duplicatedDiretoria.join(", ")}
-              </div>
-            ) : null}
-            <div className="grid gap-4">
-              {(formData.diretoria ?? []).map((membro, idx) => (
-                <div key={`diretoria-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Cargo</label>
-                      <input
-                        className={inputClass}
-                        value={membro.cargo || ""}
-                        onChange={(event) => updateDiretoria(idx, { cargo: event.target.value })}
-                        placeholder="Presidente"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Nome</label>
-                      <input
-                        className={inputClass}
-                        value={membro.nome || ""}
-                        onChange={(event) => updateDiretoria(idx, { nome: event.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <ImageField
-                      label="Foto"
-                      value={membro.foto}
-                      onChange={(value) => updateDiretoria(idx, { foto: value })}
-                      onUpload={uploadImage}
-                    />
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-xl font-bold text-brand">Secoes automaticas</h2>
+            <div className="rounded-xl border border-[#2a2d36] bg-[#111318] p-4 text-sm text-gray-300">
+              As secoes abaixo sao preenchidas automaticamente pelo sistema e nao sao editaveis
+              aqui:
+              <ul className="list-disc pl-5 mt-2 text-gray-300">
+                <li>Membros Mais Antigos (top 5 do ranking de assiduidade - Todos os Anos)</li>
+                <li>Campeoes Historicos (top 5 pontuadores - Todas as Temporadas)</li>
+                <li>Presidencia e Diretoria (admins configurados em Administradores)</li>
+              </ul>
             </div>
           </section>
         </div>
