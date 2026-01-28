@@ -1,11 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
 import { useAboutPublic } from "@/hooks/useAbout";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
+import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
@@ -24,6 +26,12 @@ export default function NossaHistoriaPage() {
     type: "geral",
     period: "all",
     limit: 50,
+  });
+  const { matches: matchesAll } = usePublicMatches({
+    slug,
+    from: "2000-01-01",
+    to: "2100-01-01",
+    limit: 5000,
   });
   const data = about || {};
 
@@ -45,16 +53,70 @@ export default function NossaHistoriaPage() {
     })),
     ...(campoAtual ? [campoAtual] : []),
   ];
-  const membrosAntigos = [...rankingGeral]
-    .sort((a, b) => (b.jogos ?? 0) - (a.jogos ?? 0) || (b.pontos ?? 0) - (a.pontos ?? 0))
-    .slice(0, 5);
+  const rankingById = useMemo(() => {
+    const map = new Map<string, (typeof rankingGeral)[number]>();
+    rankingGeral.forEach((entry) => map.set(entry.id, entry));
+    return map;
+  }, [rankingGeral]);
+
+  const membrosAntigos = useMemo(() => {
+    const map = new Map<
+      string,
+      { id: string; nome: string; slug: string; foto: string; jogos: number }
+    >();
+
+    matchesAll.forEach((match) => {
+      (match.presences ?? []).forEach((presence) => {
+        if (presence.status === "AUSENTE") return;
+        const athlete = presence.athlete;
+        if (!athlete?.id || !athlete?.name) return;
+        const existing = map.get(athlete.id);
+        const rankingEntry = rankingById.get(athlete.id);
+        const slugValue = rankingEntry?.slug ?? athlete.id;
+        const fotoValue = athlete.photoUrl || rankingEntry?.foto || DEFAULT_AVATAR;
+        if (existing) {
+          existing.jogos += 1;
+          return;
+        }
+        map.set(athlete.id, {
+          id: athlete.id,
+          nome: athlete.name,
+          slug: slugValue,
+          foto: fotoValue,
+          jogos: 1,
+        });
+      });
+    });
+
+    return Array.from(map.values())
+      .sort((a, b) => b.jogos - a.jogos)
+      .slice(0, 5);
+  }, [matchesAll, rankingById]);
   const campeoesHistoricos = [...rankingGeral]
     .sort((a, b) => (b.pontos ?? 0) - (a.pontos ?? 0) || (b.jogos ?? 0) - (a.jogos ?? 0))
     .slice(0, 5);
 
   const diretoria = (() => {
     const admins = (racha?.admins ?? []).filter((admin) => admin.status !== "inativo");
-    if (!admins.length) return [];
+    if (!admins.length) {
+      if (data.presidente?.nome) {
+        return [
+          {
+            nome: data.presidente.nome,
+            cargo: "Presidente",
+            foto: data.presidente.avatarUrl || DEFAULT_AVATAR,
+          },
+        ];
+      }
+      if (data.diretoria?.length) {
+        return data.diretoria.map((item) => ({
+          nome: item.nome,
+          cargo: item.cargo,
+          foto: item.foto || DEFAULT_AVATAR,
+        }));
+      }
+      return [];
+    }
     const resolveName = (admin: (typeof admins)[number]) =>
       admin.nome?.trim() || admin.email?.trim() || "Administrador";
     const resolvePhoto = () => DEFAULT_AVATAR;
