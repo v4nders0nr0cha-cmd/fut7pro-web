@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
 import { useAboutPublic } from "@/hooks/useAbout";
+import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
@@ -20,6 +21,7 @@ export default function NossaHistoriaPage() {
   const slug = tenantSlug || rachaConfig.slug;
   const { publicHref } = usePublicLinks();
   const { about } = useAboutPublic(slug);
+  const { footer } = useFooterConfigPublic(slug);
   const { racha } = useRachaPublic(slug);
   const { rankings: rankingGeral } = usePublicPlayerRankings({
     slug,
@@ -41,9 +43,18 @@ export default function NossaHistoriaPage() {
   const categoriasFotos = data.categoriasFotos || [];
   const videos = data.videos || [];
   const camposHistoricos = data.camposHistoricos || [];
-  const campoAtual = data.campoAtual
-    ? { ...data.campoAtual, tipo: "Atual", cor: "text-green-400", tag: "text-xs text-green-300" }
-    : null;
+  const campoAtual =
+    footer?.campo?.nome || footer?.campo?.endereco || footer?.campo?.mapa
+      ? {
+          nome: footer.campo.nome ?? "",
+          endereco: footer.campo.endereco ?? "",
+          mapa: footer.campo.mapa ?? "",
+          descricao: "",
+          tipo: "Atual",
+          cor: "text-green-400",
+          tag: "text-xs text-green-300",
+        }
+      : null;
   const todosCampos = [
     ...camposHistoricos.map((campo) => ({
       ...campo,
@@ -315,7 +326,7 @@ export default function NossaHistoriaPage() {
         {todosCampos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4 flex items-center gap-2">
-              <FaMapMarkedAlt /> Campos Historicos e Atual
+              <FaMapMarkedAlt /> Onde Começou e Onde Jogamos Hoje
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {todosCampos.map((campo, idx) => (

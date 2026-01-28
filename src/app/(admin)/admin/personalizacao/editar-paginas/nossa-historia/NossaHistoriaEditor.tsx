@@ -319,20 +319,17 @@ export default function NossaHistoriaEditor() {
         titulo: video.titulo ?? "",
         url: video.url ?? "",
       })),
-      camposHistoricos: (input?.camposHistoricos ?? []).map((campo) => ({
-        nome: campo.nome ?? "",
-        endereco: campo.endereco ?? "",
-        mapa: campo.mapa ?? "",
-        descricao: campo.descricao ?? "",
-      })),
-      campoAtual: input?.campoAtual
-        ? {
-            nome: input.campoAtual.nome ?? "",
-            endereco: input.campoAtual.endereco ?? "",
-            mapa: input.campoAtual.mapa ?? "",
-            descricao: input.campoAtual.descricao ?? "",
-          }
-        : undefined,
+      camposHistoricos: input?.camposHistoricos?.length
+        ? [
+            {
+              nome: input.camposHistoricos[0]?.nome ?? "",
+              endereco: input.camposHistoricos[0]?.endereco ?? "",
+              mapa: input.camposHistoricos[0]?.mapa ?? "",
+              descricao: input.camposHistoricos[0]?.descricao ?? "",
+            },
+          ]
+        : [],
+      campoAtual: undefined,
       membrosAntigos: (input?.membrosAntigos ?? []).map((membro) => ({
         nome: membro.nome ?? "",
         status: membro.status ?? "",
@@ -424,12 +421,6 @@ export default function NossaHistoriaEditor() {
     setField("videos", next);
   };
 
-  const updateCampoHistorico = (index: number, patch: Partial<NossaHistoriaCampo>) => {
-    const next = [...(formData.camposHistoricos ?? [])];
-    next[index] = { ...next[index], ...patch };
-    setField("camposHistoricos", next);
-  };
-
   const buildPayload = () => {
     const marcos = (formData.marcos ?? []).filter((item) => {
       return Boolean(
@@ -463,6 +454,7 @@ export default function NossaHistoriaEditor() {
           sanitizeText(campo.descricao)
       );
     });
+    const primeiroCampo = camposHistoricos[0];
     const cleaned: NossaHistoriaData = {
       titulo: sanitizeText(formData.titulo),
       descricao: sanitizeText(formData.descricao),
@@ -496,25 +488,17 @@ export default function NossaHistoriaEditor() {
         titulo: sanitizeText(video.titulo),
         url: normalizeYouTubeUrl(sanitizeUrl(video.url)),
       })),
-      camposHistoricos: camposHistoricos.map((campo) => ({
-        nome: sanitizeText(campo.nome),
-        endereco: sanitizeText(campo.endereco),
-        mapa: sanitizeUrl(campo.mapa),
-        descricao: sanitizeText(campo.descricao),
-      })),
-      campoAtual:
-        formData.campoAtual &&
-        (sanitizeText(formData.campoAtual.nome) ||
-          sanitizeText(formData.campoAtual.endereco) ||
-          sanitizeUrl(formData.campoAtual.mapa) ||
-          sanitizeText(formData.campoAtual.descricao))
-          ? {
-              nome: sanitizeText(formData.campoAtual.nome),
-              endereco: sanitizeText(formData.campoAtual.endereco),
-              mapa: sanitizeUrl(formData.campoAtual.mapa),
-              descricao: sanitizeText(formData.campoAtual.descricao),
-            }
-          : undefined,
+      camposHistoricos: primeiroCampo
+        ? [
+            {
+              nome: sanitizeText(primeiroCampo.nome),
+              endereco: sanitizeText(primeiroCampo.endereco),
+              mapa: sanitizeUrl(primeiroCampo.mapa),
+              descricao: sanitizeText(primeiroCampo.descricao),
+            },
+          ]
+        : [],
+      campoAtual: undefined,
       membrosAntigos: undefined,
       campeoesHistoricos: undefined,
       diretoria: undefined,
@@ -572,6 +556,13 @@ export default function NossaHistoriaEditor() {
     } catch (err) {
       setJsonError(err instanceof Error ? err.message : "JSON invalido.");
     }
+  };
+
+  const campoHistorico = formData.camposHistoricos?.[0] ?? {
+    nome: "",
+    endereco: "",
+    mapa: "",
+    descricao: "",
   };
 
   if (isLoading && !isInitialized) {
@@ -1220,186 +1211,52 @@ export default function NossaHistoriaEditor() {
           </section>
 
           <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Campos Historicos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("camposHistoricos", [
-                    ...(formData.camposHistoricos ?? []),
-                    { nome: "", endereco: "", mapa: "", descricao: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar campo
-              </button>
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <h2 className="text-xl font-bold text-brand">Onde Começou (Primeiro Campo)</h2>
+                <p className="text-sm text-gray-400 mt-1">
+                  O campo atual é configurado no Rodape. Aqui voce informa apenas o primeiro campo
+                  do racha.
+                </p>
+              </div>
             </div>
-            <div className="grid gap-4">
-              {(formData.camposHistoricos ?? []).map((campo, idx) => (
-                <div key={`campo-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Campo #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "camposHistoricos",
-                            moveItem(formData.camposHistoricos ?? [], idx, -1)
-                          )
-                        }
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "camposHistoricos",
-                            moveItem(formData.camposHistoricos ?? [], idx, 1)
-                          )
-                        }
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "camposHistoricos",
-                            (formData.camposHistoricos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Nome</label>
-                      <input
-                        className={inputClass}
-                        value={campo.nome || ""}
-                        onChange={(event) =>
-                          updateCampoHistorico(idx, { nome: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Endereco</label>
-                      <input
-                        className={inputClass}
-                        value={campo.endereco || ""}
-                        onChange={(event) =>
-                          updateCampoHistorico(idx, { endereco: event.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Link do mapa</label>
-                      <input
-                        className={inputClass}
-                        value={campo.mapa || ""}
-                        onChange={(event) =>
-                          updateCampoHistorico(idx, { mapa: event.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Observacao</label>
-                      <input
-                        className={inputClass}
-                        value={campo.descricao || ""}
-                        onChange={(event) =>
-                          updateCampoHistorico(idx, { descricao: event.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-6 rounded-xl border border-[#2a2d36] p-4">
-              <h3 className="text-lg font-semibold text-brand">Campo atual</h3>
-              <div className="grid gap-3 mt-3 md:grid-cols-2">
+            <div className="mt-4 rounded-xl border border-[#2a2d36] p-4">
+              <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <label className={labelClass}>Nome</label>
+                  <label className={labelClass}>Nome ou titulo do primeiro campo</label>
                   <input
                     className={inputClass}
-                    value={formData.campoAtual?.nome || ""}
+                    value={campoHistorico.nome || ""}
                     onChange={(event) =>
-                      setField("campoAtual", {
-                        ...(formData.campoAtual ?? {
-                          nome: "",
-                          endereco: "",
-                          mapa: "",
-                          descricao: "",
-                        }),
-                        nome: event.target.value,
-                      })
+                      setField("camposHistoricos", [
+                        { ...campoHistorico, nome: event.target.value },
+                      ])
                     }
                   />
                 </div>
                 <div>
-                  <label className={labelClass}>Endereco</label>
+                  <label className={labelClass}>Endereco do campo (aparece abaixo do titulo)</label>
                   <input
                     className={inputClass}
-                    value={formData.campoAtual?.endereco || ""}
+                    value={campoHistorico.endereco || ""}
                     onChange={(event) =>
-                      setField("campoAtual", {
-                        ...(formData.campoAtual ?? {
-                          nome: "",
-                          endereco: "",
-                          mapa: "",
-                          descricao: "",
-                        }),
-                        endereco: event.target.value,
-                      })
+                      setField("camposHistoricos", [
+                        { ...campoHistorico, endereco: event.target.value },
+                      ])
                     }
                   />
                 </div>
               </div>
               <div className="grid gap-3 mt-3 md:grid-cols-2">
                 <div>
-                  <label className={labelClass}>Link do mapa</label>
+                  <label className={labelClass}>Link do Google Maps (iframe/preview)</label>
                   <input
                     className={inputClass}
-                    value={formData.campoAtual?.mapa || ""}
+                    value={campoHistorico.mapa || ""}
                     onChange={(event) =>
-                      setField("campoAtual", {
-                        ...(formData.campoAtual ?? {
-                          nome: "",
-                          endereco: "",
-                          mapa: "",
-                          descricao: "",
-                        }),
-                        mapa: event.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Observacao</label>
-                  <input
-                    className={inputClass}
-                    value={formData.campoAtual?.descricao || ""}
-                    onChange={(event) =>
-                      setField("campoAtual", {
-                        ...(formData.campoAtual ?? {
-                          nome: "",
-                          endereco: "",
-                          mapa: "",
-                          descricao: "",
-                        }),
-                        descricao: event.target.value,
-                      })
+                      setField("camposHistoricos", [
+                        { ...campoHistorico, mapa: event.target.value },
+                      ])
                     }
                   />
                 </div>
