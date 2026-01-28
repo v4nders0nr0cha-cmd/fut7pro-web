@@ -5,9 +5,15 @@ export type AboutData = {
   descricao?: string;
   cores?: { primary?: string; secondary?: string; accent?: string };
   marcos?: { ano: string; titulo: string; descricao: string; conquista?: string }[];
-  curiosidades?: { icone?: string; texto: string; curtidas?: number }[];
-  depoimentos?: { nome: string; cargo: string; texto: string; foto?: string; destaque?: boolean }[];
-  categoriasFotos?: { nome: string; fotos: { src: string; alt: string }[] }[];
+  curiosidades?: { titulo?: string; icone?: string; texto: string; curtidas?: number }[];
+  depoimentos?: {
+    nome: string;
+    cargo: string;
+    texto: string;
+    foto?: string;
+    destaque?: boolean;
+  }[];
+  categoriasFotos?: { nome: string; fotos: { src: string; alt?: string }[] }[];
   videos?: { id?: string | number; titulo: string; url: string }[];
   ajudaArtigos?: {
     id?: string | number;
@@ -19,7 +25,7 @@ export type AboutData = {
   ajudaFaqs?: { pergunta: string; resposta: string }[];
   camposHistoricos?: { nome: string; mapa: string; descricao: string; endereco?: string }[];
   campoAtual?: { nome: string; mapa: string; descricao: string; endereco?: string };
-  membrosAntigos?: { nome: string; status: string; desde: number; foto?: string }[];
+  membrosAntigos?: { nome: string; status?: string; desde?: number | string; foto?: string }[];
   campeoesHistoricos?: {
     nome: string;
     slug: string;
