@@ -98,34 +98,28 @@ export default function NossaHistoriaPage() {
 
   const diretoria = (() => {
     const admins = (racha?.admins ?? []).filter((admin) => admin.status !== "inativo");
-    if (!admins.length) {
-      if (data.presidente?.nome) {
-        return [
-          {
-            nome: data.presidente.nome,
-            cargo: "Presidente",
-            foto: data.presidente.avatarUrl || DEFAULT_AVATAR,
-          },
-        ];
-      }
-      if (data.diretoria?.length) {
-        return data.diretoria.map((item) => ({
-          nome: item.nome,
-          cargo: item.cargo,
-          foto: item.foto || DEFAULT_AVATAR,
-        }));
-      }
-      return [];
-    }
     const resolveName = (admin: (typeof admins)[number]) =>
       admin.nome?.trim() || admin.email?.trim() || "Administrador";
     const resolvePhoto = () => DEFAULT_AVATAR;
     const byRole = (role: string) => admins.find((admin) => admin.role === role);
-    const presidente = byRole("presidente") ?? admins[0];
+    const presidenteAdmin = byRole("presidente") ?? admins[0];
+    const presidenteFromCadastro = data.presidente?.nome
+      ? {
+          nome: data.presidente.nome,
+          cargo: "Presidente",
+          foto: data.presidente.avatarUrl || DEFAULT_AVATAR,
+        }
+      : null;
 
     const mapped: { nome: string; cargo: string; foto?: string }[] = [];
-    if (presidente) {
-      mapped.push({ nome: resolveName(presidente), cargo: "Presidente", foto: resolvePhoto() });
+    if (presidenteFromCadastro) {
+      mapped.push(presidenteFromCadastro);
+    } else if (presidenteAdmin) {
+      mapped.push({
+        nome: resolveName(presidenteAdmin),
+        cargo: "Presidente",
+        foto: resolvePhoto(),
+      });
     }
 
     const vice = byRole("vicepresidente");
@@ -149,6 +143,14 @@ export default function NossaHistoriaPage() {
         cargo: "Diretor Financeiro",
         foto: resolvePhoto(),
       });
+    }
+
+    if (!mapped.length && data.diretoria?.length) {
+      return data.diretoria.map((item) => ({
+        nome: item.nome,
+        cargo: item.cargo,
+        foto: item.foto || DEFAULT_AVATAR,
+      }));
     }
 
     return mapped;
@@ -356,7 +358,7 @@ export default function NossaHistoriaPage() {
         {membrosAntigos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4 flex items-center gap-2">
-              <FaMedal /> Membros Mais Antigos
+              <FaMedal /> Ranking de Assiduidade
             </h2>
             <div className="flex flex-wrap gap-4">
               {membrosAntigos.map((membro, idx) => (
