@@ -127,22 +127,29 @@ export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
     "O racha seu racha nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por o presidente do racha, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.",
   marcos: [
     {
-      ano: "Ano 1",
+      ano: "2022",
       titulo: "Primeiros jogos",
       descricao: "A resenha ganhou forma e virou rotina entre a galera.",
       conquista: "⚽",
     },
     {
-      ano: "Ano 2",
+      ano: "2023",
       titulo: "Primeiro torneio interno",
       descricao: "Disputa saudável, amizade e muito espírito esportivo.",
       conquista: "🏆",
     },
     {
-      ano: "Ano 3",
+      ano: "2024",
       titulo: "Tradição consolidada",
       descricao: "O racha cresceu, ganhou identidade e ficou ainda mais unido.",
       conquista: "🤝",
+    },
+    {
+      ano: "2025",
+      titulo: "Evolução para o Fut7Pro",
+      descricao:
+        "O racha passou a contar com rankings, partidas e registros digitais. Mais organização, mais evolução.",
+      conquista: "💻",
     },
   ],
   curiosidades: [
