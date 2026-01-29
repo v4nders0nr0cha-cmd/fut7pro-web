@@ -13,8 +13,20 @@ import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { DEFAULT_NOSSA_HISTORIA } from "@/utils/schemas/nossaHistoria.schema";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
+const DEFAULT_RACHA_NAME = "seu racha";
+const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
+const DESCRICAO_TEMPLATE =
+  "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
+
+function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
+  return DESCRICAO_TEMPLATE.replace("{nomeDoRacha}", nomeDoRacha).replace(
+    "{nomePresidente}",
+    nomePresidente
+  );
+}
 
 export default function NossaHistoriaPage() {
   const { tenantSlug } = useRacha();
@@ -37,7 +49,21 @@ export default function NossaHistoriaPage() {
   });
   const data = about || {};
 
-  const marcos = data.marcos || [];
+  const presidenteNome = useMemo(() => {
+    const presidente = racha?.admins?.find((admin) => admin.role === "presidente");
+    return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
+  }, [racha?.admins]);
+  const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
+  const descricaoPadrao = buildDescricaoPadrao(rachaNome, presidenteNome);
+  const descricaoFonte = data.descricao?.trim();
+  const descricao =
+    !descricaoFonte || descricaoFonte === DEFAULT_NOSSA_HISTORIA.descricao
+      ? descricaoPadrao
+      : descricaoFonte;
+  const titulo = data.titulo?.trim() || "Nossa História";
+
+  const marcos =
+    data.marcos && data.marcos.length > 0 ? data.marcos : DEFAULT_NOSSA_HISTORIA.marcos || [];
   const curiosidades = data.curiosidades || [];
   const depoimentos = data.depoimentos || [];
   const categoriasFotos = data.categoriasFotos || [];
@@ -168,11 +194,8 @@ export default function NossaHistoriaPage() {
       </Head>
       <main className="w-full flex flex-col gap-10 pt-20">
         <section className="w-full max-w-5xl mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Nossa Historia</h1>
-          <p className="text-white text-base md:text-lg mb-4">
-            {data.descricao ||
-              "Conte sua origem, missao e marcos do racha. Edite no painel para personalizar por tenant."}
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">{titulo}</h1>
+          <p className="text-white text-base md:text-lg mb-4">{descricao}</p>
         </section>
 
         <section className="w-full max-w-5xl mx-auto px-4 flex flex-wrap gap-4 mb-2">
@@ -204,7 +227,7 @@ export default function NossaHistoriaPage() {
                   className="relative flex flex-col md:flex-row items-start md:items-center gap-1 md:gap-4 group"
                 >
                   <div className="absolute -left-9 md:-left-11 bg-brand text-black rounded-full w-8 h-8 flex items-center justify-center font-bold text-lg shadow-md border-4 border-black">
-                    {marco.ano?.substring(2)}
+                    {/^\d{4}$/.test(marco.ano) ? marco.ano.substring(2) : marco.ano}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { CheckCircle2, AlertTriangle, Plus, ArrowUp, ArrowDown, ExternalLink } from "lucide-react";
 import { useAboutAdmin } from "@/hooks/useAbout";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { DEFAULT_NOSSA_HISTORIA, nossaHistoriaSchema } from "@/utils/schemas/nossaHistoria.schema";
 import type {
   NossaHistoriaData,
@@ -34,6 +35,10 @@ const buttonGhost =
 
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const DEFAULT_RACHA_NAME = "seu racha";
+const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
+const DESCRICAO_TEMPLATE =
+  "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
 
 function sanitizeText(value?: string) {
   if (!value) return "";
@@ -77,15 +82,11 @@ function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
   return next;
 }
 
-function hasBase64Payload(value: string) {
-  return /data:image\/[a-zA-Z]+;base64,/i.test(value) || value.length > 150000;
-}
-
-function maskBase64(value: string) {
-  return value.replace(/data:image\/[a-zA-Z]+;base64,[A-Za-z0-9+/=]+/g, (match) => {
-    const prefix = match.slice(0, 40);
-    return `${prefix}...[conteudo oculto]`;
-  });
+function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
+  return DESCRICAO_TEMPLATE.replace("{nomeDoRacha}", nomeDoRacha).replace(
+    "{nomePresidente}",
+    nomePresidente
+  );
 }
 
 type FeedbackModalProps = {
@@ -259,12 +260,9 @@ function ImageField({ label, value, onChange, disabled, onUpload }: ImageFieldPr
 
 export default function NossaHistoriaEditor() {
   const { about, update, isLoading } = useAboutAdmin();
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
+  const { racha, isLoading: isLoadingRacha } = useRachaPublic(publicSlug);
   const [formData, setFormData] = useState<NossaHistoriaData>(DEFAULT_NOSSA_HISTORIA);
-  const [isAdvanced, setIsAdvanced] = useState(false);
-  const [jsonValue, setJsonValue] = useState("");
-  const [jsonError, setJsonError] = useState<string | null>(null);
-  const [showFullJson, setShowFullJson] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
   const [errorOpen, setErrorOpen] = useState(false);
@@ -272,6 +270,19 @@ export default function NossaHistoriaEditor() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const publicUrl = useMemo(() => publicHref("/sobre-nos/nossa-historia"), [publicHref]);
+  const presidenteNome = useMemo(() => {
+    const presidente = racha?.admins?.find((admin) => admin.role === "presidente");
+    return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
+  }, [racha?.admins]);
+  const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
+  const defaultContent = useMemo(
+    () => ({
+      ...DEFAULT_NOSSA_HISTORIA,
+      titulo: "Nossa História",
+      descricao: buildDescricaoPadrao(rachaNome, presidenteNome),
+    }),
+    [rachaNome, presidenteNome]
+  );
 
   const uploadImage = useCallback(async (file: File) => {
     const formData = new FormData();
@@ -285,99 +296,125 @@ export default function NossaHistoriaEditor() {
     return data?.url || data?.path || data?.publicUrl || null;
   }, []);
 
-  const normalizeFromAbout = useCallback((input?: AboutData | null) => {
-    const source = {
-      titulo: input?.titulo ?? "",
-      descricao: input?.descricao ?? "",
-      marcos: (input?.marcos ?? []).map((item) => ({
-        ano: item.ano ?? "",
-        titulo: item.titulo ?? "",
-        descricao: item.descricao ?? "",
-        conquista: item.conquista ?? "",
-      })),
-      curiosidades: (input?.curiosidades ?? []).map((item) => ({
-        titulo: item.titulo ?? "",
-        texto: item.texto ?? "",
-        icone: item.icone ?? "",
-        curtidas: item.curtidas,
-      })),
-      depoimentos: (input?.depoimentos ?? []).map((item) => ({
-        nome: item.nome ?? "",
-        cargo: item.cargo ?? "",
-        texto: item.texto ?? "",
-        foto: item.foto ?? "",
-        destaque: item.destaque ?? false,
-      })),
-      categoriasFotos: (input?.categoriasFotos ?? []).map((cat) => ({
-        nome: cat.nome ?? "",
-        fotos: (cat.fotos ?? []).map((foto) => ({
-          src: foto.src ?? "",
-          alt: foto.alt ?? "",
+  const normalizeFromAbout = useCallback(
+    (input?: AboutData | null, fallback?: NossaHistoriaData) => {
+      const base = fallback ?? DEFAULT_NOSSA_HISTORIA;
+      const source = {
+        titulo: input?.titulo ?? "",
+        descricao: input?.descricao ?? "",
+        marcos: (input?.marcos ?? []).map((item) => ({
+          ano: item.ano ?? "",
+          titulo: item.titulo ?? "",
+          descricao: item.descricao ?? "",
+          conquista: item.conquista ?? "",
         })),
-      })),
-      videos: (input?.videos ?? []).map((video) => ({
-        titulo: video.titulo ?? "",
-        url: video.url ?? "",
-      })),
-      camposHistoricos: input?.camposHistoricos?.length
-        ? [
-            {
-              nome: input.camposHistoricos[0]?.nome ?? "",
-              endereco: input.camposHistoricos[0]?.endereco ?? "",
-              mapa: input.camposHistoricos[0]?.mapa ?? "",
-              descricao: input.camposHistoricos[0]?.descricao ?? "",
-            },
-          ]
-        : [],
-      campoAtual: undefined,
-      membrosAntigos: (input?.membrosAntigos ?? []).map((membro) => ({
-        nome: membro.nome ?? "",
-        status: membro.status ?? "",
-        desde: membro.desde !== undefined && membro.desde !== null ? String(membro.desde) : "",
-        foto: membro.foto ?? "",
-      })),
-      campeoesHistoricos: (input?.campeoesHistoricos ?? []).map((item) => ({
-        nome: item.nome ?? "",
-        slug: item.slug ?? "",
-        pontos: item.pontos ?? 0,
-        posicao: item.posicao ?? "",
-        foto: item.foto ?? "",
-      })),
-      diretoria: (input?.diretoria ?? DEFAULT_NOSSA_HISTORIA.diretoria ?? []).map((item) => ({
-        cargo: item.cargo ?? "",
-        nome: item.nome ?? "",
-        foto: item.foto ?? "",
-      })),
-    };
-    const parsed = nossaHistoriaSchema.safeParse(source);
-    if (!parsed.success) {
-      return { ...DEFAULT_NOSSA_HISTORIA } as NossaHistoriaData;
+        curiosidades: (input?.curiosidades ?? []).map((item) => ({
+          titulo: item.titulo ?? "",
+          texto: item.texto ?? "",
+          icone: item.icone ?? "",
+          curtidas: item.curtidas,
+        })),
+        depoimentos: (input?.depoimentos ?? []).map((item) => ({
+          nome: item.nome ?? "",
+          cargo: item.cargo ?? "",
+          texto: item.texto ?? "",
+          foto: item.foto ?? "",
+          destaque: item.destaque ?? false,
+        })),
+        categoriasFotos: (input?.categoriasFotos ?? []).map((cat) => ({
+          nome: cat.nome ?? "",
+          fotos: (cat.fotos ?? []).map((foto) => ({
+            src: foto.src ?? "",
+            alt: foto.alt ?? "",
+          })),
+        })),
+        videos: (input?.videos ?? []).map((video) => ({
+          titulo: video.titulo ?? "",
+          url: video.url ?? "",
+        })),
+        camposHistoricos: input?.camposHistoricos?.length
+          ? [
+              {
+                nome: input.camposHistoricos[0]?.nome ?? "",
+                endereco: input.camposHistoricos[0]?.endereco ?? "",
+                mapa: input.camposHistoricos[0]?.mapa ?? "",
+                descricao: input.camposHistoricos[0]?.descricao ?? "",
+              },
+            ]
+          : [],
+        campoAtual: undefined,
+        membrosAntigos: (input?.membrosAntigos ?? []).map((membro) => ({
+          nome: membro.nome ?? "",
+          status: membro.status ?? "",
+          desde: membro.desde !== undefined && membro.desde !== null ? String(membro.desde) : "",
+          foto: membro.foto ?? "",
+        })),
+        campeoesHistoricos: (input?.campeoesHistoricos ?? []).map((item) => ({
+          nome: item.nome ?? "",
+          slug: item.slug ?? "",
+          pontos: item.pontos ?? 0,
+          posicao: item.posicao ?? "",
+          foto: item.foto ?? "",
+        })),
+        diretoria: (input?.diretoria ?? base.diretoria ?? []).map((item) => ({
+          cargo: item.cargo ?? "",
+          nome: item.nome ?? "",
+          foto: item.foto ?? "",
+        })),
+      };
+      const parsed = nossaHistoriaSchema.safeParse(source);
+      if (!parsed.success) {
+        return { ...base } as NossaHistoriaData;
+      }
+      const parsedData = parsed.data as NossaHistoriaData;
+      const resolved: NossaHistoriaData = {
+        ...base,
+        ...parsedData,
+      };
+      if (!parsedData.titulo?.trim()) {
+        resolved.titulo = base.titulo;
+      }
+      if (!parsedData.descricao?.trim()) {
+        resolved.descricao = base.descricao;
+      }
+      if (parsedData.descricao?.trim() === DEFAULT_NOSSA_HISTORIA.descricao) {
+        resolved.descricao = base.descricao;
+      }
+      if (!parsedData.marcos?.length) {
+        resolved.marcos = base.marcos;
+      }
+      if (!parsedData.curiosidades?.length) {
+        resolved.curiosidades = base.curiosidades;
+      }
+      if (!parsedData.depoimentos?.length) {
+        resolved.depoimentos = base.depoimentos;
+      }
+      if (!parsedData.categoriasFotos?.length) {
+        resolved.categoriasFotos = base.categoriasFotos;
+      }
+      if (!parsedData.videos?.length) {
+        resolved.videos = base.videos;
+      }
+      resolved.diretoria =
+        parsedData.diretoria && parsedData.diretoria.length ? parsedData.diretoria : base.diretoria;
+      return resolved;
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (isInitialized) return;
+    if (about) {
+      const normalized = normalizeFromAbout(about, defaultContent);
+      setFormData(normalized);
+      setIsInitialized(true);
+      return;
     }
-    return {
-      ...DEFAULT_NOSSA_HISTORIA,
-      ...parsed.data,
-      diretoria:
-        parsed.data.diretoria && parsed.data.diretoria.length
-          ? parsed.data.diretoria
-          : DEFAULT_NOSSA_HISTORIA.diretoria,
-    } as NossaHistoriaData;
-  }, []);
-
-  useEffect(() => {
-    if (isInitialized || !about) return;
-    const normalized = normalizeFromAbout(about);
-    setFormData(normalized);
-    setJsonValue(JSON.stringify(normalized, null, 2));
-    setIsInitialized(true);
-  }, [about, isInitialized, normalizeFromAbout]);
-
-  useEffect(() => {
-    if (!isAdvanced) return;
-    const nextJson = JSON.stringify(formData, null, 2);
-    setJsonValue(nextJson);
-    setJsonError(null);
-    setShowFullJson(!hasBase64Payload(nextJson));
-  }, [formData, isAdvanced]);
+    if (!isLoading && !isLoadingRacha) {
+      setFormData(defaultContent);
+      setIsInitialized(true);
+    }
+  }, [about, defaultContent, isInitialized, isLoading, isLoadingRacha, normalizeFromAbout]);
 
   const setField = <K extends keyof NossaHistoriaData>(key: K, value: NossaHistoriaData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -529,35 +566,6 @@ export default function NossaHistoriaEditor() {
     }
   };
 
-  const handleValidateJson = () => {
-    try {
-      const parsedRaw = JSON.parse(jsonValue) as NossaHistoriaData;
-      const parsed = nossaHistoriaSchema.safeParse(parsedRaw);
-      if (!parsed.success) {
-        setJsonError(parsed.error.errors.map((err) => err.message).join(" | "));
-        return;
-      }
-      setJsonError(null);
-    } catch (err) {
-      setJsonError(err instanceof Error ? err.message : "JSON invalido.");
-    }
-  };
-
-  const handleApplyJson = () => {
-    try {
-      const parsedRaw = JSON.parse(jsonValue) as NossaHistoriaData;
-      const parsed = nossaHistoriaSchema.safeParse(parsedRaw);
-      if (!parsed.success) {
-        setJsonError(parsed.error.errors.map((err) => err.message).join(" | "));
-        return;
-      }
-      setFormData({ ...DEFAULT_NOSSA_HISTORIA, ...parsed.data } as NossaHistoriaData);
-      setJsonError(null);
-    } catch (err) {
-      setJsonError(err instanceof Error ? err.message : "JSON invalido.");
-    }
-  };
-
   const campoHistorico = formData.camposHistoricos?.[0] ?? {
     nome: "",
     endereco: "",
@@ -610,282 +618,524 @@ export default function NossaHistoriaEditor() {
         <h1 className="text-2xl md:text-3xl font-bold text-white text-center">
           Nossa Historia (pagina publica)
         </h1>
-        <div className="flex items-center justify-center gap-2">
-          <button
-            type="button"
-            className={`${buttonSecondary} ${!isAdvanced ? "bg-brand text-black" : ""}`}
-            onClick={() => setIsAdvanced(false)}
-          >
-            Editor visual
-          </button>
-          <button
-            type="button"
-            className={`${buttonSecondary} ${isAdvanced ? "bg-brand text-black" : ""}`}
-            onClick={() => setIsAdvanced(true)}
-          >
-            Modo avancado (JSON)
-          </button>
-        </div>
       </div>
 
-      {!isAdvanced ? (
-        <div className="flex flex-col gap-8">
-          <section className={sectionClass}>
-            <h2 className="text-xl font-bold text-brand">Cabecalho</h2>
-            <div className="grid gap-4">
-              <div>
-                <label className={labelClass}>Titulo</label>
-                <input
-                  className={inputClass}
-                  value={formData.titulo || ""}
-                  onChange={(event) => setField("titulo", event.target.value)}
-                  placeholder="Ex: Nossa Historia"
-                />
-              </div>
-              <div>
-                <label className={labelClass}>Descricao</label>
-                <textarea
-                  className={textareaClass}
-                  rows={4}
-                  value={formData.descricao || ""}
-                  onChange={(event) => setField("descricao", event.target.value)}
-                  placeholder="Conte a origem e os valores do racha."
-                />
-                <div className="text-xs text-gray-400 mt-1">
-                  {formData.descricao?.length || 0} caracteres
-                </div>
+      <div className="flex flex-col gap-8">
+        <section className={sectionClass}>
+          <h2 className="text-xl font-bold text-brand">Cabecalho</h2>
+          <div className="grid gap-4">
+            <div>
+              <label className={labelClass}>Titulo</label>
+              <input
+                className={inputClass}
+                value={formData.titulo || ""}
+                onChange={(event) => setField("titulo", event.target.value)}
+                placeholder="Ex: Nossa Historia"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Descricao</label>
+              <textarea
+                className={textareaClass}
+                rows={4}
+                value={formData.descricao || ""}
+                onChange={(event) => setField("descricao", event.target.value)}
+                placeholder="Conte a origem e os valores do racha."
+              />
+              <div className="text-xs text-gray-400 mt-1">
+                {formData.descricao?.length || 0} caracteres
               </div>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Linha do Tempo</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("marcos", [
-                    ...(formData.marcos ?? []),
-                    { ano: "", titulo: "", descricao: "", conquista: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar marco
-              </button>
-            </div>
-            <div className="flex flex-col gap-4">
-              {(formData.marcos ?? []).map((marco, idx) => (
-                <div key={`marco-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Marco #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() => setField("marcos", moveItem(formData.marcos ?? [], idx, -1))}
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() => setField("marcos", moveItem(formData.marcos ?? [], idx, 1))}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "marcos",
-                            (formData.marcos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Ano</label>
-                      <input
-                        className={inputClass}
-                        value={marco.ano}
-                        onChange={(event) => updateMarco(idx, { ano: event.target.value })}
-                        placeholder="2024"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Titulo</label>
-                      <input
-                        className={inputClass}
-                        value={marco.titulo}
-                        onChange={(event) => updateMarco(idx, { titulo: event.target.value })}
-                        placeholder="Fundacao do racha"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Icone/Conquista</label>
-                      <input
-                        className={inputClass}
-                        value={marco.conquista || ""}
-                        onChange={(event) => updateMarco(idx, { conquista: event.target.value })}
-                        placeholder="🏆"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Descricao</label>
-                      <textarea
-                        className={textareaClass}
-                        rows={2}
-                        value={marco.descricao}
-                        onChange={(event) => updateMarco(idx, { descricao: event.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
-                    <span className="text-brand font-semibold">{marco.ano}</span> · {marco.titulo}
-                    {marco.conquista ? ` ${marco.conquista}` : ""} — {marco.descricao}
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Linha do Tempo</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("marcos", [
+                  ...(formData.marcos ?? []),
+                  { ano: "", titulo: "", descricao: "", conquista: "" },
+                ])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar marco
+            </button>
+          </div>
+          <div className="flex flex-col gap-4">
+            {(formData.marcos ?? []).map((marco, idx) => (
+              <div key={`marco-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-300">Marco #{idx + 1}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() => setField("marcos", moveItem(formData.marcos ?? [], idx, -1))}
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() => setField("marcos", moveItem(formData.marcos ?? [], idx, 1))}
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-400 hover:text-red-300"
+                      onClick={() =>
+                        setField(
+                          "marcos",
+                          (formData.marcos ?? []).filter((_, i) => i !== idx)
+                        )
+                      }
+                    >
+                      Remover
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Curiosidades</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("curiosidades", [
-                    ...(formData.curiosidades ?? []),
-                    { titulo: "", texto: "", icone: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar curiosidade
-              </button>
-            </div>
-            <div className="grid gap-4">
-              {(formData.curiosidades ?? []).map((curiosidade, idx) => (
-                <div key={`curiosidade-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Curiosidade #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField("curiosidades", moveItem(formData.curiosidades ?? [], idx, -1))
-                        }
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField("curiosidades", moveItem(formData.curiosidades ?? [], idx, 1))
-                        }
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "curiosidades",
-                            (formData.curiosidades ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
+                <div className="grid gap-3 mt-3 md:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Ano</label>
+                    <input
+                      className={inputClass}
+                      value={marco.ano}
+                      onChange={(event) => updateMarco(idx, { ano: event.target.value })}
+                      placeholder="2024"
+                    />
                   </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Titulo</label>
-                      <input
-                        className={inputClass}
-                        value={curiosidade.titulo || ""}
-                        onChange={(event) => updateCuriosidade(idx, { titulo: event.target.value })}
-                        placeholder="Curiosidade"
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>Emoji</label>
-                      <input
-                        className={inputClass}
-                        value={curiosidade.icone || ""}
-                        onChange={(event) => updateCuriosidade(idx, { icone: event.target.value })}
-                        placeholder="⚽"
-                      />
-                    </div>
+                  <div>
+                    <label className={labelClass}>Titulo</label>
+                    <input
+                      className={inputClass}
+                      value={marco.titulo}
+                      onChange={(event) => updateMarco(idx, { titulo: event.target.value })}
+                      placeholder="Fundacao do racha"
+                    />
                   </div>
-                  <div className="mt-3">
-                    <label className={labelClass}>Texto</label>
+                </div>
+                <div className="grid gap-3 mt-3 md:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Icone/Conquista</label>
+                    <input
+                      className={inputClass}
+                      value={marco.conquista || ""}
+                      onChange={(event) => updateMarco(idx, { conquista: event.target.value })}
+                      placeholder="🏆"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Descricao</label>
                     <textarea
                       className={textareaClass}
                       rows={2}
-                      value={curiosidade.texto}
-                      onChange={(event) => updateCuriosidade(idx, { texto: event.target.value })}
+                      value={marco.descricao}
+                      onChange={(event) => updateMarco(idx, { descricao: event.target.value })}
                     />
                   </div>
-                  <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
-                    {curiosidade.icone ? `${curiosidade.icone} ` : ""}
-                    {curiosidade.texto}
+                </div>
+                <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
+                  <span className="text-brand font-semibold">{marco.ano}</span> · {marco.titulo}
+                  {marco.conquista ? ` ${marco.conquista}` : ""} — {marco.descricao}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Curiosidades</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("curiosidades", [
+                  ...(formData.curiosidades ?? []),
+                  { titulo: "", texto: "", icone: "" },
+                ])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar curiosidade
+            </button>
+          </div>
+          <div className="grid gap-4">
+            {(formData.curiosidades ?? []).map((curiosidade, idx) => (
+              <div key={`curiosidade-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-300">Curiosidade #{idx + 1}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField("curiosidades", moveItem(formData.curiosidades ?? [], idx, -1))
+                      }
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField("curiosidades", moveItem(formData.curiosidades ?? [], idx, 1))
+                      }
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-400 hover:text-red-300"
+                      onClick={() =>
+                        setField(
+                          "curiosidades",
+                          (formData.curiosidades ?? []).filter((_, i) => i !== idx)
+                        )
+                      }
+                    >
+                      Remover
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="grid gap-3 mt-3 md:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Titulo</label>
+                    <input
+                      className={inputClass}
+                      value={curiosidade.titulo || ""}
+                      onChange={(event) => updateCuriosidade(idx, { titulo: event.target.value })}
+                      placeholder="Curiosidade"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Emoji</label>
+                    <input
+                      className={inputClass}
+                      value={curiosidade.icone || ""}
+                      onChange={(event) => updateCuriosidade(idx, { icone: event.target.value })}
+                      placeholder="⚽"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className={labelClass}>Texto</label>
+                  <textarea
+                    className={textareaClass}
+                    rows={2}
+                    value={curiosidade.texto}
+                    onChange={(event) => updateCuriosidade(idx, { texto: event.target.value })}
+                  />
+                </div>
+                <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
+                  {curiosidade.icone ? `${curiosidade.icone} ` : ""}
+                  {curiosidade.texto}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Depoimentos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("depoimentos", [
-                    ...(formData.depoimentos ?? []),
-                    { nome: "", cargo: "", texto: "", foto: "", destaque: false },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar depoimento
-              </button>
-            </div>
-            <div className="grid gap-4">
-              {(formData.depoimentos ?? []).map((dep, idx) => (
-                <div key={`depoimento-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Depoimentos</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("depoimentos", [
+                  ...(formData.depoimentos ?? []),
+                  { nome: "", cargo: "", texto: "", foto: "", destaque: false },
+                ])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar depoimento
+            </button>
+          </div>
+          <div className="grid gap-4">
+            {(formData.depoimentos ?? []).map((dep, idx) => (
+              <div key={`depoimento-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-300">Depoimento #{idx + 1}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField("depoimentos", moveItem(formData.depoimentos ?? [], idx, -1))
+                      }
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField("depoimentos", moveItem(formData.depoimentos ?? [], idx, 1))
+                      }
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-400 hover:text-red-300"
+                      onClick={() =>
+                        setField(
+                          "depoimentos",
+                          (formData.depoimentos ?? []).filter((_, i) => i !== idx)
+                        )
+                      }
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+                <div className="grid gap-3 mt-3 md:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Nome</label>
+                    <input
+                      className={inputClass}
+                      value={dep.nome}
+                      onChange={(event) => updateDepoimento(idx, { nome: event.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Cargo</label>
+                    <input
+                      className={inputClass}
+                      value={dep.cargo || ""}
+                      onChange={(event) => updateDepoimento(idx, { cargo: event.target.value })}
+                    />
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className={labelClass}>Depoimento</label>
+                  <textarea
+                    className={textareaClass}
+                    rows={3}
+                    value={dep.texto}
+                    onChange={(event) => updateDepoimento(idx, { texto: event.target.value })}
+                  />
+                </div>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <ImageField
+                    label="Foto"
+                    value={dep.foto}
+                    onChange={(value) => updateDepoimento(idx, { foto: value })}
+                    onUpload={uploadImage}
+                  />
+                  <div className="flex items-center gap-2 mt-6">
+                    <input
+                      id={`destaque-${idx}`}
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={Boolean(dep.destaque)}
+                      onChange={(event) =>
+                        updateDepoimento(idx, { destaque: event.target.checked })
+                      }
+                    />
+                    <label htmlFor={`destaque-${idx}`} className="text-sm text-gray-200">
+                      Destaque no site
+                    </label>
+                  </div>
+                </div>
+                <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
+                  {dep.texto}
+                  <div className="text-brand-soft mt-2 font-semibold">{dep.nome}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Galeria de Fotos</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("categoriasFotos", [
+                  ...(formData.categoriasFotos ?? []),
+                  { nome: "", fotos: [] },
+                ])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar categoria
+            </button>
+          </div>
+          <div className="flex flex-col gap-4">
+            {(formData.categoriasFotos ?? []).map((categoria, idx) => (
+              <div key={`categoria-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-gray-300">Categoria #{idx + 1}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField(
+                          "categoriasFotos",
+                          moveItem(formData.categoriasFotos ?? [], idx, -1)
+                        )
+                      }
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className={buttonGhost}
+                      onClick={() =>
+                        setField(
+                          "categoriasFotos",
+                          moveItem(formData.categoriasFotos ?? [], idx, 1)
+                        )
+                      }
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs text-red-400 hover:text-red-300"
+                      onClick={() =>
+                        setField(
+                          "categoriasFotos",
+                          (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
+                        )
+                      }
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3">
+                  <label className={labelClass}>Nome da categoria</label>
+                  <input
+                    className={inputClass}
+                    value={categoria.nome || ""}
+                    onChange={(event) => updateCategoriaFotos(idx, { nome: event.target.value })}
+                  />
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-sm text-gray-300">Fotos</span>
+                  <button
+                    type="button"
+                    className={buttonSecondary}
+                    onClick={() =>
+                      updateCategoriaFotos(idx, {
+                        fotos: [...(categoria.fotos ?? []), { src: "", alt: "" }],
+                      })
+                    }
+                  >
+                    <Plus size={16} className="inline" /> Adicionar foto
+                  </button>
+                </div>
+                <div className="mt-3 grid gap-4">
+                  {(categoria.fotos ?? []).map((foto, fotoIdx) => (
+                    <div
+                      key={`foto-${idx}-${fotoIdx}`}
+                      className="rounded-lg border border-[#2a2d36] p-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs text-gray-400">Foto #{fotoIdx + 1}</span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className={buttonGhost}
+                            onClick={() =>
+                              updateCategoriaFotos(idx, {
+                                fotos: moveItem(categoria.fotos ?? [], fotoIdx, -1),
+                              })
+                            }
+                          >
+                            <ArrowUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className={buttonGhost}
+                            onClick={() =>
+                              updateCategoriaFotos(idx, {
+                                fotos: moveItem(categoria.fotos ?? [], fotoIdx, 1),
+                              })
+                            }
+                          >
+                            <ArrowDown size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            className="text-xs text-red-400 hover:text-red-300"
+                            onClick={() =>
+                              updateCategoriaFotos(idx, {
+                                fotos: (categoria.fotos ?? []).filter((_, i) => i !== fotoIdx),
+                              })
+                            }
+                          >
+                            Remover
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        <ImageField
+                          label="Imagem"
+                          value={foto.src}
+                          onChange={(value) => updateFoto(idx, fotoIdx, { src: value })}
+                          onUpload={uploadImage}
+                        />
+                        <div>
+                          <label className={labelClass}>Descricao curta</label>
+                          <input
+                            className={inputClass}
+                            value={foto.alt || ""}
+                            onChange={(event) =>
+                              updateFoto(idx, fotoIdx, { alt: event.target.value })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Videos Historicos</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("videos", [...(formData.videos ?? []), { titulo: "", url: "" }])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar video
+            </button>
+          </div>
+          <div className="grid gap-4">
+            {(formData.videos ?? []).map((video, idx) => {
+              const thumb = youtubeThumb(video.url || "");
+              return (
+                <div key={`video-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Depoimento #{idx + 1}</span>
+                    <span className="text-sm text-gray-300">Video #{idx + 1}</span>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         className={buttonGhost}
-                        onClick={() =>
-                          setField("depoimentos", moveItem(formData.depoimentos ?? [], idx, -1))
-                        }
+                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, -1))}
                       >
                         <ArrowUp size={14} />
                       </button>
                       <button
                         type="button"
                         className={buttonGhost}
-                        onClick={() =>
-                          setField("depoimentos", moveItem(formData.depoimentos ?? [], idx, 1))
-                        }
+                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, 1))}
                       >
                         <ArrowDown size={14} />
                       </button>
@@ -894,8 +1144,8 @@ export default function NossaHistoriaEditor() {
                         className="text-xs text-red-400 hover:text-red-300"
                         onClick={() =>
                           setField(
-                            "depoimentos",
-                            (formData.depoimentos ?? []).filter((_, i) => i !== idx)
+                            "videos",
+                            (formData.videos ?? []).filter((_, i) => i !== idx)
                           )
                         }
                       >
@@ -905,413 +1155,110 @@ export default function NossaHistoriaEditor() {
                   </div>
                   <div className="grid gap-3 mt-3 md:grid-cols-2">
                     <div>
-                      <label className={labelClass}>Nome</label>
+                      <label className={labelClass}>Titulo</label>
                       <input
                         className={inputClass}
-                        value={dep.nome}
-                        onChange={(event) => updateDepoimento(idx, { nome: event.target.value })}
+                        value={video.titulo || ""}
+                        onChange={(event) => updateVideo(idx, { titulo: event.target.value })}
                       />
                     </div>
                     <div>
-                      <label className={labelClass}>Cargo</label>
+                      <label className={labelClass}>URL do YouTube</label>
                       <input
                         className={inputClass}
-                        value={dep.cargo || ""}
-                        onChange={(event) => updateDepoimento(idx, { cargo: event.target.value })}
+                        value={video.url || ""}
+                        onChange={(event) => updateVideo(idx, { url: event.target.value })}
+                        placeholder="https://youtu.be/..."
                       />
                     </div>
                   </div>
-                  <div className="mt-3">
-                    <label className={labelClass}>Depoimento</label>
-                    <textarea
-                      className={textareaClass}
-                      rows={3}
-                      value={dep.texto}
-                      onChange={(event) => updateDepoimento(idx, { texto: event.target.value })}
-                    />
-                  </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <ImageField
-                      label="Foto"
-                      value={dep.foto}
-                      onChange={(value) => updateDepoimento(idx, { foto: value })}
-                      onUpload={uploadImage}
-                    />
-                    <div className="flex items-center gap-2 mt-6">
-                      <input
-                        id={`destaque-${idx}`}
-                        type="checkbox"
-                        className="h-4 w-4"
-                        checked={Boolean(dep.destaque)}
-                        onChange={(event) =>
-                          updateDepoimento(idx, { destaque: event.target.checked })
-                        }
+                  {thumb ? (
+                    <div className="mt-3 flex items-center gap-3 text-xs text-gray-300">
+                      <Image
+                        src={thumb}
+                        alt="Preview do video"
+                        width={120}
+                        height={68}
+                        className="rounded border border-[#2a2d36]"
                       />
-                      <label htmlFor={`destaque-${idx}`} className="text-sm text-gray-200">
-                        Destaque no site
-                      </label>
-                    </div>
-                  </div>
-                  <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
-                    {dep.texto}
-                    <div className="text-brand-soft mt-2 font-semibold">{dep.nome}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Galeria de Fotos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("categoriasFotos", [
-                    ...(formData.categoriasFotos ?? []),
-                    { nome: "", fotos: [] },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar categoria
-              </button>
-            </div>
-            <div className="flex flex-col gap-4">
-              {(formData.categoriasFotos ?? []).map((categoria, idx) => (
-                <div key={`categoria-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Categoria #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "categoriasFotos",
-                            moveItem(formData.categoriasFotos ?? [], idx, -1)
-                          )
-                        }
+                      <a
+                        className="flex items-center gap-1 text-brand hover:text-brand-soft"
+                        href={video.url}
+                        target="_blank"
+                        rel="noreferrer"
                       >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "categoriasFotos",
-                            moveItem(formData.categoriasFotos ?? [], idx, 1)
-                          )
-                        }
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "categoriasFotos",
-                            (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
+                        Abrir video <ExternalLink size={12} />
+                      </a>
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <label className={labelClass}>Nome da categoria</label>
-                    <input
-                      className={inputClass}
-                      value={categoria.nome || ""}
-                      onChange={(event) => updateCategoriaFotos(idx, { nome: event.target.value })}
-                    />
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm text-gray-300">Fotos</span>
-                    <button
-                      type="button"
-                      className={buttonSecondary}
-                      onClick={() =>
-                        updateCategoriaFotos(idx, {
-                          fotos: [...(categoria.fotos ?? []), { src: "", alt: "" }],
-                        })
-                      }
-                    >
-                      <Plus size={16} className="inline" /> Adicionar foto
-                    </button>
-                  </div>
-                  <div className="mt-3 grid gap-4">
-                    {(categoria.fotos ?? []).map((foto, fotoIdx) => (
-                      <div
-                        key={`foto-${idx}-${fotoIdx}`}
-                        className="rounded-lg border border-[#2a2d36] p-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-gray-400">Foto #{fotoIdx + 1}</span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              className={buttonGhost}
-                              onClick={() =>
-                                updateCategoriaFotos(idx, {
-                                  fotos: moveItem(categoria.fotos ?? [], fotoIdx, -1),
-                                })
-                              }
-                            >
-                              <ArrowUp size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className={buttonGhost}
-                              onClick={() =>
-                                updateCategoriaFotos(idx, {
-                                  fotos: moveItem(categoria.fotos ?? [], fotoIdx, 1),
-                                })
-                              }
-                            >
-                              <ArrowDown size={14} />
-                            </button>
-                            <button
-                              type="button"
-                              className="text-xs text-red-400 hover:text-red-300"
-                              onClick={() =>
-                                updateCategoriaFotos(idx, {
-                                  fotos: (categoria.fotos ?? []).filter((_, i) => i !== fotoIdx),
-                                })
-                              }
-                            >
-                              Remover
-                            </button>
-                          </div>
-                        </div>
-                        <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          <ImageField
-                            label="Imagem"
-                            value={foto.src}
-                            onChange={(value) => updateFoto(idx, fotoIdx, { src: value })}
-                            onUpload={uploadImage}
-                          />
-                          <div>
-                            <label className={labelClass}>Descricao curta</label>
-                            <input
-                              className={inputClass}
-                              value={foto.alt || ""}
-                              onChange={(event) =>
-                                updateFoto(idx, fotoIdx, { alt: event.target.value })
-                              }
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-brand">Videos Historicos</h2>
-              <button
-                type="button"
-                className={buttonSecondary}
-                onClick={() =>
-                  setField("videos", [...(formData.videos ?? []), { titulo: "", url: "" }])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar video
-              </button>
-            </div>
-            <div className="grid gap-4">
-              {(formData.videos ?? []).map((video, idx) => {
-                const thumb = youtubeThumb(video.url || "");
-                return (
-                  <div key={`video-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-gray-300">Video #{idx + 1}</span>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className={buttonGhost}
-                          onClick={() =>
-                            setField("videos", moveItem(formData.videos ?? [], idx, -1))
-                          }
-                        >
-                          <ArrowUp size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className={buttonGhost}
-                          onClick={() =>
-                            setField("videos", moveItem(formData.videos ?? [], idx, 1))
-                          }
-                        >
-                          <ArrowDown size={14} />
-                        </button>
-                        <button
-                          type="button"
-                          className="text-xs text-red-400 hover:text-red-300"
-                          onClick={() =>
-                            setField(
-                              "videos",
-                              (formData.videos ?? []).filter((_, i) => i !== idx)
-                            )
-                          }
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    </div>
-                    <div className="grid gap-3 mt-3 md:grid-cols-2">
-                      <div>
-                        <label className={labelClass}>Titulo</label>
-                        <input
-                          className={inputClass}
-                          value={video.titulo || ""}
-                          onChange={(event) => updateVideo(idx, { titulo: event.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClass}>URL do YouTube</label>
-                        <input
-                          className={inputClass}
-                          value={video.url || ""}
-                          onChange={(event) => updateVideo(idx, { url: event.target.value })}
-                          placeholder="https://youtu.be/..."
-                        />
-                      </div>
-                    </div>
-                    {thumb ? (
-                      <div className="mt-3 flex items-center gap-3 text-xs text-gray-300">
-                        <Image
-                          src={thumb}
-                          alt="Preview do video"
-                          width={120}
-                          height={68}
-                          className="rounded border border-[#2a2d36]"
-                        />
-                        <a
-                          className="flex items-center gap-1 text-brand hover:text-brand-soft"
-                          href={video.url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir video <ExternalLink size={12} />
-                        </a>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <h2 className="text-xl font-bold text-brand">Onde Começou (Primeiro Campo)</h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  O campo atual é configurado no Rodape. Aqui voce informa apenas o primeiro campo
-                  do racha.
-                </p>
-              </div>
-            </div>
-            <div className="mt-4 rounded-xl border border-[#2a2d36] p-4">
-              <div className="grid gap-3 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Nome ou titulo do primeiro campo</label>
-                  <input
-                    className={inputClass}
-                    value={campoHistorico.nome || ""}
-                    onChange={(event) =>
-                      setField("camposHistoricos", [
-                        { ...campoHistorico, nome: event.target.value },
-                      ])
-                    }
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Endereco do campo (aparece abaixo do titulo)</label>
-                  <input
-                    className={inputClass}
-                    value={campoHistorico.endereco || ""}
-                    onChange={(event) =>
-                      setField("camposHistoricos", [
-                        { ...campoHistorico, endereco: event.target.value },
-                      ])
-                    }
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 mt-3 md:grid-cols-2">
-                <div>
-                  <label className={labelClass}>Link do Google Maps (iframe/preview)</label>
-                  <input
-                    className={inputClass}
-                    value={campoHistorico.mapa || ""}
-                    onChange={(event) =>
-                      setField("camposHistoricos", [
-                        { ...campoHistorico, mapa: event.target.value },
-                      ])
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section className={sectionClass}>
-            <h2 className="text-xl font-bold text-brand">Secoes automaticas</h2>
-            <div className="rounded-xl border border-[#2a2d36] bg-[#111318] p-4 text-sm text-gray-300">
-              As secoes abaixo sao preenchidas automaticamente pelo sistema e nao sao editaveis
-              aqui:
-              <ul className="list-disc pl-5 mt-2 text-gray-300">
-                <li>Membros Mais Antigos (top 5 do ranking de assiduidade - Todos os Anos)</li>
-                <li>Campeoes Historicos (top 5 pontuadores - Todas as Temporadas)</li>
-                <li>Presidencia e Diretoria (admins configurados em Administradores)</li>
-              </ul>
-            </div>
-          </section>
-        </div>
-      ) : (
-        <section className={sectionClass}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-brand">Editor JSON</h2>
-            <button
-              type="button"
-              className={buttonGhost}
-              onClick={() => setShowFullJson((prev) => !prev)}
-            >
-              {showFullJson ? "Ocultar base64" : "Mostrar JSON completo"}
-            </button>
-          </div>
-          <textarea
-            className={textareaClass}
-            rows={18}
-            value={showFullJson ? jsonValue : maskBase64(jsonValue)}
-            onChange={(event) => setJsonValue(event.target.value)}
-            readOnly={!showFullJson && hasBase64Payload(jsonValue)}
-          />
-          {!showFullJson && hasBase64Payload(jsonValue) ? (
-            <div className="text-xs text-gray-400">
-              Conteudo base64 oculto para performance. Ative \"Mostrar JSON completo\" para editar.
-            </div>
-          ) : null}
-          {jsonError ? <div className="text-xs text-red-400">{jsonError}</div> : null}
-          <div className="flex flex-wrap gap-3">
-            <button type="button" className={buttonSecondary} onClick={handleValidateJson}>
-              Validar JSON
-            </button>
-            <button type="button" className={buttonPrimary} onClick={handleApplyJson}>
-              Aplicar JSON
-            </button>
+              );
+            })}
           </div>
         </section>
-      )}
+
+        <section className={sectionClass}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-xl font-bold text-brand">Onde Começou (Primeiro Campo)</h2>
+              <p className="text-sm text-gray-400 mt-1">
+                O campo atual é configurado no Rodape. Aqui voce informa apenas o primeiro campo do
+                racha.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 rounded-xl border border-[#2a2d36] p-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Nome ou titulo do primeiro campo</label>
+                <input
+                  className={inputClass}
+                  value={campoHistorico.nome || ""}
+                  onChange={(event) =>
+                    setField("camposHistoricos", [{ ...campoHistorico, nome: event.target.value }])
+                  }
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Endereco do campo (aparece abaixo do titulo)</label>
+                <input
+                  className={inputClass}
+                  value={campoHistorico.endereco || ""}
+                  onChange={(event) =>
+                    setField("camposHistoricos", [
+                      { ...campoHistorico, endereco: event.target.value },
+                    ])
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid gap-3 mt-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Link do Google Maps (iframe/preview)</label>
+                <input
+                  className={inputClass}
+                  value={campoHistorico.mapa || ""}
+                  onChange={(event) =>
+                    setField("camposHistoricos", [{ ...campoHistorico, mapa: event.target.value }])
+                  }
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <h2 className="text-xl font-bold text-brand">Secoes automaticas</h2>
+          <div className="rounded-xl border border-[#2a2d36] bg-[#111318] p-4 text-sm text-gray-300">
+            As secoes abaixo sao preenchidas automaticamente pelo sistema e nao sao editaveis aqui:
+            <ul className="list-disc pl-5 mt-2 text-gray-300">
+              <li>Membros Mais Antigos (top 5 do ranking de assiduidade - Todos os Anos)</li>
+              <li>Campeoes Historicos (top 5 pontuadores - Todas as Temporadas)</li>
+              <li>Presidencia e Diretoria (admins configurados em Administradores)</li>
+            </ul>
+          </div>
+        </section>
+      </div>
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <button type="button" className={buttonPrimary} onClick={handleSave} disabled={saving}>

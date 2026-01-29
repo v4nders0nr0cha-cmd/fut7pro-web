@@ -122,15 +122,27 @@ export const nossaHistoriaSchema = z.object({
 export type NossaHistoriaSchema = z.infer<typeof nossaHistoriaSchema>;
 
 export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
-  titulo: "Nossa Historia",
+  titulo: "Nossa História",
   descricao:
-    "Conte a origem, missao e marcos do racha. Atualize os destaques e mantenha viva a historia.",
+    "O racha seu racha nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por o presidente do racha, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.",
   marcos: [
     {
-      ano: "2018",
-      titulo: "Fundacao do Racha",
-      descricao: "Os primeiros jogos e a base da nossa comunidade.",
+      ano: "Ano 1",
+      titulo: "Primeiros jogos",
+      descricao: "A resenha ganhou forma e virou rotina entre a galera.",
+      conquista: "⚽",
+    },
+    {
+      ano: "Ano 2",
+      titulo: "Primeiro torneio interno",
+      descricao: "Disputa saudável, amizade e muito espírito esportivo.",
       conquista: "🏆",
+    },
+    {
+      ano: "Ano 3",
+      titulo: "Tradição consolidada",
+      descricao: "O racha cresceu, ganhou identidade e ficou ainda mais unido.",
+      conquista: "🤝",
     },
   ],
   curiosidades: [
@@ -155,12 +167,7 @@ export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
   ],
   videos: [],
   camposHistoricos: [],
-  campoAtual: {
-    nome: "Campo Atual",
-    endereco: "",
-    mapa: "",
-    descricao: "",
-  },
+  campoAtual: undefined,
   membrosAntigos: [],
   campeoesHistoricos: [],
   diretoria: [
