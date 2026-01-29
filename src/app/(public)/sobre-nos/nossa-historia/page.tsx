@@ -20,6 +20,12 @@ const DEFAULT_RACHA_NAME = "seu racha";
 const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
 const DESCRICAO_TEMPLATE =
   "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
+const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
+
+function isLegacyMarcos(marcos?: { ano?: string }[] | null) {
+  if (!marcos || marcos.length === 0) return false;
+  return marcos.every((marco) => LEGACY_ANO_REGEX.test((marco.ano ?? "").trim()));
+}
 
 function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
   return DESCRICAO_TEMPLATE.replace("{nomeDoRacha}", nomeDoRacha).replace(
@@ -62,8 +68,9 @@ export default function NossaHistoriaPage() {
       : descricaoFonte;
   const titulo = data.titulo?.trim() || "Nossa História";
 
-  const marcos =
+  const rawMarcos =
     data.marcos && data.marcos.length > 0 ? data.marcos : DEFAULT_NOSSA_HISTORIA.marcos || [];
+  const marcos = isLegacyMarcos(rawMarcos) ? DEFAULT_NOSSA_HISTORIA.marcos || [] : rawMarcos;
   const curiosidades = data.curiosidades || [];
   const depoimentos = data.depoimentos || [];
   const categoriasFotos = data.categoriasFotos || [];
