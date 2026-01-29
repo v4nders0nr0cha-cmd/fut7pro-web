@@ -14,6 +14,7 @@ import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { DEFAULT_NOSSA_HISTORIA } from "@/utils/schemas/nossaHistoria.schema";
+import { buildMapsEmbedUrl } from "@/utils/maps";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_RACHA_NAME = "seu racha";
@@ -91,11 +92,19 @@ export default function NossaHistoriaPage() {
   const todosCampos = [
     ...camposHistoricos.map((campo) => ({
       ...campo,
+      mapaEmbed: buildMapsEmbedUrl(campo.mapa, campo.endereco || campo.nome),
       tipo: "Historico",
       cor: "text-brand-soft",
       tag: "text-xs text-neutral-400",
     })),
-    ...(campoAtual ? [campoAtual] : []),
+    ...(campoAtual
+      ? [
+          {
+            ...campoAtual,
+            mapaEmbed: buildMapsEmbedUrl(campoAtual.mapa, campoAtual.endereco || campoAtual.nome),
+          },
+        ]
+      : []),
   ];
   const rankingById = useMemo(() => {
     const map = new Map<string, (typeof rankingGeral)[number]>();
@@ -368,11 +377,12 @@ export default function NossaHistoriaPage() {
                     <div className="text-neutral-300 text-xs mb-2">Endereço: {campo.endereco}</div>
                   )}
                   <iframe
-                    src={campo.mapa}
+                    src={campo.mapaEmbed}
                     width="100%"
                     height="220"
                     loading="lazy"
                     className="rounded-xl mb-2 border-0"
+                    referrerPolicy="no-referrer-when-downgrade"
                     allowFullScreen
                   ></iframe>
                   <div className="text-white text-sm">{campo.descricao}</div>
