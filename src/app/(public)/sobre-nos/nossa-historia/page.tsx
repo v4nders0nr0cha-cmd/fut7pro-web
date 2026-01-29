@@ -9,12 +9,15 @@ import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { DEFAULT_NOSSA_HISTORIA } from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
+import type { PublicMatch } from "@/types/partida";
+import type { NossaHistoriaCuriosidade } from "@/types/paginasInstitucionais";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_RACHA_NAME = "seu racha";
@@ -22,6 +25,201 @@ const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
 const DESCRICAO_TEMPLATE =
   "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
+const GOLEADA_FALLBACK =
+  "Ainda não há partidas suficientes para calcular a maior goleada. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
+const INVICTO_FALLBACK =
+  "Ainda não há partidas suficientes para calcular a maior sequência invicta. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
+
+type MatchScore = { scoreA: number; scoreB: number };
+type MatchOutcome = "W" | "D" | "L";
+
+function resolveMatchScores(match: PublicMatch): MatchScore | null {
+  if (typeof match.scoreA !== "number" || typeof match.scoreB !== "number") {
+    return null;
+  }
+  return {
+    scoreA: match.scoreA,
+    scoreB: match.scoreB,
+  };
+}
+
+function parseMatchDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function resolveDurationMinutes(match: PublicMatch, fallback?: number | null) {
+  const candidate = match as Record<string, unknown>;
+  const possible = [
+    candidate.durationMin,
+    candidate.duracaoPartidaMin,
+    candidate.tempoMin,
+    candidate.tempo,
+    candidate.duration,
+  ];
+  for (const raw of possible) {
+    const value = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : undefined;
+    if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+      return Math.round(value);
+    }
+  }
+  if (typeof fallback === "number" && Number.isFinite(fallback) && fallback > 0) {
+    return Math.round(fallback);
+  }
+  return null;
+}
+
+function pluralize(value: number, singular: string, plural: string) {
+  return value === 1 ? singular : plural;
+}
+
+function buildCuriosidadesAutomaticas(
+  matches: PublicMatch[],
+  fallbackDuration?: number | null
+): NossaHistoriaCuriosidade[] {
+  let maiorGoleada: { match: PublicMatch; scoreA: number; scoreB: number; diff: number } | null =
+    null;
+
+  matches.forEach((match) => {
+    const scores = resolveMatchScores(match);
+    if (!scores) return;
+    const diff = Math.abs(scores.scoreA - scores.scoreB);
+    if (diff <= 0) return;
+    if (!maiorGoleada || diff > maiorGoleada.diff) {
+      maiorGoleada = { match, scoreA: scores.scoreA, scoreB: scores.scoreB, diff };
+    }
+  });
+
+  const goleadaTexto = (() => {
+    if (!maiorGoleada) return GOLEADA_FALLBACK;
+    const duracao = resolveDurationMinutes(maiorGoleada.match, fallbackDuration);
+    if (!duracao) return GOLEADA_FALLBACK;
+    const maior = Math.max(maiorGoleada.scoreA, maiorGoleada.scoreB);
+    const menor = Math.min(maiorGoleada.scoreA, maiorGoleada.scoreB);
+    const placar = `${maior} x ${menor}`;
+    return `A maior goleada registrada até hoje foi ${placar}, em uma partida de ${duracao} minutos.`;
+  })();
+
+  const resultadosPorJogador = new Map<
+    string,
+    { nome: string; resultados: Array<{ date: Date; outcome: MatchOutcome }> }
+  >();
+
+  matches.forEach((match) => {
+    const scores = resolveMatchScores(match);
+    if (!scores) return;
+    const matchDate = parseMatchDate(match.date);
+    if (!matchDate) return;
+    const teamAId = match.teamA?.id;
+    const teamBId = match.teamB?.id;
+    if (!teamAId || !teamBId) return;
+    const processed = new Set<string>();
+
+    match.presences.forEach((presence) => {
+      if (presence.status === "AUSENTE") return;
+      const athleteId = presence.athlete?.id || presence.athleteId;
+      if (!athleteId || processed.has(athleteId)) return;
+      const teamId = presence.teamId || presence.team?.id;
+      if (!teamId) return;
+
+      let outcome: MatchOutcome = "L";
+      if (scores.scoreA === scores.scoreB) {
+        outcome = "D";
+      } else if (teamId === teamAId) {
+        outcome = scores.scoreA > scores.scoreB ? "W" : "L";
+      } else if (teamId === teamBId) {
+        outcome = scores.scoreB > scores.scoreA ? "W" : "L";
+      } else {
+        return;
+      }
+
+      const nome =
+        presence.athlete?.name?.trim() || presence.athlete?.nickname?.trim() || "Jogador";
+      const entry = resultadosPorJogador.get(athleteId) ?? { nome, resultados: [] };
+      entry.nome = nome;
+      entry.resultados.push({ date: matchDate, outcome });
+      resultadosPorJogador.set(athleteId, entry);
+      processed.add(athleteId);
+    });
+  });
+
+  let melhorInvicto: { nome: string; streak: number; wins: number; draws: number } | null = null;
+
+  resultadosPorJogador.forEach((entry) => {
+    const ordered = entry.resultados.slice().sort((a, b) => a.date.getTime() - b.date.getTime());
+    let currentStreak = 0;
+    let currentWins = 0;
+    let currentDraws = 0;
+    let bestStreak = 0;
+    let bestWins = 0;
+    let bestDraws = 0;
+
+    ordered.forEach((item) => {
+      if (item.outcome === "L") {
+        currentStreak = 0;
+        currentWins = 0;
+        currentDraws = 0;
+        return;
+      }
+      currentStreak += 1;
+      if (item.outcome === "W") {
+        currentWins += 1;
+      } else {
+        currentDraws += 1;
+      }
+      if (currentStreak > bestStreak || (currentStreak === bestStreak && currentWins > bestWins)) {
+        bestStreak = currentStreak;
+        bestWins = currentWins;
+        bestDraws = currentDraws;
+      }
+    });
+
+    if (bestStreak <= 0) return;
+    if (
+      !melhorInvicto ||
+      bestStreak > melhorInvicto.streak ||
+      (bestStreak === melhorInvicto.streak && bestWins > melhorInvicto.wins)
+    ) {
+      melhorInvicto = {
+        nome: entry.nome,
+        streak: bestStreak,
+        wins: bestWins,
+        draws: bestDraws,
+      };
+    }
+  });
+
+  const invictoTexto = (() => {
+    if (!melhorInvicto) return INVICTO_FALLBACK;
+    const detalhe =
+      melhorInvicto.wins + melhorInvicto.draws > 0
+        ? ` Foram ${melhorInvicto.wins} ${pluralize(
+            melhorInvicto.wins,
+            "vitória",
+            "vitórias"
+          )} e ${melhorInvicto.draws} ${pluralize(
+            melhorInvicto.draws,
+            "empate",
+            "empates"
+          )} nesse período.`
+        : "";
+    return `O jogador com a maior sequência invicta até hoje é ${melhorInvicto.nome}, com ${melhorInvicto.streak} jogos sem perder.${detalhe}`;
+  })();
+
+  return [
+    {
+      titulo: "Maior goleada registrada",
+      texto: goleadaTexto,
+      icone: "⚽",
+    },
+    {
+      titulo: "Maior sequência invicta (jogador)",
+      texto: invictoTexto,
+      icone: "🔥",
+    },
+  ];
+}
 
 function isLegacyMarcos(marcos?: { ano?: string }[] | null) {
   if (!marcos || marcos.length === 0) return false;
@@ -42,6 +240,7 @@ export default function NossaHistoriaPage() {
   const { about } = useAboutPublic(slug);
   const { footer } = useFooterConfigPublic(slug);
   const { racha } = useRachaPublic(slug);
+  const { data: timesDoDiaPublicado } = useTimesDoDiaPublicado({ slug, source: "public" });
   const { rankings: rankingGeral } = usePublicPlayerRankings({
     slug,
     type: "geral",
@@ -72,7 +271,25 @@ export default function NossaHistoriaPage() {
   const rawMarcos =
     data.marcos && data.marcos.length > 0 ? data.marcos : DEFAULT_NOSSA_HISTORIA.marcos || [];
   const marcos = isLegacyMarcos(rawMarcos) ? DEFAULT_NOSSA_HISTORIA.marcos || [] : rawMarcos;
-  const curiosidades = data.curiosidades || [];
+  const curiosidadesAutomaticas = useMemo(
+    () =>
+      buildCuriosidadesAutomaticas(
+        matchesAll,
+        timesDoDiaPublicado?.configuracao?.duracaoPartidaMin ?? null
+      ),
+    [matchesAll, timesDoDiaPublicado?.configuracao?.duracaoPartidaMin]
+  );
+  const curiosidadesAdmin = data.curiosidades || [];
+  const curiosidades = useMemo(() => {
+    const normalize = (value?: string) => value?.trim().toLowerCase() || "";
+    const autoTitles = new Set(curiosidadesAutomaticas.map((item) => normalize(item.titulo)));
+    const extras = curiosidadesAdmin.filter((item) => {
+      const title = normalize(item.titulo);
+      if (!title) return true;
+      return !autoTitles.has(title);
+    });
+    return [...curiosidadesAutomaticas, ...extras];
+  }, [curiosidadesAutomaticas, curiosidadesAdmin]);
   const depoimentos = data.depoimentos || [];
   const categoriasFotos = data.categoriasFotos || [];
   const videos = data.videos || [];

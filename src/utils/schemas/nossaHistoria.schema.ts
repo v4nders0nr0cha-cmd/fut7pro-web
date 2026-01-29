@@ -152,13 +152,7 @@ export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
       conquista: "💻",
     },
   ],
-  curiosidades: [
-    {
-      titulo: "Maior goleada",
-      texto: "A maior goleada registrada ate hoje foi 9x1.",
-      icone: "⚽",
-    },
-  ],
+  curiosidades: [],
   depoimentos: [
     {
       nome: "Capitao do Racha",
