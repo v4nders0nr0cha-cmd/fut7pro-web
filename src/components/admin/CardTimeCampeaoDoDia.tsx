@@ -28,8 +28,8 @@ type Props = {
 };
 
 export default function CardTimeCampeaoDoDia({
-  fotoUrl = "/images/times/time_padrao_01.png",
-  nomeTime = "Time Campeao do Dia",
+  fotoUrl: _fotoUrl = "/images/times/time_padrao_01.png",
+  nomeTime: _nomeTime = "Time Campeao do Dia",
   editLink = "/admin/partidas/time-campeao-do-dia",
   matches,
   confrontos,
@@ -74,8 +74,8 @@ export default function CardTimeCampeaoDoDia({
   );
 
   const loading = isLoading || (shouldFetchMatches && loadingMatches);
-  const foto = campeao?.time.logoUrl || fotoUrl;
-  const titulo = campeao?.time.nome || nomeTime;
+  const foto = "/images/torneios/torneio-matador.jpg";
+  const titulo = "Time Campeao do Dia";
   const labelData =
     dataReferencia != null ? new Date(dataReferencia).toLocaleDateString("pt-BR") : undefined;
 
