@@ -8,14 +8,18 @@ import { useAboutAdmin } from "@/hooks/useAbout";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { usePublicAthletes } from "@/hooks/usePublicAthletes";
-import { DEFAULT_NOSSA_HISTORIA, nossaHistoriaSchema } from "@/utils/schemas/nossaHistoria.schema";
+import {
+  DEFAULT_GALERIA_FOTOS,
+  DEFAULT_NOSSA_HISTORIA,
+  MAX_GALERIA_FOTOS,
+  nossaHistoriaSchema,
+} from "@/utils/schemas/nossaHistoria.schema";
 import type {
   NossaHistoriaData,
   NossaHistoriaMarco,
   NossaHistoriaCuriosidade,
   NossaHistoriaDepoimento,
-  NossaHistoriaCategoriaFotos,
-  NossaHistoriaFoto,
+  NossaHistoriaGaleriaFoto,
   NossaHistoriaVideo,
   NossaHistoriaCampo,
 } from "@/types/paginasInstitucionais";
@@ -50,6 +54,16 @@ const roleLabels: Record<string, string> = {
   vicepresidente: "Vice-Presidente",
   diretorfutebol: "Diretor de Futebol",
   diretorfinanceiro: "Diretor Financeiro",
+};
+
+const DEFAULT_GALERIA_IDS = new Set(
+  DEFAULT_GALERIA_FOTOS.map((foto) => foto.id).filter((id): id is string => Boolean(id))
+);
+const DEFAULT_GALERIA_DESCRICAO = "Registro especial do racha.";
+
+type LegacyCategoriaFotos = {
+  nome?: string;
+  fotos?: { src?: string; alt?: string }[];
 };
 
 function isLegacyMarcos(marcos?: NossaHistoriaMarco[] | null) {
@@ -91,6 +105,54 @@ function buildCuriosidadeId(titulo?: string, texto?: string, index?: number) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
   }
   return `curiosidade-${hash.toString(36)}`;
+}
+
+function normalizeGaleriaFotos(
+  input: unknown,
+  fallback: NossaHistoriaGaleriaFoto[]
+): NossaHistoriaGaleriaFoto[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    return fallback.map((foto) => ({ ...foto }));
+  }
+
+  const hasLegacy = input.some(
+    (item) => item && typeof item === "object" && "fotos" in (item as Record<string, unknown>)
+  );
+
+  if (hasLegacy) {
+    const legacy = input as LegacyCategoriaFotos[];
+    const converted: NossaHistoriaGaleriaFoto[] = [];
+    legacy.forEach((cat) => {
+      const tituloBase = sanitizeText(cat.nome) || "";
+      (cat.fotos ?? []).forEach((foto) => {
+        const src = sanitizeUrl(foto?.src);
+        if (!src) return;
+        const descricao = sanitizeText(foto?.alt) || DEFAULT_GALERIA_DESCRICAO;
+        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto do racha";
+        converted.push({
+          id: createRandomId("galeria"),
+          src,
+          titulo,
+          descricao,
+        });
+      });
+    });
+    if (converted.length > 0) {
+      return converted.slice(0, MAX_GALERIA_FOTOS);
+    }
+    return fallback.map((foto) => ({ ...foto }));
+  }
+
+  const normalized = (input as NossaHistoriaGaleriaFoto[]).map((foto) => ({
+    id: foto?.id?.toString().trim() || createRandomId("galeria"),
+    src: sanitizeUrl(foto?.src),
+    titulo: sanitizeText(foto?.titulo),
+    descricao: sanitizeText(foto?.descricao),
+  }));
+
+  return normalized.length > 0
+    ? normalized.slice(0, MAX_GALERIA_FOTOS)
+    : fallback.map((foto) => ({ ...foto }));
 }
 
 function extractYouTubeId(url: string) {
@@ -511,6 +573,11 @@ export default function NossaHistoriaEditor() {
             Boolean(item)
         );
 
+      const resolvedGaleriaFotos = normalizeGaleriaFotos(
+        input?.categoriasFotos,
+        base.categoriasFotos ?? DEFAULT_GALERIA_FOTOS
+      );
+
       const source = {
         titulo: input?.titulo ?? "",
         descricao: input?.descricao ?? "",
@@ -522,13 +589,7 @@ export default function NossaHistoriaEditor() {
         })),
         curiosidades: resolvedCuriosidades,
         depoimentos: resolvedDepoimentos,
-        categoriasFotos: (input?.categoriasFotos ?? []).map((cat) => ({
-          nome: cat.nome ?? "",
-          fotos: (cat.fotos ?? []).map((foto) => ({
-            src: foto.src ?? "",
-            alt: foto.alt ?? "",
-          })),
-        })),
+        categoriasFotos: resolvedGaleriaFotos,
         videos: (input?.videos ?? []).map((video) => ({
           titulo: video.titulo ?? "",
           url: video.url ?? "",
@@ -647,18 +708,10 @@ export default function NossaHistoriaEditor() {
     setField("depoimentos", next);
   };
 
-  const updateCategoriaFotos = (index: number, patch: Partial<NossaHistoriaCategoriaFotos>) => {
+  const updateGaleriaFoto = (index: number, patch: Partial<NossaHistoriaGaleriaFoto>) => {
     const next = [...(formData.categoriasFotos ?? [])];
     next[index] = { ...next[index], ...patch };
     setField("categoriasFotos", next);
-  };
-
-  const updateFoto = (catIndex: number, fotoIndex: number, patch: Partial<NossaHistoriaFoto>) => {
-    const categories = [...(formData.categoriasFotos ?? [])];
-    const fotos = [...(categories[catIndex]?.fotos ?? [])];
-    fotos[fotoIndex] = { ...fotos[fotoIndex], ...patch };
-    categories[catIndex] = { ...categories[catIndex], fotos };
-    setField("categoriasFotos", categories);
   };
 
   const updateVideo = (index: number, patch: Partial<NossaHistoriaVideo>) => {
@@ -681,12 +734,33 @@ export default function NossaHistoriaEditor() {
     const depoimentos = (formData.depoimentos ?? []).filter((item) => {
       return Boolean(sanitizeText(item.texto) && sanitizeText(item.jogadorId));
     });
-    const categoriasFotos = (formData.categoriasFotos ?? [])
-      .map((cat) => ({
-        ...cat,
-        fotos: (cat.fotos ?? []).filter((foto) => Boolean(sanitizeUrl(foto.src))),
-      }))
-      .filter((cat) => Boolean(sanitizeText(cat.nome)) || (cat.fotos?.length ?? 0) > 0);
+    const galeriaFotosRaw = (formData.categoriasFotos ?? []).map((foto) => ({
+      id: foto.id?.toString().trim(),
+      src: sanitizeUrl(foto.src),
+      titulo: sanitizeText(foto.titulo),
+      descricao: sanitizeText(foto.descricao),
+    }));
+    const galeriaFotosFilled = galeriaFotosRaw.filter((foto) =>
+      Boolean(foto.src || foto.titulo || foto.descricao)
+    );
+    if (galeriaFotosFilled.length > MAX_GALERIA_FOTOS) {
+      throw new Error("Limite maximo de 6 fotos na galeria.");
+    }
+    const galeriaFotosInvalid = galeriaFotosFilled.find(
+      (foto) => !foto.src || !foto.titulo || !foto.descricao
+    );
+    if (galeriaFotosInvalid) {
+      throw new Error("Preencha imagem, titulo e descricao em todas as fotos da galeria.");
+    }
+    const categoriasFotos =
+      galeriaFotosFilled.length > 0
+        ? galeriaFotosFilled.map((foto, index) => ({
+            id: foto.id || createRandomId(`galeria-${index + 1}`),
+            src: foto.src,
+            titulo: foto.titulo,
+            descricao: foto.descricao,
+          }))
+        : DEFAULT_GALERIA_FOTOS.map((foto) => ({ ...foto }));
     const videos = (formData.videos ?? []).filter((video) => {
       return Boolean(sanitizeText(video.titulo) || sanitizeUrl(video.url));
     });
@@ -725,13 +799,7 @@ export default function NossaHistoriaEditor() {
         texto: sanitizeText(item.texto),
         destaque: Boolean(item.destaque),
       })),
-      categoriasFotos: categoriasFotos.map((cat) => ({
-        nome: sanitizeText(cat.nome),
-        fotos: (cat.fotos ?? []).map((foto) => ({
-          src: sanitizeUrl(foto.src),
-          alt: sanitizeText(foto.alt),
-        })),
-      })),
+      categoriasFotos,
       videos: videos.map((video) => ({
         titulo: sanitizeText(video.titulo),
         url: normalizeYouTubeUrl(sanitizeUrl(video.url)),
@@ -783,6 +851,8 @@ export default function NossaHistoriaEditor() {
     mapa: "",
     descricao: "",
   };
+  const galeriaFotos = formData.categoriasFotos ?? [];
+  const podeAdicionarGaleria = galeriaFotos.length < MAX_GALERIA_FOTOS;
 
   if (isLoading && !isInitialized) {
     return (
@@ -1179,154 +1249,118 @@ export default function NossaHistoriaEditor() {
         </section>
 
         <section className={sectionClass}>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-brand">Galeria de Fotos</h2>
-            <button
-              type="button"
-              className={buttonSecondary}
-              onClick={() =>
-                setField("categoriasFotos", [
-                  ...(formData.categoriasFotos ?? []),
-                  { nome: "", fotos: [] },
-                ])
-              }
-            >
-              <Plus size={16} className="inline" /> Adicionar categoria
-            </button>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                className={buttonSecondary}
+                disabled={!podeAdicionarGaleria}
+                onClick={() =>
+                  setField("categoriasFotos", [
+                    ...(formData.categoriasFotos ?? []),
+                    { id: createRandomId("galeria"), src: "", titulo: "", descricao: "" },
+                  ])
+                }
+              >
+                <Plus size={16} className="inline" /> Adicionar foto
+              </button>
+              {!podeAdicionarGaleria ? (
+                <span className="text-xs text-amber-300">
+                  Limite maximo de {MAX_GALERIA_FOTOS} fotos atingido.
+                </span>
+              ) : null}
+            </div>
           </div>
-          <div className="flex flex-col gap-4">
-            {(formData.categoriasFotos ?? []).map((categoria, idx) => (
-              <div key={`categoria-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm text-gray-300">Categoria #{idx + 1}</span>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className={buttonGhost}
-                      onClick={() =>
-                        setField(
-                          "categoriasFotos",
-                          moveItem(formData.categoriasFotos ?? [], idx, -1)
-                        )
-                      }
-                    >
-                      <ArrowUp size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className={buttonGhost}
-                      onClick={() =>
-                        setField(
-                          "categoriasFotos",
-                          moveItem(formData.categoriasFotos ?? [], idx, 1)
-                        )
-                      }
-                    >
-                      <ArrowDown size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      className="text-xs text-red-400 hover:text-red-300"
-                      onClick={() =>
-                        setField(
-                          "categoriasFotos",
-                          (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
-                        )
-                      }
-                    >
-                      Remover
-                    </button>
+          <div className="grid gap-4">
+            {galeriaFotos.map((foto, idx) => {
+              const isDefault = Boolean(foto.id && DEFAULT_GALERIA_IDS.has(foto.id));
+              return (
+                <div
+                  key={foto.id ?? `galeria-${idx}`}
+                  className="rounded-xl border border-[#2a2d36] p-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-300">
+                      Foto #{idx + 1} {isDefault ? "(padrao)" : ""}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() =>
+                          setField(
+                            "categoriasFotos",
+                            moveItem(formData.categoriasFotos ?? [], idx, -1)
+                          )
+                        }
+                        disabled={idx === 0}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() =>
+                          setField(
+                            "categoriasFotos",
+                            moveItem(formData.categoriasFotos ?? [], idx, 1)
+                          )
+                        }
+                        disabled={idx === galeriaFotos.length - 1}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      {!isDefault ? (
+                        <button
+                          type="button"
+                          className="text-xs text-red-400 hover:text-red-300"
+                          onClick={() =>
+                            setField(
+                              "categoriasFotos",
+                              (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
+                            )
+                          }
+                        >
+                          Remover
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                <div className="mt-3">
-                  <label className={labelClass}>Nome da categoria</label>
-                  <input
-                    className={inputClass}
-                    value={categoria.nome || ""}
-                    onChange={(event) => updateCategoriaFotos(idx, { nome: event.target.value })}
-                  />
-                </div>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-sm text-gray-300">Fotos</span>
-                  <button
-                    type="button"
-                    className={buttonSecondary}
-                    onClick={() =>
-                      updateCategoriaFotos(idx, {
-                        fotos: [...(categoria.fotos ?? []), { src: "", alt: "" }],
-                      })
-                    }
-                  >
-                    <Plus size={16} className="inline" /> Adicionar foto
-                  </button>
-                </div>
-                <div className="mt-3 grid gap-4">
-                  {(categoria.fotos ?? []).map((foto, fotoIdx) => (
-                    <div
-                      key={`foto-${idx}-${fotoIdx}`}
-                      className="rounded-lg border border-[#2a2d36] p-3"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-gray-400">Foto #{fotoIdx + 1}</span>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            className={buttonGhost}
-                            onClick={() =>
-                              updateCategoriaFotos(idx, {
-                                fotos: moveItem(categoria.fotos ?? [], fotoIdx, -1),
-                              })
-                            }
-                          >
-                            <ArrowUp size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className={buttonGhost}
-                            onClick={() =>
-                              updateCategoriaFotos(idx, {
-                                fotos: moveItem(categoria.fotos ?? [], fotoIdx, 1),
-                              })
-                            }
-                          >
-                            <ArrowDown size={14} />
-                          </button>
-                          <button
-                            type="button"
-                            className="text-xs text-red-400 hover:text-red-300"
-                            onClick={() =>
-                              updateCategoriaFotos(idx, {
-                                fotos: (categoria.fotos ?? []).filter((_, i) => i !== fotoIdx),
-                              })
-                            }
-                          >
-                            Remover
-                          </button>
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <ImageField
-                          label="Imagem"
-                          value={foto.src}
-                          onChange={(value) => updateFoto(idx, fotoIdx, { src: value })}
-                          onUpload={uploadImage}
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <ImageField
+                      label="Imagem"
+                      value={foto.src}
+                      onChange={(value) => updateGaleriaFoto(idx, { src: value })}
+                      onUpload={uploadImage}
+                    />
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <label className={labelClass}>Titulo</label>
+                        <input
+                          className={inputClass}
+                          value={foto.titulo || ""}
+                          onChange={(event) =>
+                            updateGaleriaFoto(idx, { titulo: event.target.value })
+                          }
                         />
-                        <div>
-                          <label className={labelClass}>Descricao curta</label>
-                          <input
-                            className={inputClass}
-                            value={foto.alt || ""}
-                            onChange={(event) =>
-                              updateFoto(idx, fotoIdx, { alt: event.target.value })
-                            }
-                          />
-                        </div>
+                      </div>
+                      <div>
+                        <label className={labelClass}>Descricao curta</label>
+                        <textarea
+                          className={textareaClass}
+                          rows={3}
+                          value={foto.descricao || ""}
+                          onChange={(event) =>
+                            updateGaleriaFoto(idx, { descricao: event.target.value })
+                          }
+                        />
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

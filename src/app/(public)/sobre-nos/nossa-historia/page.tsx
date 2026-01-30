@@ -15,12 +15,17 @@ import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { DEFAULT_NOSSA_HISTORIA } from "@/utils/schemas/nossaHistoria.schema";
+import {
+  DEFAULT_GALERIA_FOTOS,
+  DEFAULT_NOSSA_HISTORIA,
+  MAX_GALERIA_FOTOS,
+} from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
 import type { PublicMatch } from "@/types/partida";
 import type {
   NossaHistoriaCuriosidade,
   NossaHistoriaDepoimento,
+  NossaHistoriaGaleriaFoto,
 } from "@/types/paginasInstitucionais";
 import type { Admin } from "@/types/racha";
 
@@ -44,6 +49,13 @@ const roleLabels: Record<string, string> = {
   vicepresidente: "Vice-Presidente",
   diretorfutebol: "Diretor de Futebol",
   diretorfinanceiro: "Diretor Financeiro",
+};
+
+const DEFAULT_GALERIA_DESCRICAO = "Registro especial do racha.";
+
+type LegacyCategoriaFotos = {
+  nome?: string;
+  fotos?: { src?: string; alt?: string }[];
 };
 
 type MatchScore = { scoreA: number; scoreB: number };
@@ -273,6 +285,62 @@ function buildDescricaoPadrao(nomeDoRacha: string, nomePresidente: string) {
     "{nomePresidente}",
     nomePresidente
   );
+}
+
+function sanitizeText(value?: string | null) {
+  return value ? value.toString().trim() : "";
+}
+
+function sanitizeUrl(value?: string | null) {
+  return value ? value.toString().trim() : "";
+}
+
+function normalizeGaleriaFotos(
+  input: unknown,
+  fallback: NossaHistoriaGaleriaFoto[]
+): NossaHistoriaGaleriaFoto[] {
+  if (!Array.isArray(input) || input.length === 0) {
+    return fallback.map((foto) => ({ ...foto }));
+  }
+
+  const hasLegacy = input.some(
+    (item) => item && typeof item === "object" && "fotos" in (item as Record<string, unknown>)
+  );
+
+  if (hasLegacy) {
+    const legacy = input as LegacyCategoriaFotos[];
+    const converted: NossaHistoriaGaleriaFoto[] = [];
+    legacy.forEach((cat) => {
+      const tituloBase = sanitizeText(cat.nome) || "";
+      (cat.fotos ?? []).forEach((foto) => {
+        const src = sanitizeUrl(foto?.src);
+        if (!src) return;
+        const descricao = sanitizeText(foto?.alt) || DEFAULT_GALERIA_DESCRICAO;
+        const titulo = tituloBase || sanitizeText(foto?.alt) || "Foto do racha";
+        converted.push({
+          id: `galeria-${converted.length + 1}`,
+          src,
+          titulo,
+          descricao,
+        });
+      });
+    });
+    if (converted.length > 0) {
+      return converted.slice(0, MAX_GALERIA_FOTOS);
+    }
+    return fallback.map((foto) => ({ ...foto }));
+  }
+
+  const normalized = (input as NossaHistoriaGaleriaFoto[]).map((foto, index) => ({
+    id: foto?.id?.toString().trim() || `galeria-${index + 1}`,
+    src: sanitizeUrl(foto?.src),
+    titulo: sanitizeText(foto?.titulo),
+    descricao: sanitizeText(foto?.descricao),
+  }));
+
+  return normalized.length > 0
+    ? normalized.slice(0, MAX_GALERIA_FOTOS)
+    : fallback.map((foto) => ({ ...foto }));
 }
 
 export default function NossaHistoriaPage() {
@@ -513,7 +581,25 @@ export default function NossaHistoriaPage() {
       })
       .filter((dep) => dep.texto);
   }, [depoimentosBase, athletesById, adminsByAthleteId, adminsByName, presidenteAdmin]);
-  const categoriasFotos = data.categoriasFotos ?? [];
+  const galeriaFotosBase = useMemo(
+    () => normalizeGaleriaFotos(data.categoriasFotos, DEFAULT_GALERIA_FOTOS),
+    [data.categoriasFotos]
+  );
+  const galeriaFotos = useMemo(
+    () => galeriaFotosBase.slice(0, MAX_GALERIA_FOTOS),
+    [galeriaFotosBase]
+  );
+  const galeriaFotosRender = useMemo(
+    () =>
+      galeriaFotos
+        .filter((foto) => Boolean(foto.src))
+        .map((foto, idx) => ({
+          ...foto,
+          titulo: foto.titulo || `Foto ${idx + 1}`,
+          descricao: foto.descricao || DEFAULT_GALERIA_DESCRICAO,
+        })),
+    [galeriaFotos]
+  );
   const videos = data.videos ?? [];
   const camposHistoricos = data.camposHistoricos ?? [];
   const campoAtual =
@@ -724,32 +810,33 @@ export default function NossaHistoriaPage() {
           </section>
         )}
 
-        {categoriasFotos.length > 0 && (
+        {galeriaFotosRender.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4">Galeria de Fotos</h2>
-            <div className="flex flex-wrap gap-6">
-              {categoriasFotos.map((cat, idx) => (
-                <div key={idx} className="flex flex-col items-center">
-                  <div className="font-bold text-white mb-2">{cat.nome}</div>
-                  <div className="flex flex-wrap gap-4">
-                    {cat.fotos?.map((foto, i) => (
-                      <div
-                        key={i}
-                        className="bg-neutral-800 rounded-xl p-2 shadow-md w-40 flex flex-col items-center"
-                      >
-                        <Image
-                          src={foto.src}
-                          alt={foto.alt}
-                          width={140}
-                          height={100}
-                          className="rounded-lg object-cover w-full h-[100px]"
-                        />
-                        <span className="text-xs text-neutral-300 mt-2">{foto.alt}</span>
-                      </div>
-                    ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {galeriaFotosRender.map((foto, idx) => {
+                const titulo = foto.titulo || `Foto ${idx + 1}`;
+                const descricao = foto.descricao || "";
+                const alt = `Galeria do racha ${rachaNome}: ${titulo}`;
+                return (
+                  <div
+                    key={foto.id ?? `galeria-${idx}`}
+                    className="bg-neutral-900 rounded-xl overflow-hidden shadow-md flex flex-col"
+                  >
+                    <Image
+                      src={foto.src}
+                      alt={alt}
+                      width={420}
+                      height={260}
+                      className="w-full h-40 object-cover"
+                    />
+                    <div className="p-3">
+                      <h3 className="text-sm font-semibold text-white">{titulo}</h3>
+                      <p className="text-xs text-neutral-300 mt-1">{descricao}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

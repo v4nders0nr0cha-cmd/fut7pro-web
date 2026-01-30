@@ -22,7 +22,7 @@ export type AboutData = {
     cargo?: string;
     foto?: string;
   }[];
-  categoriasFotos?: { nome: string; fotos: { src: string; alt?: string }[] }[];
+  categoriasFotos?: { id?: string; src: string; titulo: string; descricao: string }[];
   videos?: { id?: string | number; titulo: string; url: string }[];
   ajudaArtigos?: {
     id?: string | number;

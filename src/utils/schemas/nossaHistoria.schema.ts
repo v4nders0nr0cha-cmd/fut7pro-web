@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { NossaHistoriaData } from "@/types/paginasInstitucionais";
+import type { NossaHistoriaData, NossaHistoriaGaleriaFoto } from "@/types/paginasInstitucionais";
 
 const stringOptional = z.string().trim().optional();
 
@@ -10,6 +10,45 @@ const urlSchema = z
   .refine((value) => value.startsWith("http://") || value.startsWith("https://"), {
     message: "URL deve iniciar com http:// ou https://",
   });
+const imageUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "Imagem obrigatoria")
+  .refine(
+    (value) => value.startsWith("/") || value.startsWith("http://") || value.startsWith("https://"),
+    {
+      message: "URL da imagem invalida",
+    }
+  );
+
+export const MAX_GALERIA_FOTOS = 6;
+
+export const DEFAULT_GALERIA_FOTOS: NossaHistoriaGaleriaFoto[] = [
+  {
+    id: "galeria-fundacao",
+    src: "/images/historia/foto_antiga_01.png",
+    titulo: "Fundação do Racha",
+    descricao: "O começo de tudo: o primeiro encontro que virou tradição e resenha.",
+  },
+  {
+    id: "galeria-primeiro-gol",
+    src: "/images/historia/foto_antiga_02.png",
+    titulo: "Primeiro Gol Registrado",
+    descricao: "Aquele momento que entrou pra história e deu o pontapé na rivalidade saudável.",
+  },
+  {
+    id: "galeria-primeiro-campeao",
+    src: "/images/historia/foto_antiga_03.png",
+    titulo: "Primeiro Campeão do Racha",
+    descricao: "O primeiro time a levantar moral no racha, dando início às disputas internas.",
+  },
+  {
+    id: "galeria-confraternizacao",
+    src: "/images/historia/foto_antiga_04.png",
+    titulo: "Primeira Confraternização",
+    descricao: "Quando o pós-jogo virou parte da história, união, amizade e time fechado.",
+  },
+];
 
 export const nossaHistoriaSchema = z.object({
   titulo: stringOptional,
@@ -48,18 +87,13 @@ export const nossaHistoriaSchema = z.object({
   categoriasFotos: z
     .array(
       z.object({
-        nome: z.string().trim().min(1, "Nome da categoria obrigatorio"),
-        fotos: z
-          .array(
-            z.object({
-              src: urlSchema,
-              alt: stringOptional,
-            })
-          )
-          .optional()
-          .default([]),
+        id: stringOptional,
+        src: imageUrlSchema,
+        titulo: z.string().trim().min(1, "Titulo obrigatorio"),
+        descricao: z.string().trim().min(1, "Descricao obrigatoria"),
       })
     )
+    .max(MAX_GALERIA_FOTOS, "Limite maximo de 6 fotos na galeria.")
     .optional(),
   videos: z
     .array(
@@ -154,12 +188,7 @@ export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
   ],
   curiosidades: [],
   depoimentos: [],
-  categoriasFotos: [
-    {
-      nome: "Fundacao",
-      fotos: [],
-    },
-  ],
+  categoriasFotos: DEFAULT_GALERIA_FOTOS,
   videos: [],
   camposHistoricos: [],
   campoAtual: undefined,

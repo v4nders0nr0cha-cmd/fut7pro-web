@@ -23,14 +23,11 @@ export type NossaHistoriaDepoimento = {
   foto?: string;
 };
 
-export type NossaHistoriaFoto = {
+export type NossaHistoriaGaleriaFoto = {
+  id?: string;
   src: string;
-  alt?: string;
-};
-
-export type NossaHistoriaCategoriaFotos = {
-  nome: string;
-  fotos: NossaHistoriaFoto[];
+  titulo: string;
+  descricao: string;
 };
 
 export type NossaHistoriaVideo = {
@@ -73,7 +70,7 @@ export type NossaHistoriaData = {
   curiosidades?: NossaHistoriaCuriosidade[];
   curiosidadesCurtidas?: Record<string, number>;
   depoimentos?: NossaHistoriaDepoimento[];
-  categoriasFotos?: NossaHistoriaCategoriaFotos[];
+  categoriasFotos?: NossaHistoriaGaleriaFoto[];
   videos?: NossaHistoriaVideo[];
   camposHistoricos?: NossaHistoriaCampo[];
   campoAtual?: NossaHistoriaCampo;
