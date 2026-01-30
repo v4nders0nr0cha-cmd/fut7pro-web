@@ -4,6 +4,7 @@ export const ESTATUTO_FALLBACK_ATUALIZADO_EM = "2025-07-12";
 
 export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
   {
+    id: "criterios-pontuacao",
     titulo: "Criterios de Pontuacao",
     atualizado: true,
     conteudo: [
@@ -19,6 +20,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "multas",
     titulo: "Multas",
     atualizado: true,
     conteudo: [
@@ -31,6 +33,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "comportamento",
     titulo: "Comportamento",
     conteudo: [
       "Respeito absoluto: ofensas, racismo ou discriminacao nao sao tolerados.",
@@ -40,6 +43,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "penalidades",
     titulo: "Penalidades",
     conteudo: [
       "Cartao amarelo: suspensao de 3 minutos fora durante a partida.",
@@ -49,6 +53,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "mensalistas-diaristas-reservas",
     titulo: "Mensalistas, Diaristas e Reservas",
     conteudo: [
       "Mensalista: contribui mensalmente e tem vaga garantida nas partidas.",
@@ -61,6 +66,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "organizacao-do-racha",
     titulo: "Organizacao do Racha",
     conteudo: [
       "Admins cuidam da gestao diaria, convites, organizacao dos jogos e mediacao de conflitos.",
@@ -69,6 +75,7 @@ export const ESTATUTO_TOPICOS_PADRAO: EstatutoTopico[] = [
     ],
   },
   {
+    id: "outros-pontos-importantes",
     titulo: "Outros Pontos Importantes",
     conteudo: [
       "Reserva do campo e responsabilidade dos admins, mas a colaboracao e sempre bem-vinda.",

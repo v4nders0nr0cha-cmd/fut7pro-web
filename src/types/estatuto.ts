@@ -1,4 +1,5 @@
 export type EstatutoTopico = {
+  id?: string;
   titulo: string;
   conteudo: string[];
   atualizado?: boolean;

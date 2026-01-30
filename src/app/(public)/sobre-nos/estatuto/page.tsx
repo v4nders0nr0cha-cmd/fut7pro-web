@@ -11,6 +11,7 @@ import {
   ESTATUTO_FALLBACK_ATUALIZADO_EM,
   ESTATUTO_TOPICOS_PADRAO,
 } from "@/config/estatuto.defaults";
+import { normalizeEstatutoTopicos } from "@/utils/estatuto";
 
 function formatarData(valor?: string) {
   if (!valor) return "";
@@ -25,9 +26,10 @@ export default function EstatutoPage() {
   const { estatuto, isLoading, isError } = useEstatutoPublic(slug);
   const [aberto, setAberto] = useState<number | null>(0);
 
-  const topicos = useMemo(() => {
-    return estatuto?.topicos?.length ? estatuto.topicos : ESTATUTO_TOPICOS_PADRAO;
-  }, [estatuto?.topicos]);
+  const topicos = useMemo(
+    () => normalizeEstatutoTopicos(estatuto?.topicos, ESTATUTO_TOPICOS_PADRAO),
+    [estatuto?.topicos]
+  );
 
   const atualizadoEm = formatarData(
     estatuto?.atualizadoEm || ESTATUTO_FALLBACK.atualizadoEm || ESTATUTO_FALLBACK_ATUALIZADO_EM
@@ -85,7 +87,10 @@ export default function EstatutoPage() {
           </h2>
           <div className="flex flex-col gap-3">
             {topicos.map((topico, idx) => (
-              <div key={idx} className="bg-neutral-900 rounded-xl shadow-md overflow-hidden">
+              <div
+                key={topico.id ?? idx}
+                className="bg-neutral-900 rounded-xl shadow-md overflow-hidden"
+              >
                 <button
                   className={`flex justify-between items-center w-full px-5 py-4 text-left focus:outline-none transition ${
                     aberto === idx ? "bg-brand text-black" : "text-brand-soft"
@@ -112,7 +117,7 @@ export default function EstatutoPage() {
                   } overflow-hidden bg-neutral-800 text-neutral-200 text-base`}
                 >
                   <ul className="list-disc pl-5 flex flex-col gap-2">
-                    {topico.conteudo.map((linha, liIdx) => (
+                    {(topico.conteudo ?? []).map((linha, liIdx) => (
                       <li key={liIdx}>{linha}</li>
                     ))}
                   </ul>

@@ -1,13 +1,14 @@
 "use client";
 
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FaChevronDown, FaTrash, FaPlus, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { useEstatutoAdmin } from "@/hooks/useEstatuto";
 import {
   ESTATUTO_FALLBACK_ATUALIZADO_EM,
   ESTATUTO_TOPICOS_PADRAO,
 } from "@/config/estatuto.defaults";
+import { normalizeEstatutoTopicos } from "@/utils/estatuto";
 import type { EstatutoTopico } from "@/types/estatuto";
 
 const MAX_TOPICOS = 8;
@@ -21,7 +22,9 @@ function formatarData(valor?: string | null) {
 
 export default function EditarEstatutoAdmin() {
   const { estatuto, isLoading, isError, update } = useEstatutoAdmin();
-  const [topicos, setTopicos] = useState<EstatutoTopico[]>(ESTATUTO_TOPICOS_PADRAO);
+  const [topicos, setTopicos] = useState<EstatutoTopico[]>(
+    normalizeEstatutoTopicos(ESTATUTO_TOPICOS_PADRAO)
+  );
   const [aberto, setAberto] = useState<number | null>(0);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<string>(
     ESTATUTO_FALLBACK_ATUALIZADO_EM
@@ -29,27 +32,59 @@ export default function EditarEstatutoAdmin() {
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [novoTopicoId, setNovoTopicoId] = useState<string | null>(null);
+  const tituloRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   useEffect(() => {
     if (estatuto?.topicos?.length) {
-      setTopicos(estatuto.topicos);
+      setTopicos(normalizeEstatutoTopicos(estatuto.topicos));
+    } else if (estatuto && (!estatuto.topicos || estatuto.topicos.length === 0)) {
+      setTopicos(normalizeEstatutoTopicos(ESTATUTO_TOPICOS_PADRAO));
     }
     if (estatuto?.atualizadoEm) {
       setUltimaAtualizacao(estatuto.atualizadoEm);
     }
-  }, [estatuto?.topicos, estatuto?.atualizadoEm]);
+  }, [estatuto, estatuto?.topicos, estatuto?.atualizadoEm]);
+
+  useEffect(() => {
+    if (!novoTopicoId) return;
+    const handle = window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      const input = tituloRefs.current[novoTopicoId];
+      if (input) {
+        input.focus();
+        input.select();
+      }
+      setNovoTopicoId(null);
+    }, 50);
+    return () => window.clearTimeout(handle);
+  }, [novoTopicoId]);
 
   const adicionarTopico = () => {
-    if (topicos.length >= MAX_TOPICOS) return;
-    setTopicos([...topicos, { titulo: "Novo Topico", conteudo: [""] }]);
-    setAberto(topicos.length);
+    if (topicos.length >= MAX_TOPICOS) {
+      setMensagem(`Limite maximo de ${MAX_TOPICOS} topicos atingido.`);
+      setTimeout(() => setMensagem(null), 2500);
+      return;
+    }
+    const id =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `topico-${Date.now()}`;
+    const novoTopico: EstatutoTopico = {
+      id,
+      titulo: "Novo Topico",
+      conteudo: [""],
+    };
+    setTopicos([novoTopico, ...topicos]);
+    setAberto(0);
+    setNovoTopicoId(id);
   };
 
   const removerTopico = (idx: number) => {
     if (topicos.length <= 1) return;
     const novos = topicos.filter((_, i) => i !== idx);
     setTopicos(novos);
-    setAberto(null);
+    setAberto(novos.length ? Math.min(idx, novos.length - 1) : null);
   };
 
   const moverTopico = (fromIdx: number, toIdx: number) => {
@@ -95,13 +130,17 @@ export default function EditarEstatutoAdmin() {
     setErro(null);
 
     try {
+      const sanitized = normalizeEstatutoTopicos(topicos);
       const payload = {
         ...estatuto,
         atualizadoEm: new Date().toISOString(),
-        topicos: topicos.map((topico, idx) => ({
+        topicos: sanitized.map((topico, idx) => ({
           ...topico,
           ordem: idx,
-          conteudo: (topico.conteudo || []).map((linha) => linha.trim()).filter(Boolean),
+          conteudo: (() => {
+            const cleaned = (topico.conteudo || []).map((linha) => linha.trim()).filter(Boolean);
+            return cleaned.length > 0 ? cleaned : topico.conteudo?.length ? topico.conteudo : [""];
+          })(),
         })),
       };
 
@@ -173,7 +212,7 @@ export default function EditarEstatutoAdmin() {
           <div className="flex flex-col gap-3">
             {topicos.map((topico, idx) => (
               <div
-                key={idx}
+                key={topico.id ?? idx}
                 className="bg-neutral-900 rounded-xl shadow-md overflow-hidden border border-neutral-700"
               >
                 <button
@@ -186,6 +225,11 @@ export default function EditarEstatutoAdmin() {
                     <input
                       className={`font-bold bg-transparent outline-none border-0 border-b-2 border-dashed border-yellow-400 text-lg w-full px-1 ${aberto === idx ? "text-black" : "text-yellow-300"}`}
                       value={topico.titulo}
+                      ref={(el) => {
+                        if (topico.id) {
+                          tituloRefs.current[topico.id] = el;
+                        }
+                      }}
                       onChange={(e) => alterarTitulo(idx, e.target.value)}
                       maxLength={60}
                       title="Titulo do topico"
@@ -245,7 +289,7 @@ export default function EditarEstatutoAdmin() {
                   className={`transition-all duration-300 px-5 ${aberto === idx ? "max-h-[3000px] py-4 opacity-100" : "max-h-0 py-0 opacity-0"} overflow-hidden bg-neutral-800 text-neutral-200 text-base`}
                 >
                   <ul className="flex flex-col gap-2">
-                    {topico.conteudo.map((linha, lIdx) => (
+                    {(topico.conteudo ?? [""]).map((linha, lIdx) => (
                       <li key={lIdx} className="flex items-center gap-2">
                         <textarea
                           className="bg-neutral-900 text-white rounded-lg p-2 w-full border border-neutral-700 focus:border-yellow-400 text-base min-h-[36px] resize-y"
@@ -253,7 +297,7 @@ export default function EditarEstatutoAdmin() {
                           maxLength={200}
                           onChange={(e) => alterarLinha(idx, lIdx, e.target.value)}
                         />
-                        {topico.conteudo.length > 1 && (
+                        {(topico.conteudo ?? []).length > 1 && (
                           <button
                             title="Excluir linha"
                             type="button"
