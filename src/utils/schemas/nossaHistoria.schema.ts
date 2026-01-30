@@ -27,6 +27,7 @@ export const nossaHistoriaSchema = z.object({
   curiosidades: z
     .array(
       z.object({
+        id: stringOptional,
         titulo: stringOptional,
         texto: z.string().trim().min(1, "Texto obrigatorio"),
         icone: stringOptional,
@@ -37,10 +38,9 @@ export const nossaHistoriaSchema = z.object({
   depoimentos: z
     .array(
       z.object({
-        nome: z.string().trim().min(1, "Nome obrigatorio"),
-        cargo: stringOptional,
+        id: stringOptional,
+        jogadorId: stringOptional,
         texto: z.string().trim().min(1, "Depoimento obrigatorio"),
-        foto: stringOptional,
         destaque: z.boolean().optional(),
       })
     )
@@ -153,13 +153,7 @@ export const DEFAULT_NOSSA_HISTORIA: NossaHistoriaData = {
     },
   ],
   curiosidades: [],
-  depoimentos: [
-    {
-      nome: "Capitao do Racha",
-      cargo: "Fundador",
-      texto: "A historia do racha e feita de amizade e respeito dentro de campo.",
-    },
-  ],
+  depoimentos: [],
   categoriasFotos: [
     {
       nome: "Fundacao",

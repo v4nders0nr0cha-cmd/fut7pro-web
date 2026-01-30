@@ -6,6 +6,7 @@ export type NossaHistoriaMarco = {
 };
 
 export type NossaHistoriaCuriosidade = {
+  id?: string;
   titulo?: string;
   texto: string;
   icone?: string;
@@ -13,11 +14,13 @@ export type NossaHistoriaCuriosidade = {
 };
 
 export type NossaHistoriaDepoimento = {
-  nome: string;
-  cargo?: string;
+  id?: string;
+  jogadorId?: string;
   texto: string;
-  foto?: string;
   destaque?: boolean;
+  nome?: string;
+  cargo?: string;
+  foto?: string;
 };
 
 export type NossaHistoriaFoto = {
@@ -68,6 +71,7 @@ export type NossaHistoriaData = {
   descricao?: string;
   marcos?: NossaHistoriaMarco[];
   curiosidades?: NossaHistoriaCuriosidade[];
+  curiosidadesCurtidas?: Record<string, number>;
   depoimentos?: NossaHistoriaDepoimento[];
   categoriasFotos?: NossaHistoriaCategoriaFotos[];
   videos?: NossaHistoriaVideo[];

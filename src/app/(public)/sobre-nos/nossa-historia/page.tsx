@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
 import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
+import { usePublicAthletes } from "@/hooks/usePublicAthletes";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
@@ -17,7 +18,11 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { DEFAULT_NOSSA_HISTORIA } from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
 import type { PublicMatch } from "@/types/partida";
-import type { NossaHistoriaCuriosidade } from "@/types/paginasInstitucionais";
+import type {
+  NossaHistoriaCuriosidade,
+  NossaHistoriaDepoimento,
+} from "@/types/paginasInstitucionais";
+import type { Admin } from "@/types/racha";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_RACHA_NAME = "seu racha";
@@ -29,6 +34,17 @@ const GOLEADA_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior goleada. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
 const INVICTO_FALLBACK =
   "Ainda não há partidas suficientes para calcular a maior sequência invicta. Assim que os jogos forem cadastrados, esta curiosidade aparece automaticamente.";
+const DEFAULT_DEPOIMENTO_TEXTO =
+  "Esse racha é mais do que jogo, é encontro, amizade e respeito. Aqui a disputa é saudável, a resenha é garantida e todo mundo faz parte da história. Vamos manter essa tradição viva e continuar fazendo história juntos.";
+const AUTO_GOLEADA_ID = "auto-maior-goleada";
+const AUTO_INVICTO_ID = "auto-sequencia-invicta";
+
+const roleLabels: Record<string, string> = {
+  presidente: "Presidente",
+  vicepresidente: "Vice-Presidente",
+  diretorfutebol: "Diretor de Futebol",
+  diretorfinanceiro: "Diretor Financeiro",
+};
 
 type MatchScore = { scoreA: number; scoreB: number };
 type MatchOutcome = "W" | "D" | "L";
@@ -74,9 +90,31 @@ function pluralize(value: number, singular: string, plural: string) {
   return value === 1 ? singular : plural;
 }
 
+function normalizeLookup(value?: string | null) {
+  if (!value) return "";
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function buildCuriosidadeId(item: NossaHistoriaCuriosidade, index: number) {
+  const explicit = item.id?.trim();
+  if (explicit) return explicit;
+  const seed = `${item.titulo ?? ""} ${item.texto ?? ""}`.trim().toLowerCase();
+  if (!seed) return `curiosidade-${index + 1}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return `curiosidade-${hash.toString(36)}`;
+}
+
 function buildCuriosidadesAutomaticas(
   matches: PublicMatch[],
-  fallbackDuration?: number | null
+  fallbackDuration?: number | null,
+  likesMap?: Map<string, number>
 ): NossaHistoriaCuriosidade[] {
   let maiorGoleada: { match: PublicMatch; scoreA: number; scoreB: number; diff: number } | null =
     null;
@@ -209,14 +247,18 @@ function buildCuriosidadesAutomaticas(
 
   return [
     {
+      id: AUTO_GOLEADA_ID,
       titulo: "Maior goleada registrada",
       texto: goleadaTexto,
       icone: "⚽",
+      curtidas: likesMap?.get(AUTO_GOLEADA_ID) ?? 0,
     },
     {
+      id: AUTO_INVICTO_ID,
       titulo: "Maior sequência invicta (jogador)",
       texto: invictoTexto,
       icone: "🔥",
+      curtidas: likesMap?.get(AUTO_INVICTO_ID) ?? 0,
     },
   ];
 }
@@ -241,6 +283,7 @@ export default function NossaHistoriaPage() {
   const { footer } = useFooterConfigPublic(slug);
   const { racha } = useRachaPublic(slug);
   const { data: timesDoDiaPublicado } = useTimesDoDiaPublicado({ slug, source: "public" });
+  const { athletes } = usePublicAthletes(slug);
   const { rankings: rankingGeral } = usePublicPlayerRankings({
     slug,
     type: "geral",
@@ -254,11 +297,15 @@ export default function NossaHistoriaPage() {
     limit: 5000,
   });
   const data = about || {};
+  const curiosidadesAdmin = useMemo(() => data.curiosidades ?? [], [data.curiosidades]);
+  const curiosidadesCurtidasRaw = (data as { curiosidadesCurtidas?: Record<string, number> })
+    .curiosidadesCurtidas;
+  const admins = useMemo(() => racha?.admins ?? [], [racha?.admins]);
 
   const presidenteNome = useMemo(() => {
-    const presidente = racha?.admins?.find((admin) => admin.role === "presidente");
+    const presidente = admins.find((admin) => admin.role === "presidente");
     return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
-  }, [racha?.admins]);
+  }, [admins]);
   const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
   const descricaoPadrao = buildDescricaoPadrao(rachaNome, presidenteNome);
   const descricaoFonte = data.descricao?.trim();
@@ -271,16 +318,39 @@ export default function NossaHistoriaPage() {
   const rawMarcos =
     data.marcos && data.marcos.length > 0 ? data.marcos : DEFAULT_NOSSA_HISTORIA.marcos || [];
   const marcos = isLegacyMarcos(rawMarcos) ? DEFAULT_NOSSA_HISTORIA.marcos || [] : rawMarcos;
+
+  const curiosidadesCurtidasMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (curiosidadesCurtidasRaw && typeof curiosidadesCurtidasRaw === "object") {
+      Object.entries(curiosidadesCurtidasRaw).forEach(([key, value]) => {
+        const numeric = Number(value);
+        if (Number.isFinite(numeric)) {
+          map.set(key, numeric);
+        }
+      });
+    }
+    curiosidadesAdmin.forEach((item, idx) => {
+      const id = buildCuriosidadeId(item, idx);
+      if (map.has(id)) return;
+      const numeric = Number(item.curtidas ?? 0);
+      if (Number.isFinite(numeric)) {
+        map.set(id, numeric);
+      }
+    });
+    return map;
+  }, [curiosidadesAdmin, curiosidadesCurtidasRaw]);
+
   const curiosidadesAutomaticas = useMemo(
     () =>
       buildCuriosidadesAutomaticas(
         matchesAll,
-        timesDoDiaPublicado?.configuracao?.duracaoPartidaMin ?? null
+        timesDoDiaPublicado?.configuracao?.duracaoPartidaMin ?? null,
+        curiosidadesCurtidasMap
       ),
-    [matchesAll, timesDoDiaPublicado?.configuracao?.duracaoPartidaMin]
+    [matchesAll, timesDoDiaPublicado?.configuracao?.duracaoPartidaMin, curiosidadesCurtidasMap]
   );
-  const curiosidadesAdmin = data.curiosidades || [];
-  const curiosidades = useMemo(() => {
+
+  const curiosidadesBase = useMemo(() => {
     const normalize = (value?: string) => value?.trim().toLowerCase() || "";
     const autoTitles = new Set(curiosidadesAutomaticas.map((item) => normalize(item.titulo)));
     const extras = curiosidadesAdmin.filter((item) => {
@@ -290,10 +360,162 @@ export default function NossaHistoriaPage() {
     });
     return [...curiosidadesAutomaticas, ...extras];
   }, [curiosidadesAutomaticas, curiosidadesAdmin]);
-  const depoimentos = data.depoimentos || [];
-  const categoriasFotos = data.categoriasFotos || [];
-  const videos = data.videos || [];
-  const camposHistoricos = data.camposHistoricos || [];
+
+  const [curiosidadesCurtidasLocal, setCuriosidadesCurtidasLocal] = useState<
+    Record<string, number>
+  >({});
+  const [curiosidadesCurtindo, setCuriosidadesCurtindo] = useState<Record<string, boolean>>({});
+  const [curiosidadesCurtidasLocalStorage, setCuriosidadesCurtidasLocalStorage] = useState<
+    Record<string, boolean>
+  >({});
+
+  const curiosidades = useMemo(() => {
+    return curiosidadesBase.map((item, idx) => {
+      const id = buildCuriosidadeId(item, idx);
+      const localValue = curiosidadesCurtidasLocal[id];
+      const curtidas =
+        typeof localValue === "number"
+          ? localValue
+          : typeof item.curtidas === "number"
+            ? item.curtidas
+            : (curiosidadesCurtidasMap.get(id) ?? 0);
+      return { ...item, id, curtidas };
+    });
+  }, [curiosidadesBase, curiosidadesCurtidasLocal, curiosidadesCurtidasMap]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const next: Record<string, boolean> = {};
+    const prefix = slug ? `fut7pro-curiosidade-like-${slug}-` : "fut7pro-curiosidade-like-";
+    curiosidades.forEach((item) => {
+      if (!item.id) return;
+      next[item.id] = window.localStorage.getItem(`${prefix}${item.id}`) === "1";
+    });
+    setCuriosidadesCurtidasLocalStorage(next);
+  }, [curiosidades, slug]);
+
+  const athletesById = useMemo(
+    () => new Map(athletes.map((athlete) => [athlete.id, athlete])),
+    [athletes]
+  );
+  const athletesByName = useMemo(() => {
+    const map = new Map<string, (typeof athletes)[number]>();
+    athletes.forEach((athlete) => {
+      const key = normalizeLookup(athlete.nome);
+      if (key) map.set(key, athlete);
+    });
+    return map;
+  }, [athletes]);
+  const adminsByAthleteId = useMemo(() => {
+    const map = new Map<string, Admin>();
+    admins.forEach((admin) => {
+      if (admin.athleteId) {
+        map.set(admin.athleteId, admin);
+      }
+    });
+    return map;
+  }, [admins]);
+  const adminsByName = useMemo(() => {
+    const map = new Map<string, Admin>();
+    admins.forEach((admin) => {
+      const key = normalizeLookup(admin.nome);
+      if (key) map.set(key, admin);
+    });
+    return map;
+  }, [admins]);
+  const presidenteAdmin = useMemo(
+    () => admins.find((admin) => admin.role === "presidente") ?? null,
+    [admins]
+  );
+  const presidenteAthlete = useMemo(() => {
+    if (!presidenteAdmin) return null;
+    if (presidenteAdmin.athleteId) {
+      return athletesById.get(presidenteAdmin.athleteId) ?? null;
+    }
+    const key = normalizeLookup(presidenteAdmin.nome);
+    return key ? (athletesByName.get(key) ?? null) : null;
+  }, [presidenteAdmin, athletesById, athletesByName]);
+
+  const depoimentosBase = useMemo(() => {
+    const raw = Array.isArray(data.depoimentos) ? data.depoimentos : [];
+    const normalized = raw
+      .map((item, idx) => {
+        const texto = (item?.texto ?? "").toString().trim();
+        if (!texto) return null;
+        const explicitId = item?.id?.toString().trim();
+        const legacyName = (item as { nome?: string })?.nome ?? "";
+        const legacyKey = normalizeLookup(legacyName);
+        const legacyAthlete = legacyKey ? athletesByName.get(legacyKey) : null;
+        const jogadorId =
+          (item as { jogadorId?: string })?.jogadorId?.toString().trim() ||
+          legacyAthlete?.id ||
+          presidenteAthlete?.id ||
+          presidenteAdmin?.athleteId ||
+          "";
+        const id = explicitId || `depoimento-${jogadorId || idx + 1}`;
+        return {
+          id,
+          jogadorId,
+          texto,
+          destaque: Boolean(item?.destaque),
+          legacy: item,
+        };
+      })
+      .filter(
+        (
+          item
+        ): item is {
+          id: string;
+          jogadorId: string;
+          texto: string;
+          destaque: boolean;
+          legacy: NossaHistoriaDepoimento;
+        } => Boolean(item)
+      );
+
+    if (normalized.length > 0) {
+      return normalized;
+    }
+
+    return [
+      {
+        id: "depoimento-presidente",
+        jogadorId: presidenteAthlete?.id || presidenteAdmin?.athleteId || "",
+        texto: DEFAULT_DEPOIMENTO_TEXTO,
+        destaque: true,
+      },
+    ];
+  }, [data.depoimentos, athletesByName, presidenteAthlete, presidenteAdmin]);
+
+  const depoimentosRender = useMemo(() => {
+    return depoimentosBase
+      .map((dep) => {
+        const athlete = dep.jogadorId ? athletesById.get(dep.jogadorId) : null;
+        const legacy = dep.legacy as { nome?: string; foto?: string } | undefined;
+        const legacyAdmin = legacy?.nome ? adminsByName.get(normalizeLookup(legacy.nome)) : null;
+        const adminMatch =
+          (dep.jogadorId && adminsByAthleteId.get(dep.jogadorId)) ||
+          (athlete ? adminsByName.get(normalizeLookup(athlete.nome)) : null) ||
+          legacyAdmin ||
+          (presidenteAdmin && dep.id === "depoimento-presidente" ? presidenteAdmin : null);
+
+        const nome =
+          athlete?.nome || adminMatch?.nome || legacy?.nome || presidenteAdmin?.nome || "Atleta";
+        const foto = athlete?.foto || adminMatch?.foto || legacy?.foto || DEFAULT_AVATAR;
+        const cargo = adminMatch ? roleLabels[adminMatch.role] || "Atleta" : "Atleta";
+
+        return {
+          ...dep,
+          nome,
+          foto,
+          cargo,
+        };
+      })
+      .filter((dep) => dep.texto);
+  }, [depoimentosBase, athletesById, adminsByAthleteId, adminsByName, presidenteAdmin]);
+  const categoriasFotos = data.categoriasFotos ?? [];
+  const videos = data.videos ?? [];
+  const camposHistoricos = data.camposHistoricos ?? [];
   const campoAtual =
     footer?.campo?.nome || footer?.campo?.endereco || footer?.campo?.mapa
       ? {
@@ -416,6 +638,33 @@ export default function NossaHistoriaPage() {
     alert("Funcao de download/compartilhar ainda nao implementada.");
   };
 
+  const handleCurtirCuriosidade = async (id: string, current: number) => {
+    if (!slug || !id) return;
+    if (curiosidadesCurtindo[id] || curiosidadesCurtidasLocalStorage[id]) return;
+    setCuriosidadesCurtindo((prev) => ({ ...prev, [id]: true }));
+    try {
+      const res = await fetch(
+        `/api/public/${encodeURIComponent(slug)}/curiosidades/${encodeURIComponent(id)}/like`,
+        { method: "POST" }
+      );
+      const body = await res.json().catch(() => null);
+      const next =
+        typeof body?.curtidas === "number" && Number.isFinite(body.curtidas)
+          ? Number(body.curtidas)
+          : current + 1;
+      setCuriosidadesCurtidasLocal((prev) => ({ ...prev, [id]: next }));
+      setCuriosidadesCurtidasLocalStorage((prev) => ({ ...prev, [id]: true }));
+      if (typeof window !== "undefined") {
+        const prefix = slug ? `fut7pro-curiosidade-like-${slug}-` : "fut7pro-curiosidade-like-";
+        window.localStorage.setItem(`${prefix}${id}`, "1");
+      }
+    } catch {
+      // silencioso
+    } finally {
+      setCuriosidadesCurtindo((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
   return (
     <>
       <Head>
@@ -533,43 +782,53 @@ export default function NossaHistoriaPage() {
               {curiosidades
                 .slice()
                 .sort((a, b) => (b.curtidas || 0) - (a.curtidas || 0))
-                .map((item, idx) => (
-                  <li
-                    key={idx}
-                    className="bg-neutral-900 rounded-xl px-4 py-3 flex items-center gap-3"
-                  >
-                    <span className="text-2xl">{item.icone}</span>
-                    <span className="text-white flex-1">{item.texto}</span>
-                    <button
-                      title="Curtir curiosidade"
-                      className="flex items-center gap-1 text-brand hover:text-brand-soft"
+                .map((item, idx) => {
+                  const id = item.id ?? `curiosidade-${idx}`;
+                  const jaCurtiu = Boolean(curiosidadesCurtidasLocalStorage[id]);
+                  const curtindo = Boolean(curiosidadesCurtindo[id]);
+                  return (
+                    <li
+                      key={id}
+                      className="bg-neutral-900 rounded-xl px-4 py-3 flex items-center gap-3"
                     >
-                      <FaRegThumbsUp /> {item.curtidas ?? 0}
-                    </button>
-                  </li>
-                ))}
+                      <span className="text-2xl">{item.icone}</span>
+                      <span className="text-white flex-1">{item.texto}</span>
+                      <button
+                        type="button"
+                        title={jaCurtiu ? "Voce ja curtiu" : "Curtir curiosidade"}
+                        onClick={() => handleCurtirCuriosidade(id, item.curtidas ?? 0)}
+                        disabled={jaCurtiu || curtindo}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-md border text-sm transition ${
+                          jaCurtiu
+                            ? "border-green-400 text-green-300"
+                            : "border-brand text-brand hover:text-brand-soft"
+                        } ${curtindo ? "opacity-70 cursor-wait" : ""}`}
+                      >
+                        <FaRegThumbsUp /> {item.curtidas ?? 0}
+                      </button>
+                    </li>
+                  );
+                })}
             </ul>
           </section>
         )}
 
-        {depoimentos.length > 0 && (
+        {depoimentosRender.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4">Depoimentos</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {depoimentos.map((dep, idx) => (
+              {depoimentosRender.map((dep) => (
                 <div
-                  key={idx}
+                  key={dep.id}
                   className={`bg-neutral-900 rounded-2xl p-4 flex flex-col items-center ${dep.destaque ? "border-2 border-brand" : ""}`}
                 >
-                  {dep.foto && (
-                    <Image
-                      src={dep.foto}
-                      alt={dep.nome}
-                      width={64}
-                      height={64}
-                      className="rounded-full mb-2 border-2 border-brand"
-                    />
-                  )}
+                  <Image
+                    src={dep.foto || DEFAULT_AVATAR}
+                    alt={dep.nome}
+                    width={64}
+                    height={64}
+                    className="rounded-full mb-2 border-2 border-brand"
+                  />
                   <div className="italic text-neutral-200 text-center mb-2">{dep.texto}</div>
                   <div className="text-brand-soft font-semibold">{dep.nome}</div>
                   <div className="text-neutral-400 text-xs">{dep.cargo}</div>

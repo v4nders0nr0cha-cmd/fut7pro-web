@@ -40,6 +40,8 @@ function mapTenantToRacha(data: any): Racha {
         role: normalizeAdminRole(admin?.role),
         status: admin?.status ?? "ativo",
         criadoEm: admin?.criadoEm ?? admin?.createdAt ?? undefined,
+        athleteId: admin?.athleteId ?? admin?.athlete_id ?? undefined,
+        athleteSlug: admin?.athleteSlug ?? admin?.athlete_slug ?? undefined,
       }))
     : undefined;
 

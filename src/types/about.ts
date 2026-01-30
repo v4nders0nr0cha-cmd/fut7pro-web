@@ -5,13 +5,22 @@ export type AboutData = {
   descricao?: string;
   cores?: { primary?: string; secondary?: string; accent?: string };
   marcos?: { ano: string; titulo: string; descricao: string; conquista?: string }[];
-  curiosidades?: { titulo?: string; icone?: string; texto: string; curtidas?: number }[];
-  depoimentos?: {
-    nome: string;
-    cargo: string;
+  curiosidades?: {
+    id?: string;
+    titulo?: string;
+    icone?: string;
     texto: string;
-    foto?: string;
+    curtidas?: number;
+  }[];
+  curiosidadesCurtidas?: Record<string, number>;
+  depoimentos?: {
+    id?: string;
+    jogadorId?: string;
+    texto: string;
     destaque?: boolean;
+    nome?: string;
+    cargo?: string;
+    foto?: string;
   }[];
   categoriasFotos?: { nome: string; fotos: { src: string; alt?: string }[] }[];
   videos?: { id?: string | number; titulo: string; url: string }[];

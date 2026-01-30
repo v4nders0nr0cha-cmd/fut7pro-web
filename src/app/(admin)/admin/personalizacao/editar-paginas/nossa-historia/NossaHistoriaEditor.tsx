@@ -7,6 +7,7 @@ import { CheckCircle2, AlertTriangle, Plus, ArrowUp, ArrowDown, ExternalLink } f
 import { useAboutAdmin } from "@/hooks/useAbout";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
+import { usePublicAthletes } from "@/hooks/usePublicAthletes";
 import { DEFAULT_NOSSA_HISTORIA, nossaHistoriaSchema } from "@/utils/schemas/nossaHistoria.schema";
 import type {
   NossaHistoriaData,
@@ -37,9 +38,19 @@ const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const DEFAULT_RACHA_NAME = "seu racha";
 const DEFAULT_PRESIDENTE_NAME = "o presidente do racha";
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const DESCRICAO_TEMPLATE =
   "O racha {nomeDoRacha} nasceu da amizade e da paixão pelo futebol entre amigos. Fundado por {nomePresidente}, começou como uma pelada de rotina e, com o tempo, virou tradição, união e resenha. Nossa história é feita de gols, rivalidade saudável e momentos inesquecíveis, sempre com respeito, espírito esportivo e aquele clima de time fechado.";
 const LEGACY_ANO_REGEX = /^ano\s*\d+/i;
+const DEFAULT_DEPOIMENTO_TEXTO =
+  "Esse racha é mais do que jogo, é encontro, amizade e respeito. Aqui a disputa é saudável, a resenha é garantida e todo mundo faz parte da história. Vamos manter essa tradição viva e continuar fazendo história juntos.";
+
+const roleLabels: Record<string, string> = {
+  presidente: "Presidente",
+  vicepresidente: "Vice-Presidente",
+  diretorfutebol: "Diretor de Futebol",
+  diretorfinanceiro: "Diretor Financeiro",
+};
 
 function isLegacyMarcos(marcos?: NossaHistoriaMarco[] | null) {
   if (!marcos || marcos.length === 0) return false;
@@ -54,6 +65,32 @@ function sanitizeText(value?: string) {
 function sanitizeUrl(value?: string) {
   if (!value) return "";
   return value.trim();
+}
+
+function normalizeLookup(value?: string) {
+  if (!value) return "";
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function createRandomId(prefix: string) {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  return `${prefix}-${Math.random().toString(36).slice(2)}`;
+}
+
+function buildCuriosidadeId(titulo?: string, texto?: string, index?: number) {
+  const seed = `${titulo ?? ""} ${texto ?? ""}`.trim().toLowerCase();
+  if (!seed) return `curiosidade-${index ?? 0}`;
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  return `curiosidade-${hash.toString(36)}`;
 }
 
 function extractYouTubeId(url: string) {
@@ -264,10 +301,93 @@ function ImageField({ label, value, onChange, disabled, onUpload }: ImageFieldPr
   );
 }
 
+type AthleteOption = {
+  id: string;
+  nome: string;
+  apelido?: string | null;
+  foto?: string | null;
+};
+
+type AthleteSelectProps = {
+  label: string;
+  options: AthleteOption[];
+  value?: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+};
+
+function AthleteSelect({ label, options, value, onChange, disabled }: AthleteSelectProps) {
+  const [query, setQuery] = useState("");
+  const normalizedQuery = normalizeLookup(query);
+  const filtered = normalizedQuery
+    ? options.filter((option) => {
+        const nome = normalizeLookup(option.nome);
+        const apelido = normalizeLookup(option.apelido ?? "");
+        return nome.includes(normalizedQuery) || apelido.includes(normalizedQuery);
+      })
+    : options;
+
+  const selected = options.find((option) => option.id === value);
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className={labelClass}>{label}</label>
+      <input
+        type="text"
+        className={inputClass}
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Buscar jogador..."
+        disabled={disabled}
+      />
+      <div className="max-h-48 overflow-auto rounded-lg border border-[#2a2d36] bg-[#101218]">
+        {disabled && options.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-gray-400">Carregando jogadores...</div>
+        ) : filtered.length === 0 ? (
+          <div className="px-3 py-2 text-xs text-gray-400">Nenhum jogador encontrado.</div>
+        ) : (
+          filtered.map((option) => (
+            <button
+              type="button"
+              key={option.id}
+              onClick={() => onChange(option.id)}
+              disabled={disabled}
+              className={`w-full flex items-center gap-3 px-3 py-2 text-left text-sm text-white transition ${
+                option.id === value ? "bg-[#1f2330]" : "hover:bg-[#1a1e28]"
+              }`}
+            >
+              <Image
+                src={option.foto || DEFAULT_AVATAR}
+                alt={option.nome}
+                width={32}
+                height={32}
+                className="rounded-full border border-brand"
+              />
+              <span className="flex-1">
+                {option.nome}
+                {option.apelido ? ` (${option.apelido})` : ""}
+              </span>
+            </button>
+          ))
+        )}
+      </div>
+      {selected ? (
+        <span className="text-xs text-gray-400">
+          Selecionado: {selected.nome}
+          {selected.apelido ? ` (${selected.apelido})` : ""}
+        </span>
+      ) : (
+        <span className="text-xs text-gray-500">Nenhum jogador selecionado.</span>
+      )}
+    </div>
+  );
+}
+
 export default function NossaHistoriaEditor() {
   const { about, update, isLoading } = useAboutAdmin();
   const { publicHref, publicSlug } = usePublicLinks();
   const { racha, isLoading: isLoadingRacha } = useRachaPublic(publicSlug);
+  const { athletes, isLoading: isLoadingAthletes } = usePublicAthletes(publicSlug);
   const [formData, setFormData] = useState<NossaHistoriaData>(DEFAULT_NOSSA_HISTORIA);
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
@@ -276,18 +396,68 @@ export default function NossaHistoriaEditor() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   const publicUrl = useMemo(() => publicHref("/sobre-nos/nossa-historia"), [publicHref]);
+  const admins = useMemo(() => racha?.admins ?? [], [racha?.admins]);
+  const athletesById = useMemo(
+    () => new Map(athletes.map((athlete) => [athlete.id, athlete])),
+    [athletes]
+  );
+  const athletesByName = useMemo(() => {
+    const map = new Map<string, (typeof athletes)[number]>();
+    athletes.forEach((athlete) => {
+      const key = normalizeLookup(athlete.nome);
+      if (key) map.set(key, athlete);
+    });
+    return map;
+  }, [athletes]);
+  const adminsByAthleteId = useMemo(() => {
+    const map = new Map<string, (typeof admins)[number]>();
+    admins.forEach((admin) => {
+      if (admin.athleteId) {
+        map.set(admin.athleteId, admin);
+      }
+    });
+    return map;
+  }, [admins]);
+  const adminsByName = useMemo(() => {
+    const map = new Map<string, (typeof admins)[number]>();
+    admins.forEach((admin) => {
+      const key = normalizeLookup(admin.nome);
+      if (key) map.set(key, admin);
+    });
+    return map;
+  }, [admins]);
+  const presidenteAdmin = useMemo(
+    () => admins.find((admin) => admin.role === "presidente") ?? null,
+    [admins]
+  );
+  const presidenteAthlete = useMemo(() => {
+    if (!presidenteAdmin) return null;
+    if (presidenteAdmin.athleteId) {
+      return athletesById.get(presidenteAdmin.athleteId) ?? null;
+    }
+    const key = normalizeLookup(presidenteAdmin.nome);
+    return key ? (athletesByName.get(key) ?? null) : null;
+  }, [presidenteAdmin, athletesById, athletesByName]);
   const presidenteNome = useMemo(() => {
-    const presidente = racha?.admins?.find((admin) => admin.role === "presidente");
+    const presidente = presidenteAdmin;
     return presidente?.nome?.trim() || presidente?.email?.trim() || DEFAULT_PRESIDENTE_NAME;
-  }, [racha?.admins]);
+  }, [presidenteAdmin]);
   const rachaNome = racha?.nome?.trim() || DEFAULT_RACHA_NAME;
   const defaultContent = useMemo(
     () => ({
       ...DEFAULT_NOSSA_HISTORIA,
       titulo: "Nossa História",
       descricao: buildDescricaoPadrao(rachaNome, presidenteNome),
+      depoimentos: [
+        {
+          id: "depoimento-presidente",
+          jogadorId: presidenteAthlete?.id || presidenteAdmin?.athleteId || "",
+          texto: DEFAULT_DEPOIMENTO_TEXTO,
+          destaque: true,
+        },
+      ],
     }),
-    [rachaNome, presidenteNome]
+    [rachaNome, presidenteNome, presidenteAthlete?.id, presidenteAdmin?.athleteId]
   );
 
   const uploadImage = useCallback(async (file: File) => {
@@ -305,6 +475,42 @@ export default function NossaHistoriaEditor() {
   const normalizeFromAbout = useCallback(
     (input?: AboutData | null, fallback?: NossaHistoriaData) => {
       const base = fallback ?? DEFAULT_NOSSA_HISTORIA;
+      const resolvedCuriosidades = (input?.curiosidades ?? []).map((item, index) => ({
+        id:
+          item.id?.toString().trim() ||
+          buildCuriosidadeId(item.titulo ?? "", item.texto ?? "", index),
+        titulo: item.titulo ?? "",
+        texto: item.texto ?? "",
+        icone: item.icone ?? "",
+        curtidas: item.curtidas,
+      }));
+
+      const resolvedDepoimentos = (input?.depoimentos ?? [])
+        .map((item) => {
+          const texto = (item?.texto ?? "").toString().trim();
+          if (!texto) return null;
+          const explicitId = item?.id?.toString().trim();
+          const legacyName = (item as { nome?: string })?.nome ?? "";
+          const legacyKey = normalizeLookup(legacyName);
+          const legacyAthlete = legacyKey ? athletesByName.get(legacyKey) : null;
+          const jogadorId =
+            (item as { jogadorId?: string })?.jogadorId?.toString().trim() ||
+            legacyAthlete?.id ||
+            presidenteAthlete?.id ||
+            presidenteAdmin?.athleteId ||
+            "";
+          return {
+            id: explicitId || createRandomId("depoimento"),
+            jogadorId,
+            texto,
+            destaque: Boolean(item?.destaque),
+          };
+        })
+        .filter(
+          (item): item is { id: string; jogadorId: string; texto: string; destaque: boolean } =>
+            Boolean(item)
+        );
+
       const source = {
         titulo: input?.titulo ?? "",
         descricao: input?.descricao ?? "",
@@ -314,19 +520,8 @@ export default function NossaHistoriaEditor() {
           descricao: item.descricao ?? "",
           conquista: item.conquista ?? "",
         })),
-        curiosidades: (input?.curiosidades ?? []).map((item) => ({
-          titulo: item.titulo ?? "",
-          texto: item.texto ?? "",
-          icone: item.icone ?? "",
-          curtidas: item.curtidas,
-        })),
-        depoimentos: (input?.depoimentos ?? []).map((item) => ({
-          nome: item.nome ?? "",
-          cargo: item.cargo ?? "",
-          texto: item.texto ?? "",
-          foto: item.foto ?? "",
-          destaque: item.destaque ?? false,
-        })),
+        curiosidades: resolvedCuriosidades,
+        depoimentos: resolvedDepoimentos,
         categoriasFotos: (input?.categoriasFotos ?? []).map((cat) => ({
           nome: cat.nome ?? "",
           fotos: (cat.fotos ?? []).map((foto) => ({
@@ -405,22 +600,30 @@ export default function NossaHistoriaEditor() {
         parsedData.diretoria && parsedData.diretoria.length ? parsedData.diretoria : base.diretoria;
       return resolved;
     },
-    []
+    [athletesByName, presidenteAthlete?.id, presidenteAdmin?.athleteId]
   );
 
   useEffect(() => {
     if (isInitialized) return;
-    if (about) {
+    if (about && !isLoadingAthletes) {
       const normalized = normalizeFromAbout(about, defaultContent);
       setFormData(normalized);
       setIsInitialized(true);
       return;
     }
-    if (!isLoading && !isLoadingRacha) {
+    if (!isLoading && !isLoadingRacha && !isLoadingAthletes) {
       setFormData(defaultContent);
       setIsInitialized(true);
     }
-  }, [about, defaultContent, isInitialized, isLoading, isLoadingRacha, normalizeFromAbout]);
+  }, [
+    about,
+    defaultContent,
+    isInitialized,
+    isLoading,
+    isLoadingAthletes,
+    isLoadingRacha,
+    normalizeFromAbout,
+  ]);
 
   const setField = <K extends keyof NossaHistoriaData>(key: K, value: NossaHistoriaData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -476,9 +679,7 @@ export default function NossaHistoriaEditor() {
       );
     });
     const depoimentos = (formData.depoimentos ?? []).filter((item) => {
-      return Boolean(
-        sanitizeText(item.nome) || sanitizeText(item.texto) || sanitizeText(item.cargo)
-      );
+      return Boolean(sanitizeText(item.texto) && sanitizeText(item.jogadorId));
     });
     const categoriasFotos = (formData.categoriasFotos ?? [])
       .map((cat) => ({
@@ -507,17 +708,21 @@ export default function NossaHistoriaEditor() {
         descricao: sanitizeText(item.descricao),
         conquista: sanitizeText(item.conquista),
       })),
-      curiosidades: curiosidades.map((item) => ({
+      curiosidades: curiosidades.map((item, index) => ({
+        id:
+          item.id?.toString().trim() ||
+          buildCuriosidadeId(item.titulo ?? "", item.texto ?? "", index),
         titulo: sanitizeText(item.titulo),
         texto: sanitizeText(item.texto),
         icone: sanitizeText(item.icone),
         curtidas: typeof item.curtidas === "number" ? item.curtidas : undefined,
       })),
-      depoimentos: depoimentos.map((item) => ({
-        nome: sanitizeText(item.nome),
-        cargo: sanitizeText(item.cargo),
+      curiosidadesCurtidas: (about as { curiosidadesCurtidas?: Record<string, number> })
+        ?.curiosidadesCurtidas,
+      depoimentos: depoimentos.map((item, index) => ({
+        id: item.id?.toString().trim() || createRandomId(`depoimento-${index + 1}`),
+        jogadorId: sanitizeText(item.jogadorId),
         texto: sanitizeText(item.texto),
-        foto: sanitizeUrl(item.foto),
         destaque: Boolean(item.destaque),
       })),
       categoriasFotos: categoriasFotos.map((cat) => ({
@@ -855,7 +1060,12 @@ export default function NossaHistoriaEditor() {
               onClick={() =>
                 setField("depoimentos", [
                   ...(formData.depoimentos ?? []),
-                  { nome: "", cargo: "", texto: "", foto: "", destaque: false },
+                  {
+                    id: createRandomId("depoimento"),
+                    jogadorId: presidenteAthlete?.id || presidenteAdmin?.athleteId || "",
+                    texto: "",
+                    destaque: false,
+                  },
                 ])
               }
             >
@@ -900,23 +1110,19 @@ export default function NossaHistoriaEditor() {
                     </button>
                   </div>
                 </div>
-                <div className="grid gap-3 mt-3 md:grid-cols-2">
-                  <div>
-                    <label className={labelClass}>Nome</label>
-                    <input
-                      className={inputClass}
-                      value={dep.nome}
-                      onChange={(event) => updateDepoimento(idx, { nome: event.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Cargo</label>
-                    <input
-                      className={inputClass}
-                      value={dep.cargo || ""}
-                      onChange={(event) => updateDepoimento(idx, { cargo: event.target.value })}
-                    />
-                  </div>
+                <div className="mt-3">
+                  <AthleteSelect
+                    label="Jogador"
+                    options={athletes.map((athlete) => ({
+                      id: athlete.id,
+                      nome: athlete.nome,
+                      apelido: athlete.apelido ?? undefined,
+                      foto: athlete.foto ?? undefined,
+                    }))}
+                    value={dep.jogadorId}
+                    onChange={(value) => updateDepoimento(idx, { jogadorId: value })}
+                    disabled={isLoadingAthletes}
+                  />
                 </div>
                 <div className="mt-3">
                   <label className={labelClass}>Depoimento</label>
@@ -927,31 +1133,45 @@ export default function NossaHistoriaEditor() {
                     onChange={(event) => updateDepoimento(idx, { texto: event.target.value })}
                   />
                 </div>
-                <div className="mt-3 grid gap-3 md:grid-cols-2">
-                  <ImageField
-                    label="Foto"
-                    value={dep.foto}
-                    onChange={(value) => updateDepoimento(idx, { foto: value })}
-                    onUpload={uploadImage}
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    id={`destaque-${idx}`}
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={Boolean(dep.destaque)}
+                    onChange={(event) => updateDepoimento(idx, { destaque: event.target.checked })}
                   />
-                  <div className="flex items-center gap-2 mt-6">
-                    <input
-                      id={`destaque-${idx}`}
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={Boolean(dep.destaque)}
-                      onChange={(event) =>
-                        updateDepoimento(idx, { destaque: event.target.checked })
-                      }
-                    />
-                    <label htmlFor={`destaque-${idx}`} className="text-sm text-gray-200">
-                      Destaque no site
-                    </label>
-                  </div>
+                  <label htmlFor={`destaque-${idx}`} className="text-sm text-gray-200">
+                    Destaque no site
+                  </label>
                 </div>
                 <div className="mt-3 rounded-lg bg-[#111318] p-3 text-xs text-gray-300">
-                  {dep.texto}
-                  <div className="text-brand-soft mt-2 font-semibold">{dep.nome}</div>
+                  {dep.texto || "Escreva o depoimento para visualizar o preview."}
+                  {(() => {
+                    const athlete = dep.jogadorId ? athletesById.get(dep.jogadorId) : null;
+                    const adminMatch =
+                      (dep.jogadorId && adminsByAthleteId.get(dep.jogadorId)) ||
+                      (athlete ? adminsByName.get(normalizeLookup(athlete.nome)) : null) ||
+                      (presidenteAdmin && dep.id === "depoimento-presidente"
+                        ? presidenteAdmin
+                        : null);
+                    const nome = athlete?.nome || adminMatch?.nome || "Jogador";
+                    const cargo = adminMatch ? roleLabels[adminMatch.role] || "Atleta" : "Atleta";
+                    return (
+                      <div className="mt-2 flex items-center gap-2 text-brand-soft font-semibold">
+                        <Image
+                          src={athlete?.foto || adminMatch?.foto || DEFAULT_AVATAR}
+                          alt={nome}
+                          width={28}
+                          height={28}
+                          className="rounded-full border border-brand"
+                        />
+                        <span>
+                          {nome} · {cargo}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}

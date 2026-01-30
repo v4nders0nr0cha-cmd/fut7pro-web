@@ -18,6 +18,8 @@ export interface Admin {
   role: RoleAdmin;
   status?: "ativo" | "inativo" | "pendente";
   criadoEm?: string;
+  athleteId?: string | null;
+  athleteSlug?: string | null;
 }
 
 export interface JogadorRacha {
