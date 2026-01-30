@@ -14,6 +14,7 @@ import {
   MAX_GALERIA_FOTOS,
   nossaHistoriaSchema,
 } from "@/utils/schemas/nossaHistoria.schema";
+import { normalizeYouTubeUrl, youtubeThumb } from "@/utils/youtube";
 import type {
   NossaHistoriaData,
   NossaHistoriaMarco,
@@ -153,28 +154,6 @@ function normalizeGaleriaFotos(
   return normalized.length > 0
     ? normalized.slice(0, MAX_GALERIA_FOTOS)
     : fallback.map((foto) => ({ ...foto }));
-}
-
-function extractYouTubeId(url: string) {
-  const normalized = url.trim();
-  if (!normalized) return null;
-  const match =
-    normalized.match(/v=([a-zA-Z0-9_-]{6,})/) ||
-    normalized.match(/youtu\.be\/([a-zA-Z0-9_-]{6,})/) ||
-    normalized.match(/embed\/([a-zA-Z0-9_-]{6,})/);
-  return match?.[1] || null;
-}
-
-function normalizeYouTubeUrl(url: string) {
-  const id = extractYouTubeId(url);
-  if (!id) return url;
-  return `https://www.youtube.com/embed/${id}`;
-}
-
-function youtubeThumb(url: string) {
-  const id = extractYouTubeId(url);
-  if (!id) return null;
-  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
 function moveItem<T>(items: T[], index: number, direction: -1 | 1) {

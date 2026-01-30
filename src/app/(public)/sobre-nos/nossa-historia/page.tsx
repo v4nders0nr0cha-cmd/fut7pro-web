@@ -21,6 +21,7 @@ import {
   MAX_GALERIA_FOTOS,
 } from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
+import { normalizeYouTubeUrl } from "@/utils/youtube";
 import type { PublicMatch } from "@/types/partida";
 import type {
   NossaHistoriaCuriosidade,
@@ -600,7 +601,8 @@ export default function NossaHistoriaPage() {
         })),
     [galeriaFotos]
   );
-  const videos = data.videos ?? [];
+  const videos = useMemo(() => data.videos ?? [], [data.videos]);
+  const videosRender = useMemo(() => videos.filter((video) => Boolean(video?.url)), [videos]);
   const camposHistoricos = data.camposHistoricos ?? [];
   const campoAtual =
     footer?.campo?.nome || footer?.campo?.endereco || footer?.campo?.mapa
@@ -841,18 +843,18 @@ export default function NossaHistoriaPage() {
           </section>
         )}
 
-        {videos.length > 0 && (
+        {videosRender.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4">Videos Historicos</h2>
             <div className="flex flex-wrap gap-6">
-              {videos.map((video, idx) => (
+              {videosRender.map((video, idx) => (
                 <div
                   key={idx}
                   className="w-full md:w-1/2 aspect-video bg-neutral-800 rounded-xl overflow-hidden"
                 >
                   <iframe
-                    src={video.url}
-                    title={video.titulo}
+                    src={normalizeYouTubeUrl(video.url)}
+                    title={video.titulo || "Video do racha"}
                     allowFullScreen
                     className="w-full h-full min-h-[200px] rounded-xl"
                   ></iframe>
