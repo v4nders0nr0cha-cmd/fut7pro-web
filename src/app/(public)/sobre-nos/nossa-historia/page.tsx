@@ -4,7 +4,7 @@ import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { FaRegThumbsUp, FaShareAlt, FaDownload, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
+import { FaRegThumbsUp, FaShareAlt, FaMapMarkedAlt, FaMedal } from "react-icons/fa";
 import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
@@ -723,8 +723,27 @@ export default function NossaHistoriaPage() {
     return mapped;
   })();
 
-  const handleDownload = () => {
-    alert("Funcao de download/compartilhar ainda nao implementada.");
+  const handleShare = async () => {
+    const url = window.location.href;
+    const shareData = { title: "Nossa Historia - Fut7Pro", url };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch {
+        // fallback
+      }
+    }
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        alert("Link copiado!");
+        return;
+      }
+      window.prompt("Copie o link:", url);
+    } catch {
+      alert("Nao foi possivel compartilhar agora.");
+    }
   };
 
   const handleCurtirCuriosidade = async (id: string, current: number) => {
@@ -771,17 +790,7 @@ export default function NossaHistoriaPage() {
 
         <section className="w-full max-w-5xl mx-auto px-4 flex flex-wrap gap-4 mb-2">
           <button
-            onClick={handleDownload}
-            className="flex items-center gap-2 bg-brand text-black font-bold px-4 py-2 rounded-xl hover:brightness-110 transition"
-          >
-            <FaDownload /> Baixar Linha do Tempo
-          </button>
-          <button
-            onClick={() =>
-              navigator.share
-                ? navigator.share({ title: "Nossa Historia - Fut7Pro", url: window.location.href })
-                : handleDownload()
-            }
+            onClick={handleShare}
             className="flex items-center gap-2 bg-neutral-800 text-brand font-bold px-4 py-2 rounded-xl hover:bg-neutral-700 transition"
           >
             <FaShareAlt /> Compartilhar Historia

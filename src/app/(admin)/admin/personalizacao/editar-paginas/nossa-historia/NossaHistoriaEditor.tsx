@@ -14,7 +14,12 @@ import {
   MAX_GALERIA_FOTOS,
   nossaHistoriaSchema,
 } from "@/utils/schemas/nossaHistoria.schema";
-import { normalizeYouTubeUrl, youtubeThumb, youtubeWatchUrl } from "@/utils/youtube";
+import {
+  extractYouTubeId,
+  normalizeYouTubeUrl,
+  youtubeThumb,
+  youtubeWatchUrl,
+} from "@/utils/youtube";
 import type {
   NossaHistoriaData,
   NossaHistoriaMarco,
@@ -180,6 +185,11 @@ type FeedbackModalProps = {
   subtitle: string;
   actions: ReactNode;
   tone?: "success" | "error";
+};
+
+type VideoEmbedStatus = {
+  state: "checking" | "ok" | "blocked" | "invalid" | "unknown";
+  reason?: string | null;
 };
 
 function FeedbackModal({
@@ -435,6 +445,8 @@ export default function NossaHistoriaEditor() {
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isInitialized, setIsInitialized] = useState(false);
+  const [videoEmbedStatus, setVideoEmbedStatus] = useState<Record<string, VideoEmbedStatus>>({});
+  const videoEmbedStatusRef = useRef<Record<string, VideoEmbedStatus>>({});
 
   const publicUrl = useMemo(() => publicHref("/sobre-nos/nossa-historia"), [publicHref]);
   const admins = useMemo(() => racha?.admins ?? [], [racha?.admins]);
@@ -664,6 +676,72 @@ export default function NossaHistoriaEditor() {
     isLoadingRacha,
     normalizeFromAbout,
   ]);
+
+  useEffect(() => {
+    videoEmbedStatusRef.current = videoEmbedStatus;
+  }, [videoEmbedStatus]);
+
+  const videoUrls = useMemo(
+    () => (formData.videos ?? []).map((video) => (video.url ?? "").trim()),
+    [formData.videos]
+  );
+
+  useEffect(() => {
+    const keys = videoUrls.filter(Boolean);
+    setVideoEmbedStatus((prev) => {
+      if (keys.length === 0) return {};
+      const next: Record<string, VideoEmbedStatus> = {};
+      keys.forEach((key) => {
+        if (prev[key]) next[key] = prev[key];
+      });
+      return next;
+    });
+
+    if (keys.length === 0) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      keys.forEach(async (key) => {
+        if (cancelled) return;
+        const videoId = extractYouTubeId(key);
+        if (!videoId) {
+          setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "invalid" } }));
+          return;
+        }
+        const current = videoEmbedStatusRef.current[key];
+        if (current && (current.state === "ok" || current.state === "blocked")) {
+          return;
+        }
+        setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "checking" } }));
+        try {
+          const res = await fetch(`/api/youtube/embed-status?id=${encodeURIComponent(videoId)}`);
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data) {
+            setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "unknown" } }));
+            return;
+          }
+          if (data.embeddable === false) {
+            setVideoEmbedStatus((prev) => ({
+              ...prev,
+              [key]: { state: "blocked", reason: data.reason || null },
+            }));
+            return;
+          }
+          if (data.embeddable === true) {
+            setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "ok" } }));
+            return;
+          }
+          setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "unknown" } }));
+        } catch {
+          setVideoEmbedStatus((prev) => ({ ...prev, [key]: { state: "unknown" } }));
+        }
+      });
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [videoUrls]);
 
   const setField = <K extends keyof NossaHistoriaData>(key: K, value: NossaHistoriaData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -1009,6 +1087,241 @@ export default function NossaHistoriaEditor() {
         </section>
 
         <section className={sectionClass}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold text-brand">Galeria de Fotos</h2>
+            <div className="flex flex-col items-end gap-1">
+              <button
+                type="button"
+                className={buttonSecondary}
+                disabled={!podeAdicionarGaleria}
+                onClick={() =>
+                  setField("categoriasFotos", [
+                    ...(formData.categoriasFotos ?? []),
+                    { id: createRandomId("galeria"), src: "", titulo: "", descricao: "" },
+                  ])
+                }
+              >
+                <Plus size={16} className="inline" /> Adicionar foto
+              </button>
+              {!podeAdicionarGaleria ? (
+                <span className="text-xs text-amber-300">
+                  Limite maximo de {MAX_GALERIA_FOTOS} fotos atingido.
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <div className="grid gap-4">
+            {galeriaFotos.map((foto, idx) => {
+              const isDefault = Boolean(foto.id && DEFAULT_GALERIA_IDS.has(foto.id));
+              return (
+                <div
+                  key={foto.id ?? `galeria-${idx}`}
+                  className="rounded-xl border border-[#2a2d36] p-4"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-300">
+                      Foto #{idx + 1} {isDefault ? "(padrao)" : ""}
+                    </span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() =>
+                          setField(
+                            "categoriasFotos",
+                            moveItem(formData.categoriasFotos ?? [], idx, -1)
+                          )
+                        }
+                        disabled={idx === 0}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() =>
+                          setField(
+                            "categoriasFotos",
+                            moveItem(formData.categoriasFotos ?? [], idx, 1)
+                          )
+                        }
+                        disabled={idx === galeriaFotos.length - 1}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      {!isDefault ? (
+                        <button
+                          type="button"
+                          className="text-xs text-red-400 hover:text-red-300"
+                          onClick={() =>
+                            setField(
+                              "categoriasFotos",
+                              (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
+                            )
+                          }
+                        >
+                          Remover
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <ImageField
+                      label="Imagem"
+                      value={foto.src}
+                      onChange={(value) => updateGaleriaFoto(idx, { src: value })}
+                      onUpload={uploadImage}
+                    />
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <label className={labelClass}>Titulo</label>
+                        <input
+                          className={inputClass}
+                          value={foto.titulo || ""}
+                          onChange={(event) =>
+                            updateGaleriaFoto(idx, { titulo: event.target.value })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Descricao curta</label>
+                        <textarea
+                          className={textareaClass}
+                          rows={3}
+                          value={foto.descricao || ""}
+                          onChange={(event) =>
+                            updateGaleriaFoto(idx, { descricao: event.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-brand">Videos Historicos</h2>
+            <button
+              type="button"
+              className={buttonSecondary}
+              onClick={() =>
+                setField("videos", [...(formData.videos ?? []), { titulo: "", url: "" }])
+              }
+            >
+              <Plus size={16} className="inline" /> Adicionar video
+            </button>
+          </div>
+          <p className="text-xs text-gray-400">
+            Dica: use videos com incorporacao liberada. Se o YouTube bloquear, o site publico pode
+            exibir erro 153/150.
+          </p>
+          <div className="grid gap-4">
+            {(formData.videos ?? []).map((video, idx) => {
+              const thumb = youtubeThumb(video.url || "");
+              const urlKey = (video.url ?? "").trim();
+              const status = urlKey ? videoEmbedStatus[urlKey] : null;
+              return (
+                <div key={`video-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-300">Video #{idx + 1}</span>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, -1))}
+                      >
+                        <ArrowUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className={buttonGhost}
+                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, 1))}
+                      >
+                        <ArrowDown size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-red-400 hover:text-red-300"
+                        onClick={() =>
+                          setField(
+                            "videos",
+                            (formData.videos ?? []).filter((_, i) => i !== idx)
+                          )
+                        }
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 mt-3 md:grid-cols-2">
+                    <div>
+                      <label className={labelClass}>Titulo</label>
+                      <input
+                        className={inputClass}
+                        value={video.titulo || ""}
+                        onChange={(event) => updateVideo(idx, { titulo: event.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>URL do YouTube</label>
+                      <input
+                        className={inputClass}
+                        value={video.url || ""}
+                        onChange={(event) => updateVideo(idx, { url: event.target.value })}
+                        placeholder="https://youtu.be/..."
+                      />
+                      {urlKey ? (
+                        <div className="mt-2 text-xs">
+                          {status?.state === "checking" ? (
+                            <span className="text-gray-400">Verificando incorporacao...</span>
+                          ) : status?.state === "blocked" ? (
+                            <span className="text-amber-300">
+                              Este video nao permite incorporacao
+                              {status.reason ? `: ${status.reason}` : "."}
+                            </span>
+                          ) : status?.state === "invalid" ? (
+                            <span className="text-red-400">URL do YouTube invalida.</span>
+                          ) : status?.state === "ok" ? (
+                            <span className="text-green-400">Incorporacao liberada.</span>
+                          ) : status?.state === "unknown" ? (
+                            <span className="text-gray-400">
+                              Nao foi possivel verificar o embed. Se der erro 153, troque o video.
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                  {thumb ? (
+                    <div className="mt-3 flex items-center gap-3 text-xs text-gray-300">
+                      <Image
+                        src={thumb}
+                        alt="Preview do video"
+                        width={120}
+                        height={68}
+                        className="rounded border border-[#2a2d36]"
+                      />
+                      <a
+                        className="flex items-center gap-1 text-brand hover:text-brand-soft"
+                        href={youtubeWatchUrl(video.url || "")}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Abrir video <ExternalLink size={12} />
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className={sectionClass}>
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-brand">Curiosidades</h2>
             <button
@@ -1224,215 +1537,6 @@ export default function NossaHistoriaEditor() {
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-
-        <section className={sectionClass}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-brand">Galeria de Fotos</h2>
-            <div className="flex flex-col items-end gap-1">
-              <button
-                type="button"
-                className={buttonSecondary}
-                disabled={!podeAdicionarGaleria}
-                onClick={() =>
-                  setField("categoriasFotos", [
-                    ...(formData.categoriasFotos ?? []),
-                    { id: createRandomId("galeria"), src: "", titulo: "", descricao: "" },
-                  ])
-                }
-              >
-                <Plus size={16} className="inline" /> Adicionar foto
-              </button>
-              {!podeAdicionarGaleria ? (
-                <span className="text-xs text-amber-300">
-                  Limite maximo de {MAX_GALERIA_FOTOS} fotos atingido.
-                </span>
-              ) : null}
-            </div>
-          </div>
-          <div className="grid gap-4">
-            {galeriaFotos.map((foto, idx) => {
-              const isDefault = Boolean(foto.id && DEFAULT_GALERIA_IDS.has(foto.id));
-              return (
-                <div
-                  key={foto.id ?? `galeria-${idx}`}
-                  className="rounded-xl border border-[#2a2d36] p-4"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">
-                      Foto #{idx + 1} {isDefault ? "(padrao)" : ""}
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "categoriasFotos",
-                            moveItem(formData.categoriasFotos ?? [], idx, -1)
-                          )
-                        }
-                        disabled={idx === 0}
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() =>
-                          setField(
-                            "categoriasFotos",
-                            moveItem(formData.categoriasFotos ?? [], idx, 1)
-                          )
-                        }
-                        disabled={idx === galeriaFotos.length - 1}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      {!isDefault ? (
-                        <button
-                          type="button"
-                          className="text-xs text-red-400 hover:text-red-300"
-                          onClick={() =>
-                            setField(
-                              "categoriasFotos",
-                              (formData.categoriasFotos ?? []).filter((_, i) => i !== idx)
-                            )
-                          }
-                        >
-                          Remover
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <ImageField
-                      label="Imagem"
-                      value={foto.src}
-                      onChange={(value) => updateGaleriaFoto(idx, { src: value })}
-                      onUpload={uploadImage}
-                    />
-                    <div className="flex flex-col gap-3">
-                      <div>
-                        <label className={labelClass}>Titulo</label>
-                        <input
-                          className={inputClass}
-                          value={foto.titulo || ""}
-                          onChange={(event) =>
-                            updateGaleriaFoto(idx, { titulo: event.target.value })
-                          }
-                        />
-                      </div>
-                      <div>
-                        <label className={labelClass}>Descricao curta</label>
-                        <textarea
-                          className={textareaClass}
-                          rows={3}
-                          value={foto.descricao || ""}
-                          onChange={(event) =>
-                            updateGaleriaFoto(idx, { descricao: event.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className={sectionClass}>
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-brand">Videos Historicos</h2>
-            <button
-              type="button"
-              className={buttonSecondary}
-              onClick={() =>
-                setField("videos", [...(formData.videos ?? []), { titulo: "", url: "" }])
-              }
-            >
-              <Plus size={16} className="inline" /> Adicionar video
-            </button>
-          </div>
-          <div className="grid gap-4">
-            {(formData.videos ?? []).map((video, idx) => {
-              const thumb = youtubeThumb(video.url || "");
-              return (
-                <div key={`video-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Video #{idx + 1}</span>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, -1))}
-                      >
-                        <ArrowUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className={buttonGhost}
-                        onClick={() => setField("videos", moveItem(formData.videos ?? [], idx, 1))}
-                      >
-                        <ArrowDown size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="text-xs text-red-400 hover:text-red-300"
-                        onClick={() =>
-                          setField(
-                            "videos",
-                            (formData.videos ?? []).filter((_, i) => i !== idx)
-                          )
-                        }
-                      >
-                        Remover
-                      </button>
-                    </div>
-                  </div>
-                  <div className="grid gap-3 mt-3 md:grid-cols-2">
-                    <div>
-                      <label className={labelClass}>Titulo</label>
-                      <input
-                        className={inputClass}
-                        value={video.titulo || ""}
-                        onChange={(event) => updateVideo(idx, { titulo: event.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <label className={labelClass}>URL do YouTube</label>
-                      <input
-                        className={inputClass}
-                        value={video.url || ""}
-                        onChange={(event) => updateVideo(idx, { url: event.target.value })}
-                        placeholder="https://youtu.be/..."
-                      />
-                    </div>
-                  </div>
-                  {thumb ? (
-                    <div className="mt-3 flex items-center gap-3 text-xs text-gray-300">
-                      <Image
-                        src={thumb}
-                        alt="Preview do video"
-                        width={120}
-                        height={68}
-                        className="rounded border border-[#2a2d36]"
-                      />
-                      <a
-                        className="flex items-center gap-1 text-brand hover:text-brand-soft"
-                        href={youtubeWatchUrl(video.url || "")}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Abrir video <ExternalLink size={12} />
-                      </a>
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })}
           </div>
         </section>
 
