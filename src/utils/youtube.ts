@@ -20,3 +20,9 @@ export function youtubeThumb(url: string) {
   if (!id) return null;
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
+
+export function youtubeWatchUrl(url: string) {
+  const id = extractYouTubeId(url);
+  if (!id) return url.trim();
+  return `https://www.youtube.com/watch?v=${id}`;
+}

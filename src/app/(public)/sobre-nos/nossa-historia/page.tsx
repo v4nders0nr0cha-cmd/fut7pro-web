@@ -21,7 +21,7 @@ import {
   MAX_GALERIA_FOTOS,
 } from "@/utils/schemas/nossaHistoria.schema";
 import { buildMapsEmbedUrl } from "@/utils/maps";
-import { normalizeYouTubeUrl } from "@/utils/youtube";
+import { normalizeYouTubeUrl, youtubeThumb, youtubeWatchUrl } from "@/utils/youtube";
 import type { PublicMatch } from "@/types/partida";
 import type {
   NossaHistoriaCuriosidade,
@@ -437,6 +437,7 @@ export default function NossaHistoriaPage() {
   const [curiosidadesCurtidasLocalStorage, setCuriosidadesCurtidasLocalStorage] = useState<
     Record<string, boolean>
   >({});
+  const [videosAbertos, setVideosAbertos] = useState<Record<number, boolean>>({});
 
   const curiosidades = useMemo(() => {
     return curiosidadesBase.map((item, idx) => {
@@ -847,19 +848,67 @@ export default function NossaHistoriaPage() {
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand-soft mb-4">Videos Historicos</h2>
             <div className="flex flex-wrap gap-6">
-              {videosRender.map((video, idx) => (
-                <div
-                  key={idx}
-                  className="w-full md:w-1/2 aspect-video bg-neutral-800 rounded-xl overflow-hidden"
-                >
-                  <iframe
-                    src={normalizeYouTubeUrl(video.url)}
-                    title={video.titulo || "Video do racha"}
-                    allowFullScreen
-                    className="w-full h-full min-h-[200px] rounded-xl"
-                  ></iframe>
-                </div>
-              ))}
+              {videosRender.map((video, idx) => {
+                const thumb = youtubeThumb(video.url);
+                const watchUrl = youtubeWatchUrl(video.url);
+                const embedUrl = normalizeYouTubeUrl(video.url);
+                const aberto = Boolean(videosAbertos[idx]);
+                const titulo = video.titulo || `Video ${idx + 1}`;
+                return (
+                  <div
+                    key={idx}
+                    className="w-full md:w-1/2 bg-neutral-900 rounded-xl overflow-hidden border border-[#2a2d36]"
+                  >
+                    <div className="relative aspect-video bg-neutral-800">
+                      {aberto ? (
+                        <iframe
+                          src={embedUrl}
+                          title={titulo}
+                          allowFullScreen
+                          className="w-full h-full"
+                        ></iframe>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setVideosAbertos((prev) => ({ ...prev, [idx]: true }))}
+                          className="relative w-full h-full"
+                          title="Reproduzir aqui"
+                        >
+                          {thumb ? (
+                            <Image
+                              src={thumb}
+                              alt={`Video do racha ${rachaNome}: ${titulo}`}
+                              width={640}
+                              height={360}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-neutral-300">
+                              Preview indisponivel
+                            </div>
+                          )}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="rounded-full bg-black/60 px-4 py-2 text-xs font-semibold text-white">
+                              Reproduzir aqui
+                            </div>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="text-sm font-semibold text-white">{titulo}</div>
+                      <a
+                        href={watchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-brand hover:text-brand-soft"
+                      >
+                        Assistir no YouTube
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </section>
         )}

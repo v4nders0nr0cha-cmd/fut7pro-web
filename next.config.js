@@ -22,7 +22,7 @@ const cspBase = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
   "connect-src 'self' https://api.fut7pro.com.br https://www.google-analytics.com https://www.googletagmanager.com",
-  "frame-src 'self' https://www.google.com https://maps.google.com",
+  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "upgrade-insecure-requests",
@@ -191,6 +191,18 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "fonts.gstatic.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
+        port: "",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "i.ytimg.com",
         port: "",
         pathname: "/**",
       },

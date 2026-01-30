@@ -14,7 +14,7 @@ import {
   MAX_GALERIA_FOTOS,
   nossaHistoriaSchema,
 } from "@/utils/schemas/nossaHistoria.schema";
-import { normalizeYouTubeUrl, youtubeThumb } from "@/utils/youtube";
+import { normalizeYouTubeUrl, youtubeThumb, youtubeWatchUrl } from "@/utils/youtube";
 import type {
   NossaHistoriaData,
   NossaHistoriaMarco,
@@ -1422,7 +1422,7 @@ export default function NossaHistoriaEditor() {
                       />
                       <a
                         className="flex items-center gap-1 text-brand hover:text-brand-soft"
-                        href={video.url}
+                        href={youtubeWatchUrl(video.url || "")}
                         target="_blank"
                         rel="noreferrer"
                       >
