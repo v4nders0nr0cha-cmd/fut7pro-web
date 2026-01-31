@@ -124,6 +124,10 @@ export default function EditarEstatutoAdmin() {
     );
   };
 
+  const alternarAtualizado = (idx: number) => {
+    setTopicos(topicos.map((t, i) => (i === idx ? { ...t, atualizado: !t.atualizado } : t)));
+  };
+
   const handleSalvar = async () => {
     setSalvando(true);
     setMensagem(null);
@@ -200,13 +204,20 @@ export default function EditarEstatutoAdmin() {
         <section>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-2xl font-bold text-yellow-300">Topicos do Estatuto</h2>
-            <button
-              className={`ml-2 px-3 py-2 rounded-md text-sm flex items-center gap-1 font-bold border-2 border-yellow-400 ${topicos.length >= MAX_TOPICOS ? "opacity-40 cursor-not-allowed" : "bg-yellow-400 text-black hover:brightness-110"}`}
-              onClick={adicionarTopico}
-              disabled={topicos.length >= MAX_TOPICOS}
-            >
-              <FaPlus /> Novo Topico
-            </button>
+            <div className="flex flex-col items-start gap-1">
+              <button
+                className={`ml-2 px-3 py-2 rounded-md text-sm flex items-center gap-1 font-bold border-2 border-yellow-400 ${topicos.length >= MAX_TOPICOS ? "opacity-40 cursor-not-allowed" : "bg-yellow-400 text-black hover:brightness-110"}`}
+                onClick={adicionarTopico}
+                disabled={topicos.length >= MAX_TOPICOS}
+              >
+                <FaPlus /> Novo Topico
+              </button>
+              {topicos.length >= MAX_TOPICOS ? (
+                <span className="text-xs text-amber-300">
+                  Limite maximo de {MAX_TOPICOS} topicos atingido.
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -288,6 +299,18 @@ export default function EditarEstatutoAdmin() {
                 <div
                   className={`transition-all duration-300 px-5 ${aberto === idx ? "max-h-[3000px] py-4 opacity-100" : "max-h-0 py-0 opacity-0"} overflow-hidden bg-neutral-800 text-neutral-200 text-base`}
                 >
+                  <div className="flex items-center gap-2 mb-3 text-sm text-neutral-300">
+                    <input
+                      id={`novo-${topico.id ?? idx}`}
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={Boolean(topico.atualizado)}
+                      onChange={() => alternarAtualizado(idx)}
+                    />
+                    <label htmlFor={`novo-${topico.id ?? idx}`}>
+                      Marcar como NOVO no site publico
+                    </label>
+                  </div>
                   <ul className="flex flex-col gap-2">
                     {(topico.conteudo ?? [""]).map((linha, lIdx) => (
                       <li key={lIdx} className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 "use client";
 
 import Head from "next/head";
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   FaInstagram,
   FaFacebook,
@@ -10,13 +10,32 @@ import {
   FaBuilding,
   FaCheckCircle,
 } from "react-icons/fa";
+import { useRacha } from "@/context/RachaContext";
+import { useContatosPublic } from "@/hooks/useContatos";
+import { resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
+
+type AssuntoValue = "patrocinio" | "anunciar" | "suporte" | "duvida" | "outros" | "";
+
+const assuntoLabelMap: Record<Exclude<AssuntoValue, "">, string> = {
+  patrocinio: "Patrocínio",
+  anunciar: "Anunciar",
+  suporte: "Suporte ao sistema",
+  duvida: "Dúvidas gerais",
+  outros: "Outros",
+};
 
 export default function ContatosPage() {
+  const { tenantSlug } = useRacha();
+  const slug = tenantSlug?.trim();
+  const { contatos: contatosData, isLoading } = useContatosPublic(slug);
+  const contatos = useMemo(() => resolveContatosConfig(contatosData), [contatosData]);
+  const whatsappLink = resolveWhatsappLink(contatos.whatsapp);
+
   const [form, setForm] = useState({
     nome: "",
     email: "",
     telefone: "",
-    assunto: "",
+    assunto: "" as AssuntoValue,
     mensagem: "",
   });
   const [enviando, setEnviando] = useState(false);
@@ -39,11 +58,20 @@ export default function ContatosPage() {
     setEnviando(true);
     setErro(null);
 
+    const assuntoLabel = form.assunto ? assuntoLabelMap[form.assunto] || form.assunto : "";
+
     try {
-      const res = await fetch("/api/contato", {
+      const res = await fetch("/api/public/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          name: form.nome.trim(),
+          email: form.email.trim(),
+          phone: form.telefone.trim() || undefined,
+          subject: assuntoLabel,
+          message: form.mensagem.trim(),
+          slug: slug || undefined,
+        }),
       });
 
       if (!res.ok) throw new Error("Erro ao enviar mensagem, tente novamente.");
@@ -199,18 +227,21 @@ export default function ContatosPage() {
           {/* Canais diretos */}
           <div className="bg-neutral-900 rounded-2xl shadow p-4 flex flex-col gap-3 mb-6">
             <h2 className="text-lg md:text-xl font-bold text-white mb-2">Canais Diretos</h2>
+            {isLoading && !contatosData && (
+              <span className="text-xs text-zinc-400">Carregando contatos...</span>
+            )}
             <div className="flex flex-col gap-2 md:flex-row md:gap-6">
               <a
-                href="mailto:contato@fut7pro.com.br"
+                href={`mailto:${contatos.email}`}
                 className="flex items-center gap-2 text-brand hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Enviar e-mail"
               >
-                <FaEnvelope /> contato@fut7pro.com.br
+                <FaEnvelope /> {contatos.email}
               </a>
               <a
-                href="https://wa.me/5599999999999"
+                href={whatsappLink || "#"}
                 className="flex items-center gap-2 text-brand hover:underline"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -246,18 +277,14 @@ export default function ContatosPage() {
             <div className="flex items-center gap-2 mb-1">
               <FaBuilding className="text-brand" />
               <h3 className="font-bold text-brand text-base md:text-lg">
-                Sua marca em destaque no nosso Racha
+                {contatos.tituloPatrocinio}
               </h3>
             </div>
-            <p className="text-sm md:text-base text-white mb-1">
-              Empresas e patrocinadores podem divulgar sua marca nos jogos e eventos parceiros do
-              Racha Fut7Pro, com exposição em banners, páginas e posts oficiais. Peça nosso Media
-              Kit ou solicite mais informações pelo formulário ou pelos canais diretos!
-            </p>
+            <p className="text-sm md:text-base text-white mb-1">{contatos.descricaoPatrocinio}</p>
           </div>
 
           {/* Endereço ou Sede */}
-          <div className="text-center text-zinc-400 text-sm">Racha Fut7pro – São Paulo/SP</div>
+          <div className="text-center text-zinc-400 text-sm">{contatos.endereco}</div>
         </div>
       </main>
     </>

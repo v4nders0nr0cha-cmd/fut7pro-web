@@ -1,7 +1,7 @@
 "use client";
 
 import Head from "next/head";
-import * as React from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   FaInstagram,
   FaFacebook,
@@ -10,42 +10,49 @@ import {
   FaBuilding,
   FaSave,
 } from "react-icons/fa";
-
-type ChangeEvent = React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>;
-type FormEvent = React.FormEvent<HTMLFormElement>;
-
-interface ContatosData {
-  tituloPatrocinio: string;
-  descricaoPatrocinio: string;
-  email: string;
-  whatsapp: string;
-  endereco: string;
-}
-
-const MOCK_CONTATOS: ContatosData = {
-  tituloPatrocinio: "Sua marca em destaque no nosso Racha",
-  descricaoPatrocinio:
-    "Empresas e patrocinadores podem divulgar sua marca nos jogos e eventos parceiros do Racha Fut7Pro, com exposição em banners, páginas e posts oficiais. Peça nosso Media Kit ou solicite mais informações pelo formulário ou pelos canais diretos!",
-  email: "contato@fut7pro.com.br",
-  whatsapp: "https://wa.me/5599999999999", // Link completo do WhatsApp
-  endereco: "Racha Fut7pro – São Paulo/SP",
-};
+import { useContatosAdmin } from "@/hooks/useContatos";
+import type { ContatosConfig } from "@/types/contatos";
+import { resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
 
 export default function EditarContatosPage() {
-  const [contatos, setContatos] = React.useState<ContatosData>(MOCK_CONTATOS);
-  const [msg, setMsg] = React.useState<string | null>(null);
+  const { contatos: contatosData, update, isLoading } = useContatosAdmin();
+  const [contatos, setContatos] = useState<ContatosConfig>(() => resolveContatosConfig());
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [erro, setErro] = useState<string | null>(null);
+  const initializedRef = useRef(false);
 
-  const handleChange = (e: ChangeEvent) => {
+  useEffect(() => {
+    if (!contatosData || initializedRef.current) return;
+    setContatos(resolveContatosConfig(contatosData));
+    initializedRef.current = true;
+  }, [contatosData]);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setContatos((prev) => ({ ...prev, [name]: value }));
-    setMsg(null);
+    setStatus("idle");
+    setErro(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setMsg("Alterações salvas com sucesso! (integração real em breve)");
-    setTimeout(() => setMsg(null), 3000);
+    setStatus("saving");
+    setErro(null);
+    try {
+      const payload = resolveContatosConfig(contatos);
+      await update(payload);
+      setContatos(payload);
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 2500);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar";
+      setErro(message);
+      setStatus("error");
+    }
   };
+
+  const preview = resolveContatosConfig(contatos);
+  const whatsappLink = resolveWhatsappLink(preview.whatsapp);
 
   return (
     <>
@@ -77,7 +84,7 @@ export default function EditarContatosPage() {
                 <input
                   type="email"
                   name="email"
-                  value={contatos.email}
+                  value={contatos.email || ""}
                   onChange={handleChange}
                   maxLength={80}
                   className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
@@ -91,9 +98,9 @@ export default function EditarContatosPage() {
                 <input
                   type="text"
                   name="whatsapp"
-                  value={contatos.whatsapp}
+                  value={contatos.whatsapp || ""}
                   onChange={handleChange}
-                  maxLength={80}
+                  maxLength={120}
                   className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
                   placeholder="https://wa.me/..."
                 />
@@ -103,17 +110,17 @@ export default function EditarContatosPage() {
             <div className="flex flex-col gap-2 mt-2">
               <div>
                 <a
-                  href={`mailto:${contatos.email}`}
+                  href={`mailto:${preview.email}`}
                   className="flex items-center gap-2 text-yellow-400 hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <FaEnvelope /> {contatos.email || "email@seudominio.com.br"}
+                  <FaEnvelope /> {preview.email || "email@seudominio.com.br"}
                 </a>
               </div>
               <div>
                 <a
-                  href={contatos.whatsapp || "#"}
+                  href={whatsappLink || "#"}
                   className="flex items-center gap-2 text-yellow-400 hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -141,11 +148,11 @@ export default function EditarContatosPage() {
             <input
               type="text"
               name="endereco"
-              maxLength={120}
-              value={contatos.endereco}
+              maxLength={160}
+              value={contatos.endereco || ""}
               onChange={handleChange}
               className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
-              placeholder="Ex: Racha Fut7pro – São Paulo/SP"
+              placeholder="Ex: Racha Fut7Pro - São Paulo/SP"
             />
           </section>
 
@@ -157,15 +164,15 @@ export default function EditarContatosPage() {
             <input
               type="text"
               name="tituloPatrocinio"
-              maxLength={60}
-              value={contatos.tituloPatrocinio}
+              maxLength={80}
+              value={contatos.tituloPatrocinio || ""}
               onChange={handleChange}
               className="bg-neutral-900 text-white rounded-lg p-3 w-full mb-3 border border-neutral-700 focus:border-yellow-400"
             />
             <textarea
               name="descricaoPatrocinio"
-              maxLength={600}
-              value={contatos.descricaoPatrocinio}
+              maxLength={800}
+              value={contatos.descricaoPatrocinio || ""}
               onChange={handleChange}
               rows={5}
               className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400 min-h-[120px]"
@@ -175,12 +182,25 @@ export default function EditarContatosPage() {
           <div className="flex justify-end mt-6">
             <button
               type="submit"
-              className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg"
+              className="flex items-center gap-2 bg-yellow-400 text-black font-bold px-6 py-3 rounded-xl hover:brightness-110 transition shadow-lg disabled:opacity-60"
+              disabled={status === "saving" || isLoading}
             >
-              <FaSave /> Salvar Alterações
+              <FaSave /> {status === "saving" ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
-          {msg && <div className="text-center text-green-400 font-semibold py-2">{msg}</div>}
+          {status === "saved" && (
+            <div className="text-center text-green-400 font-semibold py-2">
+              Alterações salvas com sucesso!
+            </div>
+          )}
+          {status === "error" && (
+            <div className="text-center text-red-400 font-semibold py-2">
+              {erro || "Erro ao salvar alterações."}
+            </div>
+          )}
+          {isLoading && (
+            <div className="text-center text-zinc-400 text-sm">Carregando contatos...</div>
+          )}
         </form>
       </main>
     </>
