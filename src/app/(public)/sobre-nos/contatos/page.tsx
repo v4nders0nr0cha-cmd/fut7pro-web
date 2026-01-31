@@ -2,6 +2,7 @@
 
 import Head from "next/head";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { usePathname } from "next/navigation";
 import {
   FaInstagram,
   FaFacebook,
@@ -13,6 +14,7 @@ import {
 import { useRacha } from "@/context/RachaContext";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useContatosPublic } from "@/hooks/useContatos";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { interpolateRachaName, resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
 
 type AssuntoValue = "patrocinio" | "anunciar" | "suporte" | "duvida" | "outros" | "";
@@ -27,9 +29,11 @@ const assuntoLabelMap: Record<Exclude<AssuntoValue, "">, string> = {
 
 export default function ContatosPage() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug?.trim();
-  const { contatos: contatosData, isLoading } = useContatosPublic(slug);
-  const { racha } = useRachaPublic(slug || "");
+  const pathname = usePathname() ?? "";
+  const slugFromPath = resolvePublicTenantSlug(pathname);
+  const resolvedSlug = tenantSlug?.trim() || slugFromPath || "";
+  const { contatos: contatosData, isLoading } = useContatosPublic(resolvedSlug);
+  const { racha } = useRachaPublic(resolvedSlug);
   const contatos = useMemo(() => resolveContatosConfig(contatosData), [contatosData]);
   const whatsappLink = resolveWhatsappLink(contatos.whatsapp);
   const descricaoPatrocinio = useMemo(
@@ -76,7 +80,7 @@ export default function ContatosPage() {
           phone: form.telefone.trim() || undefined,
           subject: assuntoLabel,
           message: form.mensagem.trim(),
-          slug: slug || undefined,
+          slug: resolvedSlug || undefined,
         }),
       });
 
