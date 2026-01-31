@@ -93,7 +93,7 @@ export default function EditarContatosPage() {
                   onChange={handleChange}
                   maxLength={80}
                   className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
-                  placeholder="email@seudominio.com.br"
+                  placeholder="seuemail@outlook.com"
                 />
               </div>
               <div className="flex-1">
@@ -107,32 +107,44 @@ export default function EditarContatosPage() {
                   onChange={handleChange}
                   maxLength={120}
                   className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400"
-                  placeholder="https://wa.me/..."
+                  placeholder="https://wa.me/5511999999999"
                 />
               </div>
             </div>
             {/* Preview dos links */}
             <div className="flex flex-col gap-2 mt-2">
-              <div>
-                <a
-                  href={`mailto:${preview.email}`}
-                  className="flex items-center gap-2 text-yellow-400 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FaEnvelope /> {preview.email || "email@seudominio.com.br"}
-                </a>
-              </div>
-              <div>
-                <a
-                  href={whatsappLink || "#"}
-                  className="flex items-center gap-2 text-yellow-400 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <FaWhatsapp /> WhatsApp Comercial
-                </a>
-              </div>
+              {preview.email ? (
+                <div>
+                  <a
+                    href={`mailto:${preview.email}`}
+                    className="flex items-center gap-2 text-yellow-400 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaEnvelope /> {preview.email}
+                  </a>
+                </div>
+              ) : (
+                <div className="text-sm text-zinc-500 flex items-center gap-2">
+                  <FaEnvelope /> E-mail não informado
+                </div>
+              )}
+              {whatsappLink ? (
+                <div>
+                  <a
+                    href={whatsappLink}
+                    className="flex items-center gap-2 text-yellow-400 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FaWhatsapp /> WhatsApp Comercial
+                  </a>
+                </div>
+              ) : (
+                <div className="text-sm text-zinc-500 flex items-center gap-2">
+                  <FaWhatsapp /> WhatsApp não informado
+                </div>
+              )}
               <div className="flex gap-4 mt-2 items-center">
                 <span className="text-yellow-400 text-2xl">
                   <FaInstagram />

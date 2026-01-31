@@ -4,8 +4,8 @@ export const DEFAULT_CONTATOS: Required<ContatosConfig> = {
   tituloPatrocinio: "Sua marca em destaque no nosso Racha",
   descricaoPatrocinio:
     "Empresas e patrocinadores podem colocar sua marca em evidência no [NOME_DO_RACHA], com exposição no carrossel do rodapé, em uma página exclusiva de patrocinadores no site e em posts oficiais nas redes sociais do racha. Peça o Media Kit ou fale com a gente pelo formulário e pelos canais diretos acima para receber as opções e valores.",
-  email: "contato@fut7pro.com.br",
-  whatsapp: "https://wa.me/5599999999999",
+  email: "",
+  whatsapp: "",
   endereco: "Racha Fut7Pro - São Paulo/SP",
 };
 

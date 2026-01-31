@@ -241,24 +241,28 @@ export default function ContatosPage() {
               <span className="text-xs text-zinc-400">Carregando contatos...</span>
             )}
             <div className="flex flex-col gap-2 md:flex-row md:gap-6">
-              <a
-                href={`mailto:${contatos.email}`}
-                className="flex items-center gap-2 text-brand hover:underline"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Enviar e-mail"
-              >
-                <FaEnvelope /> {contatos.email}
-              </a>
-              <a
-                href={whatsappLink || "#"}
-                className="flex items-center gap-2 text-brand hover:underline"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Falar no WhatsApp"
-              >
-                <FaWhatsapp /> WhatsApp Comercial
-              </a>
+              {contatos.email && (
+                <a
+                  href={`mailto:${contatos.email}`}
+                  className="flex items-center gap-2 text-brand hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Enviar e-mail"
+                >
+                  <FaEnvelope /> {contatos.email}
+                </a>
+              )}
+              {whatsappLink && (
+                <a
+                  href={whatsappLink}
+                  className="flex items-center gap-2 text-brand hover:underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Falar no WhatsApp"
+                >
+                  <FaWhatsapp /> WhatsApp Comercial
+                </a>
+              )}
             </div>
             <div className="flex gap-4 mt-2">
               <a
