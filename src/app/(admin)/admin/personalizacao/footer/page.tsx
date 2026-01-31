@@ -29,7 +29,7 @@ const topicosPadrao = [
 ];
 
 const defaultLegenda =
-  "Fut7Pro e o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.";
+  "Fut7Pro, plataforma para organizar racha de Futebol 7, com sorteio inteligente de times e rankings automáticos.";
 const defaultNomeCampo = "Arena Fut7Pro";
 const defaultEnderecoCampo = "Rua do Futebol, 77 - Centro, Cidade/UF";
 const defaultMapa = "https://maps.google.com/...";

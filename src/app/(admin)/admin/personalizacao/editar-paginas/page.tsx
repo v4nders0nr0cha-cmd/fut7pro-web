@@ -32,21 +32,22 @@ export default function EditarPaginas() {
   return (
     <>
       <Head>
-        <title>Editar Páginas | Personalização | Painel Admin | Fut7Pro</title>
+        <title>Páginas do Sobre Nós | Personalização | Painel Admin | Fut7Pro</title>
         <meta
           name="description"
-          content="Personalize facilmente as páginas institucionais do seu racha: Nossa História, Estatuto e Contatos. Plataforma SaaS Fut7Pro."
+          content="Atualize os textos que aparecem na página Sobre Nós do seu racha (Nossa História, Estatuto e Contatos) no Fut7Pro."
         />
         <meta
           name="keywords"
-          content="fut7, racha, sistema de futebol, personalização, editar páginas, estatuto, história, contatos, SaaS, admin"
+          content="fut7, racha, sistema de futebol, personalização, páginas do sobre nós, nossa história, estatuto, contatos, SaaS, admin"
         />
       </Head>
       <div className="min-h-screen bg-[#181A20] pt-20 pb-24 md:pt-6 md:pb-8 px-4">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-2">Editar Páginas Institucionais</h1>
-          <p className="text-gray-300 mb-8 text-base">
-            Gerencie os textos e informações das principais páginas públicas do seu racha.
+          <h1 className="text-3xl font-bold text-white mb-2">Páginas do Sobre Nós</h1>
+          <p className="text-gray-300 mb-8 text-base max-w-2xl text-balance">
+            Atualize os textos que aparecem na página Sobre Nós do seu racha (Nossa História,
+            Estatuto e Contatos). As mudanças são exibidas no site público em /[slug]/sobre-nos.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

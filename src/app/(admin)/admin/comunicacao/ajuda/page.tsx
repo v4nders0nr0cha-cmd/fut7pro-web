@@ -147,7 +147,7 @@ const artigosMock: ArtigoAjuda[] = [
     categoria: "Personalização",
     titulo: "Como editar textos e rodapé do site?",
     conteudo:
-      "Use 'Personalização' > 'Editar Páginas' e 'Rodapé/Footer' para customizar textos institucionais, links e redes sociais exibidos no site.",
+      "Use 'Personalização' > 'Páginas do Sobre Nós' e 'Rodapé/Footer' para customizar textos institucionais, links e redes sociais exibidos no site.",
   },
   {
     id: 17,

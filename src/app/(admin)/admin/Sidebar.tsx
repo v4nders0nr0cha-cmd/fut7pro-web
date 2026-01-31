@@ -60,7 +60,7 @@ const menu = [
     children: [
       { label: "Identidade Visual", href: "/admin/personalizacao/identidade-visual" },
       { label: "Visual/Temas", href: "/admin/personalizacao/visual-temas" },
-      { label: "Editar Páginas", href: "/admin/personalizacao/editar-paginas" },
+      { label: "Páginas do Sobre Nós", href: "/admin/personalizacao/editar-paginas" },
       { label: "Rodapé/Footer", href: "/admin/personalizacao/footer" },
       { label: "Redes Sociais", href: "/admin/personalizacao/redes-sociais" },
     ],

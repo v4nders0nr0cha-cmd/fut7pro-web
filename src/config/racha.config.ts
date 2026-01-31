@@ -8,7 +8,8 @@ export const rachaConfig = {
     secundária: "#1A1A1A",
   },
   frases: {
-    principal: "Fut7Pro é o primeiro sistema do mundo focado 100% no Futebol 7 entre amigos.",
+    principal:
+      "Fut7Pro, plataforma para organizar racha de Futebol 7, com sorteio inteligente de times e rankings automáticos.",
     slogan: "Fut7Pro – O jogo começa aqui.",
   },
   urls: {
