@@ -11,8 +11,9 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { useRacha } from "@/context/RachaContext";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useContatosPublic } from "@/hooks/useContatos";
-import { resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
+import { interpolateRachaName, resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
 
 type AssuntoValue = "patrocinio" | "anunciar" | "suporte" | "duvida" | "outros" | "";
 
@@ -28,8 +29,13 @@ export default function ContatosPage() {
   const { tenantSlug } = useRacha();
   const slug = tenantSlug?.trim();
   const { contatos: contatosData, isLoading } = useContatosPublic(slug);
+  const { racha } = useRachaPublic(slug || "");
   const contatos = useMemo(() => resolveContatosConfig(contatosData), [contatosData]);
   const whatsappLink = resolveWhatsappLink(contatos.whatsapp);
+  const descricaoPatrocinio = useMemo(
+    () => interpolateRachaName(contatos.descricaoPatrocinio, racha?.nome),
+    [contatos.descricaoPatrocinio, racha?.nome]
+  );
 
   const [form, setForm] = useState({
     nome: "",
@@ -280,7 +286,7 @@ export default function ContatosPage() {
                 {contatos.tituloPatrocinio}
               </h3>
             </div>
-            <p className="text-sm md:text-base text-white mb-1">{contatos.descricaoPatrocinio}</p>
+            <p className="text-sm md:text-base text-white mb-1">{descricaoPatrocinio}</p>
           </div>
 
           {/* Endereço ou Sede */}

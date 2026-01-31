@@ -46,3 +46,10 @@ export function resolveContatosConfig(
     endereco: resolveText(raw?.endereco, enderecoFallback, 160),
   };
 }
+
+export function interpolateRachaName(text: string, rachaName?: string | null) {
+  if (!text) return "";
+  const safeName = rachaName?.trim();
+  if (!safeName) return text;
+  return text.replace(/\[NOME_DO_RACHA\]/gi, safeName);
+}
