@@ -10,11 +10,15 @@ import {
   FaBuilding,
   FaSave,
 } from "react-icons/fa";
+import { useRacha } from "@/context/RachaContext";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useContatosAdmin } from "@/hooks/useContatos";
 import type { ContatosConfig } from "@/types/contatos";
-import { resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
+import { interpolateRachaName, resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
 
 export default function EditarContatosPage() {
+  const { tenantSlug } = useRacha();
+  const { racha } = useRachaPublic(tenantSlug || "");
   const { contatos: contatosData, update, isLoading } = useContatosAdmin();
   const [contatos, setContatos] = useState<ContatosConfig>(() => resolveContatosConfig());
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -53,6 +57,7 @@ export default function EditarContatosPage() {
 
   const preview = resolveContatosConfig(contatos);
   const whatsappLink = resolveWhatsappLink(preview.whatsapp);
+  const descricaoPreview = interpolateRachaName(preview.descricaoPatrocinio, racha?.nome);
 
   return (
     <>
@@ -177,6 +182,9 @@ export default function EditarContatosPage() {
               rows={5}
               className="bg-neutral-900 text-white rounded-lg p-3 w-full border border-neutral-700 focus:border-yellow-400 min-h-[120px]"
             />
+            {racha?.nome && (
+              <div className="mt-2 text-xs text-yellow-300">Prévia no site: {descricaoPreview}</div>
+            )}
           </section>
 
           <div className="flex justify-end mt-6">
