@@ -75,7 +75,7 @@ export default function ComunicadosPage() {
         <title>Comunicados | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja comunicados e avisos oficiais publicados pela administracao do seu racha."
+          content="Veja comunicados e avisos oficiais publicados pela administração do seu racha."
         />
       </Head>
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">

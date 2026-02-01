@@ -159,12 +159,12 @@ export default function HistoricoPartidas() {
           </div>
         ) : filteredMatches.length === 0 ? (
           <div className="text-center text-neutral-300">
-            Nenhuma partida encontrada para o periodo selecionado.
+            Nenhuma partida encontrada para o período selecionado.
           </div>
         ) : (
           filteredMatches.map((match: PublicMatch) => {
             const date = parseMatchDate(match.date);
-            const dateLabel = date ? format(date, "dd/MM/yyyy HH:mm") : "Data nao informada";
+            const dateLabel = date ? format(date, "dd/MM/yyyy HH:mm") : "Data não informada";
             const hasScore = match.scoreA !== null && match.scoreB !== null;
             const scoreA = hasScore ? Number(match.scoreA) : null;
             const scoreB = hasScore ? Number(match.scoreB) : null;
@@ -185,7 +185,7 @@ export default function HistoricoPartidas() {
                   <div>
                     <p className="text-sm text-neutral-400">{dateLabel}</p>
                     <p className="text-sm text-neutral-300">
-                      Local: {match.location || "Local nao informado"}
+                      Local: {match.location || "Local não informado"}
                     </p>
                   </div>
 

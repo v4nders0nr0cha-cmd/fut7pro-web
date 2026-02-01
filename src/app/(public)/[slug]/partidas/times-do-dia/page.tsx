@@ -16,7 +16,7 @@ export function generateMetadata({ params }: TimesDoDiaPageProps): Metadata {
   const slug = params.slug || rachaConfig.slug;
   const title = `Times do Dia | ${slug} | Fut7Pro`;
   const description =
-    "Veja a escalacao dos times do dia, destaques e confrontos do racha Fut7. Sistema para Fut7, racha e futebol amador.";
+    "Veja a escalação dos times do dia, destaques e confrontos do racha Fut7. Sistema para Fut7, racha e futebol amador.";
   const canonical = `${APP_URL}/${slug}/partidas/times-do-dia`;
 
   return {
@@ -28,10 +28,10 @@ export function generateMetadata({ params }: TimesDoDiaPageProps): Metadata {
       "sistema de racha",
       "sorteio de times",
       "escalacao de times",
-      "estatisticas futebol 7",
+      "estatísticas futebol 7",
       "futebol amador",
       "futebol society",
-      "campeoes do dia",
+      "campeões do dia",
     ],
     alternates: { canonical },
     openGraph: {
@@ -52,7 +52,7 @@ export function generateMetadata({ params }: TimesDoDiaPageProps): Metadata {
 export default function TimesDoDiaPage({ params }: TimesDoDiaPageProps) {
   const slug = params.slug || rachaConfig.slug;
   const texto = encodeURIComponent(
-    `Confira os Times do Dia do racha ${slug}! Veja a escalacao completa no Fut7Pro: `
+    `Confira os Times do Dia do racha ${slug}! Veja a escalação completa no Fut7Pro: `
   );
   const url = encodeURIComponent(`${APP_URL}/${slug}/partidas/times-do-dia`);
   const whatsappLink = `https://wa.me/?text=${texto}${url}`;
@@ -63,8 +63,8 @@ export default function TimesDoDiaPage({ params }: TimesDoDiaPageProps) {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-brand mb-4 text-center">Times do Dia</h2>
         <p className="text-center text-neutral-300 mb-8">
-          Veja como ficaram as escalacoes dos times do racha de hoje. Os confrontos e a ordem dos
-          jogos estao logo abaixo.
+          Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
+          jogos estão logo abaixo.
         </p>
         <TimesDoDiaClient slug={slug} />
 

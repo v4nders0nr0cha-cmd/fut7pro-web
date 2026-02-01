@@ -53,19 +53,19 @@ interface ModalNovaNotificacaoProps {
 }
 
 const TIPOS_NOTIFICACAO = [
-  "Cobranca/Financeiro",
-  "Renovacao de Plano",
+  "Cobrança/Financeiro",
+  "Renovação de Plano",
   "Upgrade de Plano",
-  "Promocoes e Ofertas",
-  "Gamificacao e Conquistas",
-  "Atualizacoes de Sistema",
+  "Promoções e Ofertas",
+  "Gamificação e Conquistas",
+  "Atualizações de Sistema",
   "Onboarding/Boas-vindas",
-  "Alertas de Seguranca",
-  "Relatorios e Desempenho",
+  "Alertas de Segurança",
+  "Relatórios e Desempenho",
   "Novidades/Novos Recursos",
   "Suporte/Ajuda",
   "Eventos e Torneios",
-  "Parcerias e Patrocinios",
+  "Parcerias e Patrocínios",
   "Avisos Institucionais",
 ];
 
@@ -166,12 +166,12 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
         newTenantDays: destination === "NEW_TENANTS" ? newTenantDays : undefined,
       });
       if (!result) {
-        setError("Falha ao gerar previa");
+        setError("Falha ao gerar prévia");
         return;
       }
       setPreview(result as NotificationCampaignPreview);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao gerar previa");
+      setError(err instanceof Error ? err.message : "Falha ao gerar prévia");
     } finally {
       setLoadingPreview(false);
     }
@@ -179,7 +179,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
 
   const handleSend = async () => {
     if (!payload.title || !payload.message) {
-      setError("Informe titulo e mensagem.");
+      setError("Informe título e mensagem.");
       return;
     }
 
@@ -189,7 +189,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
     }
 
     if (!preview) {
-      setError("Gere a previa antes de enviar.");
+      setError("Gere a prévia antes de enviar.");
       return;
     }
 
@@ -321,7 +321,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
                 onChange={(e) => setNewTenantDays(Number(e.target.value))}
               />
               <p className="text-[11px] text-zinc-500 mt-1">
-                Novos = rachas criados nos ultimos X dias.
+                Novos = rachas criados nos últimos X dias.
               </p>
             </div>
           )}
@@ -360,7 +360,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
                   checked={badge}
                   onChange={(e) => setBadge(e.target.checked)}
                 />
-                Badge (padrao)
+                Badge (padrão)
               </label>
               {CANAIS.map((canal) => (
                 <label key={canal.value} className="flex items-center gap-2 text-sm text-zinc-200">
@@ -396,19 +396,19 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
         </div>
 
         <div className="mt-5 p-4 rounded-xl bg-zinc-800/70 border border-zinc-700">
-          <div className="text-sm text-zinc-200 font-semibold mb-2">Seguranca e validacao</div>
+          <div className="text-sm text-zinc-200 font-semibold mb-2">Segurança e validação</div>
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <button
               onClick={handlePreview}
               className="px-3 py-2 rounded bg-zinc-700 text-zinc-100 hover:bg-zinc-600 transition text-sm"
               disabled={loadingPreview}
             >
-              {loadingPreview ? "Gerando previa..." : "Gerar previa"}
+              {loadingPreview ? "Gerando prévia..." : "Gerar prévia"}
             </button>
             <div className="text-xs text-zinc-400">
               {preview
-                ? `Voce vai enviar para ${preview.admins} admins de ${preview.tenants} rachas.`
-                : "Gere a previa para validar o alcance."}
+                ? `Você vai enviar para ${preview.admins} admins de ${preview.tenants} rachas.`
+                : "Gere a prévia para validar o alcance."}
             </div>
           </div>
 

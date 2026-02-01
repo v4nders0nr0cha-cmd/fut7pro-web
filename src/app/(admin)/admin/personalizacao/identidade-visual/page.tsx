@@ -218,7 +218,7 @@ export default function LogoDoRachaPage() {
         />
         <meta
           name="keywords"
-          content="Fut7Pro, logo, nome, personalizacao, racha, painel admin, futebol 7, SaaS"
+          content="Fut7Pro, logo, nome, personalização, racha, painel admin, futebol 7, SaaS"
         />
       </Head>
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4">

@@ -101,9 +101,9 @@ const STATUS_BADGES = {
 
 const STATUS_LABELS = {
   ATIVO: "Racha ativo e operando normalmente.",
-  TRIAL: "Periodo de teste, com limitacao de recursos.",
+  TRIAL: "Período de teste, com limitação de recursos.",
   INADIMPLENTE: "Pagamento em atraso, risco de bloqueio.",
-  BLOQUEADO: "Acesso bloqueado por inadimplencia ou infracao.",
+  BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
 };
 
 function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
@@ -504,7 +504,7 @@ export default function RachasCadastradosPage() {
     } catch (error) {
       if (popup) popup.close();
       const msg = error instanceof Error ? error.message : String(error);
-      alert(`Nao foi possivel acessar como admin: ${msg}`);
+      alert(`Não foi possível acessar como admin: ${msg}`);
     } finally {
       setPendingAction(null);
     }
@@ -513,14 +513,14 @@ export default function RachasCadastradosPage() {
   return (
     <>
       <Head>
-        <title>{`Gestao de Rachas - Painel SuperAdmin | ${brandLabel}`}</title>
+        <title>{`Gestão de Rachas - Painel SuperAdmin | ${brandLabel}`}</title>
         <meta
           name="description"
-          content={`Administre todos os rachas SaaS na plataforma ${brandLabel}: veja status, planos, atletas, bloqueie, exporte, filtre e otimize sua gestao multi-tenant.`}
+          content={`Administre todos os rachas SaaS na plataforma ${brandLabel}: veja status, planos, atletas, bloqueie, exporte, filtre e otimize sua gestão multi-tenant.`}
         />
         <meta
           name="keywords"
-          content={`gestao de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha, ${brandLabel}`}
+          content={`gestão de racha, plataforma saas, administrar racha, superadmin, futebol 7, controle de clubes, exportar csv, bloqueio de clientes, status racha, ${brandLabel}`}
         />
       </Head>
       <div className="w-full min-h-screen">

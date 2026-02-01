@@ -198,7 +198,7 @@ export default function TimeCampeaoDoDiaPage() {
       if (!response.ok) {
         throw new Error(resolveErrorMessage(bodyText, "Falha ao publicar no site."));
       }
-      setPublishMessage("Destaques publicados no site publico com sucesso.");
+      setPublishMessage("Destaques publicados no site público com sucesso.");
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
     } finally {
@@ -209,23 +209,23 @@ export default function TimeCampeaoDoDiaPage() {
   return (
     <>
       <Head>
-        <title>Time Campeao do Dia | Painel Admin - Fut7Pro</title>
+        <title>Time Campeão do Dia | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Veja o Time Campeao do Dia e os destaques gerados automaticamente a partir das partidas reais do racha."
+          content="Veja o Time Campeão do Dia e os destaques gerados automaticamente a partir das partidas reais do racha."
         />
         <meta
           name="keywords"
-          content="racha, fut7, time campeao do dia, destaques, painel admin, futebol entre amigos"
+          content="racha, fut7, time campeão do dia, destaques, painel admin, futebol entre amigos"
         />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 text-center drop-shadow">
-          Time Campeao do Dia
+          Time Campeão do Dia
         </h1>
         <p className="text-gray-300 mb-6 text-center text-lg max-w-2xl">
-          Os dados abaixo sao calculados automaticamente com base nas partidas finalizadas em
+          Os dados abaixo são calculados automaticamente com base nas partidas finalizadas em
           Resultados do Dia. Zagueiro do Dia tem que ser escolhido manualmente.
         </p>
         {isFetchingDestaque && (
@@ -233,19 +233,19 @@ export default function TimeCampeaoDoDiaPage() {
         )}
         {destaqueAtualizadoEm && (
           <div className="text-xs text-zinc-400 mb-4">
-            Ultima atualizacao: {destaqueAtualizadoEm}
+            Última atualização: {destaqueAtualizadoEm}
           </div>
         )}
         {actionError && (
           <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg max-w-xl text-center mb-6">
-            <p className="font-semibold mb-1">Nao foi possivel concluir a acao.</p>
+            <p className="font-semibold mb-1">Não foi possível concluir a ação.</p>
             <p className="text-sm">{actionError}</p>
           </div>
         )}
 
         {isLoading && (
           <div className="text-gray-300 py-10 text-center">
-            Carregando partidas para calcular o Time Campeao do Dia...
+            Carregando partidas para calcular o Time Campeão do Dia...
           </div>
         )}
 
@@ -259,7 +259,7 @@ export default function TimeCampeaoDoDiaPage() {
         {!isLoading && !isError && !hasDados && (
           <div className="text-gray-300 py-10 text-center">
             Nenhuma partida finalizada encontrada para o dia selecionado. Registre partidas no
-            painel para habilitar o calculo do Time Campeao do Dia.
+            painel para habilitar o cálculo do Time Campeão do Dia.
           </div>
         )}
 
@@ -300,7 +300,7 @@ export default function TimeCampeaoDoDiaPage() {
                   Salvar e Publicar no Site
                 </div>
                 <p className="text-sm text-zinc-300 text-center max-w-md">
-                  Aplica o Time Campeao do Dia, destaques individuais e banner no site publico do
+                  Aplica o Time Campeão do Dia, destaques individuais e banner no site público do
                   seu racha.
                 </p>
                 <button

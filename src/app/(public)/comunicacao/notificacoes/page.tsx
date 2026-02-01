@@ -70,8 +70,8 @@ export default function NotificacoesPage() {
     return (
       <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-brand mb-2">Notificacoes do Racha</h1>
-          <p className="text-gray-300 mb-4">Entre para ver notificacoes e avisos do seu racha.</p>
+          <h1 className="text-2xl font-bold text-brand mb-2">Notificações do Racha</h1>
+          <p className="text-gray-300 mb-4">Entre para ver notificações e avisos do seu racha.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/login"))}
@@ -87,18 +87,18 @@ export default function NotificacoesPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
       <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
-        <FaBell /> Notificacoes do Racha
+        <FaBell /> Notificações do Racha
       </h1>
       <div className="flex flex-col gap-5">
         {isLoading ? (
           <div className="text-center text-gray-400">Carregando...</div>
         ) : isError ? (
           <div className="text-center text-red-400">
-            Falha ao carregar notificacoes.
+            Falha ao carregar notificações.
             {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
           </div>
         ) : entries.length === 0 ? (
-          <div className="text-center text-gray-400">Nenhuma notificacao encontrada.</div>
+          <div className="text-center text-gray-400">Nenhuma notificação encontrada.</div>
         ) : (
           entries.map((entry) => {
             const { notificacao, kind, enqueteId } = entry;

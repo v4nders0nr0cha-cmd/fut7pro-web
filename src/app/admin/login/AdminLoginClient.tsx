@@ -21,7 +21,7 @@ const HIGHLIGHTS = [
   },
   {
     title: "Rankings oficiais",
-    description: "Estatisticas, conquistas e destaques sempre atualizados.",
+    description: "Estatísticas, conquistas e destaques sempre atualizados.",
   },
 ];
 
@@ -276,7 +276,7 @@ export default function AdminLoginClient() {
           </div>
 
           <p className="mt-4 hidden text-xs text-gray-400 sm:block">
-            Acesso protegido por autenticacao segura e isolada por tenant.
+            Acesso protegido por autenticação segura e isolada por tenant.
           </p>
         </section>
 
@@ -287,7 +287,7 @@ export default function AdminLoginClient() {
           <div className="space-y-3">
             <h1 className="text-3xl font-bold leading-tight sm:text-4xl">Login do Administrador</h1>
             <p className="text-sm leading-relaxed text-gray-300 sm:hidden">
-              Acesse a administracao do seu racha.
+              Acesse a administração do seu racha.
             </p>
             <p className="hidden text-sm leading-relaxed text-gray-300 sm:block sm:text-base">
               Acesse o centro de comando do seu racha. Tudo que voce atualiza no painel reflete no

@@ -383,7 +383,7 @@ export default function PlanosSuperAdminPage() {
                       )}
 
                       <label className="flex flex-col gap-2 text-sm text-neutral-300">
-                        Descricao
+                        Descrição
                         <textarea
                           rows={3}
                           className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"

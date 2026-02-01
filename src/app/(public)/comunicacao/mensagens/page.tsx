@@ -28,7 +28,7 @@ const resolveAuthor = (notif: Notificacao) => {
     (notif.remetente as string) ||
     (meta.autor as string) ||
     (meta.nomeResponsavel as string) ||
-    "Administracao"
+    "Administração"
   );
 };
 

@@ -225,8 +225,8 @@ export default function FinanceiroPage() {
             onChange={(e) => setPeriodo(e.target.value)}
             className="bg-zinc-800 text-white rounded px-2 py-1 ml-2"
           >
-            <option value="7d">Ultimos 7 dias</option>
-            <option value="30d">Ultimos 30 dias</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
             <option value="ano">Ano atual</option>
           </select>
           <select

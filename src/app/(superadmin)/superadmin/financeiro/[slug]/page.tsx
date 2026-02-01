@@ -454,13 +454,13 @@ export default function FinanceiroRachaDetalhePage() {
                   <b>Valor:</b> {formatCurrency(modalPagamento.valor)}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Metodo:</b> {modalPagamento.metodo}
+                  <b>Método:</b> {modalPagamento.metodo}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Referencia:</b> {modalPagamento.referencia ?? "--"}
+                  <b>Referência:</b> {modalPagamento.referencia ?? "--"}
                 </div>
                 <div className="mb-2 text-white">
-                  <b>Descricao:</b> {modalPagamento.descricao || "--"}
+                  <b>Descrição:</b> {modalPagamento.descricao || "--"}
                 </div>
                 <button
                   onClick={() => setModalPagamento(null)}

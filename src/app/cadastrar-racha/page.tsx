@@ -518,7 +518,7 @@ export default function CadastroRachaPage() {
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
 
       if (!isGoogle && requiresEmailVerification) {
-        setSucesso("Cadastro realizado! Enviamos um e-mail para confirmacao.");
+        setSucesso("Cadastro realizado! Enviamos um e-mail para confirmação.");
         const query = new URLSearchParams({
           email: emailParaConfirmar,
           slug: slugParaConfirmar,
@@ -607,7 +607,7 @@ export default function CadastroRachaPage() {
     }
 
     if (couponStatus === "loading") {
-      setFormError("Aguarde a validacao do cupom.");
+      setFormError("Aguarde a validação do cupom.");
       return;
     }
 
@@ -1033,15 +1033,15 @@ export default function CadastroRachaPage() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h2 className="text-sm font-semibold text-white">Escolha seu plano</h2>
                       <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-[11px] font-semibold text-yellow-300">
-                        {baseTrialDays} dias gratis
+                        {baseTrialDays} dias grátis
                       </span>
                     </div>
                     <p className="mt-2 text-xs text-gray-300">
-                      Teste gratis por {baseTrialDays} dias. O plano escolhido define apenas o valor
-                      apos o teste.
+                      Teste grátis por {baseTrialDays} dias. O plano escolhido define apenas o valor
+                      após o teste.
                     </p>
                     <p className="mt-2 text-[11px] text-gray-400">
-                      Apos o periodo gratis, sera solicitada a confirmacao da assinatura para manter
+                      Após o período grátis, será solicitada a confirmação da assinatura para manter
                       o painel do racha ativo.
                     </p>
                   </div>
@@ -1067,7 +1067,7 @@ export default function CadastroRachaPage() {
                           : "text-gray-300 hover:text-white"
                       }`}
                     >
-                      Anual (2 meses gratis)
+                      Anual (2 meses grátis)
                     </button>
                   </div>
 
@@ -1124,7 +1124,7 @@ export default function CadastroRachaPage() {
                           </div>
 
                           <div className="mt-3 text-[11px] text-gray-400">
-                            Apos o teste: {priceFormatter.format(plan.amount)}/{priceSuffix}
+                            Após o teste: {priceFormatter.format(plan.amount)}/{priceSuffix}
                           </div>
 
                           {copy.bullets.length > 0 && (
@@ -1220,7 +1220,7 @@ export default function CadastroRachaPage() {
 
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span>Seu teste gratis: {totalTrialDays} dias.</span>
+                    <span>Seu teste grátis: {totalTrialDays} dias.</span>
                     {discountPercent > 0 && <span>{discountPercent}% na primeira cobranca.</span>}
                   </div>
                 </div>
@@ -1259,7 +1259,7 @@ export default function CadastroRachaPage() {
                     ? "Continuar"
                     : isLoading
                       ? "Finalizando..."
-                      : "Comecar teste gratis"}
+                      : "Começar teste grátis"}
               </button>
             </div>
 
@@ -1323,7 +1323,7 @@ export default function CadastroRachaPage() {
               ? "Continuar"
               : isLoading
                 ? "Finalizando..."
-                : "Comecar teste gratis"}
+                : "Começar teste grátis"}
         </button>
       </div>
 

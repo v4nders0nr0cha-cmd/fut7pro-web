@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     "temas",
     "paleta de cores",
     "visual",
-    "personalizacao",
+    "personalização",
     "painel admin",
     "futebol 7",
     "SaaS",

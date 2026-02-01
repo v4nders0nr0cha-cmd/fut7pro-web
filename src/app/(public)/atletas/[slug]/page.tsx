@@ -223,7 +223,7 @@ export default function PerfilAtletaPage() {
         <title>{displayName} | Fut7Pro</title>
         <meta
           name="description"
-          content={`Perfil publico do atleta ${displayName} com estatisticas do racha.`}
+          content={`Perfil público do atleta ${displayName} com estatísticas do racha.`}
         />
       </Head>
       <main className="max-w-5xl mx-auto px-3 py-10">
@@ -255,28 +255,28 @@ export default function PerfilAtletaPage() {
                   </span>
                 )}
                 <span className="inline-flex items-center rounded-full border border-brand px-3 py-1 text-xs text-brand-soft">
-                  Posicao: {formatPosition(athlete.position)}
+                  Posição: {formatPosition(athlete.position)}
                 </span>
                 {athlete.positionSecondary && (
                   <span className="inline-flex items-center rounded-full border border-brand px-3 py-1 text-xs text-brand-soft">
-                    Posicao secundaria: {formatPosition(athlete.positionSecondary)}
+                    Posição secundária: {formatPosition(athlete.positionSecondary)}
                   </span>
                 )}
                 <span className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-                  Status: {athlete.status || "Nao informado"}
+                  Status: {athlete.status || "Não informado"}
                 </span>
                 <span className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-                  Mensalista: {athlete.mensalista ? "Ativo" : "Nao"}
+                  Mensalista: {athlete.mensalista ? "Ativo" : "Não"}
                 </span>
                 <span className="inline-flex items-center rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-200">
-                  Nivel de Assiduidade: {nivelAssiduidade}
+                  Nível de Assiduidade: {nivelAssiduidade}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center gap-2 text-xs text-gray-300">
-            <span className="text-gray-400">Estatisticas:</span>
+            <span className="text-gray-400">Estatísticas:</span>
             {STAT_PERIODS.map((period) => (
               <button
                 key={period.value}
@@ -297,10 +297,10 @@ export default function PerfilAtletaPage() {
             {[
               { label: "Jogos", value: jogos },
               { label: "Gols", value: atletaRanking?.gols ?? 0 },
-              { label: "Assistencias", value: atletaRanking?.assistencias ?? 0 },
-              { label: "Campeao do Dia", value: campeaoDiaLabel },
-              { label: "Media Vitorias", value: mediaVitorias },
-              { label: "Pontuacao", value: atletaRanking?.pontos ?? 0 },
+              { label: "Assistências", value: atletaRanking?.assistencias ?? 0 },
+              { label: "Campeão do Dia", value: campeaoDiaLabel },
+              { label: "Média Vitórias", value: mediaVitorias },
+              { label: "Pontuação", value: atletaRanking?.pontos ?? 0 },
             ].map((item) => (
               <div key={item.label}>
                 <p className="text-gray-400">{item.label}</p>
@@ -326,7 +326,7 @@ export default function PerfilAtletaPage() {
         </div>
 
         {isErrorRankings && (
-          <div className="mt-6 text-sm text-red-300">Falha ao carregar estatisticas do atleta.</div>
+          <div className="mt-6 text-sm text-red-300">Falha ao carregar estatísticas do atleta.</div>
         )}
       </main>
     </>

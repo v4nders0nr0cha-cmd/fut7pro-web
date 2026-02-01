@@ -59,11 +59,11 @@ export default function SuperAdminDashboard() {
         <title>{`Painel SuperAdmin - ${brand} SaaS`}</title>
         <meta
           name="description"
-          content={`Painel do SuperAdmin ${brandLabel}: visao global das vendas, receita, estatisticas do sistema, clubes/rachas criados e acoes exclusivas do dono da plataforma SaaS.`}
+          content={`Painel do SuperAdmin ${brandLabel}: visão global das vendas, receita, estatísticas do sistema, clubes/rachas criados e ações exclusivas do dono da plataforma SaaS.`}
         />
         <meta
           name="keywords"
-          content={`saas, painel do dono, futebol 7, sistema de rachas, dashboard SaaS, vendas, gestao, receita, multi-tenant, plataforma, ${brandLabel}`}
+          content={`saas, painel do dono, futebol 7, sistema de rachas, dashboard SaaS, vendas, gestão, receita, multi-tenant, plataforma, ${brandLabel}`}
         />
       </Head>
       <main className="min-h-screen bg-[#101826] text-white py-6 px-2 md:px-6">
@@ -72,7 +72,7 @@ export default function SuperAdminDashboard() {
           <span className="text-xl md:text-2xl font-bold text-yellow-400 drop-shadow-sm">
             {`Painel ${brandLabel} - SuperAdmin`}
           </span>
-          <span className="text-white/80 text-sm mt-1 md:mt-0">Ola, Dono do Sistema</span>
+          <span className="text-white/80 text-sm mt-1 md:mt-0">Olá, Dono do Sistema</span>
         </div>
 
         {/* Cards principais */}
@@ -85,7 +85,7 @@ export default function SuperAdminDashboard() {
           <div className="flex flex-col items-center bg-gradient-to-tr from-blue-400 to-blue-600/80 rounded-2xl shadow-lg p-4">
             <FaUsers className="text-3xl text-white mb-2 drop-shadow" />
             <span className="text-lg md:text-2xl font-bold text-white">{usuariosAtivos}</span>
-            <span className="text-xs md:text-base text-white/80">Usuarios Ativos</span>
+            <span className="text-xs md:text-base text-white/80">Usuários Ativos</span>
           </div>
           <div className="flex flex-col items-center bg-gradient-to-tr from-green-400 to-green-600/80 rounded-2xl shadow-lg p-4">
             <FaFutbol className="text-3xl text-white mb-2 drop-shadow" />
@@ -104,7 +104,7 @@ export default function SuperAdminDashboard() {
         {/* Ultimos rachas vendidos */}
         <section className="mb-8">
           <h2 className="text-xl md:text-2xl font-bold mb-4 text-yellow-400 drop-shadow-sm">
-            Ultimos Rachas Criados
+            Últimos Rachas Criados
           </h2>
           <div className="overflow-x-auto rounded-xl shadow">
             <table className="min-w-full bg-[#181f2a] rounded-xl">
@@ -133,10 +133,10 @@ export default function SuperAdminDashboard() {
         {/* Manual de Monetizacao */}
         <section className="mb-10 flex flex-col items-center justify-center">
           <h2 className="text-lg md:text-xl font-semibold mb-2 text-yellow-300">
-            Manual: Tecnicas para Monetizar Seu Racha
+            Manual: Técnicas para Monetizar Seu Racha
           </h2>
           <p className="mb-3 text-center max-w-xl text-sm md:text-base text-white/80">
-            {`Ao realizar sua primeira venda real, o manual exclusivo de monetizacao sera desbloqueado para voce. Aprenda tecnicas para alavancar a receita dos clubes e explorar o potencial do ${brandLabel}.`}
+            {`Ao realizar sua primeira venda real, o manual exclusivo de monetização será desbloqueado para você. Aprenda técnicas para alavancar a receita dos clubes e explorar o potencial do ${brandLabel}.`}
           </p>
           <button
             className={`flex items-center gap-2 px-5 py-2 rounded-lg font-bold text-white shadow
@@ -144,7 +144,7 @@ export default function SuperAdminDashboard() {
             disabled={!podeBaixarManual}
           >
             <FaDownload />
-            Baixar Manual de Monetizacao
+            Baixar Manual de Monetização
             {!podeBaixarManual && <FaLock className="ml-2" />}
           </button>
         </section>
@@ -152,10 +152,10 @@ export default function SuperAdminDashboard() {
         {/* SEO extra (oculto) */}
         <section className="hidden">
           <h2>
-            {`Painel do dono da plataforma ${brandLabel} - Gestao SaaS, receita global, estatisticas, vendas de rachas, administracao multi-tenant, dashboard institucional.`}
+            {`Painel do dono da plataforma ${brandLabel} - Gestão SaaS, receita global, estatísticas, vendas de rachas, administração multi-tenant, dashboard institucional.`}
           </h2>
           <p>
-            {`Plataforma SaaS lider para administracao de rachas de futebol 7 no Brasil. O painel SuperAdmin permite controle absoluto sobre vendas, receita, clubes, usuarios, alem de desbloquear recursos premium e relatorios completos em ${brandLabel}.`}
+            {`Plataforma SaaS líder para administração de rachas de futebol 7 no Brasil. O painel SuperAdmin permite controle absoluto sobre vendas, receita, clubes, usuários, além de desbloquear recursos premium e relatórios completos em ${brandLabel}.`}
           </p>
         </section>
       </main>

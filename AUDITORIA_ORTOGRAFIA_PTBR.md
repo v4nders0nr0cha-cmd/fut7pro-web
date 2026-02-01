@@ -1,6 +1,7 @@
 # AUDITORIA_ORTOGRAFIA_PTBR
 
 Data: 2026-01-31
+Status: Correções aplicadas em 2026-02-01 (itens abaixo já ajustados no código).
 Escopo: src/app/**, src/components/**, src/config/\*\* (apenas texto visível ao usuário)
 
 ## Ocorrências
