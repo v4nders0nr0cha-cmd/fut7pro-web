@@ -62,7 +62,7 @@ export default function EditarEstatutoAdmin() {
 
   const adicionarTopico = () => {
     if (topicos.length >= MAX_TOPICOS) {
-      setMensagem(`Limite maximo de ${MAX_TOPICOS} topicos atingido.`);
+      setMensagem(`Limite máximo de ${MAX_TOPICOS} tópicos atingido.`);
       setTimeout(() => setMensagem(null), 2500);
       return;
     }
@@ -72,7 +72,7 @@ export default function EditarEstatutoAdmin() {
         : `topico-${Date.now()}`;
     const novoTopico: EstatutoTopico = {
       id,
-      titulo: "Novo Topico",
+      titulo: "Novo Tópico",
       conteudo: [""],
     };
     setTopicos([novoTopico, ...topicos]);
@@ -178,43 +178,43 @@ export default function EditarEstatutoAdmin() {
         <title>Editar Estatuto | Admin | Fut7Pro</title>
         <meta
           name="description"
-          content="Painel administrativo para editar o estatuto do racha, regras, criterios de pontuacao, multas, penalidades e organizacao."
+          content="Painel administrativo para editar o estatuto do racha, regras, critérios de pontuação, multas, penalidades e organização."
         />
         <meta
           name="keywords"
-          content="admin estatuto, regras racha, painel administracao, editar estatuto, fut7pro, futebol 7"
+          content="admin estatuto, regras racha, painel administração, editar estatuto, fut7pro, futebol 7"
         />
       </Head>
       <main className="max-w-3xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8 flex flex-col gap-8">
         <section>
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-4">Editar Estatuto</h1>
           <p className="text-white text-base md:text-lg mb-4">
-            Gerencie as regras oficiais, criterios e perguntas frequentes do seu racha de forma
-            simples e segura. Depois de salvar, o site publico e as paginas slugadas do racha sao
+            Gerencie as regras oficiais, critérios e perguntas frequentes do seu racha de forma
+            simples e segura. Depois de salvar, o site público e as páginas slugadas do racha são
             revalidadas automaticamente.
             <br />
             <span className="text-yellow-300 text-sm font-semibold block mt-2">
-              Os topicos abaixo sao padroes em praticamente todo racha. Voce pode organizar,
-              remover, renomear ou criar outros topicos de acordo com a necessidade. Maximo de{" "}
-              {MAX_TOPICOS} topicos.
+              Os tópicos abaixo são padrões em praticamente todo racha. Você pode organizar,
+              remover, renomear ou criar outros tópicos de acordo com a necessidade. Máximo de{" "}
+              {MAX_TOPICOS} tópicos.
             </span>
           </p>
         </section>
 
         <section>
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-2xl font-bold text-yellow-300">Topicos do Estatuto</h2>
+            <h2 className="text-2xl font-bold text-yellow-300">Tópicos do Estatuto</h2>
             <div className="flex flex-col items-start gap-1">
               <button
                 className={`ml-2 px-3 py-2 rounded-md text-sm flex items-center gap-1 font-bold border-2 border-yellow-400 ${topicos.length >= MAX_TOPICOS ? "opacity-40 cursor-not-allowed" : "bg-yellow-400 text-black hover:brightness-110"}`}
                 onClick={adicionarTopico}
                 disabled={topicos.length >= MAX_TOPICOS}
               >
-                <FaPlus /> Novo Topico
+                <FaPlus /> Novo Tópico
               </button>
               {topicos.length >= MAX_TOPICOS ? (
                 <span className="text-xs text-amber-300">
-                  Limite maximo de {MAX_TOPICOS} topicos atingido.
+                  Limite máximo de {MAX_TOPICOS} tópicos atingido.
                 </span>
               ) : null}
             </div>
@@ -243,7 +243,7 @@ export default function EditarEstatutoAdmin() {
                       }}
                       onChange={(e) => alterarTitulo(idx, e.target.value)}
                       maxLength={60}
-                      title="Titulo do topico"
+                      title="Título do tópico"
                     />
                     {topico.atualizado && (
                       <span className="ml-2 text-xs bg-white text-yellow-500 font-bold px-2 py-0.5 rounded">
@@ -279,7 +279,7 @@ export default function EditarEstatutoAdmin() {
                       <FaArrowDown />
                     </button>
                     <button
-                      title="Excluir topico"
+                      title="Excluir tópico"
                       type="button"
                       className="p-1 ml-2 rounded-full hover:bg-red-600 text-red-400"
                       onClick={(e) => {
@@ -308,7 +308,7 @@ export default function EditarEstatutoAdmin() {
                       onChange={() => alternarAtualizado(idx)}
                     />
                     <label htmlFor={`novo-${topico.id ?? idx}`}>
-                      Marcar como NOVO no site publico
+                      Marcar como NOVO no site público
                     </label>
                   </div>
                   <ul className="flex flex-col gap-2">
@@ -342,7 +342,7 @@ export default function EditarEstatutoAdmin() {
                     <FaPlus /> Nova Linha
                   </button>
                   <div className="text-xs text-neutral-400 mt-3">
-                    Dica: voce pode colar emojis na frente de cada linha. Recomendo sites como{" "}
+                    Dica: você pode colar emojis na frente de cada linha. Recomendo sites como{" "}
                     <a
                       href="https://emojipedia.org/"
                       target="_blank"
@@ -369,7 +369,7 @@ export default function EditarEstatutoAdmin() {
         </section>
 
         <section className="mt-2 text-right text-neutral-400 text-xs">
-          Ultima atualizacao: {ultimaAtualizacaoFormatada || "—"}
+          Última atualização: {ultimaAtualizacaoFormatada || "—"}
         </section>
 
         <div className="flex justify-end mt-6">
@@ -379,7 +379,7 @@ export default function EditarEstatutoAdmin() {
             type="button"
             disabled={salvando}
           >
-            {salvando ? "Salvando..." : "Salvar Alteracoes"}
+            {salvando ? "Salvando..." : "Salvar Alterações"}
           </button>
         </div>
 
@@ -396,7 +396,7 @@ export default function EditarEstatutoAdmin() {
         )}
         {isError && (
           <div className="text-red-400 text-sm" role="status">
-            Falha ao carregar o estatuto. Tente novamente ou verifique a autenticacao.
+            Falha ao carregar o estatuto. Tente novamente ou verifique a autenticação.
           </div>
         )}
       </main>

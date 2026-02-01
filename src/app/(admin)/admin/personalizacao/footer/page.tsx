@@ -20,12 +20,12 @@ const isEnterprise = plano === "mensal-enterprise" || plano === "anual-enterpris
 
 const topicosPadrao = [
   { id: "ranking", label: "Sistema de Ranking" },
-  { id: "premiacao", label: "Sistema de Premiacao" },
+  { id: "premiacao", label: "Sistema de Premiação" },
   { id: "balanceamento", label: "Sistema de Balanceamento" },
   { id: "como-funciona", label: "Como Funciona" },
   { id: "sobre", label: "Sobre o Fut7Pro" },
   { id: "termos", label: "Termos de Uso" },
-  { id: "privacidade", label: "Politica de Privacidade" },
+  { id: "privacidade", label: "Política de Privacidade" },
 ];
 
 const defaultLegenda =
@@ -139,32 +139,32 @@ export default function FooterPersonalizacaoPage() {
   return (
     <>
       <Head>
-        <title>Personalizar Rodape | Admin Fut7Pro</title>
+        <title>Personalizar Rodapé | Admin Fut7Pro</title>
         <meta
           name="description"
-          content="Personalize os topicos do rodape, legenda institucional e localizacao do campo oficial do seu racha no Fut7Pro."
+          content="Personalize os tópicos do rodapé, legenda institucional e localização do campo oficial do seu racha no Fut7Pro."
         />
         <meta
           name="keywords"
-          content="personalizar rodape, localizacao campo, footer Fut7Pro, SaaS racha futebol, painel admin"
+          content="personalizar rodapé, localização campo, footer Fut7Pro, SaaS racha futebol, painel admin"
         />
       </Head>
       <div className="w-full max-w-4xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">
-          Configuracao do Rodape
+          Configuração do Rodapé
         </h1>
 
         {/* Topicos editaveis */}
         <section className="mb-10">
           <h2 className="text-lg text-yellow-300 font-semibold mb-3">
-            Topicos editaveis do rodape (direita)
+            Tópicos editáveis do rodapé (direita)
           </h2>
           <div className="flex flex-col sm:flex-row gap-3 mb-3">
             <input
               type="text"
               maxLength={24}
               className="flex-1 rounded px-4 py-2 bg-[#181a1e] border border-yellow-800 text-white focus:outline-none"
-              placeholder="Adicionar novo topico ao rodape"
+              placeholder="Adicionar novo tópico ao rodapé"
               value={novoTopico}
               onChange={(e) => setNovoTopico(e.target.value)}
               disabled={topicosExtras.length >= 2}
@@ -188,7 +188,7 @@ export default function FooterPersonalizacaoPage() {
                   <button
                     className="ml-2 hover:text-red-400"
                     onClick={() => removerPadrao(topico.id)}
-                    title="Excluir topico padrao"
+                    title="Excluir tópico padrão"
                   >
                     <FaTimes />
                   </button>
@@ -204,7 +204,7 @@ export default function FooterPersonalizacaoPage() {
                 <button
                   className="ml-2 hover:text-red-400"
                   onClick={() => removerTopico(idx)}
-                  title="Remover topico"
+                  title="Remover tópico"
                 >
                   <FaTimes />
                 </button>
@@ -214,8 +214,8 @@ export default function FooterPersonalizacaoPage() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-xs text-gray-400 block">
               {topicosExtras.length >= 2
-                ? "Limite maximo de 2 topicos adicionais atingido."
-                : "Adicione ate 2 topicos extras personalizados."}
+                ? "Limite máximo de 2 tópicos adicionais atingido."
+                : "Adicione até 2 tópicos extras personalizados."}
             </span>
             {topicosOcultos.length > 0 && (
               <button
@@ -223,7 +223,7 @@ export default function FooterPersonalizacaoPage() {
                 className="text-xs text-yellow-300 underline"
                 onClick={restaurarPadroes}
               >
-                Restaurar topicos padrao
+                Restaurar tópicos padrão
               </button>
             )}
           </div>
@@ -232,12 +232,12 @@ export default function FooterPersonalizacaoPage() {
         {/* Informacoes do campo */}
         <section className="mb-10">
           <h2 className="text-lg text-yellow-300 font-semibold mb-2">
-            Informacoes do campo no rodape
+            Informações do campo no rodapé
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label className="block text-gray-300 font-semibold mb-1">
-                Nome ou titulo do campo oficial
+                Nome ou título do campo oficial
               </label>
               <input
                 className="w-full rounded px-4 py-2 bg-[#181a1e] border border-yellow-800 text-white"
@@ -247,7 +247,7 @@ export default function FooterPersonalizacaoPage() {
             </div>
             <div>
               <label className="block text-gray-300 font-semibold mb-1">
-                Endereco do campo (aparece abaixo do titulo)
+                Endereço do campo (aparece abaixo do título)
               </label>
               <input
                 className="w-full rounded px-4 py-2 bg-[#181a1e] border border-yellow-800 text-white"
@@ -296,7 +296,7 @@ export default function FooterPersonalizacaoPage() {
             </a>
           </div>
           <span className="text-xs text-gray-400 block mt-1">
-            (redes sociais editaveis em outra pagina)
+            (redes sociais editáveis em outra página)
           </span>
         </section>
 
@@ -315,7 +315,7 @@ export default function FooterPersonalizacaoPage() {
           />
           {!isEnterprise && (
             <span className="text-xs text-gray-400 block mt-1">
-              Apenas no plano <b>Enterprise White Label</b> e possivel editar esta legenda.
+              Apenas no plano <b>Enterprise White Label</b> é possível editar esta legenda.
             </span>
           )}
         </section>
@@ -328,11 +328,11 @@ export default function FooterPersonalizacaoPage() {
               onClick={handleSalvar}
               disabled={status === "saving" || isLoading}
             >
-              <FaSave /> {status === "saving" ? "Salvando..." : "Salvar configuracoes"}
+              <FaSave /> {status === "saving" ? "Salvando..." : "Salvar configurações"}
             </button>
             {status === "saved" && (
               <div className="bg-green-700 border-l-4 border-green-400 text-green-100 px-4 py-2 rounded flex items-center gap-2">
-                <FaSave /> Configuracoes salvas com sucesso!
+                <FaSave /> Configurações salvas com sucesso!
               </div>
             )}
             {status === "error" && (
@@ -342,7 +342,7 @@ export default function FooterPersonalizacaoPage() {
             )}
           </div>
           {isLoading && (
-            <span className="text-xs text-gray-400">Carregando configuracoes do rodape...</span>
+            <span className="text-xs text-gray-400">Carregando configurações do rodapé...</span>
           )}
         </div>
       </div>

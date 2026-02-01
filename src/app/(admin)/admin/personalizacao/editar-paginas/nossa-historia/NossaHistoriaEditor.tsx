@@ -801,13 +801,13 @@ export default function NossaHistoriaEditor() {
       Boolean(foto.src || foto.titulo || foto.descricao)
     );
     if (galeriaFotosFilled.length > MAX_GALERIA_FOTOS) {
-      throw new Error("Limite maximo de 6 fotos na galeria.");
+      throw new Error("Limite máximo de 6 fotos na galeria.");
     }
     const galeriaFotosInvalid = galeriaFotosFilled.find(
       (foto) => !foto.src || !foto.titulo || !foto.descricao
     );
     if (galeriaFotosInvalid) {
-      throw new Error("Preencha imagem, titulo e descricao em todas as fotos da galeria.");
+      throw new Error("Preencha imagem, título e descrição em todas as fotos da galeria.");
     }
     const categoriasFotos =
       galeriaFotosFilled.length > 0
@@ -895,7 +895,7 @@ export default function NossaHistoriaEditor() {
       await update(nextData);
       setSuccessOpen(true);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : "Erro ao salvar a pagina.");
+      setErrorMessage(err instanceof Error ? err.message : "Erro ao salvar a página.");
       setErrorOpen(true);
     } finally {
       setSaving(false);
@@ -925,11 +925,11 @@ export default function NossaHistoriaEditor() {
         open={successOpen}
         onClose={() => setSuccessOpen(false)}
         title="Pagina atualizada!"
-        subtitle="Nossa Historia foi atualizada no site publico."
+        subtitle="Nossa História foi atualizada no site público."
         actions={
           <>
             <a href={publicUrl} target="_blank" rel="noreferrer" className={buttonSecondary}>
-              Ver no site publico
+              Ver no site público
             </a>
             <button type="button" onClick={() => setSuccessOpen(false)} className={buttonPrimary}>
               Fechar
@@ -941,7 +941,7 @@ export default function NossaHistoriaEditor() {
         open={errorOpen}
         onClose={() => setErrorOpen(false)}
         title="Falha ao salvar"
-        subtitle={errorMessage || "Nao foi possivel salvar. Tente novamente."}
+        subtitle={errorMessage || "Não foi possível salvar. Tente novamente."}
         tone="error"
         actions={
           <>
@@ -954,25 +954,25 @@ export default function NossaHistoriaEditor() {
 
       <div className="flex flex-col gap-4 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-white text-center">
-          Nossa Historia (pagina publica)
+          Nossa História (página pública)
         </h1>
       </div>
 
       <div className="flex flex-col gap-8">
         <section className={sectionClass}>
-          <h2 className="text-xl font-bold text-brand">Cabecalho</h2>
+          <h2 className="text-xl font-bold text-brand">Cabeçalho</h2>
           <div className="grid gap-4">
             <div>
-              <label className={labelClass}>Titulo</label>
+              <label className={labelClass}>Título</label>
               <input
                 className={inputClass}
                 value={formData.titulo || ""}
                 onChange={(event) => setField("titulo", event.target.value)}
-                placeholder="Ex: Nossa Historia"
+                placeholder="Ex: Nossa História"
               />
             </div>
             <div>
-              <label className={labelClass}>Descricao</label>
+              <label className={labelClass}>Descrição</label>
               <textarea
                 className={textareaClass}
                 rows={4}
@@ -1048,18 +1048,18 @@ export default function NossaHistoriaEditor() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Titulo</label>
+                    <label className={labelClass}>Título</label>
                     <input
                       className={inputClass}
                       value={marco.titulo}
                       onChange={(event) => updateMarco(idx, { titulo: event.target.value })}
-                      placeholder="Fundacao do racha"
+                      placeholder="Fundação do racha"
                     />
                   </div>
                 </div>
                 <div className="grid gap-3 mt-3 md:grid-cols-2">
                   <div>
-                    <label className={labelClass}>Icone/Conquista</label>
+                    <label className={labelClass}>Ícone/Conquista</label>
                     <input
                       className={inputClass}
                       value={marco.conquista || ""}
@@ -1068,7 +1068,7 @@ export default function NossaHistoriaEditor() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Descricao</label>
+                    <label className={labelClass}>Descrição</label>
                     <textarea
                       className={textareaClass}
                       rows={2}
@@ -1105,7 +1105,7 @@ export default function NossaHistoriaEditor() {
               </button>
               {!podeAdicionarGaleria ? (
                 <span className="text-xs text-amber-300">
-                  Limite maximo de {MAX_GALERIA_FOTOS} fotos atingido.
+                  Limite máximo de {MAX_GALERIA_FOTOS} fotos atingido.
                 </span>
               ) : null}
             </div>
@@ -1174,7 +1174,7 @@ export default function NossaHistoriaEditor() {
                     />
                     <div className="flex flex-col gap-3">
                       <div>
-                        <label className={labelClass}>Titulo</label>
+                        <label className={labelClass}>Título</label>
                         <input
                           className={inputClass}
                           value={foto.titulo || ""}
@@ -1184,7 +1184,7 @@ export default function NossaHistoriaEditor() {
                         />
                       </div>
                       <div>
-                        <label className={labelClass}>Descricao curta</label>
+                        <label className={labelClass}>Descrição curta</label>
                         <textarea
                           className={textareaClass}
                           rows={3}
@@ -1204,7 +1204,7 @@ export default function NossaHistoriaEditor() {
 
         <section className={sectionClass}>
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-brand">Videos Historicos</h2>
+            <h2 className="text-xl font-bold text-brand">Vídeos Históricos</h2>
             <button
               type="button"
               className={buttonSecondary}
@@ -1212,11 +1212,11 @@ export default function NossaHistoriaEditor() {
                 setField("videos", [...(formData.videos ?? []), { titulo: "", url: "" }])
               }
             >
-              <Plus size={16} className="inline" /> Adicionar video
+              <Plus size={16} className="inline" /> Adicionar vídeo
             </button>
           </div>
           <p className="text-xs text-gray-400">
-            Dica: use videos com incorporacao liberada. Se o YouTube bloquear, o site publico pode
+            Dica: use vídeos com incorporação liberada. Se o YouTube bloquear, o site público pode
             exibir erro 153/150.
           </p>
           <div className="grid gap-4">
@@ -1227,7 +1227,7 @@ export default function NossaHistoriaEditor() {
               return (
                 <div key={`video-${idx}`} className="rounded-xl border border-[#2a2d36] p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm text-gray-300">Video #{idx + 1}</span>
+                    <span className="text-sm text-gray-300">Vídeo #{idx + 1}</span>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -1259,7 +1259,7 @@ export default function NossaHistoriaEditor() {
                   </div>
                   <div className="grid gap-3 mt-3 md:grid-cols-2">
                     <div>
-                      <label className={labelClass}>Titulo</label>
+                      <label className={labelClass}>Título</label>
                       <input
                         className={inputClass}
                         value={video.titulo || ""}
@@ -1277,19 +1277,19 @@ export default function NossaHistoriaEditor() {
                       {urlKey ? (
                         <div className="mt-2 text-xs">
                           {status?.state === "checking" ? (
-                            <span className="text-gray-400">Verificando incorporacao...</span>
+                            <span className="text-gray-400">Verificando incorporação...</span>
                           ) : status?.state === "blocked" ? (
                             <span className="text-amber-300">
-                              Este video nao permite incorporacao
+                              Este vídeo não permite incorporação
                               {status.reason ? `: ${status.reason}` : "."}
                             </span>
                           ) : status?.state === "invalid" ? (
-                            <span className="text-red-400">URL do YouTube invalida.</span>
+                            <span className="text-red-400">URL do YouTube inválida.</span>
                           ) : status?.state === "ok" ? (
-                            <span className="text-green-400">Incorporacao liberada.</span>
+                            <span className="text-green-400">Incorporação liberada.</span>
                           ) : status?.state === "unknown" ? (
                             <span className="text-gray-400">
-                              Nao foi possivel verificar o embed. Se der erro 153, troque o video.
+                              Não foi possível verificar o embed. Se der erro 153, troque o vídeo.
                             </span>
                           ) : null}
                         </div>
@@ -1311,7 +1311,7 @@ export default function NossaHistoriaEditor() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Abrir video <ExternalLink size={12} />
+                        Abrir vídeo <ExternalLink size={12} />
                       </a>
                     </div>
                   ) : null}
@@ -1377,7 +1377,7 @@ export default function NossaHistoriaEditor() {
                 </div>
                 <div className="grid gap-3 mt-3 md:grid-cols-2">
                   <div>
-                    <label className={labelClass}>Titulo</label>
+                    <label className={labelClass}>Título</label>
                     <input
                       className={inputClass}
                       value={curiosidade.titulo || ""}
@@ -1545,7 +1545,7 @@ export default function NossaHistoriaEditor() {
             <div>
               <h2 className="text-xl font-bold text-brand">Onde Começou (Primeiro Campo)</h2>
               <p className="text-sm text-gray-400 mt-1">
-                O campo atual é configurado no Rodape. Aqui voce informa apenas o primeiro campo do
+                O campo atual é configurado no Rodapé. Aqui você informa apenas o primeiro campo do
                 racha.
               </p>
             </div>
@@ -1553,7 +1553,7 @@ export default function NossaHistoriaEditor() {
           <div className="mt-4 rounded-xl border border-[#2a2d36] p-4">
             <div className="grid gap-3 md:grid-cols-2">
               <div>
-                <label className={labelClass}>Nome ou titulo do primeiro campo</label>
+                <label className={labelClass}>Nome ou título do primeiro campo</label>
                 <input
                   className={inputClass}
                   value={campoHistorico.nome || ""}
@@ -1563,7 +1563,7 @@ export default function NossaHistoriaEditor() {
                 />
               </div>
               <div>
-                <label className={labelClass}>Endereco do campo (aparece abaixo do titulo)</label>
+                <label className={labelClass}>Endereço do campo (aparece abaixo do título)</label>
                 <input
                   className={inputClass}
                   value={campoHistorico.endereco || ""}
@@ -1591,13 +1591,13 @@ export default function NossaHistoriaEditor() {
         </section>
 
         <section className={sectionClass}>
-          <h2 className="text-xl font-bold text-brand">Secoes automaticas</h2>
+          <h2 className="text-xl font-bold text-brand">Seções automáticas</h2>
           <div className="rounded-xl border border-[#2a2d36] bg-[#111318] p-4 text-sm text-gray-300">
-            As secoes abaixo sao preenchidas automaticamente pelo sistema e nao sao editaveis aqui:
+            As seções abaixo são preenchidas automaticamente pelo sistema e não são editáveis aqui:
             <ul className="list-disc pl-5 mt-2 text-gray-300">
               <li>Membros Mais Antigos (top 5 do ranking de assiduidade - Todos os Anos)</li>
-              <li>Campeoes Historicos (top 5 pontuadores - Todas as Temporadas)</li>
-              <li>Presidencia e Diretoria (admins configurados em Administradores)</li>
+              <li>Campeões Históricos (top 5 pontuadores - Todas as Temporadas)</li>
+              <li>Presidência e Diretoria (admins configurados em Administradores)</li>
             </ul>
           </div>
         </section>
@@ -1605,9 +1605,9 @@ export default function NossaHistoriaEditor() {
 
       <div className="mt-8 flex flex-col items-center gap-3">
         <button type="button" className={buttonPrimary} onClick={handleSave} disabled={saving}>
-          {saving ? "Salvando..." : "Salvar pagina"}
+          {saving ? "Salvando..." : "Salvar página"}
         </button>
-        <div className="text-xs text-gray-400">As mudancas sao refletidas no site publico.</div>
+        <div className="text-xs text-gray-400">As mudanças são refletidas no site público.</div>
       </div>
     </div>
   );

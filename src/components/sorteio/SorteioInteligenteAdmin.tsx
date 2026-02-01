@@ -357,45 +357,45 @@ export default function SorteioInteligenteAdmin() {
             <b>Como garantir um sorteio realmente equilibrado?</b>
             <br />
             <br />
-            O sorteio inteligente combina nivel do atleta (habilidade 1-5 + fisico 1-3), ranking do
-            racha, posicao e historico recente de sorteios (anti-panelinha) para montar times
+            O sorteio inteligente combina nível do atleta (habilidade 1-5 + físico 1-3), ranking do
+            racha, posição e histórico recente de sorteios (anti-panelinha) para montar times
             equilibrados.
             <br />
             <br />
-            <b>PRIMEIROS 8 SORTEIOS / INICIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados
-            do sistema (ou no inicio de cada ano/temporada, quando os rankings reiniciam), o
+            <b>PRIMEIROS 8 SORTEIOS / INÍCIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados
+            do sistema (ou no início de cada ano/temporada, quando os rankings reiniciam), o
             balanceamento usa <b>somente as estrelas definidas pelo administrador</b>. A contagem
-            comeca apos a publicacao do sorteio. Rankings e estatisticas continuam sendo
-            registrados, apenas nao pesam no balanceamento.
+            começa após a publicação do sorteio. Rankings e estatísticas continuam sendo
+            registrados, apenas não pesam no balanceamento.
             <br />
             <br />
-            <b>APOS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posicao, e aplica
-            o anti-panelinha com base no historico recente para evitar repeticao de jogadores no
-            mesmo time. O equilibrio melhora a cada racha conforme o historico cresce.
+            <b>APÓS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posição, e aplica
+            o anti-panelinha com base no histórico recente para evitar repetição de jogadores no
+            mesmo time. O equilíbrio melhora a cada racha conforme o histórico cresce.
             <br />
             <br />
             <b>GOLEIROS:</b> Sempre 1 goleiro por time. Se faltar goleiro real, use o Goleiro
             Reserva (BOT) para completar o sorteio.
             <br />
             <br />
-            <b>CONFIGURACOES INICIAIS:</b> Numero de times, tempo de partida e jogadores por time
-            <b>nao influenciam no balanceamento</b>. Servem para organizar os times e gerar a tabela
+            <b>CONFIGURAÇÕES INICIAIS:</b> Número de times, tempo de partida e jogadores por time
+            <b>não influenciam no balanceamento</b>. Servem para organizar os times e gerar a tabela
             de confrontos.
             <br />
             <br />
-            <b>TABELA DE CONFRONTOS:</b> A tabela e calculada conforme o tempo total do racha,
-            reservando 15 minutos para organizacao e imprevistos. Exemplo: se o racha tem 60
-            minutos, a tabela sera criada para 45 minutos de jogos. O modelo e o tempo sugerido
+            <b>TABELA DE CONFRONTOS:</b> A tabela é calculada conforme o tempo total do racha,
+            reservando 15 minutos para organização e imprevistos. Exemplo: se o racha tem 60
+            minutos, a tabela será criada para 45 minutos de jogos. O modelo e o tempo sugerido
             podem ser ajustados pelo administrador conforme a realidade do grupo.
             <br />
             <br />
-            <b>ESTRELAS (NIVEL DO ATLETA):</b> Defina habilidade e fisico na pagina Nivel dos
-            Atletas. O nivel final e calculado automaticamente e usado no sorteio. Ajuste sempre que
-            perceber evolucao ou queda de desempenho.
+            <b>ESTRELAS (NÍVEL DO ATLETA):</b> Defina habilidade e físico na página Nível dos
+            Atletas. O nível final é calculado automaticamente e usado no sorteio. Ajuste sempre que
+            perceber evolução ou queda de desempenho.
             <br />
             <br />
-            <b>Dica:</b> Se notar desequilibrio, ajuste manualmente os times enquanto o historico
-            ainda esta curto. Isso garante jogos mais disputados ate a calibracao completa.
+            <b>Dica:</b> Se notar desequilíbrio, ajuste manualmente os times enquanto o histórico
+            ainda está curto. Isso garante jogos mais disputados até a calibração completa.
             <br />
             <br />
             Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e
@@ -459,8 +459,8 @@ export default function SorteioInteligenteAdmin() {
       {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
       {configConfirmada && (
         <div className="text-center text-xs text-yellow-200 mb-4">
-          Esta configuracao foi salva para este sorteio. Para alterar, clique em Editar
-          Configuracao.
+          Esta configuração foi salva para este sorteio. Para alterar, clique em Editar
+          Configuração.
         </div>
       )}
 
@@ -481,15 +481,15 @@ export default function SorteioInteligenteAdmin() {
       </button>
       {(loadingHistorico || erroHistorico || typeof totalTemporada === "number") && (
         <div className="text-xs text-center text-yellow-200 mb-3">
-          {loadingHistorico && "Carregando historico de sorteios..."}
-          {erroHistorico && "Falha ao carregar historico. Balanceamento parcial ativo."}
+          {loadingHistorico && "Carregando histórico de sorteios..."}
+          {erroHistorico && "Falha ao carregar histórico. Balanceamento parcial ativo."}
           {typeof totalTemporada === "number" && (
             <>
               {!loadingHistorico && !erroHistorico && (
                 <>
                   Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
                   {totalTemporada < 8
-                    ? "Fase de calibracao: nos primeiros 8 sorteios publicados, o balanceamento usa apenas as estrelas do admin."
+                    ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas as estrelas do admin."
                     : "Ranking ativo no balanceamento."}
                 </>
               )}
@@ -545,7 +545,7 @@ export default function SorteioInteligenteAdmin() {
                 href="/admin/partidas/times-do-dia"
                 className="text-sm font-semibold text-yellow-300 hover:text-yellow-200 underline"
               >
-                Veja como os atletas veem no site publico.
+                Veja como os atletas veem no site público.
               </Link>
             </div>
           )}
