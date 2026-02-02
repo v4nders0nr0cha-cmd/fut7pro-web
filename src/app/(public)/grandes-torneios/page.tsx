@@ -153,7 +153,7 @@ export default function GrandesTorneiosPage() {
             )}
             {isError && (
               <p className="text-center text-red-400 italic mt-6 text-sm">
-                Nao foi possivel carregar os torneios agora.
+                Não foi possível carregar os torneios agora.
               </p>
             )}
             {!isLoading &&
@@ -189,7 +189,7 @@ export default function GrandesTorneiosPage() {
                           </h3>
                           <p className="text-sm text-gray-300 mb-2">
                             {torneio.descricaoResumida ||
-                              `Edicao ${torneio.ano || "especial"} com os melhores jogadores do racha.`}
+                              `Edição ${torneio.ano || "especial"} com os melhores jogadores do racha.`}
                           </p>
                           <Link
                             href={publicHref(`/grandes-torneios/${torneio.slug}`)}
@@ -204,7 +204,7 @@ export default function GrandesTorneiosPage() {
                       <div className="relative h-12 w-12 shrink-0 rounded-full overflow-hidden border border-brand-strong/70 bg-zinc-950">
                         <Image
                           src={logo}
-                          alt={`Escudo do time campeao ${torneio.campeao || "A definir"}`}
+                          alt={`Escudo do time campeão ${torneio.campeao || "A definir"}`}
                           fill
                           className="object-contain p-1"
                           sizes="48px"
@@ -212,7 +212,7 @@ export default function GrandesTorneiosPage() {
                       </div>
                       <div className="flex-1">
                         <p className="text-xs uppercase tracking-wide text-gray-500">
-                          Time campeao
+                          Time campeão
                         </p>
                         <p className="text-sm font-semibold text-brand-soft">
                           {torneio.campeao || "A definir"}

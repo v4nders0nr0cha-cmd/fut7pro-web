@@ -11,10 +11,10 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
-const BADGE_AUTOMATICO = "Automatico";
+const BADGE_AUTOMATICO = "Automático";
 const CRITERIA_DIA = {
   artilheiro: "Mais gols no dia (qualquer time)",
-  maestro: "Mais assistencias no dia (qualquer time)",
+  maestro: "Mais assistências no dia (qualquer time)",
 };
 
 export default function Sidebar() {
@@ -120,7 +120,7 @@ export default function Sidebar() {
         badge={BADGE_AUTOMATICO}
         criteria={CRITERIA_DIA.maestro}
         footerValue={maestroAssists}
-        footerLabel="assistencias"
+        footerLabel="assistências"
         onRulesClick={() => setRegrasOpen(true)}
       />
 
@@ -252,7 +252,7 @@ function SidebarPlayerCard({
             icon.startsWith("/") ? (
               <Image
                 src={icon}
-                alt={`Icone ${title}`}
+                alt={`Ícone ${title}`}
                 width={24}
                 height={24}
                 className="object-contain"
@@ -304,7 +304,7 @@ function SidebarPlayerCard({
           {icon.startsWith("/") ? (
             <Image
               src={icon}
-              alt={`Icone ${title}`}
+              alt={`Ícone ${title}`}
               width={28}
               height={28}
               className="object-contain"

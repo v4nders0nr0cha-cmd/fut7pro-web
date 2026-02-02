@@ -621,7 +621,7 @@ export default function NossaHistoriaPage() {
     ...camposHistoricos.map((campo) => ({
       ...campo,
       mapaEmbed: buildMapsEmbedUrl(campo.mapa, campo.endereco || campo.nome),
-      tipo: "Historico",
+      tipo: "Histórico",
       cor: "text-brand-soft",
       tag: "text-xs text-neutral-400",
     })),
@@ -725,7 +725,7 @@ export default function NossaHistoriaPage() {
 
   const handleShare = async () => {
     const url = window.location.href;
-    const shareData = { title: "Nossa Historia - Fut7Pro", url };
+    const shareData = { title: "Nossa História - Fut7Pro", url };
     if (navigator.share) {
       try {
         await navigator.share(shareData);
@@ -776,10 +776,10 @@ export default function NossaHistoriaPage() {
   return (
     <>
       <Head>
-        <title>Nossa Historia | Sobre Nos | Fut7Pro</title>
+        <title>Nossa História | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Linha do tempo, fotos, videos, curiosidades e depoimentos sobre a historia do racha. Conteudo dinamicado por tenant."
+          content="Linha do tempo, fotos, vídeos, curiosidades e depoimentos sobre a história do racha. Conteúdo dinamicado por tenant."
         />
       </Head>
       <main className="w-full flex flex-col gap-10 pt-20">
@@ -793,7 +793,7 @@ export default function NossaHistoriaPage() {
             onClick={handleShare}
             className="flex items-center gap-2 bg-neutral-800 text-brand font-bold px-4 py-2 rounded-xl hover:bg-neutral-700 transition"
           >
-            <FaShareAlt /> Compartilhar Historia
+            <FaShareAlt /> Compartilhar História
           </button>
         </section>
 
@@ -855,14 +855,14 @@ export default function NossaHistoriaPage() {
 
         {videosRender.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
-            <h2 className="text-2xl font-bold text-brand-soft mb-4">Videos Historicos</h2>
+            <h2 className="text-2xl font-bold text-brand-soft mb-4">Vídeos Históricos</h2>
             <div className="flex flex-wrap gap-6">
               {videosRender.map((video, idx) => {
                 const thumb = youtubeThumb(video.url);
                 const watchUrl = youtubeWatchUrl(video.url);
                 const embedUrl = normalizeYouTubeUrl(video.url);
                 const aberto = Boolean(videosAbertos[idx]);
-                const titulo = video.titulo || `Video ${idx + 1}`;
+                const titulo = video.titulo || `Vídeo ${idx + 1}`;
                 return (
                   <div
                     key={idx}
@@ -886,7 +886,7 @@ export default function NossaHistoriaPage() {
                           {thumb ? (
                             <Image
                               src={thumb}
-                              alt={`Video do racha ${rachaNome}: ${titulo}`}
+                              alt={`Vídeo do racha ${rachaNome}: ${titulo}`}
                               width={640}
                               height={360}
                               className="w-full h-full object-cover"
@@ -1046,7 +1046,7 @@ export default function NossaHistoriaPage() {
         {campeoesHistoricos.length > 0 && (
           <section className="w-full max-w-5xl mx-auto px-4">
             <h2 className="text-2xl font-bold text-brand mb-4 flex items-center gap-2">
-              <FaMedal className="text-brand" /> Campeoes Historicos (Top 5 Pontuadores de todos os
+              <FaMedal className="text-brand" /> Campeões Históricos (Top 5 Pontuadores de todos os
               tempos)
             </h2>
             <div className="flex flex-wrap gap-4">

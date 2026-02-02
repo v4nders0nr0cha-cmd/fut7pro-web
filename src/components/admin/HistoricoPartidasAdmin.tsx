@@ -106,9 +106,9 @@ function normalizeKey(value?: string | null) {
 }
 
 function formatDate(value?: string | null, withTime = false) {
-  if (!value) return "Data nao informada";
+  if (!value) return "Data não informada";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data nao informada";
+  if (Number.isNaN(date.getTime())) return "Data não informada";
   return withTime ? format(date, "dd/MM/yyyy HH:mm") : format(date, "dd/MM/yyyy");
 }
 
@@ -581,7 +581,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
       .filter((player) => player.stats.goals > 0 || player.stats.assists > 0);
 
     if (!withStats.length) {
-      return <p className="text-xs text-neutral-400">Sem gols ou assistencias ainda.</p>;
+      return <p className="text-xs text-neutral-400">Sem gols ou assistências ainda.</p>;
     }
 
     return (
@@ -614,7 +614,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-yellow-400">Resultado da partida</h2>
             <p className="text-sm text-neutral-400">
-              {formatDate(match.date, true)} - {match.location || "Local nao informado"}
+              {formatDate(match.date, true)} - {match.location || "Local não informado"}
             </p>
           </div>
           <button
@@ -879,7 +879,7 @@ export default function HistoricoPartidasAdmin() {
       const location =
         sortedMatches.find((item) => item.match.location)?.match.location ||
         firstMatch.location ||
-        "Local nao informado";
+        "Local não informado";
       const hora = format(sortedMatches[0].date, "HH:mm");
       const highlights = buildDayHighlights(sortedMatches);
       const lastUpdateLabel = buildLastUpdateLabel(sortedMatches);
@@ -954,24 +954,24 @@ export default function HistoricoPartidasAdmin() {
   );
 
   if (isLoading) {
-    return renderEmptyState("Carregando historico...");
+    return renderEmptyState("Carregando histórico...");
   }
 
   if (isError) {
     return renderEmptyState(
-      `Falha ao carregar historico. ${error instanceof Error ? error.message : ""}`
+      `Falha ao carregar histórico. ${error instanceof Error ? error.message : ""}`
     );
   }
 
   if (selectedDayKey && !selectedDay) {
     return (
       <div className="space-y-4">
-        {renderEmptyState("Dia nao encontrado ou sem partidas registradas.")}
+        {renderEmptyState("Dia não encontrado ou sem partidas registradas.")}
         <Link
           href={buildHistoricoLink({ dia: null })}
           className="inline-flex items-center gap-2 rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
         >
-          Voltar para o historico
+          Voltar para o histórico
         </Link>
       </div>
     );
@@ -987,12 +987,12 @@ export default function HistoricoPartidasAdmin() {
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-widest text-neutral-400">Historico do dia</p>
+              <p className="text-xs uppercase tracking-widest text-neutral-400">Histórico do dia</p>
               <h2 className="text-2xl md:text-3xl font-bold text-yellow-400">
                 {format(selectedDay.date, "dd/MM/yyyy")} - {selectedDay.hora}
               </h2>
               <p className="text-sm text-neutral-400 mt-1">
-                {selectedDay.location || "Local nao informado"}
+                {selectedDay.location || "Local não informado"}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-neutral-300">
                 <span className={`rounded-full px-3 py-1 font-semibold ${statusBadge}`}>
@@ -1009,7 +1009,7 @@ export default function HistoricoPartidasAdmin() {
               </div>
               {selectedDay.lastUpdateLabel && (
                 <p className="mt-2 text-xs text-neutral-400">
-                  Ultima atualizacao: {selectedDay.lastUpdateLabel}
+                  Última atualização: {selectedDay.lastUpdateLabel}
                 </p>
               )}
             </div>
@@ -1019,7 +1019,7 @@ export default function HistoricoPartidasAdmin() {
                 href={buildHistoricoLink({ dia: null })}
                 className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
               >
-                Voltar para o historico
+                Voltar para o histórico
               </Link>
               {selectedDay.status !== "complete" && (
                 <Link
@@ -1041,21 +1041,21 @@ export default function HistoricoPartidasAdmin() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-            <p className="text-xs text-neutral-400">Time campeao do dia</p>
+            <p className="text-xs text-neutral-400">Time campeão do dia</p>
             <p className="text-base font-semibold text-yellow-300">
-              {selectedDay.highlights.campeao || "Nao definido"}
+              {selectedDay.highlights.campeao || "Não definido"}
             </p>
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
             <p className="text-xs text-neutral-400">Artilheiro do dia</p>
             <p className="text-base font-semibold text-yellow-300">
-              {selectedDay.highlights.artilheiro || "Nao definido"}
+              {selectedDay.highlights.artilheiro || "Não definido"}
             </p>
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
             <p className="text-xs text-neutral-400">Maestro do dia</p>
             <p className="text-base font-semibold text-yellow-300">
-              {selectedDay.highlights.maestro || "Nao definido"}
+              {selectedDay.highlights.maestro || "Não definido"}
             </p>
           </div>
         </div>
@@ -1085,7 +1085,7 @@ export default function HistoricoPartidasAdmin() {
                         {format(item.date, "dd/MM/yyyy")} - {horario}
                       </p>
                       <p className="text-xs text-neutral-500">
-                        {match.location || "Local nao informado"}
+                        {match.location || "Local não informado"}
                       </p>
                     </div>
                     <span
@@ -1220,7 +1220,7 @@ export default function HistoricoPartidasAdmin() {
           }}
           className="rounded-full border border-neutral-700 bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-neutral-200 hover:border-yellow-400/60"
         >
-          Historico completo
+          Histórico completo
         </button>
       </div>
 
@@ -1294,7 +1294,7 @@ export default function HistoricoPartidasAdmin() {
                     <p className="text-xs text-neutral-500">{day.location}</p>
                     {day.lastUpdateLabel && (
                       <p className="text-xs text-neutral-500 mt-1">
-                        Ultima atualizacao: {day.lastUpdateLabel}
+                        Última atualização: {day.lastUpdateLabel}
                       </p>
                     )}
                   </div>
@@ -1320,21 +1320,21 @@ export default function HistoricoPartidasAdmin() {
 
                 <div className="mt-4 space-y-1 text-xs text-neutral-400">
                   <p>
-                    Time campeao do dia:{" "}
+                    Time campeão do dia:{" "}
                     <span className="text-neutral-200">
-                      {day.highlights.campeao || "Nao definido"}
+                      {day.highlights.campeao || "Não definido"}
                     </span>
                   </p>
                   <p>
                     Artilheiro do dia:{" "}
                     <span className="text-neutral-200">
-                      {day.highlights.artilheiro || "Nao definido"}
+                      {day.highlights.artilheiro || "Não definido"}
                     </span>
                   </p>
                   <p>
                     Maestro do dia:{" "}
                     <span className="text-neutral-200">
-                      {day.highlights.maestro || "Nao definido"}
+                      {day.highlights.maestro || "Não definido"}
                     </span>
                   </p>
                 </div>

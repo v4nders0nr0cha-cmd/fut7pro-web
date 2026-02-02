@@ -29,7 +29,7 @@ type Props = {
 
 export default function CardTimeCampeaoDoDia({
   fotoUrl: _fotoUrl = "/images/times/time_padrao_01.png",
-  nomeTime: _nomeTime = "Time Campeao do Dia",
+  nomeTime: _nomeTime = "Time Campeão do Dia",
   editLink = "/admin/partidas/time-campeao-do-dia",
   matches,
   confrontos,
@@ -75,7 +75,7 @@ export default function CardTimeCampeaoDoDia({
 
   const loading = isLoading || (shouldFetchMatches && loadingMatches);
   const foto = "/images/torneios/torneio-matador.jpg";
-  const titulo = "Time Campeao do Dia";
+  const titulo = "Time Campeão do Dia";
   const labelData =
     dataReferencia != null ? new Date(dataReferencia).toLocaleDateString("pt-BR") : undefined;
 
@@ -112,13 +112,13 @@ export default function CardTimeCampeaoDoDia({
       <span className="text-xl font-bold text-[#ffd600] mb-1 text-center">{titulo}</span>
       <span className="text-sm text-gray-400 mb-4 text-center">
         {campeao
-          ? `Campeao definido em ${labelData ?? "data mais recente"}.`
+          ? `Campeão definido em ${labelData ?? "data mais recente"}.`
           : isError
             ? "Erro ao carregar resultados. Clique para ajustar."
             : "Cadastre foto, gols, passes e resultados do dia."}
       </span>
       <span className="mt-2 px-4 py-1 rounded bg-[#ffd600] text-black text-xs font-bold flex items-center gap-2 shadow transition group-hover:bg-yellow-400">
-        <FaUserEdit /> {campeao ? "Editar Campeao" : "Cadastrar Campeao"}
+        <FaUserEdit /> {campeao ? "Editar Campeão" : "Cadastrar Campeão"}
       </span>
     </Link>
   );

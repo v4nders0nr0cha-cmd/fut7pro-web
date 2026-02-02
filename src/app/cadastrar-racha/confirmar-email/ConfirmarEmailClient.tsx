@@ -17,7 +17,7 @@ export default function ConfirmarEmailClient() {
   const handleResend = async () => {
     if (!email) {
       setStatus("error");
-      setMessage("Informe o e-mail para reenviar a confirmacao.");
+      setMessage("Informe o e-mail para reenviar a confirmação.");
       return;
     }
 
@@ -33,7 +33,7 @@ export default function ConfirmarEmailClient() {
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
         setStatus("error");
-        setMessage(data?.message || "Nao foi possivel reenviar agora.");
+        setMessage(data?.message || "Não foi possível reenviar agora.");
         return;
       }
 
@@ -50,13 +50,13 @@ export default function ConfirmarEmailClient() {
       <section className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl sm:p-8">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/40 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-300">
-            Confirmacao de e-mail
+            Confirmação de e-mail
           </div>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">
             Confirme seu e-mail para ativar seu painel
           </h1>
           <p className="text-sm text-gray-300">
-            Enviamos um link de confirmacao para{" "}
+            Enviamos um link de confirmação para{" "}
             <span className="font-semibold text-white">{email || "seu e-mail"}</span>. Clique no
             link para liberar o acesso.
           </p>
@@ -95,13 +95,13 @@ export default function ConfirmarEmailClient() {
             }}
             className="w-full rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black shadow-lg hover:bg-yellow-300"
           >
-            Ja confirmei
+            Já confirmei
           </button>
         </div>
 
         <div className="mt-5 space-y-2 text-xs text-gray-400">
           <p>
-            Nao encontrou o e-mail? Verifique tambem as pastas Spam, Lixo eletronico ou Promocoes.
+            Não encontrou o e-mail? Verifique também as pastas Spam, Lixo eletrônico ou Promoções.
           </p>
           <button
             type="button"

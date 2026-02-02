@@ -255,7 +255,7 @@ export default function FinanceiroRachaDetalhePage() {
         <title>{tituloPagina}</title>
         <meta
           name="description"
-          content={`Detalhes financeiros e historico de pagamentos do racha ${tenant.name} na plataforma ${brandLabel}.`}
+          content={`Detalhes financeiros e histórico de pagamentos do racha ${tenant.name} na plataforma ${brandLabel}.`}
         />
         <meta
           name="keywords"
@@ -390,7 +390,7 @@ export default function FinanceiroRachaDetalhePage() {
             </button>
           </div>
 
-          <h2 className="text-xl font-bold text-white mb-3">Historico de Pagamentos</h2>
+          <h2 className="text-xl font-bold text-white mb-3">Histórico de Pagamentos</h2>
           <div className="bg-zinc-800 rounded-2xl shadow p-4 overflow-x-auto mb-8">
             <table className="min-w-full text-sm text-white">
               <thead>
@@ -398,8 +398,8 @@ export default function FinanceiroRachaDetalhePage() {
                   <th className="px-3 py-2">Data</th>
                   <th className="px-3 py-2">Valor</th>
                   <th className="px-3 py-2">Status</th>
-                  <th className="px-3 py-2">Referencia</th>
-                  <th className="px-3 py-2">Metodo</th>
+                  <th className="px-3 py-2">Referência</th>
+                  <th className="px-3 py-2">Método</th>
                   <th className="px-3 py-2"></th>
                 </tr>
               </thead>

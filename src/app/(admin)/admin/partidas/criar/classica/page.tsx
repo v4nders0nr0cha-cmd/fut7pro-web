@@ -90,7 +90,7 @@ export default function PartidaClassicaPage() {
       fallback={
         <div className="min-h-screen bg-fundo text-white px-4 pt-[64px] md:pt-[80px] pb-24 md:pb-10">
           <div className="mx-auto max-w-6xl rounded-2xl border border-neutral-800 bg-[#151515] p-6 text-sm text-neutral-300">
-            Carregando sessao de partidas classicas...
+            Carregando sessão de partidas clássicas...
           </div>
         </div>
       }
@@ -325,7 +325,7 @@ function PartidaClassicaClient() {
   const liveRosterIssues = useMemo(() => {
     const issues: string[] = [];
     if (assignedPlayers.duplicates.size > 0) {
-      issues.push("Ha atletas repetidos em mais de um time.");
+      issues.push("Há atletas repetidos em mais de um time.");
     }
     if (liveRules.goalieRequired) {
       selectedTeams.forEach((teamId) => {
@@ -336,7 +336,7 @@ function PartidaClassicaClient() {
         });
         if (!hasGoalie) {
           const teamName = teamsById.get(teamId)?.nome || "Time";
-          issues.push(`Goleiro obrigatorio: selecione um goleiro em ${teamName}.`);
+          issues.push(`Goleiro obrigatório: selecione um goleiro em ${teamName}.`);
         }
       });
     }
@@ -648,7 +648,7 @@ function PartidaClassicaClient() {
   };
 
   const validateLiveSetup = () => {
-    if (!liveDate) return "Informe a data base da sessao.";
+    if (!liveDate) return "Informe a data base da sessão.";
     if (selectedTeams.length < MIN_TEAMS) {
       return `Selecione pelo menos ${MIN_TEAMS} times.`;
     }
@@ -664,7 +664,7 @@ function PartidaClassicaClient() {
       }
     }
     if (assignedPlayers.duplicates.size > 0) {
-      return "Ha atletas repetidos em mais de um time. Ajuste a distribuicao.";
+      return "Há atletas repetidos em mais de um time. Ajuste a distribuição.";
     }
     if (liveRules.goalieRequired) {
       for (const teamId of selectedTeams) {
@@ -675,7 +675,7 @@ function PartidaClassicaClient() {
         });
         if (!hasGoalie) {
           const teamName = teamsById.get(teamId)?.nome || "Time";
-          return `Goleiro obrigatorio: selecione um goleiro em ${teamName}.`;
+          return `Goleiro obrigatório: selecione um goleiro em ${teamName}.`;
         }
       }
     }
@@ -683,7 +683,7 @@ function PartidaClassicaClient() {
   };
 
   const handleSaveLiveDraft = () => {
-    setLiveNotice("Rascunho salvo. Voce pode retomar esta sessao quando quiser.");
+    setLiveNotice("Rascunho salvo. Você pode retomar esta sessão quando quiser.");
     setTimeout(() => setLiveNotice(null), 2500);
   };
 
@@ -751,7 +751,7 @@ function PartidaClassicaClient() {
   }) => {
     const isoDate = buildIsoDate(dateValue, timeValue);
     if (!isoDate) {
-      throw new Error("Data ou horario invalido.");
+      throw new Error("Data ou horário inválido.");
     }
 
     const payload: Record<string, unknown> = {
@@ -769,12 +769,12 @@ function PartidaClassicaClient() {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(body || "Falha ao criar partida classica");
+      throw new Error(body || "Falha ao criar partida clássica");
     }
 
     const createdMatch = (await response.json().catch(() => null)) as { id?: string } | null;
     if (!createdMatch?.id) {
-      throw new Error("Resposta invalida ao criar partida classica");
+      throw new Error("Resposta inválida ao criar partida clássica");
     }
 
     const presences = [
@@ -821,7 +821,7 @@ function PartidaClassicaClient() {
     timeValue: string;
   }) => {
     if (!liveActive) {
-      setLiveMatchError("Inicie a sessao antes de cadastrar partidas.");
+      setLiveMatchError("Inicie a sessão antes de cadastrar partidas.");
       return;
     }
     if (!opts.teamAId || !opts.teamBId) {
@@ -829,7 +829,7 @@ function PartidaClassicaClient() {
       return;
     }
     if (opts.teamAId === opts.teamBId) {
-      setLiveMatchError("Os times nao podem ser iguais.");
+      setLiveMatchError("Os times não podem ser iguais.");
       return;
     }
     const rosterA = teamRosters[opts.teamAId] || [];
@@ -870,7 +870,7 @@ function PartidaClassicaClient() {
   const handleFinalizeSession = () => {
     setFinalizeError(null);
     if (!sessionCards.length) {
-      setFinalizeError("Nenhuma partida cadastrada na sessao.");
+      setFinalizeError("Nenhuma partida cadastrada na sessão.");
       return;
     }
     if (pendingMatches.length) {
@@ -967,10 +967,10 @@ function PartidaClassicaClient() {
         </button>
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">
-            Sessao de Partidas Classicas
+            Sessão de Partidas Clássicas
           </h1>
           <p className="text-xs text-neutral-400">
-            Configure a sessao atual e registre confrontos em tempo real.
+            Configure a sessão atual e registre confrontos em tempo real.
           </p>
         </div>
       </div>
@@ -978,14 +978,14 @@ function PartidaClassicaClient() {
       <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-yellow-300">Cabecalho da sessao</h2>
+            <h2 className="text-lg font-semibold text-yellow-300">Cabeçalho da sessão</h2>
             <p className="text-xs text-neutral-400">
-              Campos editaveis enquanto a sessao nao for finalizada.
+              Campos editáveis enquanto a sessão não for finalizada.
             </p>
           </div>
           {liveActive && (
             <span className="inline-flex items-center gap-2 rounded-full border border-green-400/60 bg-green-400/10 px-3 py-1 text-xs text-green-200">
-              <FaCheckCircle /> Sessao ativa
+              <FaCheckCircle /> Sessão ativa
             </span>
           )}
         </div>
@@ -1063,11 +1063,11 @@ function PartidaClassicaClient() {
             </div>
           ) : times.length === 0 ? (
             <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-              Nenhum time cadastrado. Cadastre os times antes de criar partidas classicas.
+              Nenhum time cadastrado. Cadastre os times antes de criar partidas clássicas.
             </div>
           ) : jogadores.length === 0 ? (
             <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-200">
-              Nenhum atleta cadastrado. Cadastre atletas antes de montar partidas classicas.
+              Nenhum atleta cadastrado. Cadastre atletas antes de montar partidas clássicas.
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1142,7 +1142,7 @@ function PartidaClassicaClient() {
               },
               {
                 key: "goalieRequired",
-                label: "Goleiro obrigatorio",
+                label: "Goleiro obrigatório",
                 helper: "Exige pelo menos 1 goleiro por time.",
               },
             ].map((rule) => (
@@ -1209,7 +1209,7 @@ function PartidaClassicaClient() {
             onClick={handleStartLiveSession}
             className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
           >
-            {liveActive ? "Sessao em andamento" : "Iniciar sessao"}
+            {liveActive ? "Sessão em andamento" : "Iniciar sessão"}
           </button>
         </div>
       </section>
@@ -1219,7 +1219,7 @@ function PartidaClassicaClient() {
           <div>
             <h2 className="text-lg font-semibold text-yellow-300">Tabela de classificacao</h2>
             <p className="text-xs text-neutral-400">
-              Pontuacao em tempo real baseada nos resultados desta sessao (3 pontos vitoria, 1
+              Pontuação em tempo real baseada nos resultados desta sessão (3 pontos vitória, 1
               empate).
             </p>
           </div>
@@ -1270,7 +1270,7 @@ function PartidaClassicaClient() {
                 </select>
               </div>
               <div className="flex flex-col gap-2">
-                <label className="text-xs text-neutral-400">Horario da rodada</label>
+                <label className="text-xs text-neutral-400">Horário da rodada</label>
                 <input
                   type="time"
                   value={matchTime}
@@ -1358,9 +1358,9 @@ function PartidaClassicaClient() {
         {liveActive && sessionCards.length > 0 && (
           <div className="rounded-2xl border border-neutral-800 bg-[#101010] p-4 space-y-4">
             <div>
-              <h3 className="text-sm font-semibold text-yellow-300">Cadastrar proxima rodada</h3>
+              <h3 className="text-sm font-semibold text-yellow-300">Cadastrar próxima rodada</h3>
               <p className="text-xs text-neutral-400">
-                Selecione manualmente o proximo confronto ou use a sugestao abaixo.
+                Selecione manualmente o próximo confronto ou use a sugestão abaixo.
               </p>
             </div>
             {liveRules.winnerStays && latestMatchInfo && (
@@ -1386,7 +1386,7 @@ function PartidaClassicaClient() {
                     </p>
                   </>
                 ) : (
-                  <p>Empate na ultima partida. Selecione o proximo confronto manualmente.</p>
+                  <p>Empate na última partida. Selecione o próximo confronto manualmente.</p>
                 )}
               </div>
             )}
@@ -1423,7 +1423,7 @@ function PartidaClassicaClient() {
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <label className="text-xs text-neutral-400">Horario</label>
+                  <label className="text-xs text-neutral-400">Horário</label>
                   <label className="flex items-center gap-2 text-[11px] text-neutral-400">
                     <input
                       type="checkbox"
@@ -1434,7 +1434,7 @@ function PartidaClassicaClient() {
                         if (checked) setNextTime("");
                       }}
                     />
-                    Horario automatico
+                    Horário automático
                   </label>
                 </div>
                 <input
@@ -1446,7 +1446,7 @@ function PartidaClassicaClient() {
                 />
                 {nextTimeAuto && (
                   <span className="text-[11px] text-neutral-500">
-                    Agora (Brasilia): {nextTimePreview}. Horario definido automaticamente no momento
+                    Agora (Brasília): {nextTimePreview}. Horário definido automaticamente no momento
                     do cadastro.
                   </span>
                 )}
@@ -1464,7 +1464,7 @@ function PartidaClassicaClient() {
               disabled={creatingMatch}
               className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:opacity-60"
             >
-              Cadastrar proxima rodada
+              Cadastrar próxima rodada
             </button>
           </div>
         )}
@@ -1476,7 +1476,7 @@ function PartidaClassicaClient() {
             <div>
               <h2 className="text-lg font-semibold text-yellow-300">Resultados em tempo real</h2>
               <p className="text-xs text-neutral-400">
-                Os cards abaixo sao identicos ao painel de Resultados do Dia.
+                Os cards abaixo são idênticos ao painel de Resultados do Dia.
               </p>
             </div>
             <button
@@ -1517,7 +1517,7 @@ function PartidaClassicaClient() {
         <section className="rounded-2xl border border-neutral-800 bg-[#151515] p-6 space-y-3">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <h2 className="text-lg font-semibold text-yellow-300">Finalizacao oficial</h2>
+              <h2 className="text-lg font-semibold text-yellow-300">Finalização oficial</h2>
               <p className="text-xs text-neutral-400">
                 Garante que todas as rodadas foram registradas antes de publicar os destaques do
                 dia.
@@ -1547,11 +1547,11 @@ function PartidaClassicaClient() {
         <title>Partidas Classicas | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Orquestre partidas classicas em tempo real com cadastro de confrontos e resultados do dia."
+          content="Orquestre partidas clássicas em tempo real com cadastro de confrontos e resultados do dia."
         />
         <meta
           name="keywords"
-          content="partida classica, sessao de jogos, resultados, painel admin, fut7pro"
+          content="partida clássica, sessão de jogos, resultados, painel admin, fut7pro"
         />
       </Head>
 
@@ -1564,13 +1564,13 @@ function PartidaClassicaClient() {
           <div className="w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#141414] p-6">
             <div className="flex items-center gap-3 mb-3">
               <FaCheckCircle className="text-yellow-300 text-xl" />
-              <h3 className="text-lg font-semibold text-yellow-300">Finalizar sessao</h3>
+              <h3 className="text-lg font-semibold text-yellow-300">Finalizar sessão</h3>
             </div>
             <p className="text-sm text-neutral-300">
-              Isso vai consolidar os resultados do dia e liberar os destaques para o Time Campeao.
+              Isso vai consolidar os resultados do dia e liberar os destaques para o Time Campeão.
             </p>
             <p className="mt-3 text-xs text-neutral-400">
-              Todas as partidas ja estao finalizadas. Deseja continuar?
+              Todas as partidas já estão finalizadas. Deseja continuar?
             </p>
             <div className="mt-5 flex flex-col sm:flex-row gap-3">
               <button

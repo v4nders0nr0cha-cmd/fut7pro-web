@@ -9,7 +9,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 const meses = [
   "Janeiro",
   "Fevereiro",
-  "Marco",
+  "Março",
   "Abril",
   "Maio",
   "Junho",
@@ -59,9 +59,9 @@ export default function AniversariantesPage() {
     return [...birthdays].sort((a, b) => a.birthDay - b.birthDay);
   }, [birthdays]);
 
-  const seoTitle = "Aniversariantes do mes | Fut7Pro";
+  const seoTitle = "Aniversariantes do mês | Fut7Pro";
   const seoDescription =
-    "Veja quem sao os aniversariantes do mes no Fut7Pro. Parabens automatico pelo sistema no dia do aniversario!";
+    "Veja quem são os aniversariantes do mês no Fut7Pro. Parabéns automático pelo sistema no dia do aniversário!";
 
   return (
     <>
@@ -76,7 +76,7 @@ export default function AniversariantesPage() {
       <main className="w-full pt-20 pb-10">
         <div className="max-w-3xl mx-auto px-4">
           <h1 className="text-2xl md:text-3xl font-bold text-brand text-center mb-3">
-            Aniversariantes do Mes
+            Aniversariantes do Mês
           </h1>
           <div className="flex flex-col gap-2 mb-6">
             <div className="flex flex-wrap justify-center gap-2">
@@ -120,7 +120,7 @@ export default function AniversariantesPage() {
 
             {!isLoading && aniversariantesDoMes.length === 0 && (
               <div className="col-span-full text-center text-gray-400 text-lg py-8">
-                <span>Nenhum aniversariante neste mes ainda!</span>
+                <span>Nenhum aniversariante neste mês ainda!</span>
               </div>
             )}
 
@@ -164,7 +164,7 @@ export default function AniversariantesPage() {
                     </div>
                     {ehHoje && (
                       <div className="w-full mt-2 bg-orange-100 text-orange-700 text-center rounded px-2 py-1 text-xs font-semibold shadow">
-                        Parabens, {aniv.nickname || aniv.name}!
+                        Parabéns, {aniv.nickname || aniv.name}!
                       </div>
                     )}
                   </div>
@@ -172,8 +172,8 @@ export default function AniversariantesPage() {
               })}
           </section>
           <div className="text-xs text-gray-400 mt-8 text-center">
-            As mensagens de parabens sao enviadas automaticamente para o aniversariante as 8h do
-            dia, sem exposicao de dados pessoais.
+            As mensagens de parabéns são enviadas automaticamente para o aniversariante às 8h do
+            dia, sem exposição de dados pessoais.
           </div>
         </div>
       </main>

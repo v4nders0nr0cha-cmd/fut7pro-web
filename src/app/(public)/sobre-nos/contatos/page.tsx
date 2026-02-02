@@ -10,12 +10,16 @@ import {
   FaEnvelope,
   FaBuilding,
   FaCheckCircle,
+  FaYoutube,
+  FaGlobe,
 } from "react-icons/fa";
 import { useRacha } from "@/context/RachaContext";
 import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { useContatosPublic } from "@/hooks/useContatos";
+import { useSocialLinksPublic } from "@/hooks/useSocialLinks";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { interpolateRachaName, resolveContatosConfig, resolveWhatsappLink } from "@/utils/contatos";
+import { normalizeSocialUrl } from "@/utils/social-links";
 
 type AssuntoValue = "patrocinio" | "anunciar" | "suporte" | "duvida" | "outros" | "";
 
@@ -33,12 +37,53 @@ export default function ContatosPage() {
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const resolvedSlug = tenantSlug?.trim() || slugFromPath || "";
   const { contatos: contatosData, isLoading } = useContatosPublic(resolvedSlug);
+  const { socialLinks } = useSocialLinksPublic(resolvedSlug);
   const { racha } = useRachaPublic(resolvedSlug);
   const contatos = useMemo(() => resolveContatosConfig(contatosData), [contatosData]);
   const whatsappLink = resolveWhatsappLink(contatos.whatsapp);
   const descricaoPatrocinio = useMemo(
     () => interpolateRachaName(contatos.descricaoPatrocinio, racha?.nome),
     [contatos.descricaoPatrocinio, racha?.nome]
+  );
+  const socialItems = useMemo(
+    () => [
+      {
+        id: "instagram",
+        label: "Instagram",
+        href: normalizeSocialUrl(socialLinks?.instagramUrl),
+        icon: <FaInstagram />,
+      },
+      {
+        id: "facebook",
+        label: "Facebook",
+        href: normalizeSocialUrl(socialLinks?.facebookUrl),
+        icon: <FaFacebook />,
+      },
+      {
+        id: "youtube",
+        label: "YouTube",
+        href: normalizeSocialUrl(socialLinks?.youtubeUrl),
+        icon: <FaYoutube />,
+      },
+      {
+        id: "website",
+        label: "Site",
+        href: normalizeSocialUrl(socialLinks?.websiteUrl),
+        icon: <FaGlobe />,
+      },
+      {
+        id: "whatsapp",
+        label: "WhatsApp (Grupo)",
+        href: normalizeSocialUrl(socialLinks?.whatsappGroupUrl),
+        icon: <FaWhatsapp />,
+      },
+    ],
+    [socialLinks]
+  );
+
+  const socialVisible = useMemo(
+    () => socialItems.filter((item) => Boolean(item.href)),
+    [socialItems]
   );
 
   const [form, setForm] = useState({
@@ -264,26 +309,22 @@ export default function ContatosPage() {
                 </a>
               )}
             </div>
-            <div className="flex gap-4 mt-2">
-              <a
-                href="https://www.instagram.com/fut7pro_app"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                className="text-brand hover:text-white text-2xl"
-              >
-                <FaInstagram />
-              </a>
-              <a
-                href="https://www.facebook.com/profile.php?id=61581917656941"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="text-brand hover:text-white text-2xl"
-              >
-                <FaFacebook />
-              </a>
-            </div>
+            {socialVisible.length > 0 && (
+              <div className="flex gap-4 mt-2">
+                {socialVisible.map((item) => (
+                  <a
+                    key={item.id}
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={item.label}
+                    className="text-brand hover:text-white text-2xl"
+                  >
+                    {item.icon}
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Bloco Patrocínio e Mídia */}

@@ -153,7 +153,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                     onClick={() => setDropdownOpen(false)}
                   >
-                    Ver perfil publico
+                    Ver perfil público
                   </Link>
                 )}
                 <button

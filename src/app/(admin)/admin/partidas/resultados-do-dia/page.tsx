@@ -11,7 +11,7 @@ export default function ResultadosDoDiaPage() {
         <title>Registrar Resultados do Dia | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Registre placares do dia, gols e assistencias em tempo real. Resultados atualizam rankings e historico do seu racha no Fut7Pro."
+          content="Registre placares do dia, gols e assistências em tempo real. Resultados atualizam rankings e histórico do seu racha no Fut7Pro."
         />
         <meta
           name="keywords"

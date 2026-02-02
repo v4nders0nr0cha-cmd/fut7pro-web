@@ -45,10 +45,10 @@ export default function SorteioInteligentePage() {
   return (
     <>
       <Head>
-        <title>Sorteio Inteligente | Painel de Administracao | Fut7Pro</title>
+        <title>Sorteio Inteligente | Painel de Administração | Fut7Pro</title>
         <meta
           name="description"
-          content="Monte times equilibrados no seu racha de futebol 7 com sorteio inteligente, ranking, posicao e estrelas."
+          content="Monte times equilibrados no seu racha de futebol 7 com sorteio inteligente, ranking, posição e estrelas."
         />
         <meta
           name="keywords"

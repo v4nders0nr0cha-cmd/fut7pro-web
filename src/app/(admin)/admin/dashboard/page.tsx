@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       saldo,
       receitas,
       despesas,
-      periodoLabel: doMes.length ? "mes" : "todo historico",
+      periodoLabel: doMes.length ? "mês" : "todo histórico",
     };
   }, [lancamentos]);
 
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
     const vencedor = pickWinner(ordered[0]);
     if (!vencedor) return null;
     return {
-      nome: vencedor.name || "Time campeao do dia",
+      nome: vencedor.name || "Time campeão do dia",
       logo: vencedor.logoUrl || "/images/times/time_padrao_01.png",
     };
   }, [recentMatches]);
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
         <section className="w-full grid gap-6 grid-cols-1 md:grid-cols-3">
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-600 to-yellow-300 text-black text-xs font-bold px-3 py-1 rounded-xl shadow">
-              POS-JOGO
+              PÓS-JOGO
             </span>
             <CardTimeCampeaoDoDia
               fotoUrl={ultimoCampeao?.logo}
@@ -187,7 +187,7 @@ export default function AdminDashboard() {
 
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-800 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
-              PRE-JOGO
+              PRÉ-JOGO
             </span>
             <Link
               href="/admin/partidas/times-do-dia"
@@ -197,17 +197,17 @@ export default function AdminDashboard() {
               <FaUsers className="text-[#00d3d4] w-10 h-10 mb-2 group-hover:scale-110 transition" />
               <span className="text-xl font-bold text-white mb-1">Times do Dia</span>
               <span className="text-sm text-gray-400 mb-2 text-center">
-                Veja as escalacoes e confrontos automaticos do racha de hoje.
+                Veja as escalações e confrontos automáticos do racha de hoje.
               </span>
               <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#00d3d4] text-xs font-semibold">
-                Ver Escalacoes
+                Ver Escalações
               </span>
             </Link>
           </div>
 
           <div className="relative">
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-800 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
-              PRE-JOGO
+              PRÉ-JOGO
             </span>
             <Link
               href="/admin/partidas/sorteio-inteligente"
@@ -217,7 +217,7 @@ export default function AdminDashboard() {
               <FaRandom className="text-[#ffdf38] w-10 h-10 mb-2 group-hover:rotate-12 transition" />
               <span className="text-xl font-bold text-white mb-1">Sorteio Inteligente</span>
               <span className="text-sm text-gray-400 mb-2 text-center">
-                Monte os times de forma automatica, balanceada e transparente.
+                Monte os times de forma automática, balanceada e transparente.
               </span>
               <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#ffdf38] text-xs font-semibold">
                 Acessar Sorteio
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
             >
               <FaMoneyBillWave className="text-[#38d957] w-10 h-10 mb-2 group-hover:scale-110 transition" />
               <span className="text-xl font-bold text-white mb-1 text-center">
-                Monetizacao
+                Monetização
                 <br />
                 (Lucre Mais)
               </span>
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
         <FinanceiroChart
           lancamentos={lancamentos}
           isLoading={loadingFinanceiro || loadingSubscription}
-          emptyMessage="Cadastre lancamentos para visualizar o desempenho financeiro."
+          emptyMessage="Cadastre lançamentos para visualizar o desempenho financeiro."
         />
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
             <div className="bg-[#23272F] rounded-xl shadow p-5 flex flex-col h-full">
               <div className="flex items-center gap-2 mb-3">
                 <FaMedal className="text-yellow-500 w-6 h-6" />
-                <span className="text-lg font-bold text-gray-100">Mais assiduos</span>
+                <span className="text-lg font-bold text-gray-100">Mais assíduos</span>
               </div>
               {loadingJogadores ? (
                 <div className="flex flex-col gap-2">
@@ -296,7 +296,7 @@ export default function AdminDashboard() {
                           j.photoUrl ||
                           "/images/jogadores/jogador_padrao_01.jpg"
                         }
-                        alt={`Jogador assiduo ${j.nome}`}
+                        alt={`Jogador assíduo ${j.nome}`}
                         width={32}
                         height={32}
                         className="rounded-full border border-gray-500"
@@ -309,9 +309,9 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <span className="text-sm text-gray-400">Nenhum dado de presenca encontrado.</span>
+                <span className="text-sm text-gray-400">Nenhum dado de presença encontrado.</span>
               )}
-              <span className="text-xs text-gray-400 mt-2">Ranking por presenca</span>
+              <span className="text-xs text-gray-400 mt-2">Ranking por presença</span>
             </div>
           </div>
 
@@ -348,9 +348,9 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <span className="text-sm text-gray-400">Nenhum aniversario proximo.</span>
+                <span className="text-sm text-gray-400">Nenhum aniversário próximo.</span>
               )}
-              <span className="text-xs text-gray-400 mt-2">Deseje parabens!</span>
+              <span className="text-xs text-gray-400 mt-2">Deseje parabéns!</span>
             </div>
           </div>
         </section>

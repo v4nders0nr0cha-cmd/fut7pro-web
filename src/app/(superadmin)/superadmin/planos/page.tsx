@@ -19,7 +19,7 @@ function splitLines(value: string) {
 
 function PlanPreviewCard({ plan, brand }: { plan: Plan; brand: string }) {
   const isHighlight = Boolean(plan.highlight);
-  const intervalLabel = plan.interval === "year" ? "ano" : "mes";
+  const intervalLabel = plan.interval === "year" ? "ano" : "mês";
   const title = plan.label.replace(/fut7pro/gi, brand);
   const description = plan.description?.replace(/fut7pro/gi, brand);
   const paymentNote = plan.paymentNote?.replace(/fut7pro/gi, brand);
@@ -154,14 +154,14 @@ export default function PlanosSuperAdminPage() {
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body?.message || "Falha ao salvar catalogo de planos");
+        throw new Error(body?.message || "Falha ao salvar catálogo de planos");
       }
 
       const updated = (await res.json()) as PlanCatalog;
       setCatalog(updated);
-      toast.success("Catalogo de planos atualizado");
+      toast.success("Catálogo de planos atualizado");
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao salvar catalogo de planos");
+      toast.error(err?.message || "Erro ao salvar catálogo de planos");
     } finally {
       setIsSaving(false);
     }
@@ -170,21 +170,21 @@ export default function PlanosSuperAdminPage() {
   return (
     <>
       <Head>
-        <title>{applyBrand("Planos & Precos | __BRAND__ SuperAdmin")}</title>
+        <title>{applyBrand("Planos & Preços | __BRAND__ SuperAdmin")}</title>
         <meta
           name="description"
           content={applyBrand(
-            "Edite planos, precos, limites e beneficios do __BRAND__. Tudo o que for salvo aqui aparece no painel dos rachas."
+            "Edite planos, preços, limites e benefícios do __BRAND__. Tudo o que for salvo aqui aparece no painel dos rachas."
           )}
         />
       </Head>
       <Toaster />
       <main className="max-w-6xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <div className="flex flex-col gap-2 mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400">Planos & Precos</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-yellow-400">Planos & Preços</h1>
           <p className="text-sm text-neutral-300 max-w-2xl">
             {applyBrand(
-              "Edite textos, precos, limites, destaques e CTAs. As alteracoes sao aplicadas no painel dos rachas apos salvar."
+              "Edite textos, preços, limites, destaques e CTAs. As alterações são aplicadas no painel dos rachas após salvar."
             )}
           </p>
         </div>
@@ -192,13 +192,13 @@ export default function PlanosSuperAdminPage() {
         {isLoading && (
           <div className="flex items-center gap-3 text-yellow-400">
             <FaSpinner className="animate-spin" />
-            <span>Carregando catalogo...</span>
+            <span>Carregando catálogo...</span>
           </div>
         )}
 
         {error && (
           <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
-            Erro ao carregar catalogo. Tente novamente.
+            Erro ao carregar catálogo. Tente novamente.
           </div>
         )}
 
@@ -217,7 +217,7 @@ export default function PlanosSuperAdminPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-neutral-300">
-                  Subtitulo do banner
+                  Subtítulo do banner
                   <input
                     className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                     value={meta.bannerSubtitle || ""}
@@ -226,16 +226,16 @@ export default function PlanosSuperAdminPage() {
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-neutral-300">
-                  Observacao do anual
+                  Observação do anual
                   <input
                     className="w-full rounded-lg border border-[#2b2b2b] bg-[#0f0f0f] px-3 py-2 text-white focus:border-yellow-400 focus:outline-none"
                     value={meta.annualNote || ""}
                     onChange={(e) => updateMeta("annualNote", e.target.value)}
-                    placeholder="Ex: 2 meses gratis ja embutidos no valor anual"
+                    placeholder="Ex: 2 meses grátis já embutidos no valor anual"
                   />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-neutral-300">
-                  Dias de teste padrao
+                  Dias de teste padrão
                   <input
                     type="number"
                     min={0}
@@ -268,7 +268,7 @@ export default function PlanosSuperAdminPage() {
                 disabled={isSaving}
               >
                 {isSaving ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                Salvar alteracoes
+                Salvar alterações
               </button>
             </div>
 
@@ -515,7 +515,7 @@ export default function PlanosSuperAdminPage() {
                 disabled={isSaving}
               >
                 {isSaving ? <FaSpinner className="animate-spin" /> : <FaSave />}
-                Salvar alteracoes
+                Salvar alterações
               </button>
             </div>
           </>

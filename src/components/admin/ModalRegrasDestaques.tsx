@@ -18,26 +18,26 @@ export default function ModalRegrasDestaques({ onClose }: Props) {
         </h3>
         <ul className="text-sm text-gray-200 space-y-2">
           <li>
-            <span className="font-bold text-yellow-300">Time Campeao do Dia:</span>
-            Somatoria de pontos nas partidas finalizadas (3 vitoria, 1 empate, 0 derrota).
+            <span className="font-bold text-yellow-300">Time Campeão do Dia:</span>
+            Somatória de pontos nas partidas finalizadas (3 vitória, 1 empate, 0 derrota).
           </li>
           <li>
             <span className="font-bold text-yellow-300">Atacante do Dia:</span>
-            Atacante do Time Campeao do Dia com mais gols. Desempate: mais assistencias, depois a
+            Atacante do Time Campeão do Dia com mais gols. Desempate: mais assistências, depois a
             primeira ordem do sistema.
           </li>
           <li>
             <span className="font-bold text-yellow-300">Meia do Dia:</span>
-            Meia do Time Campeao do Dia com mais assistencias. Desempate: mais gols, depois a
+            Meia do Time Campeão do Dia com mais assistências. Desempate: mais gols, depois a
             primeira ordem do sistema.
           </li>
           <li>
             <span className="font-bold text-yellow-300">Goleiro do Dia:</span>
-            Goleiro do Time Campeao do Dia.
+            Goleiro do Time Campeão do Dia.
           </li>
           <li>
             <span className="font-bold text-yellow-300">Zagueiro do Dia:</span>
-            Escolha manual entre os zagueiros do Time Campeao do Dia (o sistema nao calcula
+            Escolha manual entre os zagueiros do Time Campeão do Dia (o sistema não calcula
             desarmes).
           </li>
           <li>
@@ -46,13 +46,13 @@ export default function ModalRegrasDestaques({ onClose }: Props) {
           </li>
           <li>
             <span className="font-bold text-yellow-300">Maestro do Dia:</span>
-            Jogador de qualquer time com mais assistencias no dia.
+            Jogador de qualquer time com mais assistências no dia.
           </li>
         </ul>
         <div className="mt-5 p-3 rounded bg-zinc-800 border-l-4 border-yellow-400 text-yellow-300 text-sm">
-          Nos cards de posicao do Time Campeao do Dia existe a opcao "Jogador nao compareceu ao
-          racha". Ao marcar, o sistema exibe o BOT correspondente e nao contabiliza rankings ou
-          estatisticas do dia.
+          Nos cards de posição do Time Campeão do Dia existe a opção "Jogador não compareceu ao
+          racha". Ao marcar, o sistema exibe o BOT correspondente e não contabiliza rankings ou
+          estatísticas do dia.
         </div>
       </div>
     </div>

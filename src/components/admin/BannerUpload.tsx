@@ -143,7 +143,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
   return (
     <div className="bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 mt-2 flex flex-col gap-4 items-center justify-center w-full max-w-2xl">
       <div className="w-full text-center text-yellow-300 font-bold text-lg mb-2">
-        Banner do Campeao do Dia
+        Banner do Campeão do Dia
       </div>
       <input
         ref={inputRef}
@@ -193,7 +193,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
                 </div>
               </div>
               <div className="w-full flex items-center justify-between text-xs text-zinc-300">
-                <span>Area do banner (16:9). Arraste para posicionar.</span>
+                <span>Área do banner (16:9). Arraste para posicionar.</span>
                 <span>Zoom: {zoom.toFixed(2)}x</span>
               </div>
               <input
@@ -209,14 +209,14 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
           ) : !loadError ? (
             <img
               src={displayUrl}
-              alt="Banner do Time Campeao do Dia"
+              alt="Banner do Time Campeão do Dia"
               className="rounded-xl object-cover w-full max-w-xl"
               onError={() => setLoadError(true)}
               loading="lazy"
             />
           ) : (
             <div className="w-full max-w-xl rounded-xl border border-yellow-400/40 bg-zinc-800 px-4 py-6 text-center text-sm text-yellow-200">
-              Nao foi possivel carregar a imagem. Tente selecionar outra foto.
+              Não foi possível carregar a imagem. Tente selecionar outra foto.
             </div>
           )}
           <div className="flex flex-wrap items-center gap-3">

@@ -19,7 +19,7 @@ const STATUS_STORAGE_KEY = "fut7pro_match_status";
 const AUTO_SAVE_ENABLED = true;
 
 const STATUS_LABELS: Record<MatchStatus, string> = {
-  not_started: "Nao realizado",
+  not_started: "Não realizado",
   in_progress: "Em andamento",
   finished: "Finalizada",
 };
@@ -95,9 +95,9 @@ function createEventId() {
 }
 
 function formatDate(value?: string | null, withTime = false) {
-  if (!value) return "Data nao informada";
+  if (!value) return "Data não informada";
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Data nao informada";
+  if (Number.isNaN(date.getTime())) return "Data não informada";
   return withTime ? format(date, "dd/MM/yyyy HH:mm") : format(date, "dd/MM/yyyy");
 }
 
@@ -503,7 +503,7 @@ function GoalModal({
               disabled={isOwnGoal}
               className="w-full rounded-lg border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100 disabled:opacity-60"
             >
-              <option value={NO_ASSIST_ID}>Sem assistencia</option>
+              <option value={NO_ASSIST_ID}>Sem assistência</option>
               {filteredAssists.map((player) => (
                 <option key={player.id} value={player.id}>
                   {player.nickname ? `${player.name} (${player.nickname})` : player.name}
@@ -536,7 +536,7 @@ function GoalModal({
           )}
 
           <div>
-            <label className="block text-xs text-neutral-400 mb-2">Descricao (opcional)</label>
+            <label className="block text-xs text-neutral-400 mb-2">Descrição (opcional)</label>
             <input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -835,7 +835,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   };
 
   const handleUnlock = () => {
-    const confirmed = window.confirm("Desbloquear para correcao?");
+    const confirmed = window.confirm("Desbloquear para correção?");
     if (!confirmed) return;
     onStatusChange(match.id, "in_progress");
     setLocalStatus("in_progress");
@@ -860,7 +860,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
                 ? "Gol sem autor"
                 : scorer?.name || "Jogador";
           const assistLabel =
-            event.assistId === NO_ASSIST_ID ? "Sem assistencia" : assist?.name || "Assistencia";
+            event.assistId === NO_ASSIST_ID ? "Sem assistência" : assist?.name || "Assistência";
           const creditedTeamId = getCreditedTeamId(event, teamAId, teamBId);
           const creditedTeamLabel =
             creditedTeamId === teamAId ? match.teamA.name : match.teamB.name;
@@ -906,7 +906,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-yellow-400">Resultado da partida</h2>
             <p className="text-sm text-neutral-400">
-              {formatDate(match.date, true)} - {match.location || "Local nao informado"}
+              {formatDate(match.date, true)} - {match.location || "Local não informado"}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -918,7 +918,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
                 disabled={locked}
                 className="rounded-lg border border-neutral-700 bg-[#111] px-3 py-1 text-xs text-neutral-100 disabled:opacity-60"
               >
-                <option value="not_started">Nao realizado</option>
+                <option value="not_started">Não realizado</option>
                 <option value="in_progress">Em andamento</option>
                 <option value="finished">Finalizada</option>
               </select>
@@ -929,7 +929,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
                 onClick={handleUnlock}
                 className="rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-1 text-xs text-yellow-200"
               >
-                Desbloquear para correcao
+                Desbloquear para correção
               </button>
             ) : (
               <button
@@ -957,7 +957,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
             disabled={locked}
             className="rounded-full border border-neutral-700 px-4 py-1 text-xs text-neutral-200 disabled:opacity-60"
           >
-            Desfazer ultimo gol
+            Desfazer último gol
           </button>
           <button
             type="button"
@@ -1083,11 +1083,11 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
               <h3 className="text-lg font-semibold text-yellow-300">Finalizar partida</h3>
             </div>
             <p className="text-sm text-neutral-300">
-              Ao finalizar, o resultado entra nos rankings, estatisticas e historico publico.
+              Ao finalizar, o resultado entra nos rankings, estatísticas e histórico público.
             </p>
             <ul className="mt-4 space-y-2 text-xs text-neutral-300">
-              <li>- A edicao fica bloqueada (pode desbloquear para correcao).</li>
-              <li>- Vitorias, empates e derrotas sao calculados automaticamente.</li>
+              <li>- A edição fica bloqueada (pode desbloquear para correção).</li>
+              <li>- Vitórias, empates e derrotas são calculados automaticamente.</li>
             </ul>
             <div className="mt-5 flex flex-col sm:flex-row gap-3">
               <button
@@ -1240,7 +1240,7 @@ export default function ResultadosDoDiaAdmin({
       });
 
       return {
-        activeLabel: "Rodadas da sessao",
+        activeLabel: "Rodadas da sessão",
         matchCards: cards,
       };
     }
@@ -1413,7 +1413,7 @@ export default function ResultadosDoDiaAdmin({
               sem resultado pendente
               {pendingInfo.count === 1 ? "" : "s"} desde{" "}
               {format(pendingInfo.oldestDate, "dd/MM/yyyy")}. Publique os resultados para atualizar
-              rankings e historico.
+              rankings e histórico.
             </span>
             <button
               type="button"
@@ -1431,13 +1431,13 @@ export default function ResultadosDoDiaAdmin({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <FaCheckCircle className="text-green-300 text-lg" />
-              <span>Veja o Time Campeao do Dia e os destaques individuais da rodada.</span>
+              <span>Veja o Time Campeão do Dia e os destaques individuais da rodada.</span>
             </div>
             <Link
               href="/admin/partidas/time-campeao-do-dia"
               className="rounded-full border border-green-400/60 bg-green-400/10 px-4 py-2 text-xs font-semibold text-green-100 hover:border-green-300 hover:bg-green-400/20"
             >
-              Abrir Time Campeao do Dia
+              Abrir Time Campeão do Dia
             </Link>
           </div>
         </div>
@@ -1449,7 +1449,7 @@ export default function ResultadosDoDiaAdmin({
               Registrar Resultados do Dia
             </h1>
             <p className="text-sm text-gray-300 mt-2">
-              Lance placares e gols em tempo real. Ao finalizar, rankings e perfis sao atualizados
+              Lance placares e gols em tempo real. Ao finalizar, rankings e perfis são atualizados
               automaticamente.
             </p>
             {activeLabel && <p className="mt-2 text-xs text-yellow-200">{activeLabel}</p>}
@@ -1634,7 +1634,7 @@ export default function ResultadosDoDiaAdmin({
                   <span>Aguarde, estamos removendo esta rodada.</span>
                 </div>
               ) : (
-                <p>Tem certeza que deseja deletar esta rodada? Essa acao nao pode ser desfeita.</p>
+                <p>Tem certeza que deseja deletar esta rodada? Essa ação não pode ser desfeita.</p>
               )}
             </div>
             {deleteError && (

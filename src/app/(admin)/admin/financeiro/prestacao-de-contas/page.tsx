@@ -261,7 +261,7 @@ export default function PrestacaoDeContasAdmin() {
       if (process.env.NODE_ENV === "development") {
         console.log("Erro ao salvar lancamento:", error);
       }
-      setErroLancamento("Nao foi possivel salvar o lancamento. Tente novamente.");
+      setErroLancamento("Não foi possível salvar o lançamento. Tente novamente.");
       throw error;
     } finally {
       setSalvandoLancamento(false);
@@ -274,13 +274,13 @@ export default function PrestacaoDeContasAdmin() {
     setDeletandoLancamento(true);
     try {
       await deleteLancamento(id);
-      toast.success("Lancamento excluido.");
+      toast.success("Lançamento excluído.");
     } catch (error: unknown) {
       if (process.env.NODE_ENV === "development") {
         console.log("Erro ao excluir lancamento:", error);
       }
       const message =
-        error instanceof Error ? error.message : "Nao foi possivel excluir o lancamento.";
+        error instanceof Error ? error.message : "Não foi possível excluir o lançamento.";
       setErroLancamento(message);
       toast.error(message);
       throw error;
@@ -382,7 +382,7 @@ export default function PrestacaoDeContasAdmin() {
   return (
     <>
       <Head>
-        <title>Prestacao de Contas | Admin - Fut7Pro</title>
+        <title>Prestação de Contas | Admin - Fut7Pro</title>
         <meta
           name="description"
           content="Gerencie todas as receitas e despesas do racha, cadastre novos lancamentos e exporte relatorios financeiros."
@@ -396,23 +396,23 @@ export default function PrestacaoDeContasAdmin() {
         <ToggleVisibilidadePublica visivel={visivel} onToggle={handleToggle} />
         {saving && (
           <div className="mb-4">
-            <span className="text-xs text-yellow-400 animate-pulse">Salvando alteracao...</span>
+            <span className="text-xs text-yellow-400 animate-pulse">Salvando alteração...</span>
           </div>
         )}
         {!visivel && (
           <div className="mb-4 bg-yellow-900/70 border border-yellow-700 rounded p-3 text-yellow-300 text-xs">
-            Esta pagina esta <b>oculta no site publico</b>.<br />
-            Ative a transparencia financeira para liberar o acesso aos atletas e visitantes.
+            Esta página está <b>oculta no site público</b>.<br />
+            Ative a transparência financeira para liberar o acesso aos atletas e visitantes.
             <br />
-            Quando ativado, qualquer pessoa podera visualizar a prestacao de contas deste racha.
+            Quando ativado, qualquer pessoa poderá visualizar a prestação de contas deste racha.
           </div>
         )}
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">Prestacao de Contas</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-yellow-500">Prestação de Contas</h1>
             <p className="text-xs sm:text-sm text-gray-400">
-              Gestao total das receitas e despesas do racha.
+              Gestão total das receitas e despesas do racha.
               <br />
               Cadastre, filtre, exporte e mantenha o controle financeiro 100% transparente.
             </p>
@@ -422,14 +422,14 @@ export default function PrestacaoDeContasAdmin() {
             onClick={handleNovo}
             disabled={salvandoLancamento}
           >
-            + Novo Lancamento
+            + Novo Lançamento
           </button>
         </div>
 
         {/* Filtro de periodo */}
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 items-end">
           <div className="flex flex-col">
-            <label className="text-xs text-gray-300 font-bold mb-1">Periodo</label>
+            <label className="text-xs text-gray-300 font-bold mb-1">Período</label>
             <select
               value={periodo}
               onChange={(e) => {
@@ -438,14 +438,14 @@ export default function PrestacaoDeContasAdmin() {
               className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-xs"
               disabled={todosAnos}
             >
-              <option value="mes">Mes</option>
+              <option value="mes">Mês</option>
               <option value="quadrimestre">Quadrimestre</option>
               <option value="ano">Ano</option>
             </select>
           </div>
           {(periodo === "mes" || periodo === "quadrimestre") && (
             <div className="flex flex-col">
-              <label className="text-xs text-gray-300 font-bold mb-1">Mes</label>
+              <label className="text-xs text-gray-300 font-bold mb-1">Mês</label>
               <select
                 value={mes}
                 onChange={(e) => setMes(e.target.value)}
@@ -500,7 +500,7 @@ export default function PrestacaoDeContasAdmin() {
             <input
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Buscar por descricao ou observacao"
+              placeholder="Buscar por descrição ou observação"
               className="w-full bg-neutral-800 border border-neutral-700 text-white rounded px-3 py-2 text-sm"
             />
           </div>
@@ -549,11 +549,11 @@ export default function PrestacaoDeContasAdmin() {
         </div>
 
         {carregandoLancamentos && (
-          <div className="text-xs text-gray-400 mb-2">Carregando lancamentos reais...</div>
+          <div className="text-xs text-gray-400 mb-2">Carregando lançamentos reais...</div>
         )}
         {isError && (
           <div className="text-xs text-red-400 mb-2">
-            Nao foi possivel carregar os lancamentos do backend agora. Tente novamente em instantes.
+            Não foi possível carregar os lançamentos do backend agora. Tente novamente em instantes.
           </div>
         )}
 
@@ -566,7 +566,7 @@ export default function PrestacaoDeContasAdmin() {
 
         {/* Grafico evolucao financeira */}
         <div className="w-full mt-8 mb-4 bg-neutral-900 rounded-lg shadow-sm p-4">
-          <h3 className="text-lg font-bold text-yellow-500 mb-2">Evolucao Financeira</h3>
+          <h3 className="text-lg font-bold text-yellow-500 mb-2">Evolução Financeira</h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={dadosGraficoFiltrados}>
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
@@ -582,7 +582,7 @@ export default function PrestacaoDeContasAdmin() {
           <div className="bg-neutral-900 rounded-lg shadow-sm p-4">
             <h3 className="text-lg font-bold text-yellow-500 mb-2">Receitas por categoria</h3>
             {receitasPorCategoria.length === 0 ? (
-              <p className="text-xs text-gray-400">Sem receitas no periodo selecionado.</p>
+              <p className="text-xs text-gray-400">Sem receitas no período selecionado.</p>
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -607,7 +607,7 @@ export default function PrestacaoDeContasAdmin() {
           <div className="bg-neutral-900 rounded-lg shadow-sm p-4">
             <h3 className="text-lg font-bold text-yellow-500 mb-2">Despesas por categoria</h3>
             {despesasPorCategoria.length === 0 ? (
-              <p className="text-xs text-gray-400">Sem despesas no periodo selecionado.</p>
+              <p className="text-xs text-gray-400">Sem despesas no período selecionado.</p>
             ) : (
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -646,7 +646,7 @@ export default function PrestacaoDeContasAdmin() {
         {erroLancamento && <div className="mt-2 text-xs text-red-400">{erroLancamento}</div>}
         {salvandoLancamento && (
           <div className="mt-1 text-xs text-yellow-400">
-            Sincronizando lancamento com o backend...
+            Sincronizando lançamento com o backend...
           </div>
         )}
       </section>

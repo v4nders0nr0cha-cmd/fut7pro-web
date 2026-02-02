@@ -162,7 +162,7 @@ export default function OsCampeoesAdminPage() {
 
   const isLoading = rankingAno.isLoading || rankingTimesAno.isLoading;
   const isError = rankingAno.isError || rankingTimesAno.isError;
-  const errorMessage = rankingAno.error || rankingTimesAno.error || "Erro ao carregar campeoes.";
+  const errorMessage = rankingAno.error || rankingTimesAno.error || "Erro ao carregar campeões.";
 
   const campeoesDoAno = useMemo(() => {
     const topPontos = pickTopByMetric(rankingAno.rankings, "pontos");
@@ -193,7 +193,7 @@ export default function OsCampeoesAdminPage() {
         temporario,
       },
       {
-        titulo: "Campeao do Ano",
+        titulo: "Campeão do Ano",
         nome: topTime?.nome ?? "Time em processamento",
         valor: topTime ? `${topTime.pontos} pontos` : "Em processamento",
         image: safeImage(topTime?.logo, DEFAULT_TEAM_IMAGE),
@@ -204,7 +204,7 @@ export default function OsCampeoesAdminPage() {
       {
         titulo: "Maestro do Ano",
         nome: topAssist?.nome ?? "Maestro em processamento",
-        valor: topAssist ? `${topAssist.assistencias} assistencias` : "Em processamento",
+        valor: topAssist ? `${topAssist.assistencias} assistências` : "Em processamento",
         image: safeImage(topAssist?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
         icone: "/images/icons/chuteira-de-ouro.png",
         href: `/estatisticas/assistencias?period=temporada&year=${anoBase}`,
@@ -314,8 +314,8 @@ export default function OsCampeoesAdminPage() {
   const handleShareCampeoes = async () => {
     const shareUrl = publicHref("/os-campeoes");
     const shareData = {
-      title: "Campeoes do Racha",
-      text: "Confira os campeoes do racha no Hall da Fama.",
+      title: "Campeões do Racha",
+      text: "Confira os campeões do racha no Hall da Fama.",
       url: shareUrl,
     };
 
@@ -348,7 +348,7 @@ export default function OsCampeoesAdminPage() {
   return (
     <>
       <Head>
-        <title>Os Campeoes (Admin) | Fut7Pro</title>
+        <title>Os Campeões (Admin) | Fut7Pro</title>
         <meta
           name="description"
           content="Finalize a temporada e veja os destaques reais com base no ranking anual do racha."
@@ -362,11 +362,11 @@ export default function OsCampeoesAdminPage() {
       <main className="bg-fundo text-white min-h-screen pt-20 pb-24 md:pt-6 md:pb-8 px-4">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 text-center mt-8 mb-2">
-            Os Campeoes (Gestao)
+            Os Campeões (Gestão)
           </h1>
           <p className="text-center text-gray-300 mb-8 max-w-2xl mx-auto">
             Dados carregados do ranking anual do seu racha. Ajuste o ano para ver os vencedores e
-            destaques por posicao.
+            destaques por posição.
           </p>
 
           {isError && (
@@ -405,7 +405,7 @@ export default function OsCampeoesAdminPage() {
           </div>
 
           <section className="mb-12">
-            <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">Campeoes do Ano</h2>
+            <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">Campeões do Ano</h2>
             <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 justify-center items-stretch">
               {isLoading && (
                 <div className="text-center text-gray-400 col-span-full">Carregando ranking...</div>
@@ -419,12 +419,12 @@ export default function OsCampeoesAdminPage() {
 
           <section className="mb-12">
             <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">
-              Melhores por Posicao
+              Melhores por Posição
             </h2>
             <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6 justify-center items-stretch">
               {isLoading && (
                 <div className="text-center text-gray-400 col-span-full">
-                  Carregando posicoes...
+                  Carregando posições...
                 </div>
               )}
               {!isLoading &&
@@ -436,7 +436,7 @@ export default function OsCampeoesAdminPage() {
 
           <section className="mb-16">
             <h2 className="text-2xl font-bold text-yellow-400 text-center mb-6">
-              Campeoes por Quadrimestre
+              Campeões por Quadrimestre
             </h2>
             <QuadrimestreGrid
               dados={quadrimestres}
@@ -486,35 +486,35 @@ export default function OsCampeoesAdminPage() {
                   <p>Tem certeza que deseja finalizar a temporada atual?</p>
 
                   <div>
-                    <p className="mb-2">Ao confirmar esta acao:</p>
+                    <p className="mb-2">Ao confirmar esta ação:</p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>A temporada do racha sera encerrada definitivamente.</li>
+                      <li>A temporada do racha será encerrada definitivamente.</li>
                       <li>
-                        Os rankings anuais serao finalizados e o sistema passara a contabilizar
+                        Os rankings anuais serão finalizados e o sistema passará a contabilizar
                         dados para o ano seguinte.
                       </li>
                       <li>
-                        As premiacoes anuais (Melhor do Ano, Artilheiro do Ano, Maestro do Ano,
-                        Campeao do Ano e Melhores por Posicao) serao aplicadas automaticamente nos
+                        As premiações anuais (Melhor do Ano, Artilheiro do Ano, Maestro do Ano,
+                        Campeão do Ano e Melhores por Posição) serão aplicadas automaticamente nos
                         perfis dos atletas e do time vencedor.
                       </li>
                       <li>
-                        As premiacoes do 3o quadrimestre tambem serao aplicadas neste momento, ja
-                        que os titulos do 1o e 2o quadrimestres sao concedidos automaticamente ao
-                        final de cada periodo.
+                        As premiações do 3o quadrimestre também serão aplicadas neste momento, já
+                        que os títulos do 1o e 2o quadrimestres são concedidos automaticamente ao
+                        final de cada período.
                       </li>
                     </ul>
                   </div>
 
                   <p className="text-yellow-200">
-                    Atencao: apos finalizar a temporada, os resultados nao poderao ser alterados.
+                    Atenção: após finalizar a temporada, os resultados não poderão ser alterados.
                   </p>
 
                   <div>
-                    <h4 className="text-yellow-300 font-semibold mb-1">Finalizacao automatica</h4>
+                    <h4 className="text-yellow-300 font-semibold mb-1">Finalização automática</h4>
                     <p>
-                      Caso o ano termine e este botao nao seja acionado, o sistema finalizara a
-                      temporada automaticamente no ultimo dia do ano, aplicando todas as premiacoes
+                      Caso o ano termine e este botão não seja acionado, o sistema finalizará a
+                      temporada automaticamente no último dia do ano, aplicando todas as premiações
                       pendentes.
                     </p>
                   </div>
@@ -536,7 +536,7 @@ export default function OsCampeoesAdminPage() {
                       fechandoTemporada ? "opacity-60 cursor-not-allowed" : "hover:bg-yellow-400/10"
                     }`}
                   >
-                    Confirmar finalizacao da temporada
+                    Confirmar finalização da temporada
                   </button>
                 </div>
               </Dialog.Panel>
@@ -579,7 +579,7 @@ export default function OsCampeoesAdminPage() {
                   >
                     <Image
                       src="/images/icons/trofeu-de-ouro.png"
-                      alt="Icone de trofeu"
+                      alt="Ícone de troféu"
                       width={52}
                       height={52}
                     />
@@ -607,7 +607,7 @@ export default function OsCampeoesAdminPage() {
                     onClick={handleShareCampeoes}
                     className="px-4 py-2 rounded border border-yellow-400 text-yellow-200 font-semibold transition hover:bg-yellow-400/10"
                   >
-                    Compartilhar Campeoes
+                    Compartilhar Campeões
                   </button>
                   <button
                     type="button"
@@ -709,7 +709,7 @@ function buildQuadrimestreItems(
       slug: topAssist?.slug,
     },
     {
-      titulo: "Campeao do Quadrimestre",
+      titulo: "Campeão do Quadrimestre",
       nome: topTeam?.nome ?? "Em processamento",
       icone: "/images/icons/trofeu-de-prata.png",
     },

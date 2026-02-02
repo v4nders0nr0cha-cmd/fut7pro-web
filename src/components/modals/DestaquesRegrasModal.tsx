@@ -51,26 +51,26 @@ export default function DestaquesRegrasModal({ open, onClose }: Props) {
 
               <ul className="space-y-3 text-sm text-gray-200">
                 <li>
-                  <span className="font-semibold text-brand-soft">Time Campeao do Dia:</span>{" "}
-                  somatoria de pontos nas partidas finalizadas (3 vitoria, 1 empate, 0 derrota).
+                  <span className="font-semibold text-brand-soft">Time Campeão do Dia:</span>{" "}
+                  somatória de pontos nas partidas finalizadas (3 vitória, 1 empate, 0 derrota).
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Atacante do Dia:</span> atacante
-                  do Time Campeao do Dia com mais gols. Desempate: mais assistencias, depois a
+                  do Time Campeão do Dia com mais gols. Desempate: mais assistências, depois a
                   primeira ordem do sistema.
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Meia do Dia:</span> meia do Time
-                  Campeao do Dia com mais assistencias. Desempate: mais gols, depois a primeira
+                  Campeão do Dia com mais assistências. Desempate: mais gols, depois a primeira
                   ordem do sistema.
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Goleiro do Dia:</span> goleiro do
-                  Time Campeao do Dia.
+                  Time Campeão do Dia.
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Zagueiro do Dia:</span> escolha
-                  manual entre os zagueiros do Time Campeao do Dia (o sistema nao calcula desarmes).
+                  manual entre os zagueiros do Time Campeão do Dia (o sistema não calcula desarmes).
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Artilheiro do Dia:</span> jogador
@@ -78,7 +78,7 @@ export default function DestaquesRegrasModal({ open, onClose }: Props) {
                 </li>
                 <li>
                   <span className="font-semibold text-brand-soft">Maestro do Dia:</span> jogador de
-                  qualquer time com mais assistencias no dia.
+                  qualquer time com mais assistências no dia.
                 </li>
               </ul>
             </Dialog.Panel>

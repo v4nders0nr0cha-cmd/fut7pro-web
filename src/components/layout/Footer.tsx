@@ -3,16 +3,18 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef } from "react";
-import { FaFacebookF, FaWhatsapp, FaInstagram } from "react-icons/fa";
+import { FaFacebookF, FaWhatsapp, FaInstagram, FaYoutube, FaGlobe } from "react-icons/fa";
 import { useTema } from "@/hooks/useTema";
 import { rachaConfig } from "@/config/racha.config";
 import { useRacha } from "@/context/RachaContext";
 import { useAboutPublic } from "@/hooks/useAbout";
 import { useFooterConfigPublic } from "@/hooks/useFooterConfig";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { useSocialLinksPublic } from "@/hooks/useSocialLinks";
 import { recordSponsorMetric } from "@/lib/sponsor-metrics";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildMapsEmbedUrl } from "@/utils/maps";
+import { normalizeSocialUrl } from "@/utils/social-links";
 
 export default function Footer() {
   const tema = useTema();
@@ -20,6 +22,7 @@ export default function Footer() {
   const slug = tenantSlug || rachaConfig.slug;
   const { about } = useAboutPublic(slug);
   const { footer } = useFooterConfigPublic(slug);
+  const { socialLinks } = useSocialLinksPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
   const { slots, isLoading } = usePublicSponsors(slug);
@@ -45,7 +48,7 @@ export default function Footer() {
   const topicosPadrao = useMemo(
     () => [
       { id: "ranking", label: "Sistema de Ranking", href: publicHref("/estatisticas") },
-      { id: "premiacao", label: "Sistema de Premiacao", href: publicHref("/os-campeoes") },
+      { id: "premiacao", label: "Sistema de Premiação", href: publicHref("/os-campeoes") },
       {
         id: "balanceamento",
         label: "Sistema de Balanceamento",
@@ -54,7 +57,7 @@ export default function Footer() {
       { id: "como-funciona", label: "Como Funciona", href: publicHref("/sobre-nos") },
       { id: "sobre", label: `Sobre o ${tema.nome}`, href: publicHref("/sobre-nos") },
       { id: "termos", label: "Termos de Uso", href: publicHref("/termos") },
-      { id: "privacidade", label: "Politica de Privacidade", href: publicHref("/privacidade") },
+      { id: "privacidade", label: "Política de Privacidade", href: publicHref("/privacidade") },
     ],
     [publicHref, tema.nome]
   );
@@ -71,6 +74,47 @@ export default function Footer() {
     if (!patrocinadoresVisiveis.length) return [];
     return [...patrocinadoresVisiveis, ...patrocinadoresVisiveis];
   }, [patrocinadoresVisiveis]);
+
+  const socialItems = useMemo(
+    () => [
+      {
+        id: "instagram",
+        label: "Instagram",
+        href: normalizeSocialUrl(socialLinks?.instagramUrl),
+        icon: <FaInstagram className="text-brand hover:text-black text-lg" />,
+      },
+      {
+        id: "facebook",
+        label: "Facebook",
+        href: normalizeSocialUrl(socialLinks?.facebookUrl),
+        icon: <FaFacebookF className="text-brand hover:text-black text-lg" />,
+      },
+      {
+        id: "youtube",
+        label: "YouTube",
+        href: normalizeSocialUrl(socialLinks?.youtubeUrl),
+        icon: <FaYoutube className="text-brand hover:text-black text-lg" />,
+      },
+      {
+        id: "website",
+        label: "Site",
+        href: normalizeSocialUrl(socialLinks?.websiteUrl),
+        icon: <FaGlobe className="text-brand hover:text-black text-lg" />,
+      },
+      {
+        id: "whatsapp",
+        label: "WhatsApp",
+        href: normalizeSocialUrl(socialLinks?.whatsappGroupUrl),
+        icon: <FaWhatsapp className="text-brand hover:text-black text-lg" />,
+      },
+    ],
+    [socialLinks]
+  );
+
+  const socialVisible = useMemo(
+    () => socialItems.filter((item) => Boolean(item.href)),
+    [socialItems]
+  );
 
   useEffect(() => {
     const scroll = () => {
@@ -201,7 +245,7 @@ export default function Footer() {
           <div>
             <p className="text-brand font-bold mb-2">NOSSO CAMPO OFICIAL</p>
             {campoNome ? <p className="text-gray-100 font-semibold mb-1">{campoNome}</p> : null}
-            <p className="text-gray-300 mb-3">{campoEndereco || "Endereco nao informado"}</p>
+            <p className="text-gray-300 mb-3">{campoEndereco || "Endereço não informado"}</p>
             <iframe
               src={campoMapa}
               width="100%"
@@ -215,31 +259,21 @@ export default function Footer() {
           </div>
 
           <div className="flex flex-col items-center justify-start gap-2">
-            <p className="text-brand font-bold mb-2">Siga - nos</p>
+            <p className="text-brand font-bold mb-2">Siga-nos</p>
             <div className="flex gap-3">
-              <Link
-                href="https://www.facebook.com/profile.php?id=61581917656941"
-                target="_blank"
-                aria-label="Facebook"
-              >
-                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
-                  <FaFacebookF className="text-brand hover:text-black text-lg" />
-                </div>
-              </Link>
-              <Link href="https://wa.me/seuNumero" target="_blank" aria-label="WhatsApp">
-                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
-                  <FaWhatsapp className="text-brand hover:text-black text-lg" />
-                </div>
-              </Link>
-              <Link
-                href="https://www.instagram.com/fut7pro_app"
-                target="_blank"
-                aria-label="Instagram"
-              >
-                <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
-                  <FaInstagram className="text-brand hover:text-black text-lg" />
-                </div>
-              </Link>
+              {socialVisible.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={item.label}
+                >
+                  <div className="border border-brand p-2 rounded-md hover:bg-brand transition cursor-pointer">
+                    {item.icon}
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
 

@@ -90,7 +90,7 @@ function ModalHistorico({
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.text();
-          throw new Error(body || "Erro ao carregar historico");
+          throw new Error(body || "Erro ao carregar histórico");
         }
         return res.json();
       })
@@ -106,7 +106,7 @@ function ModalHistorico({
       <div className="bg-[#151515] border border-yellow-500/30 rounded-2xl shadow-xl p-6 w-full max-w-lg">
         <div className="flex items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-bold text-yellow-400">Historico de alteracoes</h2>
+            <h2 className="text-lg font-bold text-yellow-400">Histórico de alterações</h2>
             <p className="text-xs text-gray-300">{atleta.nome || "Atleta"}</p>
           </div>
           <button
@@ -117,7 +117,7 @@ function ModalHistorico({
           </button>
         </div>
 
-        {loading && <div className="text-sm text-gray-300">Carregando historico...</div>}
+        {loading && <div className="text-sm text-gray-300">Carregando histórico...</div>}
         {error && <div className="text-sm text-red-300">{error}</div>}
 
         {!loading && !error && (
@@ -449,7 +449,7 @@ export default function NivelDosAtletasPage() {
 
     setBulkLoading(false);
     if (skipped > 0) {
-      toast.error(`${skipped} atletas nao foram atualizados.`);
+      toast.error(`${skipped} atletas não foram atualizados.`);
     }
     toast.success("Atualizado");
     limparSelecao();
@@ -765,7 +765,7 @@ export default function NivelDosAtletasPage() {
                     className="flex items-center gap-1 text-yellow-300 hover:text-yellow-200"
                   >
                     <FaHistory size={12} />
-                    Historico
+                    Histórico
                   </button>
                 </div>
               </div>

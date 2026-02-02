@@ -24,8 +24,8 @@ export default function SobreNosPage() {
     {
       href: "/sobre-nos/nossa-historia",
       icon: <FaBookOpen className="text-3xl text-brand" />,
-      title: "Nossa Historia",
-      desc: "Conheca nossa origem, missao e os principais marcos.",
+      title: "Nossa História",
+      desc: "Conheça nossa origem, missão e os principais marcos.",
     },
     {
       href: "/sobre-nos/estatuto",
@@ -37,13 +37,13 @@ export default function SobreNosPage() {
       href: "/sobre-nos/aniversariantes",
       icon: <FaBirthdayCake className="text-3xl text-brand" />,
       title: "Aniversariantes",
-      desc: "Veja quem faz aniversario no mes e acesse o perfil dos atletas.",
+      desc: "Veja quem faz aniversário no mês e acesse o perfil dos atletas.",
     },
     {
       href: "/sobre-nos/nossos-parceiros",
       icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
-      desc: "Conheca nossos patrocinadores e apoiadores.",
+      desc: "Conheça nossos patrocinadores e apoiadores.",
     },
     {
       href: "/sobre-nos/contatos",
@@ -57,18 +57,18 @@ export default function SobreNosPage() {
     cards.push({
       href: "/sobre-nos/prestacao-de-contas",
       icon: <FaFileInvoiceDollar className="text-3xl text-brand" />,
-      title: "Prestacao de Contas",
-      desc: "Transparencia financeira: entradas e despesas do racha.",
+      title: "Prestação de Contas",
+      desc: "Transparência financeira: entradas e despesas do racha.",
     });
   }
 
   return (
     <>
       <Head>
-        <title>Sobre Nos | {racha?.nome || rachaConfig.nome}</title>
+        <title>Sobre Nós | {racha?.nome || rachaConfig.nome}</title>
         <meta
           name="description"
-          content="Saiba tudo sobre nosso futebol entre amigos: historia, missao, regras, aniversariantes, parceiros, administracao, prestacao de contas e muito mais."
+          content="Saiba tudo sobre nosso futebol entre amigos: história, missão, regras, aniversariantes, parceiros, administração, prestação de contas e muito mais."
         />
         <meta
           name="keywords"
@@ -77,11 +77,11 @@ export default function SobreNosPage() {
       </Head>
       <main className="w-full min-h-screen flex flex-col items-center py-10 pb-8 bg-fundo">
         <h1 className="mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
-          Sobre Nos
+          Sobre Nós
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Conheca mais sobre nosso futebol entre amigos: nossa historia, regras, aniversariantes,
-          parceiros e todas as informacoes importantes do racha.
+          Conheça mais sobre nosso futebol entre amigos: nossa história, regras, aniversariantes,
+          parceiros e todas as informações importantes do racha.
         </p>
         <section className="w-full max-w-5xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

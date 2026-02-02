@@ -68,7 +68,7 @@ export default function PartidasPage() {
         <title>Partidas e Resultados | Painel Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Centralize o seu racha em um so lugar: registre resultados do Sorteio Inteligente e consulte o historico completo de partidas."
+          content="Centralize o seu racha em um só lugar: registre resultados do Sorteio Inteligente e consulte o histórico completo de partidas."
         />
         <meta
           name="keywords"
@@ -82,12 +82,12 @@ export default function PartidasPage() {
             Partidas e Resultados
           </h1>
           <p className="text-center text-gray-300 mb-2 max-w-2xl mx-auto">
-            Centralize o seu racha em um so lugar: registre os resultados dos confrontos gerados no
-            Sorteio Inteligente e consulte o historico completo de partidas, com filtros por periodo
-            e busca rapida.
+            Centralize o seu racha em um só lugar: registre os resultados dos confrontos gerados no
+            Sorteio Inteligente e consulte o histórico completo de partidas, com filtros por período
+            e busca rápida.
           </p>
           <p className="text-center text-xs text-gray-400 mb-10 max-w-2xl mx-auto">
-            As partidas do Sorteio Inteligente ja ficam disponiveis no site publico, aqui voce
+            As partidas do Sorteio Inteligente já ficam disponíveis no site público, aqui você
             controla o que vira resultado oficial e o que entra nos rankings.
           </p>
 
@@ -112,15 +112,15 @@ export default function PartidasPage() {
               <ul className="mt-4 space-y-2 text-sm text-gray-300">
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
-                  Lancamento rapido por confronto (placar e destaques)
+                  Lançamento rápido por confronto (placar e destaques)
                 </li>
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
-                  Validacao para evitar erros (ex: placar incompleto)
+                  Validação para evitar erros (ex: placar incompleto)
                 </li>
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
-                  Finalizacao oficial para liberar Time Campeao do Dia
+                  Finalização oficial para liberar Time Campeão do Dia
                 </li>
               </ul>
 
@@ -129,7 +129,7 @@ export default function PartidasPage() {
                   href="/admin/partidas/resultados-do-dia"
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
                 >
-                  Lancar Resultados de Hoje
+                  Lançar Resultados de Hoje
                 </Link>
                 <a
                   href={confrontosPublicosUrl}
@@ -137,7 +137,7 @@ export default function PartidasPage() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 text-sm text-yellow-300 hover:text-yellow-200"
                 >
-                  Ver confrontos publicados no site publico
+                  Ver confrontos publicados no site público
                   <FaExternalLinkAlt className="text-yellow-300 text-xs" />
                 </a>
               </div>
@@ -147,7 +147,7 @@ export default function PartidasPage() {
               ) : !hasConfrontosHoje ? (
                 <div className="mt-4 text-xs text-yellow-200">
                   Nenhum confronto do dia encontrado, publique o Sorteio Inteligente para liberar o
-                  lancamento.
+                  lançamento.
                 </div>
               ) : null}
             </div>
@@ -156,10 +156,10 @@ export default function PartidasPage() {
               <div className="flex items-start gap-3">
                 <FaHistory className="text-yellow-400 text-3xl mt-1" />
                 <div>
-                  <h2 className="text-lg font-semibold text-yellow-300">Historico de Partidas</h2>
+                  <h2 className="text-lg font-semibold text-yellow-300">Histórico de Partidas</h2>
                   <p className="text-sm text-gray-300 mt-2">
                     Pesquise partidas anteriores, revise resultados, filtre por ano e acompanhe a
-                    evolucao do racha ao longo do tempo.
+                    evolução do racha ao longo do tempo.
                   </p>
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default function PartidasPage() {
               <ul className="mt-4 space-y-2 text-sm text-gray-300">
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
-                  Filtros por ano, mes e periodo
+                  Filtros por ano, mês e período
                 </li>
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
@@ -175,7 +175,7 @@ export default function PartidasPage() {
                 </li>
                 <li className="flex gap-2">
                   <span className="text-yellow-400">-</span>
-                  Edicao e correcao de resultados (com registro de alteracao)
+                  Edição e correção de resultados (com registro de alteração)
                 </li>
               </ul>
 
@@ -184,9 +184,9 @@ export default function PartidasPage() {
                   href="/admin/partidas/historico"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/20"
                 >
-                  Abrir Historico Completo
+                  Abrir Histórico Completo
                 </Link>
-                <span className="text-xs text-gray-500">Exportar relatorio (em breve)</span>
+                <span className="text-xs text-gray-500">Exportar relatório (em breve)</span>
               </div>
             </div>
           </div>

@@ -173,7 +173,7 @@ export default function NotificacoesPage() {
           badge: badgeEnabled,
           audience: grupo,
           audienceLabel: groupLabel,
-          autor: user?.name || "Administracao",
+          autor: user?.name || "Administração",
         },
       });
 

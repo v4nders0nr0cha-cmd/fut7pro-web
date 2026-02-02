@@ -72,40 +72,40 @@ type HighlightMeta = {
 
 const HIGHLIGHT_META: Record<"atacante" | "meia" | "zagueiro" | "goleiro", HighlightMeta> = {
   atacante: {
-    criteria: "Mais gols no time campeao",
-    badge: "Automatico",
+    criteria: "Mais gols no time campeão",
+    badge: "Automático",
     icon: "/images/icons/atacante-do-ano.png",
     statKey: "goals",
     statLabel: "gols",
   },
   meia: {
-    criteria: "Mais assistencias no time campeao",
-    badge: "Automatico",
+    criteria: "Mais assistências no time campeão",
+    badge: "Automático",
     icon: "/images/icons/meia-do-ano.png",
     statKey: "assists",
-    statLabel: "assistencias",
+    statLabel: "assistências",
   },
   zagueiro: {
-    criteria: "Escolha do admin (time campeao)",
+    criteria: "Escolha do admin (time campeão)",
     badge: "Manual",
     icon: "/images/icons/zagueiro-do-ano.png",
     footerText: "Manual",
   },
   goleiro: {
-    criteria: "Goleiro do time campeao",
-    badge: "Automatico",
+    criteria: "Goleiro do time campeão",
+    badge: "Automático",
     icon: "/images/icons/luva-de-ouro.png",
-    footerText: "Automatico",
+    footerText: "Automático",
   },
 };
 
 const DESTAQUE_CRITERIA = {
-  atacante: "Mais gols no time campeao",
-  meia: "Mais assistencias no time campeao",
-  zagueiro: "Escolha do admin (time campeao)",
-  goleiro: "Goleiro do time campeao",
+  atacante: "Mais gols no time campeão",
+  meia: "Mais assistências no time campeão",
+  zagueiro: "Escolha do admin (time campeão)",
+  goleiro: "Goleiro do time campeão",
   artilheiro: "Mais gols no dia (qualquer time)",
-  maestro: "Mais assistencias no dia (qualquer time)",
+  maestro: "Mais assistências no dia (qualquer time)",
 };
 
 function parseMatchDate(value?: string | null) {
@@ -440,7 +440,7 @@ export default function Home() {
             criteria: DESTAQUE_CRITERIA.meia,
             value:
               typeof highlights.meia.assists === "number"
-                ? `${highlights.meia.assists} assistencias`
+                ? `${highlights.meia.assists} assistências`
                 : undefined,
             image: highlights.meia.photoUrl || DEFAULT_PLAYER_IMAGE,
           }
@@ -499,7 +499,7 @@ export default function Home() {
           name: highlights.maestro.name,
           criteria: DESTAQUE_CRITERIA.maestro,
           value: highlights.maestro.assists
-            ? `${highlights.maestro.assists} assistencias`
+            ? `${highlights.maestro.assists} assistências`
             : undefined,
           image: highlights.maestro.photoUrl || DEFAULT_PLAYER_IMAGE,
         }
@@ -544,7 +544,7 @@ export default function Home() {
               ))
             ) : isErrorHighlights ? (
               <div className="col-span-4 text-center text-red-400">
-                Nao foi possivel carregar os destaques do dia.
+                Não foi possível carregar os destaques do dia.
               </div>
             ) : (
               <div className="col-span-4 text-center text-gray-400">
@@ -579,7 +579,7 @@ export default function Home() {
               <Card title="Ranking" description="Compare seu desempenho com os melhores." />
             </Link>
             <Link href={publicHref("/os-campeoes")}>
-              <Card title="Campeoes" description="Veja quem se destacou nos rachas." />
+              <Card title="Campeões" description="Veja quem se destacou nos rachas." />
             </Link>
             <Link href={publicHref("/estatisticas/tira-teima")}>
               <Card
@@ -588,14 +588,14 @@ export default function Home() {
               />
             </Link>
             <Link href={publicHref("/estatisticas")}>
-              <Card title="Estatisticas" description="Acompanhe sua performance em tempo real." />
+              <Card title="Estatísticas" description="Acompanhe sua performance em tempo real." />
             </Link>
             {/* Sorteio Inteligente so e clicavel para admin */}
             {isAdmin ? (
               <Link href="/admin/partidas/sorteio-inteligente">
                 <Card
                   title="Sorteio Inteligente"
-                  description="Equipes equilibradas com base no historico."
+                  description="Equipes equilibradas com base no histórico."
                   icon={<Shuffle size={22} className="text-brand -ml-1" />}
                   restricted={true}
                   isAdmin={isAdmin}
@@ -604,7 +604,7 @@ export default function Home() {
             ) : (
               <Card
                 title="Sorteio Inteligente"
-                description="Equipes equilibradas com base no historico."
+                description="Equipes equilibradas com base no histórico."
                 icon={<Shuffle size={22} className="text-brand -ml-1" />}
                 restricted={true}
                 isAdmin={isAdmin}

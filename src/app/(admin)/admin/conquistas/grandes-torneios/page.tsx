@@ -56,11 +56,11 @@ export default function GrandesTorneiosAdminPage() {
       <main className="min-h-screen bg-fundo text-white pt-20 pb-24 md:pt-6 md:pb-8 px-4">
         <div className="max-w-5xl mx-auto">
           <h1 className="text-3xl font-bold text-yellow-400 mb-3 text-center">
-            Grandes Torneios (Gestao)
+            Grandes Torneios (Gestão)
           </h1>
           <p className="text-center text-gray-300 mb-8 max-w-2xl mx-auto">
-            Cadastre, edite ou exclua <b>torneios especiais</b> do seu racha. Atletas campeoes
-            recebem o <b>icone especial</b> em seus perfis.
+            Cadastre, edite ou exclua <b>torneios especiais</b> do seu racha. Atletas campeões
+            recebem o <b>ícone especial</b> em seus perfis.
           </p>
 
           <div className="flex justify-end mb-4">
@@ -135,7 +135,7 @@ export default function GrandesTorneiosAdminPage() {
                           className="inline-flex items-center gap-1 text-red-400 hover:text-red-600 font-semibold"
                           onClick={async () => {
                             const ok = confirm(
-                              "Tem certeza que deseja excluir este torneio? Esta acao nao pode ser desfeita."
+                              "Tem certeza que deseja excluir este torneio? Esta ação não pode ser desfeita."
                             );
                             if (!ok) return;
                             await deleteTorneio(torneio.id);

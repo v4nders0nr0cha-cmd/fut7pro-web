@@ -8,16 +8,16 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const HIGHLIGHTS = [
   {
-    title: "Atualizacao em tempo real",
-    description: "Tudo que voce edita no painel aparece no site publico do racha.",
+    title: "Atualização em tempo real",
+    description: "Tudo que você edita no painel aparece no site público do racha.",
   },
   {
-    title: "Multi-admin com seguranca",
-    description: "Permissoes por perfil e logs de auditoria para cada acao.",
+    title: "Multi-admin com segurança",
+    description: "Permissões por perfil e logs de auditoria para cada ação.",
   },
   {
     title: "Financeiro profissional",
-    description: "Controle receitas, despesas e patrocinadores em um unico lugar.",
+    description: "Controle receitas, despesas e patrocinadores em um único lugar.",
   },
   {
     title: "Rankings oficiais",
@@ -104,7 +104,7 @@ export default function AdminLoginClient() {
         // ignore
       }
 
-      setErro("E-mail ou senha invalidos.");
+      setErro("E-mail ou senha inválidos.");
     } finally {
       setIsSubmitting(false);
     }
@@ -165,7 +165,7 @@ export default function AdminLoginClient() {
                   Confirme seu e-mail para ativar o painel.
                 </p>
                 <p className="mt-1 text-xs text-yellow-100/80">
-                  Enviamos um link de confirmacao para {email}. Verifique sua caixa de entrada ou
+                  Enviamos um link de confirmação para {email}. Verifique sua caixa de entrada ou
                   spam.
                 </p>
                 <button
@@ -177,7 +177,7 @@ export default function AdminLoginClient() {
                   }
                   className="mt-3 inline-flex items-center justify-center rounded-lg border border-yellow-300/50 px-3 py-2 text-xs font-semibold text-yellow-200 hover:border-yellow-200 hover:text-yellow-100"
                 >
-                  Ir para confirmacao
+                  Ir para confirmação
                 </button>
               </div>
             )}
@@ -258,7 +258,7 @@ export default function AdminLoginClient() {
                 Esqueci minha senha
               </a>
               <div>
-                Nao tem conta?{" "}
+                Não tem conta?{" "}
                 <a
                   href="/cadastrar-racha"
                   className="text-yellow-300 underline hover:text-yellow-200"
@@ -290,14 +290,14 @@ export default function AdminLoginClient() {
               Acesse a administração do seu racha.
             </p>
             <p className="hidden text-sm leading-relaxed text-gray-300 sm:block sm:text-base">
-              Acesse o centro de comando do seu racha. Tudo que voce atualiza no painel reflete no
-              site publico do racha com sincronizacao imediata.
+              Acesse o centro de comando do seu racha. Tudo que você atualiza no painel reflete no
+              site público do racha com sincronização imediata.
             </p>
           </div>
 
           <details className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur sm:hidden">
             <summary className="cursor-pointer text-sm font-semibold text-white">
-              Ver beneficios do painel
+              Ver benefícios do painel
             </summary>
             <div className="mt-3 space-y-2 text-xs text-gray-300">
               <ul className="space-y-2">
@@ -347,7 +347,7 @@ export default function AdminLoginClient() {
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl animate-slide-in">
             <h2 className="text-xl font-bold text-center text-white">Acesso ao painel bloqueado</h2>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
-              Este racha esta temporariamente bloqueado pelo Fut7Pro e, no momento, nao e possivel
+              Este racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível
               acessar o painel administrativo.
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
@@ -358,7 +358,7 @@ export default function AdminLoginClient() {
               .
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-400">
-              Se possivel, informe o nome do racha, o slug e o e-mail do administrador.
+              Se possível, informe o nome do racha, o slug e o e-mail do administrador.
             </p>
             <button
               className="mt-5 w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300"

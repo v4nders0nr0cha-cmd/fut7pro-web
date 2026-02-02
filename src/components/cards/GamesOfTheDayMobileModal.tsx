@@ -20,40 +20,40 @@ function BoxRegras() {
   return (
     <div className="bg-brand-soft border-l-4 border-brand-strong rounded-xl p-3 mt-2 text-[15px] text-zinc-900 font-normal flex flex-col gap-2 shadow-sm">
       <div className="font-bold text-brand-strong mb-2">
-        Como sao escolhidos os destaques do dia?
+        Como são escolhidos os destaques do dia?
       </div>
       <ul className="list-disc pl-5 mb-1">
         <li>
           <span className="font-semibold text-zinc-900">Atacante do Dia:</span> Entre os atacantes
-          do <b>time campeao</b>, aquele que fez mais gols.
+          do <b>time campeão</b>, aquele que fez mais gols.
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Meia do Dia:</span> Entre os meias do{" "}
-          <b>time campeao</b>, quem deu mais assistencias.
+          <b>time campeão</b>, quem deu mais assistências.
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Zagueiro do Dia:</span> Escolha manual entre
-          os zagueiros do <b>time campeao</b> do dia (o sistema nao calcula desarmes).
+          os zagueiros do <b>time campeão</b> do dia (o sistema não calcula desarmes).
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Goleiro do Dia:</span> O goleiro do{" "}
-          <b>time campeao</b> do dia.
+          <b>time campeão</b> do dia.
         </li>
       </ul>
       <div className="h-2" />
       <ul className="list-disc pl-5 mb-2">
         <li>
           <span className="font-semibold text-zinc-900">Artilheiro do Dia:</span> Jogador de
-          qualquer time/posicao com mais gols na rodada.
+          qualquer time/posição com mais gols na rodada.
         </li>
         <li>
           <span className="font-semibold text-zinc-900">Maestro do Dia:</span> Jogador de qualquer
-          time/posicao com mais assistencias no dia.
+          time/posição com mais assistências no dia.
         </li>
       </ul>
       <div className="text-[14px] text-zinc-800 font-medium mt-1">
-        <span className="text-brand-strong font-bold">Obs:</span> Esses criterios valorizam quem
-        ajudou o time a ser campeao, mesmo que nao seja o maior artilheiro ou assistente geral do
+        <span className="text-brand-strong font-bold">Obs:</span> Esses critérios valorizam quem
+        ajudou o time a ser campeão, mesmo que não seja o maior artilheiro ou assistente geral do
         racha.
       </div>
     </div>

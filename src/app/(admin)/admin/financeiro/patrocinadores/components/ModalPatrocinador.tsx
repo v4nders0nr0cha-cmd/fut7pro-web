@@ -25,15 +25,15 @@ const billingPlanOptions = [
 ] as const;
 
 const billingPlanValueLabels: Record<string, string> = {
-  MENSAL: "Quanto este patrocinador paga por mes?",
+  MENSAL: "Quanto este patrocinador paga por mês?",
   QUADRIMESTRAL: "Quanto este patrocinador paga a cada quatro meses?",
   ANUAL: "Quanto este patrocinador paga por ano?",
 };
 
 const billingPlanFirstPaymentQuestions: Record<string, string> = {
-  MENSAL: "Voce ja recebeu o 1o pagamento mensal deste patrocinador?",
-  QUADRIMESTRAL: "Voce ja recebeu o 1o pagamento quadrimestral deste patrocinador?",
-  ANUAL: "Voce ja recebeu o pagamento do plano anual deste patrocinador?",
+  MENSAL: "Você já recebeu o 1o pagamento mensal deste patrocinador?",
+  QUADRIMESTRAL: "Você já recebeu o 1o pagamento quadrimestral deste patrocinador?",
+  ANUAL: "Você já recebeu o pagamento do plano anual deste patrocinador?",
 };
 
 const ALLOWED_LOGO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -150,7 +150,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   const dataUrlToFile = (dataUrl: string) => {
     const [header, base64Data] = dataUrl.split(",");
     if (!base64Data) {
-      throw new Error("Imagem invalida.");
+      throw new Error("Imagem inválida.");
     }
     const match = header?.match(/data:(.*);base64/);
     const mime = match?.[1] || "image/png";
@@ -200,7 +200,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
       const file = dataUrlToFile(cropped);
       const uploadedUrl = await uploadLogo(file);
       if (!uploadedUrl) {
-        throw new Error("URL nao retornada");
+        throw new Error("URL não retornada");
       }
       setForm((f) => ({ ...f, logo: uploadedUrl }));
       setLogoPreview(uploadedUrl);
@@ -238,7 +238,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         </h2>
         {form.id && isExpired && (
           <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Este plano esta vencido. A logo continua no site publico. Confirme o recebimento quando
+            Este plano está vencido. A logo continua no site público. Confirme o recebimento quando
             renovar o ciclo ou exclua manualmente.
           </div>
         )}
@@ -255,7 +255,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
               !isEdit || hasFirstPaymentChange || firstPaymentTouched;
             if (shouldValidateFirstPayment) {
               if (!firstPaymentStatus) {
-                setFirstPaymentError("Informe se o primeiro recebimento ja ocorreu.");
+                setFirstPaymentError("Informe se o primeiro recebimento já ocorreu.");
                 return;
               }
               if (!firstPaymentDate) {
@@ -297,7 +297,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
           />
           <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-ramo">
-            Subtitulo/Categoria
+            Subtítulo/Categoria
           </label>
           <input
             id="patrocinador-ramo"
@@ -332,8 +332,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             ))}
           </select>
           <span className="text-xs text-gray-400">
-            Define a frequencia do ciclo e dos alertas. O lancamento no caixa so ocorre apos a
-            confirmacao do recebimento.
+            Define a frequência do ciclo e dos alertas. O lançamento no caixa só ocorre após a
+            confirmação do recebimento.
           </span>
           {shouldShowValue && (
             <>
@@ -385,7 +385,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                       if (!firstPaymentDate) setFirstPaymentDate(today);
                     }}
                   />
-                  Ja recebi
+                  Já recebi
                 </label>
                 <label
                   className={`flex-1 text-center text-xs font-semibold rounded px-2 py-2 cursor-pointer border transition ${
@@ -411,7 +411,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                       if (!firstPaymentDate) setFirstPaymentDate(today);
                     }}
                   />
-                  Ainda nao
+                  Ainda não
                 </label>
               </div>
               {firstPaymentStatus === "received" && (
@@ -451,7 +451,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
                     required={!form.id}
                   />
                   <p className="text-[11px] text-gray-400 mt-1">
-                    O sistema so vai lancar na Prestacao de Contas quando esta data chegar.
+                    O sistema só vai lançar na Prestação de Contas quando esta data chegar.
                   </p>
                 </div>
               )}
@@ -504,7 +504,7 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
           </div>
           {logoError && <div className="text-xs text-red-400">{logoError}</div>}
           <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-descricao">
-            Descricao/Observacoes
+            Descrição/Observações
           </label>
           <textarea
             id="patrocinador-descricao"

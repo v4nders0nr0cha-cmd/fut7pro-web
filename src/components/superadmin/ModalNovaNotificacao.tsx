@@ -260,10 +260,10 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <label className="text-xs text-zinc-400">Titulo</label>
+            <label className="text-xs text-zinc-400">Título</label>
             <input
               className="w-full rounded bg-zinc-800 text-zinc-100 border border-zinc-700 px-3 py-2"
-              placeholder="Titulo da campanha"
+              placeholder="Título da campanha"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />

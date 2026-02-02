@@ -93,7 +93,7 @@ export default function TabelaPatrocinadores({
                     </div>
                   </div>
                   <button
-                    title={sponsor.visivel ? "Ocultar do site publico" : "Exibir no site publico"}
+                    title={sponsor.visivel ? "Ocultar do site público" : "Exibir no site público"}
                     onClick={() => onToggleVisivel(sponsor.id)}
                     className={`ml-2 ${sponsor.visivel ? "text-green-500" : "text-gray-600"} hover:text-yellow-400`}
                   >
@@ -123,11 +123,11 @@ export default function TabelaPatrocinadores({
                   {dueLabel ? (
                     <div className="mt-2 text-sm text-gray-300">
                       {vencido
-                        ? `Renovacao pendente desde ${dueLabel}`
-                        : `Proxima renovacao em ${dueLabel} (faltam ${diasParaVencer} dia(s))`}
+                        ? `Renovação pendente desde ${dueLabel}`
+                        : `Próxima renovação em ${dueLabel} (faltam ${diasParaVencer} dia(s))`}
                     </div>
                   ) : (
-                    <div className="mt-2 text-sm text-gray-400">Vencimento nao informado.</div>
+                    <div className="mt-2 text-sm text-gray-400">Vencimento não informado.</div>
                   )}
                   {vencido && (
                     <button

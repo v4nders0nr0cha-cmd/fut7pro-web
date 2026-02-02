@@ -793,7 +793,7 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-2xl bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Faturas do racha</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Historico recente das suas cobrancas e pagamentos.
+              Histórico recente das suas cobranças e pagamentos.
             </p>
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
               {invoices.length === 0 && (

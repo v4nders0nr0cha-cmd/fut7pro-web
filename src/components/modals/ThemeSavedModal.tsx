@@ -75,8 +75,8 @@ export default function ThemeSavedModal({
           Tema atualizado!
         </h2>
         <p id="theme-saved-description" className="mt-2 text-center text-sm text-gray-200">
-          Seu racha agora esta em <span className="text-brand font-semibold">{themeName}</span>, no
-          admin e no site publico.
+          Seu racha agora está em <span className="text-brand font-semibold">{themeName}</span>, no
+          admin e no site público.
         </p>
 
         <div className="mt-6 flex flex-col gap-3">

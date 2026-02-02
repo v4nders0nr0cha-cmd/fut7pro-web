@@ -210,7 +210,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       !resolvedLogoUrl
     ) {
       setErro(
-        "Preencha todos os campos obrigatorios, envie o banner e a logo do time campeao e adicione pelo menos um campeao."
+        "Preencha todos os campos obrigatórios, envie o banner e a logo do time campeão e adicione pelo menos um campeão."
       );
       return;
     }
@@ -350,7 +350,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Titulo */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Titulo do Campeonato *</label>
+          <label className="text-gray-300 font-medium text-sm">Título do Campeonato *</label>
           <input
             type="text"
             className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
@@ -364,7 +364,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Descricao */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Descricao do Campeonato *</label>
+          <label className="text-gray-300 font-medium text-sm">Descrição do Campeonato *</label>
           <textarea
             className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400 resize-none"
             value={descricao}
@@ -372,14 +372,14 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             required
             rows={3}
             maxLength={200}
-            placeholder="Ex: Edicao especial realizada em 2025 com os melhores jogadores do racha."
+            placeholder="Ex: Edição especial realizada em 2025 com os melhores jogadores do racha."
           />
         </div>
 
         {/* Data do evento */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-gray-300 font-medium text-sm">Data inicio *</label>
+            <label className="text-gray-300 font-medium text-sm">Data início *</label>
             <input
               type="date"
               className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
@@ -401,7 +401,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Time campeao */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Time campeao (nome) *</label>
+          <label className="text-gray-300 font-medium text-sm">Time campeão (nome) *</label>
           <input
             type="text"
             className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
@@ -468,7 +468,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Logo */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Logo do Time Campeao *</label>
+          <label className="text-gray-300 font-medium text-sm">Logo do Time Campeão *</label>
           <div className="flex gap-3 items-center">
             <button
               type="button"
@@ -499,7 +499,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
         {/* Vagas */}
         <div className="mb-3">
-          <label className="text-gray-300 font-medium text-sm">Quantidade de Campeoes *</label>
+          <label className="text-gray-300 font-medium text-sm">Quantidade de Campeões *</label>
           <input
             type="number"
             min={1}
@@ -513,7 +513,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
         {/* Premiacoes */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-gray-300 font-medium text-sm">Premiacao Total (R$)</label>
+            <label className="text-gray-300 font-medium text-sm">Premiação Total (R$)</label>
             <input
               type="number"
               min={0}
@@ -527,14 +527,14 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             />
           </div>
           <div>
-            <label className="text-gray-300 font-medium text-sm">Premiacao MVP</label>
+            <label className="text-gray-300 font-medium text-sm">Premiação MVP</label>
             <input
               type="text"
               className="mt-1 rounded px-3 py-2 w-full bg-zinc-800 text-white border border-gray-600 focus:border-yellow-400"
               value={premioMvp}
               onChange={(e) => setPremioMvp(e.target.value)}
               maxLength={60}
-              placeholder="Ex: Trofeu + Voucher"
+              placeholder="Ex: Troféu + Voucher"
             />
           </div>
         </div>
@@ -619,7 +619,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
           <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
             <div className="bg-[#1c1e22] rounded-xl p-5 shadow-2xl max-w-md w-full">
               <div className="flex justify-between items-center mb-3">
-                <h3 className="text-lg font-bold text-yellow-400">Selecione o campeao</h3>
+                <h3 className="text-lg font-bold text-yellow-400">Selecione o campeão</h3>
                 <button
                   type="button"
                   className="text-gray-300 hover:text-yellow-400"
@@ -679,7 +679,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
           <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
             <div className="bg-[#1c1e22] rounded-xl p-6 shadow-2xl max-w-3xl w-full">
               <h3 className="text-lg text-yellow-400 font-bold mb-2">
-                Ajuste o Banner (proporcao 3:1)
+                Ajuste o Banner (proporção 3:1)
               </h3>
               <div className="relative w-full h-48 sm:h-64 bg-black rounded overflow-hidden">
                 <Cropper

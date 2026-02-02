@@ -37,7 +37,7 @@ export default function LogoDoRachaPage() {
   const isPresidente =
     membershipRole === "PRESIDENTE" ||
     (presidenteEmail && userEmail && presidenteEmail === userEmail);
-  const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrao Fut7Pro" });
+  const [logo, setLogo] = useState<LogoData>({ url: LOGO_PADRAO, nome: "Logo padrão Fut7Pro" });
   const [nomeRacha, setNomeRacha] = useState("");
   const [saving, setSaving] = useState(false);
   const [cropImage, setCropImage] = useState<string | null>(null);
@@ -91,15 +91,15 @@ export default function LogoDoRachaPage() {
         if (!active) return;
         if (res.ok && data?.available) {
           setSlugStatus("available");
-          setSlugHint("Link disponivel.");
+          setSlugHint("Link disponível.");
         } else {
           setSlugStatus("unavailable");
-          setSlugHint("Esse link ja esta em uso.");
+          setSlugHint("Esse link já está em uso.");
         }
       } catch {
         if (!active) return;
         setSlugStatus("unavailable");
-        setSlugHint("Nao foi possivel validar o link agora.");
+        setSlugHint("Não foi possível validar o link agora.");
       }
     }, 400);
 
@@ -113,7 +113,7 @@ export default function LogoDoRachaPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/") || file.size > 1_000_000) {
-      toast.error("Envie uma imagem PNG ou JPG de ate 1MB.");
+      toast.error("Envie uma imagem PNG ou JPG de até 1MB.");
       return;
     }
     const reader = new FileReader();
@@ -132,12 +132,12 @@ export default function LogoDoRachaPage() {
     const nomeDigitado = nomeRacha.trim();
     const shouldUpdateName = nomeDigitado.length > 0;
     if (slugChanged && slugStatus !== "available") {
-      toast.error("Escolha um nome com link disponivel antes de salvar.");
+      toast.error("Escolha um nome com link disponível antes de salvar.");
       return;
     }
     if (slugChanged) {
       const confirmed = window.confirm(
-        `O link publico do racha sera alterado para:\n${nextLink}\n\nDeseja continuar?`
+        `O link público do racha será alterado para:\n${nextLink}\n\nDeseja continuar?`
       );
       if (!confirmed) {
         return;
@@ -177,8 +177,8 @@ export default function LogoDoRachaPage() {
       toast.success("Identidade visual atualizada");
       if (slugChanged) {
         setTenantSlug(slugPreview);
-        toast("Novo link publico: " + nextLink);
-        toast("Se o painel nao atualizar, saia e entre novamente.");
+        toast("Novo link público: " + nextLink);
+        toast("Se o painel não atualizar, saia e entre novamente.");
       }
     } catch (err) {
       toast.error(
@@ -229,7 +229,7 @@ export default function LogoDoRachaPage() {
           {/* Nome do racha */}
           <div className="w-full max-w-xs mb-3">
             <label className="block text-yellow-300 font-semibold mb-2">
-              Nome do Racha <span className="text-xs text-gray-400">(ate 18 caracteres)</span>
+              Nome do Racha <span className="text-xs text-gray-400">(até 18 caracteres)</span>
             </label>
             <input
               type="text"
@@ -241,18 +241,18 @@ export default function LogoDoRachaPage() {
               disabled={disableActions}
             />
             <div className="text-xs text-gray-400 mt-1">
-              Esse nome sera exibido no cabecalho e outras areas do site.
+              Esse nome será exibido no cabeçalho e outras áreas do site.
             </div>
             <div className="text-xs text-gray-400 mt-1">
-              Se nao quiser alterar o nome do racha, deixe o campo em branco e troque apenas a logo.
+              Se não quiser alterar o nome do racha, deixe o campo em branco e troque apenas a logo.
             </div>
             <div className="text-xs text-gray-400 mt-2">
-              Link publico atual: <span className="text-yellow-300">{currentLink}</span>
+              Link público atual: <span className="text-yellow-300">{currentLink}</span>
             </div>
             {slugChanged && (
               <div className="mt-2 rounded-md border border-yellow-700/60 bg-[#121212] px-3 py-2">
                 <div className="text-xs text-yellow-200">
-                  Aviso: ao alterar o nome, o link publico do racha tambem muda.
+                  Aviso: ao alterar o nome, o link público do racha também muda.
                 </div>
                 <div className="text-xs text-gray-300 mt-1">
                   Novo link: <span className="text-yellow-300">{nextLink}</span>
@@ -315,7 +315,7 @@ export default function LogoDoRachaPage() {
               </span>
             </div>
             <span className="text-xs text-gray-500">
-              Nome e logo ficam visiveis em todas as telas publicas e do painel.
+              Nome e logo ficam visíveis em todas as telas públicas e do painel.
             </span>
             <button
               className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg shadow transition disabled:opacity-70"

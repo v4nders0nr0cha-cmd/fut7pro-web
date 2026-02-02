@@ -18,7 +18,7 @@ describe("ModalPatrocinador", () => {
     render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
 
     fireEvent.change(screen.getByLabelText("Nome *"), { target: { value: "Academia X" } });
-    fireEvent.change(screen.getByLabelText("Subtitulo/Categoria"), {
+    fireEvent.change(screen.getByLabelText("Subtítulo/Categoria"), {
       target: { value: "Academia e Bem-estar" },
     });
     fireEvent.change(screen.getByLabelText("Plano do Patrocinador *"), {
@@ -27,12 +27,12 @@ describe("ModalPatrocinador", () => {
     fireEvent.change(screen.getByLabelText(/Quanto este patrocinador paga por ano/i), {
       target: { value: "750" },
     });
-    fireEvent.click(screen.getByLabelText("Ja recebi"));
+    fireEvent.click(screen.getByLabelText("Já recebi"));
     fireEvent.change(screen.getByLabelText("Data do recebimento *"), {
       target: { value: "2026-01-12" },
     });
     fireEvent.change(screen.getByLabelText("Status *"), { target: { value: "encerrado" } });
-    fireEvent.change(screen.getByLabelText("Descricao/Observacoes"), {
+    fireEvent.change(screen.getByLabelText("Descrição/Observações"), {
       target: { value: "Plano trimestral" },
     });
     fireEvent.change(screen.getByLabelText("Link (opcional)"), {

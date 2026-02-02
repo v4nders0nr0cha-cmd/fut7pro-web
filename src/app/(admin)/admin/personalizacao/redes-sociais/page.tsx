@@ -1,7 +1,7 @@
 "use client";
 
 import Head from "next/head";
-import { useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   FaFacebookF,
   FaWhatsapp,
@@ -11,92 +11,96 @@ import {
   FaYoutube,
   FaGlobe,
 } from "react-icons/fa";
+import { useSocialLinksAdmin } from "@/hooks/useSocialLinks";
+import type { SocialLinksConfig } from "@/types/social-links";
+import { normalizeSocialUrl, resolveSocialLinksConfig } from "@/utils/social-links";
 
-type RedeNome = "facebook" | "whatsapp" | "instagram" | "youtube" | "blog";
-
-interface RedeSocial {
-  nome: RedeNome;
+type SocialField = {
+  key: keyof SocialLinksConfig;
   label: string;
   icon: JSX.Element;
   placeholder: string;
-  value: string;
-}
+  helper?: string;
+};
 
-const redesIniciais: RedeSocial[] = [
+const socialFields: SocialField[] = [
   {
-    nome: "facebook",
+    key: "facebookUrl",
     label: "Facebook",
     icon: <FaFacebookF size={26} className="text-blue-500" />,
     placeholder: "Link da página do Facebook",
-    value: "",
   },
   {
-    nome: "whatsapp",
-    label: "WhatsApp",
+    key: "whatsappGroupUrl",
+    label: "WhatsApp (Grupo)",
     icon: <FaWhatsapp size={26} className="text-green-400" />,
-    placeholder: "Número com DDD ou link wa.me",
-    value: "",
+    placeholder: "Link do grupo do WhatsApp (convite)",
+    helper:
+      'Aqui é o link do GRUPO do WhatsApp do racha (convite). Para WhatsApp comercial/contato direto, use a página Contatos em /admin/personalizacao/editar-paginas/contatos (campo "WhatsApp Comercial (link completo)").',
   },
   {
-    nome: "instagram",
+    key: "instagramUrl",
     label: "Instagram",
     icon: <FaInstagram size={26} className="text-pink-400" />,
     placeholder: "Link do Instagram",
-    value: "",
   },
   {
-    nome: "youtube",
+    key: "youtubeUrl",
     label: "YouTube",
     icon: <FaYoutube size={26} className="text-red-500" />,
     placeholder: "Link do canal ou vídeo do YouTube",
-    value: "",
   },
   {
-    nome: "blog",
-    label: "Blog/Site",
+    key: "websiteUrl",
+    label: "Site",
     icon: <FaGlobe size={26} className="text-yellow-300" />,
-    placeholder: "Link do blog ou site do racha",
-    value: "",
+    placeholder: "Link do site do racha",
   },
 ];
 
 export default function RedesSociaisPage() {
-  const [redes, setRedes] = useState<RedeSocial[]>(redesIniciais);
-  const [salvo, setSalvo] = useState(false);
+  const { socialLinks, update, isLoading } = useSocialLinksAdmin();
+  const [links, setLinks] = useState<SocialLinksConfig>(() => resolveSocialLinksConfig());
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [erro, setErro] = useState<string | null>(null);
+  const initializedRef = useRef(false);
 
-  function handleChange(idx: number, value: string) {
-    setRedes((redes) => {
-      const arr = [...redes];
-      arr[idx] = { ...arr[idx], value };
-      return arr;
-    });
-    setSalvo(false);
-  }
+  useEffect(() => {
+    if (!socialLinks || initializedRef.current) return;
+    setLinks(resolveSocialLinksConfig(socialLinks));
+    initializedRef.current = true;
+  }, [socialLinks]);
 
-  function handleClear(idx: number) {
-    setRedes((redes) => {
-      const arr = [...redes];
-      arr[idx] = { ...arr[idx], value: "" };
-      return arr;
-    });
-    setSalvo(false);
-  }
+  const handleChange = (key: keyof SocialLinksConfig, value: string) => {
+    setLinks((prev) => ({ ...prev, [key]: value }));
+    setStatus("idle");
+    setErro(null);
+  };
 
-  function handleSalvar() {
-    setSalvo(true);
-    setTimeout(() => setSalvo(false), 2500);
-  }
+  const handleClear = (key: keyof SocialLinksConfig) => {
+    setLinks((prev) => ({ ...prev, [key]: "" }));
+    setStatus("idle");
+    setErro(null);
+  };
 
-  function getPreviewLink(rede: RedeSocial) {
-    if (!rede.value) return "#";
-    if (rede.nome === "whatsapp") {
-      if (rede.value.startsWith("http")) return rede.value;
-      const num = rede.value.replace(/\D/g, "");
-      if (num.length >= 10) return `https://wa.me/${num}`;
-      return "#";
+  const handleSalvar = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("saving");
+    setErro(null);
+    try {
+      const payload = resolveSocialLinksConfig(links);
+      await update(payload);
+      setLinks(payload);
+      setStatus("saved");
+      setTimeout(() => setStatus("idle"), 2500);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar";
+      setErro(message);
+      setStatus("error");
     }
-    return rede.value;
-  }
+  };
+
+  const getPreviewLink = (value?: string) => normalizeSocialUrl(value);
 
   return (
     <>
@@ -119,59 +123,76 @@ export default function RedesSociaisPage() {
           Preencha os campos abaixo para exibir os ícones das redes sociais do seu racha no site.
           Deixe em branco para ocultar uma rede específica.
         </p>
-        <form className="space-y-7">
-          {redes.map((rede, idx) => (
-            <div
-              key={rede.nome}
-              className="flex items-center gap-3 bg-[#202328] rounded-lg px-4 py-3 shadow"
-            >
-              <span>{rede.icon}</span>
-              <input
-                type="text"
-                className="flex-1 rounded px-3 py-2 bg-[#181a1e] border border-yellow-800 text-white focus:outline-none"
-                placeholder={rede.placeholder}
-                value={rede.value}
-                onChange={(e) => handleChange(idx, e.target.value)}
-                maxLength={100}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              {rede.value && (
-                <a
-                  href={getPreviewLink(rede)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 underline text-yellow-300 text-sm"
-                  title="Visualizar"
-                >
-                  Preview
-                </a>
-              )}
-              {rede.value && (
-                <button
-                  type="button"
-                  className="ml-2 text-red-400 hover:text-red-600"
-                  title="Remover rede social"
-                  onClick={() => handleClear(idx)}
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-          ))}
+        <form className="space-y-7" onSubmit={handleSalvar}>
+          {socialFields.map((rede) => {
+            const value = links[rede.key] || "";
+            const previewLink = getPreviewLink(value);
+            return (
+              <div
+                key={rede.key}
+                className="flex flex-col gap-2 bg-[#202328] rounded-lg px-4 py-3 shadow"
+              >
+                <div className="flex items-center gap-3">
+                  <span>{rede.icon}</span>
+                  <input
+                    type="text"
+                    className="flex-1 rounded px-3 py-2 bg-[#181a1e] border border-yellow-800 text-white focus:outline-none"
+                    placeholder={rede.placeholder}
+                    value={value}
+                    onChange={(e) => handleChange(rede.key, e.target.value)}
+                    maxLength={180}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                  {value && previewLink && (
+                    <a
+                      href={previewLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 underline text-yellow-300 text-sm"
+                      title="Visualizar"
+                    >
+                      Preview
+                    </a>
+                  )}
+                  {value && (
+                    <button
+                      type="button"
+                      className="ml-2 text-red-400 hover:text-red-600"
+                      title="Remover rede social"
+                      onClick={() => handleClear(rede.key)}
+                    >
+                      <FaTimes />
+                    </button>
+                  )}
+                </div>
+                {rede.helper && (
+                  <p className="text-xs text-zinc-400 leading-relaxed">{rede.helper}</p>
+                )}
+              </div>
+            );
+          })}
           <div className="flex justify-end">
             <button
-              type="button"
-              className="flex items-center gap-2 px-6 py-2 rounded bg-yellow-400 text-black font-bold transition hover:bg-yellow-300"
-              onClick={handleSalvar}
+              type="submit"
+              className="flex items-center gap-2 px-6 py-2 rounded bg-yellow-400 text-black font-bold transition hover:bg-yellow-300 disabled:opacity-60"
+              disabled={status === "saving" || isLoading}
             >
-              <FaSave /> Salvar redes sociais
+              <FaSave /> {status === "saving" ? "Salvando..." : "Salvar redes sociais"}
             </button>
           </div>
-          {salvo && (
+          {status === "saved" && (
             <div className="bg-green-700 border-l-4 border-green-400 text-green-100 px-4 py-2 rounded flex items-center gap-3 mt-2">
               <FaSave /> Redes sociais salvas com sucesso!
             </div>
+          )}
+          {status === "error" && (
+            <div className="bg-red-700 border-l-4 border-red-400 text-red-100 px-4 py-2 rounded flex items-center gap-3 mt-2">
+              <FaTimes /> {erro || "Erro ao salvar redes sociais."}
+            </div>
+          )}
+          {isLoading && (
+            <div className="text-center text-zinc-400 text-sm">Carregando redes sociais...</div>
           )}
         </form>
       </div>

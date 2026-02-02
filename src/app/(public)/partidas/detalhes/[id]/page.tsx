@@ -129,13 +129,13 @@ export default function PartidaDetalhesPage() {
   if (!match) {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10">
-        <h1 className="text-2xl text-brand font-bold mb-4">Partida nao encontrada</h1>
-        <p className="text-textoSuave">Verifique o ID da partida ou volte ao historico.</p>
+        <h1 className="text-2xl text-brand font-bold mb-4">Partida não encontrada</h1>
+        <p className="text-textoSuave">Verifique o ID da partida ou volte ao histórico.</p>
         <Link
           href={publicHref("/partidas/historico")}
           className="mt-4 inline-block bg-brand text-black font-bold px-4 py-2 rounded-lg text-base hover:bg-brand-strong transition"
         >
-          Voltar ao historico
+          Voltar ao histórico
         </Link>
       </div>
     );
@@ -143,7 +143,7 @@ export default function PartidaDetalhesPage() {
 
   const dataLabel = match.date
     ? format(new Date(match.date), "dd/MM/yyyy 'as' HH:mm")
-    : "Data nao informada";
+    : "Data não informada";
   const hasScore = match.scoreA !== null && match.scoreB !== null;
   const scoreA = hasScore ? Number(match.scoreA) : null;
   const scoreB = hasScore ? Number(match.scoreB) : null;
@@ -167,7 +167,7 @@ export default function PartidaDetalhesPage() {
           </div>
           <div>
             <p className="text-sm text-neutral-400">Local</p>
-            <p className="text-lg font-semibold">{match.location || "Nao informado"}</p>
+            <p className="text-lg font-semibold">{match.location || "Não informado"}</p>
           </div>
           <div>
             <p className="text-sm text-neutral-400">Status</p>
@@ -238,7 +238,7 @@ export default function PartidaDetalhesPage() {
           </div>
 
           <div className="bg-neutral-900 rounded-xl p-4 border border-neutral-800">
-            <h2 className="text-lg font-bold text-brand mb-2">Maestro (assistencias)</h2>
+            <h2 className="text-lg font-bold text-brand mb-2">Maestro (assistências)</h2>
             {highlights.maestro ? (
               <div className="flex items-center gap-3">
                 <Image
@@ -251,12 +251,12 @@ export default function PartidaDetalhesPage() {
                 <div>
                   <p className="text-sm font-semibold">{highlights.maestro.nome}</p>
                   <p className="text-xs text-neutral-400">
-                    {highlights.maestro.assistencias} assistencias
+                    {highlights.maestro.assistencias} assistências
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-neutral-400">Sem dados de assistencias.</p>
+              <p className="text-sm text-neutral-400">Sem dados de assistências.</p>
             )}
           </div>
         </div>
@@ -280,7 +280,7 @@ export default function PartidaDetalhesPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-neutral-400 text-sm">Jogadores nao informados.</p>
+              <p className="text-neutral-400 text-sm">Jogadores não informados.</p>
             )}
           </div>
 
@@ -302,7 +302,7 @@ export default function PartidaDetalhesPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-neutral-400 text-sm">Jogadores nao informados.</p>
+              <p className="text-neutral-400 text-sm">Jogadores não informados.</p>
             )}
           </div>
         </div>
@@ -312,13 +312,13 @@ export default function PartidaDetalhesPage() {
             href={publicHref("/partidas/historico")}
             className="text-sm text-brand underline hover:text-brand-soft transition"
           >
-            Voltar ao historico
+            Voltar ao histórico
           </Link>
           <Link
             href={publicHref("/partidas/times-do-dia")}
             className="text-sm text-brand underline hover:text-brand-soft transition"
           >
-            Ver Time Campeao do Dia
+            Ver Time Campeão do Dia
           </Link>
           <button
             onClick={() => router.back()}

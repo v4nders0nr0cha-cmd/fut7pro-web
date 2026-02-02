@@ -36,10 +36,10 @@ export default function ListaAtletasSlugPage() {
   return (
     <>
       <Head>
-        <title>Perfis dos Atletas | Estatisticas e Conquistas | Fut7Pro</title>
+        <title>Perfis dos Atletas | Estatísticas e Conquistas | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheca o perfil completo de todos os atletas do seu racha: estatisticas, conquistas, posicao em campo e evolucao ao longo das temporadas."
+          content="Conheça o perfil completo de todos os atletas do seu racha: estatísticas, conquistas, posição em campo e evolução ao longo das temporadas."
         />
         <meta
           name="keywords"
@@ -52,8 +52,8 @@ export default function ListaAtletasSlugPage() {
       </h1>
       <p className="mb-7 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
         Descubra tudo sobre os <strong>atletas do seu racha</strong>! Acesse o{" "}
-        <strong>perfil completo de cada jogador</strong> com estatisticas, conquistas, posicao em
-        campo, historico de partidas e evolucao por temporada.
+        <strong>perfil completo de cada jogador</strong> com estatísticas, conquistas, posição em
+        campo, histórico de partidas e evolução por temporada.
       </p>
 
       <input

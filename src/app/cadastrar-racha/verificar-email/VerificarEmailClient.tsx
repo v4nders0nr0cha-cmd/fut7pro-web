@@ -106,13 +106,13 @@ export default function VerificarEmailClient() {
       <section className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl sm:p-8">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-yellow-400/40 bg-yellow-400/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-yellow-300">
-            Ativacao do painel
+            Ativação do painel
           </div>
           <h1 className="text-2xl font-bold text-white sm:text-3xl">
             {status === "success" ? "E-mail confirmado!" : "Confirmando seu e-mail"}
           </h1>
           <p className="text-sm text-gray-300">
-            {status === "loading" && "Aguarde enquanto validamos seu link de confirmacao."}
+            {status === "loading" && "Aguarde enquanto validamos seu link de confirmação."}
             {status !== "loading" && message}
           </p>
         </div>
@@ -162,7 +162,7 @@ export default function VerificarEmailClient() {
                 disabled={resendStatus === "loading"}
                 className="w-full rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-4 py-2 text-sm font-semibold text-yellow-200 hover:border-yellow-300 hover:text-yellow-100 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {resendStatus === "loading" ? "Enviando..." : "Reenviar confirmacao"}
+                {resendStatus === "loading" ? "Enviando..." : "Reenviar confirmação"}
               </button>
             </div>
           </div>

@@ -32,14 +32,14 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
     "Melhor do Quadrimestre",
     "Artilheiro do Quadrimestre",
     "Maestro do Quadrimestre",
-    "Campeao do Quadrimestre",
+    "Campeão do Quadrimestre",
     "Atacante do Quadrimestre",
     "Meia do Quadrimestre",
     "Zagueiro do Quadrimestre",
     "Goleiro do Quadrimestre",
     "Artilheiro",
     "Maestro",
-    "Campeao",
+    "Campeão",
     "Atacante",
     "Meia",
     "Zagueiro",
@@ -85,12 +85,12 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
               <span className="uppercase">{label}</span>
             </h3>
             <h4 className="text-center text-brand text-sm font-bold mb-4 uppercase">
-              CAMPEOES DO QUADRIMESTRE
+              CAMPEÕES DO QUADRIMESTRE
             </h4>
             <ul className="space-y-2 flex-1">
               {isBlocked ? (
                 <li className="text-center text-gray-500 py-8 text-xs">
-                  Ranking liberado no inicio do quadrimestre.
+                  Ranking liberado no início do quadrimestre.
                 </li>
               ) : itens.length > 0 ? (
                 [...itens]
@@ -103,7 +103,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
                         item.icone.startsWith("/") ? (
                           <Image
                             src={item.icone}
-                            alt="Icone do premio"
+                            alt="Ícone do prêmio"
                             width={22}
                             height={22}
                             className="inline-block align-middle"
@@ -127,7 +127,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
                           )}
                           {isFinished && !item.nome.toLowerCase().includes("processamento") && (
                             <span className="text-[9px] uppercase tracking-wide text-brand-soft border border-brand/40 bg-brand/10 px-2 py-0.5 rounded-full">
-                              campeao
+                              campeão
                             </span>
                           )}
                         </span>
@@ -138,7 +138,7 @@ export default function QuadrimestreGrid({ dados, year, tenantCreatedAt }: Props
                     </li>
                   ))
               ) : (
-                <li className="text-center text-gray-600 py-8">Nenhum campeao registrado</li>
+                <li className="text-center text-gray-600 py-8">Nenhum campeão registrado</li>
               )}
             </ul>
           </div>

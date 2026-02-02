@@ -40,16 +40,16 @@ export default function EstatutoPage() {
       window.open(estatuto.pdfUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    alert("O PDF do estatuto ainda nao esta disponivel para este racha.");
+    alert("O PDF do estatuto ainda não está disponível para este racha.");
   };
 
   return (
     <>
       <Head>
-        <title>Estatuto | Sobre Nos | Fut7Pro</title>
+        <title>Estatuto | Sobre Nós | Fut7Pro</title>
         <meta
           name="description"
-          content="Conheca o estatuto oficial do racha: regras de pontuacao, multas, penalidades, prioridades e boas praticas definidas pelo admin."
+          content="Conheça o estatuto oficial do racha: regras de pontuação, multas, penalidades, prioridades e boas práticas definidas pelo admin."
         />
         <meta
           name="keywords"
@@ -63,8 +63,8 @@ export default function EstatutoPage() {
             Estatuto do Racha Fut7Pro
           </h1>
           <p className="text-white text-base md:text-lg mb-4">
-            O Estatuto reune todas as regras, criterios e boas praticas que regem o funcionamento do
-            racha. O conteudo abaixo e carregado do painel do administrador e atualizado por tenant.
+            O Estatuto reúne todas as regras, critérios e boas práticas que regem o funcionamento do
+            racha. O conteúdo abaixo é carregado do painel do administrador e atualizado por tenant.
           </p>
           <button
             onClick={handleDownload}
@@ -77,7 +77,7 @@ export default function EstatutoPage() {
           )}
           {isError && (
             <div className="text-sm text-red-400">
-              Nao foi possivel carregar o estatuto. Tente novamente em instantes.
+              Não foi possível carregar o estatuto. Tente novamente em instantes.
             </div>
           )}
         </section>
@@ -127,7 +127,7 @@ export default function EstatutoPage() {
           </div>
         </section>
         <section className="mt-2 text-right text-neutral-400 text-xs">
-          Ultima atualizacao: {atualizadoEm || "—"}
+          Última atualização: {atualizadoEm || "—"}
         </section>
       </main>
     </>

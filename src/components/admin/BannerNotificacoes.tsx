@@ -122,20 +122,20 @@ export default function BannerNotificacoes() {
       const label = formatUpcomingLabel(feriadoRacha);
       items.push({
         id: "holiday-warning",
-        message: `Atencao: Seu racha esta agendado para um dia de feriado (${label}${
+        message: `Atenção: Seu racha está agendado para um dia de feriado (${label}${
           feriadoRacha.holidayName ? ` - ${feriadoRacha.holidayName}` : ""
-        }). Confirme se o racha ira acontecer normalmente ou reagende.`,
+        }). Confirme se o racha irá acontecer normalmente ou reagende.`,
       });
     }
 
     if (pendingInfo) {
       items.push({
         id: "pending-results",
-        message: `Atencao: ${pendingInfo.count} ${
+        message: `Atenção: ${pendingInfo.count} ${
           pendingInfo.count === 1 ? "confronto" : "confrontos"
         } sem resultado pendente${
           pendingInfo.count === 1 ? "" : "s"
-        } desde ${format(pendingInfo.oldestDate, "dd/MM/yyyy")}. Publique os resultados para atualizar rankings e historico.`,
+        } desde ${format(pendingInfo.oldestDate, "dd/MM/yyyy")}. Publique os resultados para atualizar rankings e histórico.`,
       });
     }
 

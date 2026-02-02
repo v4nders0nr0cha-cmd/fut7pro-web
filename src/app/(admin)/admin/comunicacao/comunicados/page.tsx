@@ -39,7 +39,7 @@ const resolveAuthor = (notif: Notificacao) => {
     (notif.remetente as string) ||
     (meta.nomeResponsavel as string) ||
     (meta.autor as string) ||
-    "Administracao"
+    "Administração"
   );
 };
 
@@ -101,7 +101,7 @@ export default function ComunicadosPage() {
         metadata: {
           category: "comunicado",
           status: "ativo",
-          autor: user?.name || "Administracao",
+          autor: user?.name || "Administração",
         },
       });
 
@@ -133,7 +133,7 @@ export default function ComunicadosPage() {
     try {
       const meta = (comunicado.notificacao.metadata || {}) as Record<string, unknown>;
       const autor =
-        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administracao";
+        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administração";
       const status = (meta.status || meta.situacao || "ativo").toString();
 
       const response = await notificacoesApi.update(id, {
@@ -175,7 +175,7 @@ export default function ComunicadosPage() {
     try {
       const meta = (comunicado.notificacao.metadata || {}) as Record<string, unknown>;
       const autor =
-        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administracao";
+        (meta.autor as string) || (meta.nomeResponsavel as string) || user?.name || "Administração";
 
       const response = await notificacoesApi.update(id, {
         metadata: {

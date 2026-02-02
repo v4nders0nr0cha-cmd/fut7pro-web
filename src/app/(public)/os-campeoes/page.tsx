@@ -147,7 +147,7 @@ export default function CampeoesPage() {
 
   const isLoading = rankingAno.isLoading || rankingTimesAno.isLoading;
   const isError = rankingAno.isError || rankingTimesAno.isError;
-  const errorMessage = rankingAno.error || rankingTimesAno.error || "Erro ao carregar campeoes.";
+  const errorMessage = rankingAno.error || rankingTimesAno.error || "Erro ao carregar campeões.";
 
   const campeoesAno = useMemo(() => {
     const topPontos = pickTopByMetric(rankingAno.rankings, "pontos");
@@ -178,7 +178,7 @@ export default function CampeoesPage() {
         highlight: true,
       },
       {
-        titulo: "Campeao do Ano",
+        titulo: "Campeão do Ano",
         nome: topTime?.nome ?? "Time em processamento",
         valor: topTime ? `${topTime.pontos} pontos` : "Em processamento",
         image: safeImage(topTime?.logo, DEFAULT_TEAM_IMAGE),
@@ -190,7 +190,7 @@ export default function CampeoesPage() {
       {
         titulo: "Maestro do Ano",
         nome: topAssist?.nome ?? "Maestro em processamento",
-        valor: topAssist ? `${topAssist.assistencias} assistencias` : "Em processamento",
+        valor: topAssist ? `${topAssist.assistencias} assistências` : "Em processamento",
         image: safeImage(topAssist?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
         icon: "/images/icons/chuteira-de-ouro.png",
         href: publicHref(`/estatisticas/assistencias?period=temporada&year=${anoBase}`),
@@ -237,7 +237,7 @@ export default function CampeoesPage() {
       <div className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-10">
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <span className="ml-4 text-lg text-textoSuave">Carregando campeoes...</span>
+          <span className="ml-4 text-lg text-textoSuave">Carregando campeões...</span>
         </div>
       </div>
     );
@@ -247,7 +247,7 @@ export default function CampeoesPage() {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-10">
         <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Erro ao carregar campeoes</h1>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">Erro ao carregar campeões</h1>
           <p className="text-red-300">{errorMessage}</p>
         </div>
       </div>
@@ -257,7 +257,7 @@ export default function CampeoesPage() {
   return (
     <>
       <Head>
-        <title>Os Campeoes | Hall da Fama do Racha | Fut7Pro</title>
+        <title>Os Campeões | Hall da Fama do Racha | Fut7Pro</title>
         <meta
           name="description"
           content="Veja os campeoes do ano e por quadrimestre no racha. Hall da fama com rankings de pontos, gols e assistencias, sempre atualizado em tempo real."
@@ -270,14 +270,14 @@ export default function CampeoesPage() {
 
       <main className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-12">
         <h1 className="sr-only">
-          Os Campeoes do Racha - Melhores do Ano, Rankings e Campeoes por Quadrimestre
+          Os Campeões do Racha - Melhores do Ano, Rankings e Campeões por Quadrimestre
         </h1>
 
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-brand mb-2">Os Campeoes</h2>
+          <h2 className="text-3xl font-bold text-brand mb-2">Os Campeões</h2>
           <p className="text-textoSuave">
-            Hall da Fama do racha, com os campeoes do ano e de cada quadrimestre, baseados em
-            desempenho real nos jogos, rankings e estatisticas oficiais.
+            Hall da Fama do racha, com os campeões do ano e de cada quadrimestre, baseados em
+            desempenho real nos jogos, rankings e estatísticas oficiais.
           </p>
           <div className="flex justify-center mt-3">
             <button
@@ -309,7 +309,7 @@ export default function CampeoesPage() {
         </div>
 
         <section className="mb-12">
-          <h3 className="text-2xl font-bold text-brand text-center mb-6">Campeoes do Ano</h3>
+          <h3 className="text-2xl font-bold text-brand text-center mb-6">Campeões do Ano</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {campeoesAno.map((card) => (
               <ChampionHighlightCard key={card.titulo} {...card} />
@@ -319,7 +319,7 @@ export default function CampeoesPage() {
 
         <section className="mb-12">
           <h3 className="text-2xl font-bold text-brand text-center mb-6">
-            Melhores por Posicao no Ano
+            Melhores por Posição no Ano
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {melhoresPorPosicao.map((card) => (
@@ -330,7 +330,7 @@ export default function CampeoesPage() {
 
         <section className="mb-4">
           <h3 className="text-2xl font-bold text-brand text-center mb-6">
-            Campeoes por Quadrimestre
+            Campeões por Quadrimestre
           </h3>
           <QuadrimestreGrid
             dados={quadrimestres}
@@ -374,53 +374,53 @@ export default function CampeoesPage() {
                 </button>
 
                 <Dialog.Title className="text-2xl font-bold text-brand mb-4 text-center">
-                  Como funciona a pagina Os Campeoes
+                  Como funciona a página Os Campeões
                 </Dialog.Title>
 
                 <div className="space-y-5 text-sm text-gray-200 leading-relaxed">
                   <p>
-                    A pagina Os Campeoes funciona como o Hall da Fama oficial do racha, destacando
+                    A página Os Campeões funciona como o Hall da Fama oficial do racha, destacando
                     os melhores atletas e times ao longo do ano e de cada quadrimestre, com base em
-                    dados reais registrados no sistema. Todos os campeoes sao definidos
-                    automaticamente a partir dos rankings, estatisticas e resultados oficiais das
-                    partidas, sem interferencia manual.
+                    dados reais registrados no sistema. Todos os campeões são definidos
+                    automaticamente a partir dos rankings, estatísticas e resultados oficiais das
+                    partidas, sem interferência manual.
                   </p>
 
                   <div>
                     <h4 className="text-brand-soft font-semibold mb-2">Escolha do Ano</h4>
                     <p>
-                      Voce pode selecionar o ano desejado para visualizar os campeoes daquele
-                      periodo. Os anos disponiveis comecam a partir do ano de criacao do racha e
-                      seguem de forma cronologica.
+                      Você pode selecionar o ano desejado para visualizar os campeões daquele
+                      período. Os anos disponíveis começam a partir do ano de criação do racha e
+                      seguem de forma cronológica.
                     </p>
                   </div>
 
                   <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">Campeoes do Ano</h4>
+                    <h4 className="text-brand-soft font-semibold mb-2">Campeões do Ano</h4>
                     <p className="mb-2">
-                      Nesta secao sao exibidos os principais destaques da temporada:
+                      Nesta seção são exibidos os principais destaques da temporada:
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>Melhor do Ano: atleta com maior pontuacao total no ano.</li>
-                      <li>Artilheiro do Ano: atleta com maior numero de gols no ano.</li>
-                      <li>Maestro do Ano: atleta com maior numero de assistencias no ano.</li>
-                      <li>Campeao do Ano: time com maior pontuacao acumulada no ano.</li>
+                      <li>Melhor do Ano: atleta com maior pontuação total no ano.</li>
+                      <li>Artilheiro do Ano: atleta com maior número de gols no ano.</li>
+                      <li>Maestro do Ano: atleta com maior número de assistências no ano.</li>
+                      <li>Campeão do Ano: time com maior pontuação acumulada no ano.</li>
                     </ul>
                     <p className="mt-2">
-                      Ao clicar em qualquer card, voce e direcionado ao ranking correspondente
-                      daquele ano. Quando o ano ainda nao foi finalizado, os cards exibem o selo
-                      "Temporariamente", indicando que os resultados podem mudar ate o encerramento
+                      Ao clicar em qualquer card, você é direcionado ao ranking correspondente
+                      daquele ano. Quando o ano ainda não foi finalizado, os cards exibem o selo
+                      "Temporariamente", indicando que os resultados podem mudar até o encerramento
                       da temporada.
                     </p>
                   </div>
 
                   <div>
                     <h4 className="text-brand-soft font-semibold mb-2">
-                      Melhores por Posicao no Ano
+                      Melhores por Posição no Ano
                     </h4>
                     <p className="mb-2">
-                      Abaixo dos campeoes principais estao os vencedores por posicao, considerando
-                      apenas atletas da mesma funcao:
+                      Abaixo dos campeões principais estão os vencedores por posição, considerando
+                      apenas atletas da mesma função:
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Atacante do Ano</li>
@@ -429,63 +429,63 @@ export default function CampeoesPage() {
                       <li>Goleiro do Ano</li>
                     </ul>
                     <p className="mt-2">
-                      O criterio e sempre o mesmo: maior pontuacao dentro da posicao no ano
-                      selecionado. Cada card leva ao ranking especifico daquela posicao.
+                      O critério é sempre o mesmo: maior pontuação dentro da posição no ano
+                      selecionado. Cada card leva ao ranking específico daquela posição.
                     </p>
                   </div>
 
                   <div>
                     <h4 className="text-brand-soft font-semibold mb-2">
-                      Campeoes por Quadrimestre
+                      Campeões por Quadrimestre
                     </h4>
-                    <p className="mb-2">O ano e dividido em tres quadrimestres:</p>
+                    <p className="mb-2">O ano é dividido em três quadrimestres:</p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>1o Quadrimestre: Janeiro a Abril</li>
                       <li>2o Quadrimestre: Maio a Agosto</li>
                       <li>3o Quadrimestre: Setembro a Dezembro</li>
                     </ul>
                     <p className="mt-2">
-                      Cada quadrimestre possui seus proprios campeoes, definidos apenas pelo
-                      desempenho dentro daquele periodo. Ao final de cada quadrimestre:
+                      Cada quadrimestre possui seus próprios campeões, definidos apenas pelo
+                      desempenho dentro daquele período. Ao final de cada quadrimestre:
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>Os rankings do periodo sao finalizados.</li>
-                      <li>Os campeoes recebem o selo de Campeao do Quadrimestre.</li>
+                      <li>Os rankings do período são finalizados.</li>
+                      <li>Os campeões recebem o selo de Campeão do Quadrimestre.</li>
                       <li>
-                        Os rankings do proximo quadrimestre reiniciam do zero, garantindo disputa
+                        Os rankings do próximo quadrimestre reiniciam do zero, garantindo disputa
                         justa.
                       </li>
                     </ul>
                     <p className="mt-2">
-                      Antes do inicio de um quadrimestre, os rankings aparecem com a mensagem:
-                      "Ranking liberado no inicio do quadrimestre."
+                      Antes do início de um quadrimestre, os rankings aparecem com a mensagem:
+                      "Ranking liberado no início do quadrimestre."
                     </p>
                   </div>
 
                   <div>
                     <h4 className="text-brand-soft font-semibold mb-2">
-                      Conquistas e Icones no Perfil
+                      Conquistas e Ícones no Perfil
                     </h4>
                     <p className="mb-2">
-                      Sempre que um atleta ou time conquista um titulo (anual ou quadrimestral), ele
-                      recebe um icone de premiacao virtual. Esses icones:
+                      Sempre que um atleta ou time conquista um título (anual ou quadrimestral), ele
+                      recebe um ícone de premiação virtual. Esses ícones:
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>Ficam visiveis no perfil do atleta.</li>
-                      <li>Sao permanentes.</li>
+                      <li>Ficam visíveis no perfil do atleta.</li>
+                      <li>São permanentes.</li>
                       <li>
-                        Sao organizados por importancia, dando mais destaque aos titulos mais raros
-                        e dificeis de conquistar.
+                        São organizados por importância, dando mais destaque aos títulos mais raros
+                        e difíceis de conquistar.
                       </li>
                     </ul>
                   </div>
 
                   <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">Observacao Importante</h4>
+                    <h4 className="text-brand-soft font-semibold mb-2">Observação Importante</h4>
                     <p>
                       Se um racha for criado no meio do ano, apenas os quadrimestres a partir da
-                      data de criacao passam a ser considerados. Quadrimestres ja encerrados antes
-                      da criacao do racha nao terao campeoes.
+                      data de criação passam a ser considerados. Quadrimestres já encerrados antes
+                      da criação do racha não terão campeões.
                     </p>
                   </div>
                 </div>
@@ -537,7 +537,7 @@ function ChampionHighlightCard({
       {icon && (
         <div className="absolute top-2 right-3">
           {icon.startsWith("/") ? (
-            <Image src={icon} alt={`Icone ${titulo}`} width={28} height={28} />
+            <Image src={icon} alt={`Ícone ${titulo}`} width={28} height={28} />
           ) : (
             <span className="text-2xl">{icon}</span>
           )}
@@ -644,7 +644,7 @@ function buildQuadrimestreItems(
       slug: topAssist?.slug,
     },
     {
-      titulo: "Campeao do Quadrimestre",
+      titulo: "Campeão do Quadrimestre",
       nome: topTeam?.nome ?? "Em processamento",
       icone: "/images/icons/trofeu-de-prata.png",
     },

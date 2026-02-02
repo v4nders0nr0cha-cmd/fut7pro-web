@@ -107,11 +107,11 @@ export default function VisualTemasClient() {
 
   const handleSalvar = async () => {
     if (!tenantSlug) {
-      toast.error("Nao foi possivel identificar o racha. Refaca o login.");
+      toast.error("Não foi possível identificar o racha. Refaça o login.");
       return;
     }
     if (!hasChanges) {
-      toast("Tema ja esta aplicado.");
+      toast("Tema já está aplicado.");
       return;
     }
 
@@ -182,7 +182,7 @@ export default function VisualTemasClient() {
         <p className="text-gray-200 text-base text-center mb-2">
           Escolha uma paleta de cores para personalizar o visual do seu racha.
           <br />
-          Todas as telas do painel e do site publico refletirao a identidade escolhida.
+          Todas as telas do painel e do site público refletirão a identidade escolhida.
         </p>
         <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {RACHA_THEMES.map((tema) => {

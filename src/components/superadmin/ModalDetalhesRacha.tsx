@@ -97,7 +97,7 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
             </span>
           </span>
           <span>
-            <b>Ativo:</b> {ativo ? "Sim" : "Nao"}
+            <b>Ativo:</b> {ativo ? "Sim" : "Não"}
           </span>
           <span>
             <b>Tema:</b> {themeLabel}
@@ -131,7 +131,7 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
         )}
         <div className="mb-3 mt-2">
           <h4 className="font-bold text-zinc-300 mb-1 flex items-center gap-1">
-            <FaHistory /> Historico resumido:
+            <FaHistory /> Histórico resumido:
           </h4>
           <ul className="text-xs text-zinc-400 space-y-1">
             {racha.historico?.map((h, i: number) => (

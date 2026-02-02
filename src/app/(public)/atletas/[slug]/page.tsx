@@ -35,7 +35,7 @@ const POSITION_LABELS: Record<string, string> = {
 };
 
 function formatPosition(value?: string | null) {
-  if (!value) return "Nao informado";
+  if (!value) return "Não informado";
   const normalized = value.toLowerCase();
   return POSITION_LABELS[normalized] ?? value;
 }

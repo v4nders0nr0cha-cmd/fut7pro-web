@@ -439,7 +439,7 @@ export default function CardsDestaquesDiaV2({
           apelido={meia?.apelido ?? ""}
           pos={meia?.pos ?? ""}
           foto={meia?.foto ?? ""}
-          infoExtra={meia?.nome ? `${assistenciasMeia} assistencias` : ""}
+          infoExtra={meia?.nome ? `${assistenciasMeia} assistências` : ""}
           roleKey="meia"
           athleteId={meia?.id}
         />
@@ -464,7 +464,7 @@ export default function CardsDestaquesDiaV2({
       </div>
       <div className="flex flex-wrap gap-5 justify-center mt-2">
         <CardDestaque
-          titulo="TIME CAMPEAO DO DIA"
+          titulo="TIME CAMPEÃO DO DIA"
           nome={timeCampeao?.nome ?? ""}
           apelido=""
           foto={timeCampeao?.logoUrl || "/images/logos/logo_fut7pro.png"}
@@ -488,7 +488,7 @@ export default function CardsDestaquesDiaV2({
           nome={maestro?.nome ?? ""}
           apelido=""
           foto={maestro?.foto ?? ""}
-          infoExtra={maestro?.assists ? `${maestro.assists} assistencias` : ""}
+          infoExtra={maestro?.assists ? `${maestro.assists} assistências` : ""}
         />
       </div>
       {(eventosDia?.length ?? 0) === 0 && aguardando}

@@ -168,13 +168,13 @@ export default function ModalNovoAdmin({
     }
 
     if (!adminPosicao) {
-      newErrors.adminPosicao = "Selecione a posicao do presidente.";
+      newErrors.adminPosicao = "Selecione a posição do presidente.";
     }
 
     if (!adminEmail.trim()) {
       newErrors.adminEmail = "Informe o email do presidente.";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
-      newErrors.adminEmail = "Email invalido.";
+      newErrors.adminEmail = "Email inválido.";
     }
 
     if (flow === "novo") {
@@ -182,7 +182,7 @@ export default function ModalNovoAdmin({
         newErrors.rachaNome = "Nome do racha precisa ter ao menos 3 caracteres.";
       }
       if (!rachaSlug.trim() || !SLUG_REGEX.test(rachaSlug.trim())) {
-        newErrors.rachaSlug = "Slug invalido: use minusculas, numeros e hifens (3-50).";
+        newErrors.rachaSlug = "Slug inválido: use minúsculas, números e hífens (3-50).";
       }
       if (!cidade.trim()) {
         newErrors.cidade = "Informe a cidade do racha.";
@@ -196,7 +196,7 @@ export default function ModalNovoAdmin({
       if (!selectedTenantId) {
         newErrors.existingTenantId = "Selecione o racha existente.";
       } else if (hasExistingPresident && !permitirCopresidencia) {
-        newErrors.existingTenantId = "Ja existe presidente ativo para este racha.";
+        newErrors.existingTenantId = "Já existe presidente ativo para este racha.";
       }
     }
 
@@ -258,7 +258,7 @@ export default function ModalNovoAdmin({
             <div>
               <h2 className="text-xl font-bold text-white">Criar presidente manual</h2>
               <p className="text-xs text-gray-400">
-                Fluxo operacional para onboarding assistido, migracoes e trocas de presidencia.
+                Fluxo operacional para onboarding assistido, migrações e trocas de presidência.
               </p>
             </div>
           </div>
@@ -279,7 +279,7 @@ export default function ModalNovoAdmin({
               }`}
             >
               <div className="text-sm font-semibold">Novo racha + presidente</div>
-              <div className="text-xs text-gray-400">Cria tenant e ja cadastra o presidente.</div>
+              <div className="text-xs text-gray-400">Cria tenant e já cadastra o presidente.</div>
             </button>
             <button
               type="button"
@@ -291,7 +291,7 @@ export default function ModalNovoAdmin({
               }`}
             >
               <div className="text-sm font-semibold">Presidente para racha existente</div>
-              <div className="text-xs text-gray-400">Vincula presidente a um tenant ja criado.</div>
+              <div className="text-xs text-gray-400">Vincula presidente a um tenant já criado.</div>
             </button>
           </div>
 
@@ -317,7 +317,7 @@ export default function ModalNovoAdmin({
               )}
               {selectedRacha && hasExistingPresident && !permitirCopresidencia && (
                 <div className="text-xs text-yellow-300">
-                  Este racha ja possui presidente ativo. Marque "Permitir copresidencia" para
+                  Este racha já possui presidente ativo. Marque "Permitir copresidência" para
                   seguir.
                 </div>
               )}
@@ -328,7 +328,7 @@ export default function ModalNovoAdmin({
                   onChange={(event) => setPermitirCopresidencia(event.target.checked)}
                   className="rounded border-gray-600 text-yellow-400 focus:ring-yellow-400 bg-gray-700"
                 />
-                <span>Permitir copresidencia (mais de um ADMIN ativo)</span>
+                <span>Permitir copresidência (mais de um ADMIN ativo)</span>
               </label>
             </div>
           )}
@@ -364,7 +364,7 @@ export default function ModalNovoAdmin({
                 />
                 {errors.rachaSlug && <p className="text-sm text-red-400">{errors.rachaSlug}</p>}
                 <p className="text-xs text-gray-400 mt-1">
-                  URL publica: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                  URL pública: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
                 </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -432,7 +432,7 @@ export default function ModalNovoAdmin({
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Posicao *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Posição *</label>
                 <select
                   value={adminPosicao}
                   onChange={(event) => setAdminPosicao(event.target.value)}
@@ -467,7 +467,7 @@ export default function ModalNovoAdmin({
           </div>
 
           <div className="rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3 text-sm text-gray-300">
-            Senha temporaria sera gerada automaticamente. O fluxo de convite por e-mail com token
+            Senha temporária será gerada automaticamente. O fluxo de convite por e-mail com token
             expira em etapa futura.
           </div>
 
@@ -479,7 +479,7 @@ export default function ModalNovoAdmin({
               {result.temporaryPassword && (
                 <div className="mt-2 flex flex-col gap-2">
                   <div className="text-xs text-green-100">
-                    Senha temporaria para {result.adminEmail || "presidente"}:
+                    Senha temporária para {result.adminEmail || "presidente"}:
                   </div>
                   <div className="flex items-center gap-2">
                     <input

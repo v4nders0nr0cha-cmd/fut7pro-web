@@ -43,18 +43,18 @@ const ESTADOS_BR = [
 const BENEFITS = [
   {
     title: "100% multi-tenant",
-    description: "Site publico exclusivo por racha via slug.",
+    description: "Site público exclusivo por racha via slug.",
   },
   {
-    title: "Logo dinamica",
-    description: "Aplicada no painel e no site publico.",
+    title: "Logo dinâmica",
+    description: "Aplicada no painel e no site público.",
   },
   {
     title: "Perfil pronto",
-    description: "Presidente com posicao e apelido.",
+    description: "Presidente com posição e apelido.",
   },
   {
-    title: "Slug publico",
+    title: "Slug público",
     description: "https://app.fut7pro.com.br/<slug>",
   },
 ];
@@ -65,10 +65,10 @@ const PLAN_MICRO_COPY: Record<
 > = {
   monthly_essential: {
     title: "Mensal Essencial",
-    blurb: "Controle total do racha, com menos esforco e mais organizacao.",
+    blurb: "Controle total do racha, com menos esforço e mais organização.",
     bullets: [
-      "Sorteio inteligente e rankings automaticos",
-      "Financas e patrocinios organizados no site",
+      "Sorteio inteligente e rankings automáticos",
+      "Finanças e patrocínios organizados no site",
       "Painel completo para administrar o racha",
     ],
   },
@@ -80,14 +80,14 @@ const PLAN_MICRO_COPY: Record<
       "Designers Fut7Pro para artes e kit patrocinador",
       "Apoio profissional para Instagram e identidade visual",
     ],
-    marketingNote: "Servicos de marketing comecam apos o primeiro pagamento.",
+    marketingNote: "Serviços de marketing começam após o primeiro pagamento.",
   },
   yearly_essential: {
     title: "Anual Essencial",
-    blurb: "Controle total do racha, com menos esforco e mais organizacao.",
+    blurb: "Controle total do racha, com menos esforço e mais organização.",
     bullets: [
-      "Sorteio inteligente e rankings automaticos",
-      "Financas e patrocinios organizados no site",
+      "Sorteio inteligente e rankings automáticos",
+      "Finanças e patrocínios organizados no site",
       "Painel completo para administrar o racha",
     ],
   },
@@ -99,7 +99,7 @@ const PLAN_MICRO_COPY: Record<
       "Designers Fut7Pro para artes e kit patrocinador",
       "Apoio profissional para Instagram e identidade visual",
     ],
-    marketingNote: "Servicos de marketing comecam apos o primeiro pagamento.",
+    marketingNote: "Serviços de marketing começam após o primeiro pagamento.",
   },
 };
 
@@ -444,13 +444,13 @@ export default function CadastroRachaPage() {
     if (nome && nome.split(" ").length > 1) nextErrors.adminNome = "Use apenas o primeiro nome.";
     if (nome && nome.length > 10) nextErrors.adminNome = "Maximo de 10 caracteres.";
     if (adminApelido.trim().length > 10) nextErrors.adminApelido = "Maximo de 10 caracteres.";
-    if (!adminPosicao) nextErrors.adminPosicao = "Selecione a posicao.";
+    if (!adminPosicao) nextErrors.adminPosicao = "Selecione a posição.";
     if (!adminEmail.trim()) nextErrors.adminEmail = "Informe o e-mail.";
     const wantsPassword = !isGoogle || defineSenha || adminSenha || adminConfirmSenha;
     if (wantsPassword) {
       if (!adminSenha || adminSenha.length < 6) nextErrors.adminSenha = "Minimo de 6 caracteres.";
       if (adminSenha !== adminConfirmSenha)
-        nextErrors.adminConfirmSenha = "As senhas nao conferem.";
+        nextErrors.adminConfirmSenha = "As senhas não conferem.";
     }
     return nextErrors;
   }
@@ -952,7 +952,7 @@ export default function CadastroRachaPage() {
                   </label>
 
                   <div className="text-xs text-gray-400">
-                    Link publico: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                    Link público: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1138,7 +1138,7 @@ export default function CadastroRachaPage() {
                           {(copy.marketingNote || plan.marketingStartsAfterFirstPayment) && (
                             <p className="mt-3 text-[11px] text-gray-400">
                               {copy.marketingNote ||
-                                "Servicos de marketing comecam apos o primeiro pagamento."}
+                                "Serviços de marketing começam após o primeiro pagamento."}
                             </p>
                           )}
 
@@ -1208,7 +1208,7 @@ export default function CadastroRachaPage() {
                   )}
                   {couponStatus === "invalid" && (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
-                      Cupom nao encontrado. Voce pode continuar sem cupom.
+                      Cupom não encontrado. Você pode continuar sem cupom.
                     </div>
                   )}
                   {couponStatus === "error" && (
@@ -1281,8 +1281,8 @@ export default function CadastroRachaPage() {
             </div>
             <h1 className="text-3xl font-bold text-white">Cadastre seu racha</h1>
             <p className="text-sm text-gray-300 leading-relaxed">
-              Crie seu racha e complete seu perfil. Em minutos voce entra como presidente com painel
-              e site publico sincronizados.
+              Crie seu racha e complete seu perfil. Em minutos você entra como presidente com painel
+              e site público sincronizados.
             </p>
           </div>
 

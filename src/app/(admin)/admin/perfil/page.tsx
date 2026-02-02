@@ -24,7 +24,7 @@ const POSITION_LABELS: Record<string, string> = {
 };
 
 function formatPosition(value?: string | null) {
-  if (!value) return "Nao informado";
+  if (!value) return "Não informado";
   const normalized = value.toLowerCase();
   return POSITION_LABELS[normalized] ?? value;
 }
@@ -59,7 +59,7 @@ export default function PerfilAdmin() {
     return (
       <section className="max-w-3xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-sm text-red-200">
-          Nao foi possivel carregar o perfil. Recarregue a pagina ou faca login novamente.
+          Não foi possível carregar o perfil. Recarregue a página ou faça login novamente.
         </div>
       </section>
     );
@@ -100,29 +100,29 @@ export default function PerfilAdmin() {
               </span>
               <p className="mt-2 text-zinc-300">{displayEmail}</p>
               <p className="mt-1 text-sm text-zinc-400">
-                Perfil publico do atleta exibido no site do racha.
+                Perfil público do atleta exibido no site do racha.
               </p>
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
-              <span className="text-zinc-400">Posicao: </span>
+              <span className="text-zinc-400">Posição: </span>
               {formatPosition(me.athlete.position)}
             </div>
             <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
-              <span className="text-zinc-400">Posicao secundaria: </span>
+              <span className="text-zinc-400">Posição secundária: </span>
               {me.athlete.positionSecondary
                 ? formatPosition(me.athlete.positionSecondary)
-                : "Nao informado"}
+                : "Não informado"}
             </div>
             <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
               <span className="text-zinc-400">Status: </span>
-              {me.athlete.status || "Nao informado"}
+              {me.athlete.status || "Não informado"}
             </div>
             <div className="rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-sm text-zinc-200">
               <span className="text-zinc-400">Mensalista: </span>
-              {me.athlete.mensalista ? "Ativo" : "Nao"}
+              {me.athlete.mensalista ? "Ativo" : "Não"}
             </div>
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function PerfilAdmin() {
               rel="noopener noreferrer"
               className="rounded-lg border border-yellow-400 px-4 py-2 text-sm font-bold text-yellow-300 hover:bg-yellow-400/10"
             >
-              Ver perfil publico
+              Ver perfil público
             </Link>
           )}
         </div>

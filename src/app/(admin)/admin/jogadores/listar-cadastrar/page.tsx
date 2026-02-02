@@ -97,7 +97,7 @@ function ModalCadastroJogador({
           <div>
             <h2 className="text-lg text-cyan-300 font-bold">Cadastrar Jogador</h2>
             <p className="text-sm text-gray-300">
-              Cadastro manual cria um jogador sem login. Use apenas quando necessario.
+              Cadastro manual cria um jogador sem login. Use apenas quando necessário.
             </p>
           </div>
           <button
@@ -212,15 +212,15 @@ function ModalVincularJogador({
 
         <div className="text-sm text-gray-300 leading-relaxed">
           <p className="mb-2">
-            Esta acao conecta a conta com login ao jogador NPC selecionado. O atleta passa a usar
-            este jogador, mantendo todo o historico, rankings e estatisticas do NPC.
+            Esta ação conecta a conta com login ao jogador NPC selecionado. O atleta passa a usar
+            este jogador, mantendo todo o histórico, rankings e estatísticas do NPC.
           </p>
           <p className="mb-2">
-            Os dados da conta escolhida (nome, apelido, foto, posicao, status) passam a substituir
+            Os dados da conta escolhida (nome, apelido, foto, posição, status) passam a substituir
             os dados atuais do NPC.
           </p>
           <p>
-            Se a conta escolhida ja tiver historico, o vinculo sera bloqueado para evitar
+            Se a conta escolhida já tiver histórico, o vínculo será bloqueado para evitar
             duplicidade.
           </p>
         </div>
@@ -310,7 +310,7 @@ function ModalAutoApproveConfirm({
       <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
         <h2 className="text-lg text-yellow-400 font-bold">Liberar auto-aceite?</h2>
         <p className="text-sm text-gray-200 leading-relaxed">
-          Apito inicial: ao ligar o auto-aceite, todo atleta novo entra no racha sem aprovacao
+          Apito inicial: ao ligar o auto-aceite, todo atleta novo entra no racha sem aprovação
           manual. Use somente nos primeiros dias.
         </p>
         <div className="flex gap-3 justify-end">
@@ -357,9 +357,9 @@ function ModalRejeitarSolicitacao({
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
       <div className="bg-[#151515] border border-red-700 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
-        <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitacao</h2>
+        <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitação</h2>
         <p className="text-sm text-gray-200">
-          Voce esta recusando <strong>{solicitacao.name}</strong>. A conta continua global, mas nao
+          Você está recusando <strong>{solicitacao.name}</strong>. A conta continua global, mas não
           entra no racha.
         </p>
         <div className="flex flex-col gap-2">
@@ -442,7 +442,7 @@ function ModalVincularSolicitacao({
             className="rounded-full object-cover"
           />
           <div>
-            <h2 className="text-lg text-yellow-400 font-bold">Vincular solicitacao</h2>
+            <h2 className="text-lg text-yellow-400 font-bold">Vincular solicitação</h2>
             <p className="text-sm text-gray-300">
               Conta com login: <span className="text-white font-semibold">{solicitacao.name}</span>
             </p>
@@ -450,13 +450,13 @@ function ModalVincularSolicitacao({
         </div>
 
         <div className="text-sm text-gray-300 leading-relaxed">
-          Este fluxo conecta o atleta pendente a um jogador NPC existente, mantendo historico,
-          rankings e estatisticas do NPC.
+          Este fluxo conecta o atleta pendente a um jogador NPC existente, mantendo histórico,
+          rankings e estatísticas do NPC.
         </div>
 
         {!solicitacao.userId && (
           <div className="text-xs text-red-300">
-            Conta do atleta ainda nao localizada. Aguarde a criacao ou aprove a solicitacao.
+            Conta do atleta ainda não localizada. Aguarde a criação ou aprove a solicitação.
           </div>
         )}
 
@@ -483,7 +483,7 @@ function ModalVincularSolicitacao({
             ))}
           </select>
           {npcs.length === 0 && (
-            <div className="text-xs text-yellow-300">Nenhum jogador NPC disponivel.</div>
+            <div className="text-xs text-yellow-300">Nenhum jogador NPC disponível.</div>
           )}
         </div>
 
@@ -796,7 +796,7 @@ export default function Page() {
       setRejeitarSolicitacao(null);
       setRejeitarMotivo("");
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao rejeitar solicitacao.";
+      const message = err instanceof Error ? err.message : "Erro ao rejeitar solicitação.";
       setRejeitarErro(message);
     } finally {
       setRejeitando(false);
@@ -857,7 +857,7 @@ export default function Page() {
       await mutateJogadores();
       fecharModalVincularSolicitacao();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Falha ao vincular solicitacao.";
+      const message = err instanceof Error ? err.message : "Falha ao vincular solicitação.";
       setVincularSolicitacaoErro(message);
     } finally {
       setVincularSolicitacaoLoading(false);
@@ -873,7 +873,7 @@ export default function Page() {
       await approveSolicitacao(solicitacao.id);
       await mutateJogadores();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Erro ao aprovar solicitacao.";
+      const message = err instanceof Error ? err.message : "Erro ao aprovar solicitação.";
       setSolicitacaoActionError(message);
     } finally {
       setSolicitacaoActionId(null);
@@ -936,12 +936,12 @@ export default function Page() {
 
       const result = await addJogador(payload);
       if (!result) {
-        throw new Error("Nao foi possivel cadastrar o jogador.");
+        throw new Error("Não foi possível cadastrar o jogador.");
       }
 
       setShowModalCadastro(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Nao foi possivel cadastrar o jogador.";
+      const message = err instanceof Error ? err.message : "Não foi possível cadastrar o jogador.";
       setCadastroErro(message);
     } finally {
       setCadastroLoading(false);
@@ -970,13 +970,13 @@ export default function Page() {
 
       const result = await updateJogador(jogadorEditar.id, payload);
       if (!result) {
-        throw new Error("Nao foi possivel atualizar o jogador.");
+        throw new Error("Não foi possível atualizar o jogador.");
       }
 
       setShowModalEditar(false);
       setJogadorEditar(undefined);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Nao foi possivel atualizar o jogador.";
+      const message = err instanceof Error ? err.message : "Não foi possível atualizar o jogador.";
       setEditarErro(message);
     } finally {
       setEditarLoading(false);
@@ -1074,31 +1074,31 @@ export default function Page() {
           <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
-                <h2 className="text-base font-bold text-yellow-400">Solicitacoes de atletas</h2>
+                <h2 className="text-base font-bold text-yellow-400">Solicitações de atletas</h2>
                 <p className="text-sm text-gray-300">
-                  Cadastros feitos no site publico aguardam aprovacao para liberar ranking, jogos e
+                  Cadastros feitos no site público aguardam aprovação para liberar ranking, jogos e
                   perfil completo.
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-xs text-gray-300 font-semibold">
-                  Aceitar solicitacoes automaticamente
+                  Aceitar solicitações automaticamente
                 </div>
                 <Switch
                   checked={autoApproveAthletes}
                   onCheckedChange={handleAutoApproveChange}
-                  ariaLabel="Aceitar solicitacoes automaticamente"
+                  ariaLabel="Aceitar solicitações automaticamente"
                   disabled={autoApproveBusy}
                 />
               </div>
             </div>
             <div className="mt-3 text-xs text-gray-400">
               <span className="text-yellow-300 font-semibold">Ligado:</span> aprova automaticamente.
-              <span className="ml-2 text-gray-300 font-semibold">Desligado:</span> exige aprovacao
+              <span className="ml-2 text-gray-300 font-semibold">Desligado:</span> exige aprovação
               manual.
             </div>
             {autoApproveBusy && (
-              <div className="mt-2 text-xs text-gray-400">Atualizando configuracao...</div>
+              <div className="mt-2 text-xs text-gray-400">Atualizando configuração...</div>
             )}
             {autoApproveErrorResolved && (
               <div className="mt-2 text-xs text-red-300">{autoApproveErrorResolved}</div>
@@ -1107,13 +1107,13 @@ export default function Page() {
 
           {autoApproveAthletes && !solicitacoesCount && (
             <div className="mt-3 rounded-lg border border-yellow-500/40 bg-[#1f1a10] px-4 py-3 text-sm text-yellow-200">
-              Auto-aceite ligado: novas solicitacoes entram aprovadas automaticamente.
+              Auto-aceite ligado: novas solicitações entram aprovadas automaticamente.
             </div>
           )}
 
           <div className="mt-5">
             <div className="flex items-center gap-2 text-yellow-400 font-bold text-sm mb-2">
-              Solicitacoes pendentes ({solicitacoesCount})
+              Solicitações pendentes ({solicitacoesCount})
             </div>
 
             {solicitacaoActionError && (
@@ -1121,10 +1121,10 @@ export default function Page() {
             )}
 
             {solicitacoesLoading ? (
-              <div className="text-center text-gray-400 py-6">Carregando solicitacoes...</div>
+              <div className="text-center text-gray-400 py-6">Carregando solicitações...</div>
             ) : solicitacoesError ? (
               <div className="text-center text-red-400 py-6">
-                Nao foi possivel carregar as solicitacoes.
+                Não foi possível carregar as solicitações.
                 {solicitacoesErrorMessage && (
                   <div className="text-xs text-red-300 mt-2">{solicitacoesErrorMessage}</div>
                 )}
@@ -1171,7 +1171,7 @@ export default function Page() {
                             <div className="text-xs text-gray-400">{solicitacao.email}</div>
                             <div className="text-xs mt-2 flex flex-wrap gap-2 items-center">
                               <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5">
-                                Solicitacao pendente
+                                Solicitação pendente
                               </span>
                               <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5">
                                 Criado {formatDateTime(solicitacao.createdAt)}
@@ -1220,7 +1220,7 @@ export default function Page() {
                 </AnimatePresence>
               </div>
             ) : showSolicitacoesEmpty ? (
-              <div className="text-center text-gray-400 py-6">Sem solicitacoes pendentes.</div>
+              <div className="text-center text-gray-400 py-6">Sem solicitações pendentes.</div>
             ) : null}
           </div>
         </section>
@@ -1242,7 +1242,7 @@ export default function Page() {
               value={posicaoFiltro}
               onChange={(e) => setPosicaoFiltro(e.target.value)}
               className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-52 focus:border-cyan-600"
-              aria-label="Filtrar por posicao"
+              aria-label="Filtrar por posição"
             >
               <option value="todas">Todas as posicoes</option>
               <option value="goleiro">Goleiro</option>

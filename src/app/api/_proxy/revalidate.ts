@@ -70,6 +70,11 @@ export function buildContatosPaths(slug?: string | null) {
   return [`/${slug}/sobre-nos/contatos`, "/sobre-nos/contatos"];
 }
 
+export function buildSocialLinksPaths(slug?: string | null) {
+  if (!slug) return ["/sobre-nos/contatos"];
+  return [`/${slug}/sobre-nos/contatos`, "/sobre-nos/contatos"];
+}
+
 export function buildSponsorPaths(slug?: string | null) {
   if (!slug) return [];
   return [`/${slug}/sobre-nos`, `/${slug}/sobre-nos/nossos-parceiros`];

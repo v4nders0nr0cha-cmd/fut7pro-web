@@ -172,14 +172,14 @@ export default function TimeCampeaoDoDiaPage() {
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(body?.error || "Falha ao atualizar ausencia.");
+        throw new Error(body?.error || "Falha ao atualizar ausência.");
       }
       if (body?.destaque) {
         setDestaqueDia(body.destaque as DestaqueDiaResponse);
       }
       await mutate();
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : "Falha ao atualizar ausencia.");
+      setActionError(err instanceof Error ? err.message : "Falha ao atualizar ausência.");
     } finally {
       setIsSaving(false);
     }

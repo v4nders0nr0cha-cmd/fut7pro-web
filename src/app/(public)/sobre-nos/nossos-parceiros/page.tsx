@@ -73,7 +73,7 @@ export default function NossosParceiros() {
   }, [parceiros, slug]);
 
   const seoTitle = `Nossos Parceiros | ${brandName}`;
-  const seoDescription = `Conheca os patrocinadores e apoiadores do ${brandName}.`;
+  const seoDescription = `Conheça os patrocinadores e apoiadores do ${brandName}.`;
   const seoUrl = `${APP_URL}/${slug}/sobre-nos/nossos-parceiros`;
 
   return (
@@ -98,16 +98,16 @@ export default function NossosParceiros() {
           </h1>
           <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
             Ajude quem fortalece o nosso racha! <br />
-            Valorize quem acredita na nossa equipe. Siga, prestigie e de preferencia aos nossos
-            parceiros, empresas e profissionais que apoiam o racha com descontos, patrocinios,
-            produtos e servicos de qualidade.
+            Valorize quem acredita na nossa equipe. Siga, prestigie e dê preferência aos nossos
+            parceiros, empresas e profissionais que apoiam o racha com descontos, patrocínios,
+            produtos e serviços de qualidade.
           </p>
 
           {isLoading && <div className="text-gray-300 py-6">Carregando patrocinadores...</div>}
 
           {isError && !isLoading && (
             <div className="text-red-300 py-6">
-              Nao foi possivel carregar os patrocinadores no momento.
+              Não foi possível carregar os patrocinadores no momento.
             </div>
           )}
 
@@ -172,7 +172,7 @@ export default function NossosParceiros() {
           <p className="text-center text-neutral-400 text-sm md:text-base mb-10 max-w-2xl">
             Quer apoiar nosso racha, divulgar sua empresa e fortalecer o futebol 7 entre amigos?
             <br />
-            Fale com a administracao e saiba como ser um parceiro.
+            Fale com a administração e saiba como ser um parceiro.
           </p>
         </div>
       </main>
