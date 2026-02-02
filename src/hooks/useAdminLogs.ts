@@ -1,21 +1,43 @@
 import useSWR from "swr";
-import { useRacha } from "@/context/RachaContext";
 import type { AdminLog } from "@/types/admin";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+export type AdminLogsFilters = {
+  action?: string;
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+};
 
-export function useAdminLogs(rachaIdParam?: string) {
-  const { rachaId: rachaIdContext } = useRacha();
-  const rachaId = rachaIdParam || rachaIdContext;
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(text || "Erro ao carregar logs");
+  }
+  return response.json();
+};
 
-  const { data, error, mutate } = useSWR<AdminLog[]>(
-    rachaId ? `/api/admin/rachas/${rachaId}/logs` : null,
-    fetcher
-  );
+function buildQuery(filters?: AdminLogsFilters) {
+  if (!filters) return "";
+  const params = new URLSearchParams();
+  if (filters.action) params.set("action", filters.action);
+  if (filters.userId) params.set("userId", filters.userId);
+  if (filters.startDate) params.set("startDate", filters.startDate);
+  if (filters.endDate) params.set("endDate", filters.endDate);
+  if (filters.limit) params.set("limit", String(filters.limit));
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function useAdminLogs(filters?: AdminLogsFilters) {
+  const query = buildQuery(filters);
+  const { data, error, mutate } = useSWR<AdminLog[]>(`/api/admin/logs${query}`, fetcher, {
+    revalidateOnFocus: false,
+  });
 
   async function addLog(log: Partial<AdminLog>) {
-    if (!rachaId) return;
-    await fetch(`/api/admin/rachas/${rachaId}/logs`, {
+    await fetch(`/api/admin/logs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(log),
@@ -25,7 +47,7 @@ export function useAdminLogs(rachaIdParam?: string) {
 
   return {
     logs: data || [],
-    isLoading: !error && !data && !!rachaId,
+    isLoading: !error && !data,
     isError: !!error,
     error: error?.message ?? null,
     addLog,
