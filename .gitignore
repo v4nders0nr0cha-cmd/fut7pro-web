@@ -6,6 +6,12 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# allow admin logs page folder
+!src/app/(admin)/admin/administracao/logs/
+!src/app/(admin)/admin/administracao/logs/**
+!src/app/api/admin/logs/
+!src/app/api/admin/logs/**
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
