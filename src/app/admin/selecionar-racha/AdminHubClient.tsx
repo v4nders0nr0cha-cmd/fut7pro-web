@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import useSWR from "swr";
 import { FaSearch, FaLock, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
@@ -23,13 +23,9 @@ type HubRacha = {
   } | null;
 };
 
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
-
-const setActiveTenantCookie = (slug: string) => {
-  if (typeof document === "undefined") return;
-  document.cookie = `${ACTIVE_TENANT_COOKIE}=${slug}; path=/; SameSite=Lax`;
-};
+const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
+const PERF_START_KEY = "fut7pro_admin_perf_start";
 
 const readLastTenantAccess = () => {
   if (typeof window === "undefined") return {};
@@ -77,7 +73,37 @@ const STATUS_ICONS: Record<string, JSX.Element> = {
   BLOQUEADO: <FaLock className="text-red-300" />,
 };
 
-const fetcher = async (url: string): Promise<HubRacha[]> => {
+type HubEntryResponse = {
+  items: HubRacha[];
+  count: number;
+  redirectTo: string | null;
+  blocked?: boolean;
+  timing?: {
+    hubMs?: number;
+    accessMs?: number;
+  };
+};
+
+const normalizeEntryResponse = (body: any): HubEntryResponse => {
+  if (Array.isArray(body)) {
+    return { items: body as HubRacha[], count: body.length, redirectTo: null };
+  }
+
+  const items = Array.isArray(body?.items) ? (body.items as HubRacha[]) : [];
+  const count = typeof body?.count === "number" ? body.count : items.length;
+  const redirectTo = typeof body?.redirectTo === "string" ? body.redirectTo : null;
+  const timing = typeof body?.timing === "object" ? body.timing : undefined;
+
+  return {
+    items,
+    count,
+    redirectTo,
+    blocked: Boolean(body?.blocked),
+    timing,
+  };
+};
+
+const fetcher = async (url: string): Promise<HubEntryResponse> => {
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
   let body: any = text;
@@ -93,19 +119,40 @@ const fetcher = async (url: string): Promise<HubRacha[]> => {
     error.status = res.status;
     throw error;
   }
-  return Array.isArray(body) ? body : [];
+  return normalizeEntryResponse(body);
 };
 
 export default function AdminHubClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { status } = useSession();
-  const { data, error, isLoading } = useSWR<HubRacha[]>("/api/admin/hub", fetcher, {
-    revalidateOnFocus: false,
-  });
+  const perfEnabled = searchParams?.get("perf") === "1";
+  const requestStartRef = useRef<number | null>(null);
+
+  const entryFetcher = async (url: string) => {
+    requestStartRef.current = typeof performance !== "undefined" ? performance.now() : null;
+    return fetcher(url);
+  };
+
+  const { data, error, isLoading } = useSWR<HubEntryResponse>(
+    "/api/admin/hub/entry",
+    entryFetcher,
+    {
+      revalidateOnFocus: false,
+    }
+  );
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [lastAccessMap, setLastAccessMap] = useState<Record<string, number>>({});
+  const [selectingSlug, setSelectingSlug] = useState<string | null>(null);
+  const [selectError, setSelectError] = useState("");
+  const autoRedirectedRef = useRef(false);
+
+  const items = data?.items ?? [];
+  const count = typeof data?.count === "number" ? data.count : items.length;
+  const shouldAutoRedirect =
+    !isLoading && !error && count === 1 && items[0]?.tenantSlug && data?.redirectTo;
 
   const trackLastTenantAccess = (slug: string) => {
     if (typeof window === "undefined") return;
@@ -132,17 +179,45 @@ export default function AdminHubClient() {
   }, [status, router]);
 
   useEffect(() => {
-    if (!isLoading && !error && data && data.length === 1 && data[0]?.tenantSlug) {
-      const only = data[0];
-      const blocked = only.subscription?.blocked || only.subscription?.status === "BLOQUEADO";
-      setActiveTenantCookie(only.tenantSlug);
-      trackLastTenantAccess(only.tenantSlug);
-      router.replace(blocked ? "/admin/status-assinatura" : "/admin/dashboard");
+    if (error && (error as { status?: number })?.status === 401) {
+      router.replace("/admin/login");
     }
-  }, [data, error, isLoading, router]);
+  }, [error, router]);
+
+  useEffect(() => {
+    if (!shouldAutoRedirect || autoRedirectedRef.current) return;
+    if (items[0]?.tenantSlug && data?.redirectTo) {
+      autoRedirectedRef.current = true;
+      const slug = items[0].tenantSlug;
+      trackLastTenantAccess(slug);
+      if (typeof window !== "undefined") {
+        if (perfEnabled) {
+          window.sessionStorage.setItem(PERF_FLAG_KEY, "1");
+        }
+        window.sessionStorage.setItem(PERF_START_KEY, String(performance.now()));
+      }
+      router.replace(data.redirectTo);
+    }
+  }, [data?.redirectTo, items, perfEnabled, router, shouldAutoRedirect]);
+
+  useEffect(() => {
+    if (!perfEnabled || isLoading || !data) return;
+    const hubMs = data.timing?.hubMs;
+    const accessMs = data.timing?.accessMs;
+    const clientMs =
+      requestStartRef.current && typeof performance !== "undefined"
+        ? Math.max(0, performance.now() - requestStartRef.current)
+        : null;
+    console.info("[Perf] hub", {
+      hubMs,
+      accessMs,
+      clientMs,
+      count,
+    });
+  }, [count, data, isLoading, perfEnabled]);
 
   const filtered = useMemo(() => {
-    const base = data ? [...data] : [];
+    const base = items ? [...items] : [];
     const byQuery = debouncedQuery
       ? base.filter((racha) => {
           const target =
@@ -157,9 +232,56 @@ export default function AdminHubClient() {
       if (aTime !== bTime) return bTime - aTime;
       return a.tenantName.localeCompare(b.tenantName);
     });
-  }, [data, debouncedQuery, lastAccessMap]);
+  }, [items, debouncedQuery, lastAccessMap]);
 
   const hasResults = filtered.length > 0;
+  const autoRedirecting = Boolean(shouldAutoRedirect);
+  const showLoading = isLoading && !autoRedirecting;
+  const showCount = !showLoading && !autoRedirecting;
+
+  const handleSelect = async (racha: HubRacha) => {
+    if (selectingSlug) return;
+    setSelectError("");
+    setSelectingSlug(racha.tenantSlug);
+
+    if (typeof window !== "undefined") {
+      if (perfEnabled) {
+        window.sessionStorage.setItem(PERF_FLAG_KEY, "1");
+      }
+      window.sessionStorage.setItem(PERF_START_KEY, String(performance.now()));
+    }
+
+    try {
+      const res = await fetch("/api/admin/hub/select", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: racha.tenantSlug }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(body?.error || "Falha ao acessar painel");
+      }
+      trackLastTenantAccess(racha.tenantSlug);
+      const redirectTo =
+        typeof body?.redirectTo === "string" ? body.redirectTo : "/admin/dashboard";
+      router.replace(redirectTo);
+    } catch {
+      setSelectError("Nao foi possivel acessar o painel agora.");
+    } finally {
+      setSelectingSlug(null);
+    }
+  };
+
+  if (autoRedirecting) {
+    return (
+      <main className="min-h-screen bg-[#0b0f16] text-white">
+        <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center gap-3 px-4">
+          <div className="h-10 w-10 rounded-full border-2 border-yellow-400/40 border-t-yellow-400 animate-spin" />
+          <p className="text-sm text-gray-300">Entrando no painel...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#0b0f16] text-white">
@@ -188,13 +310,16 @@ export default function AdminHubClient() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar por nome, slug ou cargo..."
+              disabled={showLoading}
               className="w-full rounded-2xl border border-white/10 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400/60"
             />
           </label>
-          <p className="text-xs text-gray-400">{filtered.length} racha(s) encontrado(s).</p>
+          <p className="text-xs text-gray-400">
+            {showCount ? `${filtered.length} racha(s) encontrado(s).` : "Carregando seus rachas..."}
+          </p>
         </div>
 
-        {isLoading ? (
+        {showLoading ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
@@ -211,7 +336,13 @@ export default function AdminHubClient() {
           </div>
         ) : null}
 
-        {!isLoading && !error && !hasResults ? (
+        {selectError ? (
+          <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            {selectError}
+          </div>
+        ) : null}
+
+        {!showLoading && !error && !hasResults ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-8 text-center">
             <h2 className="text-lg font-semibold text-white">Nenhum racha encontrado</h2>
             <p className="mt-2 text-sm text-gray-300">
@@ -238,7 +369,7 @@ export default function AdminHubClient() {
           </div>
         ) : null}
 
-        {!isLoading && !error && hasResults ? (
+        {!showLoading && !error && hasResults ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filtered.map((racha) => {
               const roleKey = racha.role?.toUpperCase() || "ADMIN";
@@ -248,7 +379,7 @@ export default function AdminHubClient() {
               const statusBadge = STATUS_BADGES[statusKey] || STATUS_BADGES.ATIVO;
               const roleBadge = ROLE_BADGES[roleKey] || ROLE_BADGES.ADMIN;
               const blocked = racha.subscription?.blocked || statusKey === "BLOQUEADO";
-              const actionHref = blocked ? "/admin/status-assinatura" : "/admin/dashboard";
+              const isSelecting = selectingSlug === racha.tenantSlug;
 
               return (
                 <div
@@ -298,20 +429,18 @@ export default function AdminHubClient() {
                     ) : null}
                   </div>
 
-                  <a
-                    href={actionHref}
-                    onClick={() => {
-                      setActiveTenantCookie(racha.tenantSlug);
-                      trackLastTenantAccess(racha.tenantSlug);
-                    }}
-                    className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                  <button
+                    type="button"
+                    disabled={isSelecting}
+                    onClick={() => handleSelect(racha)}
+                    className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
                       blocked
                         ? "border border-red-400/40 text-red-200 hover:border-red-300"
                         : "bg-yellow-400 text-black hover:bg-yellow-300"
                     }`}
                   >
-                    {blocked ? "Ver status" : "Acessar painel"}
-                  </a>
+                    {isSelecting ? "Entrando..." : blocked ? "Ver status" : "Acessar painel"}
+                  </button>
                 </div>
               );
             })}

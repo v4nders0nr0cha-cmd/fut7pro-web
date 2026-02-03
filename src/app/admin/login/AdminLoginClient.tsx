@@ -42,27 +42,8 @@ export default function AdminLoginClient() {
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
   const contactEmail = "social@fut7pro.com.br";
 
-  const redirectAfterLogin = async () => {
-    try {
-      const hubRes = await fetch("/api/admin/hub", { cache: "no-store" });
-      if (hubRes.ok) {
-        const data = await hubRes.json().catch(() => null);
-        if (Array.isArray(data)) {
-          if (data.length === 1 && data[0]?.tenantSlug) {
-            router.push("/admin/selecionar-racha");
-            return;
-          }
-          if (data.length > 1) {
-            router.push("/admin/selecionar-racha");
-            return;
-          }
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    router.push("/admin/selecionar-racha");
+  const redirectAfterLogin = () => {
+    router.replace("/admin/selecionar-racha");
   };
 
   useEffect(() => {
@@ -92,7 +73,7 @@ export default function AdminLoginClient() {
       });
 
       if (res?.ok) {
-        await redirectAfterLogin();
+        redirectAfterLogin();
         return;
       }
 

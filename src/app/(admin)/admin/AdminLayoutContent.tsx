@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Sidebar from "./Sidebar";
@@ -14,6 +14,8 @@ import PainelAdminBloqueado from "./PainelAdminBloqueado";
 
 const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
+const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
+const PERF_START_KEY = "fut7pro_admin_perf_start";
 
 const clearActiveTenantCookie = () => {
   if (typeof document === "undefined") return;
@@ -49,8 +51,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const pathname = usePathname() ?? "";
   const { tenantSlug, rachaId, setTenantSlug, setRachaId } = useRacha();
   const { access, isLoading: accessLoading, error: accessError } = useAdminAccess();
+  const perfLoggedRef = useRef(false);
 
   const isStatusRoute = useMemo(() => pathname.startsWith("/admin/status-assinatura"), [pathname]);
+  const readyTenant = access?.tenant?.slug && access.tenant.slug === tenantSlug;
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -87,6 +91,21 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
   }, [accessLoading, access?.blocked, isStatusRoute, router]);
 
+  useEffect(() => {
+    if (accessLoading || !readyTenant || perfLoggedRef.current) return;
+    if (typeof window === "undefined") return;
+    const perfEnabled = window.sessionStorage.getItem(PERF_FLAG_KEY) === "1";
+    const startRaw = window.sessionStorage.getItem(PERF_START_KEY);
+    if (!perfEnabled || !startRaw) return;
+    const start = Number(startRaw);
+    if (Number.isFinite(start)) {
+      const delta = Math.max(0, performance.now() - start);
+      console.info("[Perf] dashboardReadyMs", Math.round(delta));
+      window.sessionStorage.removeItem(PERF_START_KEY);
+    }
+    perfLoggedRef.current = true;
+  }, [accessLoading, readyTenant]);
+
   if (accessLoading) {
     return <AdminLoading />;
   }
@@ -102,8 +121,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   if (access?.blocked) {
     return <AdminLoading />;
   }
-
-  const readyTenant = access?.tenant?.slug && access.tenant.slug === tenantSlug;
   if (!readyTenant) {
     return <AdminLoading />;
   }
