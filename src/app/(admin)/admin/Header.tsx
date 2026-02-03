@@ -2,13 +2,22 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
+import {
+  FaBell,
+  FaEnvelope,
+  FaUserPlus,
+  FaUser,
+  FaSignOutAlt,
+  FaBars,
+  FaExchangeAlt,
+} from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
 import { useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
 import { buildPublicHref } from "@/utils/public-links";
+import { useBranding } from "@/hooks/useBranding";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -39,7 +48,8 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const { badges } = useAdminBadges();
   const { data: session } = useSession();
-  const { me } = useMe();
+  const { me } = useMe({ context: "admin" });
+  const { nome: rachaNome } = useBranding({ scope: "admin" });
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
@@ -74,10 +84,29 @@ export default function Header({ onMenuClick }: HeaderProps) {
           <span className="text-brand animate-pulse drop-shadow">7</span>
           Pro
         </span>
+        {rachaNome && rachaNome !== "Fut7Pro" ? (
+          <span className="hidden md:inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-gray-300">
+            {rachaNome}
+          </span>
+        ) : null}
       </Link>
 
       {/* AÇÕES ALINHADAS À DIREITA */}
       <div className="flex items-center gap-6 ml-auto">
+        <Link
+          href="/admin/selecionar-racha"
+          className="hidden md:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-gray-200 transition hover:border-white/20"
+        >
+          <FaExchangeAlt size={12} />
+          Trocar racha
+        </Link>
+        <Link
+          href="/admin/selecionar-racha"
+          className="md:hidden flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-gray-200"
+          aria-label="Trocar racha"
+        >
+          <FaExchangeAlt size={14} />
+        </Link>
         {menu.map((item) => {
           const baseHref = item.href.split("#")[0];
           const isActive = pathname.startsWith(baseHref);

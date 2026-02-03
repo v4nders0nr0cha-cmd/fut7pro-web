@@ -62,7 +62,8 @@ describe("RegisterClient", () => {
       ok: false,
       json: async () => ({
         code: "ACCOUNT_EXISTS",
-        message: "Esse e-mail ja tem conta Fut7Pro. Entre para vincular ao racha.",
+        message:
+          "Esse e-mail ja tem conta Fut7Pro. Entre para confirmar que e voce e solicitar entrada neste racha.",
       }),
     });
     global.fetch = fetchMock as any;
@@ -91,9 +92,9 @@ describe("RegisterClient", () => {
     expect(screen.getByText(/Esse e-mail ja tem conta Fut7Pro/i)).toBeInTheDocument();
     expect(screen.getByText(/Seus dados ficam separados por racha/i)).toBeInTheDocument();
 
-    const loginCta = screen.getByRole("link", { name: /Entrar para vincular ao racha/i });
+    const loginCta = screen.getByRole("link", { name: /Entrar e solicitar/i });
     expect(loginCta.getAttribute("href")).toBe(
-      "/ruimdebola/login?callbackUrl=%2Fruimdebola%2Fperfil"
+      "/ruimdebola/login?callbackUrl=%2Fruimdebola%2Fregister"
     );
   });
 });

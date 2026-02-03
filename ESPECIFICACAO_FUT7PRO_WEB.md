@@ -8,12 +8,13 @@
 - Arquitetura: Next.js App Router (14.x), NextAuth integrado ao backend (`/auth/*` do Nest), proxies server-side para todas as rotas admin/públicas.
 - Público-alvo: presidente/vice/diretores (painel), atletas (acessos restritos) e visitantes (site público).
 
-## Nota critica - Painel admin sem slug na URL
+## Nota critica - Hub admin e tenant ativo
 
-- Rotas admin ficam em `/admin/*` (sem slug no path). O tenant e resolvido pela sessao.
-- Sempre carregar `tenantSlug`/`tenantId` via `/api/me` e setar no `RachaContext` no layout admin.
-- Evitar fallback para `rachaConfig.slug` no admin ao chamar endpoints publicos (risco de 404 "Racha nao encontrado").
-- Se `tenantSlug` nao estiver na sessao, bloquear acoes sensiveis e orientar relogin.
+- O acesso admin inicia em `/{slug}/admin`; o middleware reescreve para `/admin` e grava o cookie `fut7pro_active_tenant` (racha ativo).
+- Existe um Hub global em `/admin/selecionar-racha`. Pos-login: 1 racha -> `/{slug}/admin`; 2+ rachas -> Hub; 0 rachas -> estado vazio.
+- O backend valida membership admin e ciclo do plano para qualquer rota admin por slug (nao confiar no front). Se bloqueado, permitir apenas `/admin/status-assinatura` (ou `/{slug}/admin/status-assinatura`).
+- Resolver `tenantSlug`/`tenantId` pelo cookie ou `/api/admin/access` e setar no `RachaContext`; evitar fallback para `rachaConfig.slug` no admin ao chamar endpoints publicos.
+- Se o slug ativo nao existir/expirar, redirecionar para o Hub e impedir acoes sensiveis.
 
 ## Ambiente & Integração
 
@@ -1420,7 +1421,7 @@ Resultado: Seu cargo fica protegido pela dependência do sistema e pela organiza
 Controle Total = Cargo Seguro
 
 Multi‑Horários do Racha
-Cadastre todos os dias e horários em que o seu racha acontece. Um login corresponde a um racha. Se quiser criar outro racha com outro nome e logo, faça um novo cadastro.
+Cadastre todos os dias e horários em que o seu racha acontece. Uma conta pode administrar multiplos rachas, mas cada racha tem cadastro, assinatura e agenda proprios. Para outro racha, crie um novo cadastro de racha usando a mesma conta.
 
 Testar Multi‑Horários
 Ver Demonstração
@@ -1448,13 +1449,13 @@ Pausas de férias
 Retomada automática
 Datas especiais
 Histórico preservado
-Um login por racha
-Cada racha tem seu próprio cadastro e assinatura.
+Vinculo por racha (conta global)
+Cada racha tem seu proprio cadastro e assinatura, mesmo com um unico usuario admin.
 
 Evita revenda de acessos
 Identidade (nome e logo) por racha
 Gestão financeira independente
-Para outro racha, crie novo cadastro
+Para outro racha, crie novo cadastro de racha (mesma conta)
 Funcionalidades principais
 Tudo que você precisa para organizar dias e horários no mesmo racha
 
@@ -1480,7 +1481,7 @@ Indicador na página de horários
 Opção de remarcar
 Histórico do ajuste
 Gestão simples e correta
-Um login por racha garante cobrança e operação separadas.
+Cobrança e bloqueio sao por racha; o acesso admin e sempre escopado ao racha ativo.
 
 Cada racha tem seu próprio acesso
 Assinatura independente
@@ -1499,7 +1500,7 @@ Mais previsibilidade
 Comunicação e presença melhoram com calendário consistente.
 
 Operação correta
-Um racha por login evita revenda e separa finanças.
+Cobrança por racha evita revenda e separa finanças, sem misturar dados entre rachas.
 
 Acesse diretamente pelo link do seu racha
 Sem baixar app

@@ -91,6 +91,11 @@ export default function LoginClient() {
       return;
     }
 
+    if (isErrorMe) {
+      router.replace(publicHref("/register"));
+      return;
+    }
+
     router.replace(redirectTo);
   }, [
     status,

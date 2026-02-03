@@ -17,7 +17,8 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const slugParam = searchParams.get("slug")?.trim().toLowerCase() || null;
   const contextParam = searchParams.get("context")?.trim().toLowerCase() || null;
-  const authContext = contextParam === "athlete" ? "athlete" : null;
+  const authContext =
+    contextParam === "athlete" ? "athlete" : contextParam === "admin" ? "admin" : null;
 
   const base = getApiBase();
   const headers = buildHeaders(user, resolveTenantSlug(user, slugParam || undefined), {

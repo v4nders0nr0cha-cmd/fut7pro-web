@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { getServerSession } from "next-auth/next";
+import { cookies } from "next/headers";
 import AdminLayoutContent from "./AdminLayoutContent";
 import ToasterProvider from "@/components/ToasterProvider";
 import { authOptions } from "@/server/auth/admin-options";
@@ -8,6 +9,7 @@ import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
 
 const inter = Inter({ subsets: ["latin"] });
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 
 export const metadata = {
   robots: { index: false, follow: false, nocache: true },
@@ -25,8 +27,11 @@ async function resolveAdminThemeKey() {
   try {
     const session = (await getServerSession(authOptions as any)) as AdminSession;
     const user = session?.user;
+    const cookieSlug = cookies().get(ACTIVE_TENANT_COOKIE)?.value;
+    const tenantSlug = cookieSlug || user?.tenantSlug || null;
     const tenantId = user?.tenantId;
-    if (!tenantId) {
+
+    if (!tenantSlug && !tenantId) {
       return getRachaTheme(null).key;
     }
 
@@ -34,15 +39,15 @@ async function resolveAdminThemeKey() {
     if (user?.accessToken) {
       headers.Authorization = `Bearer ${user.accessToken}`;
     }
-    if (user?.tenantSlug) {
-      headers["x-tenant-slug"] = user.tenantSlug;
+    if (tenantSlug) {
+      headers["x-tenant-slug"] = tenantSlug;
     }
 
     const base = getApiBase().replace(/\/+$/, "");
-    const res = await fetch(`${base}/rachas/${encodeURIComponent(tenantId)}`, {
-      headers,
-      cache: "no-store",
-    });
+    const targetUrl = tenantSlug
+      ? `${base}/public/${encodeURIComponent(tenantSlug)}/tenant`
+      : `${base}/rachas/${encodeURIComponent(tenantId ?? "")}`;
+    const res = await fetch(targetUrl, { headers, cache: "no-store" });
     if (!res.ok) {
       return getRachaTheme(null).key;
     }

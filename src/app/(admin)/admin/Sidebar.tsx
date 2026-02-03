@@ -10,7 +10,6 @@ import { useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
 import { useBranding } from "@/hooks/useBranding";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 
 const APP_PUBLIC_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
@@ -112,11 +111,11 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
   const { data: session } = useSession();
-  const { me } = useMe();
+  const { me } = useMe({ context: "admin" });
   const { tenantSlug } = useRacha();
   const resolvedSlug = useMemo(() => {
     const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
-    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || rachaConfig.slug;
+    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || "";
   }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
   const { nome, logo } = useBranding({ scope: "admin", slug: resolvedSlug });
   const sitePublicoUrl = `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
@@ -152,6 +151,14 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
             <span className="text-white text-2xl">×</span>
           </button>
         )}
+      </div>
+      <div className="px-6 mb-6">
+        <Link
+          href="/admin/selecionar-racha"
+          className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-200 hover:border-white/20"
+        >
+          Trocar racha
+        </Link>
       </div>
       <nav className="flex-1 overflow-y-auto">
         <ul className="space-y-1 px-4 pb-4">

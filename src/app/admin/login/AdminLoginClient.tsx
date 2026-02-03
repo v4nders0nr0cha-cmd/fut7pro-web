@@ -42,6 +42,29 @@ export default function AdminLoginClient() {
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
   const contactEmail = "social@fut7pro.com.br";
 
+  const redirectAfterLogin = async () => {
+    try {
+      const hubRes = await fetch("/api/admin/hub", { cache: "no-store" });
+      if (hubRes.ok) {
+        const data = await hubRes.json().catch(() => null);
+        if (Array.isArray(data)) {
+          if (data.length === 1 && data[0]?.tenantSlug) {
+            router.push(`/${encodeURIComponent(data[0].tenantSlug)}/admin`);
+            return;
+          }
+          if (data.length > 1) {
+            router.push("/admin/selecionar-racha");
+            return;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    router.push("/admin/selecionar-racha");
+  };
+
   useEffect(() => {
     const emailParam = (searchParams.get("email") || "").trim();
     const verifiedParam = (searchParams.get("verified") || "").trim();
@@ -69,7 +92,7 @@ export default function AdminLoginClient() {
       });
 
       if (res?.ok) {
-        router.push("/admin/dashboard");
+        await redirectAfterLogin();
         return;
       }
 
@@ -184,7 +207,7 @@ export default function AdminLoginClient() {
             <div className="mt-4 space-y-3">
               <button
                 type="button"
-                onClick={() => signIn("google", { callbackUrl: "/admin/dashboard" })}
+                onClick={() => signIn("google", { callbackUrl: "/admin/selecionar-racha" })}
                 className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
               >
                 <span className="flex items-center justify-center gap-2">

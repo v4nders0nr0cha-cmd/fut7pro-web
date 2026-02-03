@@ -90,17 +90,18 @@ export default function RegisterClient() {
     params.set("callbackUrl", redirectTo);
     return `${publicHref("/login")}?${params.toString()}`;
   }, [publicHref, redirectTo]);
+  const loginForJoinHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("callbackUrl", publicHref("/register"));
+    return `${publicHref("/login")}?${params.toString()}`;
+  }, [publicHref]);
 
   const isAuthenticated = status === "authenticated";
   const isGoogleSession = sessionUser?.authProvider === "google";
   const hasPublicSlug = Boolean(publicSlug);
   const isRegistrationBlocked = publicSlug?.toLowerCase() === "vitrine";
-  const shouldLoadMe = isAuthenticated && isGoogleSession && hasPublicSlug;
-  const {
-    me,
-    isLoading: isLoadingMe,
-    isError: isErrorMe,
-  } = useMe({
+  const shouldLoadMe = isAuthenticated && hasPublicSlug;
+  const { me, isLoading: isLoadingMe } = useMe({
     enabled: shouldLoadMe,
     tenantSlug: publicSlug,
     context: "athlete",
@@ -128,39 +129,51 @@ export default function RegisterClient() {
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
   const [pendingRachaName, setPendingRachaName] = useState("");
 
+  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const isPendingMembership = membershipStatus === "PENDENTE";
+  const isApprovedMembership = membershipStatus === "APROVADO";
+
   const profileComplete = Boolean(
     me?.athlete?.firstName &&
       me?.athlete?.position &&
       me?.athlete?.birthDay &&
       me?.athlete?.birthMonth
   );
-  const needsCompletion =
-    isAuthenticated && isGoogleSession && hasPublicSlug && (isErrorMe || !profileComplete);
+  const shouldUseCompleteEndpoint = isAuthenticated;
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !hasPublicSlug) return;
+    if (shouldLoadMe && isLoadingMe) return;
 
-    if (!isGoogleSession) {
-      router.replace(redirectTo);
+    if (isPendingMembership) {
+      router.replace(publicHref("/aguardando-aprovacao"));
       return;
     }
 
-    if (shouldLoadMe && !isLoadingMe && !isErrorMe && profileComplete) {
+    if (isApprovedMembership) {
+      if (isGoogleSession && !profileComplete) {
+        return;
+      }
       router.replace(redirectTo);
     }
   }, [
     isAuthenticated,
-    isGoogleSession,
+    hasPublicSlug,
     shouldLoadMe,
     isLoadingMe,
-    isErrorMe,
+    isPendingMembership,
+    isApprovedMembership,
+    isGoogleSession,
     profileComplete,
     redirectTo,
+    publicHref,
     router,
   ]);
 
+  const shouldPrefill = isAuthenticated && hasPublicSlug;
+
   useEffect(() => {
-    if (!needsCompletion) return;
+    if (!shouldPrefill) return;
 
     if (!nomeCompleto) {
       const nextNome = me?.athlete?.firstName || sessionUser?.name || "";
@@ -188,7 +201,7 @@ export default function RegisterClient() {
       setOcultarNascimento(true);
     }
   }, [
-    needsCompletion,
+    shouldPrefill,
     me?.athlete,
     sessionUser?.name,
     nomeCompleto,
@@ -302,7 +315,7 @@ export default function RegisterClient() {
     const trimmedNome = nomeCompleto.trim();
     const trimmedApelido = apelido.trim();
 
-    if (!needsCompletion) {
+    if (!shouldUseCompleteEndpoint) {
       if (!email.trim()) {
         setErro("Informe o e-mail.");
         return;
@@ -323,11 +336,11 @@ export default function RegisterClient() {
       birthYear: toNumberOrNull(ano),
       birthPublic: !ocultarNascimento,
     };
-    if (!needsCompletion && avatarDataUrl) {
+    if (!shouldUseCompleteEndpoint && avatarDataUrl) {
       basePayload.avatarUrl = avatarDataUrl;
     }
 
-    const payload = needsCompletion
+    const payload = shouldUseCompleteEndpoint
       ? basePayload
       : {
           ...basePayload,
@@ -335,7 +348,7 @@ export default function RegisterClient() {
           password: senha,
         };
 
-    const endpoint = needsCompletion
+    const endpoint = shouldUseCompleteEndpoint
       ? `/api/public/${publicSlug}/auth/complete`
       : `/api/public/${publicSlug}/auth/register`;
 
@@ -357,9 +370,17 @@ export default function RegisterClient() {
             : typeof body?.error?.code === "string"
               ? body.error.code
               : null;
-        const isAccountIssue =
-          errorCode === "ACCOUNT_EXISTS" || errorCode === "ATHLETE_ALREADY_REGISTERED";
-        if (isAccountIssue) {
+        if (errorCode === "REQUEST_PENDING") {
+          setPendingRachaName(nomeDoRacha);
+          setPendingModalOpen(true);
+          return;
+        }
+        if (errorCode === "ALREADY_MEMBER" || errorCode === "ATHLETE_ALREADY_REGISTERED") {
+          setAccountModalMessage("Voce ja e membro deste racha. Entre para acessar seu perfil.");
+          setAccountModalOpen(true);
+          return;
+        }
+        if (errorCode === "ACCOUNT_EXISTS") {
           setAccountModalMessage(message);
           setAccountModalOpen(true);
           return;
@@ -380,7 +401,7 @@ export default function RegisterClient() {
           redirect: false,
           accessToken,
           refreshToken,
-          authProvider: needsCompletion ? "google" : "credentials",
+          authProvider: isGoogleSession ? "google" : "credentials",
         });
 
         if (signInResult?.error) {
@@ -411,7 +432,7 @@ export default function RegisterClient() {
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-yellow-400/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
-            Cadastro de atleta
+            Solicitacao de entrada
           </p>
           <p className="text-sm text-gray-200">
             Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
@@ -434,9 +455,9 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        <h1 className="text-xl font-bold text-white text-center">Criar conta de atleta</h1>
+        <h1 className="text-xl font-bold text-white text-center">Solicitar entrada no racha</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Participe dos rankings, partidas e conquistas do seu racha.
+          Sua solicitacao sera enviada ao administrador para aprovacao.
         </p>
 
         {erro ? (
@@ -459,11 +480,13 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        {needsCompletion ? (
+        {isAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
-            Complete seu cadastro para liberar o acesso ao racha.
+            {isGoogleSession
+              ? "Complete seu cadastro para liberar o acesso ao racha."
+              : "Preencha seus dados para solicitar entrada no racha."}
             {sessionUser?.email ? (
-              <div className="mt-1 text-xs text-gray-400">Conta Google: {sessionUser.email}</div>
+              <div className="mt-1 text-xs text-gray-400">Conta: {sessionUser.email}</div>
             ) : null}
           </div>
         ) : (
@@ -488,7 +511,7 @@ export default function RegisterClient() {
           </div>
         )}
 
-        {isAuthenticated && isGoogleSession && isLoadingMe ? (
+        {isAuthenticated && isLoadingMe ? (
           <div className="mt-6 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300">
             Carregando seus dados...
           </div>
@@ -523,7 +546,7 @@ export default function RegisterClient() {
             </label>
           </div>
 
-          {!needsCompletion && (
+          {!shouldUseCompleteEndpoint && (
             <div className="rounded-lg border border-white/10 bg-white/5 p-3">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
@@ -566,7 +589,7 @@ export default function RegisterClient() {
             </div>
           )}
 
-          {!needsCompletion && (
+          {!isAuthenticated && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 E-mail
@@ -586,7 +609,7 @@ export default function RegisterClient() {
                   type="password"
                   value={senha}
                   onChange={(event) => setSenha(event.target.value)}
-                  required={!needsCompletion}
+                  required
                   autoComplete="new-password"
                   placeholder="Crie uma senha"
                   className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -705,13 +728,15 @@ export default function RegisterClient() {
           >
             {isSubmitting
               ? "Enviando..."
-              : needsCompletion
-                ? "Concluir cadastro"
+              : isAuthenticated
+                ? isGoogleSession
+                  ? "Concluir cadastro"
+                  : "Solicitar entrada"
                 : "Cadastrar atleta"}
           </button>
         </form>
 
-        {!needsCompletion && (
+        {!isAuthenticated && (
           <div className="mt-5 text-center text-sm text-gray-300">
             Ja tem conta?{" "}
             <a
@@ -764,10 +789,11 @@ export default function RegisterClient() {
                 </Dialog.Title>
                 <p className="mt-3 text-sm text-gray-200">
                   {accountModalMessage ||
-                    "Esse e-mail ja tem conta Fut7Pro. Entre para vincular ao racha."}
+                    "Esse e-mail ja tem conta Fut7Pro. Entre para confirmar que e voce e solicitar entrada neste racha."}
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
-                  Seus dados ficam separados por racha. Estatisticas e premiacoes nao se misturam.
+                  Seus dados ficam separados por racha. A entrada so acontece apos aprovacao do
+                  admin.
                 </p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -779,10 +805,10 @@ export default function RegisterClient() {
                     Fechar
                   </button>
                   <a
-                    href={loginHref}
+                    href={loginForJoinHref}
                     className="inline-flex items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
                   >
-                    Entrar para vincular ao racha
+                    Entrar e solicitar
                   </a>
                 </div>
               </Dialog.Panel>

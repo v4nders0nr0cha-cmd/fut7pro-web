@@ -25,8 +25,8 @@ export function useMe(options?: {
       params.set("slug", slug);
     }
   }
-  if (options?.context === "athlete") {
-    params.set("context", "athlete");
+  if (options?.context === "athlete" || options?.context === "admin") {
+    params.set("context", options.context);
   }
   const url = params.toString() ? `/api/me?${params.toString()}` : "/api/me";
   const { data, error, isLoading, mutate } = useSWR<MeResponse>(enabled ? url : null, fetcher, {

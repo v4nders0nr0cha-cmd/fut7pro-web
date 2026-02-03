@@ -4,6 +4,8 @@ import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
 
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+
 type UserLike = {
   id: string;
   email?: string | null;
@@ -68,7 +70,8 @@ export async function requireSuperAdminUser(): Promise<UserLike | null> {
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
-  return slug || user.tenantSlug || (user as any).slug || user.tenantId || null;
+  const cookieSlug = nextCookies().get(ACTIVE_TENANT_COOKIE)?.value;
+  return slug || cookieSlug || user.tenantSlug || (user as any).slug || user.tenantId || null;
 }
 
 export function buildHeaders(

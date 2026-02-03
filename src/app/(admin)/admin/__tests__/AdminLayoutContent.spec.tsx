@@ -1,6 +1,27 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import AdminLayoutContent from "../AdminLayoutContent";
 
+jest.mock("@/hooks/useAdminAccess", () => ({
+  useAdminAccess: () => ({
+    access: {
+      tenant: { slug: "racha-1", id: "tenant-1" },
+      blocked: false,
+      reason: "",
+    },
+    isLoading: false,
+    error: null,
+  }),
+}));
+
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({
+    tenantSlug: "racha-1",
+    rachaId: "tenant-1",
+    setTenantSlug: jest.fn(),
+    setRachaId: jest.fn(),
+  }),
+}));
+
 const mockSidebar = jest.fn(({ mobile, isOpen, onClose }) => (
   <div
     data-testid={mobile ? "sidebar-mobile" : "sidebar-desktop"}
