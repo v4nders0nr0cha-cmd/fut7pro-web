@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
-
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -12,41 +10,27 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  const adminMatch = pathname.match(/^\/([^/]+)\/admin(\/.*)?$/);
+  if (adminMatch) {
+    const redirectUrl = new URL("/admin/selecionar-racha", req.url);
+    redirectUrl.search = req.nextUrl.search;
+    return NextResponse.redirect(redirectUrl, 308);
+  }
+
   const requestHeaders = new Headers(req.headers);
   const publicSlug = resolvePublicTenantSlug(pathname);
   if (publicSlug) {
     requestHeaders.set("x-public-tenant-slug", publicSlug);
   }
 
-  const adminMatch = pathname.match(/^\/([^/]+)\/admin(\/.*)?$/);
-  const adminSlug = adminMatch && publicSlug ? publicSlug : null;
-  const adminSuffix = adminMatch?.[2] || "";
-
-  const res = adminSlug
-    ? NextResponse.rewrite(new URL(`/admin${adminSuffix}`, req.url), {
-        request: {
-          headers: requestHeaders,
-        },
-      })
-    : NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      });
-
-  if (adminSlug) {
-    res.cookies.set(ACTIVE_TENANT_COOKIE, adminSlug, {
-      path: "/",
-      sameSite: "lax",
-    });
-  }
+  const res = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
 
   // Aplicar X-Robots-Tag apenas em rotas privadas (não em APIs públicas)
-  if (
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/superadmin") ||
-    (adminSlug && adminMatch)
-  ) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/superadmin") || adminMatch) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 

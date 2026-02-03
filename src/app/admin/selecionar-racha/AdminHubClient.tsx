@@ -24,10 +24,21 @@ type HubRacha = {
 };
 
 const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 
 const setActiveTenantCookie = (slug: string) => {
   if (typeof document === "undefined") return;
   document.cookie = `${ACTIVE_TENANT_COOKIE}=${slug}; path=/; SameSite=Lax`;
+};
+
+const readLastTenantAccess = () => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(LAST_TENANT_STORAGE);
+    return raw ? (JSON.parse(raw) as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -94,11 +105,25 @@ export default function AdminHubClient() {
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [lastAccessMap, setLastAccessMap] = useState<Record<string, number>>({});
+
+  const trackLastTenantAccess = (slug: string) => {
+    if (typeof window === "undefined") return;
+    setLastAccessMap((prev) => {
+      const next = { ...prev, [slug]: Date.now() };
+      window.localStorage.setItem(LAST_TENANT_STORAGE, JSON.stringify(next));
+      return next;
+    });
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedQuery(query.trim().toLowerCase()), 250);
     return () => clearTimeout(timer);
   }, [query]);
+
+  useEffect(() => {
+    setLastAccessMap(readLastTenantAccess());
+  }, []);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -111,18 +136,28 @@ export default function AdminHubClient() {
       const only = data[0];
       const blocked = only.subscription?.blocked || only.subscription?.status === "BLOQUEADO";
       setActiveTenantCookie(only.tenantSlug);
+      trackLastTenantAccess(only.tenantSlug);
       router.replace(blocked ? "/admin/status-assinatura" : "/admin/dashboard");
     }
   }, [data, error, isLoading, router]);
 
   const filtered = useMemo(() => {
-    if (!data || !debouncedQuery) return data || [];
-    return data.filter((racha) => {
-      const target =
-        `${racha.tenantName} ${racha.tenantSlug} ${ROLE_LABELS[racha.role] || racha.role}`.toLowerCase();
-      return target.includes(debouncedQuery);
+    const base = data ? [...data] : [];
+    const byQuery = debouncedQuery
+      ? base.filter((racha) => {
+          const target =
+            `${racha.tenantName} ${racha.tenantSlug} ${ROLE_LABELS[racha.role] || racha.role}`.toLowerCase();
+          return target.includes(debouncedQuery);
+        })
+      : base;
+
+    return byQuery.sort((a, b) => {
+      const aTime = lastAccessMap[a.tenantSlug] ?? 0;
+      const bTime = lastAccessMap[b.tenantSlug] ?? 0;
+      if (aTime !== bTime) return bTime - aTime;
+      return a.tenantName.localeCompare(b.tenantName);
     });
-  }, [data, debouncedQuery]);
+  }, [data, debouncedQuery, lastAccessMap]);
 
   const hasResults = filtered.length > 0;
 
@@ -246,6 +281,11 @@ export default function AdminHubClient() {
                     >
                       {roleLabel}
                     </span>
+                    {blocked ? (
+                      <span className="inline-flex rounded-full border border-red-400/30 bg-red-500/15 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                        Bloqueado
+                      </span>
+                    ) : null}
                     {racha.subscription?.reason ? (
                       <p className="text-xs text-gray-400">{racha.subscription.reason}</p>
                     ) : null}
@@ -260,14 +300,17 @@ export default function AdminHubClient() {
 
                   <a
                     href={actionHref}
-                    onClick={() => setActiveTenantCookie(racha.tenantSlug)}
+                    onClick={() => {
+                      setActiveTenantCookie(racha.tenantSlug);
+                      trackLastTenantAccess(racha.tenantSlug);
+                    }}
                     className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition ${
                       blocked
                         ? "border border-red-400/40 text-red-200 hover:border-red-300"
                         : "bg-yellow-400 text-black hover:bg-yellow-300"
                     }`}
                   >
-                    {blocked ? "Status da assinatura" : "Acessar painel"}
+                    {blocked ? "Ver status" : "Acessar painel"}
                   </a>
                 </div>
               );

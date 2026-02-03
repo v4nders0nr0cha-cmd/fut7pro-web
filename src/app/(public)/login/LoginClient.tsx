@@ -52,7 +52,9 @@ export default function LoginClient() {
     [searchParams, publicHref]
   );
 
-  const shouldLoadMe = status === "authenticated" && Boolean(publicSlug);
+  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
+  const isAthleteSession = sessionRole === "ATLETA";
+  const shouldLoadMe = status === "authenticated" && isAthleteSession && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
@@ -64,7 +66,7 @@ export default function LoginClient() {
   });
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !isAthleteSession) return;
 
     if (sessionUser?.authProvider === "google") {
       if (!publicSlug) {
@@ -99,6 +101,7 @@ export default function LoginClient() {
     router.replace(redirectTo);
   }, [
     status,
+    isAthleteSession,
     sessionUser,
     redirectTo,
     router,

@@ -30,7 +30,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const { publicHref, publicSlug } = usePublicLinks();
   const tenantSlug = slugFromPath || publicSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
+  const isAthleteSession = sessionRole === "ATLETA";
+  const shouldCheckMe = Boolean(session?.user && tenantSlug && isAthleteSession);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,

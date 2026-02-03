@@ -12,6 +12,26 @@ import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
+
+const clearActiveTenantCookie = () => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${ACTIVE_TENANT_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+};
+
+const trackLastTenantAccess = (slug: string) => {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(LAST_TENANT_STORAGE);
+    const data = raw ? (JSON.parse(raw) as Record<string, number>) : {};
+    data[slug] = Date.now();
+    window.localStorage.setItem(LAST_TENANT_STORAGE, JSON.stringify(data));
+  } catch {
+    // ignore
+  }
+};
+
 function AdminLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white">
@@ -42,6 +62,9 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     if (nextId && nextId !== rachaId) {
       setRachaId(nextId);
     }
+    if (nextSlug) {
+      trackLastTenantAccess(nextSlug);
+    }
   }, [accessLoading, access, tenantSlug, rachaId, setTenantSlug, setRachaId]);
 
   useEffect(() => {
@@ -50,6 +73,9 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     if (status === 401) {
       router.replace("/admin/login");
       return;
+    }
+    if (status === 400 || status === 403 || status === 404) {
+      clearActiveTenantCookie();
     }
     router.replace("/admin/selecionar-racha");
   }, [accessLoading, accessError, router]);

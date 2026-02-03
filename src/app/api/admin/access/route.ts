@@ -1,9 +1,10 @@
 import { NextRequest } from "next/server";
-import { buildHeaders, proxyBackend, requireUser, resolveTenantSlug } from "../../_proxy/helpers";
+import { buildHeaders, proxyBackend, requireUser } from "../../_proxy/helpers";
 import { getApiBase } from "@/lib/get-api-base";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 
 export async function GET(req: NextRequest) {
   const user = await requireUser();
@@ -15,7 +16,8 @@ export async function GET(req: NextRequest) {
   }
 
   const slugParam = req.nextUrl.searchParams.get("slug") || undefined;
-  const tenantSlug = resolveTenantSlug(user, slugParam);
+  const cookieSlug = req.cookies.get(ACTIVE_TENANT_COOKIE)?.value;
+  const tenantSlug = slugParam || cookieSlug;
   if (!tenantSlug) {
     return new Response(JSON.stringify({ error: "Tenant nao identificado" }), {
       status: 400,

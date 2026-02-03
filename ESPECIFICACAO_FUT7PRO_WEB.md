@@ -8,13 +8,14 @@
 - Arquitetura: Next.js App Router (14.x), NextAuth integrado ao backend (`/auth/*` do Nest), proxies server-side para todas as rotas admin/públicas.
 - Público-alvo: presidente/vice/diretores (painel), atletas (acessos restritos) e visitantes (site público).
 
-## Nota critica - Hub admin e tenant ativo
+## Nota critica - Admin global e tenant ativo
 
-- O acesso admin inicia em `/{slug}/admin`; o middleware reescreve para `/admin` e grava o cookie `fut7pro_active_tenant` (racha ativo).
-- Existe um Hub global em `/admin/selecionar-racha`. Pos-login: 1 racha -> `/{slug}/admin`; 2+ rachas -> Hub; 0 rachas -> estado vazio.
-- O backend valida membership admin e ciclo do plano para qualquer rota admin por slug (nao confiar no front). Se bloqueado, permitir apenas `/admin/status-assinatura` (ou `/{slug}/admin/status-assinatura`).
-- Resolver `tenantSlug`/`tenantId` pelo cookie ou `/api/admin/access` e setar no `RachaContext`; evitar fallback para `rachaConfig.slug` no admin ao chamar endpoints publicos.
-- Se o slug ativo nao existir/expirar, redirecionar para o Hub e impedir acoes sensiveis.
+- Painel admin e **100% global** em `/admin/*`. O Hub oficial e `/admin/selecionar-racha`.
+- Atalho `/{slug}/admin` esta desativado; se acessado, redireciona 308 para `/admin/selecionar-racha` (sem setar cookie, sem UI).
+- Pos-login admin: 1 racha -> `/admin/dashboard`; 2+ rachas -> Hub; 0 rachas -> estado vazio.
+- Cookie `fut7pro_active_tenant` e **apenas UX**; autorizacao vem sempre do backend via `/api/admin/access`.
+- Se bloqueado, permitir apenas `/admin/status-assinatura` e bloquear o restante.
+- Se o tenant ativo nao existir/expirar, limpar cookie e redirecionar para o Hub.
 
 ## Ambiente & Integração
 
