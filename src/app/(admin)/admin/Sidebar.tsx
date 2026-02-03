@@ -152,14 +152,6 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
           </button>
         )}
       </div>
-      <div className="px-6 mb-6">
-        <Link
-          href="/admin/selecionar-racha"
-          className="flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-gray-200 hover:border-white/20"
-        >
-          Trocar racha
-        </Link>
-      </div>
       <nav className="flex-1 overflow-y-auto">
         <ul className="space-y-1 px-4 pb-4">
           {menu.map((item) =>

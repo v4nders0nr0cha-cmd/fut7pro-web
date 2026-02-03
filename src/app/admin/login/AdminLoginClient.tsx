@@ -25,6 +25,13 @@ const HIGHLIGHTS = [
   },
 ];
 
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+
+const setActiveTenantCookie = (slug: string) => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${ACTIVE_TENANT_COOKIE}=${slug}; path=/; SameSite=Lax`;
+};
+
 export default function AdminLoginClient() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -49,7 +56,10 @@ export default function AdminLoginClient() {
         const data = await hubRes.json().catch(() => null);
         if (Array.isArray(data)) {
           if (data.length === 1 && data[0]?.tenantSlug) {
-            router.push(`/${encodeURIComponent(data[0].tenantSlug)}/admin`);
+            const blocked =
+              data[0]?.subscription?.blocked || data[0]?.subscription?.status === "BLOQUEADO";
+            setActiveTenantCookie(data[0].tenantSlug);
+            router.push(blocked ? "/admin/status-assinatura" : "/admin/dashboard");
             return;
           }
           if (data.length > 1) {

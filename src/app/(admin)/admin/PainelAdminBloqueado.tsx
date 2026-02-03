@@ -21,11 +21,6 @@ export default function PainelAdminBloqueado({ motivo = "" }) {
             Ir para pagamento e regularizar acesso
           </button>
         </Link>
-        <Link href="/admin/selecionar-racha">
-          <button className="w-full rounded-lg border border-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/5 mb-2">
-            Trocar racha
-          </button>
-        </Link>
         <Link href="/admin/suporte" className="text-zinc-200 text-sm underline hover:text-white">
           Precisa de ajuda? Fale com o suporte.
         </Link>

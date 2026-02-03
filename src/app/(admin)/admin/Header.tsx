@@ -18,6 +18,7 @@ import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
 import { buildPublicHref } from "@/utils/public-links";
 import { useBranding } from "@/hooks/useBranding";
+import useSWR from "swr";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -43,6 +44,20 @@ type HeaderProps = {
   onMenuClick?: () => void;
 };
 
+type HubRacha = {
+  tenantId: string;
+  tenantSlug: string;
+  tenantName: string;
+  role: string;
+};
+
+const hubFetcher = async (url: string): Promise<HubRacha[]> => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => null);
+  return Array.isArray(data) ? data : [];
+};
+
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -50,6 +65,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const { data: session } = useSession();
   const { me } = useMe({ context: "admin" });
   const { nome: rachaNome } = useBranding({ scope: "admin" });
+  const { data: hubData } = useSWR<HubRacha[]>(
+    session?.user ? "/api/admin/hub" : null,
+    hubFetcher,
+    { revalidateOnFocus: false }
+  );
+  const canSwitchRacha = Array.isArray(hubData) && hubData.length > 1;
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
@@ -93,20 +114,24 @@ export default function Header({ onMenuClick }: HeaderProps) {
 
       {/* AÇÕES ALINHADAS À DIREITA */}
       <div className="flex items-center gap-6 ml-auto">
-        <Link
-          href="/admin/selecionar-racha"
-          className="hidden md:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-gray-200 transition hover:border-white/20"
-        >
-          <FaExchangeAlt size={12} />
-          Trocar racha
-        </Link>
-        <Link
-          href="/admin/selecionar-racha"
-          className="md:hidden flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-gray-200"
-          aria-label="Trocar racha"
-        >
-          <FaExchangeAlt size={14} />
-        </Link>
+        {canSwitchRacha ? (
+          <>
+            <Link
+              href="/admin/selecionar-racha"
+              className="hidden md:inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-gray-200 transition hover:border-white/20"
+            >
+              <FaExchangeAlt size={12} />
+              Meus rachas
+            </Link>
+            <Link
+              href="/admin/selecionar-racha"
+              className="md:hidden flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-gray-200"
+              aria-label="Meus rachas"
+            >
+              <FaExchangeAlt size={14} />
+            </Link>
+          </>
+        ) : null}
         {menu.map((item) => {
           const baseHref = item.href.split("#")[0];
           const isActive = pathname.startsWith(baseHref);
@@ -174,6 +199,15 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 >
                   Editar perfil
                 </Link>
+                {canSwitchRacha && (
+                  <Link
+                    href="/admin/selecionar-racha"
+                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Meus rachas
+                  </Link>
+                )}
                 {publicProfileHref && (
                   <Link
                     href={publicProfileHref}

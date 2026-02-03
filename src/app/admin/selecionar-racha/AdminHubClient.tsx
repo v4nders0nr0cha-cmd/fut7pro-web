@@ -23,6 +23,13 @@ type HubRacha = {
   } | null;
 };
 
+const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+
+const setActiveTenantCookie = (slug: string) => {
+  if (typeof document === "undefined") return;
+  document.cookie = `${ACTIVE_TENANT_COOKIE}=${slug}; path=/; SameSite=Lax`;
+};
+
 const ROLE_LABELS: Record<string, string> = {
   PRESIDENTE: "Presidente",
   VICE_PRESIDENTE: "Vice-presidente",
@@ -103,10 +110,8 @@ export default function AdminHubClient() {
     if (!isLoading && !error && data && data.length === 1 && data[0]?.tenantSlug) {
       const only = data[0];
       const blocked = only.subscription?.blocked || only.subscription?.status === "BLOQUEADO";
-      const target = blocked
-        ? `/${encodeURIComponent(only.tenantSlug)}/admin/status-assinatura`
-        : `/${encodeURIComponent(only.tenantSlug)}/admin`;
-      router.replace(target);
+      setActiveTenantCookie(only.tenantSlug);
+      router.replace(blocked ? "/admin/status-assinatura" : "/admin/dashboard");
     }
   }, [data, error, isLoading, router]);
 
@@ -208,9 +213,7 @@ export default function AdminHubClient() {
               const statusBadge = STATUS_BADGES[statusKey] || STATUS_BADGES.ATIVO;
               const roleBadge = ROLE_BADGES[roleKey] || ROLE_BADGES.ADMIN;
               const blocked = racha.subscription?.blocked || statusKey === "BLOQUEADO";
-              const actionHref = blocked
-                ? `/${encodeURIComponent(racha.tenantSlug)}/admin/status-assinatura`
-                : `/${encodeURIComponent(racha.tenantSlug)}/admin`;
+              const actionHref = blocked ? "/admin/status-assinatura" : "/admin/dashboard";
 
               return (
                 <div
@@ -257,6 +260,7 @@ export default function AdminHubClient() {
 
                   <a
                     href={actionHref}
+                    onClick={() => setActiveTenantCookie(racha.tenantSlug)}
                     className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition ${
                       blocked
                         ? "border border-red-400/40 text-red-200 hover:border-red-300"
