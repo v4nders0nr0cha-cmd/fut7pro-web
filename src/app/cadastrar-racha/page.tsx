@@ -8,37 +8,10 @@ import { signIn, useSession } from "next-auth/react";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { PlanCatalog } from "@/lib/api/billing";
 import { slugify } from "@/utils/slugify";
+import { UF_LIST } from "@/data/br/ufs";
+import { loadCitiesByUf, type CityOption } from "@/data/br/cidades";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
-const ESTADOS_BR = [
-  "AC",
-  "AL",
-  "AP",
-  "AM",
-  "BA",
-  "CE",
-  "DF",
-  "ES",
-  "GO",
-  "MA",
-  "MT",
-  "MS",
-  "MG",
-  "PA",
-  "PB",
-  "PR",
-  "PE",
-  "PI",
-  "RJ",
-  "RN",
-  "RS",
-  "RO",
-  "RR",
-  "SC",
-  "SP",
-  "SE",
-  "TO",
-];
 
 const BENEFITS = [
   {
@@ -147,6 +120,14 @@ type FieldErrors = Partial<{
   estado: string;
 }>;
 
+const normalizeCityValue = (value: string) => value.replace(/\s+/g, " ").trim();
+const normalizeSearch = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+
 export default function CadastroRachaPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
@@ -169,8 +150,9 @@ export default function CadastroRachaPage() {
 
   const [rachaNome, setRachaNome] = useState("");
   const [rachaSlug, setRachaSlug] = useState("");
-  const [cidade, setCidade] = useState("");
-  const [estado, setEstado] = useState("");
+  const [cidadeNome, setCidadeNome] = useState("");
+  const [cidadeIbgeCode, setCidadeIbgeCode] = useState("");
+  const [estadoUf, setEstadoUf] = useState("");
   const [rachaLogo, setRachaLogo] = useState<string>();
 
   const [showSenha, setShowSenha] = useState(false);
@@ -195,17 +177,59 @@ export default function CadastroRachaPage() {
     extraTrialDays: number;
     firstPaymentDiscountPercent: number;
   } | null>(null);
+  const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
+  const [cidadeFilter, setCidadeFilter] = useState("");
+  const [cidadeLoading, setCidadeLoading] = useState(false);
 
   const slugSugerido = useMemo(() => {
     if (!rachaNome) return "";
     return slugify(rachaNome).slice(0, 30);
   }, [rachaNome]);
 
+  const filteredCities = useMemo(() => {
+    if (!cidadeFilter.trim()) return cidadeOptions;
+    const term = normalizeSearch(cidadeFilter);
+    return cidadeOptions.filter((city) => normalizeSearch(city.nome).includes(term));
+  }, [cidadeFilter, cidadeOptions]);
+
   useEffect(() => {
     if (!slugEdited) {
       setRachaSlug(slugSugerido);
     }
   }, [slugEdited, slugSugerido]);
+
+  useEffect(() => {
+    let active = true;
+    setCidadeNome("");
+    setCidadeIbgeCode("");
+    setCidadeFilter("");
+    setCidadeOptions([]);
+
+    const uf = estadoUf.trim().toUpperCase();
+    if (!uf) {
+      setCidadeLoading(false);
+      return;
+    }
+
+    setCidadeLoading(true);
+    loadCitiesByUf(uf)
+      .then((cities) => {
+        if (!active) return;
+        setCidadeOptions(cities);
+      })
+      .catch(() => {
+        if (!active) return;
+        setCidadeOptions([]);
+      })
+      .finally(() => {
+        if (!active) return;
+        setCidadeLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [estadoUf]);
 
   useEffect(() => {
     const slug = rachaSlug.trim().toLowerCase();
@@ -471,8 +495,15 @@ export default function CadastroRachaPage() {
     } else if (slugStatus === "error") {
       nextErrors.rachaSlug = "Nao foi possivel verificar agora.";
     }
-    if (!cidade.trim()) nextErrors.cidade = "Informe a cidade.";
-    if (!estado.trim()) nextErrors.estado = "Selecione o estado.";
+    const uf = estadoUf.trim().toUpperCase();
+    if (!uf) nextErrors.estado = "Selecione o estado.";
+    const cityName = normalizeCityValue(cidadeNome);
+    if (!cityName) {
+      nextErrors.cidade = "Selecione a cidade.";
+    } else if (uf && cidadeOptions.length > 0) {
+      const isValid = cidadeOptions.some((city) => city.nome === cityName);
+      if (!isValid) nextErrors.cidade = "Cidade invalida para o estado.";
+    }
     return nextErrors;
   }
 
@@ -487,8 +518,9 @@ export default function CadastroRachaPage() {
       const payload = {
         rachaNome: rachaNome.trim(),
         rachaSlug: rachaSlug.trim(),
-        cidade: cidade.trim(),
-        estado: estado.trim(),
+        cidadeNome: normalizeCityValue(cidadeNome),
+        cidadeIbgeCode: cidadeIbgeCode || undefined,
+        estadoUf: estadoUf.trim().toUpperCase(),
         rachaLogoBase64: rachaLogo,
         adminNome: adminNome.trim(),
         adminApelido: adminApelido.trim() || undefined,
@@ -543,7 +575,7 @@ export default function CadastroRachaPage() {
             return;
           }
         }
-        router.push("/admin/dashboard");
+        router.push("/admin/selecionar-racha");
         return;
       }
 
@@ -957,41 +989,76 @@ export default function CadastroRachaPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="text-xs text-gray-400">
-                      Cidade *
-                      <input
-                        type="text"
-                        value={cidade}
+                      Estado *
+                      <select
+                        value={estadoUf}
                         onChange={(e) => {
-                          setCidade(e.target.value);
+                          const nextUf = e.target.value.toUpperCase();
+                          setEstadoUf(nextUf);
+                          clearError("estado");
                           clearError("cidade");
                         }}
                         className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         required
-                      />
-                      {errors.cidade && (
-                        <span className="mt-1 block text-xs text-red-300">{errors.cidade}</span>
-                      )}
-                    </label>
-                    <label className="text-xs text-gray-400">
-                      Estado *
-                      <select
-                        value={estado}
-                        onChange={(e) => {
-                          setEstado(e.target.value);
-                          clearError("estado");
-                        }}
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        required
                       >
-                        <option value="">Estado</option>
-                        {ESTADOS_BR.map((uf) => (
-                          <option key={uf} value={uf}>
-                            {uf}
+                        <option value="">Selecione o estado</option>
+                        {UF_LIST.map((estado) => (
+                          <option key={estado.uf} value={estado.uf}>
+                            {estado.nome} ({estado.uf})
                           </option>
                         ))}
                       </select>
                       {errors.estado && (
                         <span className="mt-1 block text-xs text-red-300">{errors.estado}</span>
+                      )}
+                    </label>
+                    <label className="text-xs text-gray-400">
+                      Cidade *
+                      <div className="mt-2 space-y-2">
+                        <input
+                          type="text"
+                          value={cidadeFilter}
+                          onChange={(e) => setCidadeFilter(e.target.value)}
+                          placeholder={
+                            estadoUf ? "Buscar cidade..." : "Selecione o estado primeiro"
+                          }
+                          disabled={!estadoUf}
+                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+                        />
+                        <select
+                          value={cidadeNome}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCidadeNome(value);
+                            const found = cidadeOptions.find((city) => city.nome === value);
+                            setCidadeIbgeCode(found?.ibge ?? "");
+                            clearError("cidade");
+                          }}
+                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+                          required
+                          disabled={!estadoUf || cidadeLoading}
+                        >
+                          <option value="">
+                            {!estadoUf
+                              ? "Selecione o estado primeiro"
+                              : cidadeLoading
+                                ? "Carregando cidades..."
+                                : "Selecione a cidade"}
+                          </option>
+                          {filteredCities.length === 0 && estadoUf && !cidadeLoading ? (
+                            <option value="" disabled>
+                              Nenhuma cidade encontrada
+                            </option>
+                          ) : null}
+                          {filteredCities.map((city) => (
+                            <option key={city.ibge} value={city.nome}>
+                              {city.nome}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {errors.cidade && (
+                        <span className="mt-1 block text-xs text-red-300">{errors.cidade}</span>
                       )}
                     </label>
                   </div>

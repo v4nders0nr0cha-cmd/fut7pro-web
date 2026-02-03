@@ -5,8 +5,9 @@ import { requireUser } from "../../_proxy/helpers";
 type RegisterGooglePayload = {
   rachaNome?: string;
   rachaSlug?: string;
-  cidade?: string;
-  estado?: string;
+  cidadeNome?: string;
+  cidadeIbgeCode?: string;
+  estadoUf?: string;
   rachaLogoBase64?: string;
   adminNome?: string;
   adminApelido?: string;
@@ -87,8 +88,8 @@ async function primeBranding(
     nome: data.rachaNome?.trim(),
     logoUrl: data.rachaLogoBase64,
     localizacao: {
-      cidade: data.cidade?.trim(),
-      estado: data.estado?.trim(),
+      cidade: data.cidadeNome?.trim(),
+      estado: data.estadoUf?.trim()?.toUpperCase(),
     },
     presidente: {
       nome: data.adminNome?.trim(),
@@ -167,8 +168,8 @@ export async function POST(req: NextRequest) {
     return jsonResponse("Slug invalido: use minusculas, numeros e hifens (3-30).", 400);
   if (RESERVED_SLUGS.has(payload.rachaSlug.trim().toLowerCase()))
     return jsonResponse("Slug invalido: reservado.", 400);
-  if (!payload.cidade?.trim()) return jsonResponse("Informe a cidade.", 400);
-  if (!payload.estado?.trim()) return jsonResponse("Selecione o estado.", 400);
+  if (!payload.estadoUf?.trim()) return jsonResponse("Selecione o estado.", 400);
+  if (!payload.cidadeNome?.trim()) return jsonResponse("Informe a cidade.", 400);
 
   if (payload.adminSenha && payload.adminSenha.trim().length < 6) {
     return jsonResponse("A senha deve ter ao menos 6 caracteres.", 400);
@@ -183,8 +184,9 @@ export async function POST(req: NextRequest) {
     body: JSON.stringify({
       rachaNome: payload.rachaNome.trim(),
       rachaSlug: payload.rachaSlug.trim(),
-      cidade: payload.cidade.trim(),
-      estado: payload.estado.trim(),
+      cidadeNome: payload.cidadeNome.trim(),
+      cidadeIbgeCode: payload.cidadeIbgeCode?.trim() || undefined,
+      estadoUf: payload.estadoUf.trim().toUpperCase(),
       adminNome: payload.adminNome.trim(),
       adminApelido: payload.adminApelido?.trim() || undefined,
       adminPosicao: payload.adminPosicao,

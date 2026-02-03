@@ -6,8 +6,9 @@ import { requireSuperAdminUser } from "../../_proxy/helpers";
 type RegisterPayload = {
   rachaNome?: string;
   rachaSlug?: string;
-  cidade?: string;
-  estado?: string;
+  cidadeNome?: string;
+  cidadeIbgeCode?: string;
+  estadoUf?: string;
   rachaLogoBase64?: string;
   adminNome: string;
   adminApelido?: string;
@@ -77,6 +78,9 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
       name: data.rachaNome?.trim(),
       slug: data.rachaSlug?.trim(),
       subdomain: data.rachaSlug?.trim(),
+      estadoUf: data.estadoUf?.trim()?.toUpperCase(),
+      cidadeNome: data.cidadeNome?.trim(),
+      cidadeIbgeCode: data.cidadeIbgeCode?.trim() || undefined,
       autoJoinEnabled: true,
       autoApproveAthletes: false,
     }),
@@ -148,8 +152,8 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
     nome: data.rachaNome?.trim(),
     logoUrl: data.rachaLogoBase64,
     localizacao: {
-      cidade: data.cidade?.trim(),
-      estado: data.estado?.trim(),
+      cidade: data.cidadeNome?.trim(),
+      estado: data.estadoUf?.trim()?.toUpperCase(),
     },
     presidente: {
       nome: data.adminNome.trim(),
@@ -266,8 +270,8 @@ export async function POST(req: NextRequest) {
       return jsonResponse("O nome do racha deve ter ao menos 3 caracteres.", 400);
     if (!payload.rachaSlug?.trim() || !SLUG_REGEX.test(payload.rachaSlug.trim()))
       return jsonResponse("Slug invalido: use minusculas, numeros e hifens (3-50).", 400);
-    if (!payload.cidade?.trim()) return jsonResponse("Informe a cidade.", 400);
-    if (!payload.estado?.trim()) return jsonResponse("Selecione o estado.", 400);
+    if (!payload.estadoUf?.trim()) return jsonResponse("Selecione o estado.", 400);
+    if (!payload.cidadeNome?.trim()) return jsonResponse("Informe a cidade.", 400);
 
     // 1) Cria o tenant/racha
     const tenantRes = await createTenant(baseUrl, payload);

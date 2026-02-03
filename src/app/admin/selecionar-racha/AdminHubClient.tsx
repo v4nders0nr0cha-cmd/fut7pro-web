@@ -149,7 +149,7 @@ export default function AdminHubClient() {
   const [selectError, setSelectError] = useState("");
   const autoRedirectedRef = useRef(false);
 
-  const items = data?.items ?? [];
+  const items = useMemo(() => data?.items ?? [], [data?.items]);
   const count = typeof data?.count === "number" ? data.count : items.length;
   const shouldAutoRedirect =
     !isLoading && !error && count === 1 && items[0]?.tenantSlug && data?.redirectTo;
