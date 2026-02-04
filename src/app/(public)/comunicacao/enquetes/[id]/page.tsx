@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { FaPoll } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
+import { usePublicNotifications } from "@/hooks/usePublicNotifications";
 import type { Notificacao } from "@/types/notificacao";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
@@ -43,7 +43,7 @@ export default function EnquetePage() {
   const enqueteId = Array.isArray(params?.id) ? params?.id[0] : (params?.id as string | undefined);
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { publicHref } = usePublicLinks();
-  const { notificacoes, isLoading, isError, error } = useNotifications({
+  const { notificacoes, isLoading, isError, error } = usePublicNotifications({
     enabled: isAuthenticated,
   });
 

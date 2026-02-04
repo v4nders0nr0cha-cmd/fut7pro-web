@@ -1,7 +1,7 @@
 "use client";
 
 import { FaBell } from "react-icons/fa";
-import { useNotifications } from "@/hooks/useNotifications";
+import { usePublicUnreadCount } from "@/hooks/usePublicUnreadCount";
 
 interface NotificacaoBadgeProps {
   rachaSlug?: string;
@@ -9,7 +9,7 @@ interface NotificacaoBadgeProps {
 }
 
 export default function NotificacaoBadge({ onClick }: NotificacaoBadgeProps) {
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = usePublicUnreadCount();
 
   return (
     <button

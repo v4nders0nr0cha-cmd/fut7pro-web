@@ -4,7 +4,7 @@ import Head from "next/head";
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
+import { usePublicNotifications } from "@/hooks/usePublicNotifications";
 import type { Notificacao } from "@/types/notificacao";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
@@ -37,7 +37,7 @@ export default function ComunicadosPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { publicHref } = usePublicLinks();
-  const { notificacoes, isLoading, isError, error } = useNotifications({
+  const { notificacoes, isLoading, isError, error } = usePublicNotifications({
     enabled: isAuthenticated,
   });
 
