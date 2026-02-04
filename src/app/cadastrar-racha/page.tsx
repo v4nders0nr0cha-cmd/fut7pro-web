@@ -141,6 +141,7 @@ export default function CadastroRachaPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [adminNome, setAdminNome] = useState("");
+  const [adminNomeTouched, setAdminNomeTouched] = useState(false);
   const [adminApelido, setAdminApelido] = useState("");
   const [adminPosicao, setAdminPosicao] = useState<string>(POSICOES[0]);
   const [adminEmail, setAdminEmail] = useState("");
@@ -311,10 +312,16 @@ export default function CadastroRachaPage() {
     if (googleEmailInner && adminEmail !== googleEmailInner) {
       setAdminEmail(googleEmailInner);
     }
-    if (googleName && !adminNome) {
+    if (googleName && !adminNome && !adminNomeTouched) {
       setAdminNome(googleName.split(" ")[0]);
     }
-  }, [adminEmail, adminNome, isGoogle, session?.user]);
+  }, [adminEmail, adminNome, adminNomeTouched, isGoogle, session?.user]);
+
+  useEffect(() => {
+    if (!isGoogle) {
+      setAdminNomeTouched(false);
+    }
+  }, [isGoogle]);
 
   useEffect(() => {
     if (!defineSenha && isGoogle) {
@@ -738,6 +745,7 @@ export default function CadastroRachaPage() {
                         type="text"
                         value={adminNome}
                         onChange={(e) => {
+                          setAdminNomeTouched(true);
                           setAdminNome(e.target.value);
                           clearError("adminNome");
                         }}

@@ -108,6 +108,7 @@ export default function RegisterClient() {
   });
 
   const [nomeCompleto, setNomeCompleto] = useState("");
+  const [nomeTouched, setNomeTouched] = useState(false);
   const [apelido, setApelido] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -175,7 +176,7 @@ export default function RegisterClient() {
   useEffect(() => {
     if (!shouldPrefill) return;
 
-    if (!nomeCompleto) {
+    if (!nomeTouched && !nomeCompleto) {
       const nextNome = me?.athlete?.firstName || sessionUser?.name || "";
       if (nextNome) setNomeCompleto(nextNome);
     }
@@ -205,6 +206,7 @@ export default function RegisterClient() {
     me?.athlete,
     sessionUser?.name,
     nomeCompleto,
+    nomeTouched,
     apelido,
     posicao,
     posicaoSecundaria,
@@ -212,6 +214,12 @@ export default function RegisterClient() {
     mes,
     ano,
   ]);
+
+  useEffect(() => {
+    if (!shouldPrefill) {
+      setNomeTouched(false);
+    }
+  }, [shouldPrefill]);
 
   const handleGoogle = async () => {
     setErro("");
@@ -524,7 +532,10 @@ export default function RegisterClient() {
               <input
                 type="text"
                 value={nomeCompleto}
-                onChange={(event) => setNomeCompleto(event.target.value)}
+                onChange={(event) => {
+                  setNomeTouched(true);
+                  setNomeCompleto(event.target.value);
+                }}
                 required
                 maxLength={10}
                 autoComplete="given-name"
