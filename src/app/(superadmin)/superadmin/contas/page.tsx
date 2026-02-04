@@ -63,21 +63,26 @@ export default function SuperAdminContasPage() {
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
 
+  const usuariosVisiveis = useMemo(
+    () => (usuarios || []).filter((user) => !user.superadmin),
+    [usuarios]
+  );
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return usuarios || [];
-    return (usuarios || []).filter((user) => {
+    if (!term) return usuariosVisiveis;
+    return usuariosVisiveis.filter((user) => {
       const name = (user.nome || user.name || "").toLowerCase();
       const email = (user.email || "").toLowerCase();
       return name.includes(term) || email.includes(term);
     });
-  }, [usuarios, search]);
+  }, [usuariosVisiveis, search]);
 
   const totals = useMemo(() => {
-    const total = usuarios?.length || 0;
-    const disabled = (usuarios || []).filter((user) => user.disabledAt).length;
+    const total = usuariosVisiveis.length || 0;
+    const disabled = usuariosVisiveis.filter((user) => user.disabledAt).length;
     return { total, disabled, active: total - disabled };
-  }, [usuarios]);
+  }, [usuariosVisiveis]);
 
   async function handleDisable(user: Usuario) {
     if (!user?.id) return;

@@ -154,6 +154,7 @@ export default function AdminsTable({
               const isBusy = pendingId === admin.id || pendingId === admin.userId;
               const isLocked = admin.superadmin;
               const roleKey = String(admin.role || "").toUpperCase();
+              const isVitrine = admin.tenantSlug?.toLowerCase() === "vitrine";
               return (
                 <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
                   <td className="px-4 py-3 whitespace-nowrap sm:px-6 sm:py-4">
@@ -264,8 +265,10 @@ export default function AdminsTable({
                         <button
                           onClick={() => handleAction("delete", admin)}
                           className="text-red-600 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Remover do racha"
-                          disabled={isBusy}
+                          title={
+                            isVitrine ? "Racha vitrine nao pode ser alterado." : "Remover do racha"
+                          }
+                          disabled={isBusy || isVitrine}
                         >
                           <FaTrash className="h-4 w-4" />
                         </button>

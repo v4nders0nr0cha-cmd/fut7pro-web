@@ -2,7 +2,7 @@
 "use client";
 import type { FC } from "react";
 
-type AdminResumo = { status?: string };
+type AdminResumo = { status?: string; isVitrine?: boolean };
 
 interface Props {
   admins: AdminResumo[];
@@ -10,10 +10,11 @@ interface Props {
 
 const AdminsResumoCard: FC<Props> = ({ admins }) => {
   const normalizar = (status?: string) => (status || "").toLowerCase();
-  const total = admins.length;
-  const ativos = admins.filter((a) => normalizar(a.status) === "ativo").length;
-  const trial = admins.filter((a) => normalizar(a.status) === "trial").length;
-  const bloqueados = admins.filter((a) => normalizar(a.status) === "bloqueado").length;
+  const scoped = admins.filter((a) => !a.isVitrine);
+  const total = scoped.length;
+  const ativos = scoped.filter((a) => normalizar(a.status) === "ativo").length;
+  const trial = scoped.filter((a) => normalizar(a.status) === "trial").length;
+  const bloqueados = scoped.filter((a) => normalizar(a.status) === "bloqueado").length;
   return (
     <div className="grid grid-cols-2 gap-3 mb-6 lg:grid-cols-4">
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/90 px-4 py-3 shadow-sm sm:px-6 sm:py-4">

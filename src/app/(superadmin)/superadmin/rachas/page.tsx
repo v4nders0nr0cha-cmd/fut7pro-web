@@ -51,6 +51,7 @@ type Tenant = {
   id: string;
   name?: string;
   slug?: string;
+  isVitrine?: boolean | null;
   status?: string | null;
   planKey?: string | null;
   plan?: string | null;
@@ -138,6 +139,7 @@ function resolvePlanLabel(
   trialEnd?: string | null
 ) {
   const key = (planKey || "").toLowerCase();
+  if (key.includes("vitrine")) return "Vitrine (Sem limite)";
   if (status && status.toUpperCase() === "TRIAL") {
     const trialDays = resolveTrialDays(trialStart, trialEnd) ?? 20;
     return `Trial (${trialDays} dias)`;
@@ -321,13 +323,18 @@ export default function RachasCadastradosPage() {
     () =>
       tenants.map((t) => {
         const subscription = t.subscription as any;
-        const status = normalizeStatus(subscription?.status ?? t.status, t.blocked);
-        const planLabel = resolvePlanLabel(
-          subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
-          status,
-          subscription?.trialStart ?? null,
-          subscription?.trialEnd ?? null
-        );
+        const isVitrine = Boolean(t.isVitrine) || (t.slug || "").toLowerCase() === "vitrine";
+        const status = isVitrine
+          ? "ATIVO"
+          : normalizeStatus(subscription?.status ?? t.status, t.blocked);
+        const planLabel = isVitrine
+          ? "Vitrine (Sem limite)"
+          : resolvePlanLabel(
+              subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
+              status,
+              subscription?.trialStart ?? null,
+              subscription?.trialEnd ?? null
+            );
         const owner = resolveTenantOwner(t);
         const admin = owner.name || owner.email || "--";
         const ultimaAtividade = t.lastLoginAt || t.updatedAt || t.createdAt || null;
@@ -351,6 +358,7 @@ export default function RachasCadastradosPage() {
           ultimaAtividade,
           diasInativo: daysSince(ultimaAtividade),
           bloqueado: status === "BLOQUEADO",
+          isVitrine,
           historico: [
             { acao: "Criado", criadoEm: t.createdAt || "" },
             { acao: "Ultima atualizacao", criadoEm: t.updatedAt || "" },
@@ -388,18 +396,26 @@ export default function RachasCadastradosPage() {
     });
   }, [rachas, search, filtroStatus, filtroInatividade]);
 
-  const total = rachas.length;
-  const ativos = rachas.filter((r) => r.status === "ATIVO").length;
-  const trials = rachas.filter((r) => r.status === "TRIAL").length;
-  const inadimplentes = rachas.filter((r) => r.status === "INADIMPLENTE").length;
-  const bloqueados = rachas.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
+  const rachasParaResumo = useMemo(() => rachas.filter((r) => !r.isVitrine), [rachas]);
+  const total = rachasParaResumo.length;
+  const ativos = rachasParaResumo.filter((r) => r.status === "ATIVO").length;
+  const trials = rachasParaResumo.filter((r) => r.status === "TRIAL").length;
+  const inadimplentes = rachasParaResumo.filter((r) => r.status === "INADIMPLENTE").length;
+  const bloqueados = rachasParaResumo.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
   const hoje = format(new Date(), "yyyy-MM-dd");
-  const novosHoje = rachas.filter((r) => (r.criadoEm || "").startsWith(hoje)).length;
+  const novosHoje = rachasParaResumo.filter((r) => (r.criadoEm || "").startsWith(hoje)).length;
+
+  const rachaPorId = useMemo(() => new Map(rachas.map((r) => [r.id, r])), [rachas]);
+  const rachasEditaveis = useMemo(
+    () => rachasFiltrados.filter((r) => !r.isVitrine),
+    [rachasFiltrados]
+  );
 
   function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
-    setSelectedIds(e.target.checked ? rachasFiltrados.map((r) => r.id) : []);
+    setSelectedIds(e.target.checked ? rachasEditaveis.map((r) => r.id) : []);
   }
-  function handleSelecionar(id: string) {
+  function handleSelecionar(id: string, canSelect = true) {
+    if (!canSelect) return;
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
   function statusLabel(status: string) {
@@ -412,10 +428,15 @@ export default function RachasCadastradosPage() {
 
   function handleBlock(selected: string[]) {
     if (!selected.length) return;
+    const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
+    if (editable.length !== selected.length) {
+      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+    }
+    if (!editable.length) return;
     const reason = "Bloqueio manual pelo superadmin";
     setPendingAction("Bloquear");
     Promise.all(
-      selected.map((id) =>
+      editable.map((id) =>
         fetch(`/api/superadmin/tenants/${id}/block`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -430,9 +451,14 @@ export default function RachasCadastradosPage() {
 
   function handleAviso(selected: string[]) {
     if (!selected.length) return;
+    const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
+    if (editable.length !== selected.length) {
+      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+    }
+    if (!editable.length) return;
     setPendingAction("Aviso");
     Promise.all(
-      selected.map((id) =>
+      editable.map((id) =>
         fetch(`/api/superadmin/tenants/${id}/notify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -450,7 +476,12 @@ export default function RachasCadastradosPage() {
 
   async function handleDelete(selected: string[]) {
     if (!selected.length) return;
-    const label = selected.length === 1 ? "este racha" : `${selected.length} rachas`;
+    const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
+    if (editable.length !== selected.length) {
+      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+    }
+    if (!editable.length) return;
+    const label = editable.length === 1 ? "este racha" : `${editable.length} rachas`;
     const confirmed = window.confirm(
       `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha. As contas globais dos usuarios nao serao apagadas.`
     );
@@ -458,7 +489,7 @@ export default function RachasCadastradosPage() {
     setPendingAction("Excluir");
     try {
       await Promise.all(
-        selected.map(async (id) => {
+        editable.map(async (id) => {
           const resp = await fetch(`/api/superadmin/tenants/${id}`, { method: "DELETE" });
           const data = await resp.json().catch(() => ({}));
           if (!resp.ok) {
@@ -627,7 +658,7 @@ export default function RachasCadastradosPage() {
                   <input
                     type="checkbox"
                     checked={
-                      selectedIds.length === rachasFiltrados.length && rachasFiltrados.length > 0
+                      selectedIds.length === rachasEditaveis.length && rachasEditaveis.length > 0
                     }
                     onChange={handleSelecionarTodos}
                   />
@@ -676,7 +707,9 @@ export default function RachasCadastradosPage() {
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(r.id)}
-                        onChange={() => handleSelecionar(r.id)}
+                        onChange={() => handleSelecionar(r.id, !r.isVitrine)}
+                        disabled={Boolean(r.isVitrine)}
+                        title={r.isVitrine ? "Racha vitrine nao pode ser alterado." : undefined}
                       />
                     </td>
                     <td className="px-3 py-2 font-semibold sm:px-4 sm:py-3">{r.nome}</td>
@@ -721,16 +754,20 @@ export default function RachasCadastradosPage() {
                         </button>
                         <button
                           className="flex items-center gap-1 rounded bg-red-700 px-3 py-1 text-[11px] font-bold hover:bg-red-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
-                          title="Bloquear Racha"
-                          disabled={Boolean(pendingAction)}
+                          title={
+                            r.isVitrine ? "Racha vitrine nao pode ser alterado." : "Bloquear Racha"
+                          }
+                          disabled={Boolean(pendingAction) || Boolean(r.isVitrine)}
                           onClick={() => handleBlock([r.id])}
                         >
                           <FaLock /> Bloquear
                         </button>
                         <button
                           className="flex items-center gap-1 rounded bg-rose-800 px-3 py-1 text-[11px] font-bold hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
-                          title="Excluir Racha"
-                          disabled={Boolean(pendingAction)}
+                          title={
+                            r.isVitrine ? "Racha vitrine nao pode ser alterado." : "Excluir Racha"
+                          }
+                          disabled={Boolean(pendingAction) || Boolean(r.isVitrine)}
                           onClick={() => handleDelete([r.id])}
                         >
                           <FaTrash /> Excluir

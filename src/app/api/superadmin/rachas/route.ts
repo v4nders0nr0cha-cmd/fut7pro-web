@@ -17,6 +17,7 @@ type BackendTenant = {
   name?: string | null;
   nome?: string | null;
   slug?: string | null;
+  isVitrine?: boolean | null;
   status?: string | null;
   blocked?: boolean | null;
   createdAt?: string | null;
@@ -51,7 +52,11 @@ function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
 
 function mapTenant(tenant: BackendTenant) {
   const subscription = tenant.subscription ?? null;
-  const status = normalizeStatus(subscription?.status ?? tenant.status, tenant.blocked);
+  const slug = tenant.slug ?? "";
+  const isVitrine = Boolean(tenant.isVitrine) || slug.toLowerCase() === "vitrine";
+  const status = isVitrine
+    ? "ATIVO"
+    : normalizeStatus(subscription?.status ?? tenant.status, tenant.blocked);
   const nome = tenant.name ?? tenant.nome ?? tenant.slug ?? "Racha sem nome";
   const adminsCount = Array.isArray(tenant.admins) ? tenant.admins.length : tenant.adminsCount;
   const jogadoresCount = tenant.jogadoresCount ?? tenant._count?.users ?? undefined;
@@ -59,12 +64,14 @@ function mapTenant(tenant: BackendTenant) {
   return {
     id: tenant.id ?? "",
     nome,
-    slug: tenant.slug ?? "",
+    slug: slug,
     tenantId: tenant.id ?? undefined,
     tenantSlug: tenant.slug ?? undefined,
     status,
     ativo: status === "ATIVO" || status === "TRIAL",
-    plano: subscription?.planKey ?? tenant.planKey ?? tenant.plan ?? undefined,
+    plano: isVitrine
+      ? "vitrine"
+      : (subscription?.planKey ?? tenant.planKey ?? tenant.plan ?? undefined),
     planoStatus: subscription?.status ?? undefined,
     trialExpiraEm: subscription?.trialEnd ?? tenant.trialEndsAt ?? undefined,
     criadoEm: tenant.createdAt ?? undefined,
@@ -72,6 +79,7 @@ function mapTenant(tenant: BackendTenant) {
     themeKey: tenant.themeKey ?? undefined,
     adminsCount: adminsCount ?? undefined,
     jogadoresCount,
+    isVitrine,
   };
 }
 

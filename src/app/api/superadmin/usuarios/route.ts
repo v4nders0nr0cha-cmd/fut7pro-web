@@ -42,6 +42,8 @@ type BackendUser = {
 
 function mapUser(user: BackendUser) {
   const name = typeof user.name === "string" ? user.name : "";
+  const isSuperadmin =
+    Boolean(user.superadmin) || String(user.role || "").toUpperCase() === "SUPERADMIN";
   const memberships = Array.isArray(user.memberships)
     ? user.memberships.map((membership) => ({
         id: membership?.id ?? "",
@@ -61,7 +63,7 @@ function mapUser(user: BackendUser) {
     avatarUrl: user.avatarUrl ?? undefined,
     email: user.email ?? "",
     role: user.role ?? "ADMIN",
-    superadmin: user.superadmin ?? false,
+    superadmin: isSuperadmin,
     tenantId: user.tenantId ?? user.tenant?.id ?? undefined,
     tenantSlug: user.tenantSlug ?? user.tenant?.slug ?? undefined,
     tenantNome: user.tenant?.name ?? undefined,
@@ -99,6 +101,8 @@ export async function GET(_req: NextRequest) {
       ? (body as { results: unknown[] }).results
       : [];
 
-  const usuarios = list.map((item) => mapUser(item as BackendUser));
+  const usuarios = list
+    .map((item) => mapUser(item as BackendUser))
+    .filter((user) => !user.superadmin);
   return jsonResponse(usuarios);
 }

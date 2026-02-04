@@ -2,6 +2,7 @@ export interface Racha {
   id: string;
   nome: string;
   slug: string;
+  isVitrine?: boolean;
   ownerId?: string;
   tenantId?: string;
   tenantSlug?: string;
