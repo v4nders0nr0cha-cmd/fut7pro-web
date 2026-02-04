@@ -40,6 +40,7 @@ describe("BottomMenu", () => {
 
   it("mostra CTA de login quando não autenticado", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    usePathname.mockReturnValue("/ruimdebola");
     useMe.mockReturnValue({ me: null });
     const { rerender } = render(<BottomMenu />);
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();

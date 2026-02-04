@@ -41,6 +41,11 @@ export async function POST(req: NextRequest) {
   const redirectTo = blocked ? "/admin/status-assinatura" : "/admin/dashboard";
 
   const res = NextResponse.json({ redirectTo, blocked });
-  res.cookies.set(ACTIVE_TENANT_COOKIE, slug, { path: "/", sameSite: "lax" });
+  res.cookies.set(ACTIVE_TENANT_COOKIE, slug, {
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  });
   return res;
 }

@@ -15,9 +15,10 @@ import {
 import Image from "next/image";
 import { useTema } from "@/hooks/useTema";
 import { useMe } from "@/hooks/useMe";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePathname } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -29,18 +30,29 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const { publicHref, publicSlug } = usePublicLinks();
-  const tenantSlug = slugFromPath || publicSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const { publicHref } = usePublicLinks();
+  const tenantSlug = slugFromPath || "";
+  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
+  const isAthleteSession = sessionRole === "ATLETA";
+  const shouldCheckMe = Boolean(session?.user && tenantSlug && isAthleteSession);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
-  const isLoggedIn = Boolean(me?.athlete?.id);
+  const isAthleteLoggedIn = Boolean(me?.athlete?.id);
+  const showUserMenu = tenantSlug ? isAthleteLoggedIn : Boolean(session?.user);
+  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
+  const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
   const userName = me?.athlete?.firstName || session?.user?.name || "Usuario";
+  const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
+  const resolvedSlug = slugFromPath || fallbackSlug || "";
+  const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
+  const editProfileHref = resolvedSlug ? buildPublicHref("/perfil?edit=1", resolvedSlug) : null;
+  const globalProfileHref = "/perfil";
+  const switchRachaHref = "/perfil#meus-rachas";
 
   if (!open) return null;
 
@@ -107,22 +119,56 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
         </nav>
 
         {/* Perfil + SAIR */}
-        {isLoggedIn && (
+        {showUserMenu && (
           <div className="mt-10 border-t border-zinc-700 pt-4">
-            <Link
-              href={publicHref("/perfil")}
-              onClick={onClose}
-              className="flex items-center gap-3 text-brand font-semibold hover:underline"
-            >
-              <Image
-                src={profileImage}
-                alt={userName}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
-              {userName}
-            </Link>
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                onClick={onClose}
+                className="flex items-center gap-3 text-brand font-semibold hover:underline"
+              >
+                <Image
+                  src={profileImage}
+                  alt={userName}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+                {userName}
+              </Link>
+            ) : (
+              <div className="flex items-center gap-3 text-brand font-semibold">
+                <Image
+                  src={profileImage}
+                  alt={userName}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                />
+                {userName}
+              </div>
+            )}
+
+            <div className="mt-3 flex flex-col gap-2 text-sm text-zinc-200">
+              <Link href={globalProfileHref} onClick={onClose} className="hover:text-brand-soft">
+                Perfil Global Fut7Pro
+              </Link>
+              {profileHref && (
+                <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
+                  Meu perfil neste racha
+                </Link>
+              )}
+              {editProfileHref && (
+                <Link href={editProfileHref} onClick={onClose} className="hover:text-brand-soft">
+                  Editar meu perfil neste racha
+                </Link>
+              )}
+              {canSwitchRacha && (
+                <Link href={switchRachaHref} onClick={onClose} className="hover:text-brand-soft">
+                  Trocar de racha
+                </Link>
+              )}
+            </div>
 
             <button
               onClick={() => {
@@ -131,7 +177,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
               }}
               className="mt-3 text-red-500 hover:text-red-400 font-bold text-sm"
             >
-              Sair
+              Sair da conta
             </button>
           </div>
         )}

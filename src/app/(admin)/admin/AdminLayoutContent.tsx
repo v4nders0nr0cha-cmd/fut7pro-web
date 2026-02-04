@@ -12,14 +12,15 @@ import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
 const PERF_START_KEY = "fut7pro_admin_perf_start";
 
 const clearActiveTenantCookie = () => {
-  if (typeof document === "undefined") return;
-  document.cookie = `${ACTIVE_TENANT_COOKIE}=; path=/; max-age=0; SameSite=Lax`;
+  if (typeof window === "undefined") return;
+  fetch("/api/admin/active-tenant", { method: "DELETE" }).catch(() => {
+    // ignore
+  });
 };
 
 const trackLastTenantAccess = (slug: string) => {

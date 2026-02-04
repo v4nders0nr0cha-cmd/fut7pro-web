@@ -20,8 +20,8 @@ export default function BottomMenu() {
   const router = useRouter();
   const { data: session } = useSession();
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const { publicHref, publicSlug } = usePublicLinks();
-  const tenantSlug = slugFromPath || publicSlug || "";
+  const { publicHref } = usePublicLinks();
+  const tenantSlug = slugFromPath || "";
   const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
   const isAthleteSession = sessionRole === "ATLETA";
   const shouldCheckMe = Boolean(session?.user && tenantSlug && isAthleteSession);
@@ -32,6 +32,10 @@ export default function BottomMenu() {
   });
   const isLoggedIn = Boolean(me?.athlete?.id);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
+
+  if (!tenantSlug) {
+    return null;
+  }
 
   function handleClick(href: string, label: string) {
     if (label === "Perfil" && !isLoggedIn) {

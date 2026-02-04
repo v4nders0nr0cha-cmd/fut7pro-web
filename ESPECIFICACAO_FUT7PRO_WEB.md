@@ -17,6 +17,14 @@
 - Se bloqueado, permitir apenas `/admin/status-assinatura` e bloquear o restante.
 - Se o tenant ativo nao existir/expirar, limpar cookie e redirecionar para o Hub.
 
+## Nota critica - Separacao publico/admin (atleta)
+
+- Publico (rotas `/{slug}/*`) e Admin (`/admin/*`) sao universos isolados; cookies/sessoes nao se misturam.
+- Login atleta deve usar `/api/public/{slug}/auth/login` (proxy) e validar membership/solicitacao no tenant do slug.
+- Respostas de login atleta: APPROVED libera; PENDING retorna `REQUEST_PENDING`; NOT_MEMBER retorna `NOT_MEMBER`; REJECTED retorna `REQUEST_REJECTED` com feedback em modal.
+- `/api/me?context=athlete&slug={slug}` exige slug e ignora cookie admin/tenant ativo.
+- Conta admin/presidente e global: solicitar entrada como atleta em outro racha **nao** sobrescreve dados globais do User; perfil do atleta e por tenant.
+
 ## Ambiente & Integração
 
 - Deploy: Vercel (`https://app.fut7pro.com.br`).

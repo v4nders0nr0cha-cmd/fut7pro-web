@@ -1,6 +1,6 @@
 "use client";
 
-import type { FC } from "react";
+import { useState, type FC } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -9,8 +9,9 @@ import { useSession, signOut } from "next-auth/react";
 import { useTema } from "@/hooks/useTema";
 import { useComunicacao } from "@/hooks/useComunicacao";
 import { useMe } from "@/hooks/useMe";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -28,8 +29,8 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const { publicHref, publicSlug } = usePublicLinks();
-  const tenantSlug = slugFromPath || publicSlug || "";
+  const { publicHref } = usePublicLinks();
+  const tenantSlug = slugFromPath || "";
   const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
   const isAthleteSession = sessionRole === "ATLETA";
   const shouldCheckMe = Boolean(session?.user && tenantSlug && isAthleteSession);
@@ -38,14 +39,25 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     tenantSlug,
     context: "athlete",
   });
-  const isLoggedIn = Boolean(me?.athlete?.id);
+  const isAthleteLoggedIn = Boolean(me?.athlete?.id);
+  const showUserMenu = tenantSlug ? isAthleteLoggedIn : Boolean(session?.user);
+  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
+  const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const displayName = me?.athlete?.firstName || session?.user?.name || "Usuario";
   const profileImage =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
-  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
+  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
+    enabled: isAthleteLoggedIn,
+  });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/login");
-  const profileHref = publicHref("/perfil");
+  const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
+  const resolvedSlug = slugFromPath || fallbackSlug || "";
+  const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
+  const editProfileHref = resolvedSlug ? buildPublicHref("/perfil?edit=1", resolvedSlug) : null;
+  const globalProfileHref = "/perfil";
+  const switchRachaHref = "/perfil#meus-rachas";
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
@@ -79,7 +91,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
             // Se não logado, permite navegação mas redireciona para login
             const handleClick = (e: React.MouseEvent) => {
-              if (!isLoggedIn) {
+              if (!isAthleteLoggedIn) {
                 e.preventDefault();
                 router.push(loginHref);
               }
@@ -105,7 +117,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           })}
 
           {/* Perfil/Login - à direita dos ícones */}
-          {!isLoggedIn ? (
+          {!showUserMenu ? (
             <Link
               href={loginHref}
               className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
@@ -120,9 +132,10 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               </span>
             </Link>
           ) : (
-            <div className="flex items-center gap-3 ml-3">
-              <Link
-                href={profileHref}
+            <div className="relative flex items-center gap-3 ml-3">
+              <button
+                type="button"
+                onClick={() => setDropdownOpen((prev) => !prev)}
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
                 <Image
@@ -135,13 +148,54 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                 <span className="text-brand font-bold text-[15px] uppercase truncate max-w-[90px]">
                   {displayName}
                 </span>
-              </Link>
-              <button
-                onClick={() => signOut()}
-                className="text-xs text-gray-400 hover:text-red-500 transition font-semibold uppercase"
-              >
-                SAIR
               </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 top-11 w-52 rounded-xl border border-white/10 bg-[#12141c] shadow-xl py-2 z-50">
+                  <Link
+                    href={globalProfileHref}
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                  >
+                    Perfil Global Fut7Pro
+                  </Link>
+                  {profileHref && (
+                    <Link
+                      href={profileHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Meu perfil neste racha
+                    </Link>
+                  )}
+                  {editProfileHref && (
+                    <Link
+                      href={editProfileHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Editar meu perfil neste racha
+                    </Link>
+                  )}
+                  {canSwitchRacha && (
+                    <Link
+                      href={switchRachaHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Trocar de racha
+                    </Link>
+                  )}
+                  <div className="my-1 h-px bg-white/10" />
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5"
+                  >
+                    Sair da conta
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

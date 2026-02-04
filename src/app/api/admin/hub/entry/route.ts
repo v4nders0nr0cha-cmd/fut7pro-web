@@ -85,6 +85,11 @@ export async function GET(_req: NextRequest) {
     blocked,
     timing,
   });
-  res.cookies.set(ACTIVE_TENANT_COOKIE, singleSlug, { path: "/", sameSite: "lax" });
+  res.cookies.set(ACTIVE_TENANT_COOKIE, singleSlug, {
+    path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  });
   return res;
 }

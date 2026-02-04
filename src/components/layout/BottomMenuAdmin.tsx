@@ -25,7 +25,7 @@ const menu: MenuItem[] = [
     href: "/admin/jogadores/listar-cadastrar#solicitacoes",
     badgeKey: "solicitacoes",
   },
-  { label: "Perfil", icon: FaUser, href: "/admin/perfil", badgeKey: "perfil" },
+  { label: "Perfil Global", icon: FaUser, href: "/perfil", badgeKey: "perfil" },
 ];
 
 export default function BottomMenuAdmin() {

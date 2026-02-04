@@ -69,9 +69,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const displayAvatar =
     me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
+  const rachaPerfilHref = tenantSlug ? buildPublicHref("/perfil", tenantSlug) : null;
+  const editRachaPerfilHref = tenantSlug ? buildPublicHref("/perfil?edit=1", tenantSlug) : null;
+  const athletePublicKey = me?.athlete?.slug || me?.athlete?.id || null;
   const publicProfileHref =
-    tenantSlug && me?.athlete?.slug
-      ? buildPublicHref(`/atletas/${me.athlete.slug}`, tenantSlug)
+    tenantSlug && athletePublicKey
+      ? buildPublicHref(`/atletas/${athletePublicKey}`, tenantSlug)
       : null;
 
   return (
@@ -160,26 +163,37 @@ export default function Header({ onMenuClick }: HeaderProps) {
             {dropdownOpen && (
               <div className="absolute top-12 right-0 bg-zinc-900 border border-zinc-800 rounded shadow-md w-44 py-2 z-50 flex flex-col">
                 <Link
-                  href="/admin/perfil"
+                  href="/perfil"
                   className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                   onClick={() => setDropdownOpen(false)}
                 >
-                  Meu perfil
+                  Perfil Global Fut7Pro
                 </Link>
-                <Link
-                  href="/admin/perfil/editar"
-                  className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                  onClick={() => setDropdownOpen(false)}
-                >
-                  Editar perfil
-                </Link>
-                {canSwitchRacha && (
+                {rachaPerfilHref && (
                   <Link
-                    href="/admin/selecionar-racha"
+                    href={rachaPerfilHref}
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                     onClick={() => setDropdownOpen(false)}
                   >
-                    Meus rachas
+                    Meu perfil neste racha
+                  </Link>
+                )}
+                {editRachaPerfilHref && (
+                  <Link
+                    href={editRachaPerfilHref}
+                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Editar meu perfil neste racha
+                  </Link>
+                )}
+                {canSwitchRacha && (
+                  <Link
+                    href="/perfil#meus-rachas"
+                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Trocar de racha
                   </Link>
                 )}
                 {publicProfileHref && (
@@ -198,7 +212,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   onClick={() => signOut({ callbackUrl: "/admin/login" })}
                 >
                   <FaSignOutAlt size={18} />
-                  Sair do painel
+                  Sair da conta
                 </button>
               </div>
             )}

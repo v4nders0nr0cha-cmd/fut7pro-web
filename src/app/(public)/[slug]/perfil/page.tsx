@@ -1,6 +1,6 @@
 "use client";
 
-import Page from "@/app/(public)/perfil/page";
+import Page from "@/app/(public)/perfil/RachaPerfilPage";
 
 export default function SlugPage() {
   return <Page />;
