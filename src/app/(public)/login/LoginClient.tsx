@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
@@ -46,6 +47,8 @@ export default function LoginClient() {
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingModalOpen, setPendingModalOpen] = useState(false);
+  const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
 
   const redirectTo = useMemo(
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/perfil")),
@@ -116,21 +119,78 @@ export default function LoginClient() {
   const handleEmailLogin = async (event: FormEvent) => {
     event.preventDefault();
     setErro("");
+    setPendingModalOpen(false);
+    setNotMemberModalOpen(false);
     setIsSubmitting(true);
 
     try {
-      const res = await signIn("credentials", {
-        redirect: false,
-        email,
-        password: senha,
-        rachaSlug: publicSlug,
-      });
-
-      if (res?.ok) {
+      if (!publicSlug) {
+        setErro("Slug do racha nao encontrado.");
         return;
       }
 
-      setErro("E-mail ou senha invalidos.");
+      const response = await fetch(`/api/public/${publicSlug}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: senha }),
+      });
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const code =
+          typeof body?.code === "string"
+            ? body.code
+            : typeof body?.error?.code === "string"
+              ? body.error.code
+              : typeof body?.message?.code === "string"
+                ? body.message.code
+                : null;
+        const message =
+          typeof body?.message === "string"
+            ? body.message
+            : typeof body?.error === "string"
+              ? body.error
+              : "Nao foi possivel autenticar.";
+
+        if (code === "REQUEST_PENDING") {
+          setPendingModalOpen(true);
+          return;
+        }
+
+        if (code === "NOT_MEMBER") {
+          setNotMemberModalOpen(true);
+          return;
+        }
+
+        if (code === "REQUEST_REJECTED") {
+          setErro("Sua solicitacao foi rejeitada. Fale com o administrador do racha.");
+          return;
+        }
+
+        setErro(message);
+        return;
+      }
+
+      const accessToken = body?.accessToken;
+      const refreshToken = body?.refreshToken;
+      if (!accessToken || !refreshToken) {
+        setErro("Nao foi possivel concluir o login.");
+        return;
+      }
+
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        accessToken,
+        refreshToken,
+        authProvider: "credentials",
+      });
+
+      if (signInResult?.error) {
+        setErro("Nao foi possivel concluir o login.");
+        return;
+      }
+
+      router.replace(redirectTo);
     } finally {
       setIsSubmitting(false);
     }
@@ -238,6 +298,118 @@ export default function LoginClient() {
           </a>
         </div>
       </div>
+
+      <Transition appear show={pendingModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setPendingModalOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </Transition.Child>
+          <div className="fixed inset-0 flex items-center justify-center px-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
+                <Dialog.Title className="text-lg font-semibold text-white">
+                  Solicitacao pendente
+                </Dialog.Title>
+                <p className="mt-2 text-sm text-gray-300">
+                  Seu cadastro no racha{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span> ainda esta
+                  pendente. Assim que os administradores aprovarem sua entrada, voce podera fazer
+                  login normalmente.
+                </p>
+                <p className="mt-2 text-xs text-gray-400">
+                  Entre em contato com os administradores do{" "}
+                  <span className="font-semibold text-gray-200">{publicSlug}</span> e solicite sua
+                  aprovacao.
+                </p>
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPendingModalOpen(false)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-200 hover:border-white/30"
+                  >
+                    Ok
+                  </button>
+                  <a
+                    href={publicHref("/")}
+                    className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black"
+                  >
+                    Voltar para o site
+                  </a>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
+
+      <Transition appear show={notMemberModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setNotMemberModalOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-200"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-150"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
+          </Transition.Child>
+          <div className="fixed inset-0 flex items-center justify-center px-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-200"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-150"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
+                <Dialog.Title className="text-lg font-semibold text-white">
+                  Solicite entrada no racha
+                </Dialog.Title>
+                <p className="mt-2 text-sm text-gray-300">
+                  Voce ainda nao possui solicitacao para o racha{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span>. Para entrar,
+                  envie sua solicitacao de entrada e aguarde a aprovacao.
+                </p>
+                <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setNotMemberModalOpen(false)}
+                    className="rounded-lg border border-white/10 px-4 py-2 text-sm text-gray-200 hover:border-white/30"
+                  >
+                    Ok
+                  </button>
+                  <a
+                    href={publicHref("/register")}
+                    className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black"
+                  >
+                    Solicitar entrada
+                  </a>
+                </div>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </Dialog>
+      </Transition>
     </section>
   );
 }

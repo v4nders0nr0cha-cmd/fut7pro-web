@@ -20,10 +20,20 @@ export async function GET(request: Request) {
   const authContext =
     contextParam === "athlete" ? "athlete" : contextParam === "admin" ? "admin" : null;
 
+  if (authContext === "athlete" && !slugParam) {
+    return new Response(JSON.stringify({ error: "Slug do racha obrigatorio" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const tenantSlug =
+    authContext === "athlete"
+      ? (slugParam ?? undefined)
+      : resolveTenantSlug(user, slugParam || undefined);
+
   const base = getApiBase();
-  const headers = buildHeaders(user, resolveTenantSlug(user, slugParam || undefined), {
-    includeContentType: false,
-  });
+  const headers = buildHeaders(user, tenantSlug, { includeContentType: false });
   if (authContext) {
     headers["x-auth-context"] = authContext;
   }
