@@ -1,19 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FaEdit, FaTrash, FaEye, FaKey, FaBan, FaCheck, FaUserShield } from "react-icons/fa";
+import { FaEdit, FaTrash, FaEye, FaKey, FaUserShield } from "react-icons/fa";
 import { Role, Permission } from "@/common/enums";
 
 export interface Admin {
   id: string;
+  userId: string;
   name: string;
   email: string;
-  role: Role;
+  role: string;
   superadmin: boolean;
   active: boolean;
+  status?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   permissions: Permission[];
+  tenantId?: string;
+  tenantNome?: string;
+  tenantSlug?: string;
 }
 
 interface AdminsTableProps {
@@ -24,15 +29,17 @@ interface AdminsTableProps {
   onDelete?: (admin: Admin) => void;
   onView?: (admin: Admin) => void;
   onResetPassword?: (admin: Admin) => void;
-  onRevokeAccess?: (admin: Admin) => void;
-  onActivate?: (admin: Admin) => void;
 }
 
-const roleLabels: Record<Role, string> = {
+const roleLabels: Record<string, string> = {
   ATHLETE: "Athlete",
   ATLETA: "Atleta",
   ADMIN: "Admin",
   SUPERADMIN: "SuperAdmin",
+  PRESIDENTE: "Presidente",
+  VICE_PRESIDENTE: "Vice-Presidente",
+  DIRETOR_FUTEBOL: "Diretor de Futebol",
+  DIRETOR_FINANCEIRO: "Diretor Financeiro",
   GERENTE: "Gerente",
   SUPORTE: "Suporte",
   AUDITORIA: "Auditoria",
@@ -81,8 +88,6 @@ export default function AdminsTable({
   onDelete,
   onView,
   onResetPassword,
-  onRevokeAccess,
-  onActivate,
 }: AdminsTableProps) {
   const [adminsState, setAdminsState] = useState<Admin[]>(admins);
   const [loading, setLoading] = useState<boolean>(isLoading);
@@ -106,12 +111,6 @@ export default function AdminsTable({
         break;
       case "reset-password":
         onResetPassword?.(admin);
-        break;
-      case "revoke":
-        onRevokeAccess?.(admin);
-        break;
-      case "activate":
-        onActivate?.(admin);
         break;
     }
   };
@@ -142,6 +141,7 @@ export default function AdminsTable({
             <tr>
               <th className="px-4 py-3 sm:px-6">Nome</th>
               <th className="px-4 py-3 sm:px-6">Email</th>
+              <th className="px-4 py-3 sm:px-6">Racha</th>
               <th className="px-4 py-3 sm:px-6">Role</th>
               <th className="px-4 py-3 text-center sm:px-6">Status</th>
               <th className="px-4 py-3 text-center sm:px-6">Permissoes</th>
@@ -151,8 +151,9 @@ export default function AdminsTable({
           </thead>
           <tbody className="divide-y divide-gray-700">
             {adminsState.map((admin) => {
-              const isBusy = pendingId === admin.id;
+              const isBusy = pendingId === admin.id || pendingId === admin.userId;
               const isLocked = admin.superadmin;
+              const roleKey = String(admin.role || "").toUpperCase();
               return (
                 <tr key={admin.id} className="hover:bg-gray-800 transition-colors">
                   <td className="px-4 py-3 whitespace-nowrap sm:px-6 sm:py-4">
@@ -173,19 +174,28 @@ export default function AdminsTable({
                   <td className="px-4 py-3 whitespace-nowrap text-gray-300 sm:px-6 sm:py-4">
                     {admin.email}
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-gray-300 sm:px-6 sm:py-4">
+                    {admin.tenantNome || admin.tenantSlug || "--"}
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap sm:px-6 sm:py-4">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        admin.role === Role.SUPERADMIN
+                        roleKey === "SUPERADMIN"
                           ? "bg-red-100 text-red-800"
-                          : admin.role === Role.GERENTE
-                            ? "bg-blue-100 text-blue-800"
-                            : admin.role === Role.SUPORTE
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
+                          : roleKey === "PRESIDENTE"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : roleKey === "VICE_PRESIDENTE"
+                              ? "bg-blue-100 text-blue-800"
+                              : roleKey === "DIRETOR_FUTEBOL" || roleKey === "DIRETOR_FINANCEIRO"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : roleKey === Role.GERENTE
+                                  ? "bg-blue-100 text-blue-800"
+                                  : roleKey === Role.SUPORTE
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {roleLabels[admin.role]}
+                      {roleLabels[roleKey] || admin.role}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-center sm:px-6 sm:py-4">
@@ -250,30 +260,11 @@ export default function AdminsTable({
                       >
                         <FaKey className="h-4 w-4" />
                       </button>
-                      {admin.active ? (
-                        <button
-                          onClick={() => handleAction("revoke", admin)}
-                          className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Revogar acesso"
-                          disabled={isBusy || isLocked}
-                        >
-                          <FaBan className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleAction("activate", admin)}
-                          className="text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Ativar"
-                          disabled={isBusy || isLocked}
-                        >
-                          <FaCheck className="h-4 w-4" />
-                        </button>
-                      )}
                       {!admin.superadmin && (
                         <button
                           onClick={() => handleAction("delete", admin)}
                           className="text-red-600 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Deletar"
+                          title="Remover do racha"
                           disabled={isBusy}
                         >
                           <FaTrash className="h-4 w-4" />

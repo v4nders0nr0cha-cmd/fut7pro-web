@@ -452,7 +452,7 @@ export default function RachasCadastradosPage() {
     if (!selected.length) return;
     const label = selected.length === 1 ? "este racha" : `${selected.length} rachas`;
     const confirmed = window.confirm(
-      `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha.`
+      `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha. As contas globais dos usuarios nao serao apagadas.`
     );
     if (!confirmed) return;
     setPendingAction("Excluir");

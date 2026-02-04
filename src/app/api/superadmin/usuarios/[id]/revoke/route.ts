@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { id?: string } }) {
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
@@ -20,10 +20,12 @@ export async function POST(_req: NextRequest, { params }: { params: { id?: strin
   if (!id) return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
 
   const targetUrl = `${getApiBase()}/superadmin/users/${encodeURIComponent(id)}/revoke`;
-  const { response, body } = await proxyBackend(targetUrl, {
+  const body = await req.text();
+  const { response, body: backendBody } = await proxyBackend(targetUrl, {
     method: "POST",
     headers: buildHeaders(user, undefined, { includeContentType: true }),
+    body,
   });
 
-  return forwardResponse(response.status, body);
+  return forwardResponse(response.status, backendBody);
 }

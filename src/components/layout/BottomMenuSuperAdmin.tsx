@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaTachometerAlt, FaBuilding, FaUsers, FaMoneyCheckAlt, FaCogs } from "react-icons/fa";
+import {
+  FaTachometerAlt,
+  FaBuilding,
+  FaUsers,
+  FaMoneyCheckAlt,
+  FaCogs,
+  FaIdBadge,
+} from "react-icons/fa";
 
 const menu = [
   { label: "Dashboard", icon: FaTachometerAlt, href: "/superadmin/dashboard" },
   { label: "Rachas/SaaS", icon: FaBuilding, href: "/superadmin/rachas" },
   { label: "Admins", icon: FaUsers, href: "/superadmin/admins" },
+  { label: "Contas", icon: FaIdBadge, href: "/superadmin/contas" },
   { label: "Financeiro", icon: FaMoneyCheckAlt, href: "/superadmin/financeiro" },
   { label: "Config", icon: FaCogs, href: "/superadmin/config" },
 ];

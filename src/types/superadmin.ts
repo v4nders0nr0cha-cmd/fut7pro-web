@@ -35,15 +35,34 @@ export interface Usuario {
   nome: string;
   email: string;
   name?: string;
+  nickname?: string;
+  avatarUrl?: string;
   role?: string;
   superadmin?: boolean;
   status?: string;
   tenantId?: string;
   tenantSlug?: string;
   tenantNome?: string;
+  authProvider?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: string;
+  lastLoginAt?: string;
+  disabledAt?: string;
+  disabledReason?: string;
   criadoEm?: string;
   atualizadoEm?: string;
   ativo?: boolean;
   image?: string;
   phone?: string;
+  memberships?: UsuarioMembership[];
+}
+
+export interface UsuarioMembership {
+  id?: string;
+  role?: string;
+  status?: string;
+  createdAt?: string;
+  tenantId?: string;
+  tenantSlug?: string;
+  tenantNome?: string;
 }

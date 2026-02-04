@@ -84,6 +84,14 @@ function resolveRole(raw?: string | null): Role {
   if (value === "ADMIN") return Role.ADMIN;
   if (value === "ATHLETE") return Role.ATHLETE;
   if (value === "ATLETA") return Role.ATLETA;
+  if (
+    value === "PRESIDENTE" ||
+    value === "VICE_PRESIDENTE" ||
+    value === "DIRETOR_FUTEBOL" ||
+    value === "DIRETOR_FINANCEIRO"
+  ) {
+    return Role.ADMIN;
+  }
   return Role.ADMIN;
 }
 
@@ -144,36 +152,65 @@ export default function SuperAdminAdminsPage() {
   }
 
   const adminsParaTabela = useMemo<AdminRow[]>(() => {
-    return (usuarios || []).map((usuario: Usuario) => {
-      const roleValue = resolveRole(usuario.role);
-      const active = roleValue !== Role.ATLETA && roleValue !== Role.ATHLETE;
-      return {
-        id: usuario.id,
-        name: usuario.nome || usuario.name || "Administrador",
-        email: usuario.email || "sem-email",
-        role: roleValue,
-        superadmin: roleValue === Role.SUPERADMIN || Boolean(usuario.superadmin),
-        active,
-        createdAt: usuario.criadoEm || new Date(),
-        updatedAt: usuario.atualizadoEm || usuario.criadoEm || new Date(),
-        permissions: ROLE_PERMISSIONS[roleValue] || [],
-      };
+    const adminRoleSet = new Set([
+      "ADMIN",
+      "SUPERADMIN",
+      "PRESIDENTE",
+      "VICE_PRESIDENTE",
+      "DIRETOR_FUTEBOL",
+      "DIRETOR_FINANCEIRO",
+    ]);
+
+    return (usuarios || []).flatMap((usuario: Usuario) => {
+      const memberships = usuario.memberships ?? [];
+      const userName = usuario.nome || usuario.name || "Administrador";
+      const userEmail = usuario.email || "sem-email";
+      const isUserActive = usuario.ativo !== false;
+
+      const rows = memberships
+        .filter((membership) =>
+          adminRoleSet.has(String(membership.role || usuario.role || "ADMIN").toUpperCase())
+        )
+        .map((membership) => {
+          const roleRaw = String(membership.role || usuario.role || "ADMIN").toUpperCase();
+          const permissionRole = resolveRole(roleRaw);
+          const isApproved = String(membership.status || "").toUpperCase() === "APROVADO";
+
+          return {
+            id: membership.id || `${usuario.id}-${membership.tenantId || "sem-racha"}-${roleRaw}`,
+            userId: usuario.id,
+            name: userName,
+            email: userEmail,
+            role: roleRaw,
+            superadmin: roleRaw === "SUPERADMIN" || Boolean(usuario.superadmin),
+            active: isUserActive && isApproved,
+            status: membership.status,
+            createdAt: membership.createdAt || usuario.criadoEm || new Date(),
+            updatedAt: usuario.atualizadoEm || usuario.criadoEm || new Date(),
+            permissions: ROLE_PERMISSIONS[permissionRole] || [],
+            tenantId: membership.tenantId,
+            tenantNome: membership.tenantNome,
+            tenantSlug: membership.tenantSlug,
+          };
+        });
+
+      return rows;
     });
   }, [usuarios]);
 
   function buildAdminDetails(admin: AdminRow): AdminDetalhes | null {
-    const usuario = usuarioPorId.get(admin.id);
+    const usuario = usuarioPorId.get(admin.userId);
     if (!usuario) return null;
-    const tenant = usuario.tenantId ? rachaPorId.get(usuario.tenantId) : null;
+    const tenant = admin.tenantId ? rachaPorId.get(admin.tenantId) : null;
 
     return {
-      id: admin.id,
+      id: admin.userId,
       name: admin.name,
       email: admin.email,
       role: admin.role,
       active: admin.active,
-      tenantNome: tenant?.nome || usuario.tenantNome || null,
-      tenantSlug: tenant?.slug || usuario.tenantSlug || null,
+      tenantNome: admin.tenantNome || tenant?.nome || null,
+      tenantSlug: admin.tenantSlug || tenant?.slug || null,
       createdAt: usuario.criadoEm || null,
       updatedAt: usuario.atualizadoEm || usuario.criadoEm || null,
     };
@@ -187,7 +224,7 @@ export default function SuperAdminAdminsPage() {
   }
 
   function handleEdit(admin: AdminRow) {
-    const usuario = usuarioPorId.get(admin.id);
+    const usuario = usuarioPorId.get(admin.userId);
     if (!usuario) return;
     setEditAdmin({
       id: usuario.id,
@@ -235,14 +272,14 @@ export default function SuperAdminAdminsPage() {
   }
 
   async function handleResetPassword(admin: AdminRow) {
-    if (!admin.id) return;
+    if (!admin.userId) return;
     if (!window.confirm(`Resetar senha de ${admin.email}?`)) return;
 
-    setPendingId(admin.id);
+    setPendingId(admin.userId);
     setActionError(null);
     setActionSuccess(null);
 
-    const response = await fetch(`/api/superadmin/usuarios/${admin.id}/reset-password`, {
+    const response = await fetch(`/api/superadmin/usuarios/${admin.userId}/reset-password`, {
       method: "POST",
     });
 
@@ -270,80 +307,24 @@ export default function SuperAdminAdminsPage() {
     setPendingId(null);
   }
 
-  async function handleRevokeAccess(admin: AdminRow) {
-    if (!admin.id) return;
-    if (!window.confirm(`Revogar acesso de ${admin.email}?`)) return;
-
-    setPendingId(admin.id);
-    setActionError(null);
-    setActionSuccess(null);
-
-    const response = await fetch(`/api/superadmin/usuarios/${admin.id}/revoke`, {
-      method: "POST",
-    });
-
-    const text = await response.text();
-    let body: any = null;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      body = text;
-    }
-
-    if (!response.ok) {
-      const message = body?.message || body?.error || text || "Erro ao revogar acesso.";
-      setPendingId(null);
-      setActionError(message);
-      return;
-    }
-
-    await refreshAll();
-    setActionSuccess("Acesso revogado.");
-    setPendingId(null);
-  }
-
-  async function handleActivate(admin: AdminRow) {
-    if (!admin.id) return;
-
-    setPendingId(admin.id);
-    setActionError(null);
-    setActionSuccess(null);
-
-    const response = await fetch(`/api/superadmin/usuarios/${admin.id}/activate`, {
-      method: "POST",
-    });
-
-    const text = await response.text();
-    let body: any = null;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      body = text;
-    }
-
-    if (!response.ok) {
-      const message = body?.message || body?.error || text || "Erro ao ativar acesso.";
-      setPendingId(null);
-      setActionError(message);
-      return;
-    }
-
-    await refreshAll();
-    setActionSuccess("Acesso reativado.");
-    setPendingId(null);
-  }
-
   async function handleDelete(admin: AdminRow) {
-    if (!admin.id) return;
-    if (!window.confirm(`Remover admin ${admin.email}?`)) return;
+    if (!admin.userId) return;
+    if (!admin.tenantId) {
+      setActionError("Nao foi possivel identificar o racha deste admin.");
+      return;
+    }
+    const label = admin.tenantNome || admin.tenantSlug || "racha";
+    const confirmText = `Remover ${admin.email} do racha ${label}?\\n\\nIsso remove apenas o vinculo/permissao administrativa deste racha. A conta global nao sera apagada.`;
+    if (!window.confirm(confirmText)) return;
 
     setPendingId(admin.id);
     setActionError(null);
     setActionSuccess(null);
 
-    const response = await fetch(`/api/superadmin/usuarios/${admin.id}`, {
-      method: "DELETE",
-    });
+    const response = await fetch(
+      `/api/superadmin/tenants/${admin.tenantId}/admins/${admin.userId}`,
+      { method: "DELETE" }
+    );
 
     const text = await response.text();
     let body: any = null;
@@ -354,14 +335,14 @@ export default function SuperAdminAdminsPage() {
     }
 
     if (!response.ok) {
-      const message = body?.message || body?.error || text || "Erro ao remover admin.";
+      const message = body?.message || body?.error || text || "Erro ao remover admin do racha.";
       setPendingId(null);
       setActionError(message);
       return;
     }
 
     await refreshAll();
-    setActionSuccess("Admin removido.");
+    setActionSuccess("Admin removido do racha.");
     setPendingId(null);
   }
 
@@ -428,8 +409,6 @@ export default function SuperAdminAdminsPage() {
           onView={handleView}
           onEdit={handleEdit}
           onResetPassword={handleResetPassword}
-          onRevokeAccess={handleRevokeAccess}
-          onActivate={handleActivate}
           onDelete={handleDelete}
         />
         <ModalNovoAdmin
