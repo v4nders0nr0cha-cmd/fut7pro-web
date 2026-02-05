@@ -150,8 +150,8 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl md:text-3xl font-bold text-white">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Digite seu e-mail para continuar e acessar o {nome}. Se você já usa o Fut7Pro em outro
-            racha, é a mesma conta e o mesmo acesso (senha ou Google).
+            Digite o e-mail para continuar e acessar o {nome}. Use o e-mail da sua Conta Fut7Pro —
+            se você se cadastrou pelo Google, use esse mesmo e-mail.
           </p>
         </div>
 
@@ -185,28 +185,6 @@ export default function EntrarClient() {
             {loading ? "Verificando..." : "Continuar"}
           </button>
         </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
-            <div className="font-semibold text-white mb-1">O que é uma Conta Fut7Pro?</div>É a sua
-            conta global no Fut7Pro. Nela ficam salvos todos os rachas que você participa, e você
-            consegue alternar entre eles com facilidade, sem criar várias contas diferentes.
-          </div>
-          <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
-            <div className="font-semibold text-white mb-1">
-              Por que usar uma conta única para vários rachas?
-            </div>
-            Porque o Fut7Pro junta seus números e conquistas em um só lugar, mesmo que você jogue em
-            rachas diferentes. Você pode ver seu histórico global, como jogos, vitórias, gols,
-            assistências, pontuação e títulos, além de acessar rapidamente cada racha em que você
-            participa.
-          </div>
-        </div>
-
-        <p className="mt-4 text-xs text-gray-400">
-          Seu acesso a cada racha depende da sua participação nele. Em alguns casos, pode ser
-          necessário solicitar entrada e aguardar aprovação do organizador.
-        </p>
 
         {result && (
           <div className="mt-6 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
@@ -284,6 +262,28 @@ export default function EntrarClient() {
             )}
           </div>
         )}
+
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
+            <div className="font-semibold text-white mb-1">O que é uma Conta Fut7Pro?</div>É a sua
+            conta global no Fut7Pro. Nela ficam salvos todos os rachas que você participa, e você
+            consegue alternar entre eles com facilidade, sem criar várias contas diferentes.
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
+            <div className="font-semibold text-white mb-1">
+              Por que usar uma conta única para vários rachas?
+            </div>
+            Porque o Fut7Pro junta seus números e conquistas em um só lugar, mesmo que você jogue em
+            rachas diferentes. Você pode ver seu histórico global, como jogos, vitórias, gols,
+            assistências, pontuação e títulos, além de acessar rapidamente cada racha em que você
+            participa.
+          </div>
+        </div>
+
+        <p className="mt-4 text-xs text-gray-400">
+          Seu acesso a cada racha depende da sua participação nele. Em alguns casos, pode ser
+          necessário solicitar entrada e aguardar aprovação do organizador.
+        </p>
 
         <div className="mt-6 text-center text-xs text-gray-500">
           Acesso do racha: <span className="text-gray-300">{nome}</span>
