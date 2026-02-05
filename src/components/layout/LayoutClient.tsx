@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
+import ComunicadosLoginGate from "@/components/comunicacao/ComunicadosLoginGate";
 import { useRacha } from "@/context/RachaContext";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { rachaConfig } from "@/config/racha.config";
@@ -37,6 +38,7 @@ export default function LayoutClient({ children }: { children: ReactNode }) {
     <>
       {/* HEADER FIXO NO TOPO */}
       <Header onOpenSidebar={() => setSidebarOpen(true)} />
+      <ComunicadosLoginGate />
       <SidebarMobile open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* ESPAÇAMENTO PARA O HEADER */}

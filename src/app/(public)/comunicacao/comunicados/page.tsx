@@ -1,35 +1,39 @@
 "use client";
 
 import Head from "next/head";
-import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
-import { usePublicNotifications } from "@/hooks/usePublicNotifications";
-import type { Notificacao } from "@/types/notificacao";
+import { usePublicComunicados } from "@/hooks/usePublicComunicados";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import type { ComunicadoItem } from "@/types/comunicado";
 
-const isComunicado = (notif: Notificacao) => {
-  const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
-  const meta = (notif.metadata || {}) as Record<string, unknown>;
-  const templateId = (notif.templateId || (meta.templateId as string | undefined) || "")
-    .toString()
-    .toLowerCase();
-  const category = (meta.category || meta.categoria || "").toString().toLowerCase();
-
-  if (rawType.includes("comunicado")) return true;
-  if (templateId.includes("official-communication") || templateId.includes("system-release"))
-    return true;
-  if (category.includes("comunic")) return true;
-  return false;
+const formatDate = (value?: string | null) => {
+  if (!value) return "--";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString("pt-BR");
 };
 
-const resolveAuthor = (notif: Notificacao) => {
-  const meta = (notif.metadata || {}) as Record<string, unknown>;
+const renderCard = (item: ComunicadoItem, variant: "active" | "archived") => {
+  const periodLabel = `${formatDate(item.startAt)} - ${formatDate(item.endAt)}`;
+  const archivedLabel = item.archivedAt ? formatDate(item.archivedAt) : "--";
   return (
-    (notif.remetente as string) ||
-    (meta.nomeResponsavel as string) ||
-    (meta.autor as string) ||
-    "Administração"
+    <li
+      key={item.id}
+      className={`bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 ${
+        variant === "active" ? "border-brand" : "border-zinc-600"
+      }`}
+    >
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <span className="text-lg font-bold text-brand-soft">{item.title}</span>
+        <span className="text-xs text-gray-400">Periodo: {periodLabel}</span>
+      </div>
+      <div className="mt-1 text-sm text-gray-200">{item.message}</div>
+      <div className="text-xs text-gray-400 mt-2">
+        Tipo: <span className="font-semibold">{item.severity}</span>
+        {variant === "archived" && <span className="ml-2">Arquivado em: {archivedLabel}</span>}
+      </div>
+    </li>
   );
 };
 
@@ -37,11 +41,10 @@ export default function ComunicadosPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { publicHref } = usePublicLinks();
-  const { notificacoes, isLoading, isError, error } = usePublicNotifications({
+  const { active, archivedRecent, isLoading, error } = usePublicComunicados({
     enabled: isAuthenticated,
+    days: 30,
   });
-
-  const comunicados = useMemo(() => notificacoes.filter(isComunicado), [notificacoes]);
 
   if (authLoading) {
     return (
@@ -75,48 +78,40 @@ export default function ComunicadosPage() {
         <title>Comunicados | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja comunicados e avisos oficiais publicados pela administração do seu racha."
+          content="Veja comunicados e avisos oficiais publicados pela administracao do seu racha."
         />
       </Head>
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
         <h1 className="text-xl font-bold text-zinc-100 mb-4">Comunicados Oficiais</h1>
-        <ul className="space-y-4">
-          {isLoading ? (
-            <li className="text-zinc-400 text-center">Carregando...</li>
-          ) : isError ? (
-            <li className="text-red-400 text-center">
-              Falha ao carregar comunicados.
-              {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
-            </li>
-          ) : comunicados.length === 0 ? (
-            <li className="text-zinc-400 text-center">Nenhum comunicado ativo.</li>
-          ) : (
-            comunicados.map((comunicado) => {
-              const dataLabel = comunicado.data
-                ? new Date(comunicado.data).toLocaleDateString("pt-BR")
-                : "";
-              const title = comunicado.titulo || comunicado.title || "Comunicado";
-              const message = comunicado.mensagem || comunicado.message || "";
-              const author = resolveAuthor(comunicado);
-
-              return (
-                <li
-                  key={comunicado.id}
-                  className="bg-zinc-800 rounded-lg p-4 text-zinc-100 border-l-4 border-brand"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-lg font-bold text-brand-soft">{title}</span>
-                    <span className="text-xs text-gray-400">{dataLabel}</span>
-                  </div>
-                  <div className="mt-1">{message}</div>
-                  <div className="text-xs text-gray-400 mt-2">
-                    Publicado por <span className="font-semibold">{author}</span>
-                  </div>
-                </li>
-              );
-            })
-          )}
-        </ul>
+        {isLoading ? (
+          <div className="text-zinc-400 text-center">Carregando...</div>
+        ) : error ? (
+          <div className="text-red-400 text-center">
+            Falha ao carregar comunicados.
+            <div className="text-xs text-red-300 mt-2">{String(error)}</div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <div className="text-sm text-gray-300 mb-2 font-semibold">Ativos agora</div>
+              {active.length === 0 ? (
+                <div className="text-zinc-400 text-center">Nenhum comunicado ativo.</div>
+              ) : (
+                <ul className="space-y-4">{active.map((item) => renderCard(item, "active"))}</ul>
+              )}
+            </div>
+            <div>
+              <div className="text-sm text-gray-300 mb-2 font-semibold">Arquivados recentes</div>
+              {archivedRecent.length === 0 ? (
+                <div className="text-zinc-400 text-center">Nenhum comunicado recente.</div>
+              ) : (
+                <ul className="space-y-4">
+                  {archivedRecent.map((item) => renderCard(item, "archived"))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </>
   );
