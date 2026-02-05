@@ -39,7 +39,7 @@ export default function BottomMenu() {
 
   function handleClick(href: string, label: string) {
     if (label === "Perfil" && !isLoggedIn) {
-      router.push(publicHref("/login"));
+      router.push(publicHref("/entrar"));
     } else {
       router.push(publicHref(href));
     }
@@ -51,7 +51,7 @@ export default function BottomMenu() {
       <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 md:hidden animate-slide-down">
         <button
           type="button"
-          onClick={() => router.push(publicHref("/login"))}
+          onClick={() => router.push(publicHref("/entrar"))}
           className="flex items-center gap-2 border border-brand bg-[#222] text-brand px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-brand hover:text-black transition-all"
           style={{ letterSpacing: 1 }}
           title="Area do atleta"

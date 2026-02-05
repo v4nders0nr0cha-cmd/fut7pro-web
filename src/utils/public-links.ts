@@ -5,6 +5,7 @@ const PUBLIC_ROUTE_SEGMENTS = new Set([
   "contato",
   "estatisticas",
   "grandes-torneios",
+  "entrar",
   "login",
   "os-campeoes",
   "partidas",

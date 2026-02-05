@@ -62,7 +62,7 @@ export default function ComunicadosPage() {
           <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu racha.</p>
           <button
             type="button"
-            onClick={() => router.push(publicHref("/login"))}
+            onClick={() => router.push(publicHref("/entrar"))}
             className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login

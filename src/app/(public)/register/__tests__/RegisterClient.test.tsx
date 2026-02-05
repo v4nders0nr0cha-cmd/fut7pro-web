@@ -94,7 +94,7 @@ describe("RegisterClient", () => {
 
     const loginCta = screen.getByRole("link", { name: /Entrar e solicitar/i });
     expect(loginCta.getAttribute("href")).toBe(
-      "/ruimdebola/login?callbackUrl=%2Fruimdebola%2Fregister"
+      "/ruimdebola/entrar?callbackUrl=%2Fruimdebola%2Fregister"
     );
   });
 });

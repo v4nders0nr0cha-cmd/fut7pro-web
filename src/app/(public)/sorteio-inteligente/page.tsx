@@ -31,7 +31,7 @@ export default function SorteioInteligentePage() {
           </p>
           {!isAuthenticated && (
             <Link
-              href={publicHref("/login")}
+              href={publicHref("/entrar")}
               className="inline-block bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
             >
               Fazer login

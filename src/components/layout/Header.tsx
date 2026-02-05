@@ -51,7 +51,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     enabled: isAthleteLoggedIn,
   });
   const homeHref = publicHref("/");
-  const loginHref = publicHref("/login");
+  const loginHref = publicHref("/entrar");
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = slugFromPath || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;

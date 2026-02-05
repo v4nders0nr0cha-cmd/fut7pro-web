@@ -146,6 +146,25 @@ npm run clean            # Remove arquivos de build
 npm run analyze          # Analisa bundle size
 ```
 
+## 🧪 Testes E2E (Playwright)
+
+Para rodar os testes E2E:
+
+```bash
+npm run test:e2e
+```
+
+Variáveis mínimas para cenários autenticados:
+
+```env
+E2E_RUN_AUTH=1
+E2E_PUBLIC_SLUG=seu-racha
+E2E_ADMIN_EMAIL=admin@exemplo.com
+E2E_ADMIN_PASSWORD=senha-admin
+E2E_ATHLETE_EMAIL=atleta@exemplo.com
+E2E_ATHLETE_PASSWORD=senha-atleta
+```
+
 ## 🏗️ Arquitetura
 
 ### Frontend

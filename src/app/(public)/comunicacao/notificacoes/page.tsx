@@ -18,6 +18,9 @@ type NotificacaoEntry = {
 
 const resolveKind = (notif: Notificacao): Kind => {
   const rawType = (notif.type || notif.tipo || "").toString().toLowerCase();
+  const meta = (notif.metadata || {}) as Record<string, unknown>;
+  const metaKind = (meta.kind || meta.category || meta.categoria || "").toString().toLowerCase();
+  if (metaKind.includes("enquete") || metaKind.includes("poll")) return "enquete";
   if (rawType.includes("enquete") || rawType.includes("poll")) return "enquete";
   if (rawType.includes("cobranca") || rawType.includes("financeiro")) return "cobranca";
   return "aviso";
@@ -74,7 +77,7 @@ export default function NotificacoesPage() {
           <p className="text-gray-300 mb-4">Entre para ver notificações e avisos do seu racha.</p>
           <button
             type="button"
-            onClick={() => router.push(publicHref("/login"))}
+            onClick={() => router.push(publicHref("/entrar"))}
             className="bg-brand text-black font-bold px-4 py-2 rounded hover:bg-brand-strong transition"
           >
             Fazer login

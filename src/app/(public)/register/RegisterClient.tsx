@@ -88,12 +88,12 @@ export default function RegisterClient() {
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("callbackUrl", redirectTo);
-    return `${publicHref("/login")}?${params.toString()}`;
+    return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref, redirectTo]);
   const loginForJoinHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("callbackUrl", publicHref("/register"));
-    return `${publicHref("/login")}?${params.toString()}`;
+    return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
 
   const isAuthenticated = status === "authenticated";
@@ -751,7 +751,7 @@ export default function RegisterClient() {
           <div className="mt-5 text-center text-sm text-gray-300">
             Ja tem conta?{" "}
             <a
-              href={publicHref("/login")}
+              href={publicHref("/entrar")}
               className="text-yellow-300 underline hover:text-yellow-200"
             >
               Entrar

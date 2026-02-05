@@ -281,7 +281,7 @@ export default function PerfilUsuarioPage() {
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("callbackUrl", publicHref("/perfil"));
-    return `${publicHref("/login")}?${params.toString()}`;
+    return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);

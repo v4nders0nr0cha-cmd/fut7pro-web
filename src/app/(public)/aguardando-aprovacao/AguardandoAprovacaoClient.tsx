@@ -30,7 +30,7 @@ export default function AguardandoAprovacaoClient() {
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
           <a
-            href={publicHref("/login")}
+            href={publicHref("/entrar")}
             className="rounded-lg border border-yellow-400/60 px-4 py-2 text-xs font-semibold text-yellow-300 hover:text-yellow-200"
           >
             Voltar para login
