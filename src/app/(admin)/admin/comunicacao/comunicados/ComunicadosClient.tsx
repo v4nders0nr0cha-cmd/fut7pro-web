@@ -118,13 +118,13 @@ export default function ComunicadosClient() {
   };
 
   const validatePeriod = () => {
-    if (!form.startAt || !form.endAt) return "Periodo obrigatorio";
+    if (!form.startAt || !form.endAt) return "Período obrigatório";
     const start = new Date(form.startAt);
     const end = new Date(form.endAt);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return "Periodo invalido";
+      return "Período inválido";
     }
-    if (start >= end) return "Inicio deve ser menor que o fim";
+    if (start >= end) return "Início deve ser menor que o fim";
     return null;
   };
 
@@ -135,7 +135,7 @@ export default function ComunicadosClient() {
       return;
     }
     if (!form.message.trim()) {
-      setFeedback({ type: "error", message: "Mensagem obrigatoria" });
+      setFeedback({ type: "error", message: "Mensagem obrigatória" });
       return;
     }
 
@@ -220,11 +220,24 @@ export default function ComunicadosClient() {
     <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-5xl mx-auto w-full">
       <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-2">Comunicados</h1>
       <div className="mb-6 p-4 rounded-lg bg-[#232323] border-l-4 border-yellow-400 shadow text-sm">
-        <div className="font-bold text-yellow-300 mb-1">O que sao Comunicados?</div>
+        <div className="font-bold text-yellow-300 mb-2">O que são Comunicados?</div>
         <p className="text-gray-200">
-          Comunicados sao avisos institucionais ou recorrentes com periodo definido. Durante o
-          periodo ativo, o atleta ve o comunicado em um modal sempre que fizer login no racha.
+          Comunicados são avisos institucionais ou recorrentes, com período definido, que ajudam a
+          manter todo mundo alinhado no racha. Durante o período ativo, o atleta vê o comunicado em
+          um modal sempre que fizer login no racha.
         </p>
+        <div className="mt-3 text-gray-200 font-semibold">Exemplos de comunicados:</div>
+        <ul className="mt-2 space-y-1 text-gray-200">
+          <li>📅 “Calendário do mês: jogos todos os sábados, às 19h.”</li>
+          <li>📌 “Nova regra: atraso acima de 10 minutos entra como substituto.”</li>
+          <li>💰 “Reajuste da mensalidade: novo valor a partir de 01/03.”</li>
+        </ul>
+        <div className="mt-3 text-gray-200 font-semibold">Como funciona:</div>
+        <ul className="mt-2 space-y-1 text-gray-200">
+          <li>O administrador define a data e a hora de início e de fim.</li>
+          <li>Enquanto estiver ativo, o comunicado aparece no login do atleta.</li>
+          <li>Ao final do período, o comunicado é arquivado automaticamente.</li>
+        </ul>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -269,11 +282,11 @@ export default function ComunicadosClient() {
         <div className="mb-8 bg-[#222] rounded-lg p-5 shadow flex flex-col gap-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <label className="text-gray-300 font-semibold">Titulo</label>
+              <label className="text-gray-300 font-semibold">Título</label>
               <input
                 type="text"
                 className="bg-[#111] border border-yellow-400 rounded px-3 py-2 text-yellow-300"
-                placeholder="Titulo do comunicado"
+                placeholder="Título do comunicado"
                 maxLength={80}
                 value={form.title}
                 onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
@@ -313,7 +326,7 @@ export default function ComunicadosClient() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <label className="text-gray-300 font-semibold">Inicio</label>
+              <label className="text-gray-300 font-semibold">Início</label>
               <input
                 type="datetime-local"
                 className="bg-[#111] border border-yellow-400 rounded px-3 py-2 text-gray-200"
@@ -333,7 +346,7 @@ export default function ComunicadosClient() {
           </div>
 
           <div className="text-xs text-gray-400">
-            Periodo obrigatorio. Status previsto:{" "}
+            Período obrigatório. Status previsto:{" "}
             <span className="text-yellow-300">{previewStatus || "--"}</span>
           </div>
 
@@ -395,7 +408,7 @@ export default function ComunicadosClient() {
                     <div className="text-lg font-bold text-yellow-300">{item.title}</div>
                     <div className="text-gray-200 mt-1">{item.message}</div>
                     <div className="text-xs text-gray-500 mt-2">
-                      Periodo: {formatDateTime(item.startAt)} ate {formatDateTime(item.endAt)}
+                      Período: {formatDateTime(item.startAt)} até {formatDateTime(item.endAt)}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
                       Criado por:{" "}
@@ -410,7 +423,7 @@ export default function ComunicadosClient() {
                     <span>
                       Views: <span className="text-yellow-300">{item.viewsCount ?? 0}</span>
                     </span>
-                    <span className="text-gray-400">Ultima: {formatDateTime(item.lastViewAt)}</span>
+                    <span className="text-gray-400">Última: {formatDateTime(item.lastViewAt)}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">

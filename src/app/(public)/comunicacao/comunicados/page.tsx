@@ -26,7 +26,7 @@ const renderCard = (item: ComunicadoItem, variant: "active" | "archived") => {
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <span className="text-lg font-bold text-brand-soft">{item.title}</span>
-        <span className="text-xs text-gray-400">Periodo: {periodLabel}</span>
+        <span className="text-xs text-gray-400">Período: {periodLabel}</span>
       </div>
       <div className="mt-1 text-sm text-gray-200">{item.message}</div>
       <div className="text-xs text-gray-400 mt-2">

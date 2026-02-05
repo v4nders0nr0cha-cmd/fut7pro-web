@@ -112,7 +112,7 @@ export default function ComunicadosLoginGate() {
           <span className={`px-2 py-1 rounded ${severityStyles[severity]}`}>
             {severityLabels[severity]}
           </span>
-          <span>Periodo: {periodLabel}</span>
+          <span>Período: {periodLabel}</span>
         </div>
         <div className="text-yellow-200 font-semibold text-lg mb-2">{current.title}</div>
         <div className="text-gray-200 text-sm whitespace-pre-line">{current.message}</div>
@@ -136,7 +136,7 @@ export default function ComunicadosLoginGate() {
                   className="px-3 py-1 rounded bg-[#2b2b2b] text-gray-200 hover:bg-[#3b3b3b]"
                   onClick={handleNext}
                 >
-                  Proximo
+                  Próximo
                 </button>
               </>
             )}
