@@ -23,7 +23,7 @@ export default function BottomMenu() {
   const { publicHref } = usePublicLinks();
   const tenantSlug = slugFromPath || "";
   const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA";
+  const isAthleteSession = sessionRole === "ATLETA" || sessionRole === "ATHLETE";
   const shouldCheckMe = Boolean(session?.user && tenantSlug && isAthleteSession);
   const { me } = useMe({
     enabled: shouldCheckMe,
