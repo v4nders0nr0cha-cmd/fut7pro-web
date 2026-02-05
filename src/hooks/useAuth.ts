@@ -32,7 +32,6 @@ export interface UseAuthReturn {
 
 // Mapeamento de roles para permissões
 const ROLE_PERMISSIONS: Record<Role, string[]> = {
-  ATHLETE: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
   ATLETA: ["USER_READ", "RACHA_READ", "ANALYTICS_READ"],
   ADMIN: [
     "USER_READ",

@@ -56,7 +56,7 @@ export default function LoginClient() {
   );
 
   const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA" || sessionRole === "ATHLETE";
+  const isAthleteSession = sessionRole === "ATLETA";
   const shouldLoadMe = status === "authenticated" && isAthleteSession && Boolean(publicSlug);
   const {
     me,

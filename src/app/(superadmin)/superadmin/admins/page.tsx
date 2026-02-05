@@ -17,7 +17,6 @@ import { Role, Permission } from "@/common/enums";
 import type { Usuario } from "@/types/superadmin";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  ATHLETE: [Permission.USER_READ, Permission.RACHA_READ, Permission.ANALYTICS_READ],
   ATLETA: [Permission.USER_READ, Permission.RACHA_READ, Permission.ANALYTICS_READ],
   ADMIN: [
     Permission.USER_READ,
@@ -82,7 +81,6 @@ function resolveRole(raw?: string | null): Role {
   const value = (raw || "").toUpperCase();
   if (value === "SUPERADMIN") return Role.SUPERADMIN;
   if (value === "ADMIN") return Role.ADMIN;
-  if (value === "ATHLETE") return Role.ATHLETE;
   if (value === "ATLETA") return Role.ATLETA;
   if (
     value === "PRESIDENTE" ||

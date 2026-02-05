@@ -16,7 +16,6 @@ const ROLE_LABELS: Record<string, string> = {
   ADMIN: "Admin",
   SUPERADMIN: "SuperAdmin",
   ATLETA: "Atleta",
-  ATHLETE: "Atleta",
 };
 
 function formatDate(value?: string) {

@@ -32,7 +32,7 @@ export default function ComunicadosLoginGate() {
   const { isAuthenticated, user } = useAuth();
   const { publicSlug } = usePublicLinks();
   const role = user?.role?.toString().toUpperCase();
-  const isAthlete = role === Role.ATLETA || role === Role.ATHLETE;
+  const isAthlete = role === Role.ATLETA;
   const shouldFetch = isAuthenticated && isAthlete;
   const { active, isLoading } = useActiveComunicados(shouldFetch);
   const [dismissed, setDismissed] = useState(false);

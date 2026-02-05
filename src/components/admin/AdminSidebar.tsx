@@ -44,7 +44,7 @@ const allRoles = [
   Role.SUPERADMIN,
   Role.ADMIN,
   Role.ATLETA,
-  Role.ATHLETE,
+  Role.ATLETA,
   Role.SUPORTE,
   Role.FINANCEIRO,
   Role.MARKETING,

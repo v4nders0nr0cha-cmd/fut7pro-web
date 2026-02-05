@@ -2,9 +2,8 @@
 export enum Role {
   SUPERADMIN = "SUPERADMIN",
   ADMIN = "ADMIN",
-  ATHLETE = "ATHLETE",
   GERENTE = "GERENTE",
-  ATLETA = "ATLETA", // alias usado nos testes legados
+  ATLETA = "ATLETA",
   SUPORTE = "SUPORTE",
   FINANCEIRO = "FINANCEIRO",
   MARKETING = "MARKETING",

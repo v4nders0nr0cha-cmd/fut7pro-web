@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
 
@@ -14,6 +15,16 @@ type LookupResponse = {
   requiresCaptcha?: boolean;
 };
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: string, options: Record<string, unknown>) => string | number;
+      reset: (widgetId?: string | number) => void;
+      remove: (widgetId?: string | number) => void;
+    };
+  }
+}
+
 export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
@@ -22,7 +33,11 @@ export default function EntrarClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<LookupResponse | null>(null);
-  const [captchaChecked, setCaptchaChecked] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const turnstileWidgetId = useRef<string | number | null>(null);
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+  const needsCaptcha = Boolean(result?.requiresCaptcha);
 
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -39,6 +54,10 @@ export default function EntrarClient() {
   const handleLookup = async () => {
     setError("");
     setResult(null);
+    if (needsCaptcha && !captchaToken) {
+      setError("Confirme a verificação para continuar.");
+      return;
+    }
 
     const normalized = email.trim().toLowerCase();
     if (!normalized) {
@@ -54,14 +73,19 @@ export default function EntrarClient() {
         body: JSON.stringify({
           email: normalized,
           rachaSlug: publicSlug,
-          captchaToken: captchaChecked ? "checkbox-ok" : undefined,
+          captchaToken: captchaToken || undefined,
         }),
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
-        if (body?.code === "CAPTCHA_REQUIRED") {
+        if (body?.code === "CAPTCHA_REQUIRED" || body?.code === "CAPTCHA_INVALID") {
           setResult({ exists: false, providers: [], hasPassword: false, requiresCaptcha: true });
-          setError("Muitas tentativas. Confirme a verificação para continuar.");
+          setCaptchaToken(null);
+          setError(
+            body?.code === "CAPTCHA_INVALID"
+              ? "Verificação inválida. Tente novamente."
+              : "Muitas tentativas. Confirme a verificação para continuar."
+          );
           return;
         }
         setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
@@ -83,8 +107,41 @@ export default function EntrarClient() {
   const showLoginCta = Boolean(result?.exists && result?.hasPassword);
   const showGoogleOnly = Boolean(result?.exists && hasGoogle && !result?.hasPassword);
 
+  useEffect(() => {
+    if (!needsCaptcha || !turnstileSiteKey || !turnstileReady) return;
+    if (!window.turnstile) return;
+    if (turnstileWidgetId.current) return;
+
+    const widgetId = window.turnstile.render("#turnstile-container", {
+      sitekey: turnstileSiteKey,
+      callback: (token: string) => setCaptchaToken(token),
+      "expired-callback": () => setCaptchaToken(null),
+      "error-callback": () => setCaptchaToken(null),
+    });
+    turnstileWidgetId.current = widgetId;
+  }, [needsCaptcha, turnstileSiteKey, turnstileReady]);
+
+  useEffect(() => {
+    if (!needsCaptcha && turnstileWidgetId.current && window.turnstile) {
+      window.turnstile.remove(turnstileWidgetId.current);
+      turnstileWidgetId.current = null;
+    }
+  }, [needsCaptcha]);
+
+  useEffect(() => {
+    setCaptchaToken(null);
+  }, [email]);
+
   return (
     <section className="w-full px-4">
+      {needsCaptcha && turnstileSiteKey && (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          async
+          defer
+          onLoad={() => setTurnstileReady(true)}
+        />
+      )}
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-5 flex flex-col items-center gap-2 text-center">
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
@@ -106,15 +163,10 @@ export default function EntrarClient() {
             placeholder="ex: seuemail@dominio.com"
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
           />
-          {result?.requiresCaptcha && (
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={captchaChecked}
-                onChange={(event) => setCaptchaChecked(event.target.checked)}
-              />
-              Confirmo que não sou um robô
-            </label>
+          {needsCaptcha && (
+            <div className="flex items-center justify-start">
+              <div id="turnstile-container" />
+            </div>
           )}
           {error && (
             <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
@@ -124,7 +176,7 @@ export default function EntrarClient() {
           <button
             type="button"
             onClick={handleLookup}
-            disabled={loading || (result?.requiresCaptcha && !captchaChecked)}
+            disabled={loading || (needsCaptcha && !captchaToken)}
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? "Verificando..." : "Continuar"}
