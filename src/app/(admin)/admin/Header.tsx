@@ -5,12 +5,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { FaBell, FaEnvelope, FaUserPlus, FaUser, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useAdminBadges } from "@/hooks/useAdminBadges";
 import { useSession, signOut } from "next-auth/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { IconType } from "react-icons";
 import { useMe } from "@/hooks/useMe";
 import { buildPublicHref } from "@/utils/public-links";
 import { useBranding } from "@/hooks/useBranding";
 import useSWR from "swr";
+import { setStoredTenantSlug } from "@/utils/active-tenant";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -75,6 +76,11 @@ export default function Header({ onMenuClick }: HeaderProps) {
     tenantSlug && athletePublicKey
       ? buildPublicHref(`/atletas/${athletePublicKey}`, tenantSlug)
       : null;
+
+  useEffect(() => {
+    if (!tenantSlug) return;
+    setStoredTenantSlug(tenantSlug);
+  }, [tenantSlug]);
 
   return (
     <header className="w-full z-50 top-0 left-0 bg-zinc-900 border-b border-brand shadow-md flex items-center px-4 py-2 h-[56px] fixed">

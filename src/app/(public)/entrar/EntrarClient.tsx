@@ -139,7 +139,7 @@ export default function EntrarClient() {
   useEffect(() => {
     if (!result || !resultRef.current) return;
     requestAnimationFrame(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }, [result]);
 
@@ -158,8 +158,8 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl md:text-3xl font-bold text-white">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Digite seu e-mail para continuar e acessar o {nome}. Vamos mostrar a forma de entrada
-            disponível para essa conta. Se você se cadastrou pelo Google, use o mesmo e-mail.
+            Digite seu e-mail para continuar e acessar o {nome}. Se sua conta foi criada com Google,
+            use o mesmo e-mail aqui. Em seguida, vamos indicar a forma correta de entrada.
           </p>
         </div>
 
@@ -192,87 +192,87 @@ export default function EntrarClient() {
           >
             {loading ? "Verificando..." : "Continuar"}
           </button>
-        </div>
 
-        {result && (
-          <div
-            ref={resultRef}
-            className="mt-6 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200"
-          >
-            {result.exists ? (
-              <>
-                <div className="font-semibold text-white mb-1">Conta encontrada</div>
-                <p className="mb-4">
-                  {showGoogleOnly
-                    ? "Encontramos sua Conta Fut7Pro. Continue para entrar com Google."
-                    : "Encontramos sua Conta Fut7Pro. Continue para entrar com sua senha."}
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  {showGoogleOnly ? (
-                    <button
-                      type="button"
-                      onClick={handleGoogle}
-                      className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
-                    >
-                      Entrar com Google
-                    </button>
-                  ) : (
-                    <>
+          {result && (
+            <div
+              ref={resultRef}
+              className="mt-3 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200"
+            >
+              {result.exists ? (
+                <>
+                  <div className="font-semibold text-white mb-1">Conta encontrada</div>
+                  <p className="mb-4">
+                    {showGoogleOnly
+                      ? "Encontramos sua Conta Fut7Pro. Continue para entrar com Google."
+                      : "Encontramos sua Conta Fut7Pro. Continue para entrar com sua senha."}
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    {showGoogleOnly ? (
                       <button
                         type="button"
-                        onClick={() => router.push(loginHref)}
-                        className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
+                        onClick={handleGoogle}
+                        className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
                       >
-                        {hasGoogle ? "Entrar com senha" : "Ir para Login"}
+                        Entrar com Google
                       </button>
-                      {hasGoogle && (
+                    ) : (
+                      <>
                         <button
                           type="button"
-                          onClick={handleGoogle}
-                          className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
+                          onClick={() => router.push(loginHref)}
+                          className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
                         >
-                          Entrar com Google
+                          {hasGoogle ? "Entrar com senha" : "Ir para Login"}
                         </button>
-                      )}
-                    </>
-                  )}
-                  {result.hasPassword && (
-                    <a
-                      href="/admin/esqueci-senha"
-                      className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-center text-sm font-semibold text-white/80 hover:border-white/30"
+                        {hasGoogle && (
+                          <button
+                            type="button"
+                            onClick={handleGoogle}
+                            className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
+                          >
+                            Entrar com Google
+                          </button>
+                        )}
+                      </>
+                    )}
+                    {result.hasPassword && (
+                      <a
+                        href="/admin/esqueci-senha"
+                        className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-center text-sm font-semibold text-white/80 hover:border-white/30"
+                      >
+                        Esqueci minha senha
+                      </a>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="font-semibold text-white mb-1">Primeiro acesso no Fut7Pro</div>
+                  <p className="mb-4">
+                    Ainda não existe uma Conta Fut7Pro para este e-mail. Crie sua conta para entrar
+                    e participar dos rachas.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => router.push(registerHref)}
+                      className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
                     >
-                      Esqueci minha senha
-                    </a>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="font-semibold text-white mb-1">Primeiro acesso no Fut7Pro</div>
-                <p className="mb-4">
-                  Ainda não existe uma Conta Fut7Pro para este e-mail. Crie sua conta para entrar e
-                  participar dos rachas.
-                </p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="button"
-                    onClick={() => router.push(registerHref)}
-                    className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
-                  >
-                    Criar conta Fut7Pro
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setResult(null)}
-                    className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
-                  >
-                    Voltar
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                      Criar conta Fut7Pro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResult(null)}
+                      className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">

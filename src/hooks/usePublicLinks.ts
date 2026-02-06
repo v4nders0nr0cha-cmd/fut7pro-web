@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { rachaConfig } from "@/config/racha.config";
 import { useRacha } from "@/context/RachaContext";
 import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
+import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 
 export function usePublicLinks() {
   const pathname = usePathname() ?? "";
   const { tenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const publicSlug = slugFromPath || tenantSlug || rachaConfig.slug;
+  const activeSlug = resolveActiveTenantSlug(pathname);
+  const publicSlug = activeSlug || slugFromPath || tenantSlug || rachaConfig.slug;
 
   const publicHref = useCallback((href: string) => buildPublicHref(href, publicSlug), [publicSlug]);
 

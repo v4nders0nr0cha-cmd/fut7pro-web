@@ -12,6 +12,7 @@ type NextAuthOptionsLike = {
   pages?: { signIn?: string; error?: string };
   session?: { strategy?: "jwt"; maxAge?: number };
   jwt?: { maxAge?: number };
+  cookies?: any;
   secret?: string;
 };
 
@@ -34,6 +35,15 @@ const LOGIN_PATH = normalizeAuthPath(process.env.AUTH_LOGIN_PATH, "/auth/login")
 const REFRESH_PATH = normalizeAuthPath(process.env.AUTH_REFRESH_PATH, "/auth/refresh");
 const ME_PATH = normalizeAuthPath(process.env.AUTH_ME_PATH, "/auth/me");
 const GOOGLE_PATH = "/auth/google";
+const useSecureCookies = process.env.NODE_ENV === "production";
+const cookiePrefix = useSecureCookies ? "__Secure-" : "";
+const csrfPrefix = useSecureCookies ? "__Host-" : "";
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  path: "/",
+  secure: useSecureCookies,
+};
 
 function decodeExp(token?: string | null): number | null {
   if (!token) return null;
@@ -48,6 +58,20 @@ function decodeExp(token?: string | null): number | null {
 }
 
 export const authOptions: NextAuthOptionsLike = {
+  cookies: {
+    sessionToken: {
+      name: `${cookiePrefix}next-auth.session-token`,
+      options: cookieOptions,
+    },
+    callbackUrl: {
+      name: `${cookiePrefix}next-auth.callback-url`,
+      options: cookieOptions,
+    },
+    csrfToken: {
+      name: `${csrfPrefix}next-auth.csrf-token`,
+      options: cookieOptions,
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,

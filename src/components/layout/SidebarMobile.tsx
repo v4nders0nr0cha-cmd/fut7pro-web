@@ -41,7 +41,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
     context: "athlete",
   });
   const isAthleteLoggedIn = Boolean(me?.athlete?.id);
-  const showUserMenu = tenantSlug ? isAthleteLoggedIn : Boolean(session?.user);
+  const showUserMenu = Boolean(session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileUser = globalProfile?.user;
