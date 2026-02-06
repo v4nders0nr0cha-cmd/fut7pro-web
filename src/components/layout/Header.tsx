@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FC } from "react";
+import { useEffect, useState, type FC } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -53,9 +53,13 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = slugFromPath || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
-  const editProfileHref = resolvedSlug ? buildPublicHref("/perfil?edit=1", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
+
+  useEffect(() => {
+    if (!tenantSlug || typeof window === "undefined") return;
+    window.localStorage.setItem("fut7pro_last_tenant_slug", tenantSlug);
+  }, [tenantSlug]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
@@ -164,15 +168,6 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                     >
                       Meu perfil neste racha
-                    </Link>
-                  )}
-                  {editProfileHref && (
-                    <Link
-                      href={editProfileHref}
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
-                    >
-                      Editar meu perfil neste racha
                     </Link>
                   )}
                   {canSwitchRacha && (

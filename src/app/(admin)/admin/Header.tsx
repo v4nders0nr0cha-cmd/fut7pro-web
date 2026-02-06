@@ -70,7 +70,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
     me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
   const rachaPerfilHref = tenantSlug ? buildPublicHref("/perfil", tenantSlug) : null;
-  const editRachaPerfilHref = tenantSlug ? buildPublicHref("/perfil?edit=1", tenantSlug) : null;
   const athletePublicKey = me?.athlete?.slug || me?.athlete?.id || null;
   const publicProfileHref =
     tenantSlug && athletePublicKey
@@ -176,15 +175,6 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     onClick={() => setDropdownOpen(false)}
                   >
                     Meu perfil neste racha
-                  </Link>
-                )}
-                {editRachaPerfilHref && (
-                  <Link
-                    href={editRachaPerfilHref}
-                    className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Editar meu perfil neste racha
                   </Link>
                 )}
                 {canSwitchRacha && (

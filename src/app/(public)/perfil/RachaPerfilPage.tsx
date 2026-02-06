@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
-import ModalEditarPerfil from "@/components/atletas/ModalEditarPerfil";
 import { usePerfil } from "@/components/atletas/PerfilContext";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { usePublicAthlete } from "@/hooks/usePublicAthlete";
@@ -276,7 +275,6 @@ export default function PerfilUsuarioPage() {
   const { usuario, roleLabel, isLoading, isError, isAuthenticated, isPendingApproval } =
     usePerfil();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { publicHref, publicSlug } = usePublicLinks();
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -285,8 +283,6 @@ export default function PerfilUsuarioPage() {
   }, [publicHref]);
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pedidoEnviado, setPedidoEnviado] = useState(false);
-  const [modalEditarOpen, setModalEditarOpen] = useState(false);
-  const shouldAutoOpen = searchParams?.get("edit") === "1";
   const currentYear = useMemo(() => getCurrentYear(), []);
   const rangeFrom = statsPeriod === "all" ? "2000-01-01" : `${currentYear}-01-01`;
   const rangeTo =
@@ -367,12 +363,6 @@ export default function PerfilUsuarioPage() {
       router.replace(publicHref("/aguardando-aprovacao"));
     }
   }, [isAuthenticated, isLoading, isPendingApproval, router, publicHref]);
-
-  useEffect(() => {
-    if (!shouldAutoOpen || modalEditarOpen) return;
-    if (isPendingApproval) return;
-    setModalEditarOpen(true);
-  }, [shouldAutoOpen, modalEditarOpen, isPendingApproval]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -463,14 +453,11 @@ export default function PerfilUsuarioPage() {
             </p>
             <p className="text-sm mt-1">Nivel de Assiduidade: {nivelAssiduidade}</p>
 
-            {/* Botão Editar Perfil */}
-            <button
-              className="mt-4 px-4 py-2 bg-brand-strong hover:bg-brand text-black font-semibold rounded transition w-max disabled:cursor-not-allowed disabled:opacity-60"
-              onClick={() => setModalEditarOpen(true)}
-              disabled={isPendingApproval}
-            >
-              {isPendingApproval ? "Cadastro em aprovacao" : "Editar Perfil"}
-            </button>
+            {isPendingApproval && (
+              <span className="mt-4 inline-flex rounded-full border border-brand/40 px-3 py-1 text-xs font-semibold text-brand-soft">
+                Cadastro em aprovacao
+              </span>
+            )}
           </div>
         </div>
         {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
@@ -506,9 +493,6 @@ export default function PerfilUsuarioPage() {
           )}
         </div>
       </div>
-
-      {/* MODAL EDIÇÃO DE PERFIL */}
-      {modalEditarOpen && <ModalEditarPerfil onClose={() => setModalEditarOpen(false)} />}
 
       {/* Filtro de estatísticas */}
       <div className="flex gap-4 mt-8 mb-2 items-center">

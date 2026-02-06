@@ -18,11 +18,11 @@ type UpdateGlobalProfilePayload = {
   firstName?: string;
   nickname?: string | null;
   avatarUrl?: string | null;
+  position?: string;
+  positionSecondary?: string | null;
   birthDay?: number | null;
   birthMonth?: number | null;
   birthYear?: number | null;
-  cidadeNome?: string | null;
-  estadoUf?: string | null;
 };
 
 export function useGlobalProfile(options?: { enabled?: boolean }) {

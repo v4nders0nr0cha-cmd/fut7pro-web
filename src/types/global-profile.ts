@@ -17,8 +17,9 @@ export type GlobalProfileUser = {
   birthDay?: number | null;
   birthMonth?: number | null;
   birthYear?: number | null;
-  cidadeNome?: string | null;
-  estadoUf?: string | null;
+  position?: string | null;
+  positionSecondary?: string | null;
+  hasPassword?: boolean;
   emailVerified?: boolean;
   emailVerifiedAt?: string | null;
   authProvider?: string | null;

@@ -48,7 +48,6 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = slugFromPath || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
-  const editProfileHref = resolvedSlug ? buildPublicHref("/perfil?edit=1", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
 
@@ -154,11 +153,6 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
               {profileHref && (
                 <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
                   Meu perfil neste racha
-                </Link>
-              )}
-              {editProfileHref && (
-                <Link href={editProfileHref} onClick={onClose} className="hover:text-brand-soft">
-                  Editar meu perfil neste racha
                 </Link>
               )}
               {canSwitchRacha && (
