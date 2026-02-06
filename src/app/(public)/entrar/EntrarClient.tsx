@@ -33,6 +33,7 @@ export default function EntrarClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<LookupResponse | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [turnstileReady, setTurnstileReady] = useState(false);
   const turnstileWidgetId = useRef<string | number | null>(null);
@@ -135,6 +136,13 @@ export default function EntrarClient() {
     setCaptchaToken(null);
   }, [email]);
 
+  useEffect(() => {
+    if (!result || !resultRef.current) return;
+    requestAnimationFrame(() => {
+      resultRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [result]);
+
   return (
     <section className="w-full px-4">
       {needsCaptcha && turnstileSiteKey && (
@@ -150,8 +158,8 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl md:text-3xl font-bold text-white">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Digite o e-mail para continuar e acessar o {nome}. Use o e-mail da sua Conta Fut7Pro —
-            se você se cadastrou pelo Google, use esse mesmo e-mail.
+            Digite seu e-mail para continuar e acessar o {nome}. Vamos mostrar a forma de entrada
+            disponível para essa conta. Se você se cadastrou pelo Google, use o mesmo e-mail.
           </p>
         </div>
 
@@ -187,7 +195,10 @@ export default function EntrarClient() {
         </div>
 
         {result && (
-          <div className="mt-6 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
+          <div
+            ref={resultRef}
+            className="mt-6 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200"
+          >
             {result.exists ? (
               <>
                 <div className="font-semibold text-white mb-1">Conta encontrada</div>
