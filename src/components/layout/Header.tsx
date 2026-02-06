@@ -12,6 +12,7 @@ import { useMe } from "@/hooks/useMe";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
+import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -29,8 +30,9 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
-  const tenantSlug = slugFromPath || "";
+  const tenantSlug = activeSlug || "";
   const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
@@ -42,24 +44,36 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const displayName = me?.athlete?.firstName || session?.user?.name || "Usuario";
+  const profileUser = globalProfile?.user;
+  const fallbackEmail = profileUser?.email || session?.user?.email || "";
+  const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
+  const displayName =
+    profileUser?.nickname?.trim() ||
+    profileUser?.name?.trim() ||
+    (me?.athlete?.firstName || "").trim() ||
+    (session?.user?.name || "").trim() ||
+    emailLabel ||
+    "Usuario";
   const profileImage =
-    me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
+    profileUser?.avatarUrl ||
+    me?.athlete?.avatarUrl ||
+    session?.user?.image ||
+    "/images/jogadores/jogador_padrao_01.jpg";
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
     enabled: isAthleteLoggedIn,
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
-  const resolvedSlug = slugFromPath || fallbackSlug || "";
+  const resolvedSlug = activeSlug || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
 
   useEffect(() => {
-    if (!tenantSlug || typeof window === "undefined") return;
-    window.localStorage.setItem("fut7pro_last_tenant_slug", tenantSlug);
-  }, [tenantSlug]);
+    if (!slugFromPath) return;
+    setStoredTenantSlug(slugFromPath);
+  }, [slugFromPath]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">

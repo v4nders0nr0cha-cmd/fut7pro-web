@@ -120,6 +120,7 @@ export default function GlobalPerfilClient() {
   const [securityLoading, setSecurityLoading] = useState(false);
   const [securityError, setSecurityError] = useState("");
   const [securitySuccess, setSecuritySuccess] = useState("");
+  const [securityExpanded, setSecurityExpanded] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -626,6 +627,9 @@ export default function GlobalPerfilClient() {
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 space-y-4">
           <h2 className="text-lg font-bold text-white">Senha e Seguranca</h2>
+          <p className="text-sm text-zinc-400">
+            Gerencie sua senha e metodos de login sem impactar os dados do perfil global.
+          </p>
           <div className="space-y-2 text-sm text-zinc-300">
             <div>
               <span className="text-zinc-400">Email verificado:</span>{" "}
@@ -646,89 +650,123 @@ export default function GlobalPerfilClient() {
             </div>
           </div>
 
-          <div className="space-y-3">
-            {hasPassword && (
+          {!securityExpanded ? (
+            <button
+              type="button"
+              onClick={() => setSecurityExpanded(true)}
+              className="w-full rounded-full bg-white/10 text-white font-semibold py-2 hover:bg-white/20 transition"
+            >
+              Deseja trocar sua senha?
+            </button>
+          ) : (
+            <div className="space-y-3">
+              {hasPassword && (
+                <label className="text-sm text-zinc-300">
+                  Senha atual
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(event) => setCurrentPassword(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                  />
+                </label>
+              )}
               <label className="text-sm text-zinc-300">
-                Senha atual
+                Nova senha
                 <input
                   type="password"
-                  value={currentPassword}
-                  onChange={(event) => setCurrentPassword(event.target.value)}
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 />
               </label>
-            )}
-            <label className="text-sm text-zinc-300">
-              Nova senha
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
-              />
-            </label>
-            <label className="text-sm text-zinc-300">
-              Confirmar nova senha
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
-              />
-            </label>
-          </div>
+              <label className="text-sm text-zinc-300">
+                Confirmar nova senha
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                />
+              </label>
 
-          {securityError && <div className="text-sm text-red-300">{securityError}</div>}
-          {securitySuccess && <div className="text-sm text-green-300">{securitySuccess}</div>}
+              {securityError && <div className="text-sm text-red-300">{securityError}</div>}
+              {securitySuccess && <div className="text-sm text-green-300">{securitySuccess}</div>}
 
-          <button
-            type="button"
-            onClick={async () => {
-              setSecurityError("");
-              setSecuritySuccess("");
-              if (!newPassword || newPassword.length < 6) {
-                setSecurityError("A senha deve ter ao menos 6 caracteres.");
-                return;
-              }
-              if (newPassword !== confirmPassword) {
-                setSecurityError("A confirmacao da senha nao confere.");
-                return;
-              }
-              if (hasPassword && !currentPassword) {
-                setSecurityError("Informe a senha atual.");
-                return;
-              }
-              setSecurityLoading(true);
-              try {
-                const endpoint = hasPassword
-                  ? "/api/perfil/security/change-password"
-                  : "/api/perfil/security/set-password";
-                const payload = hasPassword ? { currentPassword, newPassword } : { newPassword };
-                const res = await fetch(endpoint, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                });
-                const body = await res.json().catch(() => null);
-                if (!res.ok) {
-                  throw new Error(body?.message || body?.error || "Falha ao atualizar senha.");
-                }
-                await mutate();
-                setSecuritySuccess(hasPassword ? "Senha alterada com sucesso." : "Senha criada.");
-                setCurrentPassword("");
-                setNewPassword("");
-                setConfirmPassword("");
-              } catch (err) {
-                setSecurityError(err instanceof Error ? err.message : "Falha ao atualizar senha.");
-              } finally {
-                setSecurityLoading(false);
-              }
-            }}
-            disabled={securityLoading}
-            className="w-full rounded-full bg-brand text-black font-semibold py-2 disabled:opacity-60"
-          >
-            {securityLoading ? "Salvando..." : hasPassword ? "Alterar senha" : "Criar senha"}
-          </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSecurityError("");
+                    setSecuritySuccess("");
+                    if (!newPassword || newPassword.length < 6) {
+                      setSecurityError("A senha deve ter ao menos 6 caracteres.");
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setSecurityError("A confirmacao da senha nao confere.");
+                      return;
+                    }
+                    if (hasPassword && !currentPassword) {
+                      setSecurityError("Informe a senha atual.");
+                      return;
+                    }
+                    setSecurityLoading(true);
+                    try {
+                      const endpoint = hasPassword
+                        ? "/api/perfil/security/change-password"
+                        : "/api/perfil/security/set-password";
+                      const payload = hasPassword
+                        ? { currentPassword, newPassword }
+                        : { newPassword };
+                      const res = await fetch(endpoint, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload),
+                      });
+                      const body = await res.json().catch(() => null);
+                      if (!res.ok) {
+                        throw new Error(
+                          body?.message || body?.error || "Falha ao atualizar senha."
+                        );
+                      }
+                      await mutate();
+                      setSecuritySuccess(
+                        hasPassword ? "Senha alterada com sucesso." : "Senha criada."
+                      );
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    } catch (err) {
+                      setSecurityError(
+                        err instanceof Error ? err.message : "Falha ao atualizar senha."
+                      );
+                    } finally {
+                      setSecurityLoading(false);
+                    }
+                  }}
+                  disabled={securityLoading}
+                  className="w-full rounded-full bg-brand text-black font-semibold py-2 disabled:opacity-60"
+                >
+                  {securityLoading ? "Salvando..." : hasPassword ? "Alterar senha" : "Criar senha"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSecurityExpanded(false);
+                    setSecurityError("");
+                    setSecuritySuccess("");
+                    setCurrentPassword("");
+                    setNewPassword("");
+                    setConfirmPassword("");
+                  }}
+                  className="w-full rounded-full border border-white/10 text-white py-2 hover:bg-white/5"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

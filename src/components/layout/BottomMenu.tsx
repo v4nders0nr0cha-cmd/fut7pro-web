@@ -6,6 +6,7 @@ import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -20,8 +21,9 @@ export default function BottomMenu() {
   const router = useRouter();
   const { data: session } = useSession();
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
-  const tenantSlug = slugFromPath || "";
+  const tenantSlug = activeSlug || "";
   const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,

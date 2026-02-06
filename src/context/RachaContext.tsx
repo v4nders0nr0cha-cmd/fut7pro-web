@@ -1,8 +1,19 @@
 "use client";
 
-import { createContext, useContext, useState, useMemo, useCallback, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  type ReactNode,
+} from "react";
+import { usePathname } from "next/navigation";
 import { rachaMap } from "@/config/rachaMap";
 import { rachaConfig } from "@/config/racha.config";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
 type RachaContextType = {
   rachaId: string;
@@ -31,10 +42,12 @@ export function useRacha() {
 }
 
 export function RachaProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname() ?? "";
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
   const defaultSlug = rachaConfig.slug || defaultRachaId;
+  const initialStoredSlug = typeof window !== "undefined" ? getStoredTenantSlug() : null;
   const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
-  const [tenantSlug, setTenantSlugState] = useState<string>(defaultSlug);
+  const [tenantSlug, setTenantSlugState] = useState<string>(initialStoredSlug || defaultSlug);
 
   const setRachaId = useCallback((id: string) => {
     setRachaIdState(id);
@@ -52,6 +65,20 @@ export function RachaProvider({ children }: { children: ReactNode }) {
   const isRachaSelected = useMemo(() => {
     return (tenantSlug || rachaId).length > 0;
   }, [rachaId, tenantSlug]);
+
+  useEffect(() => {
+    const slugFromPath = resolvePublicTenantSlug(pathname);
+    if (slugFromPath) {
+      setTenantSlugState(slugFromPath);
+      setStoredTenantSlug(slugFromPath);
+      return;
+    }
+
+    const stored = getStoredTenantSlug();
+    if (stored) {
+      setTenantSlugState(stored);
+    }
+  }, [pathname]);
 
   const value = useMemo(
     () => ({

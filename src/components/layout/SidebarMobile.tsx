@@ -19,6 +19,7 @@ import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePathname } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
+import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -30,8 +31,9 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
-  const tenantSlug = slugFromPath || "";
+  const tenantSlug = activeSlug || "";
   const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
@@ -42,11 +44,23 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const showUserMenu = tenantSlug ? isAthleteLoggedIn : Boolean(session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
+  const profileUser = globalProfile?.user;
+  const fallbackEmail = profileUser?.email || session?.user?.email || "";
+  const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
   const profileImage =
-    me?.athlete?.avatarUrl || session?.user?.image || "/images/jogadores/jogador_padrao_01.jpg";
-  const userName = me?.athlete?.firstName || session?.user?.name || "Usuario";
+    profileUser?.avatarUrl ||
+    me?.athlete?.avatarUrl ||
+    session?.user?.image ||
+    "/images/jogadores/jogador_padrao_01.jpg";
+  const userName =
+    profileUser?.nickname?.trim() ||
+    profileUser?.name?.trim() ||
+    (me?.athlete?.firstName || "").trim() ||
+    (session?.user?.name || "").trim() ||
+    emailLabel ||
+    "Usuario";
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
-  const resolvedSlug = slugFromPath || fallbackSlug || "";
+  const resolvedSlug = activeSlug || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
