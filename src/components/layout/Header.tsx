@@ -55,8 +55,8 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     emailLabel ||
     "Usuario";
   const profileImage =
-    profileUser?.avatarUrl ||
     me?.athlete?.avatarUrl ||
+    profileUser?.avatarUrl ||
     session?.user?.image ||
     "/images/jogadores/jogador_padrao_01.jpg";
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({

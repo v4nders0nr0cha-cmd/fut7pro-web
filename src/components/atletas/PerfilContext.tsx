@@ -98,7 +98,8 @@ function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): At
 
   const nome = me?.athlete?.firstName || sessionUser?.name || "Atleta";
   const apelido = me?.athlete?.nickname ?? null;
-  const foto = me?.athlete?.avatarUrl || sessionUser?.image || DEFAULT_AVATAR;
+  const foto =
+    me?.athlete?.avatarUrl || me?.user?.avatarUrl || sessionUser?.image || DEFAULT_AVATAR;
   const mensalista = typeof me?.athlete?.mensalista === "boolean" ? me.athlete.mensalista : false;
 
   return {

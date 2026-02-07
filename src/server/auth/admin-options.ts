@@ -272,6 +272,12 @@ export const authOptions: NextAuthOptionsLike = {
                 const meData = await meResponse.json();
                 (user as any).emailVerified = Boolean(meData?.emailVerified);
                 (user as any).emailVerifiedAt = meData?.emailVerifiedAt ?? null;
+                (user as any).image =
+                  meData?.avatarUrl ||
+                  meData?.image ||
+                  meData?.avatar ||
+                  (user as any).image ||
+                  null;
               }
             } catch {
               (user as any).emailVerified = false;
@@ -300,6 +306,7 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).authProvider = (token as any).authProvider ?? null;
         (session.user as any).emailVerified = (token as any).emailVerified ?? false;
         (session.user as any).emailVerifiedAt = (token as any).emailVerifiedAt ?? null;
+        (session.user as any).image = (token as any).image ?? (session.user as any).image ?? null;
       }
       return session;
     },
@@ -318,6 +325,7 @@ export const authOptions: NextAuthOptionsLike = {
         (token as any).authProvider = (user as any).authProvider ?? null;
         (token as any).emailVerified = (user as any).emailVerified ?? false;
         (token as any).emailVerifiedAt = (user as any).emailVerifiedAt ?? null;
+        (token as any).image = (user as any).image ?? (token as any).image ?? null;
       }
 
       if (token.accessToken && token.refreshToken) {

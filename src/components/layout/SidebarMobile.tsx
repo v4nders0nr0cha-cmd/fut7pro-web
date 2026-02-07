@@ -48,8 +48,8 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const fallbackEmail = profileUser?.email || session?.user?.email || "";
   const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
   const profileImage =
-    profileUser?.avatarUrl ||
     me?.athlete?.avatarUrl ||
+    profileUser?.avatarUrl ||
     session?.user?.image ||
     "/images/jogadores/jogador_padrao_01.jpg";
   const userName =

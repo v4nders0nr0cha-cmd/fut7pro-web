@@ -516,7 +516,7 @@ export default function RegisterClient() {
               className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <span className="flex items-center justify-center gap-2">
-                <Image src="/images/Google-Logo.png" alt="Logo do Google" width={18} height={18} />
+                <Image src="/images/Google-Logo.png" alt="Google" width={18} height={18} />
                 Continuar com Google
               </span>
             </button>

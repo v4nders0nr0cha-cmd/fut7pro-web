@@ -16,12 +16,15 @@ jest.mock("next/script", () => ({
 }));
 
 const pushMock = jest.fn();
+const replaceMock = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
+  useRouter: () => ({ push: pushMock, replace: replaceMock }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock("next-auth/react", () => ({
+  useSession: jest.fn(),
   signIn: jest.fn(),
 }));
 
@@ -35,15 +38,18 @@ jest.mock("@/hooks/usePublicLinks", () => ({
 
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
+const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 
 describe("EntrarClient", () => {
   beforeEach(() => {
+    mockedUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
     mockedUseTema.mockReturnValue({ nome: "Casa do Gamer" });
     mockedUsePublicLinks.mockReturnValue({
       publicSlug: "casa-do-gamer",
       publicHref: (path: string) => `/casa-do-gamer${path}`,
     });
     pushMock.mockReset();
+    replaceMock.mockReset();
   });
 
   afterEach(() => {
@@ -74,7 +80,9 @@ describe("EntrarClient", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Sua conta já existe. Entre para solicitar entrada neste racha.")
+        screen.getByText(
+          "Sua conta já existe. Solicite entrada neste racha para liberar seu perfil e rankings."
+        )
       ).toBeInTheDocument();
     });
 

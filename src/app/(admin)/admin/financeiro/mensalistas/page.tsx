@@ -59,7 +59,7 @@ const AUTO_MENSALISTAS_OBSERVACOES = "auto: mensalistas";
 
 function mapMensalistas(jogadores: Jogador[]): MensalistaResumo[] {
   return jogadores
-    .filter((j) => j.mensalista || j.isMember)
+    .filter((j) => j.mensalista || j.isMensalista || j.isMember)
     .map((j) => ({
       id: j.id,
       nome: j.nome || j.nickname || "Jogador",

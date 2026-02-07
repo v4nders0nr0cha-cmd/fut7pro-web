@@ -85,8 +85,12 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
     }
 
     const mensalista =
-      typeof jogador.mensalista === "boolean" ? jogador.mensalista : jogador.isMember;
-    if (typeof mensalista === "boolean") payload.isMember = mensalista;
+      typeof jogador.mensalista === "boolean"
+        ? jogador.mensalista
+        : typeof jogador.isMensalista === "boolean"
+          ? jogador.isMensalista
+          : jogador.isMember;
+    if (typeof mensalista === "boolean") payload.isMensalista = mensalista;
 
     if (jogador.email !== undefined) {
       const emailValue = String(jogador.email).trim().toLowerCase();
@@ -126,7 +130,11 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       const avatar = jogador?.avatar ?? jogador?.photoUrl ?? jogador?.foto ?? "";
       const foto = jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
       const mensalista =
-        typeof jogador?.mensalista === "boolean" ? jogador.mensalista : Boolean(jogador?.isMember);
+        typeof jogador?.mensalista === "boolean"
+          ? jogador.mensalista
+          : typeof jogador?.isMensalista === "boolean"
+            ? jogador.isMensalista
+            : Boolean(jogador?.isMember);
       const isBot = Boolean(jogador?.isBot);
       const status = jogador?.status ?? "Ativo";
       const email = jogador?.email ?? "";
