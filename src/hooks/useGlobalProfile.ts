@@ -53,6 +53,7 @@ export function useGlobalProfile(options?: { enabled?: boolean }) {
     profile: data ?? null,
     isLoading,
     isError: Boolean(error),
+    errorStatus: (error as (Error & { status?: number }) | undefined)?.status ?? null,
     error: error instanceof Error ? error.message : null,
     mutate,
     updateProfile,

@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
@@ -94,16 +93,17 @@ function ConquistasLista({ titulo, items }: { titulo: string; items: GlobalTitle
 }
 
 export default function GlobalPerfilClient() {
-  const { status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, isLoading, isError, error, updateProfile, mutate } = useGlobalProfile({
-    enabled: status === "authenticated",
-  });
+  const { profile, isLoading, isError, error, errorStatus, updateProfile, mutate } =
+    useGlobalProfile({
+      enabled: true,
+    });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState(false);
   const [switchingSlug, setSwitchingSlug] = useState<string | null>(null);
+  const [authFallbackReady, setAuthFallbackReady] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -150,6 +150,24 @@ export default function GlobalPerfilClient() {
       }
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const waitingAuth = Boolean(isError && errorStatus === 401 && !profile);
+    if (!waitingAuth) {
+      setAuthFallbackReady(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => setAuthFallbackReady(true), 10000);
+    const retry = window.setInterval(() => {
+      mutate().catch(() => {
+        // no-op
+      });
+    }, 2000);
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(retry);
+    };
+  }, [isError, errorStatus, profile, mutate]);
 
   useEffect(() => {
     const stored = getStoredTenantSlug();
@@ -318,7 +336,9 @@ export default function GlobalPerfilClient() {
     }
   };
 
-  if (status === "loading" || isLoading) {
+  const waitingAuth = Boolean(isError && errorStatus === 401 && !profile && !authFallbackReady);
+
+  if (isLoading || waitingAuth) {
     return (
       <div className="mx-auto w-full max-w-5xl px-6 py-16 text-gray-300">
         Carregando perfil global...
@@ -326,7 +346,7 @@ export default function GlobalPerfilClient() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (isError && errorStatus === 401 && !profile) {
     return (
       <div className="mx-auto w-full max-w-4xl px-6 py-16 text-gray-200">
         <h1 className="sr-only">Perfil Global Fut7Pro</h1>
