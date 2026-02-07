@@ -41,13 +41,20 @@ export function useRacha() {
   return context;
 }
 
-export function RachaProvider({ children }: { children: ReactNode }) {
+export function RachaProvider({
+  children,
+  initialTenantSlug,
+}: {
+  children: ReactNode;
+  initialTenantSlug?: string | null;
+}) {
   const pathname = usePathname() ?? "";
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
   const defaultSlug = rachaConfig.slug || defaultRachaId;
   const initialStoredSlug = typeof window !== "undefined" ? getStoredTenantSlug() : null;
+  const initialSlug = (initialTenantSlug || initialStoredSlug || defaultSlug || "").trim();
   const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
-  const [tenantSlug, setTenantSlugState] = useState<string>(initialStoredSlug || defaultSlug);
+  const [tenantSlug, setTenantSlugState] = useState<string>(initialSlug);
 
   const setRachaId = useCallback((id: string) => {
     setRachaIdState(id);
@@ -77,8 +84,19 @@ export function RachaProvider({ children }: { children: ReactNode }) {
     const stored = getStoredTenantSlug();
     if (stored) {
       setTenantSlugState(stored);
+      return;
     }
-  }, [pathname]);
+
+    if (initialTenantSlug) {
+      setTenantSlugState(initialTenantSlug);
+      setStoredTenantSlug(initialTenantSlug);
+      return;
+    }
+
+    if (!tenantSlug && defaultSlug) {
+      setTenantSlugState(defaultSlug);
+    }
+  }, [pathname, initialTenantSlug, defaultSlug, tenantSlug]);
 
   const value = useMemo(
     () => ({

@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
+import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -151,8 +152,7 @@ export default function GlobalPerfilClient() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem("fut7pro_last_tenant_slug");
+    const stored = getStoredTenantSlug();
     if (stored) {
       setCurrentSlug(stored);
     }
@@ -309,9 +309,7 @@ export default function GlobalPerfilClient() {
       if (!res.ok) {
         throw new Error(body?.message || body?.error || "Falha ao trocar racha.");
       }
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem("fut7pro_last_tenant_slug", membership.tenantSlug);
-      }
+      setStoredTenantSlug(membership.tenantSlug);
       router.push(`/${membership.tenantSlug}`);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Falha ao trocar racha.");

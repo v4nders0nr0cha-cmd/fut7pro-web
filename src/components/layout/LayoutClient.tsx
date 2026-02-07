@@ -11,28 +11,35 @@ import TopNavMenu from "@/components/layout/TopNavMenu";
 import ComunicadosLoginGate from "@/components/comunicacao/ComunicadosLoginGate";
 import { useRacha } from "@/context/RachaContext";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
-import { rachaConfig } from "@/config/racha.config";
+import { setStoredTenantSlug } from "@/utils/active-tenant";
 
-export default function LayoutClient({ children }: { children: ReactNode }) {
+export default function LayoutClient({
+  children,
+  initialTenantSlug,
+}: {
+  children: ReactNode;
+  initialTenantSlug?: string | null;
+}) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname() ?? "";
   const { tenantSlug, setTenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const defaultSlug = (rachaConfig.slug || "").trim().toLowerCase();
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     if (slugFromPath) {
       if (slugFromPath !== tenantSlug) {
         setTenantSlug(slugFromPath);
+        setStoredTenantSlug(slugFromPath);
       }
       return;
     }
 
-    if (defaultSlug && tenantSlug !== defaultSlug) {
-      setTenantSlug(defaultSlug);
+    const fromInitial = (initialTenantSlug || "").trim().toLowerCase();
+    if (fromInitial && tenantSlug !== fromInitial) {
+      setTenantSlug(fromInitial);
+      setStoredTenantSlug(fromInitial);
     }
-  }, [slugFromPath, tenantSlug, setTenantSlug, defaultSlug]);
+  }, [slugFromPath, tenantSlug, setTenantSlug, initialTenantSlug]);
 
   return (
     <>

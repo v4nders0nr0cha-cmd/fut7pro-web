@@ -170,7 +170,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 <Link
                   href="/perfil"
                   className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={() => {
+                    if (tenantSlug) {
+                      setStoredTenantSlug(tenantSlug);
+                    }
+                    setDropdownOpen(false);
+                  }}
                 >
                   Perfil Global Fut7Pro
                 </Link>
@@ -178,7 +183,12 @@ export default function Header({ onMenuClick }: HeaderProps) {
                   <Link
                     href={rachaPerfilHref}
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={() => {
+                      if (tenantSlug) {
+                        setStoredTenantSlug(tenantSlug);
+                      }
+                      setDropdownOpen(false);
+                    }}
                   >
                     Meu perfil neste racha
                   </Link>

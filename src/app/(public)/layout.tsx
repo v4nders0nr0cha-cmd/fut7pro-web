@@ -6,7 +6,7 @@ import LayoutClient from "@/components/layout/LayoutClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -118,6 +118,13 @@ function resolveSlugFromHeaders() {
   return null;
 }
 
+function resolveSlugFromCookie() {
+  const cookieStore = cookies();
+  const raw = cookieStore.get("f7_active_slug")?.value || null;
+  const value = raw?.trim().toLowerCase() || null;
+  return value || null;
+}
+
 export default async function PublicLayout({
   children,
   params,
@@ -126,7 +133,8 @@ export default async function PublicLayout({
   params?: { slug?: string };
 }) {
   const slugFromHeaders = resolveSlugFromHeaders();
-  const resolvedSlug = params?.slug ?? slugFromHeaders ?? null;
+  const slugFromCookie = resolveSlugFromCookie();
+  const resolvedSlug = params?.slug ?? slugFromHeaders ?? slugFromCookie ?? null;
   const themeKey = await resolvePublicThemeKey(resolvedSlug);
   return (
     <div
@@ -134,8 +142,8 @@ export default async function PublicLayout({
       className={`${inter.className} bg-fundo text-white break-words min-h-screen`}
     >
       <ThemeProvider>
-        <Providers>
-          <LayoutClient>{children}</LayoutClient>
+        <Providers initialTenantSlug={resolvedSlug}>
+          <LayoutClient initialTenantSlug={resolvedSlug}>{children}</LayoutClient>
         </Providers>
       </ThemeProvider>
       <JsonLd siteName="Fut7Pro" siteUrl="https://app.fut7pro.com.br" logoUrl="/og-image.jpg" />
