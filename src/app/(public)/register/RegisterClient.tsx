@@ -383,13 +383,22 @@ export default function RegisterClient() {
           setPendingModalOpen(true);
           return;
         }
-        if (errorCode === "ALREADY_MEMBER" || errorCode === "ATHLETE_ALREADY_REGISTERED") {
-          setAccountModalMessage("Voce ja e membro deste racha. Entre para acessar seu perfil.");
+        if (errorCode === "ALREADY_MEMBER") {
+          setAccountModalMessage("Você já faz parte deste racha. Entre para acessar.");
+          setAccountModalOpen(true);
+          return;
+        }
+        if (errorCode === "ATHLETE_ALREADY_REGISTERED") {
+          setAccountModalMessage(
+            "Já existe um perfil de atleta com este e-mail neste racha. Entre com sua conta para solicitar entrada."
+          );
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ACCOUNT_EXISTS") {
-          setAccountModalMessage(message);
+          setAccountModalMessage(
+            message || "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha."
+          );
           setAccountModalOpen(true);
           return;
         }
@@ -800,11 +809,7 @@ export default function RegisterClient() {
                 </Dialog.Title>
                 <p className="mt-3 text-sm text-gray-200">
                   {accountModalMessage ||
-                    "Esse e-mail ja tem conta Fut7Pro. Entre para confirmar que e voce e solicitar entrada neste racha."}
-                </p>
-                <p className="mt-2 text-xs text-gray-400">
-                  Seus dados ficam separados por racha. A entrada so acontece apos aprovacao do
-                  admin.
+                    "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha."}
                 </p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">

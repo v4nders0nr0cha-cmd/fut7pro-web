@@ -62,8 +62,7 @@ describe("RegisterClient", () => {
       ok: false,
       json: async () => ({
         code: "ACCOUNT_EXISTS",
-        message:
-          "Esse e-mail ja tem conta Fut7Pro. Entre para confirmar que e voce e solicitar entrada neste racha.",
+        message: "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha.",
       }),
     });
     global.fetch = fetchMock as any;
@@ -89,8 +88,8 @@ describe("RegisterClient", () => {
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
-    expect(screen.getByText(/Esse e-mail ja tem conta Fut7Pro/i)).toBeInTheDocument();
-    expect(screen.getByText(/Seus dados ficam separados por racha/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sua conta Fut7Pro já existe/i)).toBeInTheDocument();
+    expect(screen.getByText(/Falta apenas solicitar entrada neste racha/i)).toBeInTheDocument();
 
     const loginCta = screen.getByRole("link", { name: /Entrar e solicitar/i });
     expect(loginCta.getAttribute("href")).toBe(

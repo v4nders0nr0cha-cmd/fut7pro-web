@@ -10,8 +10,12 @@ import { useTema } from "@/hooks/useTema";
 
 type LookupResponse = {
   exists: boolean;
+  userExists?: boolean;
   providers: string[];
   hasPassword: boolean;
+  availableAuthMethods?: Array<"google" | "password">;
+  membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
+  nextAction?: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
   requiresCaptcha?: boolean;
 };
 
@@ -107,9 +111,26 @@ export default function EntrarClient() {
     });
   };
 
-  const hasGoogle = result?.providers?.includes("google");
-  const showLoginCta = Boolean(result?.exists && result?.hasPassword);
-  const showGoogleOnly = Boolean(result?.exists && hasGoogle && !result?.hasPassword);
+  const resolvedUserExists = Boolean(result?.userExists ?? result?.exists);
+  const availableAuthMethods = useMemo(() => {
+    if (result?.availableAuthMethods?.length) {
+      return result.availableAuthMethods;
+    }
+    const methods: Array<"google" | "password"> = [];
+    if (result?.providers?.includes("google")) {
+      methods.push("google");
+    }
+    if (result?.hasPassword) {
+      methods.push("password");
+    }
+    return methods;
+  }, [result?.availableAuthMethods, result?.providers, result?.hasPassword]);
+  const hasGoogle = availableAuthMethods.includes("google");
+  const hasPassword = availableAuthMethods.includes("password") || Boolean(result?.hasPassword);
+  const membershipStatus = result?.membershipStatus ?? (resolvedUserExists ? "ACTIVE" : "NONE");
+  const nextAction =
+    result?.nextAction ?? (resolvedUserExists ? ("LOGIN" as const) : ("REGISTER" as const));
+  const showGoogleOnly = nextAction === "LOGIN" && hasGoogle && !hasPassword;
 
   useEffect(() => {
     if (!needsCaptcha || !turnstileSiteKey || !turnstileReady) return;
@@ -198,7 +219,7 @@ export default function EntrarClient() {
               ref={resultRef}
               className="mt-3 rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200"
             >
-              {result.exists ? (
+              {nextAction === "LOGIN" && (
                 <>
                   <div className="font-semibold text-white mb-1">Conta encontrada</div>
                   <p className="mb-4">
@@ -222,7 +243,7 @@ export default function EntrarClient() {
                           onClick={() => router.push(loginHref)}
                           className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
                         >
-                          {hasGoogle ? "Entrar com senha" : "Ir para Login"}
+                          {hasGoogle ? "Entrar com senha" : "Ir para login"}
                         </button>
                         {hasGoogle && (
                           <button
@@ -235,7 +256,7 @@ export default function EntrarClient() {
                         )}
                       </>
                     )}
-                    {result.hasPassword && (
+                    {hasPassword && (
                       <a
                         href="/admin/esqueci-senha"
                         className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-center text-sm font-semibold text-white/80 hover:border-white/30"
@@ -245,7 +266,77 @@ export default function EntrarClient() {
                     )}
                   </div>
                 </>
-              ) : (
+              )}
+
+              {nextAction === "REQUEST_JOIN" && (
+                <>
+                  <div className="font-semibold text-white mb-1">Conta Fut7Pro existente</div>
+                  <p className="mb-4">
+                    Sua conta já existe. Entre para solicitar entrada neste racha.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => router.push(loginHref)}
+                      className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
+                    >
+                      Entrar para solicitar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResult(null)}
+                      className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {nextAction === "WAIT_APPROVAL" && (
+                <>
+                  <div className="font-semibold text-white mb-1">Solicitação pendente</div>
+                  <p className="mb-4">
+                    Sua solicitação já foi enviada e está aguardando aprovação do administrador.
+                  </p>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => router.push(publicHref("/aguardando-aprovacao"))}
+                      className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
+                    >
+                      Acompanhar status
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setResult(null)}
+                      className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {nextAction === "BLOCKED_MESSAGE" && (
+                <>
+                  <div className="font-semibold text-white mb-1">Acesso indisponível</div>
+                  <p className="mb-4">
+                    {membershipStatus === "REJECTED"
+                      ? "Sua solicitação foi recusada para este racha. Fale com o administrador para uma nova análise."
+                      : "Seu acesso a este racha está bloqueado no momento. Entre em contato com o administrador."}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setResult(null)}
+                    className="w-full rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
+                  >
+                    Voltar
+                  </button>
+                </>
+              )}
+
+              {nextAction === "REGISTER" && (
                 <>
                   <div className="font-semibold text-white mb-1">Primeiro acesso no Fut7Pro</div>
                   <p className="mb-4">
