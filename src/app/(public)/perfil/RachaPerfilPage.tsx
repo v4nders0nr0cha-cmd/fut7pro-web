@@ -208,30 +208,31 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
 
   return (
     <>
-      <div
-        className="relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl border-4 border-brand flex flex-col justify-center items-center cursor-pointer bg-gradient-to-br from-[var(--brand-soft)] via-[var(--brand)] to-[var(--brand-strong)] hover:scale-105 transition"
+      <button
+        type="button"
+        className="group relative w-full max-w-[360px] min-h-[176px] overflow-hidden rounded-2xl border border-emerald-400/40 bg-[linear-gradient(135deg,#0b1220_0%,#0f172a_55%,#111827_100%)] px-5 py-5 text-left shadow-[0_18px_36px_rgba(0,0,0,0.45)] transition duration-200 hover:-translate-y-0.5 hover:border-emerald-300/70 hover:shadow-[0_22px_46px_rgba(0,0,0,0.55)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70"
         onClick={() => setModalOpen(true)}
-        title="Quero ser Mensalista"
-        tabIndex={0}
+        title="Solicitar vaga de mensalista"
       >
-        <div className="absolute inset-0 pointer-events-none rounded-2xl border-4 border-brand opacity-60 shadow-[0_0_12px_2px_var(--brand)]"></div>
-        <div className="flex flex-col items-center justify-center z-10 px-6 py-3 h-full w-full">
-          <div className="text-brand-strong font-extrabold text-lg text-center drop-shadow-sm mb-2">
-            Torne-se um Mensalista!
-          </div>
-          <div className="text-brand-strong text-[15px] text-center font-medium leading-snug">
-            Garanta sua vaga como mensalista
-            <br />
-            e aproveite sua vaga garantida
-            <br />
-            no racha, e benefícios exclusivos.
-            <br />
-            <span className="font-bold block mt-2">Clique aqui para solicitar!</span>
-          </div>
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(16,185,129,0.22),transparent_42%),radial-gradient(circle_at_88%_82%,rgba(16,185,129,0.16),transparent_38%)]" />
+        <div className="relative flex h-full flex-col">
+          <span className="inline-flex w-fit rounded-full border border-emerald-300/45 bg-emerald-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-100">
+            Plano mensal
+          </span>
+          <h3 className="mt-3 text-[22px] font-extrabold leading-tight text-white">
+            Torne-se mensalista
+          </h3>
+          <p className="mt-2 max-w-[34ch] text-sm leading-relaxed text-zinc-200">
+            Garanta prioridade nas partidas, benefícios exclusivos e mais previsibilidade para jogar
+            toda semana.
+          </p>
+          <span className="mt-4 inline-flex w-fit items-center rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-zinc-950 transition group-hover:bg-emerald-300">
+            Solicitar vaga agora
+          </span>
         </div>
-      </div>
+      </button>
       {modalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
           <div className="bg-zinc-900 p-8 rounded-xl max-w-sm w-full shadow-xl border border-brand-strong flex flex-col items-center">
             <div className="text-lg font-semibold text-brand mb-2 text-center">
               Solicitar vaga de Mensalista
