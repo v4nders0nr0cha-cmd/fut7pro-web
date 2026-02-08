@@ -1,6 +1,4 @@
 import Image from "next/image";
-import { useRef, useState } from "react";
-import html2canvas from "html2canvas";
 
 function CartaoMensalistaPremium({
   nome,
@@ -11,48 +9,18 @@ function CartaoMensalistaPremium({
   logoRacha: string;
   ativo?: boolean;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [exportando, setExportando] = useState(false);
-
-  const handleDownload = async () => {
-    if (!ativo || !cardRef.current) return;
-    setExportando(true);
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas(cardRef.current, {
-      backgroundColor: null,
-      useCORS: true,
-      scale: 2,
-    });
-    setExportando(false);
-    const link = document.createElement("a");
-    link.download = `cartao-mensalista-${nome.replace(/\s+/g, "_").toLowerCase()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
   return (
     <div
-      ref={cardRef}
       className={`
                 relative w-[340px] h-[160px] rounded-2xl overflow-hidden shadow-2xl
                 border-4 flex
                 bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center
                 transition
-                ${ativo ? "border-green-400 shadow-green-400/50 cursor-pointer hover:brightness-110" : "border-gray-400 shadow-gray-700/30"}
+                ${ativo ? "border-green-400 shadow-green-400/50" : "border-gray-400 shadow-gray-700/30"}
             `}
       style={{
-        boxShadow: exportando
-          ? "none"
-          : ativo
-            ? "0 0 18px 2px #38ff00, 0 2px 22px #0008"
-            : "0 0 10px #6668",
+        boxShadow: ativo ? "0 0 18px 2px #38ff00, 0 2px 22px #0008" : "0 0 10px #6668",
       }}
-      title={ativo ? "Clique para salvar seu Cartão Mensalista" : ""}
-      onClick={ativo ? handleDownload : undefined}
-      onKeyDown={ativo ? (e) => e.key === "Enter" && handleDownload() : undefined}
-      role={ativo ? "button" : undefined}
-      tabIndex={ativo ? 0 : undefined}
-      aria-label={ativo ? "Baixar cartão mensalista" : undefined}
     >
       {/* Lado esquerdo: Selo MENSALISTA */}
       <div className="flex flex-col justify-between pl-5 py-4 flex-1">
@@ -83,20 +51,18 @@ function CartaoMensalistaPremium({
         </div>
       </div>
       {/* Tooltip no canto inferior ESQUERDO */}
-      {ativo && !exportando && (
+      {ativo && (
         <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-green-300 pointer-events-none select-none">
-          Clique para baixar seu cartão!
+          Mensalista, prioridade garantida
         </div>
       )}
       {/* Neon */}
-      {!exportando && (
-        <div
-          className="pointer-events-none absolute inset-0 rounded-2xl border-4 border-green-400 opacity-70"
-          style={{
-            boxShadow: "0 0 18px 3px #38ff00, 0 0 18px #38ff0050 inset",
-          }}
-        />
-      )}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-2xl border-4 border-green-400 opacity-70"
+        style={{
+          boxShadow: "0 0 18px 3px #38ff00, 0 0 18px #38ff0050 inset",
+        }}
+      />
     </div>
   );
 }

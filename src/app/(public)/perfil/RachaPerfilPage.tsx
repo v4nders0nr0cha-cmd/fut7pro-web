@@ -128,39 +128,16 @@ function CartaoMensalistaPremium({
   logoRacha: string;
   ativo?: boolean;
 }) {
-  const [exportando, setExportando] = useState(false);
-  const cardRef = useState<HTMLDivElement | null>(null)[0];
-
-  const handleDownload = async () => {
-    if (!ativo || !cardRef) return;
-    setExportando(true);
-    await new Promise((r) => setTimeout(r, 50));
-    const html2canvas = (await import("html2canvas")).default;
-    const canvas = await html2canvas(cardRef, {
-      backgroundColor: null,
-      useCORS: true,
-      scale: 2,
-    });
-    setExportando(false);
-    const link = document.createElement("a");
-    link.download = `cartao-mensalista-${nome.replace(/\s+/g, "_").toLowerCase()}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-  };
-
   return (
     <div
-      ref={cardRef as any}
       className={`
         relative w-[340px] h-[160px] rounded-2xl overflow-hidden
         border flex
         bg-[url('/images/bg-campo-fut7.jpg')] bg-cover bg-center
         transition
-        ${exportando ? "shadow-none" : "shadow-[0_12px_28px_rgba(0,0,0,0.45)]"}
-        ${ativo ? "border-emerald-400/40 cursor-pointer hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(0,0,0,0.5)]" : "border-white/10 opacity-90"}
+        shadow-[0_12px_28px_rgba(0,0,0,0.45)]
+        ${ativo ? "border-emerald-400/40" : "border-white/10 opacity-90"}
       `}
-      title={ativo ? "Clique para salvar seu Cartão Mensalista" : ""}
-      onClick={ativo ? handleDownload : undefined}
     >
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-400/15 via-transparent to-black/40" />
       <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-emerald-400/70 via-emerald-200/30 to-transparent" />
@@ -194,9 +171,9 @@ function CartaoMensalistaPremium({
         </div>
       </div>
       {/* Tooltip - canto inferior esquerdo */}
-      {ativo && !exportando && (
+      {ativo && (
         <div className="absolute left-2 bottom-2 bg-black/70 px-2 py-1 rounded text-[10px] text-emerald-200 pointer-events-none select-none">
-          Clique para baixar seu cartão!
+          Mensalista, prioridade garantida
         </div>
       )}
     </div>
