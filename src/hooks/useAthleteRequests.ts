@@ -50,6 +50,12 @@ async function requestJson(input: string, init?: RequestInit) {
   return body;
 }
 
+function normalizeAvatarUrl(value?: string | null): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export function useAthleteRequests(options?: { status?: string; enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
   const params = new URLSearchParams();
@@ -63,6 +69,15 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
     fetcher,
     { revalidateOnFocus: false }
   );
+
+  const solicitacoesNormalizadas = (Array.isArray(data) ? data : []).map((item) => {
+    const avatarUrl = normalizeAvatarUrl(item.avatarUrl ?? item.photoUrl ?? null);
+    return {
+      ...item,
+      avatarUrl,
+      photoUrl: avatarUrl,
+    };
+  });
 
   const approve = async (id: string) => {
     await requestJson(`/api/admin/solicitacoes/${id}/approve`, {
@@ -80,7 +95,7 @@ export function useAthleteRequests(options?: { status?: string; enabled?: boolea
   };
 
   return {
-    solicitacoes: Array.isArray(data) ? data : [],
+    solicitacoes: solicitacoesNormalizadas,
     isLoading,
     isError: Boolean(error),
     error: error instanceof Error ? error.message : null,

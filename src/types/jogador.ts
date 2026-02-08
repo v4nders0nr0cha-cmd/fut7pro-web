@@ -28,6 +28,7 @@ export type Jogador = {
   posicaoSecundaria?: PosicaoJogador | null;
   positionSecondary?: PosicaoJogador | null;
   avatar: string;
+  avatarUrl?: string | null;
   foto?: string;
   photoUrl?: string | null;
   status: StatusJogador;
@@ -53,6 +54,7 @@ export type Jogador = {
     id: string;
     name?: string | null;
     email?: string | null;
+    avatarUrl?: string | null;
   } | null;
 };
 

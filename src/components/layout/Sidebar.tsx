@@ -9,6 +9,8 @@ import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { getAvatarSrc } from "@/utils/avatar";
 
 const DEFAULT_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const BADGE_AUTOMATICO = "Automático";
@@ -274,7 +276,7 @@ function SidebarPlayerCard({
         </div>
       </div>
       <div className="mt-2 flex items-center gap-2 min-w-0">
-        <Image
+        <AvatarFut7Pro
           src={image}
           alt={`Foto de ${name}`}
           width={38}
@@ -317,7 +319,7 @@ function SidebarPlayerCard({
 
       <p className="text-[10px] uppercase font-bold text-brand mb-1">{title}</p>
       <div className="flex items-center gap-3">
-        <Image
+        <AvatarFut7Pro
           src={image}
           alt={`Foto de ${name}`}
           width={40}
@@ -383,7 +385,7 @@ function SidebarRankingCard({
 }
 
 function safeImage(src?: string, fallback: string = DEFAULT_IMAGE) {
-  return src && src.trim() ? src : fallback;
+  return getAvatarSrc(src, fallback);
 }
 
 function resolveGoleiro(rankings?: RankingAtleta[]) {

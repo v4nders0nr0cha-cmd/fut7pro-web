@@ -73,7 +73,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       }
     }
 
-    const foto = jogador.foto ?? jogador.photoUrl ?? jogador.avatar;
+    const foto = jogador.foto ?? jogador.photoUrl ?? jogador.avatarUrl ?? jogador.avatar;
     if (foto !== undefined) payload.photoUrl = foto || null;
 
     if (jogador.status !== undefined) {
@@ -127,8 +127,10 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       const apelido = jogador?.apelido ?? jogador?.nickname ?? "";
       const posicao = jogador?.posicao ?? jogador?.position ?? "Meia";
       const posicaoSecundaria = jogador?.posicaoSecundaria ?? jogador?.positionSecondary ?? null;
-      const avatar = jogador?.avatar ?? jogador?.photoUrl ?? jogador?.foto ?? "";
-      const foto = jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
+      const avatar =
+        jogador?.avatarUrl ?? jogador?.avatar ?? jogador?.photoUrl ?? jogador?.foto ?? "";
+      const foto =
+        jogador?.avatarUrl ?? jogador?.foto ?? jogador?.photoUrl ?? jogador?.avatar ?? undefined;
       const mensalista =
         typeof jogador?.mensalista === "boolean"
           ? jogador.mensalista
@@ -156,7 +158,14 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         email,
         timeId,
         userId,
-        user,
+        user: user
+          ? {
+              id: user.id,
+              name: user.name ?? null,
+              email: user.email ?? null,
+              avatarUrl: user.avatarUrl ?? null,
+            }
+          : null,
       } as Jogador;
     });
   }, [data]);

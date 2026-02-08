@@ -2,11 +2,11 @@
 
 import Head from "next/head";
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import { FaInfoCircle } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
 import { rachaConfig } from "@/config/racha.config";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 const PERIODOS = [
   { label: "Este mês", value: "mes" },
@@ -70,7 +70,12 @@ export default function RankingAssiduidade() {
           id: jogador.id,
           nome: jogador.nome,
           apelido: jogador.apelido,
-          avatar: jogador.avatar || jogador.foto || jogador.photoUrl || DEFAULT_AVATAR,
+          avatar:
+            jogador.avatarUrl ||
+            jogador.avatar ||
+            jogador.foto ||
+            jogador.photoUrl ||
+            DEFAULT_AVATAR,
           jogos,
           mensalista: Boolean(jogador.mensalista),
         };
@@ -169,11 +174,12 @@ export default function RankingAssiduidade() {
                   <tr key={j.id} className="border-t border-gray-800 hover:bg-[#22242b]">
                     <td className="py-3 px-4 font-bold text-cyan-300">{idx + 1}</td>
                     <td className="py-3 px-4 flex items-center gap-3">
-                      <Image
+                      <AvatarFut7Pro
                         src={j.avatar}
                         alt={`Foto do jogador ${j.nome}`}
                         width={38}
                         height={38}
+                        fallbackSrc={DEFAULT_AVATAR}
                         className="rounded-full border-2 border-cyan-400 shadow object-cover"
                       />
                       <span className="text-white">{j.nome}</span>

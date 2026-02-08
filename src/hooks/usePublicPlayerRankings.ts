@@ -24,6 +24,7 @@ interface PublicAthleteEntry {
   posicao?: string | null;
   position?: string | null;
   foto?: string | null;
+  avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
 }
@@ -128,10 +129,15 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
   });
 
   const rankingResults = data?.results ?? [];
-  const normalizedRankings = rankingResults.map((entry) => ({
-    ...entry,
-    slug: resolveAthleteSlug(entry.slug, entry.id),
-  }));
+  const normalizedRankings = rankingResults.map((entry) => {
+    const avatarUrl = entry.avatarUrl ?? entry.foto ?? DEFAULT_AVATAR;
+    return {
+      ...entry,
+      foto: avatarUrl,
+      avatarUrl,
+      slug: resolveAthleteSlug(entry.slug, entry.id),
+    };
+  });
   const athleteResults = athletesData?.results ?? [];
   const positionFilter = normalizePosition(options.position);
 
@@ -150,7 +156,13 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
     id: athlete.id,
     nome: athlete.nome,
     slug: resolveAthleteSlug(athlete.slug, athlete.id),
-    foto: athlete.foto && athlete.foto.trim() ? athlete.foto : DEFAULT_AVATAR,
+    foto:
+      athlete.avatarUrl && athlete.avatarUrl.trim()
+        ? athlete.avatarUrl
+        : athlete.foto && athlete.foto.trim()
+          ? athlete.foto
+          : DEFAULT_AVATAR,
+    avatarUrl: athlete.avatarUrl ?? athlete.foto ?? DEFAULT_AVATAR,
     posicao: resolvePositionLabel(athlete.posicao ?? athlete.position),
     position: normalizePosition(athlete.posicao ?? athlete.position) || undefined,
     pontos: 0,

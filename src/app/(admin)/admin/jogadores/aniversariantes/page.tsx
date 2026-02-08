@@ -1,9 +1,9 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 const meses = [
   "Janeiro",
@@ -139,8 +139,8 @@ export default function AniversariantesAdminPage() {
                         HOJE!
                       </div>
                     )}
-                    <Image
-                      src={aniv.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                    <AvatarFut7Pro
+                      src={aniv.avatarUrl || aniv.photoUrl}
                       alt={`Foto de ${aniv.name} - aniversariante do racha`}
                       width={74}
                       height={74}

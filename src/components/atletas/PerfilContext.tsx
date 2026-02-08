@@ -9,6 +9,7 @@ import type { MeResponse } from "@/types/me";
 import { useMe } from "@/hooks/useMe";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { slugify } from "@/utils/slugify";
+import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
 
 interface PerfilContextType {
   usuario: Atleta | null;
@@ -31,8 +32,6 @@ type PerfilUpdatePayload = {
 };
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
-
-const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
 const ROLE_LABELS: Record<string, string> = {
   PRESIDENTE: "Presidente",
@@ -98,9 +97,13 @@ function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): At
 
   const nome = me?.athlete?.firstName || sessionUser?.name || "Atleta";
   const apelido = me?.athlete?.nickname ?? null;
-  const foto =
-    me?.athlete?.avatarUrl || me?.user?.avatarUrl || sessionUser?.image || DEFAULT_AVATAR;
+  const foto = getAvatarSrc(
+    me?.athlete?.avatarUrl || me?.user?.avatarUrl || sessionUser?.image,
+    DEFAULT_ATHLETE_AVATAR
+  );
   const mensalista = typeof me?.athlete?.mensalista === "boolean" ? me.athlete.mensalista : false;
+  const mensalistaRequestStatus = me?.athlete?.mensalistaRequestStatus ?? null;
+  const mensalistaRequestCreatedAt = me?.athlete?.mensalistaRequestCreatedAt ?? null;
 
   return {
     id: me?.athlete?.id || sessionUser?.id || "usuario-autenticado",
@@ -108,10 +111,13 @@ function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): At
     apelido,
     slug: me?.athlete?.slug || slugify(nome),
     foto,
+    avatarUrl: me?.athlete?.avatarUrl ?? me?.user?.avatarUrl ?? sessionUser?.image ?? null,
     posicao: normalizePosition(me?.athlete?.position),
     posicaoSecundaria: normalizeOptionalPosition(me?.athlete?.positionSecondary),
     status: normalizeStatus(me?.athlete?.status),
     mensalista,
+    mensalistaRequestStatus,
+    mensalistaRequestCreatedAt,
     ultimaPartida: undefined,
     totalJogos: 0,
     estatisticas: EMPTY_STATS,

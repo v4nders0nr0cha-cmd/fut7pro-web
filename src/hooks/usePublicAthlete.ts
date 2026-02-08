@@ -24,6 +24,7 @@ type PublicAthleteListEntry = {
   posicao?: string | null;
   posicaoSecundaria?: string | null;
   foto?: string | null;
+  avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
 };
@@ -84,7 +85,7 @@ export function usePublicAthlete(options: {
         position: fallbackEntry.position ?? fallbackEntry.posicao ?? null,
         positionSecondary:
           fallbackEntry.positionSecondary ?? fallbackEntry.posicaoSecundaria ?? null,
-        avatarUrl: fallbackEntry.foto ?? null,
+        avatarUrl: fallbackEntry.avatarUrl ?? fallbackEntry.foto ?? null,
         status: fallbackEntry.status ?? null,
         mensalista: fallbackEntry.mensalista ?? null,
         adminRole: null,

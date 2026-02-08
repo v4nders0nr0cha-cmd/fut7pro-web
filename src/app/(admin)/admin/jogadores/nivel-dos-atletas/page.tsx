@@ -1,7 +1,6 @@
 "use client";
 
 import Head from "next/head";
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FaSearch, FaHistory, FaFilter, FaCheckCircle, FaTimes } from "react-icons/fa";
 import { toast } from "react-hot-toast";
@@ -11,6 +10,7 @@ import { useMe } from "@/hooks/useMe";
 import { useNiveisAtletas } from "@/hooks/useNiveisAtletas";
 import EditorEstrelas from "@/components/sorteio/EditorEstrelas";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { calcularNivelFinal, formatNivel } from "@/utils/nivel-atleta";
 import type { Jogador } from "@/types/jogador";
 
@@ -666,9 +666,12 @@ export default function NivelDosAtletasPage() {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <Image
+                    <AvatarFut7Pro
                       src={
-                        jogador.avatar || jogador.foto || "/images/jogadores/jogador_padrao_01.jpg"
+                        jogador.avatarUrl ||
+                        jogador.avatar ||
+                        jogador.foto ||
+                        "/images/jogadores/jogador_padrao_01.jpg"
                       }
                       alt={`Foto de ${jogador.nome || "Atleta"}`}
                       width={48}

@@ -40,10 +40,13 @@ export interface Atleta {
   apelido?: string | null;
   slug: string;
   foto: string;
+  avatarUrl?: string | null;
   posicao: PosicaoAtleta;
   posicaoSecundaria?: PosicaoAtleta | null;
   status: StatusAtleta;
   mensalista: boolean;
+  mensalistaRequestStatus?: "PENDING" | "APPROVED" | "REJECTED" | "CANCELED" | null;
+  mensalistaRequestCreatedAt?: string | null;
   ultimaPartida?: string;
 
   // Soma vitalícia para assiduidade

@@ -17,6 +17,8 @@ export type MeAthlete = {
   avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
+  mensalistaRequestStatus?: "PENDING" | "APPROVED" | "REJECTED" | "CANCELED" | null;
+  mensalistaRequestCreatedAt?: string | null;
   birthDay?: number | null;
   birthMonth?: number | null;
   birthYear?: number | null;

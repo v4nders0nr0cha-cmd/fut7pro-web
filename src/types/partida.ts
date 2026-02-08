@@ -97,6 +97,7 @@ export type PublicMatchPresence = {
     nickname: string | null;
     position: string | null;
     photoUrl: string | null;
+    avatarUrl?: string | null;
   } | null;
   team: PublicMatchTeam | null;
 };

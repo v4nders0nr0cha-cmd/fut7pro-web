@@ -12,6 +12,8 @@ import { buildPublicHref } from "@/utils/public-links";
 import { useBranding } from "@/hooks/useBranding";
 import useSWR from "swr";
 import { setStoredTenantSlug } from "@/utils/active-tenant";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { DEFAULT_ADMIN_AVATAR, getAvatarSrc } from "@/utils/avatar";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -67,8 +69,10 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
-  const displayAvatar =
-    me?.athlete?.avatarUrl || session?.user?.image || "/images/avatar_padrao_admin.png";
+  const displayAvatar = getAvatarSrc(
+    me?.athlete?.avatarUrl || session?.user?.image,
+    DEFAULT_ADMIN_AVATAR
+  );
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
   const rachaPerfilHref = tenantSlug ? buildPublicHref("/perfil", tenantSlug) : null;
   const athletePublicKey = me?.athlete?.slug || me?.athlete?.id || null;
@@ -152,15 +156,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
             onClick={() => setDropdownOpen((v) => !v)}
             tabIndex={0}
           >
-            <img
+            <AvatarFut7Pro
               src={displayAvatar}
               alt={displayName}
               width={38}
               height={38}
+              fallbackSrc={DEFAULT_ADMIN_AVATAR}
               className="rounded-full border-2 border-brand"
-              onError={(event) => {
-                event.currentTarget.src = "/images/avatar_padrao_admin.png";
-              }}
             />
             <span className="text-brand-soft font-bold text-base hidden md:inline">
               {displayName}

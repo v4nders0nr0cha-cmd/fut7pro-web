@@ -13,7 +13,6 @@ import {
   FaCheck,
   FaTimes,
 } from "react-icons/fa";
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useAthleteRequests } from "@/hooks/useAthleteRequests";
@@ -24,6 +23,7 @@ import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
 import { Switch } from "@/components/ui/Switch";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 // --- MODAL EXCLUSÃO ---
 function ModalExcluirJogador({
@@ -195,8 +195,8 @@ function ModalVincularJogador({
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
       <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <Image
-            src={jogador.avatar || "/images/jogadores/jogador_padrao_01.jpg"}
+          <AvatarFut7Pro
+            src={jogador.avatarUrl || jogador.avatar || jogador.foto || jogador.photoUrl}
             alt={jogador.nome}
             width={56}
             height={56}
@@ -434,8 +434,8 @@ function ModalVincularSolicitacao({
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
       <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-lg flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <Image
-            src={solicitacao.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+          <AvatarFut7Pro
+            src={solicitacao.avatarUrl || solicitacao.photoUrl}
             alt={solicitacao.name}
             width={56}
             height={56}
@@ -1151,8 +1151,8 @@ export default function Page() {
                         className="bg-[#23272f] border border-yellow-600/60 rounded-xl p-4 shadow-xl"
                       >
                         <div className="flex items-center">
-                          <Image
-                            src={solicitacao.photoUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+                          <AvatarFut7Pro
+                            src={solicitacao.avatarUrl || solicitacao.photoUrl}
                             alt={solicitacao.name}
                             width={48}
                             height={48}
@@ -1287,8 +1287,8 @@ export default function Page() {
                     className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
                   >
                     <div className="flex items-center">
-                      <Image
-                        src={j.avatar || "/images/jogadores/jogador_padrao_01.jpg"}
+                      <AvatarFut7Pro
+                        src={j.avatarUrl || j.avatar || j.foto || j.photoUrl}
                         alt={j.nome}
                         width={48}
                         height={48}

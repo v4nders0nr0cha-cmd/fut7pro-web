@@ -11,6 +11,7 @@ import { usePublicAthlete } from "@/hooks/usePublicAthlete";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import type { PublicMatch } from "@/types/partida";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 const FORTALEZA_TZ = "America/Fortaleza";
 
@@ -203,8 +204,24 @@ function CartaoMensalistaPremium({
 }
 
 // --- Card Solicitar Mensalista ---
-function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
+function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => Promise<void> }) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function handleConfirm() {
+    if (isSubmitting) return;
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      await onConfirm();
+      setModalOpen(false);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Não foi possível enviar o pedido.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -233,7 +250,7 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
       </button>
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="bg-zinc-900 p-8 rounded-xl max-w-sm w-full shadow-xl border border-brand-strong flex flex-col items-center">
+          <div className="w-full max-w-sm rounded-xl border border-emerald-400/60 bg-zinc-900 p-6 shadow-xl sm:p-8">
             <div className="text-lg font-semibold text-brand mb-2 text-center">
               Solicitar vaga de Mensalista
             </div>
@@ -241,25 +258,31 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => void }) {
               Ao confirmar, seu pedido para se tornar mensalista será enviado ao administrador.
               <br />
               <span className="text-brand-soft">
-                Caso todas as vagas já estejam ocupadas, você entrará automaticamente em uma lista
-                de espera por ordem de solicitação.
+                Caso todas as vagas já estejam ocupadas, você entrará automaticamente na lista de
+                espera por ordem de solicitação.
               </span>
               <br />
               Deseja realmente enviar este pedido?
             </div>
-            <div className="flex gap-4 mt-2">
+            {submitError && (
+              <p className="mb-3 rounded-md border border-red-500/50 bg-red-500/10 px-3 py-2 text-center text-sm text-red-200">
+                {submitError}
+              </p>
+            )}
+            <div className="mt-2 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               <button
-                className="px-5 py-2 rounded bg-brand-strong text-black font-semibold hover:bg-brand transition"
-                onClick={() => {
-                  setModalOpen(false);
-                  onConfirm();
-                }}
+                type="button"
+                className="rounded px-5 py-2 font-semibold text-zinc-950 transition bg-emerald-500 hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={handleConfirm}
+                disabled={isSubmitting}
               >
-                Confirmar
+                {isSubmitting ? "Enviando..." : "Confirmar"}
               </button>
               <button
-                className="px-5 py-2 rounded bg-zinc-700 text-white font-semibold hover:bg-zinc-600 transition"
+                type="button"
+                className="rounded bg-zinc-700 px-5 py-2 font-semibold text-white transition hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-70"
                 onClick={() => setModalOpen(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </button>
@@ -283,7 +306,9 @@ export default function PerfilUsuarioPage() {
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
-  const [pedidoEnviado, setPedidoEnviado] = useState(false);
+  const [pedidoEnviado, setPedidoEnviado] = useState<boolean>(
+    usuario?.mensalistaRequestStatus === "PENDING"
+  );
   const currentYear = useMemo(() => getCurrentYear(), []);
   const rangeFrom = statsPeriod === "all" ? "2000-01-01" : `${currentYear}-01-01`;
   const rangeTo =
@@ -329,6 +354,40 @@ export default function PerfilUsuarioPage() {
 
   const athleteId = athlete?.id || atletaRanking?.id || usuario?.id || null;
   const campeaoDia = useMemo(() => countChampionDays(matches, athleteId), [matches, athleteId]);
+
+  async function solicitarVagaMensalista() {
+    if (!publicSlug) {
+      throw new Error("Não foi possível identificar o racha para enviar sua solicitação.");
+    }
+
+    const response = await fetch(
+      `/api/public/${encodeURIComponent(publicSlug)}/mensalistas/request`,
+      {
+        method: "POST",
+        cache: "no-store",
+      }
+    );
+
+    const text = await response.text();
+    let body: unknown = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text || null;
+    }
+
+    if (!response.ok) {
+      const payload = typeof body === "object" && body ? (body as Record<string, unknown>) : null;
+      const message =
+        (typeof payload?.message === "string" ? payload.message : null) ||
+        (typeof payload?.error === "string" ? payload.error : null) ||
+        (typeof body === "string" ? body : null) ||
+        "Não foi possível enviar sua solicitação agora.";
+      throw new Error(message);
+    }
+
+    setPedidoEnviado(true);
+  }
   const stats = useMemo(() => {
     if (isLoadingRankings || isErrorRankings) return null;
     const jogos = atletaRanking?.jogos ?? 0;
@@ -371,6 +430,12 @@ export default function PerfilUsuarioPage() {
       router.replace(loginHref);
     }
   }, [isAuthenticated, isLoading, router, loginHref]);
+
+  useEffect(() => {
+    if (usuario?.mensalistaRequestStatus === "PENDING") {
+      setPedidoEnviado(true);
+    }
+  }, [usuario?.mensalistaRequestStatus]);
 
   if (isLoading) {
     return <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil...</div>;
@@ -419,7 +484,7 @@ export default function PerfilUsuarioPage() {
       <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
         {/* Dados do usuário logado */}
         <div className="flex-1 flex flex-col md:flex-row gap-6 items-center">
-          <Image
+          <AvatarFut7Pro
             src={usuario.foto}
             alt={`Foto de ${usuario.nome}`}
             width={160}
@@ -478,17 +543,13 @@ export default function PerfilUsuarioPage() {
               ativo={usuario.mensalista}
             />
           ) : !pedidoEnviado ? (
-            <CardSolicitarMensalista
-              onConfirm={() => {
-                setPedidoEnviado(true);
-              }}
-            />
+            <CardSolicitarMensalista onConfirm={solicitarVagaMensalista} />
           ) : (
             <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-green-900/80 border-4 border-green-500 rounded-2xl shadow-md text-center text-green-200 font-semibold text-lg">
               Pedido enviado! Aguarde a análise do administrador.
               <br />
               <span className="text-sm font-normal text-green-300">
-                Você será avisado assim que houver uma vaga disponível.
+                Sua solicitação entrou na fila de avaliação do racha.
               </span>
             </div>
           )}

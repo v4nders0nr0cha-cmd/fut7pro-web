@@ -13,6 +13,8 @@ import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -54,11 +56,10 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     (session?.user?.name || "").trim() ||
     emailLabel ||
     "Usuario";
-  const profileImage =
-    me?.athlete?.avatarUrl ||
-    profileUser?.avatarUrl ||
-    session?.user?.image ||
-    "/images/jogadores/jogador_padrao_01.jpg";
+  const profileImage = getAvatarSrc(
+    me?.athlete?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
+    DEFAULT_ATHLETE_AVATAR
+  );
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
     enabled: isAthleteLoggedIn,
   });
@@ -154,11 +155,12 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                 onClick={() => setDropdownOpen((prev) => !prev)}
                 className="flex items-center gap-2 hover:opacity-80 transition"
               >
-                <Image
+                <AvatarFut7Pro
                   src={profileImage}
                   alt={displayName}
                   width={32}
                   height={32}
+                  fallbackSrc={DEFAULT_ATHLETE_AVATAR}
                   className="rounded-full border-2 border-brand"
                 />
                 <span className="text-brand font-bold text-[15px] uppercase truncate max-w-[90px]">

@@ -9,6 +9,7 @@ export type PublicAthlete = {
   posicao?: string | null;
   position?: string | null;
   foto?: string | null;
+  avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
 };
@@ -37,8 +38,17 @@ export function usePublicAthletes(slug?: string, options?: { enabled?: boolean }
     revalidateOnFocus: false,
   });
 
+  const athletes = (data?.results ?? []).map((athlete) => {
+    const avatarUrl = athlete.avatarUrl ?? athlete.foto ?? null;
+    return {
+      ...athlete,
+      avatarUrl,
+      foto: avatarUrl,
+    };
+  });
+
   return {
-    athletes: data?.results ?? [],
+    athletes,
     total: data?.total ?? 0,
     slug: data?.slug ?? resolvedSlug,
     isLoading: enabled ? isLoading : false,

@@ -4,6 +4,7 @@ export type BirthdayEntry = {
   nickname?: string | null;
   slug?: string | null;
   photoUrl?: string | null;
+  avatarUrl?: string | null;
   birthDay: number;
   birthMonth: number;
   birthYear?: number | null;

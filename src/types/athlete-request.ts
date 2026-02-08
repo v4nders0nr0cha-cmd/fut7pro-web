@@ -8,6 +8,7 @@ export type AthleteRequest = {
   position: string;
   positionSecondary?: string | null;
   photoUrl?: string | null;
+  avatarUrl?: string | null;
   message?: string | null;
   status: AthleteRequestStatus;
   createdAt?: string;

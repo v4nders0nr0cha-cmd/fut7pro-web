@@ -20,6 +20,8 @@ import { usePathname } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -47,11 +49,10 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const profileUser = globalProfile?.user;
   const fallbackEmail = profileUser?.email || session?.user?.email || "";
   const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
-  const profileImage =
-    me?.athlete?.avatarUrl ||
-    profileUser?.avatarUrl ||
-    session?.user?.image ||
-    "/images/jogadores/jogador_padrao_01.jpg";
+  const profileImage = getAvatarSrc(
+    me?.athlete?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
+    DEFAULT_ATHLETE_AVATAR
+  );
   const userName =
     profileUser?.nickname?.trim() ||
     profileUser?.name?.trim() ||
@@ -138,22 +139,24 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
                 onClick={onClose}
                 className="flex items-center gap-3 text-brand font-semibold hover:underline"
               >
-                <Image
+                <AvatarFut7Pro
                   src={profileImage}
                   alt={userName}
                   width={32}
                   height={32}
+                  fallbackSrc={DEFAULT_ATHLETE_AVATAR}
                   className="rounded-full"
                 />
                 {userName}
               </Link>
             ) : (
               <div className="flex items-center gap-3 text-brand font-semibold">
-                <Image
+                <AvatarFut7Pro
                   src={profileImage}
                   alt={userName}
                   width={32}
                   height={32}
+                  fallbackSrc={DEFAULT_ATHLETE_AVATAR}
                   className="rounded-full"
                 />
                 {userName}
