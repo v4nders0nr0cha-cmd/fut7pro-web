@@ -443,7 +443,8 @@ export default function MensalistasPage() {
             <div>
               <h2 className="text-lg font-bold text-emerald-300">Solicitações de mensalista</h2>
               <p className="text-xs text-emerald-100/80">
-                Fila organizada por ordem de pedido. O pedido mais antigo aparece primeiro.
+                Atletas que pediram para virar mensalistas (de diarista para mensalista). A fila
+                segue por ordem de solicitação, o pedido mais antigo aparece primeiro.
               </p>
             </div>
             <span className="inline-flex w-fit rounded-full border border-emerald-300/45 bg-emerald-300/10 px-3 py-1 text-xs font-semibold text-emerald-100">
