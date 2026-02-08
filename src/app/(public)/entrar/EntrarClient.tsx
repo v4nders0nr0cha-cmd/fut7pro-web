@@ -29,6 +29,12 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   /\/+$/,
   ""
 );
+const CAPTCHA_REQUIRED_MESSAGE =
+  'Muitas tentativas. Confirme no captcha "Não sou robô" para continuar.';
+const CAPTCHA_INVALID_MESSAGE =
+  'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
+const CAPTCHA_UNAVAILABLE_MESSAGE =
+  "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -122,8 +128,10 @@ export default function EntrarClient() {
             setCaptchaToken(null);
             setError(
               body?.code === "CAPTCHA_INVALID"
-                ? "Verificação inválida. Tente novamente."
-                : "Muitas tentativas. Confirme a verificação para continuar."
+                ? CAPTCHA_INVALID_MESSAGE
+                : turnstileSiteKey
+                  ? CAPTCHA_REQUIRED_MESSAGE
+                  : CAPTCHA_UNAVAILABLE_MESSAGE
             );
             return null;
           }
@@ -139,15 +147,21 @@ export default function EntrarClient() {
         setLoading(false);
       }
     },
-    [publicSlug]
+    [publicSlug, turnstileSiteKey]
   );
 
   const handleLookup = async () => {
     setError("");
 
-    if (needsCaptcha && !captchaToken) {
-      setError("Confirme a verificação para continuar.");
-      return;
+    if (needsCaptcha) {
+      if (!turnstileSiteKey) {
+        setError(CAPTCHA_UNAVAILABLE_MESSAGE);
+        return;
+      }
+      if (!captchaToken) {
+        setError(CAPTCHA_REQUIRED_MESSAGE);
+        return;
+      }
     }
 
     const normalized = email.trim().toLowerCase();
@@ -368,8 +382,20 @@ export default function EntrarClient() {
           />
 
           {needsCaptcha && (
-            <div className="flex items-center justify-start">
-              <div id="turnstile-container" />
+            <div className="space-y-2">
+              <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                Confirme no captcha abaixo que você não é um robô. Essa etapa é de segurança e não
+                de verificação de e-mail.
+              </div>
+              {turnstileSiteKey ? (
+                <div className="flex items-center justify-start">
+                  <div id="turnstile-container" />
+                </div>
+              ) : (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  {CAPTCHA_UNAVAILABLE_MESSAGE}
+                </div>
+              )}
             </div>
           )}
 
