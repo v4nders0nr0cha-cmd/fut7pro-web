@@ -24,6 +24,7 @@ const DynamicChart = dynamic(() => import("@/components/superadmin/DashboardChar
 
 type DashboardResponse = {
   userCount: number;
+  adminCount?: number;
   tenantCount: number;
   matchCount: number;
   lastUpdated?: string;
@@ -144,16 +145,16 @@ export default function DashboardSuperAdminPage() {
     },
     {
       title: "Admins/Presidentes",
-      value: dashboardData?.userCount ?? 0,
+      value: dashboardData?.adminCount ?? 0,
       icon: <FaUserShield size={34} />,
-      desc: "Total de usuários",
+      desc: "Contas administrativas",
       color: "from-blue-400 to-blue-600",
     },
     {
-      title: "Partidas Registradas",
-      value: dashboardData?.matchCount ?? 0,
+      title: "Total de Usuários",
+      value: dashboardData?.userCount ?? 0,
       icon: <FaUsers size={34} />,
-      desc: "Jogos contabilizados",
+      desc: "Contas cadastradas",
       color: "from-green-400 to-green-600",
     },
     {
