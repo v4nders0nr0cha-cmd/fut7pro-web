@@ -39,6 +39,7 @@ const menu = [
   { label: "Monitoramento", href: "/superadmin/monitoramento", icon: FaChartLine },
   { label: "Métricas Localização", href: "/superadmin/metricas/localizacao", icon: FaMapMarkerAlt },
   { label: "Sugestões", href: "/superadmin/comunicacao/sugestoes", icon: FaLightbulb },
+  { label: "Central de Ajuda", href: "/superadmin/comunicacao/ajuda", icon: FaBookOpen },
   { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },
   { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
   { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
