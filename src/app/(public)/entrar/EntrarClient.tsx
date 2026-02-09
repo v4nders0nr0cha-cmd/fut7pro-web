@@ -15,7 +15,13 @@ type LookupResponse = {
   hasPassword: boolean;
   availableAuthMethods?: Array<"google" | "password">;
   membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
-  nextAction?: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
+  nextAction?:
+    | "REGISTER"
+    | "LOGIN"
+    | "REQUEST_JOIN"
+    | "WAIT_APPROVAL"
+    | "BLOCKED_MESSAGE"
+    | "RACHA_NOT_FOUND";
   requiresCaptcha?: boolean;
 };
 
@@ -35,6 +41,27 @@ const CAPTCHA_INVALID_MESSAGE =
   'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
+const LOOKUP_STATE_ERROR_MESSAGE = "Falha ao verificar conta, tente novamente.";
+const VALID_NEXT_ACTIONS = new Set([
+  "REGISTER",
+  "LOGIN",
+  "REQUEST_JOIN",
+  "WAIT_APPROVAL",
+  "BLOCKED_MESSAGE",
+]);
+const VALID_MEMBERSHIP_STATUSES = new Set(["NONE", "PENDING", "ACTIVE", "REJECTED", "BLOCKED"]);
+
+function hasResolvedLookupState(payload: LookupResponse | null): payload is LookupResponse & {
+  nextAction: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
+  membershipStatus: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
+} {
+  if (!payload) return false;
+  if (!payload.nextAction || !VALID_NEXT_ACTIONS.has(payload.nextAction)) return false;
+  if (!payload.membershipStatus || !VALID_MEMBERSHIP_STATUSES.has(payload.membershipStatus)) {
+    return false;
+  }
+  return true;
+}
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -135,6 +162,11 @@ export default function EntrarClient() {
             );
             return null;
           }
+          if (body?.code === "RACHA_NOT_FOUND") {
+            setResult(null);
+            setError("Racha não encontrado.");
+            return null;
+          }
           setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
           return null;
         }
@@ -172,6 +204,14 @@ export default function EntrarClient() {
 
     const lookup = await runLookup(normalized, captchaToken);
     if (lookup) {
+      if (!hasResolvedLookupState(lookup)) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[EntrarClient] lookup-email sem estado resolvido", lookup);
+        }
+        setResult(null);
+        setError(LOOKUP_STATE_ERROR_MESSAGE);
+        return;
+      }
       setResult(lookup);
     }
   };
@@ -232,13 +272,19 @@ export default function EntrarClient() {
     void (async () => {
       const lookup = await runLookup(sessionEmail);
       if (!lookup) return;
+      if (!hasResolvedLookupState(lookup)) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[EntrarClient] auto-flow Google sem estado resolvido", lookup);
+        }
+        setResult(null);
+        setError(LOOKUP_STATE_ERROR_MESSAGE);
+        return;
+      }
 
       setResult(lookup);
 
-      const resolvedExists = Boolean(lookup.userExists ?? lookup.exists);
-      const resolvedAction =
-        lookup.nextAction ?? (resolvedExists ? ("LOGIN" as const) : ("REGISTER" as const));
-      const resolvedMembership = lookup.membershipStatus ?? (resolvedExists ? "ACTIVE" : "NONE");
+      const resolvedAction = lookup.nextAction;
+      const resolvedMembership = lookup.membershipStatus;
 
       if (resolvedAction === "LOGIN" && resolvedMembership === "ACTIVE") {
         router.replace(destinationHref);
@@ -301,9 +347,8 @@ export default function EntrarClient() {
   }, [result?.availableAuthMethods, result?.providers, result?.hasPassword]);
   const hasGoogle = availableAuthMethods.includes("google");
   const hasPassword = availableAuthMethods.includes("password") || Boolean(result?.hasPassword);
-  const membershipStatus = result?.membershipStatus ?? (resolvedUserExists ? "ACTIVE" : "NONE");
-  const nextAction =
-    result?.nextAction ?? (resolvedUserExists ? ("LOGIN" as const) : ("REGISTER" as const));
+  const membershipStatus = result?.membershipStatus ?? null;
+  const nextAction = result?.nextAction ?? null;
   const showGoogleOnly = nextAction === "LOGIN" && hasGoogle && !hasPassword;
 
   useEffect(() => {
@@ -485,7 +530,7 @@ export default function EntrarClient() {
                       )}
                       {hasPassword && (
                         <a
-                          href="/admin/esqueci-senha"
+                          href={publicHref("/esqueci-senha")}
                           className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-center text-sm font-semibold text-white/80 hover:border-white/30"
                         >
                           Esqueci minha senha
@@ -608,6 +653,12 @@ export default function EntrarClient() {
                       </button>
                     </div>
                   </>
+                )}
+
+                {result && !hasResolvedLookupState(result) && (
+                  <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    {LOOKUP_STATE_ERROR_MESSAGE}
+                  </div>
                 )}
               </div>
             )}

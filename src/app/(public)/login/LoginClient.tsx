@@ -49,6 +49,9 @@ export default function LoginClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
   const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
+  const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
+  const [requestJoinLoading, setRequestJoinLoading] = useState(false);
+  const [notMemberMessage, setNotMemberMessage] = useState("");
 
   const redirectTo = useMemo(
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/")),
@@ -70,6 +73,7 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (status !== "authenticated" || !isAthleteSession) return;
+    if (requestJoinInProgress) return;
 
     if (sessionUser?.authProvider === "google") {
       if (!publicSlug) {
@@ -114,18 +118,92 @@ export default function LoginClient() {
     isLoadingMe,
     isErrorMe,
     me,
+    requestJoinInProgress,
   ]);
+
+  const handleRequestJoin = async () => {
+    setErro("");
+    setNotMemberMessage("");
+
+    if (!publicSlug) {
+      setNotMemberMessage("Slug do racha não encontrado.");
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !senha.trim()) {
+      setNotMemberMessage("Informe e-mail e senha para solicitar entrada.");
+      return;
+    }
+
+    setRequestJoinLoading(true);
+    setRequestJoinInProgress(true);
+
+    try {
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        email: normalizedEmail,
+        password: senha,
+      });
+
+      if (signInResult?.error) {
+        setNotMemberMessage("Não foi possível validar sua conta. Tente novamente.");
+        setRequestJoinInProgress(false);
+        return;
+      }
+
+      const requestJoin = async () =>
+        fetch(`/api/public/${publicSlug}/auth/request-join`, {
+          method: "POST",
+        });
+
+      let response = await requestJoin();
+      if (response.status === 401) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        response = await requestJoin();
+      }
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = Array.isArray(body?.message)
+          ? body.message.join(" ")
+          : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
+        setNotMemberMessage(message);
+        setRequestJoinInProgress(false);
+        return;
+      }
+
+      const joinStatus = String(body?.status || "").toUpperCase();
+      const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
+      const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+
+      setNotMemberModalOpen(false);
+      if (isActive) {
+        router.replace(redirectTo);
+        return;
+      }
+
+      router.replace(publicHref("/aguardando-aprovacao"));
+    } catch {
+      setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
+      setRequestJoinInProgress(false);
+    } finally {
+      setRequestJoinLoading(false);
+    }
+  };
 
   const handleEmailLogin = async (event: FormEvent) => {
     event.preventDefault();
     setErro("");
+    setNotMemberMessage("");
+    setRequestJoinInProgress(false);
     setPendingModalOpen(false);
     setNotMemberModalOpen(false);
     setIsSubmitting(true);
 
     try {
       if (!publicSlug) {
-        setErro("Slug do racha nao encontrado.");
+        setErro("Slug do racha não encontrado.");
         return;
       }
 
@@ -150,7 +228,7 @@ export default function LoginClient() {
             ? body.message
             : typeof body?.error === "string"
               ? body.error
-              : "Nao foi possivel autenticar.";
+              : "Não foi possível autenticar.";
 
         if (code === "REQUEST_PENDING") {
           setPendingModalOpen(true);
@@ -163,7 +241,7 @@ export default function LoginClient() {
         }
 
         if (code === "REQUEST_REJECTED") {
-          setErro("Sua solicitacao foi rejeitada. Fale com o administrador do racha.");
+          setErro("Sua solicitação foi rejeitada. Fale com o administrador do racha.");
           return;
         }
 
@@ -174,7 +252,7 @@ export default function LoginClient() {
       const accessToken = body?.accessToken;
       const refreshToken = body?.refreshToken;
       if (!accessToken || !refreshToken) {
-        setErro("Nao foi possivel concluir o login.");
+        setErro("Não foi possível concluir o login.");
         return;
       }
 
@@ -186,7 +264,7 @@ export default function LoginClient() {
       });
 
       if (signInResult?.error) {
-        setErro("Nao foi possivel concluir o login.");
+        setErro("Não foi possível concluir o login.");
         return;
       }
 
@@ -289,7 +367,7 @@ export default function LoginClient() {
         </form>
 
         <div className="mt-5 text-center text-sm text-gray-300">
-          Ainda nao tem conta?{" "}
+          Ainda não tem conta?{" "}
           <a
             href={publicHref("/register")}
             className="text-brand-soft underline hover:text-brand-soft"
@@ -324,18 +402,18 @@ export default function LoginClient() {
             >
               <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
                 <Dialog.Title className="text-lg font-semibold text-white">
-                  Solicitacao pendente
+                  Solicitação pendente
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
                   Seu cadastro no racha{" "}
                   <span className="font-semibold text-brand">{nomeDoRacha}</span> ainda esta
-                  pendente. Assim que os administradores aprovarem sua entrada, voce podera fazer
+                  pendente. Assim que os administradores aprovarem sua entrada, você poderá fazer
                   login normalmente.
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
                   Entre em contato com os administradores do{" "}
                   <span className="font-semibold text-gray-200">{publicSlug}</span> e solicite sua
-                  aprovacao.
+                  aprovação.
                 </p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
@@ -386,10 +464,15 @@ export default function LoginClient() {
                   Solicite entrada no racha
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Voce ainda nao possui solicitacao para o racha{" "}
+                  Você ainda não possui solicitação para o racha{" "}
                   <span className="font-semibold text-brand">{nomeDoRacha}</span>. Para entrar,
-                  envie sua solicitacao de entrada e aguarde a aprovacao.
+                  envie sua solicitação de entrada e aguarde a aprovação.
                 </p>
+                {notMemberMessage ? (
+                  <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                    {notMemberMessage}
+                  </div>
+                ) : null}
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
@@ -398,12 +481,14 @@ export default function LoginClient() {
                   >
                     Ok
                   </button>
-                  <a
-                    href={publicHref("/register")}
-                    className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black"
+                  <button
+                    type="button"
+                    onClick={handleRequestJoin}
+                    disabled={requestJoinLoading}
+                    className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Solicitar entrada
-                  </a>
+                    {requestJoinLoading ? "Solicitando..." : "Solicitar entrada neste racha"}
+                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
