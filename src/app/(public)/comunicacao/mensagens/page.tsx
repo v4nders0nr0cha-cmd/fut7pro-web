@@ -63,7 +63,11 @@ export default function MensagensPage() {
       <main className="max-w-2xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
           <h1 className="text-2xl font-bold text-brand mb-2">Mensagens do Admin</h1>
-          <p className="text-gray-300 mb-4">Entre para ver as mensagens do seu racha.</p>
+          <p className="text-gray-300 mb-2">Entre para ver as mensagens do seu racha.</p>
+          <p className="text-sm text-gray-400 mb-4">
+            Este espaço é apenas para receber avisos do admin. Atletas não enviam mensagens por
+            aqui.
+          </p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
@@ -81,6 +85,14 @@ export default function MensagensPage() {
       <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
         <FaCommentDots /> Mensagens do Admin
       </h1>
+      <div className="mb-5 rounded-xl border border-zinc-800 bg-zinc-900/70 p-4">
+        <p className="text-sm text-gray-200">
+          Este canal é exclusivo para você receber comunicados do admin do seu racha.
+        </p>
+        <p className="mt-2 text-sm text-gray-400">
+          Importante: esta página é somente leitura para atletas e não permite envio de mensagens.
+        </p>
+      </div>
       <div className="flex gap-3 mb-5">
         <button
           type="button"
