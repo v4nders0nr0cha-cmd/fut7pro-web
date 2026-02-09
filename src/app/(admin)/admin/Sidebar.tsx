@@ -92,7 +92,6 @@ const menu = [
     children: [
       { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
       { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
-      { label: "Segurança & Privacidade", href: "/admin/configuracoes/seguranca" },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Histórico de Mudanças", href: "/admin/configuracoes/changelog" },
       { label: "Cancelar Conta", href: "/admin/configuracoes/cancelar-conta" },
