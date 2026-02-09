@@ -19,6 +19,7 @@ import {
   FaBell,
   FaLifeRing,
   FaMapMarkerAlt,
+  FaLightbulb,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -37,6 +38,7 @@ const menu = [
   { label: "Marketing", href: "/superadmin/marketing", icon: FaBullhorn },
   { label: "Monitoramento", href: "/superadmin/monitoramento", icon: FaChartLine },
   { label: "Métricas Localização", href: "/superadmin/metricas/localizacao", icon: FaMapMarkerAlt },
+  { label: "Sugestões", href: "/superadmin/comunicacao/sugestoes", icon: FaLightbulb },
   { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },
   { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
   { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
