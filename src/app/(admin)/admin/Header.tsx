@@ -25,7 +25,12 @@ interface MenuItem {
 }
 
 const menu: MenuItem[] = [
-  { label: "Notificações", icon: FaBell, href: "/admin/notificacoes", badgeKey: "notificacoes" },
+  {
+    label: "Notificações",
+    icon: FaBell,
+    href: "/admin/comunicacao/notificacoes",
+    badgeKey: "notificacoes",
+  },
   { label: "Mensagens", icon: FaEnvelope, href: "/admin/mensagens", badgeKey: "mensagens" },
   {
     label: "Solicitações",

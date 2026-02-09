@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FaCheckCircle, FaPaperPlane, FaRegCommentDots, FaSearch } from "react-icons/fa";
 
 type SuggestionCategory =
@@ -101,6 +102,7 @@ function resolveResults(payload: unknown): SuggestionItem[] {
 type TabKey = "received" | "sent";
 
 export default function SugestoesAdminPage() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<TabKey>("received");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | SuggestionStatus>("ALL");
@@ -121,6 +123,8 @@ export default function SugestoesAdminPage() {
   const [composeMessage, setComposeMessage] = useState("");
   const [composeError, setComposeError] = useState<string | null>(null);
   const [isComposing, setIsComposing] = useState(false);
+
+  const openSuggestionId = searchParams?.get("open") ?? null;
 
   const loadSuggestions = useCallback(async () => {
     setIsLoading(true);
@@ -155,6 +159,19 @@ export default function SugestoesAdminPage() {
   useEffect(() => {
     loadSuggestions();
   }, [loadSuggestions]);
+
+  useEffect(() => {
+    if (!openSuggestionId || !suggestions.length) return;
+    const target = suggestions.find((item) => item.id === openSuggestionId);
+    if (!target) return;
+
+    setSelected(target);
+    if (target.target === "FUT7PRO_TEAM") {
+      setTab("sent");
+      return;
+    }
+    setTab("received");
+  }, [openSuggestionId, suggestions]);
 
   const receivedFromAthletes = useMemo(
     () => suggestions.filter((item) => item.createdByType === "ATHLETE"),

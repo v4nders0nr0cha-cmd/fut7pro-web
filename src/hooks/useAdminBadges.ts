@@ -1,5 +1,6 @@
 "use client";
 import useSWR from "swr";
+import { useAdminNotifications } from "./useAdminNotifications";
 
 // Tipos dos badges por item do menu
 type Badges = {
@@ -27,6 +28,11 @@ const fetcher = async (url: string) => {
 };
 
 export function useAdminBadges() {
+  const { unreadCount: notificationsCount } = useAdminNotifications({
+    includeList: false,
+    refreshInterval: 30000,
+  });
+
   const { data } = useSWR<{ count?: number }>(
     "/api/admin/solicitacoes?status=PENDENTE&count=1",
     fetcher,
@@ -39,6 +45,7 @@ export function useAdminBadges() {
   const solicitacoes = typeof data?.count === "number" ? data.count : 0;
   const badges: Badges = {
     ...emptyBadges,
+    notificacoes: notificationsCount,
     solicitacoes,
   };
   return { badges };

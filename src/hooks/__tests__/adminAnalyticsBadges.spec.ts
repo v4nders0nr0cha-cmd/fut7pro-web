@@ -13,6 +13,12 @@ jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ tenantSlug: "slug-test" }),
 }));
 
+jest.mock("@/hooks/useAdminNotifications", () => ({
+  useAdminNotifications: () => ({
+    unreadCount: 0,
+  }),
+}));
+
 describe("useAdminAnalytics", () => {
   beforeEach(() => mockSWR.mockReset());
 
