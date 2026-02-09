@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +9,7 @@ import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
+import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
@@ -41,6 +42,9 @@ export default function LoginClient() {
   } | null;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const requestJoinIntent = searchParams.get("intent") === "request-join";
+  const passwordInputRef = useRef<HTMLInputElement | null>(null);
+  const prefillAppliedRef = useRef(false);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -70,6 +74,17 @@ export default function LoginClient() {
     tenantSlug: publicSlug,
     context: "athlete",
   });
+
+  useEffect(() => {
+    if (prefillAppliedRef.current) return;
+    if (!publicSlug) return;
+    const context = readPublicAuthContext(publicSlug);
+    if (!context?.email) return;
+
+    setEmail((previous) => previous || context.email);
+    prefillAppliedRef.current = true;
+    requestAnimationFrame(() => passwordInputRef.current?.focus());
+  }, [publicSlug]);
 
   useEffect(() => {
     if (status !== "authenticated" || !isAthleteSession) return;
@@ -179,10 +194,12 @@ export default function LoginClient() {
 
       setNotMemberModalOpen(false);
       if (isActive) {
+        clearPublicAuthContext();
         router.replace(redirectTo);
         return;
       }
 
+      clearPublicAuthContext();
       router.replace(publicHref("/aguardando-aprovacao"));
     } catch {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
@@ -268,6 +285,7 @@ export default function LoginClient() {
         return;
       }
 
+      clearPublicAuthContext();
       router.replace(redirectTo);
     } finally {
       setIsSubmitting(false);
@@ -291,6 +309,16 @@ export default function LoginClient() {
         <p className="mt-2 text-center text-sm text-gray-300">
           Entre para editar seu perfil e acompanhar as novidades do racha.
         </p>
+
+        {requestJoinIntent ? (
+          <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
+            <p className="font-semibold text-amber-200">Você ainda não joga neste racha</p>
+            <p className="mt-1">
+              Entre com sua senha para solicitar entrada. Assim que o admin aprovar, você entra nos
+              rankings, estatísticas e comunicação do time.
+            </p>
+          </div>
+        ) : null}
 
         {erro ? (
           <div
@@ -340,6 +368,7 @@ export default function LoginClient() {
             <div className="relative">
               <input
                 type={senhaVisivel ? "text" : "password"}
+                ref={passwordInputRef}
                 value={senha}
                 onChange={(event) => setSenha(event.target.value)}
                 required
@@ -365,6 +394,15 @@ export default function LoginClient() {
             {isSubmitting ? "Entrando..." : "Entrar"}
           </button>
         </form>
+
+        <div className="mt-3 text-center">
+          <a
+            href={publicHref("/esqueci-senha")}
+            className="text-sm font-semibold text-brand-soft underline hover:text-brand"
+          >
+            Esqueci minha senha
+          </a>
+        </div>
 
         <div className="mt-5 text-center text-sm text-gray-300">
           Ainda não tem conta?{" "}

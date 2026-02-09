@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Script from "next/script";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
+import { persistPublicAuthContext } from "@/utils/public-auth-flow";
 
 type LookupResponse = {
   exists: boolean;
@@ -97,6 +98,7 @@ export default function EntrarClient() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoFlowLoading, setAutoFlowLoading] = useState(false);
+  const [redirectingMessage, setRedirectingMessage] = useState("");
   const [error, setError] = useState("");
   const [result, setResult] = useState<LookupResponse | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -112,18 +114,6 @@ export default function EntrarClient() {
     () => resolveRedirect(callbackParam, publicHref("/")),
     [callbackParam, publicHref]
   );
-
-  const loginHref = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("callbackUrl", destinationHref);
-    return `${publicHref("/login")}?${params.toString()}`;
-  }, [destinationHref, publicHref]);
-
-  const registerHref = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("callbackUrl", publicHref("/entrar"));
-    return `${publicHref("/register")}?${params.toString()}`;
-  }, [publicHref]);
 
   const googleCallbackHref = useMemo(() => {
     const params = new URLSearchParams();
@@ -182,8 +172,69 @@ export default function EntrarClient() {
     [publicSlug, turnstileSiteKey]
   );
 
+  const redirectFromResolvedState = useCallback(
+    (
+      lookup: LookupResponse & {
+        nextAction: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
+        membershipStatus: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
+      },
+      normalizedEmail: string,
+      options?: { fromGoogle?: boolean }
+    ) => {
+      if (lookup.nextAction === "BLOCKED_MESSAGE") {
+        setResult(lookup);
+        setRedirectingMessage("");
+        return;
+      }
+
+      persistPublicAuthContext({
+        email: normalizedEmail,
+        slug: publicSlug,
+      });
+      setResult(null);
+      setError("");
+      setRedirectingMessage("Verificando seu e-mail...");
+      setAutoFlowLoading(true);
+
+      if (lookup.nextAction === "WAIT_APPROVAL") {
+        router.replace(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+
+      if (lookup.nextAction === "LOGIN") {
+        if (
+          options?.fromGoogle &&
+          lookup.membershipStatus === "ACTIVE" &&
+          lookup.availableAuthMethods?.includes("google")
+        ) {
+          router.replace(destinationHref);
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.set("callbackUrl", destinationHref);
+        router.replace(`${publicHref("/login")}?${params.toString()}`);
+        return;
+      }
+
+      if (lookup.nextAction === "REQUEST_JOIN") {
+        const params = new URLSearchParams();
+        params.set("callbackUrl", destinationHref);
+        params.set("intent", "request-join");
+        router.replace(`${publicHref("/login")}?${params.toString()}`);
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set("callbackUrl", destinationHref);
+      router.replace(`${publicHref("/register")}?${params.toString()}`);
+    },
+    [destinationHref, publicHref, publicSlug, router]
+  );
+
   const handleLookup = async () => {
     setError("");
+    setRedirectingMessage("");
 
     if (needsCaptcha) {
       if (!turnstileSiteKey) {
@@ -212,7 +263,7 @@ export default function EntrarClient() {
         setError(LOOKUP_STATE_ERROR_MESSAGE);
         return;
       }
-      setResult(lookup);
+      redirectFromResolvedState(lookup, normalized);
     }
   };
 
@@ -222,14 +273,6 @@ export default function EntrarClient() {
       callbackUrl: googleCallbackHref,
       login_hint: email.trim() || undefined,
     });
-  };
-
-  const handleGoogleRegister = async () => {
-    if (sessionStatus === "authenticated" && sessionUser?.authProvider === "google") {
-      router.push(registerHref);
-      return;
-    }
-    await handleGoogle();
   };
 
   const requestJoin = useCallback(async () => {
@@ -281,17 +324,7 @@ export default function EntrarClient() {
         return;
       }
 
-      setResult(lookup);
-
-      const resolvedAction = lookup.nextAction;
-      const resolvedMembership = lookup.membershipStatus;
-
-      if (resolvedAction === "LOGIN" && resolvedMembership === "ACTIVE") {
-        router.replace(destinationHref);
-        return;
-      }
-
-      if (resolvedAction === "REQUEST_JOIN") {
+      if (lookup.nextAction === "REQUEST_JOIN") {
         try {
           const join = await requestJoin();
           const joinStatus = String(join?.status || "").toUpperCase();
@@ -303,53 +336,36 @@ export default function EntrarClient() {
             return;
           }
 
-          setResult((previous) => ({
-            ...(previous ?? lookup),
-            exists: true,
-            userExists: true,
-            membershipStatus: "PENDING",
-            nextAction: "WAIT_APPROVAL",
-            requiresCaptcha: false,
-          }));
+          router.replace(publicHref("/aguardando-aprovacao"));
+          return;
         } catch (joinError) {
           const message =
             joinError instanceof Error
               ? joinError.message
               : "Não foi possível solicitar entrada neste racha.";
           setError(message);
+          setAutoFlowLoading(false);
+          return;
         }
       }
+
+      redirectFromResolvedState(lookup, sessionEmail, { fromGoogle: true });
     })().finally(() => setAutoFlowLoading(false));
   }, [
     destinationHref,
     googleIntent,
     publicSlug,
+    publicHref,
     requestJoin,
+    redirectFromResolvedState,
     router,
     runLookup,
     sessionStatus,
     sessionUser?.email,
   ]);
 
-  const resolvedUserExists = Boolean(result?.userExists ?? result?.exists);
-  const availableAuthMethods = useMemo(() => {
-    if (result?.availableAuthMethods?.length) {
-      return result.availableAuthMethods;
-    }
-    const methods: Array<"google" | "password"> = [];
-    if (result?.providers?.includes("google")) {
-      methods.push("google");
-    }
-    if (result?.hasPassword) {
-      methods.push("password");
-    }
-    return methods;
-  }, [result?.availableAuthMethods, result?.providers, result?.hasPassword]);
-  const hasGoogle = availableAuthMethods.includes("google");
-  const hasPassword = availableAuthMethods.includes("password") || Boolean(result?.hasPassword);
-  const membershipStatus = result?.membershipStatus ?? null;
-  const nextAction = result?.nextAction ?? null;
-  const showGoogleOnly = nextAction === "LOGIN" && hasGoogle && !hasPassword;
+  const blockedResult = hasResolvedLookupState(result) && result.nextAction === "BLOCKED_MESSAGE";
+  const blockedMembershipStatus = blockedResult ? result.membershipStatus : null;
 
   useEffect(() => {
     if (!needsCaptcha || !turnstileSiteKey || !turnstileReady) return;
@@ -374,6 +390,8 @@ export default function EntrarClient() {
 
   useEffect(() => {
     setCaptchaToken(null);
+    setResult((previous) => (previous?.nextAction === "BLOCKED_MESSAGE" ? null : previous));
+    setRedirectingMessage("");
   }, [email]);
 
   return (
@@ -459,207 +477,35 @@ export default function EntrarClient() {
             {loading || autoFlowLoading ? "Processando..." : "Continuar"}
           </button>
 
-          <div className="mt-3 min-h-[180px]">
-            {autoFlowLoading && !result && (
+          <div className="mt-3 min-h-[120px]">
+            {(loading || autoFlowLoading || redirectingMessage) && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Validando seu acesso neste racha...
+                {redirectingMessage || "Verificando seu e-mail..."}
               </div>
             )}
 
-            {!autoFlowLoading && !result && (
+            {!loading && !autoFlowLoading && !redirectingMessage && !blockedResult && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Entre com Google para seguir com poucos cliques ou informe seu e-mail para o Fut7Pro
-                indicar o fluxo correto.
+                Esta tela identifica o próximo passo. Após clicar em continuar, você será
+                redirecionado automaticamente para login, cadastro ou aprovação.
               </div>
             )}
 
-            {result && (
+            {!loading && !autoFlowLoading && !redirectingMessage && blockedResult && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                {nextAction === "LOGIN" && (
-                  <>
-                    <div className="mb-1 font-semibold text-white">Conta encontrada</div>
-                    <p className="mb-4">
-                      {showGoogleOnly
-                        ? "Encontramos sua Conta Fut7Pro. Continue para entrar com Google."
-                        : "Encontramos sua Conta Fut7Pro. Continue para entrar com sua senha."}
-                    </p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      {showGoogleOnly ? (
-                        <button
-                          type="button"
-                          onClick={handleGoogle}
-                          className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
-                        >
-                          <span className="flex items-center justify-center gap-2">
-                            <Image
-                              src="/images/Google-Logo.png"
-                              alt="Google"
-                              width={18}
-                              height={18}
-                            />
-                            Entrar com Google
-                          </span>
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => router.push(loginHref)}
-                            className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
-                          >
-                            {hasGoogle ? "Entrar com senha" : "Ir para login"}
-                          </button>
-                          {hasGoogle && (
-                            <button
-                              type="button"
-                              onClick={handleGoogle}
-                              className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <Image
-                                  src="/images/Google-Logo.png"
-                                  alt="Google"
-                                  width={18}
-                                  height={18}
-                                />
-                                Entrar com Google
-                              </span>
-                            </button>
-                          )}
-                        </>
-                      )}
-                      {hasPassword && (
-                        <a
-                          href={publicHref("/esqueci-senha")}
-                          className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-center text-sm font-semibold text-white/80 hover:border-white/30"
-                        >
-                          Esqueci minha senha
-                        </a>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {nextAction === "REQUEST_JOIN" && (
-                  <>
-                    <div className="mb-1 font-semibold text-white">Conta Fut7Pro existente</div>
-                    <p className="mb-4">
-                      Sua conta já existe. Solicite entrada neste racha para liberar seu perfil e
-                      rankings.
-                    </p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => router.push(loginHref)}
-                        className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
-                      >
-                        Entrar para solicitar
-                      </button>
-                      {hasGoogle && (
-                        <button
-                          type="button"
-                          onClick={handleGoogle}
-                          className="flex-1 rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
-                        >
-                          <span className="flex items-center justify-center gap-2">
-                            <Image
-                              src="/images/Google-Logo.png"
-                              alt="Google"
-                              width={18}
-                              height={18}
-                            />
-                            Continuar com Google
-                          </span>
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-
-                {nextAction === "WAIT_APPROVAL" && (
-                  <>
-                    <div className="mb-1 font-semibold text-white">Solicitação pendente</div>
-                    <p className="mb-4">
-                      Sua solicitação já foi enviada e está aguardando aprovação do administrador.
-                    </p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        onClick={() => router.push(publicHref("/aguardando-aprovacao"))}
-                        className="flex-1 rounded-lg bg-brand py-2 text-sm font-semibold text-black"
-                      >
-                        Acompanhar status
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setResult(null)}
-                        className="flex-1 rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
-                      >
-                        Voltar
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {nextAction === "BLOCKED_MESSAGE" && (
-                  <>
-                    <div className="mb-1 font-semibold text-white">Acesso indisponível</div>
-                    <p className="mb-4">
-                      {membershipStatus === "REJECTED"
-                        ? "Sua solicitação foi recusada para este racha. Fale com o administrador para uma nova análise."
-                        : "Seu acesso a este racha está bloqueado no momento. Entre em contato com o administrador."}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setResult(null)}
-                      className="w-full rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
-                    >
-                      Voltar
-                    </button>
-                  </>
-                )}
-
-                {nextAction === "REGISTER" && (
-                  <>
-                    <div className="mb-1 font-semibold text-yellow-300">
-                      Primeiro acesso no Fut7Pro
-                    </div>
-                    <p className="mb-4">
-                      Ainda não existe uma Conta Fut7Pro para este e-mail. Crie sua conta para
-                      entrar e participar dos rachas.
-                    </p>
-                    <div className="flex flex-col gap-2">
-                      <button
-                        type="button"
-                        onClick={() => router.push(registerHref)}
-                        className="w-full rounded-lg bg-brand py-2 text-sm font-semibold text-black"
-                      >
-                        Criar conta Fut7Pro
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleGoogleRegister}
-                        className="w-full rounded-lg border border-white/10 bg-white/5 py-2 text-sm font-semibold text-white transition hover:border-white/20"
-                      >
-                        <span className="flex items-center justify-center gap-2">
-                          <Image
-                            src="/images/Google-Logo.png"
-                            alt="Google"
-                            width={18}
-                            height={18}
-                          />
-                          Cadastrar com Google
-                        </span>
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {result && !hasResolvedLookupState(result) && (
-                  <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                    {LOOKUP_STATE_ERROR_MESSAGE}
-                  </div>
-                )}
+                <div className="mb-1 font-semibold text-white">Acesso indisponível</div>
+                <p className="mb-4">
+                  {blockedMembershipStatus === "REJECTED"
+                    ? "Sua solicitação foi recusada para este racha. Fale com o administrador para uma nova análise."
+                    : "Seu acesso a este racha está bloqueado no momento. Entre em contato com o administrador."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setResult(null)}
+                  className="w-full rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
+                >
+                  Voltar
+                </button>
               </div>
             )}
           </div>

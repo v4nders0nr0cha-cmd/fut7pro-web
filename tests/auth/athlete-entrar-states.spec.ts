@@ -24,7 +24,7 @@ async function openEntrarWithLookupMock(
 }
 
 test.describe("athlete entrar states", () => {
-  test("exibe estado ACTIVE com CTA de login", async ({ page }) => {
+  test("ACTIVE redireciona para login com e-mail preenchido", async ({ page }) => {
     await openEntrarWithLookupMock(page, {
       exists: true,
       userExists: true,
@@ -36,11 +36,11 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page.getByText("Conta encontrada")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Ir para login/i })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login`));
+    await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
   });
 
-  test("exibe estado REGISTER com CTA de cadastro", async ({ page }) => {
+  test("REGISTER redireciona para cadastro com e-mail preenchido", async ({ page }) => {
     await openEntrarWithLookupMock(page, {
       exists: false,
       userExists: false,
@@ -52,11 +52,12 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page.getByText("Primeiro acesso no Fut7Pro")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Criar conta Fut7Pro" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/register`));
+    await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
+    await expect(page.getByText(/Primeiro acesso no Fut7Pro/i)).toBeVisible();
   });
 
-  test("exibe estado REQUEST_JOIN para conta sem vinculo", async ({ page }) => {
+  test("REQUEST_JOIN redireciona para login com aviso de solicitação", async ({ page }) => {
     await openEntrarWithLookupMock(page, {
       exists: true,
       userExists: true,
@@ -68,11 +69,12 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page.getByText("Conta Fut7Pro existente")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Entrar para solicitar" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login\\?.*intent=request-join`));
+    await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
+    await expect(page.getByText(/você ainda não joga neste racha/i)).toBeVisible();
   });
 
-  test("exibe estado WAIT_APPROVAL com destino para aguardando", async ({ page }) => {
+  test("WAIT_APPROVAL redireciona para aguardando aprovação", async ({ page }) => {
     await openEntrarWithLookupMock(page, {
       exists: true,
       userExists: true,
@@ -84,21 +86,12 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page.getByText("Solicitação pendente")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Acompanhar status" })).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/aguardando-aprovacao`));
   });
 
   test("link de esqueci senha aponta para rota publica slugada", async ({ page }) => {
-    await openEntrarWithLookupMock(page, {
-      exists: true,
-      userExists: true,
-      providers: ["credentials"],
-      hasPassword: true,
-      availableAuthMethods: ["password"],
-      membershipStatus: "ACTIVE",
-      nextAction: "LOGIN",
-      requiresCaptcha: false,
-    });
+    test.skip(!shouldRun, "E2E auth envs not set");
+    await page.goto(`/${slug as string}/login`);
 
     const forgotLink = page.getByRole("link", { name: "Esqueci minha senha" });
     await expect(forgotLink).toHaveAttribute("href", `/${slug as string}/esqueci-senha`);

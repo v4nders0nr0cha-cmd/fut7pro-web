@@ -24,6 +24,9 @@ export default function AguardandoAprovacaoClient() {
         <p className="mt-2 text-sm text-gray-300">
           Seu cadastro está em análise. O administrador precisa aprovar o acesso completo ao racha.
         </p>
+        <p className="mt-2 text-sm text-emerald-200">
+          Solicitação enviada, agora é só aguardar a liberação do admin.
+        </p>
         <p className="mt-3 text-xs text-gray-400">
           Quando a aprovação for concluída, você poderá acessar o perfil completo e os rankings.
         </p>

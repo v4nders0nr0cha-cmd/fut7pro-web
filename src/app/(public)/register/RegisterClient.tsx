@@ -1,6 +1,14 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
@@ -11,6 +19,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
+import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
@@ -127,8 +136,7 @@ export default function RegisterClient() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [accountModalMessage, setAccountModalMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [pendingModalOpen, setPendingModalOpen] = useState(false);
-  const [pendingRachaName, setPendingRachaName] = useState("");
+  const [prefilledFromEntrar, setPrefilledFromEntrar] = useState(false);
 
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
   const isPendingMembership = membershipStatus === "PENDENTE";
@@ -172,6 +180,20 @@ export default function RegisterClient() {
   ]);
 
   const shouldPrefill = isAuthenticated && hasPublicSlug;
+
+  useEffect(() => {
+    if (isAuthenticated || !publicSlug) {
+      setPrefilledFromEntrar(false);
+      return;
+    }
+    const context = readPublicAuthContext(publicSlug);
+    if (!context?.email) {
+      setPrefilledFromEntrar(false);
+      return;
+    }
+    setEmail((previous) => previous || context.email);
+    setPrefilledFromEntrar(true);
+  }, [isAuthenticated, publicSlug]);
 
   useEffect(() => {
     if (!shouldPrefill) return;
@@ -228,11 +250,6 @@ export default function RegisterClient() {
       return;
     }
     await signIn("google", { callbackUrl: publicHref("/register") });
-  };
-
-  const handlePendingClose = () => {
-    setPendingModalOpen(false);
-    router.replace(publicHref("/aguardando-aprovacao"));
   };
 
   const validateBaseFields = () => {
@@ -302,6 +319,36 @@ export default function RegisterClient() {
     setAvatarPreview(DEFAULT_AVATAR);
     setAvatarError("");
   };
+
+  const requestJoinAfterRegister = useCallback(async () => {
+    if (!publicSlug) {
+      throw new Error("Slug do racha não encontrado.");
+    }
+
+    const triggerJoin = async () =>
+      fetch(`/api/public/${publicSlug}/auth/request-join`, {
+        method: "POST",
+      });
+
+    let response = await triggerJoin();
+    if (response.status === 401) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      response = await triggerJoin();
+    }
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message = Array.isArray(body?.message)
+        ? body.message.join(" ")
+        : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
+      throw new Error(message);
+    }
+
+    const joinStatus = String(body?.status || "").toUpperCase();
+    const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
+    const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+    return { isActive };
+  }, [publicSlug]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -379,8 +426,8 @@ export default function RegisterClient() {
               ? body.error.code
               : null;
         if (errorCode === "REQUEST_PENDING") {
-          setPendingRachaName(nomeDoRacha);
-          setPendingModalOpen(true);
+          clearPublicAuthContext();
+          router.replace(publicHref("/aguardando-aprovacao"));
           return;
         }
         if (errorCode === "ALREADY_MEMBER") {
@@ -410,8 +457,6 @@ export default function RegisterClient() {
       const refreshToken = body?.refreshToken;
       const rawStatus = typeof body?.status === "string" ? body.status.toUpperCase() : "";
       const requiresApproval = rawStatus === "PENDENTE" || body?.requiresApproval === true;
-      const resolvedRachaName =
-        typeof body?.rachaName === "string" && body.rachaName ? body.rachaName : nomeDoRacha;
 
       if (accessToken && refreshToken) {
         const signInResult = await signIn("credentials", {
@@ -427,12 +472,25 @@ export default function RegisterClient() {
         }
       }
 
+      let joinIsActive = false;
+      if (!isApprovedMembership) {
+        const joinOutcome = await requestJoinAfterRegister();
+        joinIsActive = joinOutcome.isActive;
+      }
+
       if (requiresApproval) {
-        setPendingRachaName(resolvedRachaName);
-        setPendingModalOpen(true);
+        clearPublicAuthContext();
+        router.replace(publicHref("/aguardando-aprovacao"));
         return;
       }
 
+      if (!joinIsActive && !isApprovedMembership) {
+        clearPublicAuthContext();
+        router.replace(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+
+      clearPublicAuthContext();
       setSucesso("Cadastro concluido com sucesso.");
       router.replace(redirectTo);
     } catch (error) {
@@ -476,6 +534,16 @@ export default function RegisterClient() {
         <p className="mt-2 text-center text-sm text-gray-300">
           Sua solicitacao sera enviada ao administrador para aprovacao.
         </p>
+
+        {!isAuthenticated && prefilledFromEntrar ? (
+          <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
+            <p className="font-semibold text-emerald-200">Primeiro acesso no Fut7Pro</p>
+            <p className="mt-1">
+              Crie sua conta para pedir entrada no racha {nomeDoRacha}. Depois da aprovação do
+              admin, você já começa a pontuar.
+            </p>
+          </div>
+        ) : null}
 
         {erro ? (
           <div
@@ -826,58 +894,6 @@ export default function RegisterClient() {
                   >
                     Entrar e solicitar
                   </a>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </Dialog>
-      </Transition.Root>
-
-      <Transition.Root show={pendingModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={handlePendingClose}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-150"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 flex items-center justify-center px-3 py-6">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-200"
-              enterFrom="opacity-0 translate-y-6"
-              enterTo="opacity-100 translate-y-0"
-              leave="ease-in duration-150"
-              leaveFrom="opacity-100 translate-y-0"
-              leaveTo="opacity-0 translate-y-6"
-            >
-              <Dialog.Panel className="relative w-full max-w-md rounded-2xl border border-yellow-500/30 bg-[#111827] px-6 pb-6 pt-6 text-white shadow-2xl">
-                <Dialog.Title className="text-lg font-semibold text-yellow-300">
-                  Solicitacao enviada
-                </Dialog.Title>
-                <p className="mt-3 text-sm text-gray-200">
-                  Sua solicitacao foi enviada para o administrador do{" "}
-                  <strong>{pendingRachaName || nomeDoRacha}</strong>. Assim que for aprovada, voce
-                  podera entrar e ver seu perfil completo.
-                </p>
-                <p className="mt-2 text-xs text-gray-400">
-                  Enquanto aguarda, voce pode navegar pelas paginas publicas do racha.
-                </p>
-
-                <div className="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handlePendingClose}
-                    className="rounded-lg bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
-                  >
-                    Entendi
-                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

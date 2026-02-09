@@ -56,7 +56,7 @@ describe("EntrarClient", () => {
     jest.clearAllMocks();
   });
 
-  it("mostra ação de solicitar entrada quando conta existe sem vínculo no racha", async () => {
+  it("redireciona para login com intent request-join quando conta existe sem vínculo", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -79,14 +79,12 @@ describe("EntrarClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          "Sua conta já existe. Solicite entrada neste racha para liberar seu perfil e rankings."
-        )
-      ).toBeInTheDocument();
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
+      );
     });
 
-    expect(screen.getByRole("button", { name: "Entrar para solicitar" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Criar conta Fut7Pro" })).not.toBeInTheDocument();
+    expect(sessionStorage.getItem("fut7pro_auth_email")).toBe("atleta@teste.com");
+    expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
   });
 });
