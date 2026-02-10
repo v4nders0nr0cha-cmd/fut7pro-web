@@ -45,6 +45,19 @@ function pickString(source: Record<string, unknown> | null, keys: string[]): str
   return "";
 }
 
+function pickNumber(source: Record<string, unknown> | null, keys: string[]): number | null {
+  if (!source) return null;
+  for (const key of keys) {
+    const value = source[key];
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim()) {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
 function pickDateValue(source: Record<string, unknown> | null): string | null {
   if (!source) return null;
   const raw = pickString(source, [
@@ -120,6 +133,27 @@ function extractList(payload: unknown): unknown[] {
   return isSingleRecord ? [root] : [];
 }
 
+function normalizeArtifactLocation(value: string | null, id: string): string | null {
+  if (value && value.startsWith("/admin/relatorios/diagnostics/")) {
+    return `/api${value}`;
+  }
+  if (value && value.startsWith("/api/admin/relatorios/diagnostics/")) {
+    return value;
+  }
+  if (value && /^https?:\/\//i.test(value)) {
+    try {
+      const parsed = new URL(value);
+      if (parsed.pathname.startsWith("/admin/relatorios/diagnostics/")) {
+        return `/api${parsed.pathname}${parsed.search || ""}`;
+      }
+    } catch {
+      return value;
+    }
+    return value;
+  }
+  return value || `/api/admin/relatorios/diagnostics/${encodeURIComponent(id)}/artifact`;
+}
+
 function normalizeRecord(item: unknown, index: number): DiagnosticsRecord | null {
   const source = asObject(item);
   if (!source) return null;
@@ -130,9 +164,10 @@ function normalizeRecord(item: unknown, index: number): DiagnosticsRecord | null
   const message =
     pickString(source, ["message", "detail", "descricao", "summary", "description"]) ||
     "Execução registrada no histórico.";
-  const location =
-    pickString(source, ["location", "url", "fileUrl", "downloadUrl", "artifactUrl"]) || null;
   const id = pickString(source, ["id", "_id", "uuid"]) || `record-${index}`;
+  const rawLocation =
+    pickString(source, ["location", "url", "fileUrl", "downloadUrl", "artifactUrl"]) || null;
+  const location = normalizeArtifactLocation(rawLocation, id);
 
   return {
     id,
@@ -166,6 +201,35 @@ function extractApiMessage(payload: unknown): string {
   return pickString(nested, ["message", "detail", "descricao"]);
 }
 
+function extractSummary(payload: unknown) {
+  const root = asObject(payload);
+  const summaryRoot = asObject(root?.summary ?? null);
+  if (!summaryRoot) {
+    return {
+      lastExecution: null as DiagnosticsRecord | null,
+      success: null as number | null,
+      warning: null as number | null,
+      failed: null as number | null,
+    };
+  }
+
+  const lastExecution = summaryRoot.lastExecution
+    ? normalizeRecord(summaryRoot.lastExecution, 0)
+    : null;
+  const success = pickNumber(summaryRoot, ["successCount", "success", "concludedCount"]);
+  const failed = pickNumber(summaryRoot, ["failedCount", "failureCount", "failed"]);
+  const running = pickNumber(summaryRoot, ["runningCount", "running"]) || 0;
+  const pending = pickNumber(summaryRoot, ["pendingCount", "pending"]);
+  const warning = pending !== null ? pending : running;
+
+  return {
+    lastExecution,
+    success,
+    warning,
+    failed,
+  };
+}
+
 function formatDatePtBr(value: string | null): string {
   if (!value) return "-";
   const parsed = new Date(value);
@@ -180,7 +244,8 @@ function toneClassName(tone: DiagnosticsStatusTone): string {
   return "bg-gray-700/35 text-gray-200 border-gray-500/50";
 }
 
-function isHttpUrl(value: string) {
+function isArtifactLink(value: string) {
+  if (value.startsWith("/")) return true;
   try {
     const parsed = new URL(value);
     return parsed.protocol === "http:" || parsed.protocol === "https:";
@@ -221,7 +286,7 @@ function getHistoryErrorText(error: FetchError | undefined): string {
     return "Você não tem permissão para consultar diagnósticos deste racha.";
   }
   if (error.status === 404) {
-    return "Endpoint de diagnósticos indisponível no backend atual.";
+    return "Diagnóstico não encontrado para o racha ativo.";
   }
   return getReadableError(error, "Falha ao carregar o histórico.");
 }
@@ -240,19 +305,21 @@ export default function BackupPage() {
 
   const history = useMemo(() => normalizeHistory(data), [data]);
   const historyErrorText = getHistoryErrorText(error);
-  const latest = history[0];
+  const apiSummary = useMemo(() => extractSummary(data), [data]);
+  const latest = apiSummary.lastExecution ?? history[0] ?? null;
   const apiMessage = useMemo(() => extractApiMessage(data), [data]);
 
   const summary = useMemo(() => {
-    const success = history.filter((item) => item.statusTone === "success").length;
-    const warning = history.filter((item) => item.statusTone === "warning").length;
-    const failed = history.filter((item) => item.statusTone === "danger").length;
+    const computedSuccess = history.filter((item) => item.statusTone === "success").length;
+    const computedWarning = history.filter((item) => item.statusTone === "warning").length;
+    const computedFailed = history.filter((item) => item.statusTone === "danger").length;
+
     return {
-      success,
-      warning,
-      failed,
+      success: apiSummary.success ?? computedSuccess,
+      warning: apiSummary.warning ?? computedWarning,
+      failed: apiSummary.failed ?? computedFailed,
     };
-  }, [history]);
+  }, [history, apiSummary]);
 
   const handleRunDiagnostics = async () => {
     setIsRunning(true);
@@ -278,7 +345,7 @@ export default function BackupPage() {
         tone: "success",
         text:
           extractApiMessage(body) ||
-          "Diagnóstico iniciado com sucesso. Atualize o histórico para acompanhar o resultado.",
+          "Diagnóstico executado com sucesso. O histórico foi atualizado.",
       });
       await mutate();
     } catch (err) {
@@ -295,6 +362,7 @@ export default function BackupPage() {
     <>
       <Head>
         <title>Backup & Recuperação | Fut7Pro Admin</title>
+        <meta name="robots" content="noindex,nofollow" />
         <meta
           name="description"
           content="Monitore diagnósticos, execute backup operacional e acione recuperação assistida com segurança no painel Fut7Pro."
@@ -433,7 +501,7 @@ export default function BackupPage() {
                       </td>
                       <td className="py-3 pr-3 text-gray-300">{item.message}</td>
                       <td className="py-3 text-gray-300">
-                        {item.location && isHttpUrl(item.location) ? (
+                        {item.location && isArtifactLink(item.location) ? (
                           <a
                             href={item.location}
                             target="_blank"
