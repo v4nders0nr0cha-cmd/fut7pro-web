@@ -1,10 +1,53 @@
-Progresso atual (estimativa): **97% concluido**
+Progresso atual (estimativa): **98% concluido**
 
-Proximos passos imediatos (atualizado 03/02/2026)
+Proximos passos imediatos (atualizado 10/02/2026)
 
 1. Admin: remover mocks restantes em personalizacao (redes-sociais, editar-paginas/contatos) e ajustar footer gating hardcoded.
 2. Admin: revisar comunicacao/ajuda fallback (articles/videos mock).
 3. Superadmin: trocar `src/app/(superadmin)/superadmin/marketing/[id]/page.tsx` para usar influencersApi/endpoints reais.
+4. Seguranca: planejar migracao para Next >= 15.5.10 para eliminar alertas residuais de `pnpm audit --prod`.
+
+Atualizacao 10/02/2026 - cancelamento da conta do racha (admin + backend)
+
+- A pagina `src/app/(admin)/admin/configuracoes/cancelar-conta/page.tsx` foi refeita para deixar explicito que o fluxo cancela apenas a conta do racha (nao a conta global do usuario).
+- Novo endpoint backend dedicado: `POST /admin/support/tickets/cancelamento-racha`, com validacao de Presidente, confirmacoes obrigatorias e frase de seguranca.
+- Web ganhou proxy dedicado em `src/app/api/admin/support/tickets/cancelamento-racha/route.ts`.
+- A solicitacao agora gera protocolo de chamado em `SupportTicket` (categoria BILLING), consolidando automaticamente no painel `superadmin/suporte`.
+- Duplicidade controlada: se ja existir solicitacao aberta de cancelamento para o mesmo racha, o backend retorna o protocolo existente.
+
+Atualizacao 10/02/2026 - superadmin (processamento de cancelamento por racha)
+
+- Nova pagina dedicada: `src/app/(superadmin)/superadmin/cancelamentos/page.tsx` com lista de "Rachas que solicitaram cancelamento".
+- Backend ganhou fluxo operacional com dois passos:
+  - `POST /superadmin/support/tickets/:id/cancelamento-racha/aprovar`
+  - `POST /superadmin/support/tickets/:id/cancelamento-racha/concluir`
+- Endpoint de listagem dedicado: `GET /superadmin/support/tickets/cancelamento-racha`.
+- Ao concluir protocolo, o backend marca a assinatura do tenant como `canceled` (quando aplicavel), fecha o ticket e grava mensagem de auditoria no historico do chamado.
+- Web ganhou proxies dedicados em:
+  - `src/app/api/superadmin/support/cancelamento-racha/route.ts`
+  - `src/app/api/superadmin/support/cancelamento-racha/[id]/aprovar/route.ts`
+  - `src/app/api/superadmin/support/cancelamento-racha/[id]/concluir/route.ts`
+- Navegacao atualizada com item `Cancelamentos` no menu lateral do SuperAdmin.
+
+Atualizacao 10/02/2026 - CI frontend estabilizado (run #420 verde)
+
+- GitHub Actions Frontend CI/CD #420 (commit `e48a2b2`) concluido com sucesso:
+  - `Code Quality`, `Tests`, `Security Scan`, `Build` e `Notify Results` verdes.
+- Correcoes aplicadas no pipeline:
+  - Workflow `.github/workflows/frontend-ci.yml` alinhado para `pnpm install --frozen-lockfile`.
+  - Condicoes invalidas com `secrets.*` em `if` foram substituidas por variaveis de job (`env.*`).
+  - Security Scan dividido em duas etapas:
+    - bloqueante: `pnpm audit --prod --audit-level=critical`
+    - informativa: `pnpm audit --prod --audit-level=moderate` com `continue-on-error: true`
+- Correcoes de lockfile/dependencias:
+  - `@dnd-kit/utilities` adicionado como dependencia direta (resolve TS2307 no `type-check` em CI).
+  - Dependencias sem uso removidas: `jspdf`, `pdfmake`, `express`, `cors`, `node-cron` e respectivos `@types/*`.
+  - Dependencias atualizadas: `next 14.2.35`, `next-auth 4.24.12`, `@sentry/browser 10.27.0`, `@sentry/nextjs 10.27.0`, `tailwindcss ^3.4.17`.
+  - Overrides de seguranca alinhados: `next 14.2.35` e `glob 10.5.0`.
+- Validacoes locais executadas apos os ajustes:
+  - `pnpm run format:check`, `pnpm run lint`, `pnpm run type-check`, `pnpm run test:ci` e `pnpm run build` verdes.
+- Risco residual conhecido:
+  - `pnpm audit --prod` ainda reporta vulnerabilidades em `next` (1 high e 1 moderate); para zerar, requer migracao para Next >= 15.5.10 com janela de compatibilidade.
 
 Observacao importante (Hub admin + tenant ativo)
 
@@ -86,7 +129,7 @@ Atualizacao 27/01/2026 - sorteio inteligente (admin) com permissao real
 Atualizacao 27/01/2026 - administracao/cancelamento sem mocks
 
 - `src/app/(admin)/admin/administracao/transferir-propriedade/page.tsx` agora usa atletas reais (`useJogadores`) e envia solicitacao via `/api/public/contact`.
-- `src/app/(admin)/admin/configuracoes/cancelar-conta/page.tsx` passou a validar permissao via `useMe` e envia solicitacao via `/api/public/contact`.
+- `src/app/(admin)/admin/configuracoes/cancelar-conta/page.tsx` evoluiu para fluxo dedicado de cancelamento do racha via `/api/admin/support/tickets/cancelamento-racha`.
 - `src/app/(admin)/admin/relatorios/RelatoriosClient.tsx` removido (mocks fora de uso).
 
 Atualizacao 26/01/2026 - nova auditoria de mocks remanescentes

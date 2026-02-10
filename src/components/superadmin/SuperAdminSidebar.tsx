@@ -13,6 +13,7 @@ const menus: MenuItem[] = [
   { href: "/superadmin/financeiro", label: "Financeiro" },
   { href: "/superadmin/planos", label: "Planos & Limites" },
   { href: "/superadmin/suporte", label: "Suporte" },
+  { href: "/superadmin/cancelamentos", label: "Cancelamentos" },
   { href: "/superadmin/notificacoes", label: "Notificações" },
   { href: "/superadmin/logs", label: "Logs e Auditoria" },
   { href: "/superadmin/integracoes", label: "Integrações" },

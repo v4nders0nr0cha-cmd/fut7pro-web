@@ -9,6 +9,7 @@ import {
   FaMoneyCheckAlt,
   FaCogs,
   FaIdBadge,
+  FaUserSlash,
 } from "react-icons/fa";
 
 const menu = [
@@ -17,6 +18,7 @@ const menu = [
   { label: "Admins", icon: FaUsers, href: "/superadmin/admins" },
   { label: "Contas", icon: FaIdBadge, href: "/superadmin/contas" },
   { label: "Financeiro", icon: FaMoneyCheckAlt, href: "/superadmin/financeiro" },
+  { label: "Cancel.", icon: FaUserSlash, href: "/superadmin/cancelamentos" },
   { label: "Config", icon: FaCogs, href: "/superadmin/config" },
 ];
 

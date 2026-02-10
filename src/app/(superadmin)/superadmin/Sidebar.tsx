@@ -20,6 +20,7 @@ import {
   FaLifeRing,
   FaMapMarkerAlt,
   FaLightbulb,
+  FaUserSlash,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -43,6 +44,7 @@ const menu = [
   { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },
   { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
   { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
+  { label: "Cancelamentos", href: "/superadmin/cancelamentos", icon: FaUserSlash },
 ];
 
 export default function Sidebar() {
