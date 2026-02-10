@@ -12,14 +12,18 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const user = await requireUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
-  const { response, body } = await proxyBackend(`${getApiBase()}/admin/relatorios/diagnostics`, {
-    headers: buildHeaders(user, user.tenantSlug || user.tenantId),
-    cache: "no-store",
-  });
+  const search = req.nextUrl.search || "";
+  const { response, body } = await proxyBackend(
+    `${getApiBase()}/admin/relatorios/diagnostics${search}`,
+    {
+      headers: buildHeaders(user, user.tenantSlug || user.tenantId),
+      cache: "no-store",
+    }
+  );
 
   return forwardResponse(response.status, body);
 }
@@ -29,15 +33,19 @@ export async function POST(req: NextRequest) {
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
   const payload = await req.json().catch(() => ({}));
-  const { response, body } = await proxyBackend(`${getApiBase()}/admin/relatorios/diagnostics`, {
-    method: "POST",
-    headers: {
-      ...buildHeaders(user, user.tenantSlug || user.tenantId, { includeContentType: true }),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
+  const search = req.nextUrl.search || "";
+  const { response, body } = await proxyBackend(
+    `${getApiBase()}/admin/relatorios/diagnostics${search}`,
+    {
+      method: "POST",
+      headers: {
+        ...buildHeaders(user, user.tenantSlug || user.tenantId, { includeContentType: true }),
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      cache: "no-store",
+    }
+  );
 
   return forwardResponse(response.status, body);
 }
