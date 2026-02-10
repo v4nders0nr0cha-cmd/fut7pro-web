@@ -111,11 +111,16 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   const [open, setOpen] = useState<string | null>(null);
   const { data: session } = useSession();
   const { me } = useMe({ context: "admin" });
+  const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
   const { tenantSlug } = useRacha();
   const resolvedSlug = useMemo(() => {
     const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
     return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || "";
   }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+  const visibleMenu = useMemo(
+    () => menu.filter((item) => item.label !== "Configurações/Extras" || isPresidente),
+    [isPresidente]
+  );
   const { nome, logo } = useBranding({ scope: "admin", slug: resolvedSlug });
   const sitePublicoUrl = `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
 
@@ -153,7 +158,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
       </div>
       <nav className="flex-1 overflow-y-auto">
         <ul className="space-y-1 px-4 pb-4">
-          {menu.map((item) =>
+          {visibleMenu.map((item) =>
             item.children ? (
               <li key={item.label}>
                 <button
