@@ -7,6 +7,13 @@ Proximos passos imediatos (atualizado 10/02/2026)
 3. Superadmin: trocar `src/app/(superadmin)/superadmin/marketing/[id]/page.tsx` para usar influencersApi/endpoints reais.
 4. Seguranca: planejar migracao para Next >= 15.5.10 para eliminar alertas residuais de `pnpm audit --prod`.
 
+Atualizacao 10/02/2026 - central de atualizacoes (changelog) com datas recentes
+
+- Backend passou a auto-publicar um baseline oficial de changelog quando necessario, evitando tela estagnada em versoes antigas.
+- Novas versoes base adicionadas (publicadas): 2025.12.19, 2025.12.21, 2026.01.01, 2026.01.27, 2026.02.03 e 2026.02.10.
+- A pagina `/admin/configuracoes/changelog` agora exibe "Ultima atualizacao" recente apos deploy, mesmo quando o banco tinha apenas releases antigos.
+- Arquivo alterado no backend: `src/modules/changelog/changelog.service.ts`.
+
 Atualizacao 10/02/2026 - cancelamento da conta do racha (admin + backend)
 
 - A pagina `src/app/(admin)/admin/configuracoes/cancelar-conta/page.tsx` foi refeita para deixar explicito que o fluxo cancela apenas a conta do racha (nao a conta global do usuario).
