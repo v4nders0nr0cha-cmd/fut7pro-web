@@ -6,11 +6,7 @@ export default function ContatoPage() {
       <ul>
         <li>Email: suporte@fut7pro.com (placeholder)</li>
       </ul>
-      <p>
-        Substitua os dados acima por contatos oficiais antes do go-live.
-      </p>
+      <p>Substitua os dados acima por contatos oficiais antes do go-live.</p>
     </main>
   );
 }
-
-

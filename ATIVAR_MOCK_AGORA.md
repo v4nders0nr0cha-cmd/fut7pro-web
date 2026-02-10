@@ -10,12 +10,14 @@
    ```
 2. **Partidas públicas do racha (dados reais)**  
    Substitua `{slug}` pelo racha que está validando.
+
    ```powershell
    curl.exe -s "https://app.fut7pro.com.br/api/public/{slug}/matches?scope=today"
    ```
 
    - `scope=today` | `upcoming` | `recent`
    - Esperado: HTTP 200 com lista de partidas (sem cache agressivo).
+
 3. **Se o backend principal estiver fora do ar**
    - Use o host de contingência já configurado no Render: `https://fut7pro-backend.onrender.com`
    - Garanta que `NEXT_PUBLIC_API_URL` e `BACKEND_URL` apontem para o host válido antes de redeploy.

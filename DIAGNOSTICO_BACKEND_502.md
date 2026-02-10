@@ -9,6 +9,7 @@ O fluxo de jogos usa apenas o backend real. Use estes passos para identificar 50
    curl.exe -sI https://api.fut7pro.com.br/health | findstr /I "HTTP"
    ```
 2. **Partidas públicas (rota oficial)**
+
    ```powershell
    $slug = "fut7pro" # ajuste para o racha em validação
    curl.exe -s "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
@@ -16,6 +17,7 @@ O fluxo de jogos usa apenas o backend real. Use estes passos para identificar 50
 
    - Esperado: 200 + JSON de partidas.
    - Scopes: `today`, `upcoming`, `recent`.
+
 3. **Se o domínio custom retornar 502/SSL**
    - Temporariamente use `https://fut7pro-backend.onrender.com` em `BACKEND_URL`/`NEXT_PUBLIC_API_URL`.
    - Redeploy no Vercel, depois revalide:

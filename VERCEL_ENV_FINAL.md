@@ -25,6 +25,7 @@
    curl.exe -sI https://api.fut7pro.com.br/health | findstr /I "HTTP"
    ```
 3. **Partidas públicas (slug do racha)**
+
    ```powershell
    $slug = "fut7pro" # ajuste para o racha
    curl.exe -s "https://app.fut7pro.com.br/api/public/$slug/matches?scope=today"
