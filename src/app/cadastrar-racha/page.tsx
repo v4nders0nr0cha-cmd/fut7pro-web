@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
@@ -151,7 +151,7 @@ const resolveFirstNameFromEmail = (email?: string | null) => {
   return resolveFirstName(normalized);
 };
 
-export default function CadastroRachaPage() {
+function CadastroRachaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
@@ -1811,5 +1811,21 @@ export default function CadastroRachaPage() {
         }}
       />
     </main>
+  );
+}
+
+export default function CadastroRachaPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="w-full max-w-6xl mx-auto px-4 py-10">
+          <div className="rounded-2xl bg-[#0f1118] border border-[#1c2030] p-6 text-sm text-gray-300">
+            Carregando cadastro do racha...
+          </div>
+        </main>
+      }
+    >
+      <CadastroRachaPageContent />
+    </Suspense>
   );
 }
