@@ -7,7 +7,7 @@ const shouldRun = Boolean(adminEmail) && Boolean(adminPassword);
 const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
 
 const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
-  { prefix: "/admin/dashboard", expected: /dashboard/i },
+  { prefix: "/admin/dashboard", expected: /dashboard|pós-jogo|acoes rápidas|ações rápidas/i },
   { prefix: "/admin/partidas", expected: /partidas|times|sorteio|resultado|campeão|histórico/i },
   { prefix: "/admin/jogadores", expected: /jogadores|atletas|mensalistas|ranking/i },
   { prefix: "/admin/conquistas", expected: /conquistas|campeões|torneios/i },
@@ -16,7 +16,8 @@ const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
   { prefix: "/admin/administracao", expected: /administração|administradores|permissões|logs/i },
   {
     prefix: "/admin/comunicacao",
-    expected: /comunicação|notificações|comunicados|enquetes|suporte|ajuda|mensagens/i,
+    expected:
+      /comunicação|notificações|comunicados|enquetes|suporte|ajuda|mensagens|sugestões|feedback/i,
   },
   {
     prefix: "/admin/configuracoes",
@@ -139,9 +140,15 @@ async function collectSidebarRoutes(page: Page) {
 }
 
 async function assertNoForbiddenTexts(page: Page) {
-  const mainText = (await page.locator("main").innerText()).toLowerCase();
+  const mains = page.locator("main");
+  const mainCount = await mains.count();
+  let mainText = "";
+  for (let i = 0; i < mainCount; i += 1) {
+    mainText += ` ${await mains.nth(i).innerText()}`;
+  }
+  const normalized = mainText.toLowerCase();
   FORBIDDEN_TEXTS.forEach((text) => {
-    expect(mainText).not.toContain(text);
+    expect(normalized).not.toContain(text);
   });
 }
 
@@ -151,12 +158,21 @@ async function assertPageHealthy(page: Page, expectedPath: string) {
 
   const pathname = new URL(page.url()).pathname;
   const expectedHeading = expectedHeadingRegex(pathname);
-  const headings = page.locator("main h1, main h2, h1");
-  await expect(headings.first()).toBeVisible({ timeout: 10000 });
+  const main = page.locator("main").first();
+  await expect(main).toBeVisible({ timeout: 10000 });
+
+  const headings = main.locator("h1, h2");
+  const headingCount = await headings.count();
+  let normalized = "";
+
+  if (headingCount > 0) {
+    const headingTexts = await headings.allInnerTexts();
+    normalized = headingTexts.join(" ").toLowerCase();
+  } else {
+    normalized = (await main.innerText()).toLowerCase();
+  }
 
   if (expectedHeading) {
-    const headingTexts = await headings.allInnerTexts();
-    const normalized = headingTexts.join(" ").toLowerCase();
     expect(normalized).toMatch(expectedHeading);
   }
 

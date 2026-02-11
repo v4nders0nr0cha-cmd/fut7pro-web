@@ -453,6 +453,32 @@ export default function RegisterClient() {
         return;
       }
 
+      const requiresEmailVerification =
+        !shouldUseCompleteEndpoint && !isGoogleSession
+          ? body?.requiresEmailVerification !== false
+          : false;
+      const registrationEmail = (
+        shouldUseCompleteEndpoint ? sessionUser?.email || "" : body?.email || payload.email || email
+      )
+        .toString()
+        .trim()
+        .toLowerCase();
+
+      if (requiresEmailVerification) {
+        clearPublicAuthContext();
+        setSucesso("Cadastro realizado! Verifique seu e-mail para ativar sua conta.");
+        const query = new URLSearchParams();
+        if (registrationEmail) {
+          query.set("email", registrationEmail);
+        }
+        const queryString = query.toString();
+        const confirmationHref = queryString
+          ? `${publicHref("/confirmar-email")}?${queryString}`
+          : publicHref("/confirmar-email");
+        router.replace(confirmationHref);
+        return;
+      }
+
       const accessToken = body?.accessToken;
       const refreshToken = body?.refreshToken;
       const rawStatus = typeof body?.status === "string" ? body.status.toUpperCase() : "";

@@ -1,6 +1,8 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterClient from "../RegisterClient";
 
+const replaceMock = jest.fn();
+
 jest.mock("next/image", () => ({
   __esModule: true,
   default: (props: any) => {
@@ -16,7 +18,7 @@ jest.mock("next-auth/react", () => ({
 }));
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: jest.fn() }),
+  useRouter: () => ({ replace: replaceMock }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -44,6 +46,7 @@ const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
 
 describe("RegisterClient", () => {
   beforeEach(() => {
+    replaceMock.mockReset();
     mockedUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
     mockedUseTema.mockReturnValue({ nome: "Racha Teste" });
     mockedUsePublicLinks.mockReturnValue({
@@ -95,5 +98,45 @@ describe("RegisterClient", () => {
     expect(loginCta.getAttribute("href")).toBe(
       "/ruimdebola/entrar?callbackUrl=%2Fruimdebola%2Fregister"
     );
+  });
+
+  it("redireciona para confirmar e-mail quando o cadastro novo exige verificacao", async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        status: "PENDENTE",
+        membership: null,
+        requiresApproval: true,
+        requiresEmailVerification: true,
+        verificationSent: true,
+        email: "novo@teste.com",
+      }),
+    });
+    global.fetch = fetchMock as any;
+
+    render(<RegisterClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("Seu primeiro nome"), {
+      target: { value: "Lucas" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "novo@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
+      target: { value: "123456" },
+    });
+    fireEvent.change(screen.getByLabelText("Posicao principal"), {
+      target: { value: "Atacante" },
+    });
+    fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
+    fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
+
+    fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/ruimdebola/confirmar-email?email=novo%40teste.com"
+      );
+    });
   });
 });

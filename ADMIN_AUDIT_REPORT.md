@@ -17,14 +17,14 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ## Plano por Etapas (Execução)
 
-| Etapa   | Objetivo                                                     | Achados vinculados | Status                      | Critério de saída                                                                                     |
-| ------- | ------------------------------------------------------------ | ------------------ | --------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída                   | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados                                 |
-| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída                   | Sem override de tenant por client, mismatch em path retorna `403`                                     |
-| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída                   | Fluxo admin sem mock residual crítico e sem dados fake                                                |
-| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída                   | Logs sanitizados no server-side, sem `console.log` em produção                                        |
-| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída                   | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs                      |
-| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Parcial (etapa 1 concluída) | Runner configurado e spec executando sem skip; falta validação final com credencial admin real válida |
+| Etapa   | Objetivo                                                     | Achados vinculados | Status    | Critério de saída                                                                   |
+| ------- | ------------------------------------------------------------ | ------------------ | --------- | ----------------------------------------------------------------------------------- |
+| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados               |
+| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída | Sem override de tenant por client, mismatch em path retorna `403`                   |
+| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída | Fluxo admin sem mock residual crítico e sem dados fake                              |
+| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída | Logs sanitizados no server-side, sem `console.log` em produção                      |
+| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs    |
+| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Concluída | Spec executado com credencial admin real, navegação principal validada e sem `skip` |
 
 ### Checklist de Fechamento por Etapa
 
@@ -37,9 +37,9 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ### Próxima Ação Recomendada (Imediata)
 
-1. Definir credenciais admin reais em `.env.e2e.local` (`E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`) ou no ambiente do CI.
-2. Reexecutar `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list`.
-3. Atualizar este relatório com resultado final do smoke (`pass`) para fechar aceite.
+1. Manter as credenciais E2E admin válidas no ambiente local/CI para evitar regressão de `skip`.
+2. Incluir este smoke no pipeline de PR para bloquear merge com rota admin quebrada.
+3. Reexecutar o smoke quando houver alteração em sidebar/header/cards do dashboard.
 
 ## Tabela de Rotas e Navegação
 
@@ -331,14 +331,14 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ## Evidências de Validação
 
-- `pnpm type-check` ✅
 - `pnpm lint` ✅
-- `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list` ✅ executou sem `skip` após bootstrap de credenciais locais.
-- Resultado E2E atual: ❌ login autenticou, mas sem tenant disponível no Hub (`0 racha(s) encontrado(s)`), bloqueando a navegação admin completa. O spec agora retorna erro explícito para esse caso.
+- `pnpm typecheck` ✅
+- `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list` ✅ **PASS** (1 passed, sem `skip`, com credencial admin real).
+- Resultado E2E atual: ✅ login autenticou, tenant selecionado e navegação admin principal concluída sem rota quebrada.
 
 ## Observações de Ambiente (Render/Vercel)
 
 - Não foi necessária nova variável de ambiente para as correções aplicadas no admin.
-- Para o smoke E2E passar com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
+- Para manter o smoke E2E executável com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
   - `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`, ou
   - `TEST_EMAIL` e `TEST_PASSWORD` (quando esses valores forem credenciais reais do ambiente alvo).

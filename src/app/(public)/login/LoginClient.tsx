@@ -246,6 +246,10 @@ export default function LoginClient() {
             : typeof body?.error === "string"
               ? body.error
               : "Não foi possível autenticar.";
+        const isEmailNotVerified =
+          code === "EMAIL_NOT_VERIFIED" ||
+          message.toLowerCase().includes("confirme seu e-mail") ||
+          message.toLowerCase().includes("verifique seu e-mail");
 
         if (code === "REQUEST_PENDING") {
           setPendingModalOpen(true);
@@ -259,6 +263,19 @@ export default function LoginClient() {
 
         if (code === "REQUEST_REJECTED") {
           setErro("Sua solicitação foi rejeitada. Fale com o administrador do racha.");
+          return;
+        }
+        if (isEmailNotVerified) {
+          const normalizedEmail = email.trim().toLowerCase();
+          const query = new URLSearchParams();
+          if (normalizedEmail) {
+            query.set("email", normalizedEmail);
+          }
+          const queryString = query.toString();
+          const confirmationHref = queryString
+            ? `${publicHref("/confirmar-email")}?${queryString}`
+            : publicHref("/confirmar-email");
+          router.replace(confirmationHref);
           return;
         }
 

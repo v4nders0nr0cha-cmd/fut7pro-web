@@ -12,7 +12,8 @@ export default function VerificarEmailClient() {
 
   const [status, setStatus] = useState<VerifyStatus>("loading");
   const [message, setMessage] = useState("");
-  const [confirmedEmail, setConfirmedEmail] = useState("");
+  const [redirectHref, setRedirectHref] = useState("/admin/login");
+  const [isAdminFlow, setIsAdminFlow] = useState(true);
   const [resendEmail, setResendEmail] = useState("");
   const [resendStatus, setResendStatus] = useState<"idle" | "loading">("idle");
 
@@ -44,14 +45,18 @@ export default function VerificarEmailClient() {
         setStatus("success");
         setMessage("E-mail confirmado com sucesso.");
         const verifiedEmail = (data?.email || "").toString().trim();
-        if (verifiedEmail) {
-          setConfirmedEmail(verifiedEmail);
-        }
+        const role = (data?.role || "").toString().trim().toUpperCase();
+        const isAdmin = role === "ADMIN" || role === "SUPERADMIN";
+        setIsAdminFlow(isAdmin);
         const params = new URLSearchParams();
         if (verifiedEmail) params.set("email", verifiedEmail);
         params.set("verified", "1");
+        const nextHref = isAdmin
+          ? `/admin/login?${params.toString()}`
+          : `/login?${params.toString()}`;
+        setRedirectHref(nextHref);
         redirectTimer = setTimeout(() => {
-          router.replace(`/admin/login?${params.toString()}`);
+          router.replace(nextHref);
         }, 1200);
       } catch {
         if (!active) return;
@@ -128,14 +133,11 @@ export default function VerificarEmailClient() {
             <button
               type="button"
               onClick={() => {
-                const params = new URLSearchParams();
-                if (confirmedEmail) params.set("email", confirmedEmail);
-                params.set("verified", "1");
-                router.push(`/admin/login?${params.toString()}`);
+                router.push(redirectHref);
               }}
               className="w-full rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black shadow-lg hover:bg-yellow-300"
             >
-              Ir para o login do painel
+              {isAdminFlow ? "Ir para o login do painel" : "Ir para o login da conta"}
             </button>
           </div>
         )}
