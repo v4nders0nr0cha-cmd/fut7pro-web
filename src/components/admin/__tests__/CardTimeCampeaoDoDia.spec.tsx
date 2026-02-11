@@ -37,8 +37,8 @@ describe("CardTimeCampeaoDoDia", () => {
   it("mostra o campeao calculado a partir das partidas", () => {
     render(<CardTimeCampeaoDoDia matches={sampleMatches} editLink="/admin/partidas" />);
 
-    expect(screen.getByText(/Time Campeão do Dia/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Editar Time Campeão do Dia/i })).toHaveAttribute(
+    expect(screen.getByText(/Time Azul/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Editar Time Azul/i })).toHaveAttribute(
       "href",
       "/admin/partidas"
     );
@@ -47,6 +47,6 @@ describe("CardTimeCampeaoDoDia", () => {
   it("exibe chamada para cadastrar quando nao ha dados", () => {
     render(<CardTimeCampeaoDoDia />);
 
-    expect(screen.getByText(/Cadastre foto/i)).toBeInTheDocument();
+    expect(screen.getByText(/Selecione um racha no Hub/i)).toBeInTheDocument();
   });
 });

@@ -77,7 +77,7 @@ const mockParticipantes: Participante[] = [
 ];
 
 jest.mock("@/context/RachaContext", () => ({
-  useRacha: () => ({ rachaId: "racha-1" }),
+  useRacha: () => ({ rachaId: "racha-1", tenantSlug: "racha-1" }),
 }));
 
 jest.mock("@/hooks/useTimes", () => ({

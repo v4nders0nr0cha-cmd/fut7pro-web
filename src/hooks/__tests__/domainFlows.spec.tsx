@@ -11,7 +11,7 @@ const handleAsyncMock = jest.fn((fn: any) => fn());
 
 const swrMock = jest.fn((key: string) => {
   const map: Record<string, any> = {
-    "/api/admin/financeiro?tenantId=tenant-1": {
+    "/api/admin/financeiro": {
       data: [
         {
           id: "l1",
@@ -163,10 +163,11 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     );
     expect(body).toEqual(
       expect.objectContaining({
-        tenantId: "tenant-1",
         type: "ENTRADA",
         value: 50,
         description: "Nova",
+        category: "",
+        date: "2025-01-01T00:00:00.000Z",
       })
     );
     expect(mutateMock).toHaveBeenCalled();

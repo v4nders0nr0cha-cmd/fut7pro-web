@@ -7,13 +7,13 @@ import { Role, Permission } from "@/common/enums";
 
 const swrMock = jest.fn((key: string) => {
   const map: Record<string, any> = {
-    "/api/jogadores?rachaId=r1": {
+    "/api/jogadores": {
       data: [{ id: "j1", nome: "Jogador 1", timeId: "t1" }],
       isLoading: false,
       error: undefined,
       mutate: jest.fn(),
     },
-    "/api/partidas?rachaId=r1": {
+    "/api/partidas": {
       data: [{ id: "p1", titulo: "Partida 1" }],
       isLoading: false,
       error: undefined,
