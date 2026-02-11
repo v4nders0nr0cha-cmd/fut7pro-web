@@ -17,12 +17,12 @@ export function usePartidas() {
   const apiState = useApiState();
 
   const { data, error, mutate, isLoading } = useSWR<Partida[]>(
-    rachaId ? `/api/partidas?rachaId=${rachaId}` : null,
+    rachaId ? "/api/partidas" : null,
     fetcher,
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar partidas:", err);
+          console.error("Erro ao carregar partidas:", err);
         }
       },
     }
@@ -32,10 +32,7 @@ export function usePartidas() {
     if (!rachaId) return null;
 
     return apiState.handleAsync(async () => {
-      const response = await partidasApi.create({
-        ...partida,
-        rachaId,
-      });
+      const response = await partidasApi.create(partida);
 
       if (response.error) {
         throw new Error(response.error);
@@ -48,10 +45,7 @@ export function usePartidas() {
 
   const updatePartida = async (id: string, partida: Partial<Partida>) => {
     return apiState.handleAsync(async () => {
-      const response = await partidasApi.update(id, {
-        ...partida,
-        rachaId,
-      });
+      const response = await partidasApi.update(id, partida);
 
       if (response.error) {
         throw new Error(response.error);

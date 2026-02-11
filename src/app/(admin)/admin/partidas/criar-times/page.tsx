@@ -6,13 +6,12 @@ import Image from "next/image";
 import { FaPlus, FaTrash, FaEdit, FaLightbulb } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTimes } from "@/hooks/useTimes";
-import { rachaConfig } from "@/config/racha.config";
 import { useRacha } from "@/context/RachaContext";
 
 export default function CriarTimesPage() {
   const { tenantSlug } = useRacha();
-  const currentSlug = tenantSlug || rachaConfig.slug;
-  const { times, addTime, updateTime, deleteTime, isLoading } = useTimes(currentSlug);
+  const currentSlug = tenantSlug?.trim() || "";
+  const { times, addTime, updateTime, deleteTime, isLoading } = useTimes(currentSlug || undefined);
 
   const [nome, setNome] = useState("");
   const [cor, setCor] = useState("#FFD700");
@@ -23,6 +22,10 @@ export default function CriarTimesPage() {
   const [dicasOpen, setDicasOpen] = useState(false);
 
   const handleLogoUpload = async (file: File) => {
+    if (!currentSlug) {
+      setLogoError("Selecione um racha no Hub para enviar logos.");
+      return;
+    }
     setLogoUploading(true);
     setLogoError("");
 
@@ -54,6 +57,10 @@ export default function CriarTimesPage() {
   };
 
   const handleAdicionarTime = async () => {
+    if (!currentSlug) {
+      alert("Selecione um racha no Hub para criar times.");
+      return;
+    }
     if (!nome.trim()) return alert("Digite o nome do time!");
 
     if (editandoTime) {
@@ -93,6 +100,7 @@ export default function CriarTimesPage() {
   };
 
   const handleExcluir = async (id: string) => {
+    if (!currentSlug) return;
     if (confirm("Tem certeza que deseja excluir este time?")) {
       await deleteTime(id);
     }
@@ -127,6 +135,11 @@ export default function CriarTimesPage() {
           aproveite esta funcionalidade para <strong>vender patrocínios</strong> com grande
           visibilidade.
         </p>
+        {!currentSlug && (
+          <div className="mb-6 rounded-lg border border-yellow-700 bg-yellow-900/30 p-4 text-sm text-yellow-200">
+            Selecione um racha no Hub (`/admin/selecionar-racha`) para cadastrar e editar os times.
+          </div>
+        )}
 
         <div className="bg-[#1a1a1a] p-4 rounded-lg shadow mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -137,6 +150,7 @@ export default function CriarTimesPage() {
                 value={nome}
                 onChange={(e) => setNome(e.target.value)}
                 className="w-full p-2 rounded bg-[#222] border border-[#333] text-white"
+                disabled={!currentSlug}
               />
             </div>
             <div>
@@ -146,6 +160,7 @@ export default function CriarTimesPage() {
                 value={cor}
                 onChange={(e) => setCor(e.target.value)}
                 className="w-16 h-10 p-1 border border-[#333] rounded"
+                disabled={!currentSlug}
               />
             </div>
             <div>
@@ -160,7 +175,7 @@ export default function CriarTimesPage() {
                   }
                 }}
                 className="w-full text-sm text-gray-300"
-                disabled={logoUploading}
+                disabled={logoUploading || !currentSlug}
               />
               <label className="block text-sm mt-3 mb-1 text-gray-300">
                 URL da Logo (opcional)
@@ -171,6 +186,7 @@ export default function CriarTimesPage() {
                 onChange={(e) => setLogo(e.target.value)}
                 placeholder="https://..."
                 className="w-full p-2 rounded bg-[#222] border border-[#333] text-white"
+                disabled={!currentSlug}
               />
               {logoUploading && <p className="text-xs text-gray-400 mt-2">Enviando logo...</p>}
               {logoError && <p className="text-xs text-red-400 mt-2">{logoError}</p>}
@@ -188,7 +204,7 @@ export default function CriarTimesPage() {
 
           <button
             onClick={handleAdicionarTime}
-            disabled={logoUploading || isLoading}
+            disabled={logoUploading || isLoading || !currentSlug}
             className="bg-yellow-400 hover:bg-yellow-500 disabled:opacity-60 disabled:cursor-not-allowed text-black px-4 py-2 rounded font-bold flex items-center gap-2"
           >
             <FaPlus /> {editandoTime ? "Salvar Alterações" : "Adicionar Time"}

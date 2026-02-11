@@ -104,17 +104,12 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
   };
 
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId
-      ? `/api/jogadores?${new URLSearchParams({
-          rachaId,
-          ...(includeBots ? { includeBots: "true" } : {}),
-        }).toString()}`
-      : null,
+    rachaId ? `/api/jogadores${includeBots ? "?includeBots=true" : ""}` : null,
     fetcher,
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar jogadores:", err);
+          console.error("Erro ao carregar jogadores:", err);
         }
       },
     }

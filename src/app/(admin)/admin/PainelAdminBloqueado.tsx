@@ -16,12 +16,15 @@ export default function PainelAdminBloqueado({ motivo = "" }) {
               "Pagamento não localizado após o vencimento do período de teste ou mensalidade."}
           </span>
         </p>
-        <Link href="/admin/financeiro">
+        <Link href="/admin/financeiro/planos-limites">
           <button className="bg-yellow-500 text-black font-bold px-6 py-3 rounded-lg hover:bg-yellow-400 duration-100 mb-2 w-full">
             Ir para pagamento e regularizar acesso
           </button>
         </Link>
-        <Link href="/admin/suporte" className="text-zinc-200 text-sm underline hover:text-white">
+        <Link
+          href="/admin/comunicacao/suporte"
+          className="text-zinc-200 text-sm underline hover:text-white"
+        >
           Precisa de ajuda? Fale com o suporte.
         </Link>
       </div>

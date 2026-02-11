@@ -219,6 +219,7 @@ export default function AdminLoginClient() {
                   autoComplete="email"
                   autoFocus
                   placeholder="email@exemplo.com"
+                  data-testid="admin-login-email"
                   className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
               </label>
@@ -232,6 +233,7 @@ export default function AdminLoginClient() {
                     required
                     autoComplete="current-password"
                     placeholder="Digite sua senha"
+                    data-testid="admin-login-password"
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                   />
                   <button
@@ -248,6 +250,7 @@ export default function AdminLoginClient() {
               <button
                 type="submit"
                 disabled={isSubmitting}
+                data-testid="admin-login-submit"
                 className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? "Entrando..." : "Entrar no painel"}

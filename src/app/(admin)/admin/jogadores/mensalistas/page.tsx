@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaPlus, FaTrash, FaInfoCircle } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import type { Jogador } from "@/types/jogador";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
@@ -196,7 +195,8 @@ function ModalRemoverMensalista({
 
 export default function MensalistasPage() {
   const { rachaId } = useRacha();
-  const resolvedRachaId = rachaId || rachaConfig.slug;
+  const resolvedRachaId = rachaId || "";
+  const missingTenantScope = !resolvedRachaId;
   const { jogadores, isLoading, isError, error, updateJogador, mutate } =
     useJogadores(resolvedRachaId);
   const [modalOpen, setModalOpen] = useState(false);
@@ -226,6 +226,12 @@ export default function MensalistasPage() {
   const pageError = acaoErro || (showFetchError ? error || "Erro ao carregar jogadores." : null);
 
   const loadMensalistaRequests = useCallback(async () => {
+    if (!resolvedRachaId) {
+      setMensalistaRequests([]);
+      setRequestsLoading(false);
+      return;
+    }
+
     setRequestsLoading(true);
     setRequestsError(null);
     try {
@@ -268,7 +274,7 @@ export default function MensalistasPage() {
     } finally {
       setRequestsLoading(false);
     }
-  }, []);
+  }, [resolvedRachaId]);
 
   useEffect(() => {
     loadMensalistaRequests();
@@ -418,6 +424,13 @@ export default function MensalistasPage() {
         <h1 className="text-3xl text-yellow-400 font-bold mb-6 text-center">
           Jogadores Mensalistas
         </h1>
+
+        {missingTenantScope && (
+          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para
+            gerenciar mensalistas.
+          </div>
+        )}
 
         <div className="bg-[#23272f] border-l-4 border-yellow-400 rounded-xl p-4 mb-8 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
           <FaInfoCircle className="text-yellow-300 text-2xl shrink-0" />

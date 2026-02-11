@@ -26,6 +26,7 @@ export default function CardAcoesRapidas({
           href={cadastrarJogador}
           className="flex flex-col items-center justify-center gap-2 bg-[#23272F] hover:bg-[#22262c] border border-[#282c34] rounded-xl p-4 transition shadow group"
           aria-label="Cadastrar Jogador"
+          data-testid="admin-dashboard-quick-cadastrar-jogador"
         >
           <FaUserPlus className="text-[#00b8b8] w-7 h-7 group-hover:text-[#00e0e0] transition" />
           <span className="text-sm font-semibold text-gray-100 text-center">Cadastrar Jogador</span>
@@ -34,6 +35,7 @@ export default function CardAcoesRapidas({
           href={criarPartida}
           className="flex flex-col items-center justify-center gap-2 bg-[#23272F] hover:bg-[#22262c] border border-[#282c34] rounded-xl p-4 transition shadow group"
           aria-label="Criar Partida"
+          data-testid="admin-dashboard-quick-criar-partida"
         >
           <FaCalendarPlus className="text-[#ffdf38] w-7 h-7 group-hover:text-[#ffe96b] transition" />
           <span className="text-sm font-semibold text-gray-100 text-center">Criar Partida</span>
@@ -42,6 +44,7 @@ export default function CardAcoesRapidas({
           href={adicionarPatrocinador}
           className="flex flex-col items-center justify-center gap-2 bg-[#23272F] hover:bg-[#22262c] border border-[#282c34] rounded-xl p-4 transition shadow group"
           aria-label="Adicionar Patrocinador"
+          data-testid="admin-dashboard-quick-adicionar-patrocinador"
         >
           <FaHandshake className="text-[#38d957] w-7 h-7 group-hover:text-[#66ff99] transition" />
           <span className="text-sm font-semibold text-gray-100 text-center">
@@ -52,6 +55,7 @@ export default function CardAcoesRapidas({
           href={enviarNotificacao}
           className="flex flex-col items-center justify-center gap-2 bg-[#23272F] hover:bg-[#22262c] border border-[#282c34] rounded-xl p-4 transition shadow group"
           aria-label="Enviar Notificação"
+          data-testid="admin-dashboard-quick-enviar-notificacao"
         >
           <FaBell className="text-gray-300 w-7 h-7 group-hover:text-white transition" />
           <span className="text-sm font-semibold text-gray-100 text-center">

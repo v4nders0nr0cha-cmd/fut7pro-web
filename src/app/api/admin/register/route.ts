@@ -22,6 +22,7 @@ type RegisterPayload = {
   existingRachaSlug?: string;
   skipTenantCreate?: boolean;
   autoPassword?: boolean;
+  useExistingGlobalAccount?: boolean;
 };
 
 type TenantInfo = {
@@ -213,6 +214,7 @@ export async function POST(req: NextRequest) {
   }
 
   const useExistingTenant = shouldUseExisting(payload);
+  const useExistingGlobalAccount = Boolean(payload.useExistingGlobalAccount);
   const wantsAutoPassword = Boolean(payload.autoPassword || !payload.adminSenha);
   const requiresSuperAdmin = useExistingTenant || wantsAutoPassword;
 
@@ -310,11 +312,15 @@ export async function POST(req: NextRequest) {
   }
 
   // 3) Faz login se necessario para obter token e salva nome/logo/localizacao via /admin/about
-  const accessToken = adminJson?.accessToken || null;
+  const accessToken = typeof adminJson?.accessToken === "string" ? adminJson.accessToken : null;
   const requiresEmailVerification = adminJson?.requiresEmailVerification ?? false;
+  const effectiveRequiresEmailVerification = useExistingGlobalAccount
+    ? false
+    : requiresEmailVerification;
   const verificationSent = adminJson?.verificationSent ?? false;
   const adminEmail = adminJson?.email || payload.adminEmail?.trim().toLowerCase();
   const tenantSlug = tenantInfo?.slug || payload.rachaSlug?.trim();
+  const refreshToken = typeof adminJson?.refreshToken === "string" ? adminJson.refreshToken : null;
 
   if (!useExistingTenant) {
     if (!accessToken) {
@@ -347,10 +353,13 @@ export async function POST(req: NextRequest) {
         : "Racha e administrador criados com sucesso.",
       tenant: tenantInfo,
       tenantSlug: tenantSlug || undefined,
-      requiresEmailVerification,
+      requiresEmailVerification: effectiveRequiresEmailVerification,
       verificationSent,
       email: adminEmail,
       temporaryPassword: generatedPassword || undefined,
+      accessToken: useExistingGlobalAccount ? accessToken || undefined : undefined,
+      refreshToken: useExistingGlobalAccount ? refreshToken || undefined : undefined,
+      useExistingGlobalAccount,
     }),
     { status: 201, headers: { "Content-Type": "application/json" } }
   );

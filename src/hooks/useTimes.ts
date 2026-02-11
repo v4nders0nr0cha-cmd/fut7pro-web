@@ -2,7 +2,6 @@
 
 import useSWR from "swr";
 import type { Time } from "@/types/time";
-import { rachaConfig } from "@/config/racha.config";
 
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_COR = "#FFD700";
@@ -52,7 +51,7 @@ function normalizeTime(raw: any): Time {
 }
 
 export function useTimes(tenantSlug?: string) {
-  const slug = tenantSlug || rachaConfig.slug;
+  const slug = tenantSlug?.trim();
   const search = slug ? `?slug=${encodeURIComponent(slug)}` : "";
   const key = slug ? `/api/times${search}` : null;
 
@@ -67,6 +66,9 @@ export function useTimes(tenantSlug?: string) {
   );
 
   async function addTime(time: Partial<Time>) {
+    if (!slug) {
+      throw new Error("Selecione o racha ativo antes de criar um time.");
+    }
     const payload = {
       name: time.nome || time.name || "Novo Time",
       color: time.cor || time.color || DEFAULT_COR,
@@ -87,6 +89,9 @@ export function useTimes(tenantSlug?: string) {
   }
 
   async function updateTime(time: Time) {
+    if (!slug) {
+      throw new Error("Selecione o racha ativo antes de atualizar um time.");
+    }
     const payload = {
       name: time.nome || time.name || "Time",
       color: time.cor || time.color || DEFAULT_COR,
@@ -107,6 +112,9 @@ export function useTimes(tenantSlug?: string) {
   }
 
   async function deleteTime(id: string) {
+    if (!slug) {
+      throw new Error("Selecione o racha ativo antes de remover um time.");
+    }
     const res = await fetch(`/api/times/${id}${search}`, {
       method: "DELETE",
     });

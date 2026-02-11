@@ -169,7 +169,7 @@ export default function OsCampeoesAdminPage() {
     const topGols = pickTopByMetric(rankingAno.rankings, "gols");
     const topAssist = pickTopByMetric(rankingAno.rankings, "assistencias");
     const topTime = pickTopTeam(rankingTimesAno.teams);
-    const temporario = anoBase === CURRENT_YEAR;
+    const parcial = anoBase === CURRENT_YEAR;
 
     return [
       {
@@ -180,7 +180,7 @@ export default function OsCampeoesAdminPage() {
         icone: "/images/icons/trofeu-de-ouro.png",
         href: `/estatisticas/ranking-anual?year=${anoBase}`,
         slug: topPontos?.slug,
-        temporario,
+        temporario: parcial,
       },
       {
         titulo: "Artilheiro do Ano",
@@ -190,7 +190,7 @@ export default function OsCampeoesAdminPage() {
         icone: "/images/icons/bola-de-ouro.png",
         href: `/estatisticas/artilheiros?period=temporada&year=${anoBase}`,
         slug: topGols?.slug,
-        temporario,
+        temporario: parcial,
       },
       {
         titulo: "Campeão do Ano",
@@ -199,7 +199,7 @@ export default function OsCampeoesAdminPage() {
         image: safeImage(topTime?.logo, DEFAULT_TEAM_IMAGE),
         icone: "/images/icons/trofeu-de-ouro.png",
         href: `/estatisticas/classificacao-dos-times?year=${anoBase}`,
-        temporario,
+        temporario: parcial,
       },
       {
         titulo: "Maestro do Ano",
@@ -209,13 +209,13 @@ export default function OsCampeoesAdminPage() {
         icone: "/images/icons/chuteira-de-ouro.png",
         href: `/estatisticas/assistencias?period=temporada&year=${anoBase}`,
         slug: topAssist?.slug,
-        temporario,
+        temporario: parcial,
       },
     ];
   }, [anoBase, rankingAno.rankings, rankingTimesAno.teams]);
 
   const melhoresPorPosicao = useMemo(() => {
-    const temporario = anoBase === CURRENT_YEAR;
+    const parcial = anoBase === CURRENT_YEAR;
     return positionMeta.map((meta) => {
       const top = pickTopByPosition(rankingAno.rankings, meta.key);
       return {
@@ -226,7 +226,7 @@ export default function OsCampeoesAdminPage() {
         icone: meta.icon,
         href: `${meta.href}?period=temporada&year=${anoBase}`,
         slug: top?.slug,
-        temporario,
+        temporario: parcial,
       };
     });
   }, [anoBase, rankingAno.rankings]);

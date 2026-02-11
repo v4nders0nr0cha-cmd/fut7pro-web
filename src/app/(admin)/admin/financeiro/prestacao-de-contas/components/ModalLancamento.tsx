@@ -287,7 +287,11 @@ export default function ModalLancamento({
       if (onSave) {
         await onSave({
           ...form,
-          id: form.id || Math.random().toString(36).substring(2, 9),
+          id:
+            form.id ||
+            (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+              ? crypto.randomUUID()
+              : `tmp-${Date.now().toString(36)}`),
           comprovanteUrl: comprovanteFinal,
           observacoes: form.observacoes?.trim() || "",
           responsavel: form.responsavel || "Admin",

@@ -11,6 +11,7 @@ type AdminOption = {
 };
 
 const LIMIT_OPTIONS = [50, 100, 200];
+const MAX_DETAILS_LENGTH = 280;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -26,6 +27,33 @@ function normalizeText(value?: string | null) {
   return (value || "").toString().toLowerCase();
 }
 
+function maskIpv4(value: string) {
+  const parts = value.split(".");
+  if (parts.length !== 4) return "[ip-redigido]";
+  return `${parts[0]}.${parts[1]}.***.***`;
+}
+
+function sanitizeLogText(value?: string | null) {
+  if (!value) return "—";
+  let sanitized = value;
+
+  sanitized = sanitized.replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, "Bearer [redigido]");
+  sanitized = sanitized.replace(
+    /(\"?(?:token|accessToken|refreshToken|authorization|cookie|set-cookie|senha|password|secret|apiKey|apikey|hash)\"?\s*[:=]\s*\")([^\"]+)(\")/gi,
+    "$1[redigido]$3"
+  );
+  sanitized = sanitized.replace(
+    /\b([A-Za-z0-9_-]{20,})\.([A-Za-z0-9_-]{20,})\.([A-Za-z0-9_-]{20,})\b/g,
+    "[jwt-redigido]"
+  );
+  sanitized = sanitized.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => maskIpv4(ip));
+
+  if (sanitized.length > MAX_DETAILS_LENGTH) {
+    return `${sanitized.slice(0, MAX_DETAILS_LENGTH).trimEnd()}...`;
+  }
+  return sanitized;
+}
+
 function escapeCsvValue(value: string) {
   const escaped = value.replace(/"/g, '""');
   return `"${escaped}"`;
@@ -38,7 +66,7 @@ function buildCsv(logs: AdminLog[]) {
     log.action || log.acao || "",
     log.adminName || log.adminNome || "",
     log.adminEmail || "",
-    log.details || log.detalhes || "",
+    sanitizeLogText(log.details || log.detalhes || ""),
     log.resource || "",
   ]);
 
@@ -290,7 +318,7 @@ export default function LogsAdminClient() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-sm text-zinc-300">
-                      {log.details || log.detalhes || "—"}
+                      {sanitizeLogText(log.details || log.detalhes || "—")}
                     </td>
                     <td className="py-3 px-4 text-xs">
                       <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">
@@ -322,7 +350,7 @@ export default function LogsAdminClient() {
                 </div>
                 {log.adminEmail && <div className="text-xs text-zinc-600">{log.adminEmail}</div>}
                 <div className="mt-2 text-sm text-zinc-300">
-                  {log.details || log.detalhes || "—"}
+                  {sanitizeLogText(log.details || log.detalhes || "—")}
                 </div>
               </div>
             ))}

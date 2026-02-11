@@ -21,7 +21,6 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 import useSubscription from "@/hooks/useSubscription";
-import { rachaConfig } from "@/config/racha.config";
 import FinanceiroChart from "@/components/admin/FinanceiroChart";
 import type { PublicMatch } from "@/types/partida";
 
@@ -73,18 +72,20 @@ export default function AdminDashboard() {
     }
   }, [tenantId, tenantSlug, setRachaId, setTenantSlug]);
 
-  const slug = tenantSlug || contextTenantSlug || rachaConfig.slug;
+  const slug = tenantSlug || contextTenantSlug || "";
 
   const { lancamentos, isLoading: loadingFinanceiro } = useFinanceiro();
   const { matches: upcomingMatches, isLoading: loadingUpcoming } = usePublicMatches({
     slug,
     scope: "upcoming",
     limit: 5,
+    enabled: Boolean(slug),
   });
   const { matches: recentMatches } = usePublicMatches({
     slug,
     scope: "recent",
     limit: 3,
+    enabled: Boolean(slug),
   });
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
   const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
@@ -193,6 +194,7 @@ export default function AdminDashboard() {
               href="/admin/partidas/times-do-dia"
               className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#00d3d4] cursor-pointer group min-h-[265px]"
               aria-label="Times do Dia"
+              data-testid="admin-dashboard-card-times-do-dia"
             >
               <FaUsers className="text-[#00d3d4] w-10 h-10 mb-2 group-hover:scale-110 transition" />
               <span className="text-xl font-bold text-white mb-1">Times do Dia</span>
@@ -213,6 +215,7 @@ export default function AdminDashboard() {
               href="/admin/partidas/sorteio-inteligente"
               className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#ffdf38] cursor-pointer group min-h-[265px]"
               aria-label="Sorteio Inteligente"
+              data-testid="admin-dashboard-card-sorteio-inteligente"
             >
               <FaRandom className="text-[#ffdf38] w-10 h-10 mb-2 group-hover:rotate-12 transition" />
               <span className="text-xl font-bold text-white mb-1">Sorteio Inteligente</span>
@@ -234,6 +237,7 @@ export default function AdminDashboard() {
             <Link
               href="/admin/monetizacao"
               className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#38d957] cursor-pointer group min-h-[180px] md:min-h-[210px]"
+              data-testid="admin-dashboard-card-monetizacao"
             >
               <FaMoneyBillWave className="text-[#38d957] w-10 h-10 mb-2 group-hover:scale-110 transition" />
               <span className="text-xl font-bold text-white mb-1 text-center">

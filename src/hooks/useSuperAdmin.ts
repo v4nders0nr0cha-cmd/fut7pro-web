@@ -25,7 +25,7 @@ export function useSuperAdmin() {
   } = useSWR<Racha[]>("/api/superadmin/rachas", fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar rachas:", err);
+        console.error("Erro ao carregar rachas:", err);
       }
     },
   });
@@ -39,7 +39,7 @@ export function useSuperAdmin() {
   } = useSWR<Metricas>("/api/superadmin/metrics", fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar métricas:", err);
+        console.error("Erro ao carregar métricas:", err);
       }
     },
   });
@@ -53,7 +53,7 @@ export function useSuperAdmin() {
   } = useSWR<Usuario[]>("/api/superadmin/usuarios", fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar usuários:", err);
+        console.error("Erro ao carregar usuários:", err);
       }
     },
   });

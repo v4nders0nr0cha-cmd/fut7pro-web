@@ -135,7 +135,7 @@ export function useAuth(): UseAuthReturn {
 
       if (result?.error) {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro no login:", result.error);
+          console.error("Erro no login:", result.error);
         }
         return false;
       }
@@ -143,7 +143,7 @@ export function useAuth(): UseAuthReturn {
       return true;
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro no login:", error);
+        console.error("Erro no login:", error);
       }
       return false;
     }
@@ -154,7 +154,7 @@ export function useAuth(): UseAuthReturn {
       await signIn("google", { callbackUrl: "/" });
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro no login Google:", error);
+        console.error("Erro no login Google:", error);
       }
     }
   }, []);
@@ -164,7 +164,7 @@ export function useAuth(): UseAuthReturn {
       await signOut({ callbackUrl: "/login" });
     } catch (error) {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro no logout:", error);
+        console.error("Erro no logout:", error);
       }
     }
   }, []);

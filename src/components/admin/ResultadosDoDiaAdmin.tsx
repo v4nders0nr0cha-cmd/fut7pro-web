@@ -91,7 +91,10 @@ function normalizeLabel(value?: string | null) {
 }
 
 function createEventId() {
-  return `goal-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `goal-${crypto.randomUUID()}`;
+  }
+  return `goal-${Date.now().toString(36)}`;
 }
 
 function formatDate(value?: string | null, withTime = false) {

@@ -21,8 +21,8 @@ const fetcher = async (url: string): Promise<PublicMatch> => {
 };
 
 export function usePublicMatch(id?: string, slug?: string) {
-  const resolvedSlug = slug || rachaConfig.slug;
-  const key = id ? `/api/public/${resolvedSlug}/matches/${id}` : null;
+  const resolvedSlug = (slug ?? rachaConfig.slug)?.trim() || "";
+  const key = id && resolvedSlug ? `/api/public/${resolvedSlug}/matches/${id}` : null;
 
   const { data, error, isLoading, mutate } = useSWR<PublicMatch>(key, fetcher, {
     revalidateOnFocus: false,

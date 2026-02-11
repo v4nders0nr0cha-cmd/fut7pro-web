@@ -18,12 +18,48 @@ export async function PATCH(req: NextRequest, { params }: { params: { tenantId: 
   const payload = await req.json();
   const base = getApiBase();
   const requestTenantSlug = req.headers.get("x-tenant-slug") || undefined;
-  const headers = buildHeaders(user, resolveTenantSlug(user, requestTenantSlug), {
+  const tenantSlug = resolveTenantSlug(user, requestTenantSlug);
+  const headers = buildHeaders(user, tenantSlug, {
     includeContentType: true,
   });
 
+  const scopeProbe = await proxyBackend(`${base}/me`, {
+    method: "GET",
+    headers: buildHeaders(user, tenantSlug),
+    cache: "no-store",
+  });
+
+  if (!scopeProbe.response.ok) {
+    return new Response(JSON.stringify({ error: "Nao foi possivel validar o tenant ativo" }), {
+      status: scopeProbe.response.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  const scopedTenantId =
+    typeof (scopeProbe.body as { tenant?: { tenantId?: unknown; id?: unknown } } | null)?.tenant
+      ?.tenantId === "string"
+      ? String((scopeProbe.body as { tenant?: { tenantId?: string } }).tenant?.tenantId)
+      : typeof (scopeProbe.body as { tenant?: { id?: unknown } } | null)?.tenant?.id === "string"
+        ? String((scopeProbe.body as { tenant?: { id?: string } }).tenant?.id)
+        : "";
+
+  if (!scopedTenantId) {
+    return new Response(JSON.stringify({ error: "Tenant ativo nao identificado" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (params.tenantId !== scopedTenantId) {
+    return new Response(JSON.stringify({ error: "TenantId invalido para o escopo ativo" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const { response, body } = await proxyBackend(
-    `${base}/tenants/${encodeURIComponent(params.tenantId)}/athletes/me`,
+    `${base}/tenants/${encodeURIComponent(scopedTenantId)}/athletes/me`,
     {
       method: "PATCH",
       headers,

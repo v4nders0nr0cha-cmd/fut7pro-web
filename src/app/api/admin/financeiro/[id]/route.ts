@@ -13,6 +13,19 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
+function sanitizeFinanceiroPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+  const { tenantId, tenantSlug, rachaId, slug, ...safePayload } = payload as Record<
+    string,
+    unknown
+  >;
+  void tenantId;
+  void tenantSlug;
+  void rachaId;
+  void slug;
+  return safePayload;
+}
+
 export async function PUT(req: NextRequest, { params }: { params: { id?: string } }) {
   const user = await requireUser();
   if (!user) {
@@ -29,10 +42,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id?: string 
   }
 
   const tenantSlug = resolveTenantSlug(user);
+  const safePayload = sanitizeFinanceiroPayload(payload);
   const { response, body } = await proxyBackend(`${getApiBase()}/financeiro/${id}`, {
     method: "PUT",
     headers: buildHeaders(user, tenantSlug, { includeContentType: true }),
-    body: JSON.stringify(payload),
+    body: JSON.stringify(safePayload),
   });
 
   return forwardResponse(response.status, body);

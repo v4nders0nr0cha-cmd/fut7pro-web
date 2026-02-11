@@ -26,7 +26,7 @@ export function useRankings() {
   } = useSWR<Ranking[]>(rachaId ? `/api/rankings/geral?rachaId=${rachaId}` : null, fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking geral:", err);
+        console.error("Erro ao carregar ranking geral:", err);
       }
     },
   });
@@ -39,7 +39,7 @@ export function useRankings() {
   } = useSWR<Ranking[]>(rachaId ? `/api/rankings/artilheiros?rachaId=${rachaId}` : null, fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking artilheiros:", err);
+        console.error("Erro ao carregar ranking artilheiros:", err);
       }
     },
   });
@@ -52,7 +52,7 @@ export function useRankings() {
   } = useSWR<Ranking[]>(rachaId ? `/api/rankings/assistencias?rachaId=${rachaId}` : null, fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking assistências:", err);
+        console.error("Erro ao carregar ranking assistências:", err);
       }
     },
   });
@@ -65,7 +65,7 @@ export function useRankings() {
   } = useSWR<Ranking[]>(rachaId ? `/api/rankings/times?rachaId=${rachaId}` : null, fetcher, {
     onError: (err) => {
       if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao carregar ranking times:", err);
+        console.error("Erro ao carregar ranking times:", err);
       }
     },
   });

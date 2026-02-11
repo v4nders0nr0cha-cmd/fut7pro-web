@@ -3,6 +3,8 @@ import { buildHeaders, proxyBackend, requireUser, resolveTenantSlug } from "../.
 
 export const runtime = "nodejs";
 
+const ALLOWED_PERIODS = new Set(["week", "month", "quarter", "year"]);
+
 export async function GET(req: NextRequest) {
   const user = await requireUser();
   if (!user) {
@@ -13,12 +15,17 @@ export async function GET(req: NextRequest) {
   }
 
   const searchParams = req.nextUrl.searchParams;
-  const period = searchParams.get("period") || "week";
+  const rawPeriod = (searchParams.get("period") || "week").toLowerCase();
+  const period = ALLOWED_PERIODS.has(rawPeriod) ? rawPeriod : "week";
   const from = searchParams.get("from");
   const to = searchParams.get("to");
-  const slugParam = searchParams.get("slug") || undefined;
-
-  const tenantSlug = resolveTenantSlug(user, slugParam);
+  const tenantSlug = resolveTenantSlug(user);
+  if (!tenantSlug) {
+    return new Response(JSON.stringify({ error: "Tenant nao identificado" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
   const baseUrl =
     process.env.BACKEND_URL ||
     process.env.API_URL ||

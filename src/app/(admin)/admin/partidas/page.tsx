@@ -8,7 +8,6 @@ import { FaClipboardList, FaHistory, FaExternalLinkAlt } from "react-icons/fa";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import { useMe } from "@/hooks/useMe";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 
 const APP_PUBLIC_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
@@ -47,13 +46,14 @@ export default function PartidasPage() {
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
   const resolvedSlug = useMemo(() => {
     const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
-    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || rachaConfig.slug;
+    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || "";
   }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+  const missingTenantScope = !resolvedSlug;
   const publicBaseUrl = useMemo(() => {
-    const slug = resolvedSlug || rachaConfig.slug;
-    return `${APP_PUBLIC_URL}/${encodeURIComponent(slug)}`;
+    if (!resolvedSlug) return null;
+    return `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
   }, [resolvedSlug]);
-  const confrontosPublicosUrl = `${publicBaseUrl}/partidas/times-do-dia`;
+  const confrontosPublicosUrl = publicBaseUrl ? `${publicBaseUrl}/partidas/times-do-dia` : null;
   const hasConfrontosHoje = useMemo(() => {
     const date = parseDateInput(
       sorteioPublicado.data?.dataPartida || sorteioPublicado.data?.publicadoEm
@@ -90,6 +90,12 @@ export default function PartidasPage() {
             As partidas do Sorteio Inteligente já ficam disponíveis no site público, aqui você
             controla o que vira resultado oficial e o que entra nos rankings.
           </p>
+          {missingTenantScope && (
+            <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para
+              continuar.
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="relative rounded-2xl border-2 border-yellow-400 bg-zinc-900/90 p-6 shadow-lg">
@@ -131,15 +137,21 @@ export default function PartidasPage() {
                 >
                   Lançar Resultados de Hoje
                 </Link>
-                <a
-                  href={confrontosPublicosUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 text-sm text-yellow-300 hover:text-yellow-200"
-                >
-                  Ver confrontos publicados no site público
-                  <FaExternalLinkAlt className="text-yellow-300 text-xs" />
-                </a>
+                {confrontosPublicosUrl ? (
+                  <a
+                    href={confrontosPublicosUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 text-sm text-yellow-300 hover:text-yellow-200"
+                  >
+                    Ver confrontos publicados no site público
+                    <FaExternalLinkAlt className="text-yellow-300 text-xs" />
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center justify-center gap-2 text-sm text-gray-500">
+                    Selecione um racha no Hub para abrir o site público.
+                  </span>
+                )}
               </div>
 
               {sorteioPublicado.isLoading ? (

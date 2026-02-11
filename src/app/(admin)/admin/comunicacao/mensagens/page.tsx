@@ -72,7 +72,7 @@ export default function MensagensAdminPage() {
           name="description"
           content="Visualize e responda as mensagens enviadas pelos atletas e pelo SuperAdmin no painel administrativo do Fut7Pro."
         />
-        <meta name="keywords" content="fut7, mensagens, painel admin, comunica‡Æo, SaaS" />
+        <meta name="keywords" content="fut7, mensagens, painel admin, comunicação, SaaS" />
       </Head>
       <main className="max-w-4xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8 flex flex-col gap-8">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Mensagens Recebidas</h1>

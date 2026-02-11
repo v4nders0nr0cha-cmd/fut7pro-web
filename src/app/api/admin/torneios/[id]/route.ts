@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
 import {
+  appendSafeQueryParams,
   buildHeaders,
   forwardResponse,
   jsonResponse,
@@ -45,7 +46,7 @@ async function forwardWithTenant(
   });
 
   const targetUrl = new URL(`${getApiBase()}/api/admin/torneios/${encodeURIComponent(params.id)}`);
-  req.nextUrl.searchParams.forEach((value, key) => targetUrl.searchParams.set(key, value));
+  appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
   if (!targetUrl.searchParams.has("slug")) {
     targetUrl.searchParams.set("slug", tenantSlug);
   }

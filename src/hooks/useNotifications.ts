@@ -91,7 +91,7 @@ export function useNotifications(options: UseNotificationsOptions = {}) {
       refreshInterval: options.refreshInterval,
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar notificações:", err);
+          console.error("Erro ao carregar notificações:", err);
         }
       },
     }

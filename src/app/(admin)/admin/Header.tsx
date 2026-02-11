@@ -31,7 +31,12 @@ const menu: MenuItem[] = [
     href: "/admin/comunicacao/notificacoes",
     badgeKey: "notificacoes",
   },
-  { label: "Mensagens", icon: FaEnvelope, href: "/admin/mensagens", badgeKey: "mensagens" },
+  {
+    label: "Mensagens",
+    icon: FaEnvelope,
+    href: "/admin/comunicacao/mensagens",
+    badgeKey: "mensagens",
+  },
   {
     label: "Solicitações",
     icon: FaUserPlus,
@@ -57,6 +62,15 @@ const hubFetcher = async (url: string): Promise<HubRacha[]> => {
   const data = await res.json().catch(() => null);
   return Array.isArray(data) ? data : [];
 };
+
+function slugifyTestId(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
 
 export default function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname() ?? "";
@@ -99,6 +113,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
         className="md:hidden flex items-center justify-center mr-2 text-brand hover:bg-zinc-800 p-2 rounded-full"
         aria-label="Abrir menu"
         tabIndex={0}
+        data-testid="admin-header-open-menu"
       >
         <FaBars size={24} />
       </button>
@@ -134,6 +149,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
               href={item.href}
               className="relative flex items-center gap-2 px-2 py-1 rounded hover:bg-zinc-800 transition"
               tabIndex={0}
+              data-testid={`admin-header-link-${slugifyTestId(item.href)}`}
             >
               <item.icon size={20} className="text-brand" />
               <span className="text-white text-sm font-medium hidden sm:inline">{item.label}</span>

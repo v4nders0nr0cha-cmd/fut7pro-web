@@ -7,7 +7,6 @@ import { FaCamera, FaUserEdit } from "react-icons/fa";
 import Link from "next/link";
 import { useRacha } from "@/context/RachaContext";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
-import { rachaConfig } from "@/config/racha.config";
 import {
   buildDestaquesDoDia,
   getTimeCampeao,
@@ -28,8 +27,8 @@ type Props = {
 };
 
 export default function CardTimeCampeaoDoDia({
-  fotoUrl: _fotoUrl = "/images/times/time_padrao_01.png",
-  nomeTime: _nomeTime = "Time Campeão do Dia",
+  fotoUrl = "/images/times/time_padrao_01.png",
+  nomeTime = "Time Campeão do Dia",
   editLink = "/admin/partidas/time-campeao-do-dia",
   matches,
   confrontos,
@@ -38,9 +37,10 @@ export default function CardTimeCampeaoDoDia({
   isLoading,
 }: Props) {
   const { tenantSlug } = useRacha();
-  const slugFinal = slug || tenantSlug || rachaConfig.slug;
+  const slugFinal = (slug ?? tenantSlug ?? "").trim();
 
-  const shouldFetchMatches = !matches && (!confrontos || confrontos.length === 0);
+  const shouldFetchMatches =
+    Boolean(slugFinal) && !matches && (!confrontos || confrontos.length === 0);
   const {
     matches: fetchedMatches,
     isLoading: loadingMatches,
@@ -74,8 +74,8 @@ export default function CardTimeCampeaoDoDia({
   );
 
   const loading = isLoading || (shouldFetchMatches && loadingMatches);
-  const foto = "/images/torneios/torneio-matador.jpg";
-  const titulo = "Time Campeão do Dia";
+  const foto = campeao?.time?.logoUrl || fotoUrl || "/images/torneios/torneio-matador.jpg";
+  const titulo = campeao?.time?.nome || nomeTime || "Time Campeão do Dia";
   const labelData =
     dataReferencia != null ? new Date(dataReferencia).toLocaleDateString("pt-BR") : undefined;
 
@@ -95,6 +95,7 @@ export default function CardTimeCampeaoDoDia({
       className="relative flex flex-col items-center justify-center bg-[#23272F] rounded-xl shadow-lg px-6 py-7 h-full transition hover:scale-[1.025] hover:ring-2 hover:ring-[#ffd600] cursor-pointer group outline-none"
       tabIndex={0}
       aria-label={`Editar ${titulo}`}
+      data-testid="admin-dashboard-card-time-campeao"
     >
       <div className="relative w-28 h-20 mb-3">
         <Image
@@ -113,9 +114,11 @@ export default function CardTimeCampeaoDoDia({
       <span className="text-sm text-gray-400 mb-4 text-center">
         {campeao
           ? `Campeão definido em ${labelData ?? "data mais recente"}.`
-          : isError
-            ? "Erro ao carregar resultados. Clique para ajustar."
-            : "Cadastre foto, gols, passes e resultados do dia."}
+          : !slugFinal
+            ? "Selecione um racha no Hub para carregar os dados do dia."
+            : isError
+              ? "Erro ao carregar resultados. Clique para ajustar."
+              : "Cadastre foto, gols, passes e resultados do dia."}
       </span>
       <span className="mt-2 px-4 py-1 rounded bg-[#ffd600] text-black text-xs font-bold flex items-center gap-2 shadow transition group-hover:bg-yellow-400">
         <FaUserEdit /> {campeao ? "Editar Campeão" : "Cadastrar Campeão"}

@@ -23,7 +23,12 @@ const menu: MenuItem[] = [
     href: "/admin/comunicacao/notificacoes",
     badgeKey: "notificacoes",
   },
-  { label: "Mensagens", icon: FaEnvelope, href: "/admin/mensagens", badgeKey: "mensagens" },
+  {
+    label: "Mensagens",
+    icon: FaEnvelope,
+    href: "/admin/comunicacao/mensagens",
+    badgeKey: "mensagens",
+  },
   {
     label: "Solicitações",
     icon: FaUserPlus,
@@ -32,6 +37,15 @@ const menu: MenuItem[] = [
   },
   { label: "Perfil Global", icon: FaUser, href: "/perfil", badgeKey: "perfil" },
 ];
+
+function slugifyTestId(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+}
 
 export default function BottomMenuAdmin() {
   const pathname = usePathname() ?? "";
@@ -71,6 +85,7 @@ export default function BottomMenuAdmin() {
             href={item.href}
             className="flex-1 flex flex-col items-center justify-center text-xs relative group min-h-[56px]"
             aria-label={item.label}
+            data-testid={`admin-bottom-link-${slugifyTestId(item.href)}`}
           >
             <item.icon
               size={24}

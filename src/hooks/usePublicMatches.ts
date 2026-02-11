@@ -44,7 +44,7 @@ function buildKey(
 
 export function usePublicMatches(options: PublicMatchesOptions = {}) {
   const enabled = options.enabled ?? true;
-  const slug = options.slug || rachaConfig.slug;
+  const slug = (options.slug ?? rachaConfig.slug)?.trim() || "";
   const hasRange = Boolean(options.date || options.from || options.to);
   const scope = options.scope ?? (hasRange ? undefined : "recent");
   const limit = options.limit ?? (hasRange ? undefined : 12);

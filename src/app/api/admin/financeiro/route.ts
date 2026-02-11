@@ -12,6 +12,27 @@ import {
 export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
+const TENANT_QUERY_KEYS = new Set(["tenantId", "tenantSlug", "rachaId", "slug"]);
+
+function applySafeQueryParams(source: URLSearchParams, target: URL) {
+  source.forEach((value, key) => {
+    if (TENANT_QUERY_KEYS.has(key)) return;
+    target.searchParams.set(key, value);
+  });
+}
+
+function sanitizeFinanceiroPayload(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+  const { tenantId, tenantSlug, rachaId, slug, ...safePayload } = payload as Record<
+    string,
+    unknown
+  >;
+  void tenantId;
+  void tenantSlug;
+  void rachaId;
+  void slug;
+  return safePayload;
+}
 
 export async function GET(req: NextRequest) {
   const user = await requireUser();
@@ -21,10 +42,7 @@ export async function GET(req: NextRequest) {
 
   const tenantSlug = resolveTenantSlug(user);
   const targetUrl = new URL(`${getApiBase()}/financeiro`);
-  const search = new URL(req.url).search;
-  if (search) {
-    targetUrl.search = search;
-  }
+  applySafeQueryParams(req.nextUrl.searchParams, targetUrl);
 
   const { response, body } = await proxyBackend(targetUrl.toString(), {
     headers: buildHeaders(user, tenantSlug),
@@ -46,10 +64,11 @@ export async function POST(req: NextRequest) {
   }
 
   const tenantSlug = resolveTenantSlug(user);
+  const safePayload = sanitizeFinanceiroPayload(payload);
   const { response, body } = await proxyBackend(`${getApiBase()}/financeiro`, {
     method: "POST",
     headers: buildHeaders(user, tenantSlug, { includeContentType: true }),
-    body: JSON.stringify(payload),
+    body: JSON.stringify(safePayload),
   });
 
   return forwardResponse(response.status, body);

@@ -14,7 +14,6 @@ import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
-import { rachaConfig } from "@/config/racha.config";
 import { logoPadrao } from "@/config/teamLogoMap";
 
 // SVG Loader animado de bola pulando (não precisa instalar nada)
@@ -128,8 +127,8 @@ function LoaderBolaFutebol() {
 
 export default function SorteioInteligenteAdmin() {
   const { rachaId, tenantSlug } = useRacha();
-  const resolvedSlug = tenantSlug || rachaId || rachaConfig.slug;
-  const { times: timesDisponiveis, isLoading: loadingTimes } = useTimes(resolvedSlug);
+  const resolvedSlug = tenantSlug?.trim() || "";
+  const { times: timesDisponiveis, isLoading: loadingTimes } = useTimes(resolvedSlug || undefined);
   const {
     historico,
     totalTemporada,

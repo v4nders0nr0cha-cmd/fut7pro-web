@@ -58,7 +58,7 @@ const menu: MenuItem[] = [
   {
     label: "Ranking & Estatisticas",
     icon: FaChartBar,
-    href: "/admin/estatisticas",
+    href: "/admin/relatorios",
     roles: allRoles,
   },
   { label: "Conquistas", icon: FaTrophy, href: "/admin/conquistas", roles: allRoles },
@@ -71,7 +71,7 @@ const menu: MenuItem[] = [
   {
     label: "Analytics",
     icon: FaChartLine,
-    href: "/admin/analytics",
+    href: "/admin/relatorios",
     roles: [
       Role.FINANCEIRO,
       Role.MARKETING,
@@ -101,7 +101,7 @@ const menu: MenuItem[] = [
     roles: [Role.GERENTE, Role.ADMIN, Role.SUPERADMIN],
   },
   { label: "Notificações", icon: FaBullhorn, href: "/admin/notificacoes", roles: allRoles },
-  { label: "Configurações", icon: FaCogs, href: "/admin/configuracoes", roles: allRoles },
+  { label: "Configurações", icon: FaCogs, href: "/admin/configuracoes/changelog", roles: allRoles },
 ];
 
 export default function AdminSidebar({ racha }: AdminSidebarProps) {

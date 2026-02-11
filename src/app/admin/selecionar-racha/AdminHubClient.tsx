@@ -307,6 +307,7 @@ export default function AdminHubClient() {
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
+              data-testid="admin-hub-search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar por nome, slug ou cargo..."
@@ -370,7 +371,10 @@ export default function AdminHubClient() {
         ) : null}
 
         {!showLoading && !error && hasResults ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            data-testid="admin-hub-list"
+          >
             {filtered.map((racha) => {
               const roleKey = racha.role?.toUpperCase() || "ADMIN";
               const roleLabel = ROLE_LABELS[roleKey] || racha.role;
@@ -384,6 +388,7 @@ export default function AdminHubClient() {
               return (
                 <div
                   key={racha.tenantId}
+                  data-testid={`admin-hub-card-${racha.tenantSlug}`}
                   className="group flex h-full flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-4 shadow-lg transition hover:border-white/20"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -431,6 +436,7 @@ export default function AdminHubClient() {
 
                   <button
                     type="button"
+                    data-testid={`admin-hub-select-${racha.tenantSlug}`}
                     disabled={isSelecting}
                     onClick={() => handleSelect(racha)}
                     className={`mt-5 inline-flex w-full items-center justify-center rounded-xl px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${

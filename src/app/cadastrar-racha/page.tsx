@@ -4,7 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { PlanCatalog } from "@/lib/api/billing";
 import { slugify } from "@/utils/slugify";
@@ -128,6 +128,19 @@ const normalizeSearch = (value: string) =>
     .toLowerCase()
     .trim();
 
+const resolveFirstName = (value?: string | null) => {
+  const raw = (value || "").trim();
+  if (!raw) return "";
+  const first = raw.split(/\s+/)[0] || "";
+  return first.slice(0, 10);
+};
+
+const resolveFirstNameFromEmail = (email?: string | null) => {
+  const local = (email || "").split("@")[0] || "";
+  const normalized = local.replace(/[._-]+/g, " ").trim();
+  return resolveFirstName(normalized);
+};
+
 export default function CadastroRachaPage() {
   const router = useRouter();
   const { data: session, status: sessionStatus } = useSession();
@@ -139,6 +152,10 @@ export default function CadastroRachaPage() {
   const [formError, setFormError] = useState("");
   const [sucesso, setSucesso] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [useExistingGlobalAccount, setUseExistingGlobalAccount] = useState(false);
+  const [existingLoginLoading, setExistingLoginLoading] = useState(false);
+  const [existingLoginError, setExistingLoginError] = useState("");
+  const [autoSkipExistingApplied, setAutoSkipExistingApplied] = useState(false);
 
   const [adminNome, setAdminNome] = useState("");
   const [adminNomeTouched, setAdminNomeTouched] = useState(false);
@@ -330,6 +347,48 @@ export default function CadastroRachaPage() {
     }
   }, [defineSenha, isGoogle]);
 
+  useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+
+    const sessionEmail = String((session?.user as any)?.email || "")
+      .trim()
+      .toLowerCase();
+    if (!sessionEmail) return;
+
+    const sessionName = resolveFirstName((session?.user as any)?.name as string | undefined);
+    const fallbackName = sessionName || resolveFirstNameFromEmail(sessionEmail);
+
+    setUseExistingGlobalAccount(true);
+    setExistingLoginError("");
+    if (adminEmail !== sessionEmail) {
+      setAdminEmail(sessionEmail);
+    }
+    if (!adminNome) {
+      setAdminNome(fallbackName);
+    }
+    if (!adminPosicao) {
+      setAdminPosicao(POSICOES[0]);
+    }
+    if (step === 1 && !autoSkipExistingApplied) {
+      setStep(2);
+      setAutoSkipExistingApplied(true);
+    }
+  }, [
+    adminEmail,
+    adminNome,
+    adminPosicao,
+    autoSkipExistingApplied,
+    session?.user,
+    sessionStatus,
+    step,
+  ]);
+
+  useEffect(() => {
+    if (sessionStatus !== "unauthenticated") return;
+    setUseExistingGlobalAccount(false);
+    setAutoSkipExistingApplied(false);
+  }, [sessionStatus]);
+
   const slugInfo = useMemo(() => {
     if (!rachaSlug) {
       return { text: "Use letras minusculas, numeros e hifen (3-30).", tone: "muted" };
@@ -468,7 +527,68 @@ export default function CadastroRachaPage() {
     }
   }
 
+  async function handleExistingGlobalLogin() {
+    const email = adminEmail.trim().toLowerCase();
+    const password = adminSenha;
+
+    if (!email || !password) {
+      setExistingLoginError("Informe e-mail e senha da conta global.");
+      return;
+    }
+
+    setExistingLoginLoading(true);
+    setExistingLoginError("");
+    setFormError("");
+    setSucesso("");
+
+    try {
+      const result = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
+
+      if (!result?.ok || result.error) {
+        setExistingLoginError("E-mail ou senha inválidos.");
+        return;
+      }
+
+      const sessionName = resolveFirstName((session?.user as any)?.name as string | undefined);
+      const fallbackName = sessionName || resolveFirstNameFromEmail(email) || "Administrador";
+
+      if (!adminNome) {
+        setAdminNome(fallbackName);
+      }
+      if (!adminPosicao) {
+        setAdminPosicao(POSICOES[0]);
+      }
+      setAdminConfirmSenha(password);
+      setUseExistingGlobalAccount(true);
+      setAutoSkipExistingApplied(true);
+      setStep(2);
+      setSucesso("Conta global reconhecida. Continue com os dados do racha.");
+    } catch {
+      setExistingLoginError("Não foi possível entrar agora. Tente novamente.");
+    } finally {
+      setExistingLoginLoading(false);
+    }
+  }
+
+  async function handleUseNewAccountFlow() {
+    setUseExistingGlobalAccount(false);
+    setAutoSkipExistingApplied(false);
+    setExistingLoginError("");
+    setSucesso("");
+    setStep(1);
+
+    if (sessionStatus === "authenticated") {
+      await signOut({ redirect: false });
+    }
+  }
+
   function buildStep1Errors(): FieldErrors {
+    if (useExistingGlobalAccount) return {};
+
     const nextErrors: FieldErrors = {};
     const nome = adminNome.trim();
     if (!nome) nextErrors.adminNome = "Informe o primeiro nome.";
@@ -521,6 +641,28 @@ export default function CadastroRachaPage() {
   async function handleRegister() {
     setIsLoading(true);
     try {
+      const normalizedEmail = adminEmail.trim().toLowerCase();
+      const normalizedName =
+        resolveFirstName(adminNome) ||
+        resolveFirstName((session?.user as any)?.name as string | undefined) ||
+        resolveFirstNameFromEmail(normalizedEmail);
+      const normalizedPosition = adminPosicao || POSICOES[0];
+      const normalizedPassword = adminSenha || undefined;
+
+      if (!normalizedEmail) {
+        setFormError("Informe o e-mail da conta global para continuar.");
+        return;
+      }
+      if (!normalizedName) {
+        setFormError("Não foi possível identificar o primeiro nome do administrador.");
+        return;
+      }
+      if (useExistingGlobalAccount && !isGoogle && !normalizedPassword) {
+        setStep(1);
+        setFormError("Confirme a senha da conta global na etapa 1 para concluir o cadastro.");
+        return;
+      }
+
       const endpoint = isGoogle ? "/api/admin/register-google" : "/api/admin/register";
       const payload = {
         rachaNome: rachaNome.trim(),
@@ -529,14 +671,15 @@ export default function CadastroRachaPage() {
         cidadeIbgeCode: cidadeIbgeCode || undefined,
         estadoUf: estadoUf.trim().toUpperCase(),
         rachaLogoBase64: rachaLogo,
-        adminNome: adminNome.trim(),
+        adminNome: normalizedName,
         adminApelido: adminApelido.trim() || undefined,
-        adminPosicao,
-        adminEmail: adminEmail.trim(),
-        adminSenha: adminSenha || undefined,
+        adminPosicao: normalizedPosition,
+        adminEmail: normalizedEmail,
+        adminSenha: normalizedPassword,
         adminAvatarBase64: adminAvatar,
         planKey: selectedPlanKey,
         couponCode: couponStatus === "valid" ? couponCode.trim() : undefined,
+        useExistingGlobalAccount,
       };
 
       const res = await fetch(endpoint, {
@@ -552,9 +695,37 @@ export default function CadastroRachaPage() {
         return;
       }
 
-      const emailParaConfirmar = (body?.email || adminEmail.trim()).toLowerCase();
+      const emailParaConfirmar = (body?.email || normalizedEmail).toLowerCase();
       const slugParaConfirmar = body?.tenantSlug || rachaSlug.trim();
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
+
+      if (useExistingGlobalAccount && !isGoogle) {
+        setSucesso("Racha cadastrado com conta global. Redirecionando para o painel.");
+        const accessToken = body?.accessToken;
+        const refreshToken = body?.refreshToken;
+
+        if (accessToken && refreshToken) {
+          const signInResult = await signIn("credentials", {
+            redirect: false,
+            accessToken,
+            refreshToken,
+            email: normalizedEmail,
+            name: normalizedName,
+            authProvider: "credentials",
+          });
+
+          if (signInResult?.error) {
+            setFormError(
+              "Racha cadastrado, mas não foi possível entrar automaticamente. Faça login para continuar."
+            );
+            setTimeout(() => router.push("/admin/login"), 1200);
+            return;
+          }
+        }
+
+        router.push("/admin/selecionar-racha");
+        return;
+      }
 
       if (!isGoogle && requiresEmailVerification) {
         setSucesso("Cadastro realizado! Enviamos um e-mail para confirmação.");
@@ -600,6 +771,12 @@ export default function CadastroRachaPage() {
     setSucesso("");
 
     if (step === 1) {
+      if (useExistingGlobalAccount) {
+        setErrors({});
+        setStep(2);
+        return;
+      }
+
       const stepErrors = buildStep1Errors();
       if (Object.keys(stepErrors).length > 0) {
         setErrors(stepErrors);
@@ -621,7 +798,7 @@ export default function CadastroRachaPage() {
       return;
     }
 
-    const step1Errors = buildStep1Errors();
+    const step1Errors = useExistingGlobalAccount ? {} : buildStep1Errors();
     const step2Errors = buildStep2Errors();
     const nextErrors = { ...step1Errors, ...step2Errors };
     if (Object.keys(nextErrors).length > 0) {
@@ -702,6 +879,113 @@ export default function CadastroRachaPage() {
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             {step === 1 && (
               <>
+                <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4 space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">
+                      Já possui conta global Fut7Pro?
+                    </h2>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Entre com e-mail/senha ou Google para pular direto para a etapa 2.
+                    </p>
+                  </div>
+
+                  {useExistingGlobalAccount ? (
+                    <div className="space-y-3">
+                      <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                        Conta global conectada: {adminEmail || googleEmail || "identificada"}.
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setStep(2)}
+                          className="rounded-lg bg-yellow-400 px-3 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
+                        >
+                          Ir para etapa 2
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleUseNewAccountFlow()}
+                          className="rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
+                        >
+                          Não tenho conta global
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className="text-xs text-gray-400">
+                          E-mail da conta global
+                          <input
+                            type="email"
+                            value={adminEmail}
+                            onChange={(e) => {
+                              setAdminEmail(e.target.value);
+                              setExistingLoginError("");
+                            }}
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            inputMode="email"
+                            spellCheck={false}
+                            className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            placeholder="email@exemplo.com"
+                          />
+                        </label>
+                        <label className="text-xs text-gray-400">
+                          Senha da conta global
+                          <div className="relative mt-2">
+                            <input
+                              type={showSenha ? "text" : "password"}
+                              value={adminSenha}
+                              onChange={(e) => {
+                                setAdminSenha(e.target.value);
+                                setExistingLoginError("");
+                              }}
+                              autoComplete="current-password"
+                              className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                              placeholder="Digite sua senha"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowSenha((prev) => !prev)}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                            >
+                              {showSenha ? "Ocultar" : "Mostrar"}
+                            </button>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleExistingGlobalLogin()}
+                          disabled={existingLoginLoading}
+                          className="rounded-lg bg-yellow-400 px-3 py-2 text-xs font-semibold text-black hover:bg-yellow-300 disabled:opacity-70"
+                        >
+                          {existingLoginLoading ? "Entrando..." : "Entrar e ir para etapa 2"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })
+                          }
+                          disabled={sessionStatus === "loading"}
+                          className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white hover:border-white/20 disabled:opacity-70"
+                        >
+                          Entrar com Google
+                        </button>
+                      </div>
+
+                      {existingLoginError && (
+                        <div className="rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-xs text-red-200">
+                          {existingLoginError}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-3">
                   <button
                     type="button"
@@ -721,7 +1005,7 @@ export default function CadastroRachaPage() {
                       className="h-5 w-5"
                     />
                     <span className="whitespace-nowrap">
-                      {isGoogle ? "Google conectado" : "Cadastrar com Google"}
+                      {isGoogle ? "Google conectado" : "Cadastrar com Google (nova conta)"}
                     </span>
                   </button>
                   {isGoogle ? (

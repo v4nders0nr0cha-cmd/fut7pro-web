@@ -10,6 +10,17 @@ import {
 } from "../_proxy/helpers";
 
 const BASE_PATH = "/api/jogadores";
+const TENANT_QUERY_KEYS = new Set(["tenantId", "tenantSlug", "rachaId", "slug"]);
+
+function sanitizeTenantFields(payload: unknown) {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return payload;
+  const safePayload = { ...(payload as Record<string, unknown>) };
+  delete safePayload.tenantId;
+  delete safePayload.tenantSlug;
+  delete safePayload.rachaId;
+  delete safePayload.slug;
+  return safePayload;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +43,7 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, includeCont
 
   const targetUrl = new URL(`${getApiBase()}${BASE_PATH}`);
   req.nextUrl.searchParams.forEach((value, key) => {
+    if (TENANT_QUERY_KEYS.has(key)) return;
     targetUrl.searchParams.set(key, value);
   });
 
@@ -59,12 +71,13 @@ export async function POST(req: NextRequest) {
   if (!payload) {
     return jsonResponse({ error: "Payload invalido" }, { status: 400 });
   }
+  const safePayload = sanitizeTenantFields(payload);
 
   return forwardToBackend(
     req,
     {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: JSON.stringify(safePayload),
     },
     true
   );

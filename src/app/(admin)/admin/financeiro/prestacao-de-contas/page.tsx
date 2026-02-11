@@ -208,9 +208,9 @@ export default function PrestacaoDeContasAdmin() {
         mutateTenant();
       }
     } catch (error: unknown) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao atualizar visibilidade:", error);
-      }
+      const message =
+        error instanceof Error ? error.message : "Erro ao atualizar visibilidade financeira.";
+      toast.error(message);
       setVisivel(!valor);
     } finally {
       setSaving(false);
@@ -258,9 +258,6 @@ export default function PrestacaoDeContasAdmin() {
       }
       setEditData(null);
     } catch (error: unknown) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao salvar lancamento:", error);
-      }
       setErroLancamento("Não foi possível salvar o lançamento. Tente novamente.");
       throw error;
     } finally {
@@ -276,9 +273,6 @@ export default function PrestacaoDeContasAdmin() {
       await deleteLancamento(id);
       toast.success("Lançamento excluído.");
     } catch (error: unknown) {
-      if (process.env.NODE_ENV === "development") {
-        console.log("Erro ao excluir lancamento:", error);
-      }
       const message =
         error instanceof Error ? error.message : "Não foi possível excluir o lançamento.";
       setErroLancamento(message);

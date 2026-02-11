@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { Participante, ConfiguracaoRacha, AvaliacaoEstrela, Posicao } from "@/types/sorteio";
 import { FaCheckCircle, FaUserPlus } from "react-icons/fa";
-import { rachaConfig } from "@/config/racha.config";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useNiveisAtletas } from "@/hooks/useNiveisAtletas";
 import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
+import { useRacha } from "@/context/RachaContext";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
 import { formatNivel } from "@/utils/nivel-atleta";
 import type { Jogador } from "@/types/jogador";
@@ -104,7 +104,7 @@ function PopoverSelecionarJogador({
           >
             <Image
               src={p.foto}
-              alt={`Foto de ${p.nome}, posicao: ${p.posicao}, ${rachaConfig.nome}`}
+              alt={`Foto de ${p.nome}, posição: ${p.posicao}`}
               width={28}
               height={28}
               className="rounded-full"
@@ -131,6 +131,7 @@ export default function ParticipantesRacha({
   participantes,
   setParticipantes,
 }: Props) {
+  const { tenantSlug } = useRacha();
   const { niveis, isLoading: loadingEstrelas } = useNiveisAtletas(rachaId);
   const [popoverKey, setPopoverKey] = useState<string | null>(null);
   const [seededKey, setSeededKey] = useState<string | null>(null);
@@ -212,7 +213,7 @@ export default function ParticipantesRacha({
 
   // Busca ranking publico para enriquecer o balanceamento
   useEffect(() => {
-    const slug = rachaConfig.slug;
+    const slug = tenantSlug?.trim();
     if (!slug) return;
     fetch(`/api/public/${slug}/player-rankings?type=geral`)
       .then((res) => res.json())
@@ -226,9 +227,9 @@ export default function ParticipantesRacha({
         setRankingMap(map);
       })
       .catch(() => {
-        // silencioso: ranking nao e obrigatorio
+        // silencioso: ranking não é obrigatório
       });
-  }, []);
+  }, [tenantSlug]);
 
   const participantesDisponiveis = useMemo<Participante[]>(() => {
     const mapped = (jogadores || []).map((jogador) => {
@@ -478,7 +479,7 @@ export default function ParticipantesRacha({
           <div className="flex flex-row items-center gap-2 min-w-0 flex-1">
             <Image
               src={jogador.foto}
-              alt={`Foto de ${jogador.nome}, ${jogador.posicao} no ${rachaConfig.nome}`}
+              alt={`Foto de ${jogador.nome}, ${jogador.posicao}`}
               width={48}
               height={48}
               className="rounded-md object-cover"

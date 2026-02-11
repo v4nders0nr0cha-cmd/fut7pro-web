@@ -3,22 +3,25 @@
 import Head from "next/head";
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { FaPlus, FaTrophy, FaEdit, FaTrash } from "react-icons/fa";
 import ModalCadastroTorneio from "@/components/admin/ModalCadastroTorneio";
 import type { DadosTorneio, Torneio } from "@/types/torneio";
 import { useTorneios } from "@/hooks/useTorneios";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 
 export default function GrandesTorneiosAdminPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [torneioSelecionado, setTorneioSelecionado] = useState<Torneio | null>(null);
   const { rachaId, tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug || rachaId;
+  const slug = tenantSlug || "";
+  const missingTenantScope = !slug || !rachaId;
   const { torneios, isLoading, addTorneio, updateTorneio, deleteTorneio } = useTorneios(slug);
 
   async function handleSalvarTorneio(dados: DadosTorneio) {
+    if (!slug || !rachaId) {
+      return;
+    }
+
     if (torneioSelecionado?.id) {
       await updateTorneio({
         ...dados,
@@ -63,10 +66,18 @@ export default function GrandesTorneiosAdminPage() {
             recebem o <b>ícone especial</b> em seus perfis.
           </p>
 
+          {missingTenantScope && (
+            <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para
+              gerenciar torneios.
+            </div>
+          )}
+
           <div className="flex justify-end mb-4">
             <button
-              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-5 py-2 rounded-xl shadow text-sm"
+              className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-5 py-2 rounded-xl shadow text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               onClick={() => setModalOpen(true)}
+              disabled={missingTenantScope}
             >
               <FaPlus /> Cadastrar Novo Torneio
             </button>
@@ -113,12 +124,16 @@ export default function GrandesTorneiosAdminPage() {
                       <h3 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-1">
                         <FaTrophy className="inline mr-1" /> {torneio.nome}
                       </h3>
-                      <Link
-                        href={`/admin/conquistas/grandes-torneios/${torneio.slug}`}
+                      <button
+                        type="button"
                         className="inline-block mt-1 text-sm font-semibold text-yellow-400 hover:underline"
+                        onClick={() => {
+                          setTorneioSelecionado(torneio);
+                          setModalOpen(true);
+                        }}
                       >
                         Gerenciar detalhes →
-                      </Link>
+                      </button>
                       <div className="flex gap-2 mt-2">
                         <button
                           type="button"

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
 import {
+  appendSafeQueryParams,
   buildHeaders,
   forwardResponse,
   jsonResponse,
@@ -46,9 +47,7 @@ async function forwardToBackend(
   });
 
   const targetUrl = new URL(`${getApiBase()}${BASE_PATH}`);
-  req.nextUrl.searchParams.forEach((value, key) => {
-    targetUrl.searchParams.set(key, value);
-  });
+  appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
   if (!targetUrl.searchParams.has("slug")) {
     targetUrl.searchParams.set("slug", tenantSlug);
   }

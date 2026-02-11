@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Search, Shield, UserCheck } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { useAdminRoleAthletes } from "@/hooks/useAdminRoleAthletes";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import type { AdminRoleAthlete, AdminRoleKey, AdminRoleSlot } from "@/types/admin-roles";
@@ -128,9 +129,13 @@ export default function TransferirPropriedadeClient() {
       {successMessage && (
         <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <span>{successMessage}</span>
-          <a href="/logout" className="text-xs font-semibold text-emerald-200 underline">
+          <button
+            type="button"
+            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            className="text-xs font-semibold text-emerald-200 underline text-left"
+          >
             Sair do painel
-          </a>
+          </button>
         </div>
       )}
 

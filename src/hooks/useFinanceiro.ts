@@ -77,7 +77,7 @@ type FinanceiroInput = Partial<LancamentoFinanceiro> & {
   observacoes?: string;
 };
 
-const buildFinanceiroPayload = (input: FinanceiroInput, tenantId: string) => {
+const buildFinanceiroPayload = (input: FinanceiroInput) => {
   const rawType = `${input.tipo ?? input.type ?? ""}`.toLowerCase();
   const rawValue = Number(input.valor ?? input.value ?? 0);
   const isSaida = rawType.includes("saida") || rawType.includes("desp") || rawValue < 0;
@@ -90,7 +90,6 @@ const buildFinanceiroPayload = (input: FinanceiroInput, tenantId: string) => {
     category: input.categoria ?? input.category ?? "",
     comprovanteUrl: input.comprovanteUrl ?? undefined,
     observacoes: input.observacoes ?? undefined,
-    tenantId,
   };
 };
 
@@ -99,15 +98,14 @@ export function useFinanceiro() {
   const apiState = useApiState();
 
   const tenantId = me?.tenant?.tenantId;
-  const query = tenantId ? `?tenantId=${tenantId}` : "";
 
   const { data, error, isLoading, mutate } = useSWR<FinanceiroApiItem[]>(
-    tenantId ? `/api/admin/financeiro${query}` : null,
+    tenantId ? "/api/admin/financeiro" : null,
     fetcher,
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar dados financeiros:", err);
+          console.error("Erro ao carregar dados financeiros:", err);
         }
       },
     }
@@ -124,7 +122,7 @@ export function useFinanceiro() {
     if (!tenantId) return null;
 
     return apiState.handleAsync(async () => {
-      const payload = buildFinanceiroPayload(lancamento, tenantId);
+      const payload = buildFinanceiroPayload(lancamento);
       const response = await fetch("/api/admin/financeiro", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,7 +143,7 @@ export function useFinanceiro() {
     if (!tenantId || !id) return null;
 
     return apiState.handleAsync(async () => {
-      const payload = buildFinanceiroPayload(lancamento, tenantId);
+      const payload = buildFinanceiroPayload(lancamento);
       const response = await fetch(`/api/admin/financeiro/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

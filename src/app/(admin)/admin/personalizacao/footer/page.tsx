@@ -5,18 +5,10 @@ import Head from "next/head";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FaFacebookF, FaWhatsapp, FaInstagram, FaPlus, FaTimes, FaSave } from "react-icons/fa";
 import { useFooterConfigAdmin } from "@/hooks/useFooterConfig";
-
-type Plano =
-  | "gratuito"
-  | "mensal-essencial"
-  | "anual-essencial"
-  | "mensal-marketing"
-  | "anual-marketing"
-  | "mensal-enterprise"
-  | "anual-enterprise";
-
-const plano = "gratuito" as Plano; // Troque para "mensal-enterprise" para testar Enterprise
-const isEnterprise = plano === "mensal-enterprise" || plano === "anual-enterprise";
+import { useMe } from "@/hooks/useMe";
+import useSubscription from "@/hooks/useSubscription";
+import { useSocialLinksAdmin } from "@/hooks/useSocialLinks";
+import { normalizeSocialUrl } from "@/utils/social-links";
 
 const topicosPadrao = [
   { id: "ranking", label: "Sistema de Ranking" },
@@ -50,6 +42,12 @@ const normalizeTopicosOcultos = (items: string[]) => {
 
 export default function FooterPersonalizacaoPage() {
   const { footer, update, isLoading } = useFooterConfigAdmin();
+  const { me } = useMe();
+  const tenantId = me?.tenant?.tenantId;
+  const { subscription, loading: loadingSubscription } = useSubscription(tenantId);
+  const { socialLinks } = useSocialLinksAdmin();
+  const planKey = (subscription?.planKey || "").toLowerCase();
+  const isEnterprise = planKey.includes("enterprise");
 
   const [topicosExtras, setTopicosExtras] = useState<string[]>([]);
   const [topicosOcultos, setTopicosOcultos] = useState<string[]>([]);
@@ -63,6 +61,9 @@ export default function FooterPersonalizacaoPage() {
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [erro, setErro] = useState<string | null>(null);
   const initializedRef = useRef(false);
+  const facebookUrl = normalizeSocialUrl(socialLinks?.facebookUrl);
+  const whatsappUrl = normalizeSocialUrl(socialLinks?.whatsappGroupUrl);
+  const instagramUrl = normalizeSocialUrl(socialLinks?.instagramUrl);
 
   useEffect(() => {
     if (!footer || initializedRef.current) return;
@@ -153,6 +154,21 @@ export default function FooterPersonalizacaoPage() {
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400 mb-6">
           Configuração do Rodapé
         </h1>
+        <div className="mb-6 rounded-lg border border-zinc-700 bg-[#202328] px-4 py-3 text-sm text-zinc-200">
+          {loadingSubscription ? (
+            <span>Carregando dados do plano...</span>
+          ) : isEnterprise ? (
+            <span>
+              Plano ativo: <b>{subscription?.planKey || "Enterprise"}</b>. Edição completa do rodapé
+              liberada.
+            </span>
+          ) : (
+            <span>
+              Plano atual: <b>{subscription?.planKey || "não identificado"}</b>. A legenda
+              institucional personalizada é exclusiva do plano Enterprise.
+            </span>
+          )}
+        </div>
 
         {/* Topicos editaveis */}
         <section className="mb-10">
@@ -270,33 +286,54 @@ export default function FooterPersonalizacaoPage() {
         <section className="mb-6">
           <h2 className="text-lg text-yellow-300 font-semibold mb-2">Redes sociais</h2>
           <div className="flex gap-4 mt-2">
-            <a
-              href="https://www.facebook.com/profile.php?id=61581917656941"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yellow-400 hover:scale-110 transition"
-            >
-              <FaFacebookF size={32} />
-            </a>
-            <a
-              href="https://wa.me/..."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yellow-400 hover:scale-110 transition"
-            >
-              <FaWhatsapp size={32} />
-            </a>
-            <a
-              href="https://www.instagram.com/fut7pro_app"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-yellow-400 hover:scale-110 transition"
-            >
-              <FaInstagram size={32} />
-            </a>
+            {facebookUrl ? (
+              <a
+                href={facebookUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:scale-110 transition"
+                title="Facebook"
+              >
+                <FaFacebookF size={32} />
+              </a>
+            ) : (
+              <span className="text-zinc-500" title="Facebook não configurado">
+                <FaFacebookF size={32} />
+              </span>
+            )}
+            {whatsappUrl ? (
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:scale-110 transition"
+                title="WhatsApp"
+              >
+                <FaWhatsapp size={32} />
+              </a>
+            ) : (
+              <span className="text-zinc-500" title="WhatsApp não configurado">
+                <FaWhatsapp size={32} />
+              </span>
+            )}
+            {instagramUrl ? (
+              <a
+                href={instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:scale-110 transition"
+                title="Instagram"
+              >
+                <FaInstagram size={32} />
+              </a>
+            ) : (
+              <span className="text-zinc-500" title="Instagram não configurado">
+                <FaInstagram size={32} />
+              </span>
+            )}
           </div>
           <span className="text-xs text-gray-400 block mt-1">
-            (redes sociais editáveis em outra página)
+            Os links são carregados da página de redes sociais do seu racha.
           </span>
         </section>
 
@@ -326,7 +363,7 @@ export default function FooterPersonalizacaoPage() {
               type="button"
               className="flex items-center gap-2 px-6 py-2 rounded bg-yellow-400 text-black font-bold transition hover:bg-yellow-300 disabled:opacity-60"
               onClick={handleSalvar}
-              disabled={status === "saving" || isLoading}
+              disabled={status === "saving" || isLoading || loadingSubscription}
             >
               <FaSave /> {status === "saving" ? "Salvando..." : "Salvar configurações"}
             </button>

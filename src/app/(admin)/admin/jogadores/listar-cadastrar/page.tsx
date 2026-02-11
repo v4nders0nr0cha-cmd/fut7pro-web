@@ -18,7 +18,6 @@ import { useJogadores } from "@/hooks/useJogadores";
 import { useAthleteRequests } from "@/hooks/useAthleteRequests";
 import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
@@ -569,8 +568,9 @@ export default function Page() {
   const { data: session } = useSession();
   const { rachaId: contextRachaId, tenantSlug, setRachaId, setTenantSlug } = useRacha();
   const sessionUser = session?.user as { tenantId?: string; tenantSlug?: string } | undefined;
-  const resolvedRachaId = sessionUser?.tenantId || contextRachaId || rachaConfig.slug;
-  const resolvedSlug = sessionUser?.tenantSlug || tenantSlug || rachaConfig.slug;
+  const resolvedRachaId = sessionUser?.tenantId || contextRachaId || "";
+  const resolvedSlug = sessionUser?.tenantSlug || tenantSlug || "";
+  const missingTenantScope = !resolvedRachaId || !resolvedSlug;
 
   useEffect(() => {
     if (sessionUser?.tenantId) {
@@ -1050,6 +1050,13 @@ export default function Page() {
       </Head>
 
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 px-2 sm:px-6 max-w-5xl mx-auto">
+        {missingTenantScope && (
+          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            Não foi possível identificar o racha ativo. Acesse o Hub e selecione o racha antes de
+            gerenciar jogadores.
+          </div>
+        )}
+
         {/* DESCRIÇÃO ADMIN */}
         <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4 mb-6 text-sm text-gray-300">
           <p className="mb-2">

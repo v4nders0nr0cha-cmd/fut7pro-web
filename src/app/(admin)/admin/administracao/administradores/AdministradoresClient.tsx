@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Crown, Shield, Trophy, DollarSign, UserPlus, RefreshCw, Trash2, Info } from "lucide-react";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import { useAdminRoleAthletes } from "@/hooks/useAdminRoleAthletes";
+import { useAdminLogs } from "@/hooks/useAdminLogs";
 import type { AdminRoleAthlete, AdminRoleKey, AdminRoleSlot } from "@/types/admin-roles";
 
 const ROLE_ORDER: AdminRoleKey[] = [
@@ -75,17 +76,22 @@ const ROLE_CONFIG: Record<
   },
 };
 
-const MOCK_AUDIT = [
-  "Presidente definiu Gabriel como Diretor Financeiro, 02/02 02:28",
-  "Presidente removeu Lucas do cargo Vice-Presidente, 01/02 19:12",
-  "Presidente definiu Ana como Diretora de Futebol, 31/01 21:44",
-  "Tentativa negada de acesso às Configurações, 30/01 10:03",
-  "Presidente substituiu Diretor Financeiro, 29/01 18:56",
-];
+function formatLogDate(value?: string | null) {
+  if (!value) return "--";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "--";
+  return parsed.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
 export default function AdministradoresClient() {
   const { slots, isLoading, isError, error, assignRole, removeRole, mutate, isSaving } =
     useAdminRoles();
+  const { logs: auditLogs, isLoading: loadingAuditLogs } = useAdminLogs({ limit: 5 });
   const [modalRole, setModalRole] = useState<AdminRoleKey | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -340,10 +346,22 @@ export default function AdministradoresClient() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setFeedback("Envio de convite simulado.")}
+                        onClick={() => {
+                          if (slot.email) {
+                            const subject = encodeURIComponent(
+                              "Reenvio de convite para administração do racha"
+                            );
+                            const body = encodeURIComponent(
+                              "Olá! Reenviamos seu convite para assumir um cargo administrativo no Fut7Pro."
+                            );
+                            window.location.href = `mailto:${slot.email}?subject=${subject}&body=${body}`;
+                            return;
+                          }
+                          setFeedback("Este administrador ainda não possui e-mail cadastrado.");
+                        }}
                         className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 text-emerald-300 px-3 py-1 text-xs hover:bg-emerald-500/10"
                       >
-                        Enviar convite
+                        Reenviar convite
                       </button>
                     </div>
                   )}
@@ -379,12 +397,26 @@ export default function AdministradoresClient() {
           Últimas ações de administração
         </div>
         <ul className="space-y-2 text-sm text-zinc-300">
-          {MOCK_AUDIT.map((item) => (
-            <li key={item} className="flex items-start gap-2">
-              <span className="mt-1 h-2 w-2 rounded-full bg-yellow-400" />
-              <span>{item}</span>
-            </li>
-          ))}
+          {loadingAuditLogs ? (
+            <li className="text-zinc-400">Carregando histórico...</li>
+          ) : auditLogs.length === 0 ? (
+            <li className="text-zinc-400">Nenhuma ação de administração registrada.</li>
+          ) : (
+            auditLogs.map((log) => {
+              const action = log.action || log.acao || "Ação";
+              const admin = log.adminName || log.adminNome || "Sistema";
+              const details = log.details || log.detalhes || "Sem detalhes";
+              const timestamp = (log.timestamp as string) || log.criadoEm || log.data;
+              return (
+                <li key={log.id} className="flex items-start gap-2">
+                  <span className="mt-1 h-2 w-2 rounded-full bg-yellow-400" />
+                  <span>
+                    {admin} • {action} • {details} ({formatLogDate(timestamp)})
+                  </span>
+                </li>
+              );
+            })
+          )}
         </ul>
         <div className="mt-4">
           <a href="/admin/administracao/logs" className="text-xs text-yellow-300 underline">

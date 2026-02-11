@@ -23,7 +23,7 @@ export function useAdmin() {
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar dados de admin:", err);
+          console.error("Erro ao carregar dados de admin:", err);
         }
       },
     }

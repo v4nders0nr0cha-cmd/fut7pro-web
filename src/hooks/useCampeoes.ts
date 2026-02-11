@@ -24,7 +24,7 @@ export function useCampeoes() {
     {
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
-          console.log("Erro ao carregar campeões:", err);
+          console.error("Erro ao carregar campeões:", err);
         }
       },
     }

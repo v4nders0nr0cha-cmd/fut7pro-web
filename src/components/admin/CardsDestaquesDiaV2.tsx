@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
-import { rachaConfig } from "@/config/racha.config";
 import {
   buildDestaquesDoDia,
   getEventosDoDia,
@@ -88,8 +87,9 @@ export default function CardsDestaquesDiaV2({
   const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
   const [faltouState, setFaltouState] = useState<Record<string, boolean>>({});
 
-  const slugFinal = slug || tenantSlug || rachaConfig.slug;
-  const shouldFetchMatches = !matches && (!confrontos || confrontos.length === 0);
+  const slugFinal = (slug ?? tenantSlug ?? "").trim();
+  const shouldFetchMatches =
+    Boolean(slugFinal) && !matches && (!confrontos || confrontos.length === 0);
 
   const {
     matches: fetchedMatches,
@@ -235,8 +235,8 @@ export default function CardsDestaquesDiaV2({
   const aguardando = (
     <div className="w-full text-center text-zinc-400 font-semibold py-8">
       {erroMatches
-        ? "Nao foi possivel carregar os resultados do dia."
-        : "Aguarde: resultados precisam ser lancados para exibir os destaques do dia."}
+        ? "Não foi possível carregar os resultados do dia."
+        : "Aguarde: resultados precisam ser lançados para exibir os destaques do dia."}
     </div>
   );
 
@@ -301,7 +301,7 @@ export default function CardsDestaquesDiaV2({
                 checked={isAbsent}
                 onChange={(e) => handleToggle(e.target.checked)}
               />
-              Jogador nao compareceu ao racha
+              Jogador não compareceu ao racha
             </label>
             <div className="h-6"></div>
           </div>
@@ -332,7 +332,7 @@ export default function CardsDestaquesDiaV2({
                 checked={isAbsent}
                 onChange={(e) => handleToggle(e.target.checked)}
               />
-              Jogador nao compareceu ao racha
+              Jogador não compareceu ao racha
             </label>
             <div className="h-6"></div>
           </div>
@@ -391,7 +391,7 @@ export default function CardsDestaquesDiaV2({
                   onChange={(e) => handleToggle(e.target.checked)}
                   disabled={!canToggle}
                 />
-                Jogador nao compareceu ao racha
+                Jogador não compareceu ao racha
               </label>
             )}
             <div className="h-6"></div>
@@ -419,7 +419,7 @@ export default function CardsDestaquesDiaV2({
     <div className="w-full flex flex-col items-center gap-8">
       {dataReferencia && (
         <span className="text-xs uppercase tracking-wide text-yellow-400">
-          Referencia: {new Date(dataReferencia).toLocaleDateString("pt-BR")}
+          Referência: {new Date(dataReferencia).toLocaleDateString("pt-BR")}
         </span>
       )}
       <div className="flex flex-wrap gap-5 justify-center">

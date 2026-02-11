@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
 import {
+  appendSafeQueryParams,
   buildHeaders,
   forwardResponse,
   jsonResponse,
@@ -26,10 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   const targetUrl = new URL(`${getApiBase()}/admin/suggestions`);
-  req.nextUrl.searchParams.forEach((value, key) => {
-    if (key === "slug") return;
-    targetUrl.searchParams.set(key, value);
-  });
+  appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
 
   const { response, body } = await proxyBackend(targetUrl.toString(), {
     headers: buildHeaders(user, tenantSlug),

@@ -393,7 +393,10 @@ function buildRoster(match: PublicMatch, targetTeamId: string, teamAId: string, 
 }
 
 function createEventId() {
-  return `goal-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `goal-${crypto.randomUUID()}`;
+  }
+  return `goal-${Date.now().toString(36)}`;
 }
 
 function buildGoalEvents(match: PublicMatch, teamAId: string, teamBId: string) {

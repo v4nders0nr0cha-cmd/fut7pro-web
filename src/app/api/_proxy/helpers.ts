@@ -5,6 +5,60 @@ import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
 
 const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+const TENANT_SCOPE_QUERY_KEYS = new Set(["tenantid", "tenantslug", "rachaid", "slug"]);
+const BLOCKED_QUERY_KEYS = new Set([
+  "include",
+  "select",
+  "where",
+  "expand",
+  "populate",
+  "fields",
+  "projection",
+  "relations",
+  "join",
+  "orderby",
+  "$where",
+  "$select",
+  "$expand",
+]);
+const DEFAULT_ALLOWED_QUERY_KEYS = new Set([
+  "page",
+  "pagesize",
+  "limit",
+  "offset",
+  "cursor",
+  "q",
+  "search",
+  "query",
+  "status",
+  "category",
+  "severity",
+  "priority",
+  "type",
+  "scope",
+  "period",
+  "year",
+  "quarter",
+  "month",
+  "date",
+  "from",
+  "to",
+  "startdate",
+  "enddate",
+  "sort",
+  "order",
+  "unread",
+  "isread",
+  "read",
+  "count",
+  "channel",
+  "groupkey",
+  "source",
+  "view",
+  "tab",
+  "competencia",
+  "action",
+]);
 
 type UserLike = {
   id: string;
@@ -70,8 +124,50 @@ export async function requireSuperAdminUser(): Promise<UserLike | null> {
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
-  const cookieSlug = nextCookies().get(ACTIVE_TENANT_COOKIE)?.value;
-  return slug || cookieSlug || user.tenantSlug || (user as any).slug || user.tenantId || null;
+  const cookieSlug = nextCookies().get(ACTIVE_TENANT_COOKIE)?.value?.trim();
+  const sessionSlug = String(user.tenantSlug || (user as any).slug || "").trim();
+  const requestedSlug = String(slug || "").trim();
+  const tenantId = String(user.tenantId || "").trim();
+
+  // Segurança multi-tenant: o escopo ativo vem do cookie/hub; não permitimos
+  // que query/body do client sobrescreva um tenant já definido na sessão.
+  if (cookieSlug) return cookieSlug;
+  if (sessionSlug) return sessionSlug;
+  if (tenantId) return tenantId;
+  if (requestedSlug) return requestedSlug;
+  return null;
+}
+
+export function appendSafeQueryParams(
+  source: URLSearchParams,
+  target: URL,
+  options?: { allowTenantKeys?: boolean; allowedKeys?: string[] }
+) {
+  const allowed = new Set(DEFAULT_ALLOWED_QUERY_KEYS);
+  if (Array.isArray(options?.allowedKeys)) {
+    options?.allowedKeys.forEach((key) => {
+      const normalized = String(key || "")
+        .trim()
+        .toLowerCase();
+      if (normalized) {
+        allowed.add(normalized);
+      }
+    });
+  }
+
+  source.forEach((value, key) => {
+    const normalizedKey = key.toLowerCase();
+    if (!options?.allowTenantKeys && TENANT_SCOPE_QUERY_KEYS.has(normalizedKey)) {
+      return;
+    }
+    if (BLOCKED_QUERY_KEYS.has(normalizedKey)) {
+      return;
+    }
+    if (!allowed.has(normalizedKey)) {
+      return;
+    }
+    target.searchParams.set(key, value);
+  });
 }
 
 export function buildHeaders(

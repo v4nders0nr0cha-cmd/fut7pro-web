@@ -19,7 +19,7 @@ export default function TimesDoDiaPage() {
           name="keywords"
           content="racha, fut7, sistema de racha, sorteio de times, escalação de times, estatísticas futebol 7, futebol amador, futebol society, campeões do dia"
         />
-        <meta name="robots" content="index, follow" />
+        <meta name="robots" content="noindex,nofollow" />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 bg-fundo min-h-screen">

@@ -43,7 +43,7 @@ export default function SorteioInteligentePage() {
           name="keywords"
           content="sorteio de times, fut7, futebol 7, racha, balanceamento, sistema de racha, times equilibrados, administrar racha, painel admin fut7pro"
         />
-        <meta name="robots" content="index, follow" />
+        <meta name="robots" content="noindex,nofollow" />
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-fundo">

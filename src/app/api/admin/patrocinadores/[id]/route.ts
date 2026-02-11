@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
 import {
+  appendSafeQueryParams,
   buildHeaders,
   forwardResponse,
   jsonResponse,
@@ -35,7 +36,7 @@ async function forwardWithTenant(
 
   const headers = buildHeaders(user, tenantSlug, { includeContentType });
   const targetUrl = new URL(`${getApiBase()}${BASE_PATH}/${encodeURIComponent(params.id)}`);
-  req.nextUrl.searchParams.forEach((value, key) => targetUrl.searchParams.set(key, value));
+  appendSafeQueryParams(req.nextUrl.searchParams, targetUrl);
 
   const { response, body } = await proxyBackend(targetUrl.toString(), {
     ...init,

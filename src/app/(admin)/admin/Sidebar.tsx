@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
 import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
 import Image from "next/image";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
 import { useBranding } from "@/hooks/useBranding";
 import { useRacha } from "@/context/RachaContext";
@@ -95,7 +95,6 @@ const menu = [
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Central de Atualizações", href: "/admin/configuracoes/changelog" },
       { label: "Cancelar conta do racha", href: "/admin/configuracoes/cancelar-conta" },
-      { label: "Sair", href: "/logout" },
     ],
   },
 ];
@@ -104,6 +103,15 @@ interface SidebarProps {
   mobile?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
+}
+
+function slugifyTestId(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
 }
 
 export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProps) {
@@ -123,6 +131,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   );
   const { nome, logo } = useBranding({ scope: "admin", slug: resolvedSlug });
   const sitePublicoUrl = `${APP_PUBLIC_URL}/${encodeURIComponent(resolvedSlug)}`;
+  const hasPublicSlug = resolvedSlug.trim().length > 0;
 
   useEffect(() => {
     if (!isOpen) setOpen(null);
@@ -137,7 +146,12 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
     : "w-72 min-h-screen bg-[#181818] border-r border-[#292929] shadow-lg flex flex-col pt-[65px] pb-8 hidden md:flex z-40";
 
   return (
-    <aside className={wrapperClass} role="navigation" aria-label="Menu administrativo">
+    <aside
+      className={wrapperClass}
+      role="navigation"
+      aria-label="Menu administrativo"
+      data-testid={mobile ? "admin-sidebar-mobile" : "admin-sidebar-desktop"}
+    >
       <div className="px-6 flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
           <Image
@@ -165,6 +179,7 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                   className={`w-full flex items-center px-3 py-2 text-left rounded-lg hover:bg-[#232323] transition ${open === item.label ? "bg-[#232323]" : ""}`}
                   onClick={() => handleToggle(item.label)}
                   aria-expanded={open === item.label}
+                  data-testid={`admin-sidebar-toggle-${slugifyTestId(item.label)}`}
                 >
                   <item.icon className="text-brand text-lg mr-3" />
                   <span className="flex-1 font-semibold">{item.label}</span>
@@ -184,6 +199,8 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                               href={child.href}
                               className={`block px-2 py-1 rounded text-sm hover:bg-[#222] transition ${pathname.startsWith(child.href) ? "bg-[#232323] text-brand-soft" : "text-gray-200"}`}
                               onClick={onClose}
+                              data-testid={`admin-sidebar-link-${slugifyTestId(child.href)}`}
+                              data-admin-nav-link="true"
                             >
                               {child.label}
                             </Link>
@@ -209,6 +226,8 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
                   href={item.href}
                   className={`flex items-center px-3 py-2 rounded-lg hover:bg-[#232323] transition ${pathname === item.href ? "bg-[#232323] text-brand-soft" : "text-gray-200"}`}
                   onClick={onClose}
+                  data-testid={`admin-sidebar-link-${slugifyTestId(item.href)}`}
+                  data-admin-nav-link="true"
                 >
                   <item.icon className="text-brand text-lg mr-3" />
                   <span className="font-semibold">{item.label}</span>
@@ -219,20 +238,38 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
         </ul>
         <div className="px-4 mt-3">
           <div className="bg-[#1a1a1a] border border-brand rounded-lg p-3 flex items-center justify-between hover:bg-[#222] transition shadow">
-            <a
-              href={sitePublicoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 font-bold text-brand-soft"
-              title="Abrir site público do seu racha"
-            >
-              Ver o Site
-              <FaExternalLinkAlt className="text-brand ml-1" />
-            </a>
+            {hasPublicSlug ? (
+              <a
+                href={sitePublicoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 font-bold text-brand-soft"
+                title="Abrir site público do seu racha"
+                data-testid="admin-sidebar-view-site"
+              >
+                Ver o Site
+                <FaExternalLinkAlt className="text-brand ml-1" />
+              </a>
+            ) : (
+              <span
+                className="font-bold text-zinc-500"
+                data-testid="admin-sidebar-view-site-disabled"
+              >
+                Selecione um racha no Hub
+              </span>
+            )}
           </div>
           <div className="text-xs text-gray-400 mt-1 pl-1">
             Atualizações podem levar até 15 minutos para aparecer no site público.
           </div>
+          <button
+            type="button"
+            className="w-full mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-500/20"
+            onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            data-testid="admin-sidebar-signout"
+          >
+            Sair da conta
+          </button>
         </div>
       </nav>
     </aside>

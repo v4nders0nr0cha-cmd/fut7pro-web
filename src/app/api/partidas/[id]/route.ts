@@ -10,6 +10,7 @@ import {
 } from "../../_proxy/helpers";
 
 const BASE_PATH = "/api/partidas";
+const TENANT_QUERY_KEYS = new Set(["tenantId", "tenantSlug", "rachaId", "slug"]);
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +30,7 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, matchId: st
   const headers = buildHeaders(user, tenantSlug);
   const targetUrl = new URL(`${getApiBase()}${BASE_PATH}/${matchId}`);
   req.nextUrl.searchParams.forEach((value, key) => {
+    if (TENANT_QUERY_KEYS.has(key)) return;
     targetUrl.searchParams.set(key, value);
   });
 

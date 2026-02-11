@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { FaInfoCircle } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 const PERIODOS = [
@@ -22,7 +21,8 @@ const getQuarter = (date: Date) => Math.floor(date.getMonth() / 4) + 1;
 export default function RankingAssiduidade() {
   const [periodo, setPeriodo] = useState("mes");
   const { rachaId } = useRacha();
-  const resolvedRachaId = rachaId || rachaConfig.slug;
+  const resolvedRachaId = rachaId || "";
+  const missingTenantScope = !resolvedRachaId;
   const { jogadores, isLoading, isError, error } = useJogadores(resolvedRachaId);
 
   const jogadoresFiltrados = useMemo(() => {
@@ -98,6 +98,13 @@ export default function RankingAssiduidade() {
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 max-w-4xl mx-auto">
+        {missingTenantScope && (
+          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+            Não foi possível identificar o racha ativo. Acesse o Hub e selecione um racha para ver o
+            ranking de assiduidade.
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold text-cyan-300">Ranking de Assiduidade</h1>
           <select

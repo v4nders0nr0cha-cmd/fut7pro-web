@@ -30,7 +30,8 @@ export default function LogoDoRachaPage() {
   const { about, update, isLoading } = useAboutAdmin();
   const { me, isLoading: isLoadingMe } = useMe();
   const { setTenantSlug } = useRacha();
-  const tenantSlug = me?.tenant?.tenantSlug || rachaConfig.slug || "";
+  const tenantSlug = me?.tenant?.tenantSlug || "";
+  const missingTenantScope = !tenantSlug;
   const membershipRole = (me?.membership?.role || "").toUpperCase();
   const presidenteEmail = about?.presidente?.email?.toLowerCase() || null;
   const userEmail = me?.user?.email?.toLowerCase() || null;
@@ -60,12 +61,13 @@ export default function LogoDoRachaPage() {
   const slugPreview = useMemo(() => slugify(nomeRacha.trim()), [nomeRacha]);
   const slugChanged = Boolean(slugPreview && tenantSlug && slugPreview !== tenantSlug);
   const currentLink = useMemo(() => {
-    const slug = tenantSlug || rachaConfig.slug;
-    return `${APP_PUBLIC_URL}/${slug}`;
+    if (!tenantSlug) return null;
+    return `${APP_PUBLIC_URL}/${encodeURIComponent(tenantSlug)}`;
   }, [tenantSlug]);
   const nextLink = useMemo(() => {
-    const slug = slugPreview || tenantSlug || rachaConfig.slug;
-    return `${APP_PUBLIC_URL}/${slug}`;
+    const slug = slugPreview || tenantSlug;
+    if (!slug) return null;
+    return `${APP_PUBLIC_URL}/${encodeURIComponent(slug)}`;
   }, [slugPreview, tenantSlug]);
 
   useEffect(() => {
@@ -129,13 +131,18 @@ export default function LogoDoRachaPage() {
   }
 
   async function handleSalvarIdentidade() {
+    if (!tenantSlug) {
+      toast.error("Selecione um racha ativo no Hub antes de salvar.");
+      return;
+    }
+
     const nomeDigitado = nomeRacha.trim();
     const shouldUpdateName = nomeDigitado.length > 0;
     if (slugChanged && slugStatus !== "available") {
       toast.error("Escolha um nome com link disponível antes de salvar.");
       return;
     }
-    if (slugChanged) {
+    if (slugChanged && nextLink) {
       const confirmed = window.confirm(
         `O link público do racha será alterado para:\n${nextLink}\n\nDeseja continuar?`
       );
@@ -246,17 +253,26 @@ export default function LogoDoRachaPage() {
             <div className="text-xs text-gray-400 mt-1">
               Se não quiser alterar o nome do racha, deixe o campo em branco e troque apenas a logo.
             </div>
-            <div className="text-xs text-gray-400 mt-2">
-              Link público atual: <span className="text-yellow-300">{currentLink}</span>
-            </div>
+            {currentLink && (
+              <div className="text-xs text-gray-400 mt-2">
+                Link público atual: <span className="text-yellow-300">{currentLink}</span>
+              </div>
+            )}
+            {missingTenantScope && (
+              <div className="mt-2 text-xs text-red-300">
+                Racha ativo não identificado. Volte ao Hub para selecionar um racha.
+              </div>
+            )}
             {slugChanged && (
               <div className="mt-2 rounded-md border border-yellow-700/60 bg-[#121212] px-3 py-2">
                 <div className="text-xs text-yellow-200">
                   Aviso: ao alterar o nome, o link público do racha também muda.
                 </div>
-                <div className="text-xs text-gray-300 mt-1">
-                  Novo link: <span className="text-yellow-300">{nextLink}</span>
-                </div>
+                {nextLink && (
+                  <div className="text-xs text-gray-300 mt-1">
+                    Novo link: <span className="text-yellow-300">{nextLink}</span>
+                  </div>
+                )}
                 {slugHint && (
                   <div
                     className={`text-xs mt-1 ${
@@ -320,7 +336,7 @@ export default function LogoDoRachaPage() {
             <button
               className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg shadow transition disabled:opacity-70"
               onClick={handleSalvarIdentidade}
-              disabled={disableSave}
+              disabled={disableSave || missingTenantScope}
             >
               {saving ? "Salvando..." : "Salvar identidade"}
             </button>
