@@ -55,6 +55,11 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
 
   const isStatusRoute = useMemo(() => pathname.startsWith("/admin/status-assinatura"), [pathname]);
+  const isBillingRoute = useMemo(
+    () => pathname.startsWith("/admin/financeiro/planos-limites"),
+    [pathname]
+  );
+  const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
   const readyTenant = access?.tenant?.slug && access.tenant.slug === tenantSlug;
 
   useEffect(() => {
@@ -87,10 +92,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   useEffect(() => {
     if (accessLoading || !access?.blocked) return;
-    if (!isStatusRoute) {
+    if (!isAllowedWhenBlocked) {
       router.replace("/admin/status-assinatura");
     }
-  }, [accessLoading, access?.blocked, isStatusRoute, router]);
+  }, [accessLoading, access?.blocked, isAllowedWhenBlocked, router]);
 
   useEffect(() => {
     if (accessLoading || !readyTenant || perfLoggedRef.current) return;
@@ -119,7 +124,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     return <PainelAdminBloqueado motivo={access.reason || ""} />;
   }
 
-  if (access?.blocked) {
+  if (access?.blocked && !isBillingRoute) {
     return <AdminLoading />;
   }
   if (!readyTenant) {

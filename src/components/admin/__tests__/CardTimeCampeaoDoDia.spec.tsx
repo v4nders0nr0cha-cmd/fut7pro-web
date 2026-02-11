@@ -37,10 +37,15 @@ describe("CardTimeCampeaoDoDia", () => {
   it("mostra o campeao calculado a partir das partidas", () => {
     render(<CardTimeCampeaoDoDia matches={sampleMatches} editLink="/admin/partidas" />);
 
-    expect(screen.getByText(/Time Azul/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Editar Time Azul/i })).toHaveAttribute(
+    expect(screen.getByText(/Time Campeão do Dia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Campeão definido em/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Editar Time Campeão do Dia/i })).toHaveAttribute(
       "href",
       "/admin/partidas"
+    );
+    expect(screen.getByAltText(/Foto do Time Campeão do Dia/i)).toHaveAttribute(
+      "src",
+      "/images/Timecampeao.jpg"
     );
   });
 

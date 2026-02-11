@@ -6,8 +6,8 @@ import {
   jsonResponse,
   proxyBackend,
   requireUser,
-  resolveTenantSlug,
 } from "../../../../../_proxy/helpers";
+import { ensureScopedSubscription } from "../../_scope";
 
 export const runtime = "nodejs";
 export const revalidate = 0;
@@ -26,12 +26,16 @@ export async function POST(req: NextRequest, { params }: { params: { subscriptio
 
   const payload = await req.json().catch(() => ({}));
 
-  const tenantSlug = resolveTenantSlug(user);
+  const scopedSubscription = await ensureScopedSubscription(user, subscriptionId);
+  if ("error" in scopedSubscription) {
+    return jsonResponse({ error: scopedSubscription.error }, { status: scopedSubscription.status });
+  }
+
   const { response, body } = await proxyBackend(
     `${getApiBase()}/billing/subscription/${subscriptionId}/pix`,
     {
       method: "POST",
-      headers: buildHeaders(user, tenantSlug, { includeContentType: true }),
+      headers: buildHeaders(user, scopedSubscription.tenantSlug, { includeContentType: true }),
       body: JSON.stringify(payload),
     }
   );

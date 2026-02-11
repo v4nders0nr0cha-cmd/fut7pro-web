@@ -184,12 +184,14 @@ async function createSubscription(
 ) {
   const planKey = data.planKey?.trim();
   if (!planKey) return null;
+  const tenantSlug = data.rachaSlug?.trim();
 
   return fetch(resolvePath(baseUrl, "/billing/subscription"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
+      ...(tenantSlug ? { "x-tenant-slug": tenantSlug } : {}),
     },
     body: JSON.stringify({
       tenantId,

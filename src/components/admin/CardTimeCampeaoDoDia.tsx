@@ -16,8 +16,6 @@ import {
 import type { PublicMatch } from "@/types/partida";
 
 type Props = {
-  fotoUrl?: string;
-  nomeTime?: string;
   editLink?: string;
   matches?: PublicMatch[];
   confrontos?: ConfrontoV2[];
@@ -26,9 +24,9 @@ type Props = {
   isLoading?: boolean;
 };
 
+const DEFAULT_TIME_CAMPEAO_CARD_IMAGE = "/images/Timecampeao.jpg";
+
 export default function CardTimeCampeaoDoDia({
-  fotoUrl = "/images/times/time_padrao_01.png",
-  nomeTime = "Time Campeão do Dia",
   editLink = "/admin/partidas/time-campeao-do-dia",
   matches,
   confrontos,
@@ -74,8 +72,8 @@ export default function CardTimeCampeaoDoDia({
   );
 
   const loading = isLoading || (shouldFetchMatches && loadingMatches);
-  const foto = campeao?.time?.logoUrl || fotoUrl || "/images/torneios/torneio-matador.jpg";
-  const titulo = campeao?.time?.nome || nomeTime || "Time Campeão do Dia";
+  const foto = DEFAULT_TIME_CAMPEAO_CARD_IMAGE;
+  const titulo = "Time Campeão do Dia";
   const labelData =
     dataReferencia != null ? new Date(dataReferencia).toLocaleDateString("pt-BR") : undefined;
 

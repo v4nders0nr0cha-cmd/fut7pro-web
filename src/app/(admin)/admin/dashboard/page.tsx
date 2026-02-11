@@ -43,13 +43,6 @@ function formatMatchLabel(match: PublicMatch) {
   };
 }
 
-function pickWinner(match: PublicMatch) {
-  const scoreA = match.score?.teamA ?? match.scoreA ?? null;
-  const scoreB = match.score?.teamB ?? match.scoreB ?? null;
-  if (scoreA === null || scoreB === null || scoreA === scoreB) return null;
-  return scoreA > scoreB ? match.teamA : match.teamB;
-}
-
 function isSameMonth(date: Date, compare: Date) {
   return date.getFullYear() === compare.getFullYear() && date.getMonth() === compare.getMonth();
 }
@@ -79,12 +72,6 @@ export default function AdminDashboard() {
     slug,
     scope: "upcoming",
     limit: 5,
-    enabled: Boolean(slug),
-  });
-  const { matches: recentMatches } = usePublicMatches({
-    slug,
-    scope: "recent",
-    limit: 3,
     enabled: Boolean(slug),
   });
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
@@ -131,25 +118,6 @@ export default function AdminDashboard() {
     [upcomingMatches]
   );
 
-  const ultimoCampeao = useMemo(() => {
-    if (!recentMatches?.length) return null;
-    const finalizadas = [...recentMatches].filter((m) => {
-      const scoreA = m.score?.teamA ?? m.scoreA ?? null;
-      const scoreB = m.score?.teamB ?? m.scoreB ?? null;
-      return scoreA !== null && scoreB !== null;
-    });
-    if (!finalizadas.length) return null;
-    const ordered = finalizadas.sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
-    const vencedor = pickWinner(ordered[0]);
-    if (!vencedor) return null;
-    return {
-      nome: vencedor.name || "Time campeão do dia",
-      logo: vencedor.logoUrl || "/images/times/time_padrao_01.png",
-    };
-  }, [recentMatches]);
-
   const assiduos = useMemo(() => {
     if (!jogadores?.length) return [];
     return [...jogadores]
@@ -179,11 +147,7 @@ export default function AdminDashboard() {
             <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-600 to-yellow-300 text-black text-xs font-bold px-3 py-1 rounded-xl shadow">
               PÓS-JOGO
             </span>
-            <CardTimeCampeaoDoDia
-              fotoUrl={ultimoCampeao?.logo}
-              nomeTime={ultimoCampeao?.nome}
-              editLink="/admin/partidas/time-campeao-do-dia"
-            />
+            <CardTimeCampeaoDoDia editLink="/admin/partidas/time-campeao-do-dia" />
           </div>
 
           <div className="relative">
