@@ -7,10 +7,12 @@ import ToasterProvider from "@/components/ToasterProvider";
 import { authOptions } from "@/server/auth/admin-options";
 import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
+import {
+  ADMIN_ACTIVE_TENANT_COOKIE,
+  LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
+} from "@/lib/admin-tenant-cookie";
 
 const inter = Inter({ subsets: ["latin"] });
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
-
 export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
@@ -27,7 +29,9 @@ async function resolveAdminThemeKey() {
   try {
     const session = (await getServerSession(authOptions as any)) as AdminSession;
     const user = session?.user;
-    const cookieSlug = cookies().get(ACTIVE_TENANT_COOKIE)?.value;
+    const cookieSlug =
+      cookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
+      cookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
     const tenantSlug = cookieSlug || user?.tenantSlug || null;
     const tenantId = user?.tenantId;
 

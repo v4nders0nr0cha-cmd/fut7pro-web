@@ -61,7 +61,11 @@ export function RachaProvider({
   }, []);
 
   const setTenantSlug = useCallback((slug: string) => {
-    setTenantSlugState(slug);
+    const nextSlug = slug.trim();
+    setTenantSlugState(nextSlug);
+    if (nextSlug) {
+      setStoredTenantSlug(nextSlug);
+    }
   }, []);
 
   const clearRachaId = useCallback(() => {

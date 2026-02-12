@@ -3,8 +3,10 @@ import { getToken } from "next-auth/jwt";
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
-
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+import {
+  ADMIN_ACTIVE_TENANT_COOKIE,
+  LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
+} from "@/lib/admin-tenant-cookie";
 const TENANT_SCOPE_QUERY_KEYS = new Set(["tenantid", "tenantslug", "rachaid", "slug"]);
 const BLOCKED_QUERY_KEYS = new Set([
   "include",
@@ -124,7 +126,9 @@ export async function requireSuperAdminUser(): Promise<UserLike | null> {
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
-  const cookieSlug = nextCookies().get(ACTIVE_TENANT_COOKIE)?.value?.trim();
+  const cookieSlug =
+    nextCookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
+    nextCookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim();
   const sessionSlug = String(user.tenantSlug || (user as any).slug || "").trim();
   const requestedSlug = String(slug || "").trim();
   const tenantId = String(user.tenantId || "").trim();

@@ -196,6 +196,10 @@ export default function AdminHubClient() {
         }
         window.sessionStorage.setItem(PERF_START_KEY, String(performance.now()));
       }
+      if (typeof window !== "undefined") {
+        window.location.replace(data.redirectTo);
+        return;
+      }
       router.replace(data.redirectTo);
     }
   }, [data?.redirectTo, items, perfEnabled, router, shouldAutoRedirect]);
@@ -251,11 +255,15 @@ export default function AdminHubClient() {
       window.sessionStorage.setItem(PERF_START_KEY, String(performance.now()));
     }
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
       const res = await fetch("/api/admin/hub/select", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ slug: racha.tenantSlug }),
+        signal: controller.signal,
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -264,10 +272,15 @@ export default function AdminHubClient() {
       trackLastTenantAccess(racha.tenantSlug);
       const redirectTo =
         typeof body?.redirectTo === "string" ? body.redirectTo : "/admin/dashboard";
+      if (typeof window !== "undefined") {
+        window.location.assign(redirectTo);
+        return;
+      }
       router.replace(redirectTo);
     } catch {
-      setSelectError("Nao foi possivel acessar o painel agora.");
+      setSelectError("Não foi possível acessar o painel agora.");
     } finally {
+      window.clearTimeout(timeout);
       setSelectingSlug(null);
     }
   };
@@ -333,7 +346,7 @@ export default function AdminHubClient() {
 
         {error ? (
           <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Nao foi possivel carregar seus rachas. Tente novamente em instantes.
+            Não foi possível carregar seus rachas. Tente novamente em instantes.
           </div>
         ) : null}
 

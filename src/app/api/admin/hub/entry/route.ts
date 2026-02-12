@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildHeaders, proxyBackend, requireUser } from "../../../_proxy/helpers";
 import { getApiBase } from "@/lib/get-api-base";
+import {
+  ADMIN_ACTIVE_TENANT_COOKIE,
+  LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
+} from "@/lib/admin-tenant-cookie";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
 
 type HubItem = {
   tenantId: string;
@@ -85,8 +87,15 @@ export async function GET(_req: NextRequest) {
     blocked,
     timing,
   });
-  res.cookies.set(ACTIVE_TENANT_COOKIE, singleSlug, {
+  res.cookies.set(ADMIN_ACTIVE_TENANT_COOKIE, singleSlug, {
     path: "/",
+    sameSite: "lax",
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+  });
+  res.cookies.set(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE, "", {
+    path: "/",
+    maxAge: 0,
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

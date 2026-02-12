@@ -333,8 +333,26 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 - `pnpm lint` ✅
 - `pnpm typecheck` ✅
-- `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list` ✅ **PASS** (1 passed, sem `skip`, com credencial admin real).
-- Resultado E2E atual: ✅ login autenticou, tenant selecionado e navegação admin principal concluída sem rota quebrada.
+- `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list` ⚠️ **PARCIAL** no cenário multi-racha real (mesmo usuário com 2 rachas: 1 ativo + 1 bloqueado):
+  - ✅ `valida bloqueio por inadimplência com isolamento do tenant` (passou).
+  - ❌ `navega pelos principais itens do admin sem rota quebrada` (falhou).
+  - Falha observada no deploy atual: estado `Carregando painel...` permanece visível por tempo acima do limite do smoke (incluindo tentativa de reload), impedindo abertura consistente do shell admin.
+  - Evidência Playwright: `test-results/admin-admin-smoke-navigati-48bb7--do-admin-sem-rota-quebrada-chromium/error-context.md`.
+- Resultado E2E atual (ambiente real): isolamento de bloqueio confirmado, porém fluxo ativo ainda com intermitência/timeout no carregamento do painel para usuário multi-racha.
+
+## Reteste Multi-Racha (2026-02-12)
+
+- Conta de teste: mesmo usuário administrador em 2 rachas (um ativo e um bloqueado).
+- Comandos executados:
+  - `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list`
+  - execução com `E2E_ACTIVE_TENANT_SLUG` e `E2E_BLOCKED_TENANT_SLUG` explícitos.
+- Achado principal:
+  - O cenário bloqueado está correto (redireciona e mantém isolamento por tenant).
+  - O cenário ativo ainda apresenta travamento/intermitência no carregamento do painel em ambiente real.
+- Correções locais já aplicadas para hardening desse fluxo (pendentes de publicação para validação final em produção):
+  - isolamento de cookie admin dedicado (`fut7pro_admin_active_tenant`);
+  - fail-safe visual no shell admin para evitar loading infinito;
+  - timeout defensivo no `useAdminAccess` para evitar request pendurada sem fallback.
 
 ## Observações de Ambiente (Render/Vercel)
 

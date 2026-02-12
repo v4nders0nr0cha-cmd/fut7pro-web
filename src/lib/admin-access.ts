@@ -3,8 +3,10 @@ import { cookies } from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { getApiBase } from "@/lib/get-api-base";
 import type { MeResponse } from "@/types/me";
-
-const ACTIVE_TENANT_COOKIE = "fut7pro_active_tenant";
+import {
+  ADMIN_ACTIVE_TENANT_COOKIE,
+  LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
+} from "@/lib/admin-tenant-cookie";
 
 type AdminSessionUser = {
   accessToken?: string | null;
@@ -23,7 +25,9 @@ export async function fetchAdminMe(): Promise<MeResponse | null> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${user.accessToken}`,
   };
-  const cookieSlug = cookies().get(ACTIVE_TENANT_COOKIE)?.value;
+  const cookieSlug =
+    cookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
+    cookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
   const resolvedSlug = cookieSlug || user.tenantSlug || null;
   if (resolvedSlug) {
     headers["x-tenant-slug"] = resolvedSlug;

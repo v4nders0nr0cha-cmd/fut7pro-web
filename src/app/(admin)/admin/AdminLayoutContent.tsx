@@ -11,6 +11,7 @@ import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
+import { signOut } from "next-auth/react";
 
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
@@ -48,6 +49,7 @@ function AdminLoading() {
 
 export default function AdminLayoutContent({ children }: { children: ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [tenantResolutionError, setTenantResolutionError] = useState(false);
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const { tenantSlug, rachaId, setTenantSlug, setRachaId } = useRacha();
@@ -59,8 +61,9 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     () => pathname.startsWith("/admin/financeiro/planos-limites"),
     [pathname]
   );
+  const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);
   const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
-  const readyTenant = access?.tenant?.slug && access.tenant.slug === tenantSlug;
+  const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -76,6 +79,18 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       trackLastTenantAccess(nextSlug);
     }
   }, [accessLoading, access, tenantSlug, rachaId, setTenantSlug, setRachaId]);
+
+  useEffect(() => {
+    if (accessLoading || accessError || access?.blocked || hasResolvedTenant || isHubRoute) {
+      setTenantResolutionError(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setTenantResolutionError(true);
+    }, 12000);
+    return () => window.clearTimeout(timer);
+  }, [accessLoading, accessError, access?.blocked, hasResolvedTenant, isHubRoute]);
 
   useEffect(() => {
     if (accessLoading || !accessError) return;
@@ -98,7 +113,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   }, [accessLoading, access?.blocked, isAllowedWhenBlocked, router]);
 
   useEffect(() => {
-    if (accessLoading || !readyTenant || perfLoggedRef.current) return;
+    if (accessLoading || !hasResolvedTenant || perfLoggedRef.current) return;
     if (typeof window === "undefined") return;
     const perfEnabled = window.sessionStorage.getItem(PERF_FLAG_KEY) === "1";
     const startRaw = window.sessionStorage.getItem(PERF_START_KEY);
@@ -110,14 +125,40 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       window.sessionStorage.removeItem(PERF_START_KEY);
     }
     perfLoggedRef.current = true;
-  }, [accessLoading, readyTenant]);
+  }, [accessLoading, hasResolvedTenant]);
 
   if (accessLoading) {
     return <AdminLoading />;
   }
 
   if (accessError) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
+        <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
+          <h1 className="text-xl font-bold text-red-200 mb-2">Falha ao carregar o painel</h1>
+          <p className="text-sm text-zinc-200 mb-6">
+            Não foi possível validar o racha ativo agora. Volte para selecionar seu racha ou saia da
+            conta.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-yellow-400 text-black font-semibold px-4 py-2"
+              onClick={() => router.replace("/admin/selecionar-racha")}
+            >
+              Voltar para selecionar racha
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 font-semibold px-4 py-2"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            >
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (access?.blocked && isStatusRoute) {
@@ -127,7 +168,39 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   if (access?.blocked && !isBillingRoute) {
     return <AdminLoading />;
   }
-  if (!readyTenant) {
+
+  if (tenantResolutionError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
+        <div className="max-w-md w-full rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
+          <h1 className="text-xl font-bold text-yellow-300 mb-2">
+            Não foi possível abrir este racha
+          </h1>
+          <p className="text-sm text-zinc-200 mb-6">
+            O painel ficou carregando além do esperado. Tente selecionar o racha novamente.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-yellow-400 text-black font-semibold px-4 py-2"
+              onClick={() => router.replace("/admin/selecionar-racha")}
+            >
+              Voltar para selecionar racha
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 font-semibold px-4 py-2"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            >
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasResolvedTenant) {
     return <AdminLoading />;
   }
 

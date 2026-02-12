@@ -87,9 +87,13 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const canSwitchRacha = Array.isArray(hubData) && hubData.length > 1;
   const isLoggedIn = !!session?.user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const displayName = me?.athlete?.firstName || session?.user?.name || "Admin";
+  const displayName =
+    session?.user?.name?.trim() ||
+    me?.athlete?.firstName?.trim() ||
+    session?.user?.email?.split("@")[0] ||
+    "Admin";
   const displayAvatar = getAvatarSrc(
-    me?.athlete?.avatarUrl || session?.user?.image,
+    session?.user?.image || me?.user?.avatarUrl || me?.athlete?.avatarUrl,
     DEFAULT_ADMIN_AVATAR
   );
   const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
@@ -218,7 +222,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                 )}
                 {canSwitchRacha && (
                   <Link
-                    href="/perfil#meus-rachas"
+                    href="/admin/selecionar-racha"
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                     onClick={() => setDropdownOpen(false)}
                   >
