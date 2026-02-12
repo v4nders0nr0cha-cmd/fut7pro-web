@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
+import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
@@ -62,8 +63,31 @@ function toOptionalInt(value: string) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function toOptionalString(value?: string | null) {
+  const trimmed = String(value || "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
+function pickNumber(...values: Array<number | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
 function normalizePositionLabel(value?: string | null): Posicao {
-  const key = String(value || "").toLowerCase();
+  const key = String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  if (!key) return "";
+  if (key.startsWith("gol")) return "Goleiro";
+  if (key.startsWith("zag") || key.startsWith("def")) return "Zagueiro";
+  if (key.startsWith("mei")) return "Meia";
+  if (key.startsWith("ata")) return "Atacante";
   return POSITION_LABELS[key] ?? "";
 }
 
@@ -118,6 +142,8 @@ export default function GlobalPerfilClient() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [currentSlug, setCurrentSlug] = useState<string | null>(null);
+  const [hasEditedForm, setHasEditedForm] = useState(false);
+  const [hydratedUserId, setHydratedUserId] = useState<string | null>(null);
   const [securityLoading, setSecurityLoading] = useState(false);
   const [securityError, setSecurityError] = useState("");
   const [securitySuccess, setSecuritySuccess] = useState("");
@@ -125,21 +151,40 @@ export default function GlobalPerfilClient() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const { me } = useMe({
+    enabled: true,
+    tenantSlug: currentSlug || undefined,
+  });
 
   useEffect(() => {
     if (!profile?.user) return;
+
+    const isSameUser = hydratedUserId === profile.user.id;
+    if (isSameUser && hasEditedForm) {
+      return;
+    }
+
+    const fallbackAthlete = me?.athlete;
+    const resolvedBirthDay = pickNumber(profile.user.birthDay, fallbackAthlete?.birthDay);
+    const resolvedBirthMonth = pickNumber(profile.user.birthMonth, fallbackAthlete?.birthMonth);
+    const resolvedBirthYear = pickNumber(profile.user.birthYear, fallbackAthlete?.birthYear);
+
     setForm({
-      firstName: profile.user.name || "",
-      nickname: profile.user.nickname || "",
-      position: normalizePositionLabel(profile.user.position),
-      positionSecondary: normalizePositionLabel(profile.user.positionSecondary),
-      birthDay: profile.user.birthDay ? String(profile.user.birthDay) : "",
-      birthMonth: profile.user.birthMonth ? String(profile.user.birthMonth) : "",
-      birthYear: profile.user.birthYear ? String(profile.user.birthYear) : "",
+      firstName: profile.user.name || fallbackAthlete?.firstName || "",
+      nickname: profile.user.nickname || fallbackAthlete?.nickname || "",
+      position: normalizePositionLabel(profile.user.position || fallbackAthlete?.position),
+      positionSecondary: normalizePositionLabel(
+        profile.user.positionSecondary || fallbackAthlete?.positionSecondary
+      ),
+      birthDay: resolvedBirthDay ? String(resolvedBirthDay) : "",
+      birthMonth: resolvedBirthMonth ? String(resolvedBirthMonth) : "",
+      birthYear: resolvedBirthYear ? String(resolvedBirthYear) : "",
     });
-    setAvatarPreview(profile.user.avatarUrl || DEFAULT_AVATAR);
+    setAvatarPreview(profile.user.avatarUrl || fallbackAthlete?.avatarUrl || DEFAULT_AVATAR);
     setAvatarFile(null);
-  }, [profile?.user]);
+    setHydratedUserId(profile.user.id);
+    setHasEditedForm(false);
+  }, [profile?.user, me?.athlete, hasEditedForm, hydratedUserId]);
 
   useEffect(() => {
     const target = searchParams?.get("tab");
@@ -180,6 +225,11 @@ export default function GlobalPerfilClient() {
   const totalTitulos = profile?.totalTitulos ?? 0;
   const membershipList = profile?.memberships ?? [];
   const user = profile?.user;
+
+  function updateFormField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
+    setHasEditedForm(true);
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
 
   const providerLabel = useMemo(() => {
     const raw = String(user?.authProvider || "").toLowerCase();
@@ -257,11 +307,15 @@ export default function GlobalPerfilClient() {
       setFormError("Apelido com maximo de 10 letras.");
       return;
     }
-    if (!form.position) {
+    const resolvedPosition =
+      form.position ||
+      normalizePositionLabel(toOptionalString(user.position)) ||
+      normalizePositionLabel(toOptionalString(me?.athlete?.position));
+    if (!resolvedPosition) {
       setFormError("Selecione a posicao principal.");
       return;
     }
-    if (form.positionSecondary && form.positionSecondary === form.position) {
+    if (form.positionSecondary && form.positionSecondary === resolvedPosition) {
       setFormError("Posicao secundaria nao pode ser igual a principal.");
       return;
     }
@@ -297,13 +351,14 @@ export default function GlobalPerfilClient() {
         firstName: trimmedName,
         nickname: form.nickname.trim() || null,
         avatarUrl,
-        position: form.position || undefined,
+        position: resolvedPosition,
         positionSecondary: form.positionSecondary || null,
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
       });
       setSuccess(true);
+      setHasEditedForm(false);
       setTimeout(() => setSuccess(false), 1600);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar perfil.");
@@ -539,9 +594,7 @@ export default function GlobalPerfilClient() {
                 <input
                   type="text"
                   value={form.firstName}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, firstName: event.target.value }))
-                  }
+                  onChange={(event) => updateFormField("firstName", event.target.value)}
                   maxLength={10}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 />
@@ -551,9 +604,7 @@ export default function GlobalPerfilClient() {
                 <input
                   type="text"
                   value={form.nickname}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, nickname: event.target.value }))
-                  }
+                  onChange={(event) => updateFormField("nickname", event.target.value)}
                   maxLength={10}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 />
@@ -562,9 +613,7 @@ export default function GlobalPerfilClient() {
                 Posicao principal *
                 <select
                   value={form.position}
-                  onChange={(event) =>
-                    setForm((prev) => ({ ...prev, position: event.target.value as Posicao }))
-                  }
+                  onChange={(event) => updateFormField("position", event.target.value as Posicao)}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 >
                   <option value="">Selecione</option>
@@ -580,10 +629,7 @@ export default function GlobalPerfilClient() {
                 <select
                   value={form.positionSecondary}
                   onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      positionSecondary: event.target.value as Posicao,
-                    }))
+                    updateFormField("positionSecondary", event.target.value as Posicao)
                   }
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 >
@@ -601,9 +647,7 @@ export default function GlobalPerfilClient() {
                   <input
                     type="number"
                     value={form.birthDay}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, birthDay: event.target.value }))
-                    }
+                    onChange={(event) => updateFormField("birthDay", event.target.value)}
                     className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                   />
                 </label>
@@ -612,9 +656,7 @@ export default function GlobalPerfilClient() {
                   <input
                     type="number"
                     value={form.birthMonth}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, birthMonth: event.target.value }))
-                    }
+                    onChange={(event) => updateFormField("birthMonth", event.target.value)}
                     className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                   />
                 </label>
@@ -623,9 +665,7 @@ export default function GlobalPerfilClient() {
                   <input
                     type="number"
                     value={form.birthYear}
-                    onChange={(event) =>
-                      setForm((prev) => ({ ...prev, birthYear: event.target.value }))
-                    }
+                    onChange={(event) => updateFormField("birthYear", event.target.value)}
                     className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                   />
                 </label>
