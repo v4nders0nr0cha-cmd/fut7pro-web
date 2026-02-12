@@ -142,16 +142,16 @@ async function createAdmin(baseUrl: string, data: RegisterPayload) {
 async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken?: string | null) {
   if (!accessToken || !data.rachaSlug) return;
 
-  // Guardar logo/avatar apenas se forem leves (limitado a ~1MB em base64)
+  // Guardar branding mesmo quando apenas um dos arquivos estiver acima do limite.
+  // Se um campo estourar o tamanho, ele é descartado isoladamente sem abortar todo o payload.
   const logoTooLarge =
     data.rachaLogoBase64 && data.rachaLogoBase64.length > MAX_INLINE_IMAGE_LENGTH;
   const avatarTooLarge =
     data.adminAvatarBase64 && data.adminAvatarBase64.length > MAX_INLINE_IMAGE_LENGTH;
-  if (logoTooLarge || avatarTooLarge) return;
 
   const aboutPayload = {
     nome: data.rachaNome?.trim(),
-    logoUrl: data.rachaLogoBase64,
+    logoUrl: logoTooLarge ? undefined : data.rachaLogoBase64,
     localizacao: {
       cidade: data.cidadeNome?.trim(),
       estado: data.estadoUf?.trim()?.toUpperCase(),
@@ -160,7 +160,7 @@ async function primeBranding(baseUrl: string, data: RegisterPayload, accessToken
       nome: data.adminNome.trim(),
       apelido: data.adminApelido?.trim() || null,
       posicao: data.adminPosicao,
-      avatarUrl: data.adminAvatarBase64 || null,
+      avatarUrl: avatarTooLarge ? null : data.adminAvatarBase64 || null,
       email: data.adminEmail.trim().toLowerCase(),
     },
   };

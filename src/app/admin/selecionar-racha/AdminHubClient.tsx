@@ -23,6 +23,22 @@ type HubRacha = {
   } | null;
 };
 
+function getTenantInitials(name: string) {
+  const normalized = String(name || "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+  return normalized || "R";
+}
+
+function normalizeLogoUrl(value?: string | null) {
+  const trimmed = String(value || "").trim();
+  return trimmed.length ? trimmed : null;
+}
+
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
 const PERF_START_KEY = "fut7pro_admin_perf_start";
@@ -148,6 +164,7 @@ export default function AdminHubClient() {
   const [selectingSlug, setSelectingSlug] = useState<string | null>(null);
   const [selectError, setSelectError] = useState("");
   const autoRedirectedRef = useRef(false);
+  const [brokenLogos, setBrokenLogos] = useState<Record<string, boolean>>({});
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
   const count = typeof data?.count === "number" ? data.count : items.length;
@@ -397,6 +414,9 @@ export default function AdminHubClient() {
               const roleBadge = ROLE_BADGES[roleKey] || ROLE_BADGES.ADMIN;
               const blocked = racha.subscription?.blocked || statusKey === "BLOQUEADO";
               const isSelecting = selectingSlug === racha.tenantSlug;
+              const hasBrokenLogo = Boolean(brokenLogos[racha.tenantId]);
+              const logoUrl = hasBrokenLogo ? null : normalizeLogoUrl(racha.logoUrl);
+              const initials = getTenantInitials(racha.tenantName);
 
               return (
                 <div
@@ -406,11 +426,27 @@ export default function AdminHubClient() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <img
-                        src={racha.logoUrl || "/images/logos/logo_fut7pro.png"}
-                        alt={racha.tenantName}
-                        className="h-12 w-12 rounded-xl object-cover"
-                      />
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={`Logo do ${racha.tenantName}`}
+                          className="h-12 w-12 rounded-xl object-cover"
+                          onError={() =>
+                            setBrokenLogos((prev) => ({
+                              ...prev,
+                              [racha.tenantId]: true,
+                            }))
+                          }
+                        />
+                      ) : (
+                        <div
+                          aria-label={`Sem logo cadastrada para ${racha.tenantName}`}
+                          title="Sem logo cadastrada para este racha"
+                          className="h-12 w-12 rounded-xl border border-white/15 bg-white/10 text-brand-soft font-bold text-sm flex items-center justify-center"
+                        >
+                          {initials}
+                        </div>
+                      )}
                       <div>
                         <h3 className="text-base font-semibold text-white">{racha.tenantName}</h3>
                         <p className="text-xs text-gray-400">@{racha.tenantSlug}</p>
