@@ -63,6 +63,29 @@ function calcDaysRemaining(target?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function extractApiError(error: unknown, fallback: string) {
+  if (!(error instanceof Error)) return fallback;
+  const raw = error.message?.trim();
+  if (!raw) return fallback;
+
+  try {
+    const parsed = JSON.parse(raw) as { message?: string | string[]; error?: string };
+    if (Array.isArray(parsed.message) && parsed.message.length > 0) {
+      return parsed.message.join(" ");
+    }
+    if (typeof parsed.message === "string" && parsed.message.trim()) {
+      return parsed.message;
+    }
+    if (typeof parsed.error === "string" && parsed.error.trim()) {
+      return parsed.error;
+    }
+  } catch {
+    // message ja esta em texto simples
+  }
+
+  return raw || fallback;
+}
+
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -187,7 +210,7 @@ export default function PlanosLimitesPage() {
       setActionError("Nao foi possivel gerar o link de pagamento. Tente novamente.");
     } catch (err) {
       console.error(err);
-      setActionError("Erro ao atualizar pagamento. Tente novamente.");
+      setActionError(extractApiError(err, "Erro ao atualizar pagamento. Tente novamente."));
     } finally {
       setActionLoading(null);
     }
@@ -210,7 +233,7 @@ export default function PlanosLimitesPage() {
       setShowPixModal(true);
     } catch (err) {
       console.error(err);
-      setActionError("Erro ao gerar PIX. Tente novamente.");
+      setActionError(extractApiError(err, "Erro ao gerar PIX. Tente novamente."));
     } finally {
       setActionLoading(null);
     }
@@ -258,9 +281,7 @@ export default function PlanosLimitesPage() {
       setSelectedPlan(null);
     } catch (err) {
       console.error(err);
-      setActionError(
-        err instanceof Error ? err.message : "Nao foi possivel trocar o plano. Tente novamente."
-      );
+      setActionError(extractApiError(err, "Nao foi possivel trocar o plano. Tente novamente."));
     } finally {
       setActionLoading(null);
     }
