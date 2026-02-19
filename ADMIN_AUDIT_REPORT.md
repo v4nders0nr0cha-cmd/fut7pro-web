@@ -1,6 +1,6 @@
 # ADMIN AUDIT REPORT
 
-Data: 2026-02-10  
+Data: 2026-02-18  
 Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo painel `/admin`.
 
 ## Resumo Executivo
@@ -14,6 +14,104 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - Foram removidos `console.log` de hooks usados pelo admin e eliminados geradores de ID com `Math.random` em componentes do fluxo admin.
 - Foi adicionado smoke test E2E para navegação principal do admin.
 - O relatório está organizado por etapas de execução para acompanhamento incremental até o aceite final.
+
+## Reauditoria Pós-Incidente (2026-02-18)
+
+### Resumo da Reabertura
+
+- A auditoria anterior foi **reaberta** após incidente em produção: racha bloqueado foi liberado sem confirmação real de pagamento.
+- Causa raiz confirmada no backend: no fluxo de checkout recorrente, o método de ativação alterava estado da assinatura antes da confirmação do provedor.
+- Foi aplicado hotfix server-side para impedir desbloqueio por clique e exigir confirmação do Mercado Pago para liberar acesso.
+- Foi identificado também problema operacional no ambiente Render: webhook do Mercado Pago com assinatura inválida (`invalid signature`), exigindo ajuste de variável no ambiente.
+
+### Novos Achados Críticos (Reauditoria)
+
+#### 10) Desbloqueio indevido sem pagamento confirmado (BYPASS de inadimplência)
+
+- Severidade: **Crítico**
+- Repositório/arquivo:
+  - `fut7pro-backend/src/billing/billing.service.ts`
+- Problema:
+  - O fluxo `activateSubscription` promovia assinatura para estado liberado durante a geração do checkout, sem aguardar confirmação real do pagamento.
+  - Resultado: racha inadimplente podia voltar ao painel apenas clicando em "Continuar no Mercado Pago".
+- Correção aplicada:
+  - Removida alteração de `status` no `activateSubscription`; o fluxo agora apenas inicia checkout e grava identificadores necessários.
+  - Desbloqueio permanece condicionado à confirmação real (webhook/status reconciliado).
+  - Referências:
+    - `fut7pro-backend/src/billing/billing.service.ts:329`
+    - `fut7pro-backend/src/billing/billing.service.ts:337`
+- Como testar:
+  - Com assinatura `paused`/`past_due`, clicar em checkout recorrente e **não concluir pagamento**.
+  - Validar que `/admin/access` continua bloqueando o tenant.
+  - Validar que painel continua em tela de bloqueio até confirmação real.
+
+#### 11) Webhook Mercado Pago inválido em produção (assinatura rejeitada)
+
+- Severidade: **Crítico (Operacional)**
+- Evidência:
+  - Logs Render com `UnauthorizedException: invalid signature` em `/billing/mp/webhook`.
+- Problema:
+  - Mesmo com código correto, eventos do MP não são processados se a assinatura do webhook falhar, quebrando automação de reconciliação.
+- Correção aplicada:
+  - Não é correção de código; depende de configuração do ambiente.
+- Ação obrigatória:
+  - Ajustar `MP_WEBHOOK_SECRET` no Render para o mesmo segredo configurado no painel Mercado Pago para o endpoint:
+    - `https://api.fut7pro.com.br/billing/mp/webhook`
+- Como testar:
+  - Disparar evento real/sandbox do MP e validar ausência de `invalid signature` nos logs.
+  - Confirmar atualização de status de assinatura/fatura após pagamento aprovado.
+
+### Novos Achados Altos (Reauditoria)
+
+#### 12) Link "Abrir link do PIX" apontando para cobrança indisponível
+
+- Severidade: **Alto**
+- Repositório/arquivo:
+  - `fut7pro-backend/src/billing/billing.service.ts`
+- Problema:
+  - Reuso cego de fatura pendente e idempotência determinística podiam reaproveitar cobrança inválida/expirada.
+- Correção aplicada:
+  - Validação de status do pagamento existente no MP antes de reutilizar cobrança.
+  - Geração de idempotency key por `randomUUID()` para evitar reciclagem indevida de transação.
+  - Referências:
+    - `fut7pro-backend/src/billing/billing.service.ts:393`
+    - `fut7pro-backend/src/billing/billing.service.ts:487`
+- Como testar:
+  - Gerar PIX, invalidar/expirar cobrança e gerar novamente.
+  - Validar que novo QR/link é válido (não "Pagamento indisponível").
+
+#### 13) Falha no checkout recorrente para assinatura em estado `paused`
+
+- Severidade: **Alto**
+- Repositório/arquivo:
+  - `fut7pro-backend/src/billing/billing.service.ts`
+- Problema:
+  - Fluxo recorrente rejeitava parte dos estados bloqueados legítimos para regularização.
+- Correção aplicada:
+  - Inclusão de `paused` como estado elegível para iniciar checkout.
+  - Fallback de URL de checkout (`init_point`/`sandbox_init_point`) com validação explícita.
+  - Referências:
+    - `fut7pro-backend/src/billing/billing.service.ts:274`
+    - `fut7pro-backend/src/billing/billing.service.ts:324`
+- Como testar:
+  - Com assinatura `paused`, abrir modal de pagamento e clicar em "Continuar no Mercado Pago".
+  - Validar redirecionamento para checkout sem liberar o painel antes do pagamento.
+
+### Teste de Regressão Adicionado (Backend)
+
+- Arquivo:
+  - `fut7pro-backend/src/billing/__tests__/billing.service.spec.ts`
+- Cobertura:
+  - Garante que `activateSubscription` não altera `status` para liberar acesso ao iniciar checkout.
+- Resultado local:
+  - `pnpm exec jest src/billing/__tests__/billing.service.spec.ts --runInBand` ✅
+
+### Estado Atual de Aceite (após reauditoria)
+
+- `Zero bypass de bloqueio por clique`: **Corrigido em código** (pendente deploy).
+- `Liberação apenas com confirmação do pagamento`: **Corrigido em código** (pendente deploy).
+- `Webhook assinado e processando`: **Pendente ação operacional** (ajustar `MP_WEBHOOK_SECRET` no Render).
+- `Conclusão final do aceite do admin`: **Reaberto até reteste em produção após deploy + ajuste do webhook**.
 
 ## Plano por Etapas (Execução)
 
@@ -339,6 +437,11 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
   - Falha observada no deploy atual: estado `Carregando painel...` permanece visível por tempo acima do limite do smoke (incluindo tentativa de reload), impedindo abertura consistente do shell admin.
   - Evidência Playwright: `test-results/admin-admin-smoke-navigati-48bb7--do-admin-sem-rota-quebrada-chromium/error-context.md`.
 - Resultado E2E atual (ambiente real): isolamento de bloqueio confirmado, porém fluxo ativo ainda com intermitência/timeout no carregamento do painel para usuário multi-racha.
+- Reauditoria de billing (backend) em 2026-02-18:
+  - `pnpm lint` (`fut7pro-backend`) ✅
+  - `pnpm typecheck` (`fut7pro-backend`) ✅
+  - `pnpm exec jest src/billing/__tests__/billing.service.spec.ts --runInBand` (`fut7pro-backend`) ✅
+  - `pnpm test -- --runInBand test/app.e2e-spec.ts` (`fut7pro-backend`) ✅
 
 ## Reteste Multi-Racha (2026-02-12)
 
@@ -360,3 +463,6 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - Para manter o smoke E2E executável com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
   - `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`, ou
   - `TEST_EMAIL` e `TEST_PASSWORD` (quando esses valores forem credenciais reais do ambiente alvo).
+- Requisito operacional adicional identificado na reauditoria:
+  - `MP_WEBHOOK_SECRET` no Render deve corresponder exatamente ao segredo configurado no webhook do Mercado Pago.
+  - Sem esse ajuste, o backend registra `invalid signature` em `/billing/mp/webhook` e a reconciliação automática pode falhar.
