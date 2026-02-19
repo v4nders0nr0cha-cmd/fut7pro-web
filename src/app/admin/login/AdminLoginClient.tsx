@@ -33,6 +33,7 @@ export default function AdminLoginClient() {
   const [verifiedMessage, setVerifiedMessage] = useState("");
   const [blocked, setBlocked] = useState(false);
   const [notVerified, setNotVerified] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const router = useRouter();
@@ -56,6 +57,10 @@ export default function AdminLoginClient() {
       setVerifiedMessage("E-mail confirmado! Agora entre para acessar seu painel.");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -249,11 +254,11 @@ export default function AdminLoginClient() {
               </label>
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={!isHydrated || isSubmitting}
                 data-testid="admin-login-submit"
                 className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isSubmitting ? "Entrando..." : "Entrar no painel"}
+                {!isHydrated ? "Carregando..." : isSubmitting ? "Entrando..." : "Entrar no painel"}
               </button>
             </form>
 

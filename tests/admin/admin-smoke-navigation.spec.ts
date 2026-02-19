@@ -97,14 +97,22 @@ async function selectTenantFromHub(
 async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResult> {
   const { email, password, expectedAccess, targetTenantSlug } = options;
   await page.goto("/admin/login", { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.locator('[data-testid="admin-login-email"], input[type="email"]').first().fill(email);
-  await page
-    .locator('[data-testid="admin-login-password"], input[type="password"]')
-    .first()
-    .fill(password);
+
   const submit = page.locator(
     '[data-testid="admin-login-submit"], button:has-text("Entrar no painel")'
   );
+  await expect(submit.first()).toBeEnabled({ timeout: 30000 });
+
+  const emailInput = page.locator('[data-testid="admin-login-email"], input[type="email"]').first();
+  const passwordInput = page
+    .locator('[data-testid="admin-login-password"], input[type="password"]')
+    .first();
+
+  await emailInput.fill(email);
+  await passwordInput.fill(password);
+  await expect(emailInput).toHaveValue(email);
+  await expect(passwordInput).toHaveValue(password);
+
   await submit.first().click();
 
   const loginState = await Promise.race([

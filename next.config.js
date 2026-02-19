@@ -14,13 +14,16 @@ try {
 }
 
 // CSP enxuta e compatível (sem 'unsafe-eval' em prod)
+const scriptSrc = isProd
+  ? "'self' 'unsafe-inline' https://www.googletagmanager.com"
+  : "'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com";
 const cspBase = [
   "default-src 'self'",
   "base-uri 'self'",
   "img-src 'self' data: blob: https: https://www.google-analytics.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+  `script-src ${scriptSrc}`,
   "connect-src 'self' https://api.fut7pro.com.br https://www.google-analytics.com https://www.googletagmanager.com",
   "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com",
   "frame-ancestors 'none'",
@@ -28,8 +31,7 @@ const cspBase = [
   "upgrade-insecure-requests",
 ].join("; ");
 
-// Em dev permitimos 'unsafe-eval' para toolings
-const CSP = isProd ? cspBase : `${cspBase}; script-src 'self' 'unsafe-inline' 'unsafe-eval'`;
+const CSP = cspBase;
 
 // Headers de segurança
 const securityHeaders = [
