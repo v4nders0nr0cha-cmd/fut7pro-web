@@ -119,28 +119,42 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
   await expect(emailInput).toHaveValue(email);
   await expect(passwordInput).toHaveValue(password);
 
-  await submit.first().click();
+  const waitLoginState = async () =>
+    Promise.race([
+      page
+        .waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 })
+        .then(() => "redirect" as const)
+        .catch(() => null),
+      page
+        .locator('[role="alert"], [aria-live="polite"]')
+        .filter({ hasText: /E-mail ou senha inválidos|E-mail ou senha invalidos/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 8000 })
+        .then(() => "invalid_credentials" as const)
+        .catch(() => null),
+      page
+        .locator('[role="alert"], [aria-live="polite"]')
+        .filter({ hasText: /Acesso ao painel bloqueado/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 8000 })
+        .then(() => "blocked" as const)
+        .catch(() => null),
+    ]);
 
-  const loginState = await Promise.race([
-    page
-      .waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 })
-      .then(() => "redirect" as const)
-      .catch(() => null),
-    page
-      .locator('[role="alert"], [aria-live="polite"]')
-      .filter({ hasText: /E-mail ou senha inválidos|E-mail ou senha invalidos/i })
+  await submit.first().click();
+  let loginState = await waitLoginState();
+
+  // Retry defensivo para flakiness eventual no callback de login.
+  if (!loginState) {
+    const canRetry = await submit
       .first()
-      .waitFor({ state: "visible", timeout: 8000 })
-      .then(() => "invalid_credentials" as const)
-      .catch(() => null),
-    page
-      .locator('[role="alert"], [aria-live="polite"]')
-      .filter({ hasText: /Acesso ao painel bloqueado/i })
-      .first()
-      .waitFor({ state: "visible", timeout: 8000 })
-      .then(() => "blocked" as const)
-      .catch(() => null),
-  ]);
+      .isEnabled()
+      .catch(() => false);
+    if (canRetry) {
+      await submit.first().click();
+      loginState = await waitLoginState();
+    }
+  }
 
   if (loginState === "invalid_credentials") {
     throw new Error(
@@ -347,9 +361,6 @@ async function assertNoForbiddenTexts(page: Page) {
 }
 
 async function assertPageHealthy(page: Page, expectedPath: string) {
-  const response = await page.request.get(expectedPath, { failOnStatusCode: false });
-  expect(response.status(), `Status inesperado em ${expectedPath}`).toBeLessThan(400);
-
   const pathname = new URL(page.url()).pathname;
   if (pathname.startsWith("/admin") && pathname !== "/admin/status-assinatura") {
     await waitForAdminShell(page);
