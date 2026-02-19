@@ -1,17 +1,18 @@
 # ADMIN AUDIT REPORT
 
-Data: 2026-02-18  
+Data: 2026-02-19  
 Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo painel `/admin`.
 
 ## Resumo Executivo
 
-- Status geral: **admin sem links quebrados no fluxo ativo, sem mocks residuais críticos, com hardening multi-tenant aplicado**.
+- Status geral: **admin reaberto para aceite final** (sem mocks residuais críticos e com hardening multi-tenant aplicado, porém ainda pendente de validação final em produção nos fluxos ativo e billing/webhook).
 - Foi concluído inventário completo das rotas do admin (62 rotas `page.tsx`) e auditoria de navegação (sidebar/header/bottom/cards).
 - Foram removidos fallbacks perigosos de tenant (`rachaConfig.slug`) no admin e bloqueado o uso de `tenantId/rachaId/slug` do client para definição de escopo em proxies críticos.
 - Foi aplicado hardening centralizado de query string em proxies admin com `appendSafeQueryParams` em allowlist rígida (bloqueando params perigosos e escopo de tenant).
 - Rotas com tenant no path agora validam mismatch de escopo e retornam `403`.
 - Logs administrativos agora têm sanitização de detalhes sensíveis no server-side (proxy) e no client (defesa em profundidade).
 - Foram removidos `console.log` de hooks usados pelo admin e eliminados geradores de ID com `Math.random` em componentes do fluxo admin.
+- Fluxo de cobrança PIX foi corrigido para enviar descrição dinâmica por plano/ciclo no Mercado Pago (removido texto fixo de Enterprise em planos Essencial/Marketing).
 - Foi adicionado smoke test E2E para navegação principal do admin.
 - O relatório está organizado por etapas de execução para acompanhamento incremental até o aceite final.
 
@@ -97,6 +98,34 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
   - Com assinatura `paused`, abrir modal de pagamento e clicar em "Continuar no Mercado Pago".
   - Validar redirecionamento para checkout sem liberar o painel antes do pagamento.
 
+#### 14) Descrição incorreta no ticket PIX (texto fixo de Enterprise em plano Essencial)
+
+- Severidade: **Alto**
+- Repositório/arquivo:
+  - `fut7pro-backend/src/billing/mp/mp.client.ts`
+  - `fut7pro-backend/src/billing/billing.service.ts`
+- Problema:
+  - O payload de criação do PIX enviava descrição fixa:
+    - `Fut7Pro Enterprise - complemento 12x R$290 (upfront)`
+  - Isso aparecia no ticket do Mercado Pago mesmo quando o racha estava em `Mensal Essencial`, gerando inconsistência comercial/jurídica.
+- Correção aplicada:
+  - `createPixPayment` passou a aceitar descrição dinâmica.
+  - `BillingService` agora monta descrição por contexto:
+    - recorrente: `Fut7Pro <Plano> - ciclo mensal/anual`
+    - entrada enterprise: `Fut7Pro <Plano> - entrada`
+  - Reuso de cobrança pendente agora só ocorre para cobranças já emitidas no padrão novo (`descriptionVersion: v2`), evitando reaproveitar ticket legado com descrição incorreta.
+  - `createPreapprovalDirect` também recebeu motivo dinâmico por plano (`Assinatura Fut7Pro - <Plano>`).
+  - Referências:
+    - `fut7pro-backend/src/billing/mp/mp.client.ts:49`
+    - `fut7pro-backend/src/billing/mp/mp.client.ts:63`
+    - `fut7pro-backend/src/billing/billing.service.ts:39`
+    - `fut7pro-backend/src/billing/billing.service.ts:514`
+    - `fut7pro-backend/src/billing/billing.service.ts:728`
+- Como testar:
+  - Com assinatura `Mensal Essencial`, gerar PIX e abrir o link; validar descrição do item no MP sem menção a Enterprise/upfront.
+  - Com assinatura anual, gerar PIX e validar descrição com `ciclo anual`.
+  - No fluxo enterprise mensal (entrada), validar descrição com `entrada`.
+
 ### Teste de Regressão Adicionado (Backend)
 
 - Arquivo:
@@ -113,16 +142,27 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - `Webhook assinado e processando`: **Pendente ação operacional** (ajustar `MP_WEBHOOK_SECRET` no Render).
 - `Conclusão final do aceite do admin`: **Reaberto até reteste em produção após deploy + ajuste do webhook**.
 
+### Pendências Objetivas para Concluir o Painel Admin
+
+1. Publicar em produção os hotfixes de billing e seleção multi-racha (frontend + backend).
+2. Ajustar e validar `MP_WEBHOOK_SECRET` no Render com evento real do Mercado Pago (sem `invalid signature`).
+3. Reexecutar smoke E2E admin em ambiente real com cenário multi-racha:
+   - mesmo usuário com 1 racha ativo e 1 bloqueado;
+   - `navega pelos principais itens do admin sem rota quebrada` precisa passar;
+   - `valida bloqueio por inadimplência com isolamento do tenant` precisa continuar passando.
+4. Confirmar que o fluxo ativo não entra em `Carregando painel...` infinito após seleção de racha.
+5. Registrar evidência final de aceite (log do Playwright + captura da validação de pagamento desbloqueando apenas após confirmação real).
+
 ## Plano por Etapas (Execução)
 
-| Etapa   | Objetivo                                                     | Achados vinculados | Status    | Critério de saída                                                                   |
-| ------- | ------------------------------------------------------------ | ------------------ | --------- | ----------------------------------------------------------------------------------- |
-| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados               |
-| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída | Sem override de tenant por client, mismatch em path retorna `403`                   |
-| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída | Fluxo admin sem mock residual crítico e sem dados fake                              |
-| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída | Logs sanitizados no server-side, sem `console.log` em produção                      |
-| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs    |
-| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Concluída | Spec executado com credencial admin real, navegação principal validada e sem `skip` |
+| Etapa   | Objetivo                                                     | Achados vinculados | Status       | Critério de saída                                                                              |
+| ------- | ------------------------------------------------------------ | ------------------ | ------------ | ---------------------------------------------------------------------------------------------- |
+| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída    | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados                          |
+| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída    | Sem override de tenant por client, mismatch em path retorna `403`                              |
+| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída    | Fluxo admin sem mock residual crítico e sem dados fake                                         |
+| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída    | Logs sanitizados no server-side, sem `console.log` em produção                                 |
+| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída    | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs               |
+| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Em validação | Spec com cenário bloqueado validado e cenário ativo ainda pendente de estabilidade em produção |
 
 ### Checklist de Fechamento por Etapa
 
@@ -442,6 +482,17 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
   - `pnpm typecheck` (`fut7pro-backend`) ✅
   - `pnpm exec jest src/billing/__tests__/billing.service.spec.ts --runInBand` (`fut7pro-backend`) ✅
   - `pnpm test -- --runInBand test/app.e2e-spec.ts` (`fut7pro-backend`) ✅
+- Hardening de descrição de cobrança (2026-02-19):
+  - `pnpm test -- src/billing/__tests__/billing.service.spec.ts --runInBand` (`fut7pro-backend`) ✅
+  - Cobertura adicionada:
+    - preapproval com motivo dinâmico por plano;
+    - PIX recorrente com descrição correta por ciclo/plano;
+    - PIX de entrada enterprise com descrição de entrada (sem vazamento de texto fixo).
+- Reteste backend completo em 2026-02-19 (pós-hardening de teardown e conexão de testes):
+  - `pnpm lint` (`fut7pro-backend`) ✅
+  - `pnpm typecheck` (`fut7pro-backend`) ✅
+  - `pnpm test -- --runInBand --detectOpenHandles` (`fut7pro-backend`) ✅
+  - `pnpm test` (`fut7pro-backend`) ✅ (`8 passed`, `34 passed`)
 
 ## Reteste Multi-Racha (2026-02-12)
 
