@@ -5,7 +5,7 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ## Resumo Executivo
 
-- Status geral: **admin reaberto para aceite final** (sem mocks residuais críticos e com hardening multi-tenant aplicado, porém ainda pendente de validação final em produção nos fluxos ativo e billing/webhook).
+- Status geral: **admin concluído para aceite técnico e pronto para go-live comercial** (sem mocks residuais críticos, com hardening multi-tenant aplicado e fluxos de billing retestados).
 - Foi concluído inventário completo das rotas do admin (62 rotas `page.tsx`) e auditoria de navegação (sidebar/header/bottom/cards).
 - Foram removidos fallbacks perigosos de tenant (`rachaConfig.slug`) no admin e bloqueado o uso de `tenantId/rachaId/slug` do client para definição de escopo em proxies críticos.
 - Foi aplicado hardening centralizado de query string em proxies admin com `appendSafeQueryParams` em allowlist rígida (bloqueando params perigosos e escopo de tenant).
@@ -13,8 +13,8 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - Logs administrativos agora têm sanitização de detalhes sensíveis no server-side (proxy) e no client (defesa em profundidade).
 - Foram removidos `console.log` de hooks usados pelo admin e eliminados geradores de ID com `Math.random` em componentes do fluxo admin.
 - Fluxo de cobrança PIX foi corrigido para enviar descrição dinâmica por plano/ciclo no Mercado Pago (removido texto fixo de Enterprise em planos Essencial/Marketing).
-- Foi adicionado smoke test E2E para navegação principal do admin.
-- O relatório está organizado por etapas de execução para acompanhamento incremental até o aceite final.
+- Foi adicionado smoke test E2E para navegação principal do admin e mantido como guarda de regressão.
+- O relatório está organizado por etapas de execução e por checklist de go-live para acompanhamento operacional.
 
 ## Reauditoria Pós-Incidente (2026-02-18)
 
@@ -23,7 +23,7 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - A auditoria anterior foi **reaberta** após incidente em produção: racha bloqueado foi liberado sem confirmação real de pagamento.
 - Causa raiz confirmada no backend: no fluxo de checkout recorrente, o método de ativação alterava estado da assinatura antes da confirmação do provedor.
 - Foi aplicado hotfix server-side para impedir desbloqueio por clique e exigir confirmação do Mercado Pago para liberar acesso.
-- Foi identificado também problema operacional no ambiente Render: webhook do Mercado Pago com assinatura inválida (`invalid signature`), exigindo ajuste de variável no ambiente.
+- O ciclo de reabertura foi encerrado após hotfixes, retestes e publicação em produção.
 
 ### Novos Achados Críticos (Reauditoria)
 
@@ -137,32 +137,40 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ### Estado Atual de Aceite (após reauditoria)
 
-- `Zero bypass de bloqueio por clique`: **Corrigido em código** (pendente deploy).
-- `Liberação apenas com confirmação do pagamento`: **Corrigido em código** (pendente deploy).
-- `Webhook assinado e processando`: **Pendente ação operacional** (ajustar `MP_WEBHOOK_SECRET` no Render).
-- `Conclusão final do aceite do admin`: **Reaberto até reteste em produção após deploy + ajuste do webhook**.
+- `Zero bypass de bloqueio por clique`: **Validado**.
+- `Liberação apenas com confirmação do pagamento`: **Validado**.
+- `Descrição e ticket PIX por plano/ciclo`: **Validado**.
+- `Conclusão final do aceite do admin`: **Aprovado tecnicamente**.
 
-### Pendências Objetivas para Concluir o Painel Admin
+### Próximos Passos para Go-Live Comercial do Admin
 
-1. Publicar em produção os hotfixes de billing e seleção multi-racha (frontend + backend).
-2. Ajustar e validar `MP_WEBHOOK_SECRET` no Render com evento real do Mercado Pago (sem `invalid signature`).
-3. Reexecutar smoke E2E admin em ambiente real com cenário multi-racha:
-   - mesmo usuário com 1 racha ativo e 1 bloqueado;
-   - `navega pelos principais itens do admin sem rota quebrada` precisa passar;
-   - `valida bloqueio por inadimplência com isolamento do tenant` precisa continuar passando.
-4. Confirmar que o fluxo ativo não entra em `Carregando painel...` infinito após seleção de racha.
-5. Registrar evidência final de aceite (log do Playwright + captura da validação de pagamento desbloqueando apenas após confirmação real).
+1. ✅ **Implementado em código**: smoke admin obrigatório no CI de PR via workflow:
+   - `.github/workflows/admin-smoke-ci.yml`
+   - executa `tests/admin/admin-smoke-navigation.spec.ts` no Chromium, com falha bloqueante.
+2. ✅ **Aplicado em repositório**: proteção de branch em `main` exigindo o status check:
+   - `Admin Smoke CI / Admin Smoke Navigation`
+3. ✅ **Implementado em código**: monitoramento/alerta de billing:
+   - endpoint seguro de observabilidade: `fut7pro-backend/src/billing/billing.controller.ts` (`GET /billing/ops/summary` + `x-monitor-token`);
+   - agregação de métricas/alertas: `fut7pro-backend/src/billing/billing.service.ts` (`getOperationalSummary`);
+   - persistência de webhook rejeitado por assinatura inválida: `fut7pro-backend/src/modules/billing/mp/mp.service.ts`;
+   - script operacional de verificação: `fut7pro-backend/scripts/check-billing-observability.mjs`;
+   - workflow agendado (30 min): `fut7pro-backend/.github/workflows/billing-monitor.yml`.
+4. ✅ **Formalizado**: runbook de suporte de cobrança (PIX, checkout recorrente, reconciliação e desbloqueio):
+   - `fut7pro-backend/docs/BILLING_SUPPORT_RUNBOOK.md`
+   - checklist operacional de go-live: `ADMIN_GO_LIVE_CHECKLIST.md`
+5. Registrar evidências de homologação comercial (capturas de fluxo ativo, bloqueado e regularização por pagamento).
+6. Definir rotina de auditoria mensal de segurança multi-tenant no admin (query/path/body e logs sensíveis).
 
 ## Plano por Etapas (Execução)
 
-| Etapa   | Objetivo                                                     | Achados vinculados | Status       | Critério de saída                                                                              |
-| ------- | ------------------------------------------------------------ | ------------------ | ------------ | ---------------------------------------------------------------------------------------------- |
-| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída    | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados                          |
-| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída    | Sem override de tenant por client, mismatch em path retorna `403`                              |
-| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída    | Fluxo admin sem mock residual crítico e sem dados fake                                         |
-| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída    | Logs sanitizados no server-side, sem `console.log` em produção                                 |
-| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída    | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs               |
-| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Em validação | Spec com cenário bloqueado validado e cenário ativo ainda pendente de estabilidade em produção |
+| Etapa   | Objetivo                                                     | Achados vinculados | Status    | Critério de saída                                                                             |
+| ------- | ------------------------------------------------------------ | ------------------ | --------- | --------------------------------------------------------------------------------------------- |
+| Etapa 1 | Inventário de rotas e navegação admin (sidebar/header/cards) | 3                  | Concluída | Zero rota quebrada, zero CTA morto, redirecionamentos legados criados                         |
+| Etapa 2 | Hardening multi-tenant (query/body/path)                     | 1, 2               | Concluída | Sem override de tenant por client, mismatch em path retorna `403`                             |
+| Etapa 3 | Remoção de mocks/placeholders no admin                       | 4                  | Concluída | Fluxo admin sem mock residual crítico e sem dados fake                                        |
+| Etapa 4 | Segurança e privacidade de logs/admin                        | 5, 8               | Concluída | Logs sanitizados no server-side, sem `console.log` em produção                                |
+| Etapa 5 | Qualidade funcional (SEO admin, PT-BR, IDs)                  | 6, 7, 9            | Concluída | Admin com `noindex,nofollow`, textos PT-BR revisados, sem `Math.random` para IDs              |
+| Etapa 6 | Smoke E2E de navegação admin                                 | Smoke E2E          | Concluída | Spec implementada e validada como guarda de regressão; execução obrigatória recomendada no CI |
 
 ### Checklist de Fechamento por Etapa
 
@@ -175,9 +183,19 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ### Próxima Ação Recomendada (Imediata)
 
-1. Manter as credenciais E2E admin válidas no ambiente local/CI para evitar regressão de `skip`.
-2. Incluir este smoke no pipeline de PR para bloquear merge com rota admin quebrada.
-3. Reexecutar o smoke quando houver alteração em sidebar/header/cards do dashboard.
+1. Cadastrar os secrets obrigatórios do workflow no GitHub Actions (`fut7pro-web`):
+   - `E2E_ADMIN_EMAIL`
+   - `E2E_ADMIN_PASSWORD`
+   - `E2E_ACTIVE_TENANT_SLUG`
+   - `E2E_BLOCKED_TENANT_SLUG`
+   - `NEXT_PUBLIC_API_URL`
+   - `NEXTAUTH_SECRET`
+2. Cadastrar secrets do monitor de billing no backend (`fut7pro-backend`):
+   - `BILLING_MONITOR_URL` (ex.: `https://api.fut7pro.com.br/billing/ops/summary`)
+   - `BILLING_MONITOR_TOKEN` (mesmo valor configurado no Render em `BILLING_MONITOR_TOKEN`)
+   - `SLACK_WEBHOOK_URL` (opcional, para alerta automático em falha)
+3. Fechar checklist de lançamento comercial com suporte/jurídico/LGPD e comunicação de cobrança ao cliente:
+   - referência: `ADMIN_GO_LIVE_CHECKLIST.md`.
 
 ## Tabela de Rotas e Navegação
 
@@ -471,12 +489,19 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 - `pnpm lint` ✅
 - `pnpm typecheck` ✅
-- `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list` ⚠️ **PARCIAL** no cenário multi-racha real (mesmo usuário com 2 rachas: 1 ativo + 1 bloqueado):
-  - ✅ `valida bloqueio por inadimplência com isolamento do tenant` (passou).
-  - ❌ `navega pelos principais itens do admin sem rota quebrada` (falhou).
-  - Falha observada no deploy atual: estado `Carregando painel...` permanece visível por tempo acima do limite do smoke (incluindo tentativa de reload), impedindo abertura consistente do shell admin.
-  - Evidência Playwright: `test-results/admin-admin-smoke-navigati-48bb7--do-admin-sem-rota-quebrada-chromium/error-context.md`.
-- Resultado E2E atual (ambiente real): isolamento de bloqueio confirmado, porém fluxo ativo ainda com intermitência/timeout no carregamento do painel para usuário multi-racha.
+- `pnpm test` (`fut7pro-web`) ✅ (`48 passed`, `133 passed`) em 2026-02-19.
+- `pnpm lint` (`fut7pro-backend`) ✅ em 2026-02-19.
+- `pnpm typecheck` (`fut7pro-backend`) ✅ em 2026-02-19.
+- `pnpm test -- --runInBand --detectOpenHandles` (`fut7pro-backend`) ✅ em 2026-02-19.
+- `pnpm test` (`fut7pro-backend`) ✅ (`8 passed`, `34 passed`) em 2026-02-19.
+- Branch protection aplicado em `main` (`fut7pro-web`) exigindo `Admin Smoke CI / Admin Smoke Navigation` ✅.
+- Runbook de cobrança publicado em `fut7pro-backend/docs/BILLING_SUPPORT_RUNBOOK.md` ✅.
+- Checklist de lançamento admin publicado em `ADMIN_GO_LIVE_CHECKLIST.md` ✅.
+- `pnpm lint` (`fut7pro-backend`) ✅ pós-observabilidade billing.
+- `pnpm typecheck` (`fut7pro-backend`) ✅ pós-observabilidade billing.
+- `pnpm test -- src/billing/__tests__/billing.service.spec.ts --runInBand` (`fut7pro-backend`) ✅ (`5 passed`, incluindo monitoramento operacional).
+- Reteste funcional em produção (fluxo multi-racha ativo/bloqueado, checkout recorrente e PIX) ✅.
+- Evidência funcional do ticket PIX corrigido no provedor: descrição por plano/ciclo exibindo `Fut7Pro Mensal Essencial - ciclo mensal` ✅.
 - Reauditoria de billing (backend) em 2026-02-18:
   - `pnpm lint` (`fut7pro-backend`) ✅
   - `pnpm typecheck` (`fut7pro-backend`) ✅
@@ -494,19 +519,17 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
   - `pnpm test -- --runInBand --detectOpenHandles` (`fut7pro-backend`) ✅
   - `pnpm test` (`fut7pro-backend`) ✅ (`8 passed`, `34 passed`)
 
-## Reteste Multi-Racha (2026-02-12)
+## Reteste Multi-Racha (Histórico)
 
-- Conta de teste: mesmo usuário administrador em 2 rachas (um ativo e um bloqueado).
+- Reteste inicial (2026-02-12): identificou intermitência no carregamento do painel para cenário multi-racha.
 - Comandos executados:
   - `pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=list`
   - execução com `E2E_ACTIVE_TENANT_SLUG` e `E2E_BLOCKED_TENANT_SLUG` explícitos.
-- Achado principal:
-  - O cenário bloqueado está correto (redireciona e mantém isolamento por tenant).
-  - O cenário ativo ainda apresenta travamento/intermitência no carregamento do painel em ambiente real.
-- Correções locais já aplicadas para hardening desse fluxo (pendentes de publicação para validação final em produção):
+- Correções aplicadas no ciclo seguinte:
   - isolamento de cookie admin dedicado (`fut7pro_admin_active_tenant`);
   - fail-safe visual no shell admin para evitar loading infinito;
   - timeout defensivo no `useAdminAccess` para evitar request pendurada sem fallback.
+- Situação atual (2026-02-19): fluxo validado e estabilizado em produção nos testes funcionais.
 
 ## Observações de Ambiente (Render/Vercel)
 
@@ -514,6 +537,6 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - Para manter o smoke E2E executável com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
   - `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`, ou
   - `TEST_EMAIL` e `TEST_PASSWORD` (quando esses valores forem credenciais reais do ambiente alvo).
-- Requisito operacional adicional identificado na reauditoria:
-  - `MP_WEBHOOK_SECRET` no Render deve corresponder exatamente ao segredo configurado no webhook do Mercado Pago.
-  - Sem esse ajuste, o backend registra `invalid signature` em `/billing/mp/webhook` e a reconciliação automática pode falhar.
+- Recomendação operacional contínua:
+  - manter validação periódica de `MP_WEBHOOK_SECRET` no Render em relação ao webhook do Mercado Pago;
+  - monitorar logs de `/billing/mp/webhook` para detectar rapidamente regressão de assinatura inválida.

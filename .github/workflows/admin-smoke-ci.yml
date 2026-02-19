@@ -1,0 +1,111 @@
+name: Admin Smoke CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: admin-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.19.0"
+
+jobs:
+  admin-smoke:
+    name: Admin Smoke Navigation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate required secrets
+        env:
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ACTIVE_TENANT_SLUG: ${{ secrets.E2E_ACTIVE_TENANT_SLUG }}
+          E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        run: |
+          required_vars=(
+            E2E_ADMIN_EMAIL
+            E2E_ADMIN_PASSWORD
+            E2E_ACTIVE_TENANT_SLUG
+            E2E_BLOCKED_TENANT_SLUG
+            NEXT_PUBLIC_API_URL
+            NEXTAUTH_SECRET
+          )
+
+          missing=0
+          for var in "${required_vars[@]}"; do
+            if [ -z "${!var}" ]; then
+              echo "::error::Secret obrigatório não configurado: ${var}"
+              missing=1
+            fi
+          done
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Configure os secrets obrigatórios para executar o smoke admin."
+            exit 1
+          fi
+
+      - name: Create local env for CI web server
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        run: |
+          {
+            echo "NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}"
+            echo "API_URL=${NEXT_PUBLIC_API_URL}"
+            echo "BACKEND_URL=${NEXT_PUBLIC_API_URL}"
+            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET}"
+            echo "DISABLE_WEB_DIRECT_DB=true"
+            echo "NODE_ENV=test"
+          } > .env.local
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run admin smoke (mandatory)
+        env:
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          E2E_RUN_ACTIVE_SMOKE: "1"
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_ACTIVE_TENANT_SLUG: ${{ secrets.E2E_ACTIVE_TENANT_SLUG }}
+          E2E_BLOCKED_TENANT_SLUG: ${{ secrets.E2E_BLOCKED_TENANT_SLUG }}
+        run: pnpm exec playwright test tests/admin/admin-smoke-navigation.spec.ts --project=chromium --workers=1 --reporter=line
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-smoke-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
