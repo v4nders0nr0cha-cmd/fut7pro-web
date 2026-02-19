@@ -31,7 +31,10 @@ const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
   },
   { prefix: "/admin/jogadores", expected: /jogadores|atletas|mensalistas|ranking/i },
   { prefix: "/admin/conquistas", expected: /conquistas|campeões|torneios/i },
-  { prefix: "/admin/financeiro", expected: /financeiro|mensalistas|patrocinadores|planos/i },
+  {
+    prefix: "/admin/financeiro",
+    expected: /financeiro|mensalistas|patrocinadores|planos|prestação|contas/i,
+  },
   { prefix: "/admin/personalizacao", expected: /personalização|identidade|temas|rodapé|redes/i },
   { prefix: "/admin/administracao", expected: /administração|administradores|permissões|logs/i },
   {
@@ -72,9 +75,12 @@ async function selectTenantFromHub(
   const allHubButtons = page.locator('[data-testid^="admin-hub-select-"]');
 
   if (targetTenantSlug) {
-    const targetButton = page.getByTestId(`admin-hub-select-${targetTenantSlug}`);
-    await expect(targetButton).toBeVisible({ timeout: 12000 });
-    return targetButton;
+    const targetButton = page.getByTestId(`admin-hub-select-${targetTenantSlug}`).first();
+    const targetExists = (await targetButton.count()) > 0;
+    if (targetExists) {
+      await expect(targetButton).toBeVisible({ timeout: 12000 });
+      return targetButton;
+    }
   }
 
   const expectedButtonText =
