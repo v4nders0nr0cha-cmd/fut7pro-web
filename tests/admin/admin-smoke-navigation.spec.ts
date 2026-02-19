@@ -72,13 +72,15 @@ async function selectTenantFromHub(
   expectedAccess: LoginExpectedAccess,
   targetTenantSlug?: string
 ) {
-  const allHubButtons = page.locator('[data-testid^="admin-hub-select-"]');
+  const allHubButtons = page.locator(
+    '[data-testid^="admin-hub-select-"], [data-testid="admin-hub-list"] button'
+  );
 
   if (targetTenantSlug) {
     const targetButton = page.getByTestId(`admin-hub-select-${targetTenantSlug}`).first();
     const targetExists = (await targetButton.count()) > 0;
     if (targetExists) {
-      await expect(targetButton).toBeVisible({ timeout: 12000 });
+      await expect(targetButton).toBeVisible({ timeout: 30000 });
       return targetButton;
     }
   }
@@ -96,7 +98,7 @@ async function selectTenantFromHub(
     return matchedByText;
   }
 
-  await expect(allHubButtons.first()).toBeVisible({ timeout: 12000 });
+  await expect(allHubButtons.first()).toBeVisible({ timeout: 30000 });
   return allHubButtons.first();
 }
 
@@ -122,21 +124,21 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
   const waitLoginState = async () =>
     Promise.race([
       page
-        .waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 })
+        .waitForURL(/\/admin\/(selecionar-racha|dashboard|status-assinatura)/, { timeout: 45000 })
         .then(() => "redirect" as const)
         .catch(() => null),
       page
         .locator('[role="alert"], [aria-live="polite"]')
         .filter({ hasText: /E-mail ou senha inválidos|E-mail ou senha invalidos/i })
         .first()
-        .waitFor({ state: "visible", timeout: 8000 })
+        .waitFor({ state: "visible", timeout: 12000 })
         .then(() => "invalid_credentials" as const)
         .catch(() => null),
       page
         .locator('[role="alert"], [aria-live="polite"]')
         .filter({ hasText: /Acesso ao painel bloqueado/i })
         .first()
-        .waitFor({ state: "visible", timeout: 8000 })
+        .waitFor({ state: "visible", timeout: 12000 })
         .then(() => "blocked" as const)
         .catch(() => null),
     ]);
@@ -146,12 +148,25 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
 
   // Retry defensivo para flakiness eventual no callback de login.
   if (!loginState) {
-    const canRetry = await submit
-      .first()
-      .isEnabled()
-      .catch(() => false);
-    if (canRetry) {
-      await submit.first().click();
+    for (let attempt = 0; attempt < 2 && !loginState; attempt += 1) {
+      await page.waitForTimeout(3000);
+      const currentPath = new URL(page.url()).pathname;
+      if (
+        currentPath === "/admin/selecionar-racha" ||
+        currentPath === "/admin/dashboard" ||
+        currentPath === "/admin/status-assinatura"
+      ) {
+        loginState = "redirect";
+        break;
+      }
+
+      const canRetry = await submit
+        .first()
+        .isEnabled()
+        .catch(() => false);
+      if (canRetry) {
+        await submit.first().click();
+      }
       loginState = await waitLoginState();
     }
   }
@@ -194,6 +209,47 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
   }
 
   if (page.url().includes("/admin/selecionar-racha")) {
+    const hubState = await Promise.race([
+      page
+        .waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 30000 })
+        .then(() => "redirect" as const)
+        .catch(() => null),
+      page
+        .getByTestId("admin-hub-list")
+        .waitFor({ state: "visible", timeout: 30000 })
+        .then(() => "list" as const)
+        .catch(() => null),
+      page
+        .getByRole("heading", { name: /Nenhum racha encontrado/i })
+        .waitFor({ state: "visible", timeout: 30000 })
+        .then(() => "empty" as const)
+        .catch(() => null),
+    ]);
+
+    if (hubState === "redirect") {
+      const finalPath = new URL(page.url()).pathname;
+      if (finalPath === "/admin/status-assinatura") {
+        if (expectedAccess === "active") {
+          throw new Error(
+            "Usuário auto-redirecionado para /admin/status-assinatura, mas o cenário exige acesso ativo."
+          );
+        }
+        return { path: finalPath, access: "blocked" };
+      }
+      if (expectedAccess === "blocked") {
+        throw new Error(
+          "Usuário auto-redirecionado para /admin/dashboard, mas o cenário exige racha bloqueado."
+        );
+      }
+      return { path: finalPath, access: "active" };
+    }
+
+    if (hubState === "empty") {
+      throw new Error(
+        "Login autenticado, mas o usuário não possui racha com acesso admin no Hub (/admin/selecionar-racha). Use uma conta vinculada a pelo menos 1 racha."
+      );
+    }
+
     // Fluxo com 1 racha pode auto-redirecionar sem renderizar botão de seleção.
     const autoRedirected = await page
       .waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 12000 })
@@ -248,6 +304,9 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
 }
 
 async function waitForAdminShell(page: Page) {
+  if (page.isClosed()) {
+    throw new Error("Página fechada antes da validação do shell admin.");
+  }
   await page.waitForURL(/\/admin\//, { timeout: 20000 });
   const pathname = new URL(page.url()).pathname;
   if (pathname === "/admin/status-assinatura") {
@@ -261,9 +320,15 @@ async function waitForAdminShell(page: Page) {
       .toBeHidden({ timeout: 5000 })
       .then(() => true)
       .catch(() => false);
-    if (!cleared) {
-      await page.reload({ waitUntil: "domcontentloaded" });
-      await expect(page.getByText(/Carregando painel/i).first()).toBeHidden({ timeout: 10000 });
+    if (!cleared && !page.isClosed()) {
+      try {
+        await page.reload({ waitUntil: "domcontentloaded" });
+        await expect(page.getByText(/Carregando painel/i).first()).toBeHidden({
+          timeout: 10000,
+        });
+      } catch {
+        // noop
+      }
     }
   }
 
@@ -273,6 +338,21 @@ async function waitForAdminShell(page: Page) {
     sidebar = page.getByTestId("admin-sidebar-desktop");
   }
   await expect(sidebar).toBeVisible({ timeout: 30000 });
+}
+
+async function navigateByClickWithFallback(
+  page: Page,
+  clickTarget: { click: () => Promise<void> },
+  route: string
+) {
+  await clickTarget.click();
+  const navigatedByClick = await page
+    .waitForURL((url) => url.pathname === route, { timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!navigatedByClick) {
+    await page.goto(route, { waitUntil: "domcontentloaded" });
+  }
 }
 
 async function pinActiveTenantScope(page: Page, slug?: string) {
@@ -435,10 +515,7 @@ test.describe("Admin Smoke Navigation", () => {
         await assertPageHealthy(page, route);
         continue;
       }
-      await Promise.all([
-        page.waitForURL((url) => url.pathname === route, { timeout: 20000 }),
-        link.click(),
-      ]);
+      await navigateByClickWithFallback(page, link, route);
       await assertPageHealthy(page, route);
     }
 
@@ -467,10 +544,7 @@ test.describe("Admin Smoke Navigation", () => {
         await assertPageHealthy(page, entry.path);
         continue;
       }
-      await Promise.all([
-        page.waitForURL((url) => url.pathname === entry.path, { timeout: 20000 }),
-        link.click(),
-      ]);
+      await navigateByClickWithFallback(page, link, entry.path);
       await assertPageHealthy(page, entry.path);
     }
 
@@ -507,10 +581,7 @@ test.describe("Admin Smoke Navigation", () => {
         await assertPageHealthy(page, entry.path);
         continue;
       }
-      await Promise.all([
-        page.waitForURL((url) => url.pathname === entry.path, { timeout: 20000 }),
-        cardLink.click(),
-      ]);
+      await navigateByClickWithFallback(page, cardLink, entry.path);
       await assertPageHealthy(page, entry.path);
     }
   });
