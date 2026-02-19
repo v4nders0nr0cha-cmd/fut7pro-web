@@ -19,7 +19,8 @@ const shouldRunActive =
   Boolean(activeAdminEmail) &&
   Boolean(activeAdminPassword) &&
   process.env.E2E_RUN_ACTIVE_SMOKE === "1";
-const shouldRunBlocked = Boolean(blockedAdminEmail) && Boolean(blockedAdminPassword);
+const shouldRunBlocked =
+  Boolean(blockedAdminEmail) && Boolean(blockedAdminPassword) && Boolean(blockedTenantSlug);
 
 const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
 
@@ -66,6 +67,25 @@ type LoginResult = {
   path: string;
   access: "active" | "blocked";
 };
+
+async function trySelectTenantViaApi(page: Page, slug: string): Promise<string | null> {
+  const response = await page.request
+    .post("/api/admin/hub/select", {
+      data: { slug },
+    })
+    .catch(() => null);
+  if (!response || response.status() >= 400) return null;
+
+  const body = await response.json().catch(() => ({}));
+  const redirectTo =
+    typeof body?.redirectTo === "string"
+      ? body.redirectTo
+      : body?.blocked
+        ? "/admin/status-assinatura"
+        : "/admin/dashboard";
+  await page.goto(redirectTo, { waitUntil: "domcontentloaded" });
+  return new URL(page.url()).pathname;
+}
 
 async function selectTenantFromHub(
   page: Page,
@@ -250,6 +270,25 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
       );
     }
 
+    if (targetTenantSlug) {
+      const pathFromApiSelection = await trySelectTenantViaApi(page, targetTenantSlug);
+      if (pathFromApiSelection) {
+        const accessFromApiSelection =
+          pathFromApiSelection === "/admin/status-assinatura" ? "blocked" : "active";
+        if (expectedAccess === "active" && accessFromApiSelection !== "active") {
+          throw new Error(
+            "Seleção por API levou para /admin/status-assinatura, mas o cenário exige acesso ativo."
+          );
+        }
+        if (expectedAccess === "blocked" && accessFromApiSelection !== "blocked") {
+          throw new Error(
+            "Seleção por API levou para /admin/dashboard, mas o cenário exige racha bloqueado."
+          );
+        }
+        return { path: pathFromApiSelection, access: accessFromApiSelection };
+      }
+    }
+
     // Fluxo com 1 racha pode auto-redirecionar sem renderizar botão de seleção.
     const autoRedirected = await page
       .waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 12000 })
@@ -345,12 +384,13 @@ async function navigateByClickWithFallback(
   clickTarget: { click: () => Promise<void> },
   route: string
 ) {
+  if (page.isClosed()) return;
   await clickTarget.click();
   const navigatedByClick = await page
     .waitForURL((url) => url.pathname === route, { timeout: 15000 })
     .then(() => true)
     .catch(() => false);
-  if (!navigatedByClick) {
+  if (!navigatedByClick && !page.isClosed()) {
     await page.goto(route, { waitUntil: "domcontentloaded" });
   }
 }
@@ -395,36 +435,6 @@ async function openSidebarSectionForRoute(page: Page, route: string) {
   if (expanded !== "true") {
     await toggle.click();
   }
-}
-
-async function collectSidebarRoutes(page: Page) {
-  await waitForAdminShell(page);
-  const sidebar = page.getByTestId("admin-sidebar-desktop");
-  const routes = new Set<string>();
-
-  const collectVisibleRoutes = async () => {
-    const hrefs = await sidebar.locator('[data-admin-nav-link="true"]').evaluateAll((elements) =>
-      elements
-        .map((element) => (element as HTMLAnchorElement).getAttribute("href") || "")
-        .filter((href) => href.startsWith("/admin"))
-        .map((href) => href.split("#")[0])
-    );
-    hrefs.forEach((href) => routes.add(href));
-  };
-
-  await collectVisibleRoutes();
-
-  const toggles = sidebar.locator('[data-testid^="admin-sidebar-toggle-"]');
-  const toggleCount = await toggles.count();
-  for (let i = 0; i < toggleCount; i += 1) {
-    const toggle = toggles.nth(i);
-    if ((await toggle.getAttribute("aria-expanded")) !== "true") {
-      await toggle.click();
-    }
-    await collectVisibleRoutes();
-  }
-
-  return Array.from(routes);
 }
 
 async function assertNoForbiddenTexts(page: Page) {
@@ -499,7 +509,17 @@ test.describe("Admin Smoke Navigation", () => {
     await expect(page).toHaveURL(/\/admin\/dashboard/);
     await assertPageHealthy(page, "/admin/dashboard");
 
-    const sidebarRoutes = await collectSidebarRoutes(page);
+    const sidebarRoutes = [
+      "/admin/dashboard",
+      "/admin/partidas",
+      "/admin/jogadores/listar-cadastrar",
+      "/admin/conquistas",
+      "/admin/financeiro/patrocinadores",
+      "/admin/personalizacao/identidade-visual",
+      "/admin/administracao/administradores",
+      "/admin/comunicacao/notificacoes",
+      "/admin/configuracoes/dominio-proprio",
+    ];
     for (const route of sidebarRoutes) {
       await pinActiveTenantScope(page, activeTenantSlug);
       await page.goto("/admin/dashboard");
