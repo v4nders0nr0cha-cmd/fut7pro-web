@@ -495,6 +495,8 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 - `pnpm test -- --runInBand --detectOpenHandles` (`fut7pro-backend`) ✅ em 2026-02-19.
 - `pnpm test` (`fut7pro-backend`) ✅ (`8 passed`, `34 passed`) em 2026-02-19.
 - Branch protection aplicado em `main` (`fut7pro-web`) exigindo `Admin Smoke CI / Admin Smoke Navigation` ✅.
+- GitHub Actions `Admin Smoke CI` ✅ (run `22201213606`, 2026-02-20):
+  - <https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/runs/22201213606>
 - Runbook de cobrança publicado em `fut7pro-backend/docs/BILLING_SUPPORT_RUNBOOK.md` ✅.
 - Checklist de lançamento admin publicado em `ADMIN_GO_LIVE_CHECKLIST.md` ✅.
 - `pnpm lint` (`fut7pro-backend`) ✅ pós-observabilidade billing.
@@ -518,6 +520,9 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
   - `pnpm typecheck` (`fut7pro-backend`) ✅
   - `pnpm test -- --runInBand --detectOpenHandles` (`fut7pro-backend`) ✅
   - `pnpm test` (`fut7pro-backend`) ✅ (`8 passed`, `34 passed`)
+- GitHub Actions `Billing Monitor` ✅ (run `22225524084`, 2026-02-20):
+  - <https://github.com/v4nders0nr0cha-cmd/fut7pro-backend/actions/runs/22225524084>
+  - Resultado: monitor operacional executado com `ok: true`, sem alertas críticos (`alerts.critical = []`).
 
 ## Reteste Multi-Racha (Histórico)
 
@@ -533,7 +538,9 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ## Observações de Ambiente (Render/Vercel)
 
-- Não foi necessária nova variável de ambiente para as correções aplicadas no admin.
+- Variáveis adicionadas para observabilidade de billing (Render + GitHub Actions backend):
+  - `BILLING_MONITOR_URL`
+  - `BILLING_MONITOR_TOKEN`
 - Para manter o smoke E2E executável com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
   - `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`, ou
   - `TEST_EMAIL` e `TEST_PASSWORD` (quando esses valores forem credenciais reais do ambiente alvo).
