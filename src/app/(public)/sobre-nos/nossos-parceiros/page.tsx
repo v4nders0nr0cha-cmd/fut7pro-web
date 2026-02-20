@@ -4,10 +4,10 @@ import Head from "next/head";
 import Image from "next/image";
 import { useEffect, useMemo, useRef } from "react";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import { useBranding } from "@/hooks/useBranding";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
 import { recordSponsorMetric } from "@/lib/sponsor-metrics";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/$/,
@@ -33,7 +33,8 @@ const resolveCategoria = (ramo?: string | null) => {
 
 export default function NossosParceiros() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { nome: brandName } = useBranding({ scope: "public", slug });
   const { sponsors, isLoading, isError } = usePublicSponsors(slug);
   const impressionRef = useRef(new Set<string>());

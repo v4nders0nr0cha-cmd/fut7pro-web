@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { PublicSponsor } from "@/types/sponsor";
 
 const FUT7PRO_LOGO = "/images/logos/logo_fut7pro.png";
@@ -110,7 +109,7 @@ function normalizeSponsor(raw: any, index: number): PublicSponsor {
 }
 
 export function usePublicSponsors(slug?: string) {
-  const resolvedSlug = slug || rachaConfig.slug;
+  const resolvedSlug = slug?.trim() || "";
   const key = resolvedSlug ? `/api/public/${resolvedSlug}/sponsors` : null;
 
   const { data, error, isLoading, mutate } = useSWR<PublicSponsor[]>(key, fetcher, {

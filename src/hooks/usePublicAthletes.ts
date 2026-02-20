@@ -1,5 +1,4 @@
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 
 export type PublicAthlete = {
   id: string;
@@ -31,7 +30,7 @@ const fetcher = async (url: string): Promise<PublicAthletesResponse> => {
 
 export function usePublicAthletes(slug?: string, options?: { enabled?: boolean }) {
   const enabled = options?.enabled !== false;
-  const resolvedSlug = slug ?? rachaConfig.slug;
+  const resolvedSlug = slug?.trim() || "";
   const key = enabled && resolvedSlug ? `/api/public/${resolvedSlug}/athletes` : null;
 
   const { data, error, isLoading, mutate } = useSWR<PublicAthletesResponse>(key, fetcher, {

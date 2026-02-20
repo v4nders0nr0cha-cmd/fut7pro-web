@@ -238,7 +238,8 @@ function buildBotHighlight(
 
 export default function Home() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicHref, publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || rachaConfig.slug;
   const { hasPermission } = useAuth();
   const pathname = usePathname() ?? "";
   const { data: session } = useSession();
@@ -249,7 +250,6 @@ export default function Home() {
       : "";
   const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
   const isAdmin = isTenantSession && hasPermission("RACHA_UPDATE");
-  const { publicHref } = usePublicLinks();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [regrasOpen, setRegrasOpen] = useState(false);

@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { BirthdaysResponse } from "@/types/birthdays";
 
 type PublicBirthdaysOptions = {
@@ -30,7 +29,7 @@ function buildKey(slug: string, month?: number, limit?: number) {
 
 export function usePublicBirthdays(options: PublicBirthdaysOptions = {}) {
   const enabled = options.enabled ?? true;
-  const slug = options.slug || rachaConfig.slug;
+  const slug = options.slug?.trim() || "";
   const month = options.month ?? new Date().getMonth() + 1;
   const key = enabled ? buildKey(slug, month, options.limit) : null;
 

@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { RankingAtleta } from "@/types/estatisticas";
 
 type PlayerRankingType = "geral" | "artilheiros" | "assistencias";
@@ -99,7 +98,7 @@ export interface UsePublicPlayerRankingsOptions {
 }
 
 export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions) {
-  const slug = options.slug ?? rachaConfig.slug;
+  const slug = options.slug?.trim() || "";
   const athletesKey = slug ? `/api/public/${slug}/athletes` : null;
 
   const { data: athletesData, isLoading: athletesLoading } = useSWR<PublicAthletesResponse>(

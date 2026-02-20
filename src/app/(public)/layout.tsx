@@ -1,4 +1,5 @@
 import { Inter } from "next/font/google";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Providers } from "../providers";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -14,7 +15,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Fut7Pro - Sistema Completo para Futebol 7 entre Amigos",
   description:
     "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
@@ -57,9 +58,6 @@ export const metadata = {
     description:
       "Fut7Pro – O primeiro sistema do mundo focado 100% no Futebol 7 entre amigos. Gerencie rachas, torneios, estatísticas e muito mais!",
     images: ["https://app.fut7pro.com.br/og-image.jpg"],
-  },
-  verification: {
-    google: "your-google-verification-code", // Substitua pelo código real do Search Console
   },
 };
 

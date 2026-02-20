@@ -1,11 +1,23 @@
-Progresso atual (estimativa): **Admin 100% concluido | Projeto geral em transicao para auditoria do site publico**
+Progresso atual (estimativa): **Admin 100% concluido | Publico auditado (nao aprovado para go-live ate fechar bloqueios criticos)**
 
 Proximos passos imediatos (atualizado 20/02/2026)
 
-1. Publico: executar auditoria exclusiva de `src/app/(public)/**` e `src/app/[slug]/**` (sem mock, sem rota quebrada, SEO/slug corretos).
-2. Publico: validar fluxo completo de conta global + atleta (email/senha, Google, solicitacao/aprovacao por racha) ponta a ponta.
-3. Superadmin: manter consolidacao dos dados publicos/admin por tenant com isolamento total e sem bypass por URL/query/body.
-4. Seguranca: planejar migracao para Next >= 15.5.10 para eliminar alertas residuais de `pnpm audit --prod`.
+1. Publico (critico): corrigir vazamento multi-tenant no proxy `/api/public/[slug]/sponsors` (bloquear override por query `slug`).
+2. Publico (critico): substituir conteudo placeholder de `contato`, `privacidade` e `termos` por versoes oficiais finais.
+3. Publico (critico): remover/bloquear endpoints legados `jogos-do-dia-fallback` e `jogos-do-dia-ssl-fix`.
+4. Publico (alto): corrigir links quebrados da Sidebar (`/estatisticas/atacantes`, `/estatisticas/meias`, `/estatisticas/goleiros`).
+5. Publico (medio): eliminar estados artificiais (`Jogador 1`, `Time A/B`, `placeholder-*`) e revisar fallback de slug default.
+6. Seguranca/infra: manter trilha de upgrade para Next >= 15.5.10 para reduzir risco residual de dependencias.
+
+Atualizacao 20/02/2026 - auditoria completa do site publico (fase 1)
+
+- Relatorio dedicado criado: `PUBLIC_AUDIT_REPORT.md`.
+- Escopo auditado: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/**`, `src/hooks/usePublic*`.
+- Inventario concluido: 105 rotas publicas (`page.tsx`) e 46 endpoints publicos (`route.ts`).
+- Resultado atual: **nao aprovado para venda** ate fechamento dos achados:
+  - 3 criticos
+  - 2 altos
+  - 2 medios
 
 Atualizacao 20/02/2026 - fechamento do painel admin (aceite tecnico)
 

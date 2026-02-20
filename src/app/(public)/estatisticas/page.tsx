@@ -8,33 +8,33 @@ const estatisticasLinks = [
   {
     title: "🏆 Classificação dos Times",
     href: "/estatisticas/classificacao-dos-times",
-    description:
-      "Acompanhe o desempenho de cada time rodada a rodada e veja quem está na liderança.",
+    description: "Acompanhe pontos, aproveitamento, vitórias, empates e derrotas por período.",
   },
   {
     title: "📋 Ranking Geral",
     href: "/estatisticas/ranking-geral",
-    description: "Pontuação acumulada de todos os jogadores durante a temporada ou quadrimestre.",
+    description:
+      "Pontuação consolidada dos atletas com filtros de temporada, quadrimestre e geral.",
   },
   {
     title: "🎯 Artilheiros",
     href: "/estatisticas/artilheiros",
-    description: "Ranking dos atletas com mais gols marcados nas partidas.",
+    description: "Veja quem mais decide na bola na rede, com filtros por período e ano.",
   },
   {
     title: "🅰️ Assistências",
     href: "/estatisticas/assistencias",
-    description: "Ranking dos principais maestros: veja quem mais distribuiu assistências.",
+    description: "Ranking dos maestros com mais passes para gol nas partidas registradas.",
   },
   {
     title: "💪 Melhores por Posição",
     href: "/estatisticas/melhores-por-posicao",
-    description: "Destaques por posição: atacante, meia, zagueiro e goleiro.",
+    description: "Destaques de atacante, meia, zagueiro e goleiro com base em dados oficiais.",
   },
   {
     title: "⚖️ Tira-teima (Comparador)",
     href: "/estatisticas/tira-teima",
-    description: "Compare dois jogadores lado a lado, com base em estatísticas oficiais.",
+    description: "Compare dois atletas lado a lado com histórico, eficiência e desempenho.",
   },
 ];
 
@@ -47,7 +47,7 @@ export default function EstatisticasPage() {
         <title>Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Estatísticas completas do seu racha de futebol 7: gols, assistências, ranking de times, ranking geral, destaques por posição e comparativo entre atletas. Atualizado automaticamente a cada jogo. Fut7Pro – O sistema mais completo para futebol 7, racha e futebol amador."
+          content="Estatísticas oficiais do racha em tempo real: classificação dos times, ranking geral, artilheiros, assistências, melhores por posição e comparador de atletas. Dados atualizados a cada partida publicada."
         />
         <meta
           name="keywords"
@@ -65,9 +65,8 @@ export default function EstatisticasPage() {
         max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto
         leading-relaxed font-medium"
       >
-        Explore todos os rankings: classificação de times, desempenho dos jogadores, artilharia,
-        assistências, destaques por posição e comparador de atletas. Evolua sua performance rodada a
-        rodada, e mostre que está sempre entre os melhores.
+        Explore as métricas oficiais do seu racha com visão completa por atleta, time, posição e
+        período. Tudo é alimentado automaticamente pelos jogos registrados no painel administrativo.
       </p>
 
       <div

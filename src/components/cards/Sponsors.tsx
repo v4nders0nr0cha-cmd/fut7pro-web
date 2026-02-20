@@ -3,12 +3,13 @@
 import Image from "next/image";
 import { useMemo } from "react";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import { usePublicSponsors } from "@/hooks/usePublicSponsors";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function Sponsors() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { slots, isLoading } = usePublicSponsors(slug);
 
   const list = useMemo(() => {

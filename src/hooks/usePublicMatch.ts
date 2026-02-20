@@ -1,5 +1,4 @@
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { PublicMatch } from "@/types/partida";
 
 type PublicMatchResponse = {
@@ -21,7 +20,7 @@ const fetcher = async (url: string): Promise<PublicMatch> => {
 };
 
 export function usePublicMatch(id?: string, slug?: string) {
-  const resolvedSlug = (slug ?? rachaConfig.slug)?.trim() || "";
+  const resolvedSlug = slug?.trim() || "";
   const key = id && resolvedSlug ? `/api/public/${resolvedSlug}/matches/${id}` : null;
 
   const { data, error, isLoading, mutate } = useSWR<PublicMatch>(key, fetcher, {

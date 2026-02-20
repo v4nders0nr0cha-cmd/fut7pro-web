@@ -13,6 +13,10 @@ import { getApiBase } from "@/lib/get-api-base";
 import { GaScripts } from "@/components/layout/GaScripts";
 
 const inter = Inter({ subsets: ["latin"] });
+const googleVerification =
+  process.env.GOOGLE_SITE_VERIFICATION?.trim() ||
+  process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() ||
+  "";
 
 async function fetchBrandingMetadata() {
   const base = getApiBase();
@@ -87,9 +91,7 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-snippet": -1,
       },
     },
-    verification: {
-      google: "your-google-verification-code",
-    },
+    verification: googleVerification ? { google: googleVerification } : undefined,
   };
 }
 

@@ -58,14 +58,20 @@ export default function Sidebar() {
   const artilheiroData = {
     name: artilheiro?.nome ?? "Artilheiro em atualização",
     value: artilheiro ? `${artilheiro.gols ?? artilheiro.pontos ?? 0} gols` : "Em processamento",
-    href: publicHref(artilheiro?.slug ? `/atletas/${artilheiro.slug}` : "/estatisticas/atacantes"),
+    href: publicHref(
+      artilheiro?.slug
+        ? `/atletas/${artilheiro.slug}`
+        : "/estatisticas/melhores-por-posicao/atacantes"
+    ),
     image: safeImage(artilheiro?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
   };
 
   const maestroData = {
     name: maestro?.nome ?? "Maestro em atualização",
     value: maestro ? `${maestro.assistencias ?? 0} assistências` : "Em processamento",
-    href: publicHref(maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/meias"),
+    href: publicHref(
+      maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/melhores-por-posicao/meias"
+    ),
     image: safeImage(maestro?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
   };
 
@@ -79,7 +85,9 @@ export default function Sidebar() {
   const goleiroData = {
     name: goleiro?.nome ?? melhorDoAnoData.name,
     value: goleiro ? `${goleiro.pontos ?? 0} pontos` : melhorDoAnoData.value,
-    href: publicHref(goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/goleiros"),
+    href: publicHref(
+      goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/melhores-por-posicao/goleiros"
+    ),
     image: safeImage(goleiro?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
   };
 
@@ -138,7 +146,7 @@ export default function Sidebar() {
         title="Artilheiro do Ano"
         name={artilheiroData.name}
         value={artilheiroData.value}
-        href={publicHref("/estatisticas/atacantes")}
+        href={publicHref("/estatisticas/melhores-por-posicao/atacantes")}
         image={artilheiroData.image}
         icon="/images/icons/bola-de-ouro.png"
       />
@@ -147,7 +155,7 @@ export default function Sidebar() {
         title="Meia do Ano"
         name={maestroData.name}
         value={maestroData.value}
-        href={publicHref("/estatisticas/meias")}
+        href={publicHref("/estatisticas/melhores-por-posicao/meias")}
         image={maestroData.image}
         icon="/images/icons/chuteira-de-ouro.png"
       />
@@ -156,7 +164,7 @@ export default function Sidebar() {
         title="Goleiro do Ano"
         name={goleiroData.name}
         value={goleiroData.value}
-        href={publicHref("/estatisticas/goleiros")}
+        href={publicHref("/estatisticas/melhores-por-posicao/goleiros")}
         image={goleiroData.image}
         icon="/images/icons/luva-de-ouro.png"
       />

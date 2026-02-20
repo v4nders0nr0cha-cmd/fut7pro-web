@@ -260,11 +260,11 @@ export default function CampeoesPage() {
         <title>Os Campeões | Hall da Fama do Racha | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja os campeoes do ano e por quadrimestre no racha. Hall da fama com rankings de pontos, gols e assistencias, sempre atualizado em tempo real."
+          content="Hall da Fama oficial do racha com campeões do ano e de cada quadrimestre, baseado em rankings reais de pontos, gols, assistências e desempenho por posição."
         />
         <meta
           name="keywords"
-          content="os campeoes, hall da fama, ranking anual, ranking quadrimestral, artilheiros, assistencias, fut7, futebol 7, racha"
+          content="campeões do racha, hall da fama, ranking anual, ranking quadrimestral, conquistas, artilheiros, assistências, fut7pro"
         />
       </Head>
 
@@ -276,8 +276,8 @@ export default function CampeoesPage() {
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-brand mb-2">Os Campeões</h2>
           <p className="text-textoSuave">
-            Hall da Fama do racha, com os campeões do ano e de cada quadrimestre, baseados em
-            desempenho real nos jogos, rankings e estatísticas oficiais.
+            O Hall da Fama oficial do racha reúne os títulos anuais e quadrimestrais gerados a
+            partir dos dados reais das partidas publicadas.
           </p>
           <div className="flex justify-center mt-3">
             <button
@@ -379,11 +379,9 @@ export default function CampeoesPage() {
 
                 <div className="space-y-5 text-sm text-gray-200 leading-relaxed">
                   <p>
-                    A página Os Campeões funciona como o Hall da Fama oficial do racha, destacando
-                    os melhores atletas e times ao longo do ano e de cada quadrimestre, com base em
-                    dados reais registrados no sistema. Todos os campeões são definidos
-                    automaticamente a partir dos rankings, estatísticas e resultados oficiais das
-                    partidas, sem interferência manual.
+                    A página Os Campeões consolida os títulos oficiais do racha por ano e por
+                    quadrimestre. Os vencedores são calculados automaticamente com base nas partidas
+                    registradas e publicadas no sistema.
                   </p>
 
                   <div>
@@ -407,10 +405,9 @@ export default function CampeoesPage() {
                       <li>Campeão do Ano: time com maior pontuação acumulada no ano.</li>
                     </ul>
                     <p className="mt-2">
-                      Ao clicar em qualquer card, você é direcionado ao ranking correspondente
-                      daquele ano. Quando o ano ainda não foi finalizado, os cards exibem o selo
-                      "Temporariamente", indicando que os resultados podem mudar até o encerramento
-                      da temporada.
+                      Ao clicar em cada card, você abre o ranking correspondente já filtrado para o
+                      ano selecionado. Enquanto a temporada está em andamento, os resultados são
+                      exibidos como provisórios.
                     </p>
                   </div>
 
@@ -429,8 +426,8 @@ export default function CampeoesPage() {
                       <li>Goleiro do Ano</li>
                     </ul>
                     <p className="mt-2">
-                      O critério é sempre o mesmo: maior pontuação dentro da posição no ano
-                      selecionado. Cada card leva ao ranking específico daquela posição.
+                      O critério é a maior pontuação entre atletas da mesma posição no ano
+                      selecionado. Cada card direciona para o ranking específico da função.
                     </p>
                   </div>
 
@@ -440,9 +437,9 @@ export default function CampeoesPage() {
                     </h4>
                     <p className="mb-2">O ano é dividido em três quadrimestres:</p>
                     <ul className="list-disc pl-5 space-y-1">
-                      <li>1o Quadrimestre: Janeiro a Abril</li>
-                      <li>2o Quadrimestre: Maio a Agosto</li>
-                      <li>3o Quadrimestre: Setembro a Dezembro</li>
+                      <li>1º Quadrimestre: janeiro a abril</li>
+                      <li>2º Quadrimestre: maio a agosto</li>
+                      <li>3º Quadrimestre: setembro a dezembro</li>
                     </ul>
                     <p className="mt-2">
                       Cada quadrimestre possui seus próprios campeões, definidos apenas pelo
@@ -451,15 +448,8 @@ export default function CampeoesPage() {
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Os rankings do período são finalizados.</li>
                       <li>Os campeões recebem o selo de Campeão do Quadrimestre.</li>
-                      <li>
-                        Os rankings do próximo quadrimestre reiniciam do zero, garantindo disputa
-                        justa.
-                      </li>
+                      <li>O próximo quadrimestre começa com nova disputa dentro do seu período.</li>
                     </ul>
-                    <p className="mt-2">
-                      Antes do início de um quadrimestre, os rankings aparecem com a mensagem:
-                      "Ranking liberado no início do quadrimestre."
-                    </p>
                   </div>
 
                   <div>
@@ -472,7 +462,7 @@ export default function CampeoesPage() {
                     </p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Ficam visíveis no perfil do atleta.</li>
-                      <li>São permanentes.</li>
+                      <li>Ficam registrados no histórico de conquistas.</li>
                       <li>
                         São organizados por importância, dando mais destaque aos títulos mais raros
                         e difíceis de conquistar.

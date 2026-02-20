@@ -6,10 +6,12 @@ import { notFound } from "next/navigation";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
 import TabelaLancamentos from "@/components/financeiro/TabelaLancamentos";
 import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 export default function PrestacaoDeContasPage() {
   const { tenantSlug } = useRachaContext();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const {
     resumo,
     lancamentos,

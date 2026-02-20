@@ -2,12 +2,13 @@
 
 import { useRacha } from "@/context/RachaContext";
 import { useAboutPublic } from "@/hooks/useAbout";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { OFFICIAL_YOUTUBE_CHANNEL_URL } from "@/lib/help-center-defaults";
 
 export default function AjudaClient() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { about } = useAboutPublic(slug);
   const videos = about?.videos?.length ? about.videos : [];
 

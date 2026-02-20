@@ -49,10 +49,17 @@ export function RachaProvider({
   initialTenantSlug?: string | null;
 }) {
   const pathname = usePathname() ?? "";
+  const slugFromPath = resolvePublicTenantSlug(pathname);
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
-  const defaultSlug = rachaConfig.slug || defaultRachaId;
+  const fallbackSlug = rachaConfig.slug || defaultRachaId;
+  const allowDefaultFallback = !slugFromPath && !initialTenantSlug;
   const initialStoredSlug = typeof window !== "undefined" ? getStoredTenantSlug() : null;
-  const initialSlug = (initialTenantSlug || initialStoredSlug || defaultSlug || "").trim();
+  const initialSlug = (
+    initialTenantSlug ||
+    slugFromPath ||
+    (allowDefaultFallback ? initialStoredSlug || fallbackSlug : "") ||
+    ""
+  ).trim();
   const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
   const [tenantSlug, setTenantSlugState] = useState<string>(initialSlug);
 
@@ -70,8 +77,8 @@ export function RachaProvider({
 
   const clearRachaId = useCallback(() => {
     setRachaIdState(defaultRachaId);
-    setTenantSlugState(defaultSlug);
-  }, [defaultRachaId, defaultSlug]);
+    setTenantSlugState(fallbackSlug);
+  }, [defaultRachaId, fallbackSlug]);
 
   const isRachaSelected = useMemo(() => {
     return (tenantSlug || rachaId).length > 0;
@@ -79,16 +86,19 @@ export function RachaProvider({
 
   useEffect(() => {
     const slugFromPath = resolvePublicTenantSlug(pathname);
+    const shouldUseDefaultFallback = !slugFromPath && !initialTenantSlug;
     if (slugFromPath) {
       setTenantSlugState(slugFromPath);
       setStoredTenantSlug(slugFromPath);
       return;
     }
 
-    const stored = getStoredTenantSlug();
-    if (stored) {
-      setTenantSlugState(stored);
-      return;
+    if (shouldUseDefaultFallback) {
+      const stored = getStoredTenantSlug();
+      if (stored) {
+        setTenantSlugState(stored);
+        return;
+      }
     }
 
     if (initialTenantSlug) {
@@ -97,10 +107,10 @@ export function RachaProvider({
       return;
     }
 
-    if (!tenantSlug && defaultSlug) {
-      setTenantSlugState(defaultSlug);
+    if (!tenantSlug && shouldUseDefaultFallback && fallbackSlug) {
+      setTenantSlugState(fallbackSlug);
     }
-  }, [pathname, initialTenantSlug, defaultSlug, tenantSlug]);
+  }, [pathname, initialTenantSlug, fallbackSlug, tenantSlug]);
 
   const value = useMemo(
     () => ({

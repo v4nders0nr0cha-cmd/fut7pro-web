@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type ChatMessage = {
   id: string;
@@ -18,12 +18,13 @@ function formatDate(value?: string | number | Date) {
 
 export default function ChatClient() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       autor: "admin",
-      texto: "Bem-vindo! Envie sua duvida e retornaremos no email informado.",
+      texto: "Bem-vindo! Envie sua dúvida e retornaremos no e-mail informado.",
       data: formatDate(),
     },
   ]);
@@ -102,7 +103,7 @@ export default function ChatClient() {
             <span
               className={`text-xs mb-1 ${msg.autor === "admin" ? "text-brand" : "text-zinc-300"}`}
             >
-              {msg.autor === "admin" ? "Admin" : "Voce"}
+              {msg.autor === "admin" ? "Admin" : "Você"}
             </span>
             <span
               className={`inline-block px-3 py-2 rounded-xl text-sm ${

@@ -25,31 +25,31 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossa-historia",
       icon: <FaBookOpen className="text-3xl text-brand" />,
       title: "Nossa História",
-      desc: "Conheça nossa origem, missão e os principais marcos.",
+      desc: "Conheça a trajetória do racha, marcos, curiosidades e evolução do grupo.",
     },
     {
       href: "/sobre-nos/estatuto",
       icon: <FaGavel className="text-3xl text-brand" />,
       title: "Estatuto",
-      desc: "Regras e diretrizes internas que norteiam o nosso racha.",
+      desc: "Regras oficiais do racha publicadas e atualizadas pelo painel administrativo.",
     },
     {
       href: "/sobre-nos/aniversariantes",
       icon: <FaBirthdayCake className="text-3xl text-brand" />,
       title: "Aniversariantes",
-      desc: "Veja quem faz aniversário no mês e acesse o perfil dos atletas.",
+      desc: "Veja quem faz aniversário no mês e fortaleça o engajamento da turma.",
     },
     {
       href: "/sobre-nos/nossos-parceiros",
       icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
-      desc: "Conheça nossos patrocinadores e apoiadores.",
+      desc: "Acesse patrocinadores ativos, benefícios e parceiros que apoiam o racha.",
     },
     {
       href: "/sobre-nos/contatos",
       icon: <FaPhoneAlt className="text-3xl text-brand" />,
       title: "Contatos",
-      desc: "Entre em contato com nossos administradores.",
+      desc: "Fale com a administração, suporte e responsáveis do racha.",
     },
   ];
 
@@ -80,8 +80,8 @@ export default function SobreNosPage() {
           Sobre Nós
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Conheça mais sobre nosso futebol entre amigos: nossa história, regras, aniversariantes,
-          parceiros e todas as informações importantes do racha.
+          Esta seção centraliza como o Fut7Pro funciona no dia a dia do racha: governança, regras,
+          comunicação, histórico, parceiros e transparência operacional.
         </p>
         <section className="w-full max-w-5xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 
 export interface TeamRankingEntry {
   id: string;
@@ -64,7 +63,7 @@ export interface UsePublicTeamRankingsOptions {
 }
 
 export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}) {
-  const slug = options.slug ?? rachaConfig.slug;
+  const slug = options.slug?.trim() || "";
 
   const params = new URLSearchParams();
   const isAllPeriod = options.period === "all";

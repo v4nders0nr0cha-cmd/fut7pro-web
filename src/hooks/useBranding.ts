@@ -21,7 +21,7 @@ export function useBranding(options?: BrandingOptions) {
   const { tenantSlug } = useRacha();
   const scope = options?.scope ?? "public";
   const resolvedSlug = options?.slug || tenantSlug || "";
-  const publicSlug = resolvedSlug || rachaConfig.slug || "";
+  const publicSlug = resolvedSlug;
 
   const publicAbout = useAboutPublic(scope === "public" ? publicSlug : undefined);
   const adminAbout = useAboutAdmin({ enabled: scope === "admin" });

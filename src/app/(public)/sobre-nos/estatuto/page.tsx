@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { FaDownload, FaChevronDown } from "react-icons/fa";
 import { useEstatutoPublic } from "@/hooks/useEstatuto";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
+import { usePublicLinks } from "@/hooks/usePublicLinks";
 import {
   ESTATUTO_FALLBACK,
   ESTATUTO_FALLBACK_ATUALIZADO_EM,
@@ -22,7 +22,8 @@ function formatarData(valor?: string) {
 
 export default function EstatutoPage() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { estatuto, isLoading, isError } = useEstatutoPublic(slug);
   const [aberto, setAberto] = useState<number | null>(0);
 

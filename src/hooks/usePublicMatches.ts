@@ -1,5 +1,4 @@
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { PublicMatchesResponse } from "@/types/partida";
 
 type Scope = "today" | "recent" | "upcoming";
@@ -44,7 +43,7 @@ function buildKey(
 
 export function usePublicMatches(options: PublicMatchesOptions = {}) {
   const enabled = options.enabled ?? true;
-  const slug = (options.slug ?? rachaConfig.slug)?.trim() || "";
+  const slug = options.slug?.trim() || "";
   const hasRange = Boolean(options.date || options.from || options.to);
   const scope = options.scope ?? (hasRange ? undefined : "recent");
   const limit = options.limit ?? (hasRange ? undefined : 12);

@@ -1,5 +1,4 @@
 import useSWR from "swr";
-import { rachaConfig } from "@/config/racha.config";
 import type { PublicDestaquesDoDiaResponse } from "@/types/destaques";
 
 type Options = {
@@ -27,7 +26,7 @@ function buildKey(slug?: string, date?: string) {
 
 export function usePublicDestaquesDoDia(options: Options = {}) {
   const enabled = options.enabled ?? true;
-  const slug = options.slug || rachaConfig.slug;
+  const slug = options.slug?.trim() || "";
   const key = enabled ? buildKey(slug, options.date) : null;
 
   const { data, error, isLoading, mutate } = useSWR<PublicDestaquesDoDiaResponse>(

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { rachaConfig } from "@/config/racha.config";
 import RegisterClient from "@/app/(public)/register/RegisterClient";
 
 type RegisterPageProps = {
@@ -13,7 +12,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 );
 
 export function generateMetadata({ params }: RegisterPageProps): Metadata {
-  const slug = params.slug || rachaConfig.slug;
+  const slug = params.slug;
   return {
     title: `Cadastro do Atleta | ${slug} | Fut7Pro`,
     description: "Crie sua conta de atleta para acessar o Fut7Pro.",

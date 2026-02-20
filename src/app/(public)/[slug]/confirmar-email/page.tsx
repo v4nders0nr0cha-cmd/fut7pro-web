@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { rachaConfig } from "@/config/racha.config";
 import ConfirmarEmailPublicClient from "@/app/(public)/confirmar-email/ConfirmarEmailPublicClient";
 
 type ConfirmarEmailSlugPageProps = {
@@ -13,7 +12,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 );
 
 export function generateMetadata({ params }: ConfirmarEmailSlugPageProps): Metadata {
-  const slug = params.slug || rachaConfig.slug;
+  const slug = params.slug;
   return {
     title: `Confirmação de e-mail | ${slug} | Fut7Pro`,
     description: "Confirme seu e-mail para liberar o acesso da sua conta no Fut7Pro.",

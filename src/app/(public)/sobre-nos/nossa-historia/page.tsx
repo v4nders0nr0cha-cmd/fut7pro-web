@@ -346,8 +346,8 @@ function normalizeGaleriaFotos(
 
 export default function NossaHistoriaPage() {
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { about } = useAboutPublic(slug);
   const { footer } = useFooterConfigPublic(slug);
   const { racha } = useRachaPublic(slug);

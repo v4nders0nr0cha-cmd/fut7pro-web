@@ -19,14 +19,14 @@ import { normalizeSocialUrl } from "@/utils/social-links";
 export default function Footer() {
   const tema = useTema();
   const { tenantSlug } = useRacha();
-  const slug = tenantSlug || rachaConfig.slug;
+  const { publicHref, publicSlug } = usePublicLinks();
+  const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { about } = useAboutPublic(slug);
   const { footer } = useFooterConfigPublic(slug);
   const { socialLinks } = useSocialLinksPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
   const { slots, isLoading } = usePublicSponsors(slug);
-  const { publicHref } = usePublicLinks();
 
   const campoAbout = useMemo(() => {
     if (about?.campoAtual) return about.campoAtual;
@@ -47,14 +47,14 @@ export default function Footer() {
 
   const topicosPadrao = useMemo(
     () => [
-      { id: "ranking", label: "Sistema de Ranking", href: publicHref("/estatisticas") },
-      { id: "premiacao", label: "Sistema de Premiação", href: publicHref("/os-campeoes") },
+      { id: "ranking", label: "Rankings e Estatísticas", href: publicHref("/estatisticas") },
+      { id: "premiacao", label: "Campeões e Conquistas", href: publicHref("/os-campeoes") },
       {
         id: "balanceamento",
-        label: "Sistema de Balanceamento",
+        label: "Sorteio Inteligente",
         href: publicHref("/sorteio-inteligente"),
       },
-      { id: "como-funciona", label: "Como Funciona", href: publicHref("/sobre-nos") },
+      { id: "como-funciona", label: "Como o Fut7Pro Funciona", href: publicHref("/sobre-nos") },
       { id: "sobre", label: `Sobre o ${tema.nome}`, href: publicHref("/sobre-nos") },
       { id: "termos", label: "Termos de Uso", href: publicHref("/termos") },
       { id: "privacidade", label: "Política de Privacidade", href: publicHref("/privacidade") },
