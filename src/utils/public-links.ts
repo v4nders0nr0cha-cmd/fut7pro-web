@@ -31,6 +31,7 @@ const SYSTEM_SEGMENTS = new Set([
   "favicon",
   "robots",
   "sitemap",
+  "sitemaps",
   "manifest",
   "_next",
   "health",

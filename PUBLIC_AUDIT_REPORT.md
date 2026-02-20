@@ -1,6 +1,6 @@
 # PUBLIC AUDIT REPORT
 
-Data: 2026-02-20 (revalidação pós-hotfixes)  
+Data: 2026-02-20 (revalidação pós-hotfixes + validação em produção)  
 Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/**`, `src/hooks/usePublic*`.
 
 ## Resumo Executivo
@@ -16,6 +16,7 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - ✅ Removidos placeholders legais/contato em páginas públicas.
 - ✅ Endpoints legados públicos de jogos do dia agora retornam `410 Gone`.
 - ✅ Fallback de `rachaConfig.slug` removido dos hooks públicos e das rotas públicas slugadas.
+- ✅ Verificação Google Search Console concluída com token correto em produção (`google-site-verification`).
 
 ## Inventário e Navegação
 
@@ -124,24 +125,23 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - Resultado:
   - Fluxos slugados não dependem mais de tenant default implícito.
 
-### F) Placeholder de verificação SEO removido dos layouts (corrigido em código)
+### F) Placeholder de verificação SEO removido (corrigido e validado em produção)
 
 - Evidências:
-  - `src/app/(public)/layout.tsx:17`
-  - `src/app/(public)/layout.tsx:65`
-  - `src/app/layout.tsx:17`
-  - `src/app/layout.tsx:91`
+  - `src/app/layout.tsx:16`
+  - `src/app/layout.tsx:94`
+  - `view-source:https://app.fut7pro.com.br/`
+  - `view-source:https://app.fut7pro.com.br/vitrine`
 - Resultado:
-  - O placeholder fixo foi removido e a verificação Google agora usa variável de ambiente (`GOOGLE_SITE_VERIFICATION` ou `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`).
+  - O placeholder fixo foi removido e a verificação Google usa env (`GOOGLE_SITE_VERIFICATION` com fallback opcional `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`), com confirmação de propriedade concluída no Search Console.
 
 ## Resultado de Prontidão (Go-Live Público)
 
 - **Ainda não aprovado para venda** nesta revisão.
-- Bloqueios críticos foram resolvidos, porém restam pendências médias que afetam qualidade final e SEO técnico.
+- Bloqueios críticos foram resolvidos, porém restam pendências médias de qualidade funcional (empty-state e política de tenant em rotas não slugadas).
 
 ## Próxima Etapa Recomendada (ordem de execução)
 
 1. Remover textos/dados artificiais de empty-state (`Jogador 1`, `Time A`, `Time B`, `placeholder-*`).
 2. Formalizar política de tenant para rotas públicas não slugadas (`/` e redirects).
-3. Garantir `GOOGLE_SITE_VERIFICATION` (ou `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`) configurada em produção.
-4. Executar smoke E2E público final (rotas principais + validações de conteúdo sem mocks).
+3. Executar smoke E2E público final (rotas principais + validações de conteúdo sem mocks).

@@ -94,6 +94,15 @@ const nextConfig = {
     ];
   },
 
+  async rewrites() {
+    return [
+      {
+        source: "/sitemaps/:slug.xml",
+        destination: "/sitemaps/:slug",
+      },
+    ];
+  },
+
   // Redirects canônicos
   async redirects() {
     return [

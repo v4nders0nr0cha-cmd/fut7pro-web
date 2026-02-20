@@ -43,5 +43,5 @@ export function middleware(req: NextRequest) {
 // reduz custo: não roda em _next/static, imagens, favicon, robots, sitemap
 // IMPORTANTE: excluir APIs para não interferir nos headers de cache
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|api).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps|api).*)"],
 };
