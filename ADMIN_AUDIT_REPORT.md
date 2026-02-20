@@ -1,6 +1,6 @@
 # ADMIN AUDIT REPORT
 
-Data: 2026-02-19  
+Data: 2026-02-20  
 Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo painel `/admin`.
 
 ## Resumo Executivo
@@ -183,19 +183,17 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ### Próxima Ação Recomendada (Imediata)
 
-1. Cadastrar os secrets obrigatórios do workflow no GitHub Actions (`fut7pro-web`):
-   - `E2E_ADMIN_EMAIL`
-   - `E2E_ADMIN_PASSWORD`
-   - `E2E_ACTIVE_TENANT_SLUG`
-   - `E2E_BLOCKED_TENANT_SLUG`
-   - `NEXT_PUBLIC_API_URL`
-   - `NEXTAUTH_SECRET`
-2. Cadastrar secrets do monitor de billing no backend (`fut7pro-backend`):
-   - `BILLING_MONITOR_URL` (ex.: `https://api.fut7pro.com.br/billing/ops/summary`)
-   - `BILLING_MONITOR_TOKEN` (mesmo valor configurado no Render em `BILLING_MONITOR_TOKEN`)
-   - `SLACK_WEBHOOK_URL` (opcional, para alerta automático em falha)
-3. Fechar checklist de lançamento comercial com suporte/jurídico/LGPD e comunicação de cobrança ao cliente:
+1. Encerrar formalmente o escopo admin como concluído no checklist comercial:
    - referência: `ADMIN_GO_LIVE_CHECKLIST.md`.
+2. Iniciar auditoria exclusiva do site público (nova fase):
+   - rotas slugadas e navegação completa;
+   - autenticação global/atleta e aprovação de vínculo;
+   - SEO/indexação e conteúdo dinâmico por tenant;
+   - hardening multi-tenant também nas páginas públicas.
+3. Manter operação contínua pós-go-live do admin:
+   - monitorar workflow `Admin Smoke CI` em PRs;
+   - monitorar workflow `Billing Monitor` e logs do webhook MP;
+   - executar reauditoria de segurança multi-tenant mensal.
 
 ## Tabela de Rotas e Navegação
 
@@ -538,10 +536,17 @@ Escopo: `src/app/(admin)/admin/**`, navegação e integrações usadas pelo pain
 
 ## Observações de Ambiente (Render/Vercel)
 
-- Variáveis adicionadas para observabilidade de billing (Render + GitHub Actions backend):
+- Variáveis de observabilidade de billing confirmadas como configuradas (Render + GitHub Actions backend):
   - `BILLING_MONITOR_URL`
   - `BILLING_MONITOR_TOKEN`
-- Para manter o smoke E2E executável com login real, usar credenciais válidas de admin em `.env.e2e.local` (local) ou secrets do CI:
+- Secrets do smoke admin confirmados no GitHub Actions (`fut7pro-web`):
+  - `E2E_ADMIN_EMAIL`
+  - `E2E_ADMIN_PASSWORD`
+  - `E2E_ACTIVE_TENANT_SLUG`
+  - `E2E_BLOCKED_TENANT_SLUG`
+  - `NEXT_PUBLIC_API_URL`
+  - `NEXTAUTH_SECRET`
+- Para manter o smoke E2E executável localmente, usar credenciais válidas de admin em `.env.e2e.local`:
   - `E2E_ADMIN_EMAIL` e `E2E_ADMIN_PASSWORD`, ou
   - `TEST_EMAIL` e `TEST_PASSWORD` (quando esses valores forem credenciais reais do ambiente alvo).
 - Recomendação operacional contínua:

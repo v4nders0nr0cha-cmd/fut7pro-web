@@ -1,11 +1,20 @@
-Progresso atual (estimativa): **98% concluido**
+Progresso atual (estimativa): **Admin 100% concluido | Projeto geral em transicao para auditoria do site publico**
 
-Proximos passos imediatos (atualizado 10/02/2026)
+Proximos passos imediatos (atualizado 20/02/2026)
 
-1. Admin: remover mocks restantes em personalizacao (redes-sociais, editar-paginas/contatos) e ajustar footer gating hardcoded.
-2. Admin: revisar comunicacao/ajuda fallback (articles/videos mock).
-3. Superadmin: trocar `src/app/(superadmin)/superadmin/marketing/[id]/page.tsx` para usar influencersApi/endpoints reais.
+1. Publico: executar auditoria exclusiva de `src/app/(public)/**` e `src/app/[slug]/**` (sem mock, sem rota quebrada, SEO/slug corretos).
+2. Publico: validar fluxo completo de conta global + atleta (email/senha, Google, solicitacao/aprovacao por racha) ponta a ponta.
+3. Superadmin: manter consolidacao dos dados publicos/admin por tenant com isolamento total e sem bypass por URL/query/body.
 4. Seguranca: planejar migracao para Next >= 15.5.10 para eliminar alertas residuais de `pnpm audit --prod`.
+
+Atualizacao 20/02/2026 - fechamento do painel admin (aceite tecnico)
+
+- `ADMIN_AUDIT_REPORT.md` consolidado com status final do admin: concluido para go-live comercial.
+- `ADMIN_GO_LIVE_CHECKLIST.md` atualizado com controles/smoke/monitoramento e evidencias de aceite.
+- Workflow `Admin Smoke CI` validado em PR real (run `22201213606`).
+- Workflow `Billing Monitor` validado com `ok: true` (run `22225524084`).
+- Secrets de smoke admin e monitor de billing confirmados em GitHub/Render.
+- Proxima fase oficial do projeto: auditoria completa do site publico.
 
 Atualizacao 10/02/2026 - central de atualizacoes (changelog) com datas recentes
 
