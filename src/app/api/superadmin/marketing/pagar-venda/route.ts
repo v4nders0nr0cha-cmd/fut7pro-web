@@ -1,20 +1,25 @@
-// src/app/api/superadmin/marketing/pagar-venda/route.ts
-
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { jsonResponse, requireSuperAdminUser } from "../../../_proxy/helpers";
 
-export async function POST(request: Request) {
-  const data = await request.formData();
-  const id = data.get("id")?.toString();
-  if (!id) return NextResponse.json({ ok: false, error: "ID inválido" }, { status: 400 });
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  await prisma.influencerVenda.update({
-    where: { id },
-    data: {
-      status: "pago",
-      pagoEm: new Date(),
+const GONE_PAYLOAD = {
+  error: "Endpoint legado desativado",
+  code: "LEGACY_ENDPOINT_DISABLED",
+};
+
+export async function POST() {
+  const user = await requireSuperAdminUser();
+  if (!user) {
+    return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
+  }
+
+  return NextResponse.json(GONE_PAYLOAD, {
+    status: 410,
+    headers: {
+      "Cache-Control": "no-store, max-age=0, must-revalidate",
     },
   });
-
-  return NextResponse.redirect(request.headers.get("referer") || "/superadmin/marketing", 303);
 }

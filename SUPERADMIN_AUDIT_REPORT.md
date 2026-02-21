@@ -14,6 +14,8 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
   - `legacy`: 9
   - `root`: 2
 - Foi aplicado corte operacional para go-live: menu principal agora exibe apenas o conjunto minimo necessario para controle da plataforma.
+- Lacunas de segurança em endpoints legados fora do menu principal foram identificadas e mitigadas nesta rodada.
+- Rotas de paginas legacy agora ficam bloqueadas por feature flag server-side (default bloqueado).
 
 ## Status Final de Aceite
 
@@ -28,7 +30,15 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 ### Critico
 
-1. Telas com dados mock expostas no painel
+1. Endpoint legado sensivel sem autenticacao e com acesso direto ao banco (Prisma no app web)
+
+- Evidencias:
+  - `src/app/api/superadmin/marketing/pagar-venda/route.ts:1`
+- Risco:
+  - Alteracao de estado financeiro sem sessao SUPERADMIN valida.
+  - Bypass do backend oficial e da regra de producao `DISABLE_WEB_DIRECT_DB=true`.
+
+2. Telas com dados mock expostas no painel
 
 - Evidencias:
   - `src/app/(superadmin)/superadmin/(legacy)/logs/page.tsx:5`
@@ -39,7 +49,7 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 ### Alto
 
-2. Monitoramento com fallback de incidentes/servicos hardcoded
+3. Monitoramento com fallback de incidentes/servicos hardcoded
 
 - Evidencias:
   - `src/app/(superadmin)/superadmin/(legacy)/monitoramento/page.tsx:39`
@@ -49,7 +59,7 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 - Risco:
   - Dados operacionais podem nao refletir estado real quando API falha/retorna vazio.
 
-3. Integracoes com fallback local (localStorage + catalogo local)
+4. Integracoes com fallback local (localStorage + catalogo local)
 
 - Evidencias:
   - `src/app/(superadmin)/superadmin/(legacy)/integracoes/page.tsx:339`
@@ -58,7 +68,15 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 - Risco:
   - Configuracao pode aparentar persistencia backend sem de fato estar aplicada no sistema.
 
-4. Estrutura sem separacao clara de dominio (antes da reorganizacao)
+5. Endpoint de exportacao financeira exposto sem autenticacao e com resposta mock
+
+- Evidencias:
+  - `src/app/api/superadmin/export-financeiro/route.ts:1`
+- Risco:
+  - Superficie desnecessaria para enumeracao de rotas privadas.
+  - Resposta mock em endpoint com semantica de operacao critica.
+
+6. Estrutura sem separacao clara de dominio (antes da reorganizacao)
 
 - Sintoma:
   - Muitas paginas "soltas" em `src/app/(superadmin)/superadmin/*`.
@@ -67,14 +85,14 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 ### Medio
 
-5. Duplicidade de entrada no dashboard
+7. Duplicidade de entrada no dashboard
 
 - Evidencia anterior:
   - `src/app/(superadmin)/superadmin/page.tsx` (dashboard duplicado do `/superadmin/dashboard`)
 - Risco:
   - Dupla manutencao e divergencia funcional.
 
-6. Artefato de shell duplicado
+8. Artefato de shell duplicado
 
 - Evidencia anterior:
   - `src/components/superadmin/SuperAdminSidebar.tsx` (arquivo sem uso)
@@ -146,6 +164,31 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
   - `ESPECIFICACAO_FUT7PRO_WEB.md`
   - `SUPERADMIN_AUDIT_REPORT.md`
 
+6. Hardening do endpoint legado `marketing/pagar-venda`
+
+- Arquivo:
+  - `src/app/api/superadmin/marketing/pagar-venda/route.ts`
+- Resultado:
+  - Removido acesso direto ao Prisma no app web.
+  - Endpoint agora exige sessao SUPERADMIN e retorna `410` (desativado).
+
+7. Hardening do endpoint `export-financeiro`
+
+- Arquivo:
+  - `src/app/api/superadmin/export-financeiro/route.ts`
+- Resultado:
+  - Endpoint agora exige sessao SUPERADMIN.
+  - Mock removido; resposta controlada `501` enquanto o backend oficial nao expoe exportacao por API.
+
+8. Bloqueio server-side das paginas `legacy` por feature flag
+
+- Arquivos:
+  - `src/app/(superadmin)/superadmin/(legacy)/layout.tsx`
+  - `src/lib/feature-flags.ts`
+- Resultado:
+  - Paginas legacy nao ficam mais acessiveis por URL direta quando a flag estiver desativada.
+  - Valor padrao: bloqueado (`SUPERADMIN_ENABLE_LEGACY_ROUTES=false`).
+
 ## Validacao Tecnica
 
 - `pnpm typecheck` -> OK
@@ -155,4 +198,5 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 - O SuperAdmin agora esta pronto para operacao minima de vendas com foco em controle real do negocio.
 - As areas com maior risco de mock/fallback foram isoladas em `legacy` e removidas da navegacao principal.
+- Os endpoints legados sem protecao foram endurecidos para reduzir superficie de ataque.
 - Recomendacao para fase 2 (pos-go-live): migrar `legacy` para backend real ou remover definitivamente pagina por pagina.

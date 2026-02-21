@@ -22,6 +22,22 @@ Proximos passos imediatos (atualizado 21/02/2026)
 3. Qualidade: manter `lint`, `typecheck` e testes como gate obrigatorio antes de deploy.
 4. Produto: manter foco no escopo MVP vendido e evitar reintroduzir paginas mock na navegacao principal.
 
+Atualizacao 21/02/2026 - hardening de endpoints legacy (superadmin)
+
+- Endpoint `src/app/api/superadmin/marketing/pagar-venda/route.ts`:
+  - removido acesso direto ao Prisma no web app;
+  - agora exige sessao SUPERADMIN e retorna `410` (desativado).
+- Endpoint `src/app/api/superadmin/export-financeiro/route.ts`:
+  - agora exige sessao SUPERADMIN;
+  - mock removido e resposta controlada `501` ate backend oficial de exportacao.
+
+Atualizacao 21/02/2026 - bloqueio das paginas legacy por feature flag (superadmin)
+
+- Novo layout de guarda em `src/app/(superadmin)/superadmin/(legacy)/layout.tsx`.
+- Quando `SUPERADMIN_ENABLE_LEGACY_ROUTES=false` (padrao), qualquer URL de pagina legacy retorna 404.
+- Flag centralizada em `src/lib/feature-flags.ts`.
+- Variavel documentada em `env.example`, `env.local.example` e `.env.vercel.example`.
+
 Historico anterior (mantido para rastreabilidade)
 
 Atualizacao 10/02/2026 - central de atualizacoes (changelog) com datas recentes

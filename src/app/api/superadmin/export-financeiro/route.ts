@@ -1,24 +1,27 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { jsonResponse, requireSuperAdminUser } from "../../_proxy/helpers";
 
-// Runtime configuration for Node.js
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export async function GET(request: NextRequest) {
-  try {
-    // Headers para evitar cache e problemas de prerender
-    const response = NextResponse.json({
-      message: "Export financeiro endpoint",
-      data: [],
-    });
+const NOT_IMPLEMENTED_PAYLOAD = {
+  error: "Exportacao financeira via API ainda nao disponivel",
+  code: "FEATURE_NOT_AVAILABLE",
+};
 
-    response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-    response.headers.set("Pragma", "no-cache");
-    response.headers.set("Expires", "0");
-
-    return response;
-  } catch (error) {
-    const response = NextResponse.json({ error: "Internal server error" }, { status: 500 });
-    response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-    return response;
+export async function GET() {
+  const user = await requireSuperAdminUser();
+  if (!user) {
+    return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
+
+  return NextResponse.json(NOT_IMPLEMENTED_PAYLOAD, {
+    status: 501,
+    headers: {
+      "Cache-Control": "no-store, max-age=0, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 }
