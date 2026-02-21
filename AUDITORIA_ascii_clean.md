@@ -14,6 +14,7 @@ Atualizacao 21/02/2026 - consolidado de auditoria (web)
   - relatorio final: `SUPERADMIN_AUDIT_REPORT.md`
   - status: aprovado para MVP operacional de vendas
   - ajustes aplicados: menu reduzido ao essencial, isolamento de telas em `legacy`, organizacao por route groups
+  - evidencia adicional: gate CI `SuperAdmin Legacy Security Smoke` no workflow `admin-smoke-ci.yml`
 
 Proximos passos imediatos (atualizado 21/02/2026)
 
@@ -47,6 +48,14 @@ Atualizacao 21/02/2026 - bloqueio dos endpoints API legacy por feature flag (sup
   - `metricas/localizacao` (`/api/superadmin/metrics/locations`, `/api/superadmin/tenants/[id]/location`)
   - `sugestoes` (`/api/superadmin/suggestions/**`)
 - Objetivo: reduzir superficie de ataque e impedir acesso direto a modulos fora do MVP comercial.
+
+Atualizacao 21/02/2026 - validacao em producao apos deploy (superadmin)
+
+- Smoke Playwright `tests/security/superadmin-legacy-block.spec.ts` aprovado contra `https://app.fut7pro.com.br`.
+- Confirmado via HTTP:
+  - paginas legacy `404`;
+  - APIs legacy `404`;
+  - `/superadmin/dashboard` `200`.
 
 Historico anterior (mantido para rastreabilidade)
 

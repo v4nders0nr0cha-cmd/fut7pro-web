@@ -212,6 +212,14 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 - `pnpm typecheck` -> OK
 - `pnpm lint` -> OK
+- Gate CI obrigatorio adicionado:
+  - Workflow `.github/workflows/admin-smoke-ci.yml`
+  - Job `SuperAdmin Legacy Security Smoke` (Playwright local, bloqueio legacy com `404`)
+- Smoke de seguranca em producao (2026-02-21) -> OK
+  - `tests/security/superadmin-legacy-block.spec.ts` em `https://app.fut7pro.com.br` aprovado.
+  - Rotas legacy de pagina (`/superadmin/automacoes`, `/superadmin/marketing`, `/superadmin/monitoramento`, `/superadmin/integracoes`, `/superadmin/metricas/localizacao`, `/superadmin/comunicacao/ajuda`, `/superadmin/comunicacao/sugestoes`) retornando `404`.
+  - Endpoints API legacy (`/api/superadmin/integracoes`, `/api/superadmin/suggestions`, `/api/superadmin/metrics/locations`) retornando `404`.
+  - Rota core `/superadmin/dashboard` respondendo `200` (sem bloqueio indevido do modulo MVP).
 
 ## Parecer Final
 

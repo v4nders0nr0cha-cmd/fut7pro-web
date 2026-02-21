@@ -14,6 +14,65 @@ env:
   PNPM_VERSION: "10.19.0"
 
 jobs:
+  superadmin-legacy-security:
+    name: SuperAdmin Legacy Security Smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create local env for SuperAdmin security smoke
+        run: |
+          {
+            echo "NEXT_PUBLIC_API_URL=https://api.fut7pro.com.br"
+            echo "API_URL=https://api.fut7pro.com.br"
+            echo "BACKEND_URL=https://api.fut7pro.com.br"
+            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_SECRET=ci-superadmin-legacy-smoke"
+            echo "DISABLE_WEB_DIRECT_DB=true"
+            echo "SUPERADMIN_ENABLE_LEGACY_ROUTES=false"
+            echo "NODE_ENV=test"
+          } > .env.local
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run SuperAdmin legacy security smoke (mandatory)
+        env:
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          SUPERADMIN_ENABLE_LEGACY_ROUTES: "false"
+        run: pnpm exec playwright test tests/security/superadmin-legacy-block.spec.ts --project=chromium --workers=1 --reporter=line
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: superadmin-legacy-security-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+
   admin-smoke:
     name: Admin Smoke Navigation
     runs-on: ubuntu-latest
