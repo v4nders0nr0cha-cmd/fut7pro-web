@@ -24,6 +24,7 @@ type TenantMembership = {
     name?: string | null;
     email?: string | null;
     role?: string | null;
+    lastLoginAt?: string | null;
   } | null;
 };
 
@@ -170,6 +171,35 @@ function daysSince(dateISO?: string | null) {
   if (Number.isNaN(d.getTime())) return null;
   const diffMs = Date.now() - d.getTime();
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function pickLatestDate(...values: Array<string | null | undefined>) {
+  let latest: Date | null = null;
+  for (const value of values) {
+    if (!value) continue;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) continue;
+    if (!latest || parsed.getTime() > latest.getTime()) {
+      latest = parsed;
+    }
+  }
+  return latest ? latest.toISOString() : null;
+}
+
+function resolveTenantLastActivity(tenant: Tenant) {
+  const loginByMembership = (tenant.memberships ?? []).map(
+    (membership) => membership.user?.lastLoginAt
+  );
+  const lastLoginAt = pickLatestDate(tenant.lastLoginAt, ...loginByMembership);
+  if (lastLoginAt) {
+    return { value: lastLoginAt, source: "login" as const };
+  }
+
+  const fallbackActivity = pickLatestDate(tenant.updatedAt, tenant.createdAt);
+  return {
+    value: fallbackActivity,
+    source: "activity" as const,
+  };
 }
 
 function cleanValue(value?: string | null) {
@@ -337,7 +367,8 @@ export default function RachasCadastradosPage() {
             );
         const owner = resolveTenantOwner(t);
         const admin = owner.name || owner.email || "--";
-        const ultimaAtividade = t.lastLoginAt || t.updatedAt || t.createdAt || null;
+        const atividade = resolveTenantLastActivity(t);
+        const ultimaAtividade = atividade.value;
 
         return {
           id: t.id,
@@ -357,6 +388,7 @@ export default function RachasCadastradosPage() {
           criadoEm: t.createdAt || "",
           ultimaAtividade,
           diasInativo: daysSince(ultimaAtividade),
+          tipoInatividade: atividade.source,
           bloqueado: status === "BLOQUEADO",
           isVitrine,
           historico: [
@@ -731,7 +763,8 @@ export default function RachasCadastradosPage() {
                       {r.ultimaAtividade ? formatDate(r.ultimaAtividade) : "--"}
                       {typeof r.diasInativo === "number" ? (
                         <span className="block text-xs text-zinc-400">
-                          {r.diasInativo} dias sem login
+                          {r.diasInativo} dias sem{" "}
+                          {r.tipoInatividade === "login" ? "login" : "atividade"}
                         </span>
                       ) : null}
                     </td>
