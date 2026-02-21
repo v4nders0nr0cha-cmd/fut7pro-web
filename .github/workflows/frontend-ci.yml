@@ -244,7 +244,25 @@ jobs:
       - name: Build for preview
         run: pnpm run build
 
+      - name: Check Vercel secrets availability
+        id: vercel_secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip preview deploy (Vercel secrets ausentes)
+        if: steps.vercel_secrets.outputs.enabled != 'true'
+        run: echo "Credenciais da Vercel nao configuradas. Deploy Preview ignorado sem falhar."
+
       - name: Deploy to Vercel Preview
+        if: steps.vercel_secrets.outputs.enabled == 'true'
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
