@@ -20,12 +20,11 @@
     "noImplicitAny": false,
     "strictNullChecks": false,
     "moduleResolution": "node",
-    "types": ["node", "next"],
+    "types": ["node"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     },
-    "typeRoots": ["./node_modules/@types"],
     "plugins": [
       {
         "name": "next"
