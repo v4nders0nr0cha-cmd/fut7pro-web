@@ -165,6 +165,9 @@ a {
 .bg-brand-soft {
   background-color: var(--brand-soft);
 }
+.bg-brand-strong {
+  background-color: var(--brand-strong);
+}
 .bg-secondary {
   background-color: var(--color-secondary);
 }
@@ -226,6 +229,9 @@ a {
 }
 .hover\:bg-brand-soft:hover {
   background-color: var(--brand-soft);
+}
+.hover\:bg-brand-strong:hover {
+  background-color: var(--brand-strong);
 }
 .hover\:shadow-brand:hover {
   box-shadow: 0 0 10px 2px var(--brand);

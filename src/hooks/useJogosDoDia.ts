@@ -22,18 +22,40 @@ function mapMatch(match: PublicMatch): JogoDoDia {
   };
 }
 
+function sortMatchesByDateDesc(matches: PublicMatch[]) {
+  return [...matches].sort((a, b) => {
+    const timeA = a.date ? new Date(a.date).getTime() : 0;
+    const timeB = b.date ? new Date(b.date).getTime() : 0;
+    return timeB - timeA;
+  });
+}
+
 export function useJogosDoDia(slug?: string) {
-  const { matches, isLoading, isError, error, mutate } = usePublicMatches({
+  const todayQuery = usePublicMatches({
     slug,
     scope: "today",
     limit: 6,
   });
 
+  const shouldUseRecentFallback =
+    Boolean(slug?.trim()) &&
+    !todayQuery.isLoading &&
+    (todayQuery.matches.length === 0 || todayQuery.isError);
+
+  const recentQuery = usePublicMatches({
+    slug,
+    scope: "recent",
+    limit: 6,
+    enabled: shouldUseRecentFallback,
+  });
+
+  const sourceMatches = shouldUseRecentFallback ? recentQuery.matches : todayQuery.matches;
+
   return {
-    jogos: matches.map(mapMatch),
-    isLoading,
-    isError,
-    error,
-    mutate,
+    jogos: sortMatchesByDateDesc(sourceMatches).map(mapMatch),
+    isLoading: todayQuery.isLoading || (shouldUseRecentFallback && recentQuery.isLoading),
+    isError: shouldUseRecentFallback ? recentQuery.isError : todayQuery.isError,
+    error: shouldUseRecentFallback ? recentQuery.error : todayQuery.error,
+    mutate: shouldUseRecentFallback ? recentQuery.mutate : todayQuery.mutate,
   };
 }

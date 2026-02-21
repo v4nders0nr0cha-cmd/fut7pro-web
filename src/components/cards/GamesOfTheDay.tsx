@@ -17,7 +17,7 @@ export default function GamesOfTheDay({
   isLoading = false,
   isError = false,
 }: GamesOfTheDayProps) {
-  const ultimosJogos = partidas.slice(-3).reverse();
+  const ultimosJogos = partidas.slice(0, 3);
   const { publicHref } = usePublicLinks();
 
   return (
