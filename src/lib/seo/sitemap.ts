@@ -94,23 +94,12 @@ function dedupeSlugs(slugs: string[]) {
 }
 
 function collectConfiguredTenantSlugs() {
-  const multiValueVars = [
-    process.env.SITEMAP_PUBLIC_TENANT_SLUGS,
-    process.env.SITEMAP_TENANT_SLUGS,
-    process.env.VITRINE_TENANT_SLUGS,
-  ];
-  const singleValueVars = [
-    process.env.NEXT_PUBLIC_DEFAULT_RACHA_SLUG,
-    process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG,
-  ];
-
-  const fromCsv = multiValueVars.flatMap((value) => parseCsv(value));
-  const fromSingle = singleValueVars.flatMap((value) => (value ? [value] : []));
-
-  return dedupeSlugs([...fromCsv, ...fromSingle]);
+  const manualVars = [process.env.SITEMAP_PUBLIC_TENANT_SLUGS, process.env.SITEMAP_TENANT_SLUGS];
+  const fromCsv = manualVars.flatMap((value) => parseCsv(value));
+  return dedupeSlugs(fromCsv);
 }
 
-function extractSlugCandidates(payload: unknown): string[] {
+function extractSlugCandidatesFromArray(payload: unknown): string[] {
   if (Array.isArray(payload)) {
     return payload
       .map((item) => {
@@ -126,35 +115,42 @@ function extractSlugCandidates(payload: unknown): string[] {
       })
       .filter((value): value is string => Boolean(value));
   }
+  return [];
+}
 
-  if (!payload || typeof payload !== "object") return [];
+function extractSlugCandidates(payload: unknown): string[] {
+  if (!payload || typeof payload !== "object") {
+    return extractSlugCandidatesFromArray(payload);
+  }
 
   const data = payload as {
     slugs?: unknown;
     results?: unknown;
-    items?: unknown;
-    data?: unknown;
   };
 
-  return [
-    ...extractSlugCandidates(data.slugs),
-    ...extractSlugCandidates(data.results),
-    ...extractSlugCandidates(data.items),
-    ...extractSlugCandidates(data.data),
-  ];
+  const fromSlugs = extractSlugCandidatesFromArray(data.slugs);
+  if (fromSlugs.length > 0) return fromSlugs;
+
+  const fromResults = extractSlugCandidatesFromArray(data.results);
+  if (fromResults.length > 0) return fromResults;
+
+  return [];
 }
 
-async function fetchTenantSlugsFromBackend(apiBase: string) {
+async function fetchTenantSlugsFromBackend(
+  apiBase: string
+): Promise<{ ok: boolean; slugs: string[] }> {
   const customEndpoint = process.env.SITEMAP_BACKEND_SLUGS_ENDPOINT?.trim();
   const endpoint = customEndpoint || `${trimBaseUrl(apiBase)}/public/sitemap/slugs`;
 
   try {
     const response = await fetch(endpoint, { cache: "no-store" });
-    if (!response.ok) return [];
+    if (!response.ok) return { ok: false, slugs: [] };
     const payload = (await response.json().catch(() => null)) as unknown;
-    return dedupeSlugs(extractSlugCandidates(payload));
+    if (!payload) return { ok: false, slugs: [] };
+    return { ok: true, slugs: dedupeSlugs(extractSlugCandidates(payload)) };
   } catch {
-    return [];
+    return { ok: false, slugs: [] };
   }
 }
 
@@ -241,11 +237,11 @@ export function isValidTenantSlug(slug?: string | null) {
 }
 
 export async function resolveSitemapTenantSlugs(apiBase: string) {
+  const backend = await fetchTenantSlugsFromBackend(apiBase);
+  if (backend.ok) return backend.slugs;
+
   const configured = collectConfiguredTenantSlugs();
   if (configured.length > 0) return configured;
-
-  const fromBackend = await fetchTenantSlugsFromBackend(apiBase);
-  if (fromBackend.length > 0) return fromBackend;
 
   const fallback = normalizeTenantSlug(FALLBACK_TENANT_SLUG);
   return fallback ? [fallback] : [];
