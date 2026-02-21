@@ -212,9 +212,22 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 - `pnpm typecheck` -> OK
 - `pnpm lint` -> OK
+- Workflow obrigatorio (`Admin Smoke CI`) em `main` -> OK
+  - Run: `https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/runs/22258934708`
+  - Evento: `workflow_dispatch`
+  - Branch: `main`
+  - Commit validado: `f0b8b90d7245266088dc61ace5d124264c2b126c`
+  - Job `Admin Smoke Navigation` -> `success`
+    - `https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/runs/22258934708/job/64394082934`
+  - Job `SuperAdmin Legacy Security Smoke` -> `success`
+    - `https://github.com/v4nders0nr0cha-cmd/fut7pro-web/actions/runs/22258934708/job/64394082937`
 - Gate CI obrigatorio adicionado:
   - Workflow `.github/workflows/admin-smoke-ci.yml`
   - Job `SuperAdmin Legacy Security Smoke` (Playwright local, bloqueio legacy com `404`)
+- Evidência PR (branch protection):
+  - PR de validação (chore/docs): https://github.com/v4nders0nr0cha-cmd/fut7pro-web/pull/6
+  - Evidência: merge bloqueado por checks Required e checks failing (screenshot anexada).
+  - Checks Required observados: Admin Smoke CI / Admin Smoke Navigation, Admin Smoke CI / SuperAdmin Legacy Security Smoke.
 - Smoke de seguranca em producao (2026-02-21) -> OK
   - `tests/security/superadmin-legacy-block.spec.ts` em `https://app.fut7pro.com.br` aprovado.
   - Rotas legacy de pagina (`/superadmin/automacoes`, `/superadmin/marketing`, `/superadmin/monitoramento`, `/superadmin/integracoes`, `/superadmin/metricas/localizacao`, `/superadmin/comunicacao/ajuda`, `/superadmin/comunicacao/sugestoes`) retornando `404`.
@@ -223,7 +236,12 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 ## Parecer Final
 
+- Auditoria SuperAdmin encerrada em `2026-02-21`.
 - O SuperAdmin agora esta pronto para operacao minima de vendas com foco em controle real do negocio.
 - As areas com maior risco de mock/fallback foram isoladas em `legacy` e removidas da navegacao principal.
 - Os endpoints legados sem protecao foram endurecidos para reduzir superficie de ataque.
 - Recomendacao para fase 2 (pos-go-live): migrar `legacy` para backend real ou remover definitivamente pagina por pagina.
+
+## Evidência PR (branch protection)
+
+PR de validação (chore/docs): (colar link aqui após abrir)
