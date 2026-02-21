@@ -227,3 +227,6 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 - As areas com maior risco de mock/fallback foram isoladas em `legacy` e removidas da navegacao principal.
 - Os endpoints legados sem protecao foram endurecidos para reduzir superficie de ataque.
 - Recomendacao para fase 2 (pos-go-live): migrar `legacy` para backend real ou remover definitivamente pagina por pagina.
+
+## Evidência PR (branch protection)
+PR de validação (chore/docs): (colar link aqui após abrir)
