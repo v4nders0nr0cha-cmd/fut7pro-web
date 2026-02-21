@@ -107,7 +107,7 @@ export default function ListaAtletasSlugPage() {
                 </div>
                 <Link
                   href={publicHref(`/atletas/${profileSlug}`)}
-                  className="inline-block w-full text-center bg-brand-strong hover:bg-brand-soft text-white font-bold px-3 py-2 rounded-lg text-sm transition"
+                  className="inline-block w-full text-center bg-brand-strong hover:bg-brand-soft text-white hover:text-black font-bold px-3 py-2 rounded-lg text-sm transition"
                 >
                   Ver Perfil
                 </Link>

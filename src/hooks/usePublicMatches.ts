@@ -49,7 +49,7 @@ export function usePublicMatches(options: PublicMatchesOptions = {}) {
   const limit = options.limit ?? (hasRange ? undefined : 12);
   const key = enabled ? buildKey(slug, scope, limit, options.date, options.from, options.to) : null;
 
-  const { data, error, isLoading, mutate } = useSWR<PublicMatchesResponse>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<PublicMatchesResponse>(
     key,
     fetcher,
     enabled
@@ -68,6 +68,7 @@ export function usePublicMatches(options: PublicMatchesOptions = {}) {
     total: enabled ? (data?.total ?? 0) : 0,
     slug: data?.slug ?? slug,
     isLoading: enabled ? isLoading : false,
+    isValidating: enabled ? Boolean(isValidating) : false,
     isError: Boolean(error),
     error,
     mutate,

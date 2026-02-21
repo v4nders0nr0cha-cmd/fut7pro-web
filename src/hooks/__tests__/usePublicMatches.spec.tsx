@@ -133,4 +133,34 @@ describe("useJogosDoDia", () => {
     expect(result.current.jogos[0]?.timeB).toBe("Estrelas do Campo");
     expect(result.current.isError).toBe(false);
   });
+
+  it("aguarda revalidacao de today antes de habilitar fallback recent", () => {
+    mockedUseSWR.mockImplementation((key: string | null) => {
+      if (key === "/api/public/fut7pro/matches?scope=today&limit=6") {
+        return {
+          data: { slug: "fut7pro", total: 0, results: [] },
+          isLoading: false,
+          isValidating: true,
+          mutate: jest.fn(),
+        };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isValidating: false,
+        mutate: jest.fn(),
+      };
+    });
+
+    const { result } = renderHook(() => useJogosDoDia("fut7pro"));
+
+    expect(result.current.jogos).toHaveLength(0);
+    expect(result.current.isLoading).toBe(true);
+    expect(
+      mockedUseSWR.mock.calls.some(
+        (call) => call[0] === "/api/public/fut7pro/matches?scope=recent&limit=6"
+      )
+    ).toBe(false);
+  });
 });
