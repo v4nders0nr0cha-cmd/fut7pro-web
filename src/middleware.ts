@@ -1,9 +1,37 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
+import { isSuperAdminLegacyEnabled } from "@/lib/feature-flags";
+
+const SUPERADMIN_LEGACY_PATHS = [
+  "/superadmin/automacoes",
+  "/superadmin/logs",
+  "/superadmin/marketing",
+  "/superadmin/monitoramento",
+  "/superadmin/metricas/localizacao",
+  "/superadmin/integracoes",
+  "/superadmin/comunicacao/ajuda",
+  "/superadmin/comunicacao/sugestoes",
+];
+
+function isLegacySuperAdminPath(pathname: string) {
+  return SUPERADMIN_LEGACY_PATHS.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
+  );
+}
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (!isSuperAdminLegacyEnabled() && isLegacySuperAdminPath(pathname)) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: {
+        "Cache-Control": "no-store, max-age=0, must-revalidate",
+        "X-Robots-Tag": "noindex, nofollow",
+      },
+    });
+  }
 
   // Não mexa em headers de cache das APIs
   if (pathname.startsWith("/api")) {

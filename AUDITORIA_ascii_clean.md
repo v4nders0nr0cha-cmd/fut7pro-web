@@ -34,9 +34,19 @@ Atualizacao 21/02/2026 - hardening de endpoints legacy (superadmin)
 Atualizacao 21/02/2026 - bloqueio das paginas legacy por feature flag (superadmin)
 
 - Novo layout de guarda em `src/app/(superadmin)/superadmin/(legacy)/layout.tsx`.
+- Middleware reforcado em `src/middleware.ts` para devolver `404` em rotas legacy conhecidas quando a flag estiver desligada.
 - Quando `SUPERADMIN_ENABLE_LEGACY_ROUTES=false` (padrao), qualquer URL de pagina legacy retorna 404.
 - Flag centralizada em `src/lib/feature-flags.ts`.
 - Variavel documentada em `env.example`, `env.local.example` e `.env.vercel.example`.
+
+Atualizacao 21/02/2026 - bloqueio dos endpoints API legacy por feature flag (superadmin)
+
+- Criado guard central `src/app/api/superadmin/_legacy-guard.ts`.
+- Endpoints API legacy agora retornam `404` quando `SUPERADMIN_ENABLE_LEGACY_ROUTES=false`:
+  - `integracoes` (`/api/superadmin/integracoes`, `/api/superadmin/integracoes/[slug]`)
+  - `metricas/localizacao` (`/api/superadmin/metrics/locations`, `/api/superadmin/tenants/[id]/location`)
+  - `sugestoes` (`/api/superadmin/suggestions/**`)
+- Objetivo: reduzir superficie de ataque e impedir acesso direto a modulos fora do MVP comercial.
 
 Historico anterior (mantido para rastreabilidade)
 

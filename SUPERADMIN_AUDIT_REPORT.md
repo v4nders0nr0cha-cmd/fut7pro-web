@@ -16,6 +16,7 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 - Foi aplicado corte operacional para go-live: menu principal agora exibe apenas o conjunto minimo necessario para controle da plataforma.
 - Lacunas de segurança em endpoints legados fora do menu principal foram identificadas e mitigadas nesta rodada.
 - Rotas de paginas legacy agora ficam bloqueadas por feature flag server-side (default bloqueado).
+- Endpoints API ligados a modulos legacy agora tambem ficam bloqueados por feature flag (default bloqueado).
 
 ## Status Final de Aceite
 
@@ -184,10 +185,28 @@ Escopo: `src/app/(superadmin)/superadmin/**`, `src/components/superadmin/**`, `s
 
 - Arquivos:
   - `src/app/(superadmin)/superadmin/(legacy)/layout.tsx`
+  - `src/middleware.ts`
   - `src/lib/feature-flags.ts`
 - Resultado:
   - Paginas legacy nao ficam mais acessiveis por URL direta quando a flag estiver desativada.
+  - Middleware reforca o bloqueio em borda com retorno `404` para as rotas legacy conhecidas.
   - Valor padrao: bloqueado (`SUPERADMIN_ENABLE_LEGACY_ROUTES=false`).
+
+9. Bloqueio server-side dos endpoints API legacy por feature flag
+
+- Arquivos:
+  - `src/app/api/superadmin/_legacy-guard.ts`
+  - `src/app/api/superadmin/integracoes/route.ts`
+  - `src/app/api/superadmin/integracoes/[slug]/route.ts`
+  - `src/app/api/superadmin/metrics/locations/route.ts`
+  - `src/app/api/superadmin/tenants/[id]/location/route.ts`
+  - `src/app/api/superadmin/suggestions/route.ts`
+  - `src/app/api/superadmin/suggestions/[id]/route.ts`
+  - `src/app/api/superadmin/suggestions/[id]/status/route.ts`
+  - `src/app/api/superadmin/suggestions/[id]/respond/route.ts`
+- Resultado:
+  - Quando `SUPERADMIN_ENABLE_LEGACY_ROUTES=false`, os endpoints API legacy retornam `404`.
+  - Reducao adicional de superficie de ataque fora do escopo MVP vendido.
 
 ## Validacao Tecnica
 

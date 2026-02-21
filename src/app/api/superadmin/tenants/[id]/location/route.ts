@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
+import { blockLegacySuperAdminApiWhenDisabled } from "../../../_legacy-guard";
 import {
   buildHeaders,
   forwardResponse,
@@ -13,6 +14,11 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function PUT(req: NextRequest, { params }: { params: { id?: string } }) {
+  const blockedResponse = blockLegacySuperAdminApiWhenDisabled();
+  if (blockedResponse) {
+    return blockedResponse;
+  }
+
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
