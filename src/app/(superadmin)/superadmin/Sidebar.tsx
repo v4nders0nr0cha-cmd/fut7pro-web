@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ComponentType } from "react";
 import {
   FaTachometerAlt,
   FaFutbol,
@@ -9,42 +10,49 @@ import {
   FaIdBadge,
   FaMoneyBillWave,
   FaCogs,
-  FaTools,
-  FaSignInAlt,
-  FaBookOpen,
-  FaChartLine,
-  FaBullhorn,
   FaListAlt,
-  FaPuzzlePiece,
   FaBell,
   FaLifeRing,
-  FaMapMarkerAlt,
-  FaLightbulb,
   FaUserSlash,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
 
-const menu = [
-  { label: "Dashboard", href: "/superadmin/dashboard", icon: FaTachometerAlt },
-  { label: "Rachas/SaaS", href: "/superadmin/rachas", icon: FaFutbol },
-  { label: "Admins", href: "/superadmin/admins", icon: FaUsers },
-  { label: "Contas Globais", href: "/superadmin/contas", icon: FaIdBadge },
-  { label: "Financeiro", href: "/superadmin/financeiro", icon: FaMoneyBillWave },
-  { label: "Config", href: "/superadmin/config", icon: FaCogs },
-  { label: "Automacoes", href: "/superadmin/automacoes", icon: FaTools },
-  { label: "Integracoes", href: "/superadmin/integracoes", icon: FaPuzzlePiece },
-  { label: "Login", href: "/superadmin/login", icon: FaSignInAlt },
-  { label: "Logs", href: "/superadmin/logs", icon: FaBookOpen },
-  { label: "Marketing", href: "/superadmin/marketing", icon: FaBullhorn },
-  { label: "Monitoramento", href: "/superadmin/monitoramento", icon: FaChartLine },
-  { label: "Métricas Localização", href: "/superadmin/metricas/localizacao", icon: FaMapMarkerAlt },
-  { label: "Sugestões", href: "/superadmin/comunicacao/sugestoes", icon: FaLightbulb },
-  { label: "Central de Ajuda", href: "/superadmin/comunicacao/ajuda", icon: FaBookOpen },
-  { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },
-  { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
-  { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
-  { label: "Cancelamentos", href: "/superadmin/cancelamentos", icon: FaUserSlash },
+type MenuItem = {
+  label: string;
+  href: string;
+  icon: ComponentType<{ size?: number; className?: string }>;
+};
+
+const sections: Array<{ title: string; items: MenuItem[] }> = [
+  {
+    title: "Core",
+    items: [
+      { label: "Dashboard", href: "/superadmin/dashboard", icon: FaTachometerAlt },
+      { label: "Rachas/SaaS", href: "/superadmin/rachas", icon: FaFutbol },
+      { label: "Admins", href: "/superadmin/admins", icon: FaUsers },
+      { label: "Contas Globais", href: "/superadmin/contas", icon: FaIdBadge },
+    ],
+  },
+  {
+    title: "Financeiro",
+    items: [
+      { label: "Financeiro", href: "/superadmin/financeiro", icon: FaMoneyBillWave },
+      { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
+    ],
+  },
+  {
+    title: "Operação",
+    items: [
+      { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
+      { label: "Cancelamentos", href: "/superadmin/cancelamentos", icon: FaUserSlash },
+      { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },
+    ],
+  },
+  {
+    title: "Sistema",
+    items: [{ label: "Config", href: "/superadmin/config", icon: FaCogs }],
+  },
 ];
 
 export default function Sidebar() {
@@ -68,25 +76,32 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 flex flex-col gap-1 px-2 mt-2">
-        {menu.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all text-base 
-                ${
-                  isActive
-                    ? "bg-yellow-400 text-black shadow-md"
-                    : "text-zinc-300 hover:bg-yellow-900/50 hover:text-yellow-300"
-                }
-              `}
-            >
-              <item.icon size={20} className={isActive ? "text-black" : "text-yellow-400"} />
-              {item.label}
-            </Link>
-          );
-        })}
+        {sections.map((section) => (
+          <div key={section.title} className="mb-3">
+            <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              {section.title}
+            </p>
+            {section.items.map((item) => {
+              const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-semibold transition-all text-base 
+                    ${
+                      isActive
+                        ? "bg-yellow-400 text-black shadow-md"
+                        : "text-zinc-300 hover:bg-yellow-900/50 hover:text-yellow-300"
+                    }
+                  `}
+                >
+                  <item.icon size={20} className={isActive ? "text-black" : "text-yellow-400"} />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </nav>
       <div className="flex flex-col items-center py-5">
         <span className="text-xs text-zinc-600">

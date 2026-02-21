@@ -1,32 +1,28 @@
-Progresso atual (estimativa): **Admin 100% concluido | Publico auditado (nao aprovado para go-live ate fechar bloqueios criticos)**
+Progresso atual (estimativa): **Admin 100% concluido | Publico 100% concluido | SuperAdmin MVP operacional concluido**
 
-Proximos passos imediatos (atualizado 20/02/2026)
+Atualizacao 21/02/2026 - consolidado de auditoria (web)
 
-1. Publico (critico): corrigir vazamento multi-tenant no proxy `/api/public/[slug]/sponsors` (bloquear override por query `slug`).
-2. Publico (critico): substituir conteudo placeholder de `contato`, `privacidade` e `termos` por versoes oficiais finais.
-3. Publico (critico): remover/bloquear endpoints legados `jogos-do-dia-fallback` e `jogos-do-dia-ssl-fix`.
-4. Publico (alto): corrigir links quebrados da Sidebar (`/estatisticas/atacantes`, `/estatisticas/meias`, `/estatisticas/goleiros`).
-5. Publico (medio): eliminar estados artificiais (`Jogador 1`, `Time A/B`, `placeholder-*`) e revisar fallback de slug default.
-6. Seguranca/infra: manter trilha de upgrade para Next >= 15.5.10 para reduzir risco residual de dependencias.
+- Publico:
+  - relatorio final: `PUBLIC_AUDIT_REPORT.md`
+  - status: aprovado para go-live operacional
+  - evidencia: smoke funcional E2E com slugs reais (`vitrine`, `chelsea`) aprovado
+- Admin:
+  - relatorio final: `ADMIN_AUDIT_REPORT.md`
+  - status: aprovado para go-live comercial
+  - evidencia: `Admin Smoke CI` obrigatorio em PR
+- SuperAdmin:
+  - relatorio final: `SUPERADMIN_AUDIT_REPORT.md`
+  - status: aprovado para MVP operacional de vendas
+  - ajustes aplicados: menu reduzido ao essencial, isolamento de telas em `legacy`, organizacao por route groups
 
-Atualizacao 20/02/2026 - auditoria completa do site publico (fase 1)
+Proximos passos imediatos (atualizado 21/02/2026)
 
-- Relatorio dedicado criado: `PUBLIC_AUDIT_REPORT.md`.
-- Escopo auditado: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/**`, `src/hooks/usePublic*`.
-- Inventario concluido: 105 rotas publicas (`page.tsx`) e 46 endpoints publicos (`route.ts`).
-- Resultado atual: **nao aprovado para venda** ate fechamento dos achados:
-  - 3 criticos
-  - 2 altos
-  - 2 medios
+1. SuperAdmin fase 2: substituir telas `legacy` por integracao real backend ou remover definitivamente o que nao entrar no produto.
+2. Operacao: rodar smoke E2E funcional publico regularmente apos cada deploy de producao.
+3. Qualidade: manter `lint`, `typecheck` e testes como gate obrigatorio antes de deploy.
+4. Produto: manter foco no escopo MVP vendido e evitar reintroduzir paginas mock na navegacao principal.
 
-Atualizacao 20/02/2026 - fechamento do painel admin (aceite tecnico)
-
-- `ADMIN_AUDIT_REPORT.md` consolidado com status final do admin: concluido para go-live comercial.
-- `ADMIN_GO_LIVE_CHECKLIST.md` atualizado com controles/smoke/monitoramento e evidencias de aceite.
-- Workflow `Admin Smoke CI` validado em PR real (run `22201213606`).
-- Workflow `Billing Monitor` validado com `ok: true` (run `22225524084`).
-- Secrets de smoke admin e monitor de billing confirmados em GitHub/Render.
-- Proxima fase oficial do projeto: auditoria completa do site publico.
+Historico anterior (mantido para rastreabilidade)
 
 Atualizacao 10/02/2026 - central de atualizacoes (changelog) com datas recentes
 
