@@ -22,18 +22,47 @@ function mapMatch(match: PublicMatch): JogoDoDia {
   };
 }
 
+function sortMatchesByDateDesc(matches: PublicMatch[]) {
+  return [...matches].sort((a, b) => {
+    const timeA = a.date ? new Date(a.date).getTime() : 0;
+    const timeB = b.date ? new Date(b.date).getTime() : 0;
+    return timeB - timeA;
+  });
+}
+
 export function useJogosDoDia(slug?: string) {
-  const { matches, isLoading, isError, error, mutate } = usePublicMatches({
+  const todayQuery = usePublicMatches({
     slug,
     scope: "today",
     limit: 6,
   });
 
+  const hasTodayMatches = todayQuery.matches.length > 0;
+  const waitingTodayRefresh = !hasTodayMatches && (todayQuery.isLoading || todayQuery.isValidating);
+
+  const shouldUseRecentFallback = Boolean(slug?.trim()) && !waitingTodayRefresh && !hasTodayMatches;
+
+  const recentQuery = usePublicMatches({
+    slug,
+    scope: "recent",
+    limit: 6,
+    enabled: shouldUseRecentFallback,
+  });
+
+  const sourceMatches = shouldUseRecentFallback ? recentQuery.matches : todayQuery.matches;
+  const hasSourceMatches = sourceMatches.length > 0;
+
   return {
-    jogos: matches.map(mapMatch),
-    isLoading,
-    isError,
-    error,
-    mutate,
+    jogos: sortMatchesByDateDesc(sourceMatches).map(mapMatch),
+    isLoading:
+      waitingTodayRefresh ||
+      (shouldUseRecentFallback && (recentQuery.isLoading || recentQuery.isValidating)),
+    isError: hasSourceMatches
+      ? false
+      : shouldUseRecentFallback
+        ? recentQuery.isError
+        : todayQuery.isError,
+    error: hasSourceMatches ? null : shouldUseRecentFallback ? recentQuery.error : todayQuery.error,
+    mutate: shouldUseRecentFallback ? recentQuery.mutate : todayQuery.mutate,
   };
 }

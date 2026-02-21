@@ -87,4 +87,80 @@ describe("useJogosDoDia", () => {
     expect(jogo.golsTimeB).toBe(0);
     expect(result.current.isLoading).toBe(false);
   });
+
+  it("usa partidas recentes como fallback quando nao ha jogos no dia", () => {
+    mockedUseSWR.mockImplementation((key: string | null) => {
+      if (key === "/api/public/fut7pro/matches?scope=today&limit=6") {
+        return {
+          data: { slug: "fut7pro", total: 0, results: [] },
+          isLoading: false,
+          mutate: jest.fn(),
+        };
+      }
+
+      if (key === "/api/public/fut7pro/matches?scope=recent&limit=6") {
+        return {
+          data: {
+            slug: "fut7pro",
+            total: 1,
+            results: [
+              {
+                id: "m-recente",
+                date: "2026-02-18T19:00:00.000Z",
+                score: { teamA: 5, teamB: 1 },
+                teamA: { id: "a", name: "Bravos do Sul", logoUrl: null, color: null },
+                teamB: { id: "b", name: "Estrelas do Campo", logoUrl: null, color: null },
+                presences: [],
+              },
+            ],
+          },
+          isLoading: false,
+          mutate: jest.fn(),
+        };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        mutate: jest.fn(),
+      };
+    });
+
+    const { result } = renderHook(() => useJogosDoDia("fut7pro"));
+
+    expect(result.current.jogos).toHaveLength(1);
+    expect(result.current.jogos[0]?.timeA).toBe("Bravos do Sul");
+    expect(result.current.jogos[0]?.timeB).toBe("Estrelas do Campo");
+    expect(result.current.isError).toBe(false);
+  });
+
+  it("aguarda revalidacao de today antes de habilitar fallback recent", () => {
+    mockedUseSWR.mockImplementation((key: string | null) => {
+      if (key === "/api/public/fut7pro/matches?scope=today&limit=6") {
+        return {
+          data: { slug: "fut7pro", total: 0, results: [] },
+          isLoading: false,
+          isValidating: true,
+          mutate: jest.fn(),
+        };
+      }
+
+      return {
+        data: undefined,
+        isLoading: false,
+        isValidating: false,
+        mutate: jest.fn(),
+      };
+    });
+
+    const { result } = renderHook(() => useJogosDoDia("fut7pro"));
+
+    expect(result.current.jogos).toHaveLength(0);
+    expect(result.current.isLoading).toBe(true);
+    expect(
+      mockedUseSWR.mock.calls.some(
+        (call) => call[0] === "/api/public/fut7pro/matches?scope=recent&limit=6"
+      )
+    ).toBe(false);
+  });
 });
