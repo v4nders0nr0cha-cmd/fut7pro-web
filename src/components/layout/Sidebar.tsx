@@ -188,14 +188,9 @@ export default function Sidebar() {
                 value: p.pontos ?? 0,
                 href: p.slug ? publicHref(`/atletas/${p.slug}`) : undefined,
               }))
-            : [
-                { name: "Jogador 1", value: 0 },
-                { name: "Jogador 2", value: 0 },
-                { name: "Jogador 3", value: 0 },
-                { name: "Jogador 4", value: 0 },
-                { name: "Jogador 5", value: 0 },
-              ]
+            : []
         }
+        emptyMessage="Ranking anual em atualização."
       />
       <DestaquesRegrasModal open={regrasOpen} onClose={() => setRegrasOpen(false)} />
     </aside>
@@ -352,10 +347,12 @@ function SidebarRankingCard({
   title,
   label,
   items,
+  emptyMessage,
 }: {
   title: string;
   label: string;
   items: { name: string; value: number; href?: string }[];
+  emptyMessage?: string;
 }) {
   return (
     <div className="bg-[#1A1A1A] rounded-xl p-3 mb-4">
@@ -363,31 +360,37 @@ function SidebarRankingCard({
         <p className="text-[10px] uppercase font-bold text-brand">{title}</p>
         <span className="text-[10px] uppercase text-gray-400">{label}</span>
       </div>
-      <ul className="space-y-1 text-sm text-white">
-        {items.map((item, index) => {
-          const content = (
-            <>
-              <span>{item.name}</span>
-              <span className="text-brand font-semibold">{item.value}</span>
-            </>
-          );
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-400">
+          {emptyMessage || "Sem dados publicados no momento."}
+        </p>
+      ) : (
+        <ul className="space-y-1 text-sm text-white">
+          {items.map((item, index) => {
+            const content = (
+              <>
+                <span>{item.name}</span>
+                <span className="text-brand font-semibold">{item.value}</span>
+              </>
+            );
 
-          return (
-            <li key={index} className="flex justify-between">
-              {item.href ? (
-                <Link
-                  href={item.href}
-                  className="flex justify-between w-full hover:text-brand-soft"
-                >
-                  {content}
-                </Link>
-              ) : (
-                content
-              )}
-            </li>
-          );
-        })}
-      </ul>
+            return (
+              <li key={index} className="flex justify-between">
+                {item.href ? (
+                  <Link
+                    href={item.href}
+                    className="flex justify-between w-full hover:text-brand-soft"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  content
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

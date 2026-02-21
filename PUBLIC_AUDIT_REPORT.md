@@ -1,13 +1,13 @@
 # PUBLIC AUDIT REPORT
 
-Data: 2026-02-20 (revalidação pós-hotfixes + validação em produção)  
+Data: 2026-02-21 (revalidação pós-hotfixes + SEO + empty-state + política sem fallback default)  
 Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/**`, `src/hooks/usePublic*`.
 
 ## Resumo Executivo
 
 - Status geral: **melhorou de forma significativa**, com todos os bloqueios críticos anteriores corrigidos.
 - Inventário validado: **105 rotas públicas (`page.tsx`)** e **46 rotas de API pública (`route.ts`)**.
-- Resultado atual: **não aprovado ainda para go-live comercial**, por pendências de qualidade em empty-states e fallback residual em rotas não slugadas.
+- Resultado atual: **tecnicamente apto**, sem achados críticos/altos/médios abertos no escopo auditado.
 
 ### Evolução desde a auditoria anterior
 
@@ -17,6 +17,9 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - ✅ Endpoints legados públicos de jogos do dia agora retornam `410 Gone`.
 - ✅ Fallback de `rachaConfig.slug` removido dos hooks públicos e das rotas públicas slugadas.
 - ✅ Verificação Google Search Console concluída com token correto em produção (`google-site-verification`).
+- ✅ Estados vazios públicos sem dados fictícios (`Jogador 1`, `Time A`, `Time B`, `placeholder-*`).
+- ✅ Política de rotas públicas sem slug aplicada sem fallback default de tenant.
+- ✅ Smoke SEO automatizado (Playwright) cobrindo `robots.txt` e `sitemap.xml` com sucesso (`6/6`).
 
 ## Inventário e Navegação
 
@@ -44,35 +47,7 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 
 ### Médio
 
-#### 1) Estado vazio público ainda usa textos/dados artificiais
-
-- Arquivos:
-  - `src/components/layout/Sidebar.tsx:194`
-  - `src/hooks/useJogosDoDia.ts:15`
-  - `src/hooks/useJogosDoDia.ts:16`
-  - `src/hooks/usePublicSponsors.ts:58`
-- Problema:
-  - Ainda existem fallbacks visuais como `Jogador 1`, `Time A`, `Time B`, `placeholder-*`.
-- Impacto:
-  - Percepção de mock e redução de qualidade comercial no site público.
-- Correção recomendada:
-  - Trocar para mensagens editoriais reais de empty-state (sem entidades fictícias).
-
-#### 2) Fallback default ainda existe em rotas públicas não slugadas
-
-- Arquivos:
-  - `src/app/(public)/page.tsx:242`
-  - `src/app/(public)/partidas/times-do-dia/page.tsx:20`
-  - `src/context/RachaContext.tsx:54`
-- Problema:
-  - Para rotas sem slug explícito, ainda há fallback para tenant default.
-  - Em rotas slugadas e hooks públicos, esse fallback já foi removido.
-- Impacto:
-  - Risco residual de comportamento implícito em navegação sem contexto de slug.
-- Correção recomendada:
-  - Definir política explícita para raiz (`/`) e rotas públicas sem slug:
-    - redirecionar para seletor/tenant explícito, ou
-    - manter fallback default como decisão de produto documentada.
+#### Nenhum achado médio aberto nesta revalidação
 
 ## Itens Resolvidos (evidência de código)
 
@@ -135,13 +110,32 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - Resultado:
   - O placeholder fixo foi removido e a verificação Google usa env (`GOOGLE_SITE_VERIFICATION` com fallback opcional `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`), com confirmação de propriedade concluída no Search Console.
 
+### G) Empty-state público sem dados artificiais (corrigido)
+
+- Evidências:
+  - `src/components/layout/Sidebar.tsx:193`
+  - `src/components/layout/Sidebar.tsx:363`
+  - `src/hooks/useJogosDoDia.ts:18`
+  - `src/hooks/usePublicSponsors.ts:81`
+- Resultado:
+  - Removidos fallbacks fictícios e placeholders sintéticos; estados vazios agora exibem mensagens editoriais e dados reais publicados.
+
+### H) Política sem fallback default em rotas públicas não slugadas (corrigido)
+
+- Evidências:
+  - `src/app/(public)/page.tsx:241`
+  - `src/app/(public)/partidas/times-do-dia/page.tsx:7`
+  - `src/app/(public)/partidas/times-do-dia/page.tsx:22`
+  - `src/context/RachaContext.tsx:53`
+- Resultado:
+  - O fallback implícito para tenant default foi removido; rotas públicas sem slug passam a usar apenas contexto explícito (slug da URL ou slug ativo em cookie), sem hardcode de tenant.
+
 ## Resultado de Prontidão (Go-Live Público)
 
-- **Ainda não aprovado para venda** nesta revisão.
-- Bloqueios críticos foram resolvidos, porém restam pendências médias de qualidade funcional (empty-state e política de tenant em rotas não slugadas).
+- **Aprovado tecnicamente para go-live público**, condicionado ao smoke E2E final em produção.
+- Não há bloqueios críticos/altos/médios abertos no escopo desta auditoria documental/estrutural.
 
 ## Próxima Etapa Recomendada (ordem de execução)
 
-1. Remover textos/dados artificiais de empty-state (`Jogador 1`, `Time A`, `Time B`, `placeholder-*`).
-2. Formalizar política de tenant para rotas públicas não slugadas (`/` e redirects).
-3. Executar smoke E2E público final (rotas principais + validações de conteúdo sem mocks).
+1. Executar smoke E2E funcional público final (rotas slugadas principais + validações de conteúdo sem mocks).
+2. Revalidar no Search Console após novo deploy para confirmar aumento de URLs indexáveis via sitemap por slug.

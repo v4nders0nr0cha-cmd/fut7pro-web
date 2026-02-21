@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { rachaConfig } from "@/config/racha.config";
+import { cookies, headers } from "next/headers";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 
 export default function TimesDoDiaRedirect() {
   const ref = headers().get("referer");
+  const cookieSlug = cookies().get("f7_active_slug")?.value?.trim().toLowerCase() || "";
   let slug = "";
 
   if (ref) {
@@ -16,9 +16,11 @@ export default function TimesDoDiaRedirect() {
     }
   }
 
-  const fallback =
-    process.env.NEXT_PUBLIC_DEFAULT_TENANT_SLUG?.trim().toLowerCase() || rachaConfig.slug;
-  const targetSlug = slug || fallback;
+  const targetSlug = slug || cookieSlug;
+
+  if (!targetSlug) {
+    redirect("/partidas");
+  }
 
   redirect(`/${targetSlug}/partidas/times-do-dia`);
 }

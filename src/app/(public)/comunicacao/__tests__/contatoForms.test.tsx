@@ -13,7 +13,8 @@ jest.mock("@/hooks/useMe", () => ({
   useMe: jest.fn(),
 }));
 
-const renderWithRacha = (ui: React.ReactNode) => render(<RachaProvider>{ui}</RachaProvider>);
+const renderWithRacha = (ui: React.ReactNode, initialTenantSlug?: string) =>
+  render(<RachaProvider initialTenantSlug={initialTenantSlug}>{ui}</RachaProvider>);
 const mockedUseSession = useSession as jest.Mock;
 const mockedUseMe = useMe as jest.Mock;
 
@@ -97,7 +98,7 @@ describe("Formulários de contato público", () => {
       });
     global.fetch = fetchMock as any;
 
-    renderWithRacha(<SugestoesPage />);
+    renderWithRacha(<SugestoesPage />, "vitrine");
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(

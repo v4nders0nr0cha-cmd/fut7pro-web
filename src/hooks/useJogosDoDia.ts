@@ -10,10 +10,13 @@ export type JogoDoDia = {
 };
 
 function mapMatch(match: PublicMatch): JogoDoDia {
+  const nomeTimeA = match.teamA?.name?.trim();
+  const nomeTimeB = match.teamB?.name?.trim();
+
   return {
     id: match.id,
-    timeA: match.teamA?.name || "Time A",
-    timeB: match.teamB?.name || "Time B",
+    timeA: nomeTimeA || "Equipe mandante",
+    timeB: nomeTimeB || "Equipe visitante",
     golsTimeA: Number(match.score?.teamA ?? match.scoreA ?? 0),
     golsTimeB: Number(match.score?.teamB ?? match.scoreB ?? 0),
   };

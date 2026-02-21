@@ -55,7 +55,7 @@ export default function GamesOfTheDay({
             />
           ))
         ) : (
-          <p className="text-sm text-center text-gray-400">Nenhum jogo disponivel</p>
+          <p className="text-sm text-center text-gray-400">Nenhum jogo disponível.</p>
         )}
       </div>
     </div>

@@ -17,7 +17,6 @@ import { useJogosDoDia } from "@/hooks/useJogosDoDia";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicDestaquesDoDia } from "@/hooks/usePublicDestaquesDoDia";
 import { useRacha } from "@/context/RachaContext";
-import { rachaConfig } from "@/config/racha.config";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildDestaquesDoDia, getTimeCampeao } from "@/utils/destaquesDoDia";
@@ -239,7 +238,7 @@ function buildBotHighlight(
 export default function Home() {
   const { tenantSlug } = useRacha();
   const { publicHref, publicSlug } = usePublicLinks();
-  const slug = publicSlug.trim() || tenantSlug.trim() || rachaConfig.slug;
+  const slug = publicSlug.trim() || tenantSlug.trim();
   const { hasPermission } = useAuth();
   const pathname = usePathname() ?? "";
   const { data: session } = useSession();

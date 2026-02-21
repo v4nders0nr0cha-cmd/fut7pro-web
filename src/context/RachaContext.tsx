@@ -11,7 +11,6 @@ import {
 } from "react";
 import { usePathname } from "next/navigation";
 import { rachaMap } from "@/config/rachaMap";
-import { rachaConfig } from "@/config/racha.config";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
@@ -51,13 +50,12 @@ export function RachaProvider({
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
-  const fallbackSlug = rachaConfig.slug || defaultRachaId;
-  const allowDefaultFallback = !slugFromPath && !initialTenantSlug;
+  const allowStoredFallback = !slugFromPath && !initialTenantSlug;
   const initialStoredSlug = typeof window !== "undefined" ? getStoredTenantSlug() : null;
   const initialSlug = (
     initialTenantSlug ||
     slugFromPath ||
-    (allowDefaultFallback ? initialStoredSlug || fallbackSlug : "") ||
+    (allowStoredFallback ? initialStoredSlug || "" : "") ||
     ""
   ).trim();
   const [rachaId, setRachaIdState] = useState<string>(defaultRachaId);
@@ -77,8 +75,8 @@ export function RachaProvider({
 
   const clearRachaId = useCallback(() => {
     setRachaIdState(defaultRachaId);
-    setTenantSlugState(fallbackSlug);
-  }, [defaultRachaId, fallbackSlug]);
+    setTenantSlugState("");
+  }, [defaultRachaId]);
 
   const isRachaSelected = useMemo(() => {
     return (tenantSlug || rachaId).length > 0;
@@ -86,14 +84,14 @@ export function RachaProvider({
 
   useEffect(() => {
     const slugFromPath = resolvePublicTenantSlug(pathname);
-    const shouldUseDefaultFallback = !slugFromPath && !initialTenantSlug;
+    const shouldUseStoredFallback = !slugFromPath && !initialTenantSlug;
     if (slugFromPath) {
       setTenantSlugState(slugFromPath);
       setStoredTenantSlug(slugFromPath);
       return;
     }
 
-    if (shouldUseDefaultFallback) {
+    if (shouldUseStoredFallback) {
       const stored = getStoredTenantSlug();
       if (stored) {
         setTenantSlugState(stored);
@@ -106,11 +104,7 @@ export function RachaProvider({
       setStoredTenantSlug(initialTenantSlug);
       return;
     }
-
-    if (!tenantSlug && shouldUseDefaultFallback && fallbackSlug) {
-      setTenantSlugState(fallbackSlug);
-    }
-  }, [pathname, initialTenantSlug, fallbackSlug, tenantSlug]);
+  }, [pathname, initialTenantSlug]);
 
   const value = useMemo(
     () => ({
