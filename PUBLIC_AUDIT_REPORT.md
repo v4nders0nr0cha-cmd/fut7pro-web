@@ -1,6 +1,6 @@
 # PUBLIC AUDIT REPORT
 
-Data: 2026-02-21 (revalidação pós-hotfixes + SEO + empty-state + política sem fallback default)  
+Data: 2026-02-21 (revalidação pós-hotfixes + SEO + empty-state + política sem fallback default + smoke funcional real)  
 Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/**`, `src/hooks/usePublic*`.
 
 ## Resumo Executivo
@@ -20,6 +20,7 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - ✅ Estados vazios públicos sem dados fictícios (`Jogador 1`, `Time A`, `Time B`, `placeholder-*`).
 - ✅ Política de rotas públicas sem slug aplicada sem fallback default de tenant.
 - ✅ Smoke SEO automatizado (Playwright) cobrindo `robots.txt` e `sitemap.xml` com sucesso (`6/6`).
+- ✅ Smoke E2E funcional público em produção com slugs reais (`vitrine`, `chelsea`) aprovado em Chromium, Firefox e WebKit.
 
 ## Inventário e Navegação
 
@@ -130,12 +131,21 @@ Escopo: `src/app/(public)/**`, `src/app/api/public/**`, `src/components/layout/*
 - Resultado:
   - O fallback implícito para tenant default foi removido; rotas públicas sem slug passam a usar apenas contexto explícito (slug da URL ou slug ativo em cookie), sem hardcode de tenant.
 
+### I) Smoke E2E funcional público com slugs reais (concluído)
+
+- Evidências:
+  - `tests/public/public-smoke-functional.spec.ts:56`
+  - Execução Playwright em produção (`PLAYWRIGHT_BASE_URL=https://app.fut7pro.com.br`) com slugs reais `vitrine,chelsea`
+  - Resultado: `3 passed` (Chromium, Firefox, WebKit)
+- Resultado:
+  - Rotas públicas principais `/:slug/**` responderam com sucesso e sem sinais de conteúdo mock/placeholder no conteúdo visível.
+
 ## Resultado de Prontidão (Go-Live Público)
 
-- **Aprovado tecnicamente para go-live público**, condicionado ao smoke E2E final em produção.
+- **Aprovado para go-live operacional público** nesta revisão final.
 - Não há bloqueios críticos/altos/médios abertos no escopo desta auditoria documental/estrutural.
 
 ## Próxima Etapa Recomendada (ordem de execução)
 
-1. Executar smoke E2E funcional público final (rotas slugadas principais + validações de conteúdo sem mocks).
-2. Revalidar no Search Console após novo deploy para confirmar aumento de URLs indexáveis via sitemap por slug.
+1. Revalidar no Search Console nos próximos ciclos para confirmar crescimento de indexação via sitemap por slug.
+2. Monitorar métricas de erro/latência das rotas públicas em produção por 24-72 horas pós-go-live.
