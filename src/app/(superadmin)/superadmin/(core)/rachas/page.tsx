@@ -108,6 +108,15 @@ const STATUS_LABELS = {
   BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
 };
 
+const ADMIN_MEMBERSHIP_ROLES = new Set([
+  "ADMIN",
+  "SUPERADMIN",
+  "PRESIDENTE",
+  "VICE_PRESIDENTE",
+  "DIRETOR_FUTEBOL",
+  "DIRETOR_FINANCEIRO",
+]);
+
 function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
   const value = (raw || "").toUpperCase();
   if (blocked) return "BLOQUEADO";
@@ -173,6 +182,17 @@ function daysSince(dateISO?: string | null) {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
+function isAdminMembershipRole(value?: string | null) {
+  return value ? ADMIN_MEMBERSHIP_ROLES.has(value.toUpperCase()) : false;
+}
+
+function isApprovedAdminMembership(membership?: TenantMembership | null) {
+  if (!membership) return false;
+  if ((membership.status || "").toUpperCase() !== "APROVADO") return false;
+  const role = membership.role || membership.user?.role;
+  return isAdminMembershipRole(role);
+}
+
 function pickLatestDate(...values: Array<string | null | undefined>) {
   let latest: Date | null = null;
   for (const value of values) {
@@ -187,9 +207,9 @@ function pickLatestDate(...values: Array<string | null | undefined>) {
 }
 
 function resolveTenantLastActivity(tenant: Tenant) {
-  const loginByMembership = (tenant.memberships ?? []).map(
-    (membership) => membership.user?.lastLoginAt
-  );
+  const loginByMembership = (tenant.memberships ?? [])
+    .filter(isApprovedAdminMembership)
+    .map((membership) => membership.user?.lastLoginAt);
   const lastLoginAt = pickLatestDate(tenant.lastLoginAt, ...loginByMembership);
   if (lastLoginAt) {
     return { value: lastLoginAt, source: "login" as const };
@@ -210,8 +230,7 @@ function cleanValue(value?: string | null) {
 
 function resolveMembershipOwner(memberships?: TenantMembership[] | null) {
   if (!Array.isArray(memberships) || memberships.length === 0) return null;
-  const approved =
-    memberships.find((m) => (m.status || "").toUpperCase() === "APROVADO") || memberships[0];
+  const approved = memberships.find(isApprovedAdminMembership) || memberships[0];
   const user = approved?.user;
   if (!user) return null;
   const name = cleanValue(user.name);
