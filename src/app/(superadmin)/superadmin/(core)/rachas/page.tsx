@@ -24,6 +24,7 @@ type TenantMembership = {
     name?: string | null;
     email?: string | null;
     role?: string | null;
+    lastLoginAt?: string | null;
   } | null;
 };
 
@@ -107,6 +108,15 @@ const STATUS_LABELS = {
   BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
 };
 
+const ADMIN_MEMBERSHIP_ROLES = new Set([
+  "ADMIN",
+  "SUPERADMIN",
+  "PRESIDENTE",
+  "VICE_PRESIDENTE",
+  "DIRETOR_FUTEBOL",
+  "DIRETOR_FINANCEIRO",
+]);
+
 function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
   const value = (raw || "").toUpperCase();
   if (blocked) return "BLOQUEADO";
@@ -172,6 +182,46 @@ function daysSince(dateISO?: string | null) {
   return Math.floor(diffMs / (1000 * 60 * 60 * 24));
 }
 
+function isAdminMembershipRole(value?: string | null) {
+  return value ? ADMIN_MEMBERSHIP_ROLES.has(value.toUpperCase()) : false;
+}
+
+function isApprovedAdminMembership(membership?: TenantMembership | null) {
+  if (!membership) return false;
+  if ((membership.status || "").toUpperCase() !== "APROVADO") return false;
+  const role = membership.role || membership.user?.role;
+  return isAdminMembershipRole(role);
+}
+
+function pickLatestDate(...values: Array<string | null | undefined>) {
+  let latest: Date | null = null;
+  for (const value of values) {
+    if (!value) continue;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) continue;
+    if (!latest || parsed.getTime() > latest.getTime()) {
+      latest = parsed;
+    }
+  }
+  return latest ? latest.toISOString() : null;
+}
+
+function resolveTenantLastActivity(tenant: Tenant) {
+  const loginByMembership = (tenant.memberships ?? [])
+    .filter(isApprovedAdminMembership)
+    .map((membership) => membership.user?.lastLoginAt);
+  const lastLoginAt = pickLatestDate(tenant.lastLoginAt, ...loginByMembership);
+  if (lastLoginAt) {
+    return { value: lastLoginAt, source: "login" as const };
+  }
+
+  const fallbackActivity = pickLatestDate(tenant.updatedAt, tenant.createdAt);
+  return {
+    value: fallbackActivity,
+    source: "activity" as const,
+  };
+}
+
 function cleanValue(value?: string | null) {
   if (!value) return null;
   const trimmed = value.trim();
@@ -180,8 +230,7 @@ function cleanValue(value?: string | null) {
 
 function resolveMembershipOwner(memberships?: TenantMembership[] | null) {
   if (!Array.isArray(memberships) || memberships.length === 0) return null;
-  const approved =
-    memberships.find((m) => (m.status || "").toUpperCase() === "APROVADO") || memberships[0];
+  const approved = memberships.find(isApprovedAdminMembership) || memberships[0];
   const user = approved?.user;
   if (!user) return null;
   const name = cleanValue(user.name);
@@ -337,7 +386,8 @@ export default function RachasCadastradosPage() {
             );
         const owner = resolveTenantOwner(t);
         const admin = owner.name || owner.email || "--";
-        const ultimaAtividade = t.lastLoginAt || t.updatedAt || t.createdAt || null;
+        const atividade = resolveTenantLastActivity(t);
+        const ultimaAtividade = atividade.value;
 
         return {
           id: t.id,
@@ -357,6 +407,7 @@ export default function RachasCadastradosPage() {
           criadoEm: t.createdAt || "",
           ultimaAtividade,
           diasInativo: daysSince(ultimaAtividade),
+          tipoInatividade: atividade.source,
           bloqueado: status === "BLOQUEADO",
           isVitrine,
           historico: [
@@ -731,7 +782,8 @@ export default function RachasCadastradosPage() {
                       {r.ultimaAtividade ? formatDate(r.ultimaAtividade) : "--"}
                       {typeof r.diasInativo === "number" ? (
                         <span className="block text-xs text-zinc-400">
-                          {r.diasInativo} dias sem login
+                          {r.diasInativo} dias sem{" "}
+                          {r.tipoInatividade === "login" ? "login" : "atividade"}
                         </span>
                       ) : null}
                     </td>
