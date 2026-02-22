@@ -26,7 +26,7 @@ export default function Footer() {
   const { socialLinks } = useSocialLinksPublic(slug);
   const carouselRef = useRef<HTMLDivElement | null>(null);
   const impressionRef = useRef(new Set<string>());
-  const { slots, isLoading } = usePublicSponsors(slug);
+  const { slots, isLoading } = usePublicSponsors(slug, { fillDefaultSlots: true });
 
   const campoAbout = useMemo(() => {
     if (about?.campoAtual) return about.campoAtual;
@@ -135,6 +135,7 @@ export default function Footer() {
     if (!patrocinadoresVisiveis.length) return;
     const currentUrl = typeof window !== "undefined" ? window.location.href : undefined;
     patrocinadoresVisiveis.forEach((patro) => {
+      if (patro.isPlaceholder) return;
       if (impressionRef.current.has(patro.id)) return;
       impressionRef.current.add(patro.id);
       recordSponsorMetric({
@@ -215,7 +216,8 @@ export default function Footer() {
                         href={patro.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() =>
+                        onClick={() => {
+                          if (patro.isPlaceholder) return;
                           recordSponsorMetric({
                             slug,
                             sponsorId: patro.id,
@@ -223,8 +225,8 @@ export default function Footer() {
                             targetUrl: patro.link,
                             currentUrl:
                               typeof window !== "undefined" ? window.location.href : undefined,
-                          })
-                        }
+                          });
+                        }}
                         aria-label={`Visitar site do patrocinador ${patro.name}`}
                       >
                         {image}

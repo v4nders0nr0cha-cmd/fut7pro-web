@@ -45,11 +45,11 @@ export default function GamesOfTheDay({
               key={jogo.id}
               teamA={{
                 name: jogo.timeA,
-                logo: teamLogoMap[jogo.timeA] || logoPadrao,
+                logo: jogo.logoTimeA || teamLogoMap[jogo.timeA] || logoPadrao,
               }}
               teamB={{
                 name: jogo.timeB,
-                logo: teamLogoMap[jogo.timeB] || logoPadrao,
+                logo: jogo.logoTimeB || teamLogoMap[jogo.timeB] || logoPadrao,
               }}
               score={`${jogo.golsTimeA} - ${jogo.golsTimeB}`}
             />

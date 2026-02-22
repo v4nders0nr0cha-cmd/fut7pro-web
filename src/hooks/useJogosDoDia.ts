@@ -5,6 +5,8 @@ export type JogoDoDia = {
   id: string;
   timeA: string;
   timeB: string;
+  logoTimeA: string | null;
+  logoTimeB: string | null;
   golsTimeA: number;
   golsTimeB: number;
 };
@@ -12,11 +14,15 @@ export type JogoDoDia = {
 function mapMatch(match: PublicMatch): JogoDoDia {
   const nomeTimeA = match.teamA?.name?.trim();
   const nomeTimeB = match.teamB?.name?.trim();
+  const logoTimeA = match.teamA?.logoUrl?.trim() || null;
+  const logoTimeB = match.teamB?.logoUrl?.trim() || null;
 
   return {
     id: match.id,
     timeA: nomeTimeA || "Equipe mandante",
     timeB: nomeTimeB || "Equipe visitante",
+    logoTimeA,
+    logoTimeB,
     golsTimeA: Number(match.score?.teamA ?? match.scoreA ?? 0),
     golsTimeB: Number(match.score?.teamB ?? match.scoreB ?? 0),
   };

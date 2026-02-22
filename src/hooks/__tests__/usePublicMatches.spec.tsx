@@ -61,8 +61,8 @@ describe("useJogosDoDia", () => {
             id: "m1",
             date: "2025-01-01T10:00:00.000Z",
             score: { teamA: 3, teamB: 0 },
-            teamA: { id: "a", name: "Azul", logoUrl: null, color: null },
-            teamB: { id: "b", name: "Laranja", logoUrl: null, color: null },
+            teamA: { id: "a", name: "Azul", logoUrl: "/logo-azul.png", color: null },
+            teamB: { id: "b", name: "Laranja", logoUrl: "/logo-laranja.png", color: null },
             presences: [],
           },
         ],
@@ -83,6 +83,8 @@ describe("useJogosDoDia", () => {
 
     expect(jogo.timeA).toBe("Azul");
     expect(jogo.timeB).toBe("Laranja");
+    expect(jogo.logoTimeA).toBe("/logo-azul.png");
+    expect(jogo.logoTimeB).toBe("/logo-laranja.png");
     expect(jogo.golsTimeA).toBe(3);
     expect(jogo.golsTimeB).toBe(0);
     expect(result.current.isLoading).toBe(false);
