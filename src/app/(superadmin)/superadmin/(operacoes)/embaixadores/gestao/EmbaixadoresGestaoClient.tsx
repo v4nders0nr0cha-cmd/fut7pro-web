@@ -138,6 +138,7 @@ export default function EmbaixadoresGestaoClient() {
   const [stateFilter, setStateFilter] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [selectedAmbassadorId, setSelectedAmbassadorId] = useState("");
+  const [hasAppliedQuerySelection, setHasAppliedQuerySelection] = useState(false);
 
   const ambassadorMetrics = useMemo<AmbassadorMetrics[]>(() => {
     if (!data) return [];
@@ -266,11 +267,13 @@ export default function EmbaixadoresGestaoClient() {
     }
 
     if (
+      !hasAppliedQuerySelection &&
       preselectedAmbassadorId &&
       ambassadorMetrics.some((item) => item.id === preselectedAmbassadorId) &&
       selectedAmbassadorId !== preselectedAmbassadorId
     ) {
       setSelectedAmbassadorId(preselectedAmbassadorId);
+      setHasAppliedQuerySelection(true);
       return;
     }
 
@@ -282,7 +285,7 @@ export default function EmbaixadoresGestaoClient() {
     }
 
     setSelectedAmbassadorId(ambassadorMetrics[0].id);
-  }, [ambassadorMetrics, preselectedAmbassadorId, selectedAmbassadorId]);
+  }, [ambassadorMetrics, hasAppliedQuerySelection, preselectedAmbassadorId, selectedAmbassadorId]);
 
   const selectedAmbassador = useMemo(
     () => ambassadorMetrics.find((item) => item.id === selectedAmbassadorId) || null,
