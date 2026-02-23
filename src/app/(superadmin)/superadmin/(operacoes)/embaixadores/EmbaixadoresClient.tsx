@@ -78,6 +78,7 @@ interface DashboardResponse {
     tiktok: string | null;
     youtube: string | null;
     facebookPage: string | null;
+    couponRequested: string | null;
     niche: string | null;
     pixKeyMasked: string;
     photoUrl: string | null;
@@ -149,6 +150,10 @@ function statusLabel(status: ApplicationStatus): string {
   return "Pendente";
 }
 
+function normalizeCouponInput(value: string): string {
+  return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 export default function EmbaixadoresClient() {
   const { data, error, isLoading, mutate, isValidating } = useSWR<DashboardResponse>(
     "/api/superadmin/embaixadores",
@@ -161,6 +166,7 @@ export default function EmbaixadoresClient() {
 
   const [selectedApplicationId, setSelectedApplicationId] = useState<string>("");
   const [reviewNote, setReviewNote] = useState("");
+  const [reviewCoupon, setReviewCoupon] = useState("");
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -183,6 +189,7 @@ export default function EmbaixadoresClient() {
 
     setSelectedApplicationId(prioritized.id);
     setReviewNote(prioritized.reviewNotes || "");
+    setReviewCoupon(prioritized.couponRequested || "");
   }, [data, selectedApplicationId]);
 
   const selectedApplication = useMemo(
@@ -193,6 +200,7 @@ export default function EmbaixadoresClient() {
   useEffect(() => {
     if (!selectedApplication) return;
     setReviewNote(selectedApplication.reviewNotes || "");
+    setReviewCoupon(selectedApplication.couponRequested || "");
   }, [selectedApplication]);
 
   const handleUpdateApplication = async (nextStatus: ApplicationStatus) => {
@@ -205,12 +213,17 @@ export default function EmbaixadoresClient() {
     setActionMessage("");
 
     try {
+      const normalizedCoupon = normalizeCouponInput(reviewCoupon.trim());
       const response = await fetch(
         `/api/superadmin/embaixadores/applications/${encodeURIComponent(selectedApplication.id)}/status`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus, note: reviewNote.trim() || undefined }),
+          body: JSON.stringify({
+            status: nextStatus,
+            note: reviewNote.trim() || undefined,
+            coupon: nextStatus === "APROVADA" && normalizedCoupon ? normalizedCoupon : undefined,
+          }),
         }
       );
 
@@ -389,6 +402,12 @@ export default function EmbaixadoresClient() {
                     Cidade/UF: {selectedApplication.city}/{selectedApplication.state}
                   </p>
                   <p className="text-sm text-zinc-300">Pix: {selectedApplication.pixKeyMasked}</p>
+                  <p className="text-sm text-zinc-300">
+                    Cupom solicitado:{" "}
+                    <span className="font-semibold text-yellow-300">
+                      {selectedApplication.couponRequested || "-"}
+                    </span>
+                  </p>
                   <p className="text-sm text-zinc-300">Nicho: {selectedApplication.niche || "-"}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -433,6 +452,27 @@ export default function EmbaixadoresClient() {
                     {selectedApplication.facebookPage || "-"}
                   </p>
                 </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="review-coupon"
+                  className="mb-2 block text-xs uppercase tracking-wide text-zinc-500"
+                >
+                  Cupom para aprovacao
+                </label>
+                <input
+                  id="review-coupon"
+                  value={reviewCoupon}
+                  onChange={(event) => setReviewCoupon(normalizeCouponInput(event.target.value))}
+                  maxLength={14}
+                  className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950/50 px-3 text-sm text-zinc-100 outline-none focus:border-yellow-500"
+                  placeholder="Ex: FUT7SOBRAL"
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Por padrao usamos o cupom solicitado. Edite apenas se precisar ajustar antes da
+                  aprovacao.
+                </p>
               </div>
 
               <div>

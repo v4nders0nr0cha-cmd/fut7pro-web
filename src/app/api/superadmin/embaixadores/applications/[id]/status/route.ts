@@ -26,6 +26,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
   const payload = (await request.json().catch(() => ({}))) as {
     status?: string;
     note?: string;
+    coupon?: string;
   };
 
   if (!payload.status) {
@@ -40,6 +41,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
       body: JSON.stringify({
         status: payload.status,
         note: payload.note,
+        coupon: payload.coupon,
       }),
       cache: "no-store",
     }
