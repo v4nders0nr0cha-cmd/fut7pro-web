@@ -77,7 +77,7 @@ interface DashboardResponse {
     instagram: string | null;
     tiktok: string | null;
     youtube: string | null;
-    linkedin: string | null;
+    facebookPage: string | null;
     niche: string | null;
     pixKeyMasked: string;
     photoUrl: string | null;
@@ -428,9 +428,9 @@ export default function EmbaixadoresClient() {
                   <p className="mt-1 text-sm text-zinc-200">{selectedApplication.youtube || "-"}</p>
                 </div>
                 <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
-                  <p className="text-xs uppercase text-zinc-500">LinkedIn</p>
+                  <p className="text-xs uppercase text-zinc-500">Pagina do Facebook</p>
                   <p className="mt-1 text-sm text-zinc-200">
-                    {selectedApplication.linkedin || "-"}
+                    {selectedApplication.facebookPage || "-"}
                   </p>
                 </div>
               </div>
