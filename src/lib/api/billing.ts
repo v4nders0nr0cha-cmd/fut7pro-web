@@ -53,6 +53,15 @@ export interface Invoice {
   metadata?: Record<string, any> | null;
 }
 
+export interface ChargePricing {
+  isFirstPayment: boolean;
+  firstPaymentDiscountApplied: boolean;
+  baseAmountCents: number;
+  discountPct: number;
+  discountCents: number;
+  totalCents: number;
+}
+
 export interface Subscription {
   id: string;
   tenantId: string;
@@ -73,6 +82,7 @@ export interface Subscription {
   couponCode?: string;
   discountPct?: number;
   extraTrialDays?: number;
+  pricingPreview?: ChargePricing;
   invoices?: Invoice[];
 }
 
@@ -84,6 +94,7 @@ export interface SubscriptionStatus {
 
 export interface PixChargeResponse {
   invoice: Invoice;
+  pricing?: ChargePricing;
   pix: {
     id?: string;
     qrCode?: string;
@@ -119,8 +130,8 @@ export class BillingAPI {
   }
 
   // Buscar assinatura por tenant
-  static async getSubscriptionByTenant(tenantId: string): Promise<Subscription> {
-    return this.request<Subscription>(`/subscription/tenant/${tenantId}`);
+  static async getSubscriptionByTenant(tenantId: string): Promise<Subscription | null> {
+    return this.request<Subscription | null>(`/subscription/tenant/${tenantId}`);
   }
 
   // Buscar status da assinatura
@@ -145,8 +156,18 @@ export class BillingAPI {
   static async activateSubscription(
     subscriptionId: string,
     backUrl: string
-  ): Promise<{ checkoutUrl?: string }> {
-    return this.request<{ checkoutUrl?: string }>(`/subscription/${subscriptionId}/activate`, {
+  ): Promise<{
+    checkoutUrl?: string;
+    pricing?: ChargePricing;
+    subscription?: Subscription;
+    mpResponse?: Record<string, any>;
+  }> {
+    return this.request<{
+      checkoutUrl?: string;
+      pricing?: ChargePricing;
+      subscription?: Subscription;
+      mpResponse?: Record<string, any>;
+    }>(`/subscription/${subscriptionId}/activate`, {
       method: "POST",
       body: JSON.stringify({ backUrl }),
     });

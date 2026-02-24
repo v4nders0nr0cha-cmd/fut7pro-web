@@ -32,12 +32,14 @@ export function useSubscription(tenantId?: string): UseSubscriptionReturn {
     try {
       setError(null);
       const data = await BillingAPI.getSubscriptionByTenant(tenantId);
-      setSubscription(data);
+      setSubscription(data ?? null);
 
       // Se tiver subscription, buscar status
-      if (data.id) {
+      if (data?.id) {
         const status = await BillingAPI.getSubscriptionStatus(data.id);
         setSubscriptionStatus(status);
+      } else {
+        setSubscriptionStatus(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao buscar assinatura");

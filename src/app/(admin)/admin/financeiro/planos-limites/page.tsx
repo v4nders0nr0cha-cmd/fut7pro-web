@@ -4,7 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaSpinner } from "react-icons/fa";
-import BillingAPI, { type Plan, type PixChargeResponse } from "@/lib/api/billing";
+import BillingAPI, {
+  type ChargePricing,
+  type Plan,
+  type PixChargeResponse,
+} from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
 
 function formatDate(value?: string | null) {
@@ -86,6 +90,50 @@ function extractApiError(error: unknown, fallback: string) {
   return raw || fallback;
 }
 
+function formatPercent(value?: number | null) {
+  if (value === null || value === undefined) return "0%";
+  return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
+}
+
+function buildFallbackPricing(baseAmountCents?: number | null): ChargePricing | null {
+  if (baseAmountCents === null || baseAmountCents === undefined) return null;
+  return {
+    isFirstPayment: false,
+    firstPaymentDiscountApplied: false,
+    baseAmountCents,
+    discountPct: 0,
+    discountCents: 0,
+    totalCents: baseAmountCents,
+  };
+}
+
+function buildPixPricingFromInvoice(
+  pixCharge: PixChargeResponse | null,
+  paymentPricing: ChargePricing | null
+): ChargePricing | null {
+  if (pixCharge?.pricing) return pixCharge.pricing;
+
+  const invoiceAmountCents = pixCharge?.invoice?.amount;
+  if (invoiceAmountCents === null || invoiceAmountCents === undefined) {
+    return paymentPricing;
+  }
+
+  const baseAmountCents = paymentPricing?.baseAmountCents ?? invoiceAmountCents;
+  const totalCents = invoiceAmountCents;
+  const discountCents = Math.max(baseAmountCents - totalCents, 0);
+  const discountPct =
+    baseAmountCents > 0 ? Number(((discountCents / baseAmountCents) * 100).toFixed(2)) : 0;
+
+  return {
+    isFirstPayment: paymentPricing?.isFirstPayment ?? false,
+    firstPaymentDiscountApplied: paymentPricing?.firstPaymentDiscountApplied ?? discountCents > 0,
+    baseAmountCents,
+    discountPct: paymentPricing?.discountPct ?? discountPct,
+    discountCents: paymentPricing?.discountCents ?? discountCents,
+    totalCents,
+  };
+}
+
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -106,6 +154,7 @@ export default function PlanosLimitesPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showPixModal, setShowPixModal] = useState(false);
   const [pixCharge, setPixCharge] = useState<PixChargeResponse | null>(null);
+  const [checkoutPricing, setCheckoutPricing] = useState<ChargePricing | null>(null);
   const [recurringAccepted, setRecurringAccepted] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
 
@@ -176,6 +225,14 @@ export default function PlanosLimitesPage() {
   const cycleLabel = daysRemaining !== null ? `${daysRemaining}` : "--";
 
   const invoices = subscription?.invoices ?? [];
+  const paymentPricing =
+    checkoutPricing || subscription?.pricingPreview || buildFallbackPricing(subscription?.amount);
+  const pixPricing = useMemo(
+    () => buildPixPricingFromInvoice(pixCharge, paymentPricing),
+    [paymentPricing, pixCharge]
+  );
+  const hasFirstPaymentDiscount = Boolean(paymentPricing?.firstPaymentDiscountApplied);
+  const hasCouponBenefits = Boolean(subscription?.couponCode && hasFirstPaymentDiscount);
 
   const openPaymentModal = () => {
     if (!subscription?.id) {
@@ -187,6 +244,7 @@ export default function PlanosLimitesPage() {
     setRecurringAccepted(false);
     setPixCopied(false);
     setPixCharge(null);
+    setCheckoutPricing(subscription?.pricingPreview || null);
     setShowPixModal(false);
     setShowPaymentModal(true);
   };
@@ -203,6 +261,9 @@ export default function PlanosLimitesPage() {
     try {
       const backUrl = window.location.href;
       const result = await BillingAPI.activateSubscription(subscription.id, backUrl);
+      if (result.pricing) {
+        setCheckoutPricing(result.pricing);
+      }
       if (result.checkoutUrl) {
         window.location.href = result.checkoutUrl;
         return;
@@ -229,6 +290,9 @@ export default function PlanosLimitesPage() {
     try {
       const result = await BillingAPI.createPixCharge(subscription.id, payerName);
       setPixCharge(result);
+      if (result.pricing) {
+        setCheckoutPricing(result.pricing);
+      }
       setShowPaymentModal(false);
       setShowPixModal(true);
     } catch (err) {
@@ -595,6 +659,18 @@ export default function PlanosLimitesPage() {
                 {actionError}
               </div>
             )}
+            {hasCouponBenefits && paymentPricing && (
+              <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+                <p className="font-semibold text-emerald-200">
+                  Cupom de embaixador aplicado no seu racha.
+                </p>
+                <p className="mt-1">
+                  Você ganhou +10 dias de teste (total de 30 dias) e{" "}
+                  <strong>{formatPercent(paymentPricing.discountPct)}</strong> de desconto nesta
+                  primeira cobrança. Nas próximas cobranças, o valor volta ao preço normal do plano.
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
@@ -650,6 +726,36 @@ export default function PlanosLimitesPage() {
               Plano atual: <b className="text-gray-200">{planLabel}</b> | Valor:{" "}
               <b className="text-gray-200">{formatCurrencyFromCents(subscription.amount)}</b>
             </div>
+            {paymentPricing && (
+              <div className="mt-3 rounded-xl border border-[#2b2b2b] bg-[#111418] p-3 text-xs text-gray-300">
+                <p className="mb-2 font-semibold text-white">Resumo desta cobrança</p>
+                <div className="flex items-center justify-between">
+                  <span>Plano</span>
+                  <span>{formatCurrencyFromCents(paymentPricing.baseAmountCents)}</span>
+                </div>
+                {paymentPricing.firstPaymentDiscountApplied && (
+                  <div className="mt-1 flex items-center justify-between text-emerald-300">
+                    <span>
+                      Desconto cupom embaixador ({formatPercent(paymentPricing.discountPct)})
+                    </span>
+                    <span>-{formatCurrencyFromCents(paymentPricing.discountCents)}</span>
+                  </div>
+                )}
+                <div className="mt-2 flex items-center justify-between border-t border-[#2b2b2b] pt-2 font-semibold text-white">
+                  <span>
+                    {paymentPricing.firstPaymentDiscountApplied
+                      ? "Total do primeiro pagamento"
+                      : "Total desta cobrança"}
+                  </span>
+                  <span>{formatCurrencyFromCents(paymentPricing.totalCents)}</span>
+                </div>
+                {paymentPricing.firstPaymentDiscountApplied && (
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    Desconto válido somente na primeira cobrança.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </Modal>
       )}
@@ -712,6 +818,34 @@ export default function PlanosLimitesPage() {
                 {formatDate(pixCharge.invoice.periodEnd)}
               </b>
             </div>
+            {pixPricing && (
+              <div className="mt-3 rounded-xl border border-[#2b2b2b] bg-[#111418] p-3 text-xs text-gray-300">
+                <p className="mb-2 font-semibold text-white">Resumo do PIX</p>
+                <div className="flex items-center justify-between">
+                  <span>Plano</span>
+                  <span>{formatCurrencyFromCents(pixPricing.baseAmountCents)}</span>
+                </div>
+                {pixPricing.firstPaymentDiscountApplied && (
+                  <div className="mt-1 flex items-center justify-between text-emerald-300">
+                    <span>Desconto cupom embaixador ({formatPercent(pixPricing.discountPct)})</span>
+                    <span>-{formatCurrencyFromCents(pixPricing.discountCents)}</span>
+                  </div>
+                )}
+                <div className="mt-2 flex items-center justify-between border-t border-[#2b2b2b] pt-2 font-semibold text-white">
+                  <span>
+                    {pixPricing.firstPaymentDiscountApplied
+                      ? "Total do primeiro pagamento"
+                      : "Total desta cobrança"}
+                  </span>
+                  <span>{formatCurrencyFromCents(pixPricing.totalCents)}</span>
+                </div>
+                {pixPricing.firstPaymentDiscountApplied && (
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    Desconto válido somente na primeira cobrança.
+                  </p>
+                )}
+              </div>
+            )}
             {pixCharge.pix.expiresAt && (
               <div className="mt-2 text-xs text-gray-400">
                 Valido ate: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
