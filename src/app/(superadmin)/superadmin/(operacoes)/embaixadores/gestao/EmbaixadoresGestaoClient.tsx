@@ -125,7 +125,7 @@ export default function EmbaixadoresGestaoClient() {
   const searchParams = useSearchParams();
   const preselectedAmbassadorId = searchParams.get("ambassadorId") || "";
 
-  const { data, error, isLoading, isValidating } = useSWR<DashboardResponse>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<DashboardResponse>(
     "/api/superadmin/embaixadores",
     fetcher,
     {
@@ -139,6 +139,8 @@ export default function EmbaixadoresGestaoClient() {
   const [cityFilter, setCityFilter] = useState("");
   const [selectedAmbassadorId, setSelectedAmbassadorId] = useState("");
   const [hasAppliedQuerySelection, setHasAppliedQuerySelection] = useState(false);
+  const [actionLoading, setActionLoading] = useState<"status" | "delete" | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const ambassadorMetrics = useMemo<AmbassadorMetrics[]>(() => {
     if (!data) return [];
@@ -305,6 +307,79 @@ export default function EmbaixadoresGestaoClient() {
         ambassadorMetrics.length
       : 0;
 
+  const handleToggleAmbassadorStatus = async () => {
+    if (!selectedAmbassador) return;
+
+    const nextStatus = selectedAmbassador.status === "BLOQUEADO" ? "ATIVO" : "BLOQUEADO";
+    const confirmMessage =
+      nextStatus === "BLOQUEADO"
+        ? `Bloquear temporariamente ${selectedAmbassador.name}? O cupom ficará indisponível até a reativação.`
+        : `Reativar ${selectedAmbassador.name}? O cupom volta a ficar disponível.`;
+
+    if (!window.confirm(confirmMessage)) return;
+
+    setActionLoading("status");
+    setActionMessage(null);
+    try {
+      const response = await fetch(
+        `/api/superadmin/embaixadores/${encodeURIComponent(selectedAmbassador.id)}/status`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        }
+      );
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "Nao foi possivel atualizar o status do embaixador.");
+      }
+      setActionMessage(
+        nextStatus === "BLOQUEADO"
+          ? "Embaixador bloqueado temporariamente."
+          : "Embaixador reativado com sucesso."
+      );
+      await mutate();
+    } catch (requestError) {
+      setActionMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "Erro ao atualizar status do embaixador."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteAmbassador = async () => {
+    if (!selectedAmbassador) return;
+
+    const confirmMessage = `Deletar embaixador ${selectedAmbassador.name}? Esta ação remove o cadastro e não pode ser desfeita.`;
+    if (!window.confirm(confirmMessage)) return;
+
+    setActionLoading("delete");
+    setActionMessage(null);
+    try {
+      const response = await fetch(
+        `/api/superadmin/embaixadores/${encodeURIComponent(selectedAmbassador.id)}`,
+        {
+          method: "DELETE",
+        }
+      );
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "Nao foi possivel deletar o embaixador.");
+      }
+      setActionMessage("Embaixador deletado com sucesso.");
+      await mutate();
+    } catch (requestError) {
+      setActionMessage(
+        requestError instanceof Error ? requestError.message : "Erro ao deletar embaixador."
+      );
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
@@ -355,6 +430,20 @@ export default function EmbaixadoresGestaoClient() {
           </div>
         </div>
       </section>
+
+      {actionMessage ? (
+        <section className="mb-6">
+          <div
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              actionMessage.toLowerCase().includes("erro")
+                ? "border-red-500/40 bg-red-950/30 text-red-200"
+                : "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
+            }`}
+          >
+            {actionMessage}
+          </div>
+        </section>
+      ) : null}
 
       <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <article className="rounded-xl bg-gradient-to-tr from-yellow-400 to-yellow-600 p-4 text-black shadow-lg">
@@ -544,6 +633,32 @@ export default function EmbaixadoresGestaoClient() {
                   >
                     {selectedAmbassador.status}
                   </span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void handleToggleAmbassadorStatus()}
+                    disabled={actionLoading !== null}
+                    className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                      selectedAmbassador.status === "BLOQUEADO"
+                        ? "border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
+                        : "border border-yellow-500/50 bg-yellow-500/15 text-yellow-200 hover:bg-yellow-500/25"
+                    }`}
+                  >
+                    {actionLoading === "status"
+                      ? "Processando..."
+                      : selectedAmbassador.status === "BLOQUEADO"
+                        ? "Reativar embaixador"
+                        : "Bloquear temporariamente"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDeleteAmbassador()}
+                    disabled={actionLoading !== null}
+                    className="rounded-md border border-red-500/50 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoading === "delete" ? "Deletando..." : "Deletar embaixador"}
+                  </button>
                 </div>
               </div>
 
