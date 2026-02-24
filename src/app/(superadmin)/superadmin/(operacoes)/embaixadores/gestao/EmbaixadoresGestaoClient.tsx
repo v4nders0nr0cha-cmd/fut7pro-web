@@ -5,9 +5,28 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
-type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO";
+type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO" | "EXCLUIDO";
 type ReferralStatus = "TESTE" | "PRIMEIRA_COMPRA" | "ATIVO" | "CANCELADO";
 type CommissionStatus = "PENDENTE" | "PAGA" | "BLOQUEADA";
+type ActionModalType = "STATUS" | "DELETE";
+type ActionCategory =
+  | "FRAUDE_SPAM"
+  | "VIOLACAO_REGRAS"
+  | "AUTOINDICACAO"
+  | "SOLICITACAO_EMBAIXADOR"
+  | "DADOS_INVALIDOS"
+  | "OUTROS";
+type ManagedStatus = "ATIVO" | "BLOQUEADO";
+
+const MIN_REASON_LENGTH = 20;
+const ACTION_CATEGORY_OPTIONS: Array<{ value: ActionCategory; label: string }> = [
+  { value: "FRAUDE_SPAM", label: "Fraude/Spam" },
+  { value: "VIOLACAO_REGRAS", label: "Violação de regras" },
+  { value: "AUTOINDICACAO", label: "Autoindicação" },
+  { value: "SOLICITACAO_EMBAIXADOR", label: "Solicitação do embaixador" },
+  { value: "DADOS_INVALIDOS", label: "Dados inválidos" },
+  { value: "OUTROS", label: "Outros" },
+];
 
 interface DashboardResponse {
   kpis: {
@@ -25,6 +44,7 @@ interface DashboardResponse {
     id: string;
     name: string;
     cpfMasked: string;
+    emailMasked?: string | null;
     level: 1 | 2 | 3;
     status: AmbassadorStatus;
     sales: number;
@@ -62,6 +82,7 @@ interface AmbassadorMetrics {
   id: string;
   name: string;
   cpfMasked: string;
+  emailMasked: string | null;
   couponCode: string;
   city: string;
   state: string;
@@ -79,13 +100,19 @@ interface AmbassadorMetrics {
   paidCommissionsCents: number;
 }
 
+interface ActionModalState {
+  type: ActionModalType;
+  ambassadorId: string;
+  nextStatus?: ManagedStatus;
+}
+
 const fetcher = async (url: string): Promise<DashboardResponse> => {
   const response = await fetch(url, { cache: "no-store" });
   const body = (await response.json().catch(() => ({}))) as {
     error?: string;
   } & Partial<DashboardResponse>;
   if (!response.ok) {
-    throw new Error(body.error || "Nao foi possivel carregar os dados de embaixadores.");
+    throw new Error(body.error || "Não foi possível carregar os dados de embaixadores.");
   }
   return body as DashboardResponse;
 };
@@ -121,6 +148,10 @@ function referralStatusBadge(status: ReferralStatus): string {
   return "border-red-500/40 bg-red-500/20 text-red-300";
 }
 
+function isErrorFeedback(message: string): boolean {
+  return /(erro|falha|inválido|invalido|não foi possível|nao foi possivel)/i.test(message);
+}
+
 export default function EmbaixadoresGestaoClient() {
   const searchParams = useSearchParams();
   const preselectedAmbassadorId = searchParams.get("ambassadorId") || "";
@@ -141,6 +172,11 @@ export default function EmbaixadoresGestaoClient() {
   const [hasAppliedQuerySelection, setHasAppliedQuerySelection] = useState(false);
   const [actionLoading, setActionLoading] = useState<"status" | "delete" | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [actionModal, setActionModal] = useState<ActionModalState | null>(null);
+  const [actionReason, setActionReason] = useState("");
+  const [actionCategory, setActionCategory] = useState<"" | ActionCategory>("");
+  const [deleteConfirmation, setDeleteConfirmation] = useState(false);
+  const [actionFormError, setActionFormError] = useState<string | null>(null);
 
   const ambassadorMetrics = useMemo<AmbassadorMetrics[]>(() => {
     if (!data) return [];
@@ -151,6 +187,7 @@ export default function EmbaixadoresGestaoClient() {
         id: ambassador.id,
         name: ambassador.name,
         cpfMasked: ambassador.cpfMasked,
+        emailMasked: ambassador.emailMasked || null,
         couponCode: ambassador.couponCode,
         city: ambassador.city || "-",
         state: ambassador.state || "-",
@@ -301,80 +338,139 @@ export default function EmbaixadoresGestaoClient() {
       .sort((a, b) => Date.parse(b.trialStartedAt) - Date.parse(a.trialStartedAt));
   }, [data, selectedAmbassadorId]);
 
+  const modalAmbassador = useMemo(() => {
+    if (!actionModal) return null;
+    return ambassadorMetrics.find((item) => item.id === actionModal.ambassadorId) || null;
+  }, [actionModal, ambassadorMetrics]);
+
   const averageReferrals =
     ambassadorMetrics.length > 0
       ? ambassadorMetrics.reduce((sum, item) => sum + item.totalReferrals, 0) /
         ambassadorMetrics.length
       : 0;
 
-  const handleToggleAmbassadorStatus = async () => {
+  const openStatusActionModal = () => {
     if (!selectedAmbassador) return;
-
-    const nextStatus = selectedAmbassador.status === "BLOQUEADO" ? "ATIVO" : "BLOQUEADO";
-    const confirmMessage =
-      nextStatus === "BLOQUEADO"
-        ? `Bloquear temporariamente ${selectedAmbassador.name}? O cupom ficará indisponível até a reativação.`
-        : `Reativar ${selectedAmbassador.name}? O cupom volta a ficar disponível.`;
-
-    if (!window.confirm(confirmMessage)) return;
-
-    setActionLoading("status");
-    setActionMessage(null);
-    try {
-      const response = await fetch(
-        `/api/superadmin/embaixadores/${encodeURIComponent(selectedAmbassador.id)}/status`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus }),
-        }
-      );
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "Nao foi possivel atualizar o status do embaixador.");
-      }
-      setActionMessage(
-        nextStatus === "BLOQUEADO"
-          ? "Embaixador bloqueado temporariamente."
-          : "Embaixador reativado com sucesso."
-      );
-      await mutate();
-    } catch (requestError) {
-      setActionMessage(
-        requestError instanceof Error
-          ? requestError.message
-          : "Erro ao atualizar status do embaixador."
-      );
-    } finally {
-      setActionLoading(null);
+    if (selectedAmbassador.status === "EXCLUIDO") {
+      setActionMessage("Esse embaixador já foi excluído e não pode ser reativado pelo painel.");
+      return;
     }
+
+    const nextStatus: ManagedStatus =
+      selectedAmbassador.status === "BLOQUEADO" ? "ATIVO" : "BLOQUEADO";
+    setActionModal({
+      type: "STATUS",
+      ambassadorId: selectedAmbassador.id,
+      nextStatus,
+    });
+    setActionReason("");
+    setActionCategory("");
+    setDeleteConfirmation(false);
+    setActionFormError(null);
   };
 
-  const handleDeleteAmbassador = async () => {
+  const openDeleteActionModal = () => {
     if (!selectedAmbassador) return;
+    if (selectedAmbassador.status === "EXCLUIDO") {
+      setActionMessage("Esse embaixador já está excluído.");
+      return;
+    }
 
-    const confirmMessage = `Deletar embaixador ${selectedAmbassador.name}? Esta ação remove o cadastro e não pode ser desfeita.`;
-    if (!window.confirm(confirmMessage)) return;
+    setActionModal({
+      type: "DELETE",
+      ambassadorId: selectedAmbassador.id,
+    });
+    setActionReason("");
+    setActionCategory("");
+    setDeleteConfirmation(false);
+    setActionFormError(null);
+  };
 
-    setActionLoading("delete");
+  const closeActionModal = () => {
+    if (actionLoading !== null) return;
+    setActionModal(null);
+    setActionFormError(null);
+    setDeleteConfirmation(false);
+  };
+
+  const handleConfirmModalAction = async () => {
+    if (!actionModal || !modalAmbassador) return;
+
+    const reason = actionReason.trim();
+    if (reason.length < MIN_REASON_LENGTH) {
+      setActionFormError(`Informe um motivo com no mínimo ${MIN_REASON_LENGTH} caracteres.`);
+      return;
+    }
+
+    if (actionModal.type === "DELETE" && !deleteConfirmation) {
+      setActionFormError("Confirme que entendeu o impacto antes de excluir o embaixador.");
+      return;
+    }
+
+    setActionFormError(null);
     setActionMessage(null);
+    setActionLoading(actionModal.type === "STATUS" ? "status" : "delete");
+
     try {
-      const response = await fetch(
-        `/api/superadmin/embaixadores/${encodeURIComponent(selectedAmbassador.id)}`,
-        {
-          method: "DELETE",
+      if (actionModal.type === "STATUS") {
+        if (actionModal.nextStatus !== "ATIVO" && actionModal.nextStatus !== "BLOQUEADO") {
+          throw new Error("Status alvo inválido para esta ação.");
         }
-      );
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
-      if (!response.ok) {
-        throw new Error(body.error || "Nao foi possivel deletar o embaixador.");
+
+        const response = await fetch(
+          `/api/superadmin/embaixadores/${encodeURIComponent(actionModal.ambassadorId)}/status`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              status: actionModal.nextStatus,
+              reason,
+              category: actionCategory || undefined,
+            }),
+          }
+        );
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) {
+          throw new Error(body.error || "Não foi possível atualizar o status do embaixador.");
+        }
+
+        setActionMessage(
+          actionModal.nextStatus === "BLOQUEADO"
+            ? "Embaixador suspenso com sucesso. E-mail de notificação enviado."
+            : "Embaixador reativado com sucesso."
+        );
+      } else {
+        const response = await fetch(
+          `/api/superadmin/embaixadores/${encodeURIComponent(actionModal.ambassadorId)}`,
+          {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              reason,
+              category: actionCategory || undefined,
+            }),
+          }
+        );
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        if (!response.ok) {
+          throw new Error(body.error || "Não foi possível excluir o embaixador.");
+        }
+
+        setActionMessage("Embaixador excluído com sucesso. E-mail de notificação enviado.");
       }
-      setActionMessage("Embaixador deletado com sucesso.");
+
+      setActionModal(null);
+      setActionReason("");
+      setActionCategory("");
+      setDeleteConfirmation(false);
       await mutate();
     } catch (requestError) {
-      setActionMessage(
-        requestError instanceof Error ? requestError.message : "Erro ao deletar embaixador."
-      );
+      const message =
+        requestError instanceof Error
+          ? requestError.message
+          : "Erro ao processar a ação do embaixador.";
+      setActionFormError(message);
+      setActionMessage(message);
     } finally {
       setActionLoading(null);
     }
@@ -384,7 +480,7 @@ export default function EmbaixadoresGestaoClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl bg-zinc-900/80 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestao de Embaixadores</h1>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
           <p className="mt-2 text-zinc-400">Carregando dados dos embaixadores...</p>
         </section>
       </main>
@@ -395,11 +491,11 @@ export default function EmbaixadoresGestaoClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl border border-red-500/40 bg-red-950/20 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestao de Embaixadores</h1>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
           <p className="mt-2 text-red-200">
             {error instanceof Error
               ? error.message
-              : "Nao foi possivel carregar os dados dos embaixadores."}
+              : "Não foi possível carregar os dados dos embaixadores."}
           </p>
         </section>
       </main>
@@ -411,10 +507,10 @@ export default function EmbaixadoresGestaoClient() {
       <section className="mb-6 rounded-xl bg-zinc-900/80 p-5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-white md:text-3xl">Gestao de Embaixadores</h1>
+            <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
             <p className="mt-1 text-zinc-400">
-              Operacao completa do programa com busca, distribuicao geografica e desempenho de
-              conversao por cupom.
+              Operação completa do programa com busca, distribuição geográfica e desempenho de
+              conversão por cupom.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -435,7 +531,7 @@ export default function EmbaixadoresGestaoClient() {
         <section className="mb-6">
           <div
             className={`rounded-xl border px-4 py-3 text-sm ${
-              actionMessage.toLowerCase().includes("erro")
+              isErrorFeedback(actionMessage)
                 ? "border-red-500/40 bg-red-950/30 text-red-200"
                 : "border-emerald-500/40 bg-emerald-950/30 text-emerald-200"
             }`}
@@ -624,6 +720,9 @@ export default function EmbaixadoresGestaoClient() {
                     <p className="text-base font-semibold text-white">{selectedAmbassador.name}</p>
                     <p className="text-sm text-zinc-300">CPF: {selectedAmbassador.cpfMasked}</p>
                     <p className="text-sm text-zinc-300">
+                      E-mail: {selectedAmbassador.emailMasked || "Não informado"}
+                    </p>
+                    <p className="text-sm text-zinc-300">
                       Cidade/UF: {selectedAmbassador.city}/{selectedAmbassador.state}
                     </p>
                     <p className="text-sm text-zinc-300">Cupom: {selectedAmbassador.couponCode}</p>
@@ -637,8 +736,8 @@ export default function EmbaixadoresGestaoClient() {
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => void handleToggleAmbassadorStatus()}
-                    disabled={actionLoading !== null}
+                    onClick={openStatusActionModal}
+                    disabled={actionLoading !== null || selectedAmbassador.status === "EXCLUIDO"}
                     className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
                       selectedAmbassador.status === "BLOQUEADO"
                         ? "border border-emerald-500/50 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25"
@@ -653,23 +752,28 @@ export default function EmbaixadoresGestaoClient() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleDeleteAmbassador()}
-                    disabled={actionLoading !== null}
+                    onClick={openDeleteActionModal}
+                    disabled={actionLoading !== null || selectedAmbassador.status === "EXCLUIDO"}
                     className="rounded-md border border-red-500/50 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {actionLoading === "delete" ? "Deletando..." : "Deletar embaixador"}
+                    {actionLoading === "delete" ? "Processando..." : "Excluir embaixador"}
                   </button>
                 </div>
+                {selectedAmbassador.status === "EXCLUIDO" ? (
+                  <p className="mt-2 text-xs text-red-300">
+                    Conta excluída. Esta ação é irreversível no painel.
+                  </p>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <MetricCard label="Rachas com cupom" value={selectedAmbassador.totalReferrals} />
                 <MetricCard
-                  label="Compraram apos teste"
+                  label="Compraram após teste"
                   value={selectedAmbassador.convertedReferrals}
                 />
                 <MetricCard
-                  label="Nao compraram"
+                  label="Não compraram"
                   value={selectedAmbassador.nonConvertedReferrals}
                 />
                 <MetricCard label="Ainda em teste" value={selectedAmbassador.inTrialReferrals} />
@@ -678,18 +782,18 @@ export default function EmbaixadoresGestaoClient() {
                   value={selectedAmbassador.canceledReferrals}
                 />
                 <MetricCard
-                  label="Taxa de conversao"
+                  label="Taxa de conversão"
                   value={`${Math.round(selectedAmbassador.conversionRate)}%`}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <MetricCard
-                  label="Comissao pendente"
+                  label="Comissão pendente"
                   value={formatCurrency(selectedAmbassador.pendingCommissionsCents)}
                 />
                 <MetricCard
-                  label="Comissao paga"
+                  label="Comissão paga"
                   value={formatCurrency(selectedAmbassador.paidCommissionsCents)}
                 />
               </div>
@@ -718,7 +822,7 @@ export default function EmbaixadoresGestaoClient() {
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-zinc-400">
-                          Cidade: {referral.city} - Inicio do teste:{" "}
+                          Cidade: {referral.city} - Início do teste:{" "}
                           {formatDate(referral.trialStartedAt)}
                         </p>
                         <p className="text-xs text-zinc-400">
@@ -734,6 +838,23 @@ export default function EmbaixadoresGestaoClient() {
           )}
         </article>
       </section>
+
+      {actionModal && modalAmbassador ? (
+        <AmbassadorActionModal
+          actionModal={actionModal}
+          ambassador={modalAmbassador}
+          reason={actionReason}
+          category={actionCategory}
+          deleteConfirmation={deleteConfirmation}
+          isSubmitting={actionLoading !== null}
+          error={actionFormError}
+          onReasonChange={setActionReason}
+          onCategoryChange={setActionCategory}
+          onDeleteConfirmationChange={setDeleteConfirmation}
+          onClose={closeActionModal}
+          onConfirm={() => void handleConfirmModalAction()}
+        />
+      ) : null}
     </main>
   );
 }
@@ -743,6 +864,173 @@ function MetricCard({ label, value }: { label: string; value: string | number })
     <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-2.5">
       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
+function AmbassadorActionModal({
+  actionModal,
+  ambassador,
+  reason,
+  category,
+  deleteConfirmation,
+  isSubmitting,
+  error,
+  onReasonChange,
+  onCategoryChange,
+  onDeleteConfirmationChange,
+  onClose,
+  onConfirm,
+}: {
+  actionModal: ActionModalState;
+  ambassador: AmbassadorMetrics;
+  reason: string;
+  category: "" | ActionCategory;
+  deleteConfirmation: boolean;
+  isSubmitting: boolean;
+  error: string | null;
+  onReasonChange: (value: string) => void;
+  onCategoryChange: (value: "" | ActionCategory) => void;
+  onDeleteConfirmationChange: (value: boolean) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const isDelete = actionModal.type === "DELETE";
+  const isBlock = actionModal.type === "STATUS" && actionModal.nextStatus === "BLOQUEADO";
+  const title = isDelete
+    ? "Excluir Embaixador"
+    : isBlock
+      ? "Suspender Embaixador"
+      : "Reativar Embaixador";
+  const confirmText = isDelete
+    ? "Confirmar exclusão"
+    : isBlock
+      ? "Confirmar suspensão"
+      : "Confirmar reativação";
+  const titleStyle = isDelete ? "text-red-300" : isBlock ? "text-yellow-300" : "text-emerald-300";
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-zinc-700 px-5 py-4">
+          <h3 className={`text-lg font-semibold ${titleStyle}`}>{title}</h3>
+          <p className="mt-1 text-sm text-zinc-400">
+            Registre um motivo objetivo. Esse texto será salvo na auditoria e enviado por e-mail ao
+            embaixador.
+          </p>
+        </div>
+
+        <div className="space-y-4 px-5 py-4">
+          <div className="rounded-lg border border-zinc-700 bg-zinc-950/60 p-3 text-sm text-zinc-200">
+            <p>
+              <span className="text-zinc-400">Nome:</span> {ambassador.name}
+            </p>
+            <p>
+              <span className="text-zinc-400">CPF:</span> {ambassador.cpfMasked}
+            </p>
+            <p>
+              <span className="text-zinc-400">E-mail:</span>{" "}
+              {ambassador.emailMasked || "Não informado"}
+            </p>
+            <p>
+              <span className="text-zinc-400">Cupom:</span> {ambassador.couponCode}
+            </p>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm font-medium text-zinc-200" htmlFor="motivo-acao">
+              Motivo da ação (obrigatório)
+            </label>
+            <textarea
+              id="motivo-acao"
+              value={reason}
+              onChange={(event) => onReasonChange(event.target.value)}
+              rows={5}
+              maxLength={2000}
+              className="w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-500"
+              placeholder="Descreva o motivo com clareza e respeito."
+            />
+            <div className="mt-1 flex items-center justify-between text-xs text-zinc-400">
+              <span>Mínimo recomendado: {MIN_REASON_LENGTH} caracteres.</span>
+              <span>{reason.trim().length}/2000</span>
+            </div>
+          </div>
+
+          <div>
+            <label
+              className="mb-1 block text-sm font-medium text-zinc-200"
+              htmlFor="categoria-acao"
+            >
+              Categoria do motivo (opcional)
+            </label>
+            <select
+              id="categoria-acao"
+              value={category}
+              onChange={(event) => onCategoryChange(event.target.value as "" | ActionCategory)}
+              className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950/70 px-3 text-sm text-zinc-100 outline-none focus:border-yellow-500"
+            >
+              <option value="">Selecione uma categoria</option>
+              {ACTION_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {isDelete ? (
+            <label className="flex items-start gap-2 rounded-lg border border-red-500/40 bg-red-950/30 p-3 text-sm text-red-200">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={deleteConfirmation}
+                onChange={(event) => onDeleteConfirmationChange(event.target.checked)}
+              />
+              <span>
+                Entendo que essa ação desativa o embaixador e o cupom, e não pode ser desfeita no
+                painel.
+              </span>
+            </label>
+          ) : null}
+
+          {error ? (
+            <div className="rounded-md border border-red-500/50 bg-red-950/30 px-3 py-2 text-sm text-red-200">
+              {error}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-zinc-700 px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="rounded-md border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isSubmitting}
+            className={`rounded-md px-4 py-2 text-sm font-semibold text-black transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              isDelete
+                ? "bg-red-500 hover:bg-red-400"
+                : isBlock
+                  ? "bg-yellow-400 hover:bg-yellow-300"
+                  : "bg-emerald-400 hover:bg-emerald-300"
+            }`}
+          >
+            {isSubmitting ? "Processando..." : confirmText}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
