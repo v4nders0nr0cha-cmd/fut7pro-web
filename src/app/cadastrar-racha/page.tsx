@@ -211,6 +211,8 @@ function CadastroRachaPageContent() {
   const [couponBenefits, setCouponBenefits] = useState<{
     extraTrialDays: number;
     firstPaymentDiscountPercent: number;
+    ambassadorName?: string | null;
+    couponType?: string | null;
   } | null>(null);
   const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState("");
@@ -526,6 +528,11 @@ function CadastroRachaPageContent() {
           firstPaymentDiscountPercent: Number(
             data.firstPaymentDiscountPercent || data.discountPct || 0
           ),
+          ambassadorName:
+            typeof data.ambassadorName === "string" && data.ambassadorName.trim()
+              ? data.ambassadorName.trim()
+              : null,
+          couponType: typeof data.couponType === "string" ? data.couponType : null,
         });
         return;
       }
@@ -1649,8 +1656,8 @@ function CadastroRachaPageContent() {
                       Cupom de embaixador ou influencer
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Aplique um cupom para ganhar +10 dias de teste e 35% de desconto na primeira
-                      cobranca.
+                      Aplique um cupom para ganhar 30 dias de teste (20 + 10) e 33,33% de desconto
+                      na primeira cobrança.
                     </p>
                   </div>
 
@@ -1665,7 +1672,7 @@ function CadastroRachaPageContent() {
                           setCouponBenefits(null);
                         }
                       }}
-                      placeholder="Digite seu cupom (ex: FUT7VIP)"
+                      placeholder="Digite seu cupom (ex: NAYARA10)"
                       className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     />
                     <button
@@ -1680,8 +1687,15 @@ function CadastroRachaPageContent() {
 
                   {couponStatus === "valid" && (
                     <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-                      Cupom aplicado. +{couponBenefits?.extraTrialDays ?? 0} dias e{" "}
-                      {discountPercent}% na primeira cobranca.
+                      {couponBenefits?.ambassadorName
+                        ? `Cupom do embaixador ${couponBenefits.ambassadorName} aplicado com sucesso.`
+                        : "Cupom aplicado com sucesso."}{" "}
+                      +{couponBenefits?.extraTrialDays ?? 0} dias no teste e{" "}
+                      {discountPercent.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2,
+                      })}
+                      % de desconto na primeira cobrança.
                     </div>
                   )}
                   {couponStatus === "invalid" && (
@@ -1699,7 +1713,15 @@ function CadastroRachaPageContent() {
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span>Seu teste grátis: {totalTrialDays} dias.</span>
-                    {discountPercent > 0 && <span>{discountPercent}% na primeira cobranca.</span>}
+                    {discountPercent > 0 && (
+                      <span>
+                        {discountPercent.toLocaleString("pt-BR", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        })}
+                        % de desconto na primeira cobrança.
+                      </span>
+                    )}
                   </div>
                 </div>
               </>
