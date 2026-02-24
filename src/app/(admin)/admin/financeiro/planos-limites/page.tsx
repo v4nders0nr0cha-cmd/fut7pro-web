@@ -107,6 +107,33 @@ function buildFallbackPricing(baseAmountCents?: number | null): ChargePricing | 
   };
 }
 
+function buildPixPricingFromInvoice(
+  pixCharge: PixChargeResponse | null,
+  paymentPricing: ChargePricing | null
+): ChargePricing | null {
+  if (pixCharge?.pricing) return pixCharge.pricing;
+
+  const invoiceAmountCents = pixCharge?.invoice?.amount;
+  if (invoiceAmountCents === null || invoiceAmountCents === undefined) {
+    return paymentPricing;
+  }
+
+  const baseAmountCents = paymentPricing?.baseAmountCents ?? invoiceAmountCents;
+  const totalCents = invoiceAmountCents;
+  const discountCents = Math.max(baseAmountCents - totalCents, 0);
+  const discountPct =
+    baseAmountCents > 0 ? Number(((discountCents / baseAmountCents) * 100).toFixed(2)) : 0;
+
+  return {
+    isFirstPayment: paymentPricing?.isFirstPayment ?? false,
+    firstPaymentDiscountApplied: paymentPricing?.firstPaymentDiscountApplied ?? discountCents > 0,
+    baseAmountCents,
+    discountPct: paymentPricing?.discountPct ?? discountPct,
+    discountCents: paymentPricing?.discountCents ?? discountCents,
+    totalCents,
+  };
+}
+
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
   const user = session?.user as any;
@@ -200,7 +227,10 @@ export default function PlanosLimitesPage() {
   const invoices = subscription?.invoices ?? [];
   const paymentPricing =
     checkoutPricing || subscription?.pricingPreview || buildFallbackPricing(subscription?.amount);
-  const pixPricing = pixCharge?.pricing || paymentPricing;
+  const pixPricing = useMemo(
+    () => buildPixPricingFromInvoice(pixCharge, paymentPricing),
+    [paymentPricing, pixCharge]
+  );
   const hasFirstPaymentDiscount = Boolean(paymentPricing?.firstPaymentDiscountApplied);
   const hasCouponBenefits = Boolean(subscription?.couponCode && hasFirstPaymentDiscount);
 
