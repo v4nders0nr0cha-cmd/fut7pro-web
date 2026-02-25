@@ -7,6 +7,7 @@ import {
   createBlogCategory,
   createBlogPost,
   createBlogTag,
+  getBlogErrorMessage,
   getBlogPost,
   listBlogCategories,
   listBlogTags,
@@ -37,6 +38,37 @@ const STATUSES: Array<{ value: BlogStatus; label: string }> = [
   { value: "PUBLISHED", label: "Publicado" },
   { value: "ARCHIVED", label: "Arquivado" },
 ];
+const ROBOTS_OPTIONS = [
+  { value: "index,follow", label: "index,follow (indexar e seguir links)" },
+  { value: "noindex,follow", label: "noindex,follow (não indexar e seguir links)" },
+  { value: "index,nofollow", label: "index,nofollow (indexar e não seguir links)" },
+  { value: "noindex,nofollow", label: "noindex,nofollow (não indexar e não seguir links)" },
+];
+
+const BLOG_PUBLIC_BASE_URL = "https://www.fut7pro.com.br/blog";
+
+function stripMarkdown(markdown: string) {
+  return markdown
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`[^`]*`/g, " ")
+    .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+    .replace(/\[[^\]]*]\([^)]+\)/g, " ")
+    .replace(/[#>*_~\-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function countWords(markdown: string) {
+  const cleaned = stripMarkdown(markdown);
+  return cleaned ? cleaned.split(" ").length : 0;
+}
+
+function countMarkdownLinks(markdown: string) {
+  const links = markdown.match(/\[[^\]]+]\(([^)]+)\)/g) || [];
+  const external = links.filter((item) => /\]\((https?:)?\/\//i.test(item)).length;
+  const internal = links.length - external;
+  return { total: links.length, external, internal };
+}
 
 export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const router = useRouter();
@@ -53,12 +85,20 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
 
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [tags, setTags] = useState<BlogTag[]>([]);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [tagsError, setTagsError] = useState<string | null>(null);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingTags, setLoadingTags] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newTag, setNewTag] = useState("");
 
   const [title, setTitle] = useState("");
+  const [metaTitle, setMetaTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
+  const [canonicalUrl, setCanonicalUrl] = useState("");
+  const [focusKeyword, setFocusKeyword] = useState("");
+  const [robots, setRobots] = useState("index,follow");
   const [content, setContent] = useState("");
   const [slug, setSlug] = useState("");
   const [status, setStatus] = useState<BlogStatus>("DRAFT");
@@ -75,28 +115,95 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
     setSlug(slugifyBlogTitle(title));
   }, [slugTouched, title]);
 
+  function toFriendlyTaxonomyError(err: unknown) {
+    const message = getBlogErrorMessage(err, "Não foi possível carregar agora. Tente recarregar.");
+    return message.length > 180 ? `${message.slice(0, 180)}...` : message;
+  }
+
+  async function loadCategories(options?: { silent?: boolean }) {
+    setLoadingCategories(true);
+    setCategoriesError(null);
+
+    try {
+      const loaded = await listBlogCategories();
+      setCategories(loaded);
+      return true;
+    } catch (err) {
+      setCategories([]);
+      const friendly = toFriendlyTaxonomyError(err);
+      setCategoriesError(friendly);
+      if (!options?.silent) {
+        setError(friendly);
+      }
+      return false;
+    } finally {
+      setLoadingCategories(false);
+    }
+  }
+
+  async function loadTags(options?: { silent?: boolean }) {
+    setLoadingTags(true);
+    setTagsError(null);
+
+    try {
+      const loaded = await listBlogTags();
+      setTags(loaded);
+      return true;
+    } catch (err) {
+      setTags([]);
+      const friendly = toFriendlyTaxonomyError(err);
+      setTagsError(friendly);
+      if (!options?.silent) {
+        setError(friendly);
+      }
+      return false;
+    } finally {
+      setLoadingTags(false);
+    }
+  }
+
   useEffect(() => {
     let cancelled = false;
 
     async function bootstrap() {
       setLoading(true);
       setError(null);
+      setCategoriesError(null);
+      setTagsError(null);
+
       try {
-        const [loadedCategories, loadedTags] = await Promise.all([
+        const [categoriesResult, tagsResult] = await Promise.allSettled([
           listBlogCategories(),
           listBlogTags(),
         ]);
+
         if (cancelled) return;
-        setCategories(loadedCategories);
-        setTags(loadedTags);
+
+        if (categoriesResult.status === "fulfilled") {
+          setCategories(categoriesResult.value);
+        } else {
+          setCategories([]);
+          setCategoriesError(toFriendlyTaxonomyError(categoriesResult.reason));
+        }
+
+        if (tagsResult.status === "fulfilled") {
+          setTags(tagsResult.value);
+        } else {
+          setTags([]);
+          setTagsError(toFriendlyTaxonomyError(tagsResult.reason));
+        }
 
         if (postId) {
           const post = await getBlogPost(postId);
           if (cancelled) return;
           setSavedPostId(post.id);
           setTitle(post.title || "");
+          setMetaTitle(post.metaTitle || "");
           setSubtitle(post.subtitle || "");
           setExcerpt(post.excerpt || "");
+          setCanonicalUrl(post.canonicalUrl || "");
+          setFocusKeyword(post.focusKeyword || "");
+          setRobots(post.robots || "index,follow");
           setContent(post.content || "");
           setSlug(post.slug || "");
           setSlugTouched(true);
@@ -111,7 +218,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Falha ao carregar editor.");
+          setError(getBlogErrorMessage(err, "Falha ao carregar editor."));
         }
       } finally {
         if (!cancelled) {
@@ -127,6 +234,99 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   }, [postId]);
 
   const canPreview = useMemo(() => Boolean(savedPostId), [savedPostId]);
+  const taxonomyUnavailable = useMemo(
+    () => Boolean(categoriesError || tagsError),
+    [categoriesError, tagsError]
+  );
+  const metaDescriptionLength = excerpt.trim().length;
+  const titleLength = title.trim().length;
+  const effectiveMetaTitle = (metaTitle.trim() || title.trim()).trim();
+  const effectiveMetaTitleLength = effectiveMetaTitle.length;
+  const slugLength = slug.trim().length;
+  const contentWords = useMemo(() => countWords(content), [content]);
+  const markdownLinks = useMemo(() => countMarkdownLinks(content), [content]);
+  const urlPreview = `${BLOG_PUBLIC_BASE_URL}/${slug.trim() || "slug-do-artigo"}`;
+  const canonicalIsValid =
+    !canonicalUrl.trim() ||
+    canonicalUrl.trim().startsWith("/") ||
+    /^https?:\/\//i.test(canonicalUrl.trim());
+  const seoChecks = useMemo(
+    () => [
+      {
+        key: "title",
+        label: "Título editorial entre 20 e 90 caracteres",
+        ok: titleLength >= 20 && titleLength <= 90,
+      },
+      {
+        key: "meta-title",
+        label: "Meta title entre 45 e 65 caracteres",
+        ok: effectiveMetaTitleLength >= 45 && effectiveMetaTitleLength <= 65,
+      },
+      {
+        key: "slug",
+        label: "Slug curto e limpo (até 70 caracteres)",
+        ok: slugLength > 0 && slugLength <= 70,
+      },
+      {
+        key: "meta",
+        label: "Meta description entre 140 e 160 caracteres",
+        ok: metaDescriptionLength >= 140 && metaDescriptionLength <= 160,
+      },
+      {
+        key: "content",
+        label: "Corpo do artigo com pelo menos 700 palavras",
+        ok: contentWords >= 700,
+      },
+      {
+        key: "tags",
+        label: "Mínimo de 2 tags para cluster semântico",
+        ok: selectedTagIds.length >= 2,
+      },
+      {
+        key: "cover-alt",
+        label: "Imagem de capa com texto alternativo (alt)",
+        ok: !coverImageUrl.trim() || coverImageAlt.trim().length >= 8,
+      },
+      {
+        key: "links",
+        label: "Adicionar links internos e externos no conteúdo",
+        ok: markdownLinks.internal >= 1 && markdownLinks.external >= 1,
+      },
+      {
+        key: "canonical",
+        label: "Canonical com URL válida (relativa ou absoluta)",
+        ok: canonicalIsValid,
+      },
+      {
+        key: "focus",
+        label: "Definir palavra-chave foco",
+        ok: focusKeyword.trim().length >= 3,
+      },
+    ],
+    [
+      titleLength,
+      effectiveMetaTitleLength,
+      slugLength,
+      metaDescriptionLength,
+      contentWords,
+      selectedTagIds.length,
+      coverImageUrl,
+      coverImageAlt,
+      markdownLinks.internal,
+      markdownLinks.external,
+      canonicalIsValid,
+      focusKeyword,
+    ]
+  );
+  const seoScore = Math.round(
+    (seoChecks.filter((item) => item.ok).length / Math.max(seoChecks.length, 1)) * 100
+  );
+  const seoScoreTone =
+    seoScore >= 85
+      ? "text-emerald-300 border-emerald-500/40 bg-emerald-900/20"
+      : seoScore >= 60
+        ? "text-amber-300 border-amber-500/40 bg-amber-900/20"
+        : "text-rose-300 border-rose-500/40 bg-rose-900/20";
 
   function toggleTag(id: string) {
     setSelectedTagIds((current) =>
@@ -144,7 +344,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       setCategoryId(created.id);
       setNewCategory("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar categoria.");
+      setError(getBlogErrorMessage(err, "Falha ao criar categoria."));
     }
   }
 
@@ -156,15 +356,31 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       setSelectedTagIds((current) => Array.from(new Set([...current, created.id])));
       setNewTag("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao criar tag.");
+      setError(getBlogErrorMessage(err, "Falha ao criar tag."));
     }
+  }
+
+  async function handleReloadCategories() {
+    setMessage(null);
+    setError(null);
+    await loadCategories({ silent: true });
+  }
+
+  async function handleReloadTags() {
+    setMessage(null);
+    setError(null);
+    await loadTags({ silent: true });
   }
 
   function buildPayload(nextStatus: BlogStatus): UpsertBlogPostPayload {
     return {
       title: title.trim(),
+      metaTitle: metaTitle.trim() || undefined,
       subtitle: subtitle.trim() || undefined,
       excerpt: excerpt.trim(),
+      canonicalUrl: canonicalUrl.trim() || undefined,
+      focusKeyword: focusKeyword.trim() || undefined,
+      robots: robots.trim() || undefined,
       content: content.trim(),
       slug: slug.trim() || undefined,
       coverImageUrl: coverImageUrl.trim() || undefined,
@@ -206,7 +422,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         mode === "publish" ? "Artigo publicado com sucesso." : "Rascunho salvo com sucesso."
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao salvar artigo.");
+      setError(getBlogErrorMessage(err, "Falha ao salvar artigo."));
     } finally {
       setSaving(false);
     }
@@ -273,7 +489,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
 
       setMessage("Imagem enviada com sucesso.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao enviar imagem.");
+      setError(getBlogErrorMessage(err, "Falha ao enviar imagem."));
     } finally {
       if (mode === "cover") setUploadingCover(false);
       if (mode === "og") setUploadingOg(false);
@@ -318,6 +534,13 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         </div>
       ) : null}
 
+      {taxonomyUnavailable ? (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-900/20 px-4 py-3 text-sm text-amber-200">
+          Não foi possível carregar categorias e tags agora. Você pode continuar criando o artigo e
+          tentar recarregar estes dados.
+        </div>
+      ) : null}
+
       <section className="space-y-5 rounded-2xl border border-zinc-800 bg-zinc-950/70 p-5">
         <div className="grid gap-4 md:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm text-zinc-200">
@@ -351,14 +574,83 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-zinc-200">
-          Resumo (excerpt)
+          Meta description (meta descrição)
           <textarea
             value={excerpt}
             onChange={(event) => setExcerpt(event.target.value)}
             rows={3}
             className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
           />
+          <span className="text-xs text-zinc-400">
+            Recomendado: 140 a 160 caracteres. Atual: {metaDescriptionLength}.
+          </span>
         </label>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm text-zinc-200">
+            Meta title (título SEO)
+            <input
+              value={metaTitle}
+              onChange={(event) => setMetaTitle(event.target.value)}
+              placeholder="Ex.: Como organizar racha de Futebol 7 com mais equilíbrio"
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
+            />
+            <span className="text-xs text-zinc-400">
+              Se vazio, o sistema usa o título principal do artigo.
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm text-zinc-200">
+            Palavra-chave foco
+            <input
+              value={focusKeyword}
+              onChange={(event) => setFocusKeyword(event.target.value)}
+              placeholder="Ex.: sistema para racha"
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
+            />
+            <span className="text-xs text-zinc-400">
+              Use a expressão principal que você quer ranquear no Google.
+            </span>
+          </label>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="flex flex-col gap-2 text-sm text-zinc-200">
+            Canonical URL (opcional)
+            <input
+              value={canonicalUrl}
+              onChange={(event) => setCanonicalUrl(event.target.value)}
+              placeholder="Ex.: /blog/como-organizar-racha ou https://www.fut7pro.com.br/blog/..."
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
+            />
+            <span className="text-xs text-zinc-400">
+              Use apenas quando quiser forçar URL canônica diferente do slug atual.
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-2 text-sm text-zinc-200">
+            Robots
+            <select
+              value={robots}
+              onChange={(event) => setRobots(event.target.value)}
+              className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
+            >
+              {ROBOTS_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-xs text-zinc-300">
+          <p className="font-semibold text-zinc-100">URL pública do artigo</p>
+          <p className="mt-1 break-all text-zinc-300">{urlPreview}</p>
+          <p className="mt-2 text-zinc-400">
+            O slug deve ser objetivo, sem acentos e focado na principal intenção de busca.
+          </p>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-4">
           <label className="flex flex-col gap-2 text-sm text-zinc-200">
@@ -396,6 +688,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
             <select
               value={categoryId}
               onChange={(event) => setCategoryId(event.target.value)}
+              disabled={loadingCategories}
               className="rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 outline-none ring-yellow-400 focus:ring-2"
             >
               <option value="">Sem categoria</option>
@@ -405,6 +698,17 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
                 </option>
               ))}
             </select>
+            {categoriesError ? (
+              <span className="text-xs text-amber-300">{categoriesError}</span>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void handleReloadCategories()}
+              disabled={loadingCategories}
+              className="mt-1 inline-flex items-center justify-center rounded-md border border-zinc-600 px-2 py-1 text-xs font-semibold text-zinc-200 hover:border-zinc-400 disabled:opacity-50"
+            >
+              {loadingCategories ? "Recarregando..." : "Recarregar categorias"}
+            </button>
           </label>
 
           <label className="flex items-end gap-2 rounded-lg border border-zinc-800 bg-zinc-900/70 px-3 py-2 text-sm text-zinc-200">
@@ -459,7 +763,18 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         </div>
 
         <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
-          <p className="text-sm font-semibold text-zinc-100">Tags</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-zinc-100">Tags</p>
+            <button
+              type="button"
+              onClick={() => void handleReloadTags()}
+              disabled={loadingTags}
+              className="inline-flex items-center justify-center rounded-md border border-zinc-600 px-2 py-1 text-xs font-semibold text-zinc-200 hover:border-zinc-400 disabled:opacity-50"
+            >
+              {loadingTags ? "Recarregando..." : "Recarregar tags"}
+            </button>
+          </div>
+          {tagsError ? <p className="text-xs text-amber-300">{tagsError}</p> : null}
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => {
               const checked = selectedTagIds.includes(tag.id);
@@ -528,6 +843,47 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
                 }
               />
             </label>
+          </div>
+        </div>
+
+        <div className="space-y-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold text-zinc-100">SEO e ranqueamento</p>
+            <div className={`rounded-md border px-3 py-1 text-xs font-semibold ${seoScoreTone}`}>
+              Score SEO: {seoScore}/100
+            </div>
+          </div>
+
+          <ul className="grid gap-2 md:grid-cols-2">
+            {seoChecks.map((item) => (
+              <li
+                key={item.key}
+                className={`rounded-md border px-3 py-2 text-xs ${
+                  item.ok
+                    ? "border-emerald-500/40 bg-emerald-900/20 text-emerald-200"
+                    : "border-zinc-700 bg-zinc-950 text-zinc-300"
+                }`}
+              >
+                {item.ok ? "OK" : "Pendente"} - {item.label}
+              </li>
+            ))}
+          </ul>
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
+              Prévia do Google
+            </p>
+            <p className="mt-2 line-clamp-2 text-base font-semibold text-blue-300">
+              {effectiveMetaTitle || "Título do artigo"}
+            </p>
+            <p className="mt-1 line-clamp-1 break-all text-xs text-emerald-300">{urlPreview}</p>
+            <p className="mt-1 line-clamp-2 text-sm text-zinc-300">
+              {excerpt.trim() ||
+                "Escreva uma meta description clara com benefício, contexto e palavra-chave principal."}
+            </p>
+            <p className="mt-2 text-xs text-zinc-400">
+              Palavra-chave foco: {focusKeyword.trim() || "não definida"}
+            </p>
           </div>
         </div>
 
