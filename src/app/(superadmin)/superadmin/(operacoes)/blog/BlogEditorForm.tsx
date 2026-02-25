@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, type ClipboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   createBlogCategory,
   createBlogPost,
@@ -158,6 +158,201 @@ function countMarkdownLinks(markdown: string) {
   const external = links.filter((item) => /\]\((https?:)?\/\//i.test(item)).length;
   const internal = links.length - external;
   return { total: links.length, external, internal };
+}
+
+const BLOCK_TAGS = new Set([
+  "article",
+  "aside",
+  "blockquote",
+  "div",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "header",
+  "li",
+  "main",
+  "ol",
+  "p",
+  "pre",
+  "section",
+  "table",
+  "ul",
+]);
+
+function escapeInlineMarkdown(value: string) {
+  return value.replace(/([`\\])/g, "\\$1");
+}
+
+function normalizeMarkdownWhitespace(markdown: string) {
+  return markdown
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+function collectInlineMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent || "";
+    return text.replace(/\s+/g, " ");
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return "";
+  }
+
+  const element = node as HTMLElement;
+  const tag = element.tagName.toLowerCase();
+  const children = Array.from(element.childNodes).map(collectInlineMarkdown).join("");
+
+  if (tag === "br") return "\n";
+  if (tag === "strong" || tag === "b") {
+    const value = children.trim();
+    return value ? `**${value}**` : "";
+  }
+  if (tag === "em" || tag === "i") {
+    const value = children.trim();
+    return value ? `*${value}*` : "";
+  }
+  if (tag === "code") {
+    const value = escapeInlineMarkdown(element.textContent?.trim() || "");
+    return value ? `\`${value}\`` : "";
+  }
+  if (tag === "a") {
+    const href = (element.getAttribute("href") || "").trim();
+    const label = children.trim() || href;
+    if (!href) return label;
+    return `[${label}](${href})`;
+  }
+  if (tag === "img") {
+    const src = (element.getAttribute("src") || "").trim();
+    if (!src) return "";
+    const alt = (element.getAttribute("alt") || "Imagem").trim();
+    return `![${alt}](${src})`;
+  }
+
+  return children;
+}
+
+function convertListToMarkdown(list: HTMLElement, ordered: boolean) {
+  const items = Array.from(list.children).filter((child) => child.tagName.toLowerCase() === "li");
+  return items
+    .map((item, index) => {
+      const marker = ordered ? `${index + 1}.` : "-";
+      const value = collectInlineMarkdown(item).replace(/\s+/g, " ").trim();
+      return value ? `${marker} ${value}` : "";
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function convertTableToMarkdown(table: HTMLElement) {
+  const rows = Array.from(table.querySelectorAll("tr"));
+  if (rows.length === 0) return "";
+
+  const parsedRows = rows
+    .map((row) =>
+      Array.from(row.querySelectorAll("th,td"))
+        .map((cell) => collectInlineMarkdown(cell).replace(/\s+/g, " ").trim())
+        .map((cell) => cell.replace(/\|/g, "\\|"))
+    )
+    .filter((row) => row.length > 0);
+
+  if (parsedRows.length === 0) return "";
+
+  const header = parsedRows[0];
+  const divider = header.map(() => "---");
+  const body = parsedRows.slice(1);
+  const serialized = [
+    `| ${header.join(" | ")} |`,
+    `| ${divider.join(" | ")} |`,
+    ...body.map((row) => `| ${row.join(" | ")} |`),
+  ];
+
+  return serialized.join("\n");
+}
+
+function convertNodeToMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent?.replace(/\s+/g, " ").trim() || "";
+    return text;
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return "";
+  }
+
+  const element = node as HTMLElement;
+  const tag = element.tagName.toLowerCase();
+
+  if (tag === "script" || tag === "style") {
+    return "";
+  }
+
+  if (tag === "pre") {
+    const code = element.textContent?.replace(/\n+$/, "") || "";
+    if (!code.trim()) return "";
+    return `\`\`\`\n${code}\n\`\`\``;
+  }
+
+  if (tag === "blockquote") {
+    const content = Array.from(element.childNodes).map(convertNodeToMarkdown).join("\n").trim();
+    if (!content) return "";
+    return content
+      .split("\n")
+      .map((line) => `> ${line}`)
+      .join("\n");
+  }
+
+  if (tag === "ul") {
+    return convertListToMarkdown(element, false);
+  }
+
+  if (tag === "ol") {
+    return convertListToMarkdown(element, true);
+  }
+
+  if (tag === "table") {
+    return convertTableToMarkdown(element);
+  }
+
+  if (/^h[1-6]$/.test(tag)) {
+    const level = Number(tag.replace("h", "")) || 2;
+    const value = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
+    if (!value) return "";
+    return `${"#".repeat(level)} ${value}`;
+  }
+
+  if (tag === "hr") {
+    return "---";
+  }
+
+  if (tag === "p") {
+    const value = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
+    return value;
+  }
+
+  const children = Array.from(element.childNodes).map(convertNodeToMarkdown).filter(Boolean);
+  if (children.length === 0) {
+    const inline = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
+    return inline;
+  }
+
+  if (BLOCK_TAGS.has(tag)) {
+    return children.join("\n\n");
+  }
+
+  return collectInlineMarkdown(element);
+}
+
+function convertHtmlToMarkdown(html: string) {
+  const parser = new DOMParser();
+  const document = parser.parseFromString(html, "text/html");
+  const blocks = Array.from(document.body.childNodes).map(convertNodeToMarkdown).filter(Boolean);
+  return normalizeMarkdownWhitespace(blocks.join("\n\n"));
 }
 
 export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
@@ -541,6 +736,45 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       return;
     }
     await persist("draft");
+  }
+
+  function insertContentAtCursor(value: string) {
+    const textarea = contentRef.current;
+    if (!textarea) {
+      setContent((old) => (old ? `${old}\n\n${value}` : value));
+      return;
+    }
+
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+
+    setContent((old) => `${old.slice(0, start)}${value}${old.slice(end)}`);
+
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursor = start + value.length;
+      textarea.setSelectionRange(cursor, cursor);
+    });
+  }
+
+  function handleContentPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    const html = event.clipboardData.getData("text/html");
+    if (!html || !html.includes("<")) {
+      return;
+    }
+
+    try {
+      const markdown = convertHtmlToMarkdown(html);
+      if (!markdown) {
+        return;
+      }
+
+      event.preventDefault();
+      insertContentAtCursor(markdown);
+      setMessage("Colagem inteligente aplicada: formatação convertida de HTML para Markdown.");
+    } catch {
+      // fallback: mantém colagem padrão do navegador
+    }
   }
 
   function closePendingImageEdit() {
@@ -1274,10 +1508,15 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
               />
             </label>
           </div>
+          <p className="text-xs text-zinc-400">
+            Colagem inteligente ativa: ao colar do ChatGPT/Docs, o editor preserva estrutura,
+            títulos, listas, negrito, itálico, links e ícones convertendo para Markdown.
+          </p>
           <textarea
             ref={contentRef}
             value={content}
             onChange={(event) => setContent(event.target.value)}
+            onPaste={handleContentPaste}
             rows={18}
             placeholder="Escreva o artigo em Markdown..."
             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none ring-yellow-400 focus:ring-2"
