@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   archiveBlogPost,
+  getBlogErrorMessage,
   listBlogCategories,
   listBlogPosts,
   publishBlogPost,
@@ -57,7 +58,7 @@ export default function SuperAdminBlogPage() {
       setTotalPages(postResponse.totalPages);
       setCategories(categoryResponse);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao carregar o blog.");
+      setError(getBlogErrorMessage(err, "Falha ao carregar o blog."));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export default function SuperAdminBlogPage() {
       await publishBlogPost(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao publicar artigo.");
+      setError(getBlogErrorMessage(err, "Falha ao publicar artigo."));
     } finally {
       setBusyId(null);
     }
@@ -87,7 +88,7 @@ export default function SuperAdminBlogPage() {
       await unpublishBlogPost(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao despublicar artigo.");
+      setError(getBlogErrorMessage(err, "Falha ao despublicar artigo."));
     } finally {
       setBusyId(null);
     }
@@ -101,7 +102,7 @@ export default function SuperAdminBlogPage() {
       await archiveBlogPost(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao arquivar artigo.");
+      setError(getBlogErrorMessage(err, "Falha ao arquivar artigo."));
     } finally {
       setBusyId(null);
     }
@@ -129,7 +130,7 @@ export default function SuperAdminBlogPage() {
           type="search"
           value={q}
           onChange={(event) => setQ(event.target.value)}
-          placeholder="Buscar por título ou resumo"
+          placeholder="Buscar por título, meta title, resumo ou palavra-chave"
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none ring-yellow-400 focus:ring-2"
         />
 

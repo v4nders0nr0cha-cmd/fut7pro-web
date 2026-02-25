@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import MarkdownRenderer from "@/components/superadmin/blog/MarkdownRenderer";
-import { getBlogPost, type BlogPostSummary } from "@/lib/superadmin-blog";
+import { getBlogErrorMessage, getBlogPost, type BlogPostSummary } from "@/lib/superadmin-blog";
 
 export default function BlogPreviewPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ export default function BlogPreviewPage({ params }: { params: { id: string } }) 
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Falha ao carregar preview.");
+          setError(getBlogErrorMessage(err, "Falha ao carregar preview."));
         }
       } finally {
         if (!cancelled) {
@@ -78,6 +78,24 @@ export default function BlogPreviewPage({ params }: { params: { id: string } }) 
         <p className="mt-4 rounded-lg border border-zinc-800 bg-zinc-950/70 px-3 py-3 text-sm text-zinc-300">
           {post.excerpt}
         </p>
+
+        <div className="mt-4 grid gap-2 rounded-lg border border-zinc-800 bg-zinc-950/70 p-3 text-xs text-zinc-300 md:grid-cols-2">
+          <p>
+            <strong className="text-zinc-100">Meta title:</strong>{" "}
+            {post.metaTitle || "(usa o título do artigo)"}
+          </p>
+          <p>
+            <strong className="text-zinc-100">Canonical:</strong>{" "}
+            {post.canonicalUrl || "(automática por slug)"}
+          </p>
+          <p>
+            <strong className="text-zinc-100">Palavra-chave foco:</strong>{" "}
+            {post.focusKeyword || "(não definida)"}
+          </p>
+          <p>
+            <strong className="text-zinc-100">Robots:</strong> {post.robots || "index,follow"}
+          </p>
+        </div>
       </div>
 
       {post.coverImageUrl ? (
