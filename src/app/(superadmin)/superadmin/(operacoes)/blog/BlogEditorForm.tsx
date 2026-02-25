@@ -47,6 +47,96 @@ const ROBOTS_OPTIONS = [
 
 const BLOG_PUBLIC_BASE_URL = "https://www.fut7pro.com.br/blog";
 
+type ImageEditMode = "cover" | "og";
+
+type PendingImageEdit = {
+  mode: ImageEditMode;
+  file: File;
+  previewUrl: string;
+  zoom: number;
+  focalX: number;
+  focalY: number;
+  naturalWidth: number;
+  naturalHeight: number;
+};
+
+const IMAGE_EDIT_TARGETS: Record<
+  ImageEditMode,
+  { width: number; height: number; ratioLabel: string; recommendation: string }
+> = {
+  cover: {
+    width: 1600,
+    height: 900,
+    ratioLabel: "16:9",
+    recommendation: "Recomendado: 1600x900 px (mínimo 1200x675), JPG/PNG/WEBP até 3MB.",
+  },
+  og: {
+    width: 1200,
+    height: 630,
+    ratioLabel: "1.91:1",
+    recommendation: "Recomendado: 1200x630 px (Open Graph), JPG/PNG/WEBP até 3MB.",
+  },
+};
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+async function loadImageFromUrl(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Não foi possível carregar a imagem para ajuste."));
+    image.src = src;
+  });
+}
+
+async function createAdjustedImageFile(edit: PendingImageEdit) {
+  const target = IMAGE_EDIT_TARGETS[edit.mode];
+  const image = await loadImageFromUrl(edit.previewUrl);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = target.width;
+  canvas.height = target.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Não foi possível processar o ajuste da imagem.");
+  }
+
+  const baseScale = Math.max(target.width / image.width, target.height / image.height);
+  const scale = baseScale * clamp(edit.zoom, 1, 2.5);
+  const drawWidth = image.width * scale;
+  const drawHeight = image.height * scale;
+  const objectX = clamp(50 + edit.focalX, 0, 100);
+  const objectY = clamp(50 + edit.focalY, 0, 100);
+  const drawX = (target.width - drawWidth) * (objectX / 100);
+  const drawY = (target.height - drawHeight) * (objectY / 100);
+
+  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (result) {
+          resolve(result);
+          return;
+        }
+        reject(new Error("Falha ao exportar imagem ajustada."));
+      },
+      "image/webp",
+      0.92
+    );
+  });
+
+  const baseName = edit.file.name.replace(/\.[^/.]+$/, "");
+  const adjustedFile = new File([blob], `${baseName}-ajustada.webp`, {
+    type: "image/webp",
+  });
+
+  return { file: adjustedFile, width: target.width, height: target.height };
+}
+
 function stripMarkdown(markdown: string) {
   return markdown
     .replace(/```[\s\S]*?```/g, " ")
@@ -109,11 +199,21 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const [coverImageUrl, setCoverImageUrl] = useState("");
   const [coverImageAlt, setCoverImageAlt] = useState("");
   const [ogImageUrl, setOgImageUrl] = useState("");
+  const [pendingImageEdit, setPendingImageEdit] = useState<PendingImageEdit | null>(null);
+  const [applyingImageEdit, setApplyingImageEdit] = useState(false);
 
   useEffect(() => {
     if (slugTouched) return;
     setSlug(slugifyBlogTitle(title));
   }, [slugTouched, title]);
+
+  useEffect(() => {
+    return () => {
+      if (pendingImageEdit?.previewUrl) {
+        URL.revokeObjectURL(pendingImageEdit.previewUrl);
+      }
+    };
+  }, [pendingImageEdit?.previewUrl]);
 
   function toFriendlyTaxonomyError(err: unknown) {
     const message = getBlogErrorMessage(err, "Não foi possível carregar agora. Tente recarregar.");
@@ -327,6 +427,13 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       : seoScore >= 60
         ? "text-amber-300 border-amber-500/40 bg-amber-900/20"
         : "text-rose-300 border-rose-500/40 bg-rose-900/20";
+  const pendingImageTarget = pendingImageEdit ? IMAGE_EDIT_TARGETS[pendingImageEdit.mode] : null;
+  const pendingImageIsBelowRecommendation = Boolean(
+    pendingImageEdit &&
+      pendingImageTarget &&
+      (pendingImageEdit.naturalWidth < pendingImageTarget.width ||
+        pendingImageEdit.naturalHeight < pendingImageTarget.height)
+  );
 
   function toggleTag(id: string) {
     setSelectedTagIds((current) =>
@@ -436,10 +543,61 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
     await persist("draft");
   }
 
-  async function handleImageUpload(
+  function closePendingImageEdit() {
+    setPendingImageEdit(null);
+  }
+
+  function resetPendingImageEdit() {
+    setPendingImageEdit((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        zoom: 1,
+        focalX: 0,
+        focalY: 0,
+      };
+    });
+  }
+
+  async function openImageAdjuster(file: File, mode: ImageEditMode) {
+    const previewUrl = URL.createObjectURL(file);
+
+    setPendingImageEdit((current) => {
+      if (current?.previewUrl) {
+        URL.revokeObjectURL(current.previewUrl);
+      }
+      return {
+        mode,
+        file,
+        previewUrl,
+        zoom: 1,
+        focalX: 0,
+        focalY: 0,
+        naturalWidth: 0,
+        naturalHeight: 0,
+      };
+    });
+
+    try {
+      const image = await loadImageFromUrl(previewUrl);
+      setPendingImageEdit((current) => {
+        if (!current || current.previewUrl !== previewUrl) return current;
+        return {
+          ...current,
+          naturalWidth: image.naturalWidth || image.width,
+          naturalHeight: image.naturalHeight || image.height,
+        };
+      });
+    } catch (err) {
+      closePendingImageEdit();
+      setError(getBlogErrorMessage(err, "Falha ao abrir imagem para ajuste."));
+    }
+  }
+
+  async function uploadImageAsset(
     file: File | null,
     mode: "cover" | "og" | "inline",
-    event?: ChangeEvent<HTMLInputElement>
+    options?: { width?: number; height?: number; event?: ChangeEvent<HTMLInputElement> }
   ) {
     if (!file) return;
     setError(null);
@@ -458,6 +616,8 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         file,
         alt: alt || undefined,
         postId: savedPostId || undefined,
+        width: options?.width,
+        height: options?.height,
       });
 
       if (mode === "cover") {
@@ -494,10 +654,48 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       if (mode === "cover") setUploadingCover(false);
       if (mode === "og") setUploadingOg(false);
       if (mode === "inline") setUploadingInline(false);
+      if (options?.event) {
+        options.event.target.value = "";
+      }
+    }
+  }
+
+  async function applyPendingImageEdit() {
+    if (!pendingImageEdit) return;
+    setApplyingImageEdit(true);
+    setError(null);
+    setMessage(null);
+
+    try {
+      const adjusted = await createAdjustedImageFile(pendingImageEdit);
+      await uploadImageAsset(adjusted.file, pendingImageEdit.mode, {
+        width: adjusted.width,
+        height: adjusted.height,
+      });
+      closePendingImageEdit();
+    } catch (err) {
+      setError(getBlogErrorMessage(err, "Falha ao aplicar ajuste da imagem."));
+    } finally {
+      setApplyingImageEdit(false);
+    }
+  }
+
+  async function handleImageUpload(
+    file: File | null,
+    mode: "cover" | "og" | "inline",
+    event?: ChangeEvent<HTMLInputElement>
+  ) {
+    if (!file) return;
+
+    if (mode === "cover" || mode === "og") {
       if (event) {
         event.target.value = "";
       }
+      await openImageAdjuster(file, mode);
+      return;
     }
+
+    await uploadImageAsset(file, mode, { event });
   }
 
   if (loading) {
@@ -799,6 +997,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
             <p className="text-sm font-semibold text-zinc-100">Imagem de capa</p>
+            <p className="text-xs text-zinc-400">{IMAGE_EDIT_TARGETS.cover.recommendation}</p>
             <input
               value={coverImageUrl}
               onChange={(event) => setCoverImageUrl(event.target.value)}
@@ -811,8 +1010,25 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
               placeholder="Alt da capa (obrigatório se houver imagem)"
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none ring-yellow-400 focus:ring-2"
             />
+            {coverImageUrl.trim() ? (
+              <div className="space-y-1">
+                <p className="text-xs text-zinc-400">
+                  Prévia da capa ({IMAGE_EDIT_TARGETS.cover.ratioLabel})
+                </p>
+                <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950">
+                  <div className="aspect-video w-full">
+                    <img
+                      src={coverImageUrl}
+                      alt={coverImageAlt || "Prévia da imagem de capa"}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <label className="inline-flex cursor-pointer items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-100 hover:border-zinc-500">
-              {uploadingCover ? "Enviando..." : "Enviar capa"}
+              {uploadingCover ? "Enviando..." : "Selecionar e ajustar capa"}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -822,18 +1038,39 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
                 }
               />
             </label>
+            <p className="text-xs text-zinc-500">
+              Após selecionar a imagem, ajuste zoom e enquadramento antes de enviar.
+            </p>
           </div>
 
           <div className="space-y-3 rounded-lg border border-zinc-800 bg-zinc-900/50 p-3">
             <p className="text-sm font-semibold text-zinc-100">Imagem OG (opcional)</p>
+            <p className="text-xs text-zinc-400">{IMAGE_EDIT_TARGETS.og.recommendation}</p>
             <input
               value={ogImageUrl}
               onChange={(event) => setOgImageUrl(event.target.value)}
               placeholder="URL da imagem OG"
               className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm outline-none ring-yellow-400 focus:ring-2"
             />
+            {ogImageUrl.trim() ? (
+              <div className="space-y-1">
+                <p className="text-xs text-zinc-400">
+                  Prévia OG ({IMAGE_EDIT_TARGETS.og.ratioLabel})
+                </p>
+                <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950">
+                  <div className="w-full" style={{ aspectRatio: "1200 / 630" }}>
+                    <img
+                      src={ogImageUrl}
+                      alt="Prévia da imagem OG"
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <label className="inline-flex cursor-pointer items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-100 hover:border-zinc-500">
-              {uploadingOg ? "Enviando..." : "Enviar imagem OG"}
+              {uploadingOg ? "Enviando..." : "Selecionar e ajustar imagem OG"}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -843,8 +1080,143 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
                 }
               />
             </label>
+            <p className="text-xs text-zinc-500">
+              Recomendado para compartilhamento em WhatsApp, Instagram, Facebook e X.
+            </p>
           </div>
         </div>
+
+        {pendingImageEdit && pendingImageTarget ? (
+          <div className="space-y-4 rounded-lg border border-yellow-500/40 bg-yellow-900/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-yellow-200">
+                Ajustar {pendingImageEdit.mode === "cover" ? "imagem de capa" : "imagem OG"}
+              </p>
+              <p className="text-xs text-zinc-300">
+                Original: {pendingImageEdit.naturalWidth || "-"}x
+                {pendingImageEdit.naturalHeight || "-"} px | Saída: {pendingImageTarget.width}x
+                {pendingImageTarget.height} px
+              </p>
+            </div>
+
+            {pendingImageIsBelowRecommendation ? (
+              <p className="rounded-md border border-amber-500/40 bg-amber-900/30 px-3 py-2 text-xs text-amber-200">
+                A imagem selecionada está abaixo do recomendado. O resultado pode perder nitidez.
+              </p>
+            ) : null}
+
+            <div className="overflow-hidden rounded-lg border border-zinc-700 bg-zinc-950">
+              <div
+                className="w-full"
+                style={{
+                  aspectRatio: `${pendingImageTarget.width} / ${pendingImageTarget.height}`,
+                }}
+              >
+                <img
+                  src={pendingImageEdit.previewUrl}
+                  alt="Prévia de ajuste"
+                  className="h-full w-full object-cover"
+                  style={{
+                    objectPosition: `${clamp(50 + pendingImageEdit.focalX, 0, 100)}% ${clamp(
+                      50 + pendingImageEdit.focalY,
+                      0,
+                      100
+                    )}%`,
+                    transform: `scale(${pendingImageEdit.zoom})`,
+                    transformOrigin: "center center",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <label className="flex flex-col gap-2 text-xs text-zinc-300">
+                Zoom ({pendingImageEdit.zoom.toFixed(2)}x)
+                <input
+                  type="range"
+                  min={1}
+                  max={2.5}
+                  step={0.05}
+                  value={pendingImageEdit.zoom}
+                  onChange={(event) =>
+                    setPendingImageEdit((current) =>
+                      current ? { ...current, zoom: Number(event.target.value) } : current
+                    )
+                  }
+                  className="accent-yellow-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-xs text-zinc-300">
+                Foco horizontal ({pendingImageEdit.focalX > 0 ? "+" : ""}
+                {pendingImageEdit.focalX})
+                <input
+                  type="range"
+                  min={-50}
+                  max={50}
+                  step={1}
+                  value={pendingImageEdit.focalX}
+                  onChange={(event) =>
+                    setPendingImageEdit((current) =>
+                      current ? { ...current, focalX: Number(event.target.value) } : current
+                    )
+                  }
+                  className="accent-yellow-400"
+                />
+              </label>
+
+              <label className="flex flex-col gap-2 text-xs text-zinc-300">
+                Foco vertical ({pendingImageEdit.focalY > 0 ? "+" : ""}
+                {pendingImageEdit.focalY})
+                <input
+                  type="range"
+                  min={-50}
+                  max={50}
+                  step={1}
+                  value={pendingImageEdit.focalY}
+                  onChange={(event) =>
+                    setPendingImageEdit((current) =>
+                      current ? { ...current, focalY: Number(event.target.value) } : current
+                    )
+                  }
+                  className="accent-yellow-400"
+                />
+              </label>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void applyPendingImageEdit()}
+                disabled={applyingImageEdit}
+                className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-yellow-300 disabled:opacity-50"
+              >
+                {applyingImageEdit ? "Aplicando..." : "Aplicar ajuste e enviar"}
+              </button>
+              <button
+                type="button"
+                onClick={resetPendingImageEdit}
+                disabled={
+                  applyingImageEdit ||
+                  (pendingImageEdit.zoom === 1 &&
+                    pendingImageEdit.focalX === 0 &&
+                    pendingImageEdit.focalY === 0)
+                }
+                className="rounded-lg border border-yellow-500/50 px-4 py-2 text-sm font-semibold text-yellow-200 hover:border-yellow-300 disabled:opacity-50"
+              >
+                Resetar enquadramento
+              </button>
+              <button
+                type="button"
+                onClick={closePendingImageEdit}
+                disabled={applyingImageEdit}
+                className="rounded-lg border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200 hover:border-zinc-400 disabled:opacity-50"
+              >
+                Cancelar ajuste
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="space-y-4 rounded-lg border border-zinc-800 bg-zinc-900/50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
