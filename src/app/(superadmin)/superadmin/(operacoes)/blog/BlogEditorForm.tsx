@@ -9,9 +9,11 @@ import {
   createBlogTag,
   getBlogErrorMessage,
   getBlogPost,
+  listBlogPosts,
   listBlogCategories,
   listBlogTags,
   publishBlogPost,
+  type BlogPostSummary,
   slugifyBlogTitle,
   type BlogCategory,
   type BlogDifficulty,
@@ -355,6 +357,22 @@ function convertHtmlToMarkdown(html: string) {
   return normalizeMarkdownWhitespace(blocks.join("\n\n"));
 }
 
+function hasOwnKey(value: unknown, key: string) {
+  return Boolean(
+    value && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, key)
+  );
+}
+
+function supportsAdvancedSeoFields(post: BlogPostSummary | null | undefined) {
+  if (!post) return false;
+  return (
+    hasOwnKey(post, "metaTitle") ||
+    hasOwnKey(post, "canonicalUrl") ||
+    hasOwnKey(post, "focusKeyword") ||
+    hasOwnKey(post, "robots")
+  );
+}
+
 export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const router = useRouter();
   const contentRef = useRef<HTMLTextAreaElement | null>(null);
@@ -396,6 +414,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const [ogImageUrl, setOgImageUrl] = useState("");
   const [pendingImageEdit, setPendingImageEdit] = useState<PendingImageEdit | null>(null);
   const [applyingImageEdit, setApplyingImageEdit] = useState(false);
+  const [apiSupportsSeoFields, setApiSupportsSeoFields] = useState(false);
 
   useEffect(() => {
     if (slugTouched) return;
@@ -467,9 +486,10 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       setTagsError(null);
 
       try {
-        const [categoriesResult, tagsResult] = await Promise.allSettled([
+        const [categoriesResult, tagsResult, postsProbeResult] = await Promise.allSettled([
           listBlogCategories(),
           listBlogTags(),
+          listBlogPosts({ page: 1, pageSize: 1 }),
         ]);
 
         if (cancelled) return;
@@ -488,9 +508,19 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
           setTagsError(toFriendlyTaxonomyError(tagsResult.reason));
         }
 
+        if (postsProbeResult.status === "fulfilled") {
+          const firstPost = postsProbeResult.value.results[0];
+          if (supportsAdvancedSeoFields(firstPost)) {
+            setApiSupportsSeoFields(true);
+          }
+        }
+
         if (postId) {
           const post = await getBlogPost(postId);
           if (cancelled) return;
+          if (supportsAdvancedSeoFields(post)) {
+            setApiSupportsSeoFields(true);
+          }
           setSavedPostId(post.id);
           setTitle(post.title || "");
           setMetaTitle(post.metaTitle || "");
@@ -675,14 +705,10 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   }
 
   function buildPayload(nextStatus: BlogStatus): UpsertBlogPostPayload {
-    return {
+    const payload: UpsertBlogPostPayload = {
       title: title.trim(),
-      metaTitle: metaTitle.trim() || undefined,
       subtitle: subtitle.trim() || undefined,
       excerpt: excerpt.trim(),
-      canonicalUrl: canonicalUrl.trim() || undefined,
-      focusKeyword: focusKeyword.trim() || undefined,
-      robots: robots.trim() || undefined,
       content: content.trim(),
       slug: slug.trim() || undefined,
       coverImageUrl: coverImageUrl.trim() || undefined,
@@ -695,6 +721,15 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       difficulty,
       publishedAt: nextStatus === "PUBLISHED" ? new Date().toISOString() : undefined,
     };
+
+    if (apiSupportsSeoFields) {
+      payload.metaTitle = metaTitle.trim() || undefined;
+      payload.canonicalUrl = canonicalUrl.trim() || undefined;
+      payload.focusKeyword = focusKeyword.trim() || undefined;
+      payload.robots = robots.trim() || undefined;
+    }
+
+    return payload;
   }
 
   async function persist(mode: "draft" | "publish") {
@@ -1075,6 +1110,14 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
             </select>
           </label>
         </div>
+
+        {!apiSupportsSeoFields ? (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-900/20 px-3 py-2 text-xs text-amber-200">
+            Campos SEO avançados (meta title, canonical, palavra-chave foco e robots) estão
+            temporariamente em modo de compatibilidade porque o backend em produção ainda não expõe
+            esses campos no CMS. A publicação continua normal com título, slug, resumo e conteúdo.
+          </div>
+        ) : null}
 
         <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-3 text-xs text-zinc-300">
           <p className="font-semibold text-zinc-100">URL pública do artigo</p>
