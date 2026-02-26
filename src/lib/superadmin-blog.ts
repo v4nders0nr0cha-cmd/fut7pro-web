@@ -109,6 +109,10 @@ function asObject(input: unknown): Record<string, unknown> {
   return {};
 }
 
+function hasOwn(source: Record<string, unknown>, key: string) {
+  return Object.prototype.hasOwnProperty.call(source, key);
+}
+
 function toStringOrFallback(value: unknown, fallback = "") {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -165,17 +169,27 @@ function normalizePostSummary(input: unknown): BlogPostSummary {
   const source = asObject(input);
   const tags = Array.isArray(source.tags) ? source.tags.map((item) => normalizeTag(item)) : [];
   const category = source.category ? normalizeCategory(source.category) : null;
+  const hasMetaTitle = hasOwn(source, "metaTitle");
+  const hasCanonicalUrl = hasOwn(source, "canonicalUrl");
+  const hasFocusKeyword = hasOwn(source, "focusKeyword");
+  const hasRobots = hasOwn(source, "robots");
 
   return {
     id: toStringOrFallback(source.id),
     slug: toStringOrFallback(source.slug),
     title: toStringOrFallback(source.title, "Sem título"),
-    metaTitle: typeof source.metaTitle === "string" ? source.metaTitle : null,
+    ...(hasMetaTitle
+      ? { metaTitle: typeof source.metaTitle === "string" ? source.metaTitle : null }
+      : {}),
     subtitle: typeof source.subtitle === "string" ? source.subtitle : null,
     excerpt: toStringOrFallback(source.excerpt),
-    canonicalUrl: typeof source.canonicalUrl === "string" ? source.canonicalUrl : null,
-    focusKeyword: typeof source.focusKeyword === "string" ? source.focusKeyword : null,
-    robots: typeof source.robots === "string" ? source.robots : null,
+    ...(hasCanonicalUrl
+      ? { canonicalUrl: typeof source.canonicalUrl === "string" ? source.canonicalUrl : null }
+      : {}),
+    ...(hasFocusKeyword
+      ? { focusKeyword: typeof source.focusKeyword === "string" ? source.focusKeyword : null }
+      : {}),
+    ...(hasRobots ? { robots: typeof source.robots === "string" ? source.robots : null } : {}),
     status: normalizeStatus(source.status),
     featured: Boolean(source.featured),
     featuredAt: typeof source.featuredAt === "string" ? source.featuredAt : null,
