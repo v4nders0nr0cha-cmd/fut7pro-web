@@ -14,6 +14,40 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 const SEO_COMPAT_FIELDS = ["metaTitle", "canonicalUrl", "focusKeyword", "robots"] as const;
+const EXTENDED_COMPAT_FIELDS = [
+  "subtitle",
+  "coverImageAlt",
+  "ogImageUrl",
+  "difficulty",
+  "featuredAt",
+] as const;
+const LEGACY_CORE_FIELDS = [
+  "title",
+  "excerpt",
+  "content",
+  "slug",
+  "coverImageUrl",
+  "status",
+  "featured",
+  "categoryId",
+  "tagIds",
+  "publishedAt",
+] as const;
+const LEGACY_MINIMAL_FIELDS = [
+  "title",
+  "excerpt",
+  "content",
+  "slug",
+  "coverImageUrl",
+  "categoryId",
+  "tagIds",
+] as const;
+
+type CompatAttempt = {
+  name: string;
+  payload: Record<string, unknown>;
+  removedFields: string[];
+};
 
 function isGenericBadRequest(body: unknown) {
   if (!body || typeof body !== "object") return false;
@@ -32,6 +66,62 @@ function stripSeoCompatFields(payload: Record<string, unknown>) {
     }
   });
   return { payload: nextPayload, removedFields };
+}
+
+function omitFields(payload: Record<string, unknown>, fields: readonly string[]) {
+  const nextPayload: Record<string, unknown> = { ...payload };
+  const removedFields: string[] = [];
+  fields.forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(nextPayload, field)) {
+      delete nextPayload[field];
+      removedFields.push(field);
+    }
+  });
+  return { payload: nextPayload, removedFields };
+}
+
+function pickFields(payload: Record<string, unknown>, fields: readonly string[]) {
+  const allowed = new Set(fields);
+  const nextPayload: Record<string, unknown> = {};
+  const removedFields: string[] = [];
+  Object.keys(payload).forEach((key) => {
+    if (allowed.has(key)) {
+      nextPayload[key] = payload[key];
+      return;
+    }
+    removedFields.push(key);
+  });
+  return { payload: nextPayload, removedFields };
+}
+
+function payloadSignature(payload: Record<string, unknown>) {
+  const entries = Object.keys(payload)
+    .sort()
+    .map((key) => [key, payload[key]]);
+  return JSON.stringify(entries);
+}
+
+function buildCompatibilityAttempts(payload: Record<string, unknown>) {
+  const attempts: CompatAttempt[] = [];
+  const seenSignatures = new Set<string>([payloadSignature(payload)]);
+
+  const candidates: CompatAttempt[] = [
+    { name: "seo-only", ...stripSeoCompatFields(payload) },
+    { name: "extended", ...omitFields(payload, [...SEO_COMPAT_FIELDS, ...EXTENDED_COMPAT_FIELDS]) },
+    { name: "legacy-core", ...pickFields(payload, LEGACY_CORE_FIELDS) },
+    { name: "legacy-minimal", ...pickFields(payload, LEGACY_MINIMAL_FIELDS) },
+  ];
+
+  candidates.forEach((candidate) => {
+    if (candidate.removedFields.length === 0) return;
+    if (Object.keys(candidate.payload).length === 0) return;
+    const signature = payloadSignature(candidate.payload);
+    if (seenSignatures.has(signature)) return;
+    seenSignatures.add(signature);
+    attempts.push(candidate);
+  });
+
+  return attempts;
 }
 
 function logPayloadShape(prefix: string, body: unknown) {
@@ -109,23 +199,34 @@ export async function POST(req: NextRequest) {
   });
 
   if (response.status === 400 && isGenericBadRequest(body)) {
-    const compatibilityPayload = stripSeoCompatFields(normalized.payload);
-    if (compatibilityPayload.removedFields.length > 0) {
+    const compatibilityAttempts = buildCompatibilityAttempts(normalized.payload);
+    for (const attempt of compatibilityAttempts) {
       const retry = await proxyBackend(`${getApiBase()}/superadmin/blog/posts`, {
         method: "POST",
         headers: buildHeaders(user, undefined, { includeContentType: true }),
-        body: JSON.stringify(compatibilityPayload.payload),
+        body: JSON.stringify(attempt.payload),
       });
 
       if (retry.response.ok) {
-        console.warn("[superadmin/blog/posts][POST] seo-compat-retry-success", {
-          removedFields: compatibilityPayload.removedFields,
+        console.warn("[superadmin/blog/posts][POST] compat-retry-success", {
+          mode: attempt.name,
+          removedFields: attempt.removedFields,
         });
         return forwardResponse(retry.response.status, retry.body);
       }
 
-      console.warn("[superadmin/blog/posts][POST] seo-compat-retry-failed", {
-        removedFields: compatibilityPayload.removedFields,
+      if (!isGenericBadRequest(retry.body)) {
+        console.warn("[superadmin/blog/posts][POST] compat-retry-non-generic", {
+          mode: attempt.name,
+          removedFields: attempt.removedFields,
+          status: retry.response.status,
+        });
+        return forwardResponse(retry.response.status, retry.body);
+      }
+
+      console.warn("[superadmin/blog/posts][POST] compat-retry-generic-400", {
+        mode: attempt.name,
+        removedFields: attempt.removedFields,
         status: retry.response.status,
       });
     }
@@ -148,7 +249,7 @@ export async function POST(req: NextRequest) {
           {
             field: "compat",
             message:
-              "Se o backend ainda não suportar SEO avançado, tente salvar com Meta title, Canonical, Palavra-chave foco e Robots vazios.",
+              "Backend legado detectado: campos avançados podem ser ignorados automaticamente no retry.",
           },
         ],
       },
