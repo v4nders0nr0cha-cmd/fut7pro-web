@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ChangeEvent, type ClipboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { marked } from "marked";
+import TurndownService from "turndown";
+import { gfm as turndownGfm } from "turndown-plugin-gfm";
 import {
   createBlogCategory,
   createBlogPost,
@@ -160,30 +163,69 @@ function countMarkdownLinks(markdown: string) {
   return { total: links.length, external, internal };
 }
 
-const BLOCK_TAGS = new Set([
-  "article",
-  "aside",
+const ALLOWED_EDITOR_TAGS = new Set([
+  "a",
+  "b",
   "blockquote",
-  "div",
+  "br",
+  "code",
+  "del",
+  "em",
   "h1",
   "h2",
   "h3",
   "h4",
   "h5",
   "h6",
-  "header",
+  "hr",
+  "i",
+  "img",
   "li",
-  "main",
   "ol",
   "p",
   "pre",
-  "section",
+  "s",
+  "strong",
   "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "u",
   "ul",
 ]);
 
-function escapeInlineMarkdown(value: string) {
-  return value.replace(/([`\\])/g, "\\$1");
+const ALLOWED_EDITOR_ATTRS: Record<string, Set<string>> = {
+  a: new Set(["href", "target", "rel", "title"]),
+  img: new Set(["src", "alt", "title", "width", "height"]),
+  td: new Set(["colspan", "rowspan"]),
+  th: new Set(["colspan", "rowspan"]),
+};
+
+const TURNDOWN = new TurndownService({
+  headingStyle: "atx",
+  bulletListMarker: "-",
+  codeBlockStyle: "fenced",
+  emDelimiter: "_",
+  strongDelimiter: "**",
+});
+
+TURNDOWN.use(turndownGfm);
+TURNDOWN.remove("style");
+
+marked.setOptions({
+  gfm: true,
+  breaks: false,
+});
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 function normalizeMarkdownWhitespace(markdown: string) {
@@ -194,170 +236,116 @@ function normalizeMarkdownWhitespace(markdown: string) {
     .trim();
 }
 
-function collectInlineMarkdown(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const text = node.textContent || "";
-    return text.replace(/\s+/g, " ");
-  }
+function isSafeEditorUrl(input: string) {
+  const value = input.trim();
+  if (!value) return false;
+  if (value.startsWith("/") || value.startsWith("#")) return true;
 
-  if (node.nodeType !== Node.ELEMENT_NODE) {
-    return "";
+  try {
+    const parsed = new URL(value, "https://www.fut7pro.com.br");
+    const protocol = parsed.protocol.toLowerCase();
+    return (
+      protocol === "http:" || protocol === "https:" || protocol === "mailto:" || protocol === "tel:"
+    );
+  } catch {
+    return false;
   }
-
-  const element = node as HTMLElement;
-  const tag = element.tagName.toLowerCase();
-  const children = Array.from(element.childNodes).map(collectInlineMarkdown).join("");
-
-  if (tag === "br") return "\n";
-  if (tag === "strong" || tag === "b") {
-    const value = children.trim();
-    return value ? `**${value}**` : "";
-  }
-  if (tag === "em" || tag === "i") {
-    const value = children.trim();
-    return value ? `*${value}*` : "";
-  }
-  if (tag === "code") {
-    const value = escapeInlineMarkdown(element.textContent?.trim() || "");
-    return value ? `\`${value}\`` : "";
-  }
-  if (tag === "a") {
-    const href = (element.getAttribute("href") || "").trim();
-    const label = children.trim() || href;
-    if (!href) return label;
-    return `[${label}](${href})`;
-  }
-  if (tag === "img") {
-    const src = (element.getAttribute("src") || "").trim();
-    if (!src) return "";
-    const alt = (element.getAttribute("alt") || "Imagem").trim();
-    return `![${alt}](${src})`;
-  }
-
-  return children;
 }
 
-function convertListToMarkdown(list: HTMLElement, ordered: boolean) {
-  const items = Array.from(list.children).filter((child) => child.tagName.toLowerCase() === "li");
-  return items
-    .map((item, index) => {
-      const marker = ordered ? `${index + 1}.` : "-";
-      const value = collectInlineMarkdown(item).replace(/\s+/g, " ").trim();
-      return value ? `${marker} ${value}` : "";
-    })
-    .filter(Boolean)
-    .join("\n");
-}
-
-function convertTableToMarkdown(table: HTMLElement) {
-  const rows = Array.from(table.querySelectorAll("tr"));
-  if (rows.length === 0) return "";
-
-  const parsedRows = rows
-    .map((row) =>
-      Array.from(row.querySelectorAll("th,td"))
-        .map((cell) => collectInlineMarkdown(cell).replace(/\s+/g, " ").trim())
-        .map((cell) => cell.replace(/\|/g, "\\|"))
-    )
-    .filter((row) => row.length > 0);
-
-  if (parsedRows.length === 0) return "";
-
-  const header = parsedRows[0];
-  const divider = header.map(() => "---");
-  const body = parsedRows.slice(1);
-  const serialized = [
-    `| ${header.join(" | ")} |`,
-    `| ${divider.join(" | ")} |`,
-    ...body.map((row) => `| ${row.join(" | ")} |`),
-  ];
-
-  return serialized.join("\n");
-}
-
-function convertNodeToMarkdown(node: Node): string {
-  if (node.nodeType === Node.TEXT_NODE) {
-    const text = node.textContent?.replace(/\s+/g, " ").trim() || "";
-    return text;
-  }
-
-  if (node.nodeType !== Node.ELEMENT_NODE) {
-    return "";
-  }
-
-  const element = node as HTMLElement;
-  const tag = element.tagName.toLowerCase();
-
-  if (tag === "script" || tag === "style") {
-    return "";
-  }
-
-  if (tag === "pre") {
-    const code = element.textContent?.replace(/\n+$/, "") || "";
-    if (!code.trim()) return "";
-    return `\`\`\`\n${code}\n\`\`\``;
-  }
-
-  if (tag === "blockquote") {
-    const content = Array.from(element.childNodes).map(convertNodeToMarkdown).join("\n").trim();
-    if (!content) return "";
-    return content
-      .split("\n")
-      .map((line) => `> ${line}`)
-      .join("\n");
-  }
-
-  if (tag === "ul") {
-    return convertListToMarkdown(element, false);
-  }
-
-  if (tag === "ol") {
-    return convertListToMarkdown(element, true);
-  }
-
-  if (tag === "table") {
-    return convertTableToMarkdown(element);
-  }
-
-  if (/^h[1-6]$/.test(tag)) {
-    const level = Number(tag.replace("h", "")) || 2;
-    const value = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
-    if (!value) return "";
-    return `${"#".repeat(level)} ${value}`;
-  }
-
-  if (tag === "hr") {
-    return "---";
-  }
-
-  if (tag === "p") {
-    const value = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
-    return value;
-  }
-
-  const children = Array.from(element.childNodes).map(convertNodeToMarkdown).filter(Boolean);
-  if (children.length === 0) {
-    const inline = collectInlineMarkdown(element).replace(/\s+/g, " ").trim();
-    return inline;
-  }
-
-  if (BLOCK_TAGS.has(tag)) {
-    return children.join("\n\n");
-  }
-
-  return collectInlineMarkdown(element);
-}
-
-function convertHtmlToMarkdown(html: string) {
+function sanitizeEditorHtml(rawHtml: string) {
   const parser = new DOMParser();
-  const document = parser.parseFromString(html, "text/html");
-  const blocks = Array.from(document.body.childNodes).map(convertNodeToMarkdown).filter(Boolean);
-  return normalizeMarkdownWhitespace(blocks.join("\n\n"));
+  const document = parser.parseFromString(rawHtml, "text/html");
+  const elements = Array.from(document.body.querySelectorAll("*"));
+
+  for (const element of elements) {
+    const tag = element.tagName.toLowerCase();
+    if (!ALLOWED_EDITOR_TAGS.has(tag)) {
+      const fragment = document.createDocumentFragment();
+      while (element.firstChild) {
+        fragment.appendChild(element.firstChild);
+      }
+      element.replaceWith(fragment);
+      continue;
+    }
+
+    const allowedAttrs = ALLOWED_EDITOR_ATTRS[tag] || new Set<string>();
+    const attributes = Array.from(element.attributes);
+    for (const attribute of attributes) {
+      const name = attribute.name.toLowerCase();
+      if (name.startsWith("on")) {
+        element.removeAttribute(attribute.name);
+        continue;
+      }
+
+      if (!allowedAttrs.has(name)) {
+        element.removeAttribute(attribute.name);
+        continue;
+      }
+
+      if ((name === "href" || name === "src") && !isSafeEditorUrl(attribute.value)) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+
+    if (tag === "a") {
+      const href = element.getAttribute("href");
+      if (!href) {
+        element.replaceWith(...Array.from(element.childNodes));
+        continue;
+      }
+      if (element.getAttribute("target") === "_blank") {
+        element.setAttribute("rel", "noopener noreferrer nofollow");
+      } else {
+        element.removeAttribute("target");
+        element.removeAttribute("rel");
+      }
+    }
+
+    if (tag === "img") {
+      const src = element.getAttribute("src");
+      if (!src) {
+        element.remove();
+        continue;
+      }
+      if (!element.getAttribute("alt")) {
+        element.setAttribute("alt", "Imagem do artigo");
+      }
+    }
+  }
+
+  return document.body.innerHTML.trim();
+}
+
+function htmlToMarkdown(html: string) {
+  const sanitized = sanitizeEditorHtml(html);
+  const markdown = TURNDOWN.turndown(sanitized || "<p></p>");
+  return normalizeMarkdownWhitespace(markdown);
+}
+
+function markdownToEditorHtml(markdown: string) {
+  const source = markdown.trim();
+  if (!source) {
+    return "<p></p>";
+  }
+  const html = marked.parse(source) as string;
+  const sanitized = sanitizeEditorHtml(html);
+  return sanitized || "<p></p>";
+}
+
+function plainTextToHtml(text: string) {
+  const normalized = text.replace(/\r\n/g, "\n").trim();
+  if (!normalized) return "<p></p>";
+
+  return normalized
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`)
+    .join("");
 }
 
 export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const router = useRouter();
-  const contentRef = useRef<HTMLTextAreaElement | null>(null);
+  const contentEditorRef = useRef<HTMLDivElement | null>(null);
+  const editorSelectionRef = useRef<Range | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -385,6 +373,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const [focusKeyword, setFocusKeyword] = useState("");
   const [robots, setRobots] = useState("index,follow");
   const [content, setContent] = useState("");
+  const [editorInitialMarkdown, setEditorInitialMarkdown] = useState("");
   const [slug, setSlug] = useState("");
   const [status, setStatus] = useState<BlogStatus>("DRAFT");
   const [difficulty, setDifficulty] = useState<BlogDifficulty>("INICIANTE");
@@ -500,6 +489,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
           setFocusKeyword(post.focusKeyword || "");
           setRobots(post.robots || "index,follow");
           setContent(post.content || "");
+          setEditorInitialMarkdown(post.content || "");
           setSlug(post.slug || "");
           setSlugTouched(true);
           setStatus(post.status);
@@ -510,6 +500,8 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
           setCoverImageUrl(post.coverImageUrl || "");
           setCoverImageAlt(post.coverImageAlt || "");
           setOgImageUrl(post.ogImageUrl || "");
+        } else {
+          setEditorInitialMarkdown("");
         }
       } catch (err) {
         if (!cancelled) {
@@ -527,6 +519,15 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       cancelled = true;
     };
   }, [postId]);
+
+  useEffect(() => {
+    const editor = contentEditorRef.current;
+    if (!editor) return;
+
+    const html = markdownToEditorHtml(editorInitialMarkdown);
+    editor.innerHTML = html;
+    setContent(htmlToMarkdown(html));
+  }, [editorInitialMarkdown]);
 
   const canPreview = useMemo(() => Boolean(savedPostId), [savedPostId]);
   const taxonomyUnavailable = useMemo(
@@ -674,7 +675,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
     await loadTags({ silent: true });
   }
 
-  function buildPayload(nextStatus: BlogStatus): UpsertBlogPostPayload {
+  function buildPayload(nextStatus: BlogStatus, contentValue: string): UpsertBlogPostPayload {
     return {
       title: title.trim(),
       metaTitle: metaTitle.trim() || undefined,
@@ -683,7 +684,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       canonicalUrl: canonicalUrl.trim() || undefined,
       focusKeyword: focusKeyword.trim() || undefined,
       robots: robots.trim() || undefined,
-      content: content.trim(),
+      content: contentValue.trim(),
       slug: slug.trim() || undefined,
       coverImageUrl: coverImageUrl.trim() || undefined,
       coverImageAlt: coverImageAlt.trim() || undefined,
@@ -705,7 +706,8 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
     try {
       const nextStatus: BlogStatus =
         mode === "publish" ? "PUBLISHED" : status === "ARCHIVED" ? "DRAFT" : status;
-      const payload = buildPayload(nextStatus);
+      const normalizedContent = syncContentFromEditor({ normalizeHtml: true });
+      const payload = buildPayload(nextStatus, normalizedContent);
       const result = savedPostId
         ? await updateBlogPost(savedPostId, payload)
         : await createBlogPost(payload);
@@ -738,42 +740,129 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
     await persist("draft");
   }
 
-  function insertContentAtCursor(value: string) {
-    const textarea = contentRef.current;
-    if (!textarea) {
-      setContent((old) => (old ? `${old}\n\n${value}` : value));
-      return;
+  function saveEditorSelection() {
+    const editor = contentEditorRef.current;
+    if (!editor) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    if (editor.contains(range.commonAncestorContainer)) {
+      editorSelectionRef.current = range.cloneRange();
     }
-
-    const start = textarea.selectionStart || 0;
-    const end = textarea.selectionEnd || 0;
-
-    setContent((old) => `${old.slice(0, start)}${value}${old.slice(end)}`);
-
-    requestAnimationFrame(() => {
-      textarea.focus();
-      const cursor = start + value.length;
-      textarea.setSelectionRange(cursor, cursor);
-    });
   }
 
-  function handleContentPaste(event: ClipboardEvent<HTMLTextAreaElement>) {
-    const html = event.clipboardData.getData("text/html");
-    if (!html || !html.includes("<")) {
+  function restoreEditorSelection() {
+    const editor = contentEditorRef.current;
+    if (!editor) return;
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    selection.removeAllRanges();
+
+    const storedRange = editorSelectionRef.current;
+    if (storedRange && editor.contains(storedRange.commonAncestorContainer)) {
+      selection.addRange(storedRange);
       return;
     }
 
-    try {
-      const markdown = convertHtmlToMarkdown(html);
-      if (!markdown) {
-        return;
-      }
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    selection.addRange(range);
+  }
 
+  function syncContentFromEditor(options?: { normalizeHtml?: boolean }) {
+    const editor = contentEditorRef.current;
+    if (!editor) return content.trim();
+
+    const sanitizedHtml = sanitizeEditorHtml(editor.innerHTML);
+    if (options?.normalizeHtml && editor.innerHTML !== sanitizedHtml) {
+      editor.innerHTML = sanitizedHtml;
+    }
+
+    const markdown = htmlToMarkdown(sanitizedHtml);
+    setContent(markdown);
+    return markdown;
+  }
+
+  function insertHtmlAtSelection(html: string) {
+    const editor = contentEditorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    restoreEditorSelection();
+
+    if (document.queryCommandSupported?.("insertHTML")) {
+      document.execCommand("insertHTML", false, html);
+    } else {
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) return;
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const fragment = range.createContextualFragment(html);
+      const lastNode = fragment.lastChild;
+      range.insertNode(fragment);
+      if (lastNode) {
+        range.setStartAfter(lastNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+
+    saveEditorSelection();
+    syncContentFromEditor();
+  }
+
+  function runEditorCommand(command: string, value?: string) {
+    const editor = contentEditorRef.current;
+    if (!editor) return;
+
+    editor.focus();
+    restoreEditorSelection();
+    document.execCommand(command, false, value);
+    saveEditorSelection();
+    syncContentFromEditor();
+  }
+
+  function handleInsertLink() {
+    const href = window.prompt("Informe a URL do link (https://...)");
+    if (!href) return;
+
+    if (!isSafeEditorUrl(href)) {
+      setError("URL inválida para link. Use http(s), mailto, tel, /caminho ou #ancora.");
+      return;
+    }
+
+    runEditorCommand("createLink", href.trim());
+  }
+
+  function handleEditorInput() {
+    syncContentFromEditor();
+  }
+
+  function handleEditorBlur() {
+    saveEditorSelection();
+    syncContentFromEditor({ normalizeHtml: true });
+  }
+
+  function handleEditorPaste(event: ClipboardEvent<HTMLDivElement>) {
+    const html = event.clipboardData.getData("text/html");
+    const plainText = event.clipboardData.getData("text/plain");
+
+    if (html && html.includes("<")) {
       event.preventDefault();
-      insertContentAtCursor(markdown);
-      setMessage("Colagem inteligente aplicada: formatação convertida de HTML para Markdown.");
-    } catch {
-      // fallback: mantém colagem padrão do navegador
+      const sanitized = sanitizeEditorHtml(html);
+      insertHtmlAtSelection(sanitized);
+      setMessage("Colagem inteligente aplicada com editor visual.");
+      return;
+    }
+
+    if (plainText) {
+      event.preventDefault();
+      insertHtmlAtSelection(plainTextToHtml(plainText));
     }
   }
 
@@ -862,23 +951,10 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       } else if (mode === "og") {
         setOgImageUrl(asset.url);
       } else {
-        const markdownImage = `![${asset.alt || "Imagem do artigo"}](${asset.url})`;
-        const textarea = contentRef.current;
-        if (!textarea) {
-          setContent((old) => `${old}\n\n${markdownImage}`);
-        } else {
-          const start = textarea.selectionStart || 0;
-          const end = textarea.selectionEnd || 0;
-          const before = content.slice(0, start);
-          const after = content.slice(end);
-          const inserted = `${before}${markdownImage}${after}`;
-          setContent(inserted);
-          requestAnimationFrame(() => {
-            textarea.focus();
-            const cursor = start + markdownImage.length;
-            textarea.setSelectionRange(cursor, cursor);
-          });
-        }
+        const imageHtml = `<p><img src="${escapeHtml(asset.url)}" alt="${escapeHtml(
+          asset.alt || "Imagem do artigo"
+        )}"></p><p></p>`;
+        insertHtmlAtSelection(imageHtml);
       }
 
       setMessage("Imagem enviada com sucesso.");
@@ -944,7 +1020,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
             {savedPostId ? "Editar artigo" : "Novo artigo"}
           </h1>
           <p className="mt-1 text-sm text-zinc-300">
-            Conteúdo em Markdown com SEO e publicação no site institucional.
+            Conteúdo em editor visual com SEO e publicação no site institucional.
           </p>
         </div>
         <Link
@@ -1493,9 +1569,9 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold text-zinc-100">Conteúdo (Markdown)</label>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <label className="text-sm font-semibold text-zinc-100">Conteúdo (Editor visual)</label>
             <label className="inline-flex cursor-pointer items-center rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-100 hover:border-zinc-500">
               {uploadingInline ? "Inserindo..." : "Inserir imagem no conteúdo"}
               <input
@@ -1508,19 +1584,101 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
               />
             </label>
           </div>
+
           <p className="text-xs text-zinc-400">
-            Colagem inteligente ativa: ao colar do ChatGPT/Docs, o editor preserva estrutura,
-            títulos, listas, negrito, itálico, links e ícones convertendo para Markdown.
+            Cole direto do ChatGPT no editor visual. O formato é preservado na tela e convertido com
+            segurança para Markdown ao salvar/publicar.
           </p>
-          <textarea
-            ref={contentRef}
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            onPaste={handleContentPaste}
-            rows={18}
-            placeholder="Escreva o artigo em Markdown..."
-            className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none ring-yellow-400 focus:ring-2"
+
+          <div className="flex flex-wrap gap-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-2">
+            <button
+              type="button"
+              onClick={() => runEditorCommand("bold")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Negrito
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("italic")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Itálico
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("formatBlock", "h2")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Título H2
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("formatBlock", "p")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Parágrafo
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("insertUnorderedList")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("insertOrderedList")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Lista num.
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("formatBlock", "blockquote")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Citação
+            </button>
+            <button
+              type="button"
+              onClick={handleInsertLink}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Link
+            </button>
+            <button
+              type="button"
+              onClick={() => runEditorCommand("removeFormat")}
+              className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-100 hover:border-zinc-500"
+            >
+              Limpar
+            </button>
+          </div>
+
+          <div
+            ref={contentEditorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleEditorInput}
+            onPaste={handleEditorPaste}
+            onBlur={handleEditorBlur}
+            onMouseUp={saveEditorSelection}
+            onKeyUp={saveEditorSelection}
+            className="min-h-[460px] w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-zinc-100 outline-none ring-yellow-400 focus:ring-2 [&_a]:text-blue-300 [&_a]:underline [&_blockquote]:border-l-4 [&_blockquote]:border-zinc-600 [&_blockquote]:pl-3 [&_h1]:mb-3 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:mb-3 [&_h2]:text-2xl [&_h2]:font-semibold [&_h3]:mb-2 [&_h3]:text-xl [&_h3]:font-semibold [&_img]:my-4 [&_img]:max-w-full [&_img]:rounded-lg [&_li]:my-1 [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-6"
           />
+
+          <details className="rounded-lg border border-zinc-800 bg-zinc-950/70 p-3">
+            <summary className="cursor-pointer text-xs font-semibold text-zinc-300">
+              Ver Markdown gerado (somente leitura)
+            </summary>
+            <textarea
+              value={content}
+              readOnly
+              rows={8}
+              className="mt-3 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 outline-none"
+            />
+          </details>
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-zinc-800 pt-4">
