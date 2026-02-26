@@ -1,3 +1,5 @@
+import { normalizeBlogPostPayload } from "@/lib/superadmin-blog-payload";
+
 export type BlogStatus = "DRAFT" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED";
 export type BlogDifficulty = "INICIANTE" | "INTERMEDIARIO" | "AVANCADO";
 
@@ -88,6 +90,149 @@ export type BlogAsset = {
 const BLOG_GENERIC_ERROR = "Falha ao processar a requisição de blog.";
 const BLOG_INVALID_UPSTREAM_ERROR =
   "Resposta inválida do servidor. Tente novamente em alguns instantes.";
+const BLOG_SAFE_STATUS_VALUES = new Set<BlogStatus>([
+  "DRAFT",
+  "SCHEDULED",
+  "PUBLISHED",
+  "ARCHIVED",
+]);
+const BLOG_SAFE_DIFFICULTY_VALUES = new Set<BlogDifficulty>([
+  "INICIANTE",
+  "INTERMEDIARIO",
+  "AVANCADO",
+]);
+
+function asObject(input: unknown): Record<string, unknown> {
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    return input as Record<string, unknown>;
+  }
+  return {};
+}
+
+function toStringOrFallback(value: unknown, fallback = "") {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed) return trimmed;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return fallback;
+}
+
+function normalizeCategory(input: unknown): BlogCategory {
+  const source = asObject(input);
+  return {
+    id: toStringOrFallback(source.id),
+    slug: toStringOrFallback(source.slug),
+    name: toStringOrFallback(source.name, "Categoria"),
+    description: typeof source.description === "string" ? source.description : null,
+    postsCount: typeof source.postsCount === "number" ? source.postsCount : undefined,
+  };
+}
+
+function normalizeTag(input: unknown): BlogTag {
+  const source = asObject(input);
+  return {
+    id: toStringOrFallback(source.id),
+    slug: toStringOrFallback(source.slug),
+    name: toStringOrFallback(source.name, "Tag"),
+    postsCount: typeof source.postsCount === "number" ? source.postsCount : undefined,
+  };
+}
+
+function normalizeStatus(input: unknown): BlogStatus {
+  if (typeof input === "string") {
+    const candidate = input.trim().toUpperCase() as BlogStatus;
+    if (BLOG_SAFE_STATUS_VALUES.has(candidate)) {
+      return candidate;
+    }
+  }
+  return "DRAFT";
+}
+
+function normalizeDifficulty(input: unknown): BlogDifficulty {
+  if (typeof input === "string") {
+    const candidate = input.trim().toUpperCase() as BlogDifficulty;
+    if (BLOG_SAFE_DIFFICULTY_VALUES.has(candidate)) {
+      return candidate;
+    }
+  }
+  return "INICIANTE";
+}
+
+function normalizePostSummary(input: unknown): BlogPostSummary {
+  const source = asObject(input);
+  const tags = Array.isArray(source.tags) ? source.tags.map((item) => normalizeTag(item)) : [];
+  const category = source.category ? normalizeCategory(source.category) : null;
+
+  return {
+    id: toStringOrFallback(source.id),
+    slug: toStringOrFallback(source.slug),
+    title: toStringOrFallback(source.title, "Sem título"),
+    metaTitle: typeof source.metaTitle === "string" ? source.metaTitle : null,
+    subtitle: typeof source.subtitle === "string" ? source.subtitle : null,
+    excerpt: toStringOrFallback(source.excerpt),
+    canonicalUrl: typeof source.canonicalUrl === "string" ? source.canonicalUrl : null,
+    focusKeyword: typeof source.focusKeyword === "string" ? source.focusKeyword : null,
+    robots: typeof source.robots === "string" ? source.robots : null,
+    status: normalizeStatus(source.status),
+    featured: Boolean(source.featured),
+    featuredAt: typeof source.featuredAt === "string" ? source.featuredAt : null,
+    categoryId:
+      source.categoryId === null || source.categoryId === undefined
+        ? null
+        : toStringOrFallback(source.categoryId),
+    category,
+    tags,
+    readingTimeMinutes:
+      typeof source.readingTimeMinutes === "number" && Number.isFinite(source.readingTimeMinutes)
+        ? source.readingTimeMinutes
+        : 1,
+    difficulty: normalizeDifficulty(source.difficulty),
+    publishedAt: typeof source.publishedAt === "string" ? source.publishedAt : null,
+    viewsTotal:
+      typeof source.viewsTotal === "number" && Number.isFinite(source.viewsTotal)
+        ? source.viewsTotal
+        : 0,
+    coverImageUrl: typeof source.coverImageUrl === "string" ? source.coverImageUrl : null,
+    coverImageAlt: typeof source.coverImageAlt === "string" ? source.coverImageAlt : null,
+    ogImageUrl: typeof source.ogImageUrl === "string" ? source.ogImageUrl : null,
+    content: typeof source.content === "string" ? source.content : undefined,
+    createdAt: typeof source.createdAt === "string" ? source.createdAt : undefined,
+    updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined,
+  };
+}
+
+function normalizeListResponse(input: unknown): BlogListResponse {
+  const source = asObject(input);
+  const results = Array.isArray(source.results)
+    ? source.results.map((item) => normalizePostSummary(item))
+    : [];
+  const page = typeof source.page === "number" && Number.isFinite(source.page) ? source.page : 1;
+  const pageSize =
+    typeof source.pageSize === "number" && Number.isFinite(source.pageSize)
+      ? source.pageSize
+      : results.length;
+  const total =
+    typeof source.total === "number" && Number.isFinite(source.total)
+      ? source.total
+      : results.length;
+  const totalPages =
+    typeof source.totalPages === "number" && Number.isFinite(source.totalPages)
+      ? source.totalPages
+      : total > 0 && pageSize > 0
+        ? Math.ceil(total / pageSize)
+        : 0;
+
+  return {
+    results,
+    page,
+    pageSize,
+    total,
+    totalPages,
+  };
+}
 
 function isHtmlLikeText(text: string) {
   const normalized = text.slice(0, 500).toLowerCase();
@@ -143,6 +288,27 @@ function toErrorMessage(body: unknown, fallback: string, status?: number) {
   }
 
   if (body && typeof body === "object") {
+    if ("issues" in body) {
+      const issues = (body as { issues?: unknown }).issues;
+      if (Array.isArray(issues)) {
+        const mappedIssues = issues
+          .map((entry) => {
+            if (!entry || typeof entry !== "object") return "";
+            const issueField = (entry as { field?: unknown }).field;
+            const issueMessage = (entry as { message?: unknown }).message;
+            if (typeof issueMessage !== "string" || !issueMessage.trim()) return "";
+            if (typeof issueField === "string" && issueField.trim()) {
+              return `${issueField}: ${issueMessage.trim()}`;
+            }
+            return issueMessage.trim();
+          })
+          .filter(Boolean);
+        if (mappedIssues.length > 0) {
+          return mappedIssues.join(", ");
+        }
+      }
+    }
+
     if ("error" in body) {
       const errorMessage = (body as { error?: unknown }).error;
       if (typeof errorMessage === "string" && errorMessage.trim()) {
@@ -261,59 +427,90 @@ export async function listBlogPosts(params: {
   if (params.page) search.set("page", String(params.page));
   if (params.pageSize) search.set("pageSize", String(params.pageSize));
   const suffix = search.toString() ? `?${search.toString()}` : "";
-  return requestJson<BlogListResponse>(`/api/superadmin/blog/posts${suffix}`);
+  const response = await requestJson<BlogListResponse>(`/api/superadmin/blog/posts${suffix}`);
+  return normalizeListResponse(response);
 }
 
 export async function getBlogPost(id: string) {
-  return requestJson<BlogPostSummary>(`/api/superadmin/blog/posts/${encodeURIComponent(id)}`);
+  const response = await requestJson<BlogPostSummary>(
+    `/api/superadmin/blog/posts/${encodeURIComponent(id)}`
+  );
+  return normalizePostSummary(response);
 }
 
 export async function createBlogPost(payload: UpsertBlogPostPayload) {
-  return requestJson<BlogPostSummary>("/api/superadmin/blog/posts", {
+  const normalized = normalizeBlogPostPayload(payload, "create");
+  if (normalized.issues.length > 0) {
+    throw new Error(normalized.issues.map((issue) => issue.message).join(", "));
+  }
+
+  const response = await requestJson<BlogPostSummary>("/api/superadmin/blog/posts", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(normalized.payload),
   });
+
+  return normalizePostSummary(response);
 }
 
 export async function updateBlogPost(id: string, payload: Partial<UpsertBlogPostPayload>) {
-  return requestJson<BlogPostSummary>(`/api/superadmin/blog/posts/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
+  const normalized = normalizeBlogPostPayload(payload, "update");
+  if (normalized.issues.length > 0) {
+    throw new Error(normalized.issues.map((issue) => issue.message).join(", "));
+  }
+
+  const response = await requestJson<BlogPostSummary>(
+    `/api/superadmin/blog/posts/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(normalized.payload),
+    }
+  );
+
+  return normalizePostSummary(response);
 }
 
 export async function publishBlogPost(id: string) {
-  return requestJson<BlogPostSummary>(
+  const response = await requestJson<BlogPostSummary>(
     `/api/superadmin/blog/posts/${encodeURIComponent(id)}/publish`,
     {
       method: "POST",
     }
   );
+
+  return normalizePostSummary(response);
 }
 
 export async function unpublishBlogPost(id: string) {
-  return requestJson<BlogPostSummary>(
+  const response = await requestJson<BlogPostSummary>(
     `/api/superadmin/blog/posts/${encodeURIComponent(id)}/unpublish`,
     {
       method: "POST",
     }
   );
+
+  return normalizePostSummary(response);
 }
 
 export async function archiveBlogPost(id: string) {
-  return requestJson<BlogPostSummary>(`/api/superadmin/blog/posts/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  const response = await requestJson<BlogPostSummary>(
+    `/api/superadmin/blog/posts/${encodeURIComponent(id)}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  return normalizePostSummary(response);
 }
 
 export async function listBlogCategories() {
-  return requestJson<BlogCategory[]>("/api/superadmin/blog/categories");
+  const response = await requestJson<BlogCategory[]>("/api/superadmin/blog/categories");
+  return Array.isArray(response) ? response.map((item) => normalizeCategory(item)) : [];
 }
 
 export async function createBlogCategory(payload: {
@@ -321,27 +518,32 @@ export async function createBlogCategory(payload: {
   slug?: string;
   description?: string;
 }) {
-  return requestJson<BlogCategory>("/api/superadmin/blog/categories", {
+  const response = await requestJson<BlogCategory>("/api/superadmin/blog/categories", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
+
+  return normalizeCategory(response);
 }
 
 export async function listBlogTags() {
-  return requestJson<BlogTag[]>("/api/superadmin/blog/tags");
+  const response = await requestJson<BlogTag[]>("/api/superadmin/blog/tags");
+  return Array.isArray(response) ? response.map((item) => normalizeTag(item)) : [];
 }
 
 export async function createBlogTag(payload: { name: string; slug?: string }) {
-  return requestJson<BlogTag>("/api/superadmin/blog/tags", {
+  const response = await requestJson<BlogTag>("/api/superadmin/blog/tags", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
+
+  return normalizeTag(response);
 }
 
 export async function uploadBlogAsset(input: {
