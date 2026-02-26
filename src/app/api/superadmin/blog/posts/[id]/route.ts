@@ -12,6 +12,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+const SEO_COMPAT_FIELDS = ["metaTitle", "canonicalUrl", "focusKeyword", "robots"] as const;
 
 type Params = { params: { id?: string } };
 
@@ -20,6 +21,18 @@ function isGenericBadRequest(body: unknown) {
   const statusCode = Number((body as { statusCode?: unknown }).statusCode);
   const message = (body as { message?: unknown }).message;
   return statusCode === 400 && typeof message === "string" && message.trim() === "Bad Request";
+}
+
+function stripSeoCompatFields(payload: Record<string, unknown>) {
+  const nextPayload: Record<string, unknown> = { ...payload };
+  const removedFields: string[] = [];
+  SEO_COMPAT_FIELDS.forEach((field) => {
+    if (Object.prototype.hasOwnProperty.call(nextPayload, field)) {
+      delete nextPayload[field];
+      removedFields.push(field);
+    }
+  });
+  return { payload: nextPayload, removedFields };
 }
 
 export async function GET(_req: NextRequest, { params }: Params) {
@@ -99,6 +112,27 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   });
 
   if (response.status === 400 && isGenericBadRequest(body)) {
+    const compatibilityPayload = stripSeoCompatFields(normalized.payload);
+    if (compatibilityPayload.removedFields.length > 0) {
+      const retry = await proxyBackend(targetUrl, {
+        method: "PATCH",
+        headers: buildHeaders(user, undefined, { includeContentType: true }),
+        body: JSON.stringify(compatibilityPayload.payload),
+      });
+
+      if (retry.response.ok) {
+        console.warn("[superadmin/blog/posts/:id][PATCH] seo-compat-retry-success", {
+          removedFields: compatibilityPayload.removedFields,
+        });
+        return forwardResponse(retry.response.status, retry.body);
+      }
+
+      console.warn("[superadmin/blog/posts/:id][PATCH] seo-compat-retry-failed", {
+        removedFields: compatibilityPayload.removedFields,
+        status: retry.response.status,
+      });
+    }
+
     console.warn("[superadmin/blog/posts/:id][PATCH] backend-bad-request", {
       keys: normalized.diagnostics.keys,
       categoryIdType: normalized.diagnostics.categoryIdType,
@@ -112,7 +146,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           {
             field: "payload",
             message:
-              "Verifique título, resumo, conteúdo, categoria/tags e URLs (canonical/imagens).",
+              "Verifique título, resumo, conteúdo, categoria/tags e URLs de imagem/canonical.",
+          },
+          {
+            field: "compat",
+            message:
+              "Se o backend ainda não suportar SEO avançado, tente salvar com Meta title, Canonical, Palavra-chave foco e Robots vazios.",
           },
         ],
       },
