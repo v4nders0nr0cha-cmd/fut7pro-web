@@ -16,6 +16,7 @@ import {
   FaUserSlash,
   FaBullhorn,
   FaEnvelope,
+  FaNewspaper,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -54,6 +55,7 @@ const sections: Array<{ title: string; items: MenuItem[] }> = [
   {
     title: "Marketing",
     items: [
+      { label: "Blog", href: "/superadmin/blog", icon: FaNewspaper },
       { label: "Embaixadores", href: "/superadmin/embaixadores", icon: FaBullhorn },
       { label: "Leads Newsletter", href: "/superadmin/newsletter", icon: FaEnvelope },
     ],
