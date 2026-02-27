@@ -133,7 +133,6 @@ function buildPixPricingFromInvoice(
     totalCents,
   };
 }
-
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
   const user = session?.user as any;

@@ -15,6 +15,7 @@ import {
   FaLifeRing,
   FaUserSlash,
   FaBullhorn,
+  FaEnvelope,
   FaNewspaper,
 } from "react-icons/fa";
 import Image from "next/image";
@@ -56,6 +57,7 @@ const sections: Array<{ title: string; items: MenuItem[] }> = [
     items: [
       { label: "Blog", href: "/superadmin/blog", icon: FaNewspaper },
       { label: "Embaixadores", href: "/superadmin/embaixadores", icon: FaBullhorn },
+      { label: "Leads Newsletter", href: "/superadmin/newsletter", icon: FaEnvelope },
     ],
   },
   {
