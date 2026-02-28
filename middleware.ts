@@ -68,8 +68,10 @@ export default withAuth(
     if (pathname.startsWith("/superadmin")) {
       const isPublicAuthPath = isSuperAdminAuthPublicPath(pathname);
       const superAdminToken = await resolveSuperAdminToken(req);
-      const isSuperAdmin =
-        String((superAdminToken as any)?.role || "").toUpperCase() === "SUPERADMIN";
+      const role = String((superAdminToken as any)?.role || "").toUpperCase();
+      const hasAccessToken = Boolean((superAdminToken as any)?.accessToken);
+      const tokenError = String((superAdminToken as any)?.error || "").trim();
+      const isSuperAdmin = role === "SUPERADMIN" && hasAccessToken && !tokenError;
 
       if (isPublicAuthPath) {
         if (isSuperAdmin) {

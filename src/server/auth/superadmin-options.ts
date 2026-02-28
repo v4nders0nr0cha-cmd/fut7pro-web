@@ -3,6 +3,11 @@ import type { JWT } from "next-auth/jwt";
 
 const API_BASE_URL =
   process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const SUPERADMIN_REFRESH_MARGIN_SECONDS = 120;
+
+type RefreshResult = { ok: true; accessToken: string; refreshToken: string } | { ok: false };
+
+const superAdminRefreshFlights = new Map<string, Promise<RefreshResult>>();
 
 const normalizeAuthPath = (value: string | undefined | null, fallback: string) => {
   if (!value) return fallback;
@@ -30,6 +35,48 @@ function decodeExp(token?: string | null): number | null {
   } catch {
     return null;
   }
+}
+
+async function requestSuperAdminRefresh(refreshToken: string): Promise<RefreshResult> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      return { ok: false };
+    }
+
+    const data = await response.json().catch(() => null);
+    const nextAccessToken = String((data as any)?.accessToken || "").trim();
+    const nextRefreshToken = String((data as any)?.refreshToken || "").trim();
+    if (!nextAccessToken || !nextRefreshToken) {
+      return { ok: false };
+    }
+
+    return {
+      ok: true,
+      accessToken: nextAccessToken,
+      refreshToken: nextRefreshToken,
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
+async function refreshSuperAdminTokenSingleFlight(refreshToken: string): Promise<RefreshResult> {
+  const existing = superAdminRefreshFlights.get(refreshToken);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = requestSuperAdminRefresh(refreshToken).finally(() => {
+    superAdminRefreshFlights.delete(refreshToken);
+  });
+  superAdminRefreshFlights.set(refreshToken, promise);
+  return promise;
 }
 
 const cookieOptions = {
@@ -152,6 +199,7 @@ export const superAdminAuthOptions = {
         session.user.accessToken = token.accessToken as string;
         session.user.refreshToken = token.refreshToken as string;
         session.user.accessTokenExp = (token as any).accessTokenExp ?? null;
+        session.user.tokenError = (token as any).error ?? null;
       }
       return session;
     },
@@ -165,31 +213,38 @@ export const superAdminAuthOptions = {
         token.accessToken = (user as any).accessToken;
         token.refreshToken = (user as any).refreshToken;
         (token as any).accessTokenExp = decodeExp(token.accessToken as string);
+        (token as any).error = null;
       }
 
       if (token.accessToken && token.refreshToken) {
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 
-        if (tokenExp && tokenExp < now + 300) {
-          try {
-            const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ refreshToken: token.refreshToken }),
-            });
+        if (tokenExp && tokenExp < now + SUPERADMIN_REFRESH_MARGIN_SECONDS) {
+          const refreshResult = await refreshSuperAdminTokenSingleFlight(
+            String(token.refreshToken)
+          );
 
-            if (response.ok) {
-              const data = await response.json();
-              token.accessToken = data.accessToken;
-              token.refreshToken = data.refreshToken;
-              (token as any).accessTokenExp = decodeExp(token.accessToken as string);
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Erro no refresh token (superadmin):", error);
-            }
+          if (refreshResult.ok) {
+            token.accessToken = refreshResult.accessToken;
+            token.refreshToken = refreshResult.refreshToken;
+            (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
+            (token as any).error = null;
+          } else {
+            (token as any).accessToken = undefined;
+            (token as any).refreshToken = undefined;
+            (token as any).accessTokenExp = null;
+            (token as any).error = "RefreshAccessTokenError";
           }
+        }
+      } else if (token.accessToken) {
+        const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
+        const now = Math.floor(Date.now() / 1000);
+        if (tokenExp && tokenExp <= now) {
+          (token as any).accessToken = undefined;
+          (token as any).refreshToken = undefined;
+          (token as any).accessTokenExp = null;
+          (token as any).error = "AccessTokenExpired";
         }
       }
       return token;

@@ -74,6 +74,19 @@ type UserLike = {
   accessTokenExp?: number | null;
 };
 
+const ADMIN_SESSION_COOKIE_CANDIDATES = [
+  "__Secure-next-auth.session-token",
+  "next-auth.session-token",
+  "next-auth.session-token-dev",
+];
+
+const SUPERADMIN_SESSION_COOKIE_CANDIDATES = [
+  `next-auth.session-token-superadmin${process.env.NODE_ENV === "development" ? "-dev" : ""}`,
+  "next-auth.session-token-superadmin",
+  "next-auth.session-token-superadmin-dev",
+  "__Secure-next-auth.session-token-superadmin",
+];
+
 function resolveRequestMeta() {
   const headers = nextHeaders();
   const forwardedFor = headers.get("x-forwarded-for") || "";
@@ -90,55 +103,105 @@ function logSuperAdminUnauthorized(reason: string) {
   );
 }
 
-async function mergeTokenUser(sessionUser: UserLike | null): Promise<UserLike | null> {
+type AuthScope = "admin" | "superadmin";
+
+function resolveCookieCandidates(scope: AuthScope) {
+  return scope === "superadmin"
+    ? SUPERADMIN_SESSION_COOKIE_CANDIDATES
+    : ADMIN_SESSION_COOKIE_CANDIDATES;
+}
+
+async function resolveTokenFromCookies(scope: AuthScope) {
+  for (const cookieName of resolveCookieCandidates(scope)) {
+    try {
+      const token = await getToken({
+        req: {
+          cookies: nextCookies(),
+          headers: nextHeaders(),
+        } as any,
+        cookieName,
+      });
+      if (token) {
+        return token as any;
+      }
+    } catch {
+      // ignore and try next candidate
+    }
+  }
+  return null;
+}
+
+function tokenToUser(token: any, fallback?: UserLike | null): UserLike | null {
+  if (!token) return null;
+  const accessToken = String(token?.accessToken || "").trim();
+  if (!accessToken) return null;
+
+  const id = String(token?.id || token?.sub || fallback?.id || "").trim();
+  if (!id) return null;
+
+  return {
+    id,
+    email: (token?.email as string | null | undefined) ?? fallback?.email ?? null,
+    name: (token?.name as string | null | undefined) ?? fallback?.name ?? null,
+    role: (token?.role as string | undefined) ?? fallback?.role,
+    tenantId: (token?.tenantId as string | undefined) ?? fallback?.tenantId,
+    tenantSlug: (token?.tenantSlug as string | null | undefined) ?? fallback?.tenantSlug ?? null,
+    accessToken,
+    refreshToken:
+      (token?.refreshToken as string | null | undefined) ?? fallback?.refreshToken ?? null,
+    accessTokenExp:
+      (token?.accessTokenExp as number | null | undefined) ?? fallback?.accessTokenExp ?? null,
+  };
+}
+
+async function mergeTokenUser(
+  sessionUser: UserLike | null,
+  scope: AuthScope
+): Promise<UserLike | null> {
   if (!sessionUser) return null;
   if (sessionUser.accessToken) return sessionUser;
 
   try {
-    const token = await getToken({
-      req: {
-        cookies: nextCookies(),
-        headers: nextHeaders(),
-      } as any,
-    });
-
-    if (!token) return sessionUser;
-
-    return {
-      ...sessionUser,
-      id: token.id ? String(token.id) : sessionUser.id,
-      email: (token as any).email ?? sessionUser.email ?? null,
-      name: (token as any).name ?? sessionUser.name ?? null,
-      role: (token as any).role ?? sessionUser.role,
-      tenantId: (token as any).tenantId ?? sessionUser.tenantId,
-      tenantSlug: (token as any).tenantSlug ?? sessionUser.tenantSlug ?? null,
-      accessToken: (token as any).accessToken ?? sessionUser.accessToken,
-      refreshToken: (token as any).refreshToken ?? sessionUser.refreshToken ?? null,
-      accessTokenExp: (token as any).accessTokenExp ?? sessionUser.accessTokenExp ?? null,
-    };
+    const token = await resolveTokenFromCookies(scope);
+    const fromToken = tokenToUser(token, sessionUser);
+    return fromToken ?? sessionUser;
   } catch {
     return sessionUser;
   }
 }
 
-async function resolveSessionUser(session: unknown): Promise<UserLike | null> {
+async function resolveSessionUser(session: unknown, scope: AuthScope): Promise<UserLike | null> {
   const sessionUser = (session as any)?.user ?? null;
-  const merged = await mergeTokenUser(sessionUser);
+  const merged = await mergeTokenUser(sessionUser, scope);
   if (!merged?.accessToken) return null;
   return merged;
 }
 
+async function resolveTokenOnlyUser(scope: AuthScope): Promise<UserLike | null> {
+  const token = await resolveTokenFromCookies(scope);
+  return tokenToUser(token, null);
+}
+
 export async function requireUser(): Promise<UserLike | null> {
-  let session = await getServerSession?.(authOptions as any);
-  if (!session) {
-    session = await getServerSession?.(superAdminAuthOptions as any);
+  const adminSession = await getServerSession?.(authOptions as any);
+  const adminUser = await resolveSessionUser(adminSession, "admin");
+  if (adminUser) {
+    return adminUser;
   }
-  return resolveSessionUser(session);
+
+  const superAdminSession = await getServerSession?.(superAdminAuthOptions as any);
+  const superAdminUser = await resolveSessionUser(superAdminSession, "superadmin");
+  if (superAdminUser) {
+    return superAdminUser;
+  }
+
+  return (await resolveTokenOnlyUser("admin")) ?? (await resolveTokenOnlyUser("superadmin"));
 }
 
 export async function requireSuperAdminUser(): Promise<UserLike | null> {
   const session = await getServerSession?.(superAdminAuthOptions as any);
-  const user = await resolveSessionUser(session);
+  const user =
+    (await resolveSessionUser(session, "superadmin")) ?? (await resolveTokenOnlyUser("superadmin"));
   if (!user) {
     logSuperAdminUnauthorized("missing_session");
     return null;
