@@ -168,12 +168,14 @@ export default function SuperAdminLoginClient() {
       return;
     }
 
-    if (result.errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
+    if (result.ok === false && result.errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
       await handleAutoStartMfaSetup();
       return;
     }
 
-    setErro(mapAuthError(result.errorCode));
+    if (result.ok === false) {
+      setErro(mapAuthError(result.errorCode));
+    }
   }
 
   async function handleConfirmMfaSetup() {
@@ -203,7 +205,7 @@ export default function SuperAdminLoginClient() {
       setSetupMode(false);
       setInfo("MFA habilitado com sucesso. Realizando login...");
       const result = await performLogin(setupCode.trim());
-      if (!result.ok) {
+      if (result.ok === false) {
         setErro(mapAuthError(result.errorCode));
       }
     } finally {
