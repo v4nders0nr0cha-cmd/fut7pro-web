@@ -14,6 +14,8 @@ type MfaSetupStartResponse = {
   expiresInSec: number;
 };
 
+type AuthAttemptResult = { ok: true } | { ok: false; errorCode: string; rawError?: string | null };
+
 export default function SuperAdminLoginClient() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -59,24 +61,37 @@ export default function SuperAdminLoginClient() {
     };
   }, [setupMode, otpauthUrl]);
 
-  function mapAuthError(raw?: string | null) {
+  function extractAuthCode(raw?: string | null) {
     const value = String(raw || "").toUpperCase();
     if (value.includes("SUPERADMIN_MFA_SETUP_REQUIRED")) {
-      return "MFA obrigatorio ainda nao foi configurado. Use o botao de configuracao abaixo.";
+      return "SUPERADMIN_MFA_SETUP_REQUIRED";
     }
     if (value.includes("SUPERADMIN_MFA_REQUIRED")) {
-      return "Informe o codigo MFA de 6 digitos para continuar.";
+      return "SUPERADMIN_MFA_REQUIRED";
     }
     if (value.includes("SUPERADMIN_MFA_INVALID")) {
-      return "Codigo MFA invalido.";
+      return "SUPERADMIN_MFA_INVALID";
     }
     if (value.includes("CREDENTIALSSIGNIN") || value.includes("AUTH_FAILED")) {
+      return "AUTH_FAILED";
+    }
+    return "UNKNOWN";
+  }
+
+  function mapAuthError(code: string) {
+    if (code === "SUPERADMIN_MFA_REQUIRED") {
+      return "Informe o codigo MFA de 6 digitos para continuar.";
+    }
+    if (code === "SUPERADMIN_MFA_INVALID") {
+      return "Codigo MFA invalido.";
+    }
+    if (code === "AUTH_FAILED") {
       return "Credenciais invalidas.";
     }
     return "Nao foi possivel autenticar no painel SuperAdmin.";
   }
 
-  async function performLogin(codeOverride?: string) {
+  async function performLogin(codeOverride?: string): Promise<AuthAttemptResult> {
     const normalizedCode = String(codeOverride ?? mfaCode).trim();
     setErro("");
     setInfo("");
@@ -92,46 +107,44 @@ export default function SuperAdminLoginClient() {
       });
 
       if (!res?.ok) {
-        setErro(mapAuthError(res?.error));
-        return false;
+        return { ok: false, errorCode: extractAuthCode(res?.error), rawError: res?.error };
       }
 
       router.push("/superadmin/dashboard");
-      return true;
+      return { ok: true };
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    await performLogin();
-  }
-
-  async function handleStartMfaSetup() {
+  async function handleAutoStartMfaSetup() {
     setErro("");
     setInfo("");
-
-    if (!email.trim() || !senha.trim()) {
-      setErro("Informe e-mail e senha para iniciar a configuracao do MFA.");
-      return;
-    }
-
     setLoading(true);
+
     try {
-      const res = await fetch("/api/superadmin/mfa/setup/start", {
+      const challengeRes = await fetch("/api/superadmin/mfa/setup/challenge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password: senha }),
       });
 
+      if (!challengeRes.ok) {
+        setErro("Nao foi possivel iniciar a configuracao segura do MFA.");
+        return;
+      }
+
+      const res = await fetch("/api/superadmin/mfa/setup/start", {
+        method: "POST",
+        cache: "no-store",
+      });
+
       const body = (await res.json().catch(() => ({}))) as Partial<MfaSetupStartResponse> & {
-        code?: string;
         message?: string;
       };
 
       if (!res.ok) {
-        setErro(body.message || "Falha ao iniciar setup do MFA.");
+        setErro(body.message || "Nao foi possivel iniciar a configuracao segura do MFA.");
         return;
       }
 
@@ -141,11 +154,26 @@ export default function SuperAdminLoginClient() {
       setQrCodeDataUrl("");
       setSetupMode(true);
       setInfo(
-        "MFA iniciado. Cadastre a chave no autenticador e confirme com o codigo de 6 digitos."
+        "Conta sem MFA configurado. Finalize o setup com o app autenticador para concluir o login."
       );
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    const result = await performLogin();
+    if (result.ok) {
+      return;
+    }
+
+    if (result.errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
+      await handleAutoStartMfaSetup();
+      return;
+    }
+
+    setErro(mapAuthError(result.errorCode));
   }
 
   async function handleConfirmMfaSetup() {
@@ -174,7 +202,10 @@ export default function SuperAdminLoginClient() {
       setMfaCode(setupCode.trim());
       setSetupMode(false);
       setInfo("MFA habilitado com sucesso. Realizando login...");
-      await performLogin(setupCode.trim());
+      const result = await performLogin(setupCode.trim());
+      if (!result.ok) {
+        setErro(mapAuthError(result.errorCode));
+      }
     } finally {
       setLoading(false);
     }
@@ -232,15 +263,6 @@ export default function SuperAdminLoginClient() {
           className="w-full bg-yellow-400 text-black py-2 rounded hover:bg-yellow-300 font-bold transition disabled:opacity-60"
         >
           {loading ? "Entrando..." : "Entrar"}
-        </button>
-
-        <button
-          type="button"
-          disabled={loading}
-          onClick={handleStartMfaSetup}
-          className="w-full border border-zinc-500 text-zinc-100 py-2 rounded hover:bg-zinc-700 font-semibold transition disabled:opacity-60"
-        >
-          Configurar MFA obrigatorio
         </button>
 
         {setupMode && (
