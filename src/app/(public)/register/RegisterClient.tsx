@@ -46,6 +46,8 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   /\/+$/,
   ""
 );
+const VITRINE_AUTH_BLOCKED_MESSAGE =
+  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
 
 type SessionUser = {
   name?: string | null;
@@ -527,6 +529,40 @@ export default function RegisterClient() {
       setIsSubmitting(false);
     }
   };
+
+  if (isRegistrationBlocked) {
+    return (
+      <section className="w-full px-4">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
+          <div className="mb-4 rounded-lg border border-amber-400/30 bg-[#141824] px-3 py-3 text-center">
+            <p className="text-sm font-semibold text-amber-200">Racha Vitrine</p>
+            <p className="mt-1 text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
+          </div>
+          <h1 className="text-xl font-bold text-white text-center">
+            Cadastro de atleta desabilitado
+          </h1>
+          <p className="mt-2 text-center text-sm text-gray-300">
+            Este ambiente e apenas de demonstracao. Para usar o Fut7Pro de verdade, crie seu proprio
+            racha.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <a
+              href="/cadastrar-racha"
+              className="inline-flex items-center justify-center rounded-lg bg-yellow-400 py-2.5 font-bold text-black hover:bg-yellow-300"
+            >
+              Criar meu racha
+            </a>
+            <a
+              href={publicHref("/")}
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"
+            >
+              Voltar para vitrine
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full px-4">

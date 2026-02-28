@@ -34,6 +34,17 @@ export async function POST(req: NextRequest) {
     return json({ error: "E-mail obrigatorio" }, { status: 400 });
   }
 
+  if (rachaSlug.toLowerCase() === "vitrine") {
+    return json({
+      exists: false,
+      userExists: false,
+      providers: [],
+      hasPassword: false,
+      membershipStatus: "BLOCKED",
+      nextAction: "BLOCKED_MESSAGE",
+    });
+  }
+
   try {
     const forwardedFor = req.headers.get("x-forwarded-for");
     const realIp = req.headers.get("x-real-ip");
