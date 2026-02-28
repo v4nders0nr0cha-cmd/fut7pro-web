@@ -74,6 +74,22 @@ type UserLike = {
   accessTokenExp?: number | null;
 };
 
+function resolveRequestMeta() {
+  const headers = nextHeaders();
+  const forwardedFor = headers.get("x-forwarded-for") || "";
+  const ip = (forwardedFor.split(",")[0] || headers.get("x-real-ip") || "unknown").trim();
+  const userAgent = (headers.get("user-agent") || "unknown").slice(0, 160);
+  const path = headers.get("x-invoke-path") || headers.get("next-url") || "unknown";
+  return { ip, userAgent, path };
+}
+
+function logSuperAdminUnauthorized(reason: string) {
+  const meta = resolveRequestMeta();
+  console.warn(
+    `[security][superadmin][unauthorized] reason=${reason} ip=${meta.ip} path=${meta.path} ua="${meta.userAgent}"`
+  );
+}
+
 async function mergeTokenUser(sessionUser: UserLike | null): Promise<UserLike | null> {
   if (!sessionUser) return null;
   if (sessionUser.accessToken) return sessionUser;
@@ -122,7 +138,19 @@ export async function requireUser(): Promise<UserLike | null> {
 
 export async function requireSuperAdminUser(): Promise<UserLike | null> {
   const session = await getServerSession?.(superAdminAuthOptions as any);
-  return resolveSessionUser(session);
+  const user = await resolveSessionUser(session);
+  if (!user) {
+    logSuperAdminUnauthorized("missing_session");
+    return null;
+  }
+
+  const role = String(user.role || "").toUpperCase();
+  if (role !== "SUPERADMIN") {
+    logSuperAdminUnauthorized("invalid_role");
+    return null;
+  }
+
+  return user;
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {

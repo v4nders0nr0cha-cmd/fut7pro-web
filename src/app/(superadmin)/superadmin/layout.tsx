@@ -1,12 +1,5 @@
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
-import AdminLayoutContent from "./SuperAdminLayoutContent";
-import { SuperAdminGuard } from "@/components/superadmin/SuperAdminGuard";
-import dynamic from "next/dynamic";
-
-const SuperAdminProviders = dynamic(() => import("@/components/superadmin/SuperAdminProviders"), {
-  ssr: false,
-});
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,16 +7,6 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className={`${inter.className} bg-gradient-to-br from-[#181818] to-[#232323] text-white min-h-screen`}
-    >
-      <SuperAdminProviders>
-        <SuperAdminGuard>
-          <AdminLayoutContent>{children}</AdminLayoutContent>
-        </SuperAdminGuard>
-      </SuperAdminProviders>
-    </div>
-  );
+export default function SuperAdminRootLayout({ children }: { children: ReactNode }) {
+  return <div className={`${inter.className} min-h-screen bg-zinc-950 text-white`}>{children}</div>;
 }
