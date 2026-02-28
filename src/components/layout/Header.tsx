@@ -35,6 +35,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
+  const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
   const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
@@ -65,6 +66,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
+  const createRachaHref = "/cadastrar-racha";
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = activeSlug || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
@@ -110,7 +112,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             const handleClick = (e: React.MouseEvent) => {
               if (!isAthleteLoggedIn) {
                 e.preventDefault();
-                router.push(loginHref);
+                router.push(isVitrineSlug ? createRachaHref : loginHref);
               }
             };
 
@@ -136,15 +138,17 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
           {/* Perfil/Login - à direita dos ícones */}
           {!showUserMenu ? (
             <Link
-              href={loginHref}
+              href={isVitrineSlug ? createRachaHref : loginHref}
               className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
               style={{ letterSpacing: 1 }}
             >
               <FaUser size={18} className="text-brand shrink-0" />
               <span className="flex flex-col leading-tight text-left">
-                <span className="text-[13px] font-bold uppercase">Entrar</span>
+                <span className="text-[13px] font-bold uppercase">
+                  {isVitrineSlug ? "Criar racha" : "Entrar"}
+                </span>
                 <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
-                  Atletas do {nome}
+                  {isVitrineSlug ? "Comece no Fut7Pro" : `Atletas do ${nome}`}
                 </span>
               </span>
             </Link>

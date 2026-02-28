@@ -15,6 +15,8 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   /\/+$/,
   ""
 );
+const VITRINE_AUTH_BLOCKED_MESSAGE =
+  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -34,6 +36,7 @@ export default function LoginClient() {
   const { nome } = useTema();
   const nomeDoRacha = nome || "Fut7Pro";
   const { publicHref, publicSlug } = usePublicLinks();
+  const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
 
   const { data: session, status } = useSession();
   const sessionUser = session?.user as {
@@ -140,6 +143,11 @@ export default function LoginClient() {
     setErro("");
     setNotMemberMessage("");
 
+    if (isVitrineSlug) {
+      setNotMemberMessage(VITRINE_AUTH_BLOCKED_MESSAGE);
+      return;
+    }
+
     if (!publicSlug) {
       setNotMemberMessage("Slug do racha não encontrado.");
       return;
@@ -219,6 +227,11 @@ export default function LoginClient() {
     setIsSubmitting(true);
 
     try {
+      if (isVitrineSlug) {
+        setErro(VITRINE_AUTH_BLOCKED_MESSAGE);
+        return;
+      }
+
       if (!publicSlug) {
         setErro("Slug do racha não encontrado.");
         return;
@@ -308,6 +321,37 @@ export default function LoginClient() {
       setIsSubmitting(false);
     }
   };
+
+  if (isVitrineSlug) {
+    return (
+      <section className="w-full px-4">
+        <div className="mx-auto w-full max-w-lg rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
+          <div className="mb-4 rounded-lg border border-amber-400/30 bg-[#141824] px-3 py-3 text-center">
+            <p className="text-sm font-semibold text-amber-200">Racha Vitrine</p>
+            <p className="mt-1 text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
+          </div>
+          <h1 className="text-xl font-bold text-white text-center">Acesso desabilitado</h1>
+          <p className="mt-2 text-center text-sm text-gray-300">
+            Para criar seu ambiente real no Fut7Pro, use o cadastro de racha.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <a
+              href="/cadastrar-racha"
+              className="inline-flex items-center justify-center rounded-lg bg-brand py-2.5 font-bold text-black hover:bg-brand-soft"
+            >
+              Criar meu racha
+            </a>
+            <a
+              href={publicHref("/")}
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"
+            >
+              Voltar para vitrine
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full px-4">

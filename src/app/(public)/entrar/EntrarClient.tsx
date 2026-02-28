@@ -43,6 +43,8 @@ const CAPTCHA_INVALID_MESSAGE =
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
 const LOOKUP_STATE_ERROR_MESSAGE = "Falha ao verificar conta, tente novamente.";
+const VITRINE_AUTH_BLOCKED_MESSAGE =
+  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
 const VALID_NEXT_ACTIONS = new Set([
   "REGISTER",
   "LOGIN",
@@ -95,6 +97,7 @@ export default function EntrarClient() {
   const { data: session, status: sessionStatus } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
   const { publicHref, publicSlug } = usePublicLinks();
+  const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [autoFlowLoading, setAutoFlowLoading] = useState(false);
@@ -236,6 +239,11 @@ export default function EntrarClient() {
     setError("");
     setRedirectingMessage("");
 
+    if (isVitrineSlug) {
+      setError(VITRINE_AUTH_BLOCKED_MESSAGE);
+      return;
+    }
+
     if (needsCaptcha) {
       if (!turnstileSiteKey) {
         setError(CAPTCHA_UNAVAILABLE_MESSAGE);
@@ -269,6 +277,10 @@ export default function EntrarClient() {
 
   const handleGoogle = async () => {
     setError("");
+    if (isVitrineSlug) {
+      setError(VITRINE_AUTH_BLOCKED_MESSAGE);
+      return;
+    }
     await signIn("google", {
       callbackUrl: googleCallbackHref,
       login_hint: email.trim() || undefined,
@@ -297,6 +309,10 @@ export default function EntrarClient() {
 
   useEffect(() => {
     if (!googleIntent || sessionStatus !== "authenticated") return;
+    if (isVitrineSlug) {
+      setError(VITRINE_AUTH_BLOCKED_MESSAGE);
+      return;
+    }
 
     const sessionEmail = sessionUser?.email?.trim().toLowerCase() || "";
     if (!sessionEmail) {
@@ -354,6 +370,7 @@ export default function EntrarClient() {
   }, [
     destinationHref,
     googleIntent,
+    isVitrineSlug,
     publicSlug,
     publicHref,
     requestJoin,
@@ -393,6 +410,38 @@ export default function EntrarClient() {
     setResult((previous) => (previous?.nextAction === "BLOCKED_MESSAGE" ? null : previous));
     setRedirectingMessage("");
   }, [email]);
+
+  if (isVitrineSlug) {
+    return (
+      <section className="w-full px-4">
+        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
+          <div className="mb-4 flex flex-col items-center gap-2 text-center">
+            <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
+            <h1 className="text-2xl font-bold text-white md:text-3xl">Racha Vitrine</h1>
+            <p className="text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
+            Este ambiente e somente de demonstracao. Para usar o Fut7Pro de verdade, crie seu
+            proprio racha.
+          </div>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            <a
+              href="/cadastrar-racha"
+              className="inline-flex items-center justify-center rounded-lg bg-brand py-2.5 font-bold text-black hover:bg-brand-soft"
+            >
+              Criar meu racha
+            </a>
+            <a
+              href={publicHref("/")}
+              className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"
+            >
+              Voltar para vitrine
+            </a>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full px-4">
