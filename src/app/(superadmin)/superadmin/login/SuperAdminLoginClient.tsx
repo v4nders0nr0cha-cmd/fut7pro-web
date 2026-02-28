@@ -88,7 +88,6 @@ export default function SuperAdminLoginClient() {
         email,
         password: senha,
         mfaCode: normalizedCode || undefined,
-        basePath: "/api/superadmin-auth",
         callbackUrl: "/superadmin/dashboard",
       });
 
