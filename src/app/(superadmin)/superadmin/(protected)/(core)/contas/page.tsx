@@ -3,7 +3,7 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { FaBan, FaCheck, FaEye, FaSearch, FaUsers, FaUserShield } from "react-icons/fa";
+import { FaBan, FaCheck, FaEye, FaSearch, FaTrash, FaUsers, FaUserShield } from "react-icons/fa";
 import { useBranding } from "@/hooks/useBranding";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import type { Usuario, UsuarioMembership } from "@/types/superadmin";
@@ -147,6 +147,53 @@ export default function SuperAdminContasPage() {
     await refreshAll();
     setActionSuccess("Conta reativada com sucesso.");
     setPendingId(null);
+  }
+
+  async function handleDelete(user: Usuario) {
+    if (!user?.id) return;
+
+    const email = String(user.email || "")
+      .trim()
+      .toLowerCase();
+    const confirmation = window.prompt(
+      `Exclusao permanente.\nDigite o e-mail da conta para confirmar:\n${email}`
+    );
+    if (!confirmation) return;
+    if (confirmation.trim().toLowerCase() !== email) {
+      setActionError("Confirmacao invalida. Exclusao cancelada.");
+      return;
+    }
+
+    setPendingId(user.id);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}`, {
+        method: "DELETE",
+      });
+
+      const text = await response.text();
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = text;
+      }
+
+      if (!response.ok) {
+        const message = body?.message || body?.error || text || "Erro ao excluir conta.";
+        setActionError(message);
+        return;
+      }
+
+      await refreshAll();
+      setActionSuccess("Conta excluida com sucesso.");
+    } catch {
+      setActionError("Falha de rede ao excluir conta.");
+    } finally {
+      setPendingId(null);
+    }
   }
 
   return (
@@ -331,6 +378,16 @@ export default function SuperAdminContasPage() {
                                   <FaBan className="h-4 w-4" />
                                 </button>
                               ))}
+                            {canManage && (
+                              <button
+                                onClick={() => handleDelete(user)}
+                                className="text-rose-400 hover:text-rose-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Excluir conta"
+                                disabled={isBusy}
+                              >
+                                <FaTrash className="h-4 w-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

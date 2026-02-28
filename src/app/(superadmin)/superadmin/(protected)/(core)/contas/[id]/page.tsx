@@ -2,9 +2,10 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import useSWR from "swr";
-import { FaArrowLeft, FaBan, FaCheck, FaUserShield } from "react-icons/fa";
+import { useState } from "react";
+import { FaArrowLeft, FaBan, FaCheck, FaTrash, FaUserShield } from "react-icons/fa";
 import { useBranding } from "@/hooks/useBranding";
 import type { Usuario, UsuarioMembership } from "@/types/superadmin";
 
@@ -64,8 +65,13 @@ export default function SuperAdminContaDetalhePage() {
   const brand = brandingName || "Fut7Pro";
   const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
   const params = useParams();
+  const router = useRouter();
   const id =
     typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
+  const [pendingAction, setPendingAction] = useState<"activate" | "disable" | "delete" | null>(
+    null
+  );
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const {
     data: user,
@@ -79,18 +85,78 @@ export default function SuperAdminContaDetalhePage() {
     const reason = window.prompt(
       "Motivo do bloqueio (opcional). Esta conta global sera desativada:"
     );
-    await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason?.trim() || undefined }),
-    });
-    await mutate();
+    setPendingAction("disable");
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason?.trim() || undefined }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao desativar conta.");
+        return;
+      }
+      await mutate();
+    } catch {
+      setActionError("Falha de rede ao desativar conta.");
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   async function handleActivate() {
     if (!user?.id) return;
-    await fetch(`/api/superadmin/usuarios/${user.id}/activate`, { method: "POST" });
-    await mutate();
+    setPendingAction("activate");
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}/activate`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao ativar conta.");
+        return;
+      }
+      await mutate();
+    } catch {
+      setActionError("Falha de rede ao ativar conta.");
+    } finally {
+      setPendingAction(null);
+    }
+  }
+
+  async function handleDelete() {
+    if (!user?.id) return;
+    const email = String(user.email || "")
+      .trim()
+      .toLowerCase();
+    const confirmation = window.prompt(
+      `Exclusao permanente.\nDigite o e-mail da conta para confirmar:\n${email}`
+    );
+    if (!confirmation) return;
+    if (confirmation.trim().toLowerCase() !== email) {
+      setActionError("Confirmacao invalida. Exclusao cancelada.");
+      return;
+    }
+
+    setPendingAction("delete");
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao excluir conta.");
+        return;
+      }
+      router.push("/superadmin/contas");
+      router.refresh();
+    } catch {
+      setActionError("Falha de rede ao excluir conta.");
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   return (
@@ -120,6 +186,7 @@ export default function SuperAdminContaDetalhePage() {
               {user.disabledAt ? (
                 <button
                   onClick={handleActivate}
+                  disabled={pendingAction !== null}
                   className="inline-flex items-center gap-2 rounded-lg bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-400"
                 >
                   <FaCheck /> Ativar conta
@@ -127,14 +194,28 @@ export default function SuperAdminContaDetalhePage() {
               ) : (
                 <button
                   onClick={handleDisable}
+                  disabled={pendingAction !== null}
                   className="inline-flex items-center gap-2 rounded-lg bg-red-500/90 px-4 py-2 text-sm font-semibold text-white hover:bg-red-400"
                 >
                   <FaBan /> Desativar conta
                 </button>
               )}
+              <button
+                onClick={handleDelete}
+                disabled={pendingAction !== null}
+                className="inline-flex items-center gap-2 rounded-lg bg-rose-700/90 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-600 disabled:opacity-60"
+              >
+                <FaTrash /> Excluir conta
+              </button>
             </div>
           )}
         </div>
+
+        {actionError && (
+          <div className="mb-4 rounded-lg border border-red-600/60 bg-red-900/30 px-4 py-3 text-sm text-red-200">
+            {actionError}
+          </div>
+        )}
 
         {isLoading && <div className="text-gray-300">Carregando conta...</div>}
         {error && <div className="text-red-400">Falha ao carregar dados.</div>}
