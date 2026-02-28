@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
+import SuperAdminProviders from "@/components/superadmin/SuperAdminProviders";
 
 export const metadata: Metadata = {
   title: "Login SuperAdmin | Fut7Pro",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 export default function SuperAdminLoginLayout({ children }: { children: ReactNode }) {
   return (
     <div className="bg-zinc-950 text-white min-h-screen flex items-center justify-center">
-      {children}
+      <SuperAdminProviders>{children}</SuperAdminProviders>
     </div>
   );
 }
