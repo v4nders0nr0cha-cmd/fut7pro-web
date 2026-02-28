@@ -8,7 +8,10 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const { data, status } = useSession();
   const router = useRouter();
   const role = (data?.user as any)?.role;
-  const isSuperAdmin = role === "SUPERADMIN" || role === "superadmin";
+  const accessToken = String((data?.user as any)?.accessToken || "").trim();
+  const tokenError = String((data?.user as any)?.tokenError || "").trim();
+  const isSuperAdmin =
+    (role === "SUPERADMIN" || role === "superadmin") && Boolean(accessToken) && !tokenError;
   const signOutSuper = (params?: any) =>
     (signOut as any)({ basePath: "/api/superadmin-auth", ...params });
 

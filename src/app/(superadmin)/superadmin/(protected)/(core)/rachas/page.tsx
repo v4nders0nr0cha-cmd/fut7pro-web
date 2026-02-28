@@ -85,6 +85,12 @@ type TenantsResponse = { results?: Tenant[] };
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, { cache: "no-store" });
+  if (res.status === 401 || res.status === 403) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/superadmin/login?reason=session-expirada";
+    }
+    throw new Error("Sessao expirada");
+  }
   const text = await res.text();
   if (!res.ok) throw new Error(text || `Request failed ${res.status}`);
   try {

@@ -13,15 +13,19 @@ const SuperAdminProviders = dynamic(() => import("@/components/superadmin/SuperA
 type SuperAdminSession = {
   user?: {
     role?: string | null;
+    accessToken?: string | null;
+    tokenError?: string | null;
   } | null;
 } | null;
 
 export default async function SuperAdminProtectedLayout({ children }: { children: ReactNode }) {
   const session = (await getServerSession(superAdminAuthOptions as any)) as SuperAdminSession;
   const role = String(session?.user?.role || "").toUpperCase();
+  const accessToken = String(session?.user?.accessToken || "").trim();
+  const tokenError = String(session?.user?.tokenError || "").trim();
 
   // SSR guard: nunca renderiza estrutura interna antes de validar sessão.
-  if (!session?.user || role !== "SUPERADMIN") {
+  if (!session?.user || role !== "SUPERADMIN" || !accessToken || tokenError) {
     redirect("/superadmin/login");
   }
 
