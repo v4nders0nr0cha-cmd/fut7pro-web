@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useBranding } from "@/hooks/useBranding";
+import QRCode from "qrcode";
 
 type MfaSetupStartResponse = {
   ok: boolean;
@@ -21,6 +22,7 @@ export default function SuperAdminLoginClient() {
   const [setupCode, setSetupCode] = useState("");
   const [manualEntryKey, setManualEntryKey] = useState("");
   const [otpauthUrl, setOtpauthUrl] = useState("");
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
   const [setupMode, setSetupMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState("");
@@ -28,6 +30,34 @@ export default function SuperAdminLoginClient() {
   const router = useRouter();
   const { nome } = useBranding({ scope: "superadmin" });
   const brandName = nome || "Fut7Pro";
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function buildQrCode() {
+      if (!setupMode || !otpauthUrl) {
+        if (mounted) setQrCodeDataUrl("");
+        return;
+      }
+
+      try {
+        const url = await QRCode.toDataURL(otpauthUrl, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 220,
+        });
+        if (mounted) setQrCodeDataUrl(url);
+      } catch {
+        if (mounted) setQrCodeDataUrl("");
+      }
+    }
+
+    void buildQrCode();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setupMode, otpauthUrl]);
 
   function mapAuthError(raw?: string | null) {
     const value = String(raw || "").toUpperCase();
@@ -109,6 +139,7 @@ export default function SuperAdminLoginClient() {
       setSetupToken(String(body.setupToken || ""));
       setManualEntryKey(String(body.manualEntryKey || ""));
       setOtpauthUrl(String(body.otpauthUrl || ""));
+      setQrCodeDataUrl("");
       setSetupMode(true);
       setInfo(
         "MFA iniciado. Cadastre a chave no autenticador e confirme com o codigo de 6 digitos."
@@ -216,9 +247,21 @@ export default function SuperAdminLoginClient() {
         {setupMode && (
           <div className="rounded-lg border border-zinc-600 bg-zinc-900 p-4 space-y-3">
             <p className="text-sm text-zinc-200 font-semibold">Setup MFA (SuperAdmin)</p>
-            <p className="text-xs text-zinc-400">
-              1) Abra Google Authenticator/Authy. 2) Adicione conta manualmente com a chave abaixo.
-            </p>
+            <p className="text-xs text-zinc-400">1) Abra Google Authenticator/Authy.</p>
+            <p className="text-xs text-zinc-400">2) Escaneie o QR code (ou use a chave manual).</p>
+
+            <div className="rounded-lg border border-zinc-700 bg-white p-3">
+              {qrCodeDataUrl ? (
+                <img
+                  src={qrCodeDataUrl}
+                  alt="QR code para configuracao do MFA SuperAdmin"
+                  className="mx-auto h-52 w-52 rounded"
+                />
+              ) : (
+                <p className="text-center text-xs text-zinc-700">Gerando QR code...</p>
+              )}
+            </div>
+
             <code className="block break-all rounded bg-zinc-950 p-2 text-xs text-emerald-300">
               {manualEntryKey}
             </code>
