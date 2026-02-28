@@ -47,21 +47,31 @@ export const superAdminAuthOptions = {
       credentials: {
         email: { label: "E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
+        mfaCode: { label: "Codigo MFA", type: "text" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
         try {
+          const payload: Record<string, string> = {
+            email: credentials.email,
+            password: credentials.password,
+          };
+          const mfaCode = String((credentials as any)?.mfaCode || "").trim();
+          if (mfaCode) {
+            payload.mfaCode = mfaCode;
+          }
+
           const response = await fetch(`${API_BASE_URL}${LOGIN_PATH}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: credentials.email, password: credentials.password }),
+            body: JSON.stringify(payload),
           });
 
           if (!response.ok) {
-            let message = "Erro na autenticacao";
+            let message = "AUTH_FAILED";
             try {
               const body = await response.json();
-              message = (body as any)?.message || message;
+              message = (body as any)?.code || (body as any)?.message || message;
             } catch {
               /* ignore */
             }
@@ -108,7 +118,10 @@ export const superAdminAuthOptions = {
           if (process.env.NODE_ENV === "development") {
             console.log("Erro na autenticacao superadmin:", error);
           }
-          return null;
+          if (error instanceof Error) {
+            throw error;
+          }
+          throw new Error("AUTH_FAILED");
         }
       },
     }),
