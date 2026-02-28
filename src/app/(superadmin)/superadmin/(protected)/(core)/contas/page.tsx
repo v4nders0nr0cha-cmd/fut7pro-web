@@ -168,28 +168,32 @@ export default function SuperAdminContasPage() {
     setActionError(null);
     setActionSuccess(null);
 
-    const response = await fetch(`/api/superadmin/usuarios/${user.id}`, {
-      method: "DELETE",
-    });
-
-    const text = await response.text();
-    let body: any = null;
     try {
-      body = text ? JSON.parse(text) : null;
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}`, {
+        method: "DELETE",
+      });
+
+      const text = await response.text();
+      let body: any = null;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = text;
+      }
+
+      if (!response.ok) {
+        const message = body?.message || body?.error || text || "Erro ao excluir conta.";
+        setActionError(message);
+        return;
+      }
+
+      await refreshAll();
+      setActionSuccess("Conta excluida com sucesso.");
     } catch {
-      body = text;
-    }
-
-    if (!response.ok) {
-      const message = body?.message || body?.error || text || "Erro ao excluir conta.";
+      setActionError("Falha de rede ao excluir conta.");
+    } finally {
       setPendingId(null);
-      setActionError(message);
-      return;
     }
-
-    await refreshAll();
-    setActionSuccess("Conta excluida com sucesso.");
-    setPendingId(null);
   }
 
   return (

@@ -87,36 +87,44 @@ export default function SuperAdminContaDetalhePage() {
     );
     setPendingAction("disable");
     setActionError(null);
-    const response = await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason: reason?.trim() || undefined }),
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      setActionError(text || "Falha ao desativar conta.");
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason?.trim() || undefined }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao desativar conta.");
+        return;
+      }
+      await mutate();
+    } catch {
+      setActionError("Falha de rede ao desativar conta.");
+    } finally {
       setPendingAction(null);
-      return;
     }
-    await mutate();
-    setPendingAction(null);
   }
 
   async function handleActivate() {
     if (!user?.id) return;
     setPendingAction("activate");
     setActionError(null);
-    const response = await fetch(`/api/superadmin/usuarios/${user.id}/activate`, {
-      method: "POST",
-    });
-    if (!response.ok) {
-      const text = await response.text();
-      setActionError(text || "Falha ao ativar conta.");
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}/activate`, {
+        method: "POST",
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao ativar conta.");
+        return;
+      }
+      await mutate();
+    } catch {
+      setActionError("Falha de rede ao ativar conta.");
+    } finally {
       setPendingAction(null);
-      return;
     }
-    await mutate();
-    setPendingAction(null);
   }
 
   async function handleDelete() {
@@ -135,15 +143,20 @@ export default function SuperAdminContaDetalhePage() {
 
     setPendingAction("delete");
     setActionError(null);
-    const response = await fetch(`/api/superadmin/usuarios/${user.id}`, { method: "DELETE" });
-    if (!response.ok) {
-      const text = await response.text();
-      setActionError(text || "Falha ao excluir conta.");
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const text = await response.text();
+        setActionError(text || "Falha ao excluir conta.");
+        return;
+      }
+      router.push("/superadmin/contas");
+      router.refresh();
+    } catch {
+      setActionError("Falha de rede ao excluir conta.");
+    } finally {
       setPendingAction(null);
-      return;
     }
-    router.push("/superadmin/contas");
-    router.refresh();
   }
 
   return (
