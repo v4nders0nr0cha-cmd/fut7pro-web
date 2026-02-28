@@ -10,8 +10,22 @@ export const metadata: Metadata = {
 
 export default function SuperAdminLoginLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-zinc-950 text-white min-h-screen flex items-center justify-center">
-      <SuperAdminProviders>{children}</SuperAdminProviders>
+    <div className="relative min-h-screen text-white">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat md:hidden"
+        style={{ backgroundImage: "url('/images/leao-de-juda-mobile.jpg')" }}
+        aria-hidden
+      />
+      <div
+        className="absolute inset-0 hidden bg-cover bg-center bg-no-repeat md:block"
+        style={{ backgroundImage: "url('/images/leao-de-juda.jpg')" }}
+        aria-hidden
+      />
+      <div className="absolute inset-0 bg-black/70" aria-hidden />
+
+      <div className="relative min-h-screen flex items-center justify-center px-4">
+        <SuperAdminProviders>{children}</SuperAdminProviders>
+      </div>
     </div>
   );
 }
