@@ -17,13 +17,9 @@ function json(body: unknown, init?: ResponseInit) {
 
 function normalizeLookupSuccess(payload: unknown) {
   const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
-  const message =
-    typeof body.message === "string" && body.message.trim()
-      ? body.message.trim()
-      : LOOKUP_UNIFORM_MESSAGE;
   return {
     ok: true,
-    message,
+    message: LOOKUP_UNIFORM_MESSAGE,
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
   };
 }

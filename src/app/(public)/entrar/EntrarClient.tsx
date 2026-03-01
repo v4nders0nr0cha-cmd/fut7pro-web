@@ -211,9 +211,17 @@ export default function EntrarClient() {
       throw new Error("Slug do racha nao encontrado.");
     }
 
-    const response = await fetch(`/api/public/${publicSlug}/auth/request-join`, {
-      method: "POST",
-    });
+    const performJoin = () =>
+      fetch(`/api/public/${publicSlug}/auth/request-join`, {
+        method: "POST",
+      });
+
+    let response = await performJoin();
+    if (response.status === 401) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      response = await performJoin();
+    }
+
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
