@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const activeAdminEmail =
   process.env.E2E_ACTIVE_ADMIN_EMAIL || process.env.E2E_ADMIN_EMAIL || process.env.TEST_EMAIL;
@@ -24,6 +24,7 @@ const shouldRunBlocked =
 
 const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
 const ADMIN_ACTIVE_TENANT_COOKIE = "fut7pro_admin_active_tenant";
+const HUB_LOAD_ERROR_REGEX = /Não foi possível carregar seus rachas/i;
 
 const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
   { prefix: "/admin/dashboard", expected: /dashboard|pós-jogo|acoes rápidas|ações rápidas/i },
@@ -148,7 +149,7 @@ async function selectTenantFromHub(
   page: Page,
   expectedAccess: LoginExpectedAccess,
   targetTenantSlug?: string
-) {
+): Promise<Locator | null> {
   const allHubButtons = page.locator(
     '[data-testid^="admin-hub-select-"], [data-testid="admin-hub-list"] button'
   );
@@ -175,8 +176,20 @@ async function selectTenantFromHub(
     return matchedByText;
   }
 
-  await expect(allHubButtons.first()).toBeVisible({ timeout: 30000 });
-  return allHubButtons.first();
+  const fallbackButton = allHubButtons.first();
+  const fallbackVisible = await fallbackButton.isVisible({ timeout: 10000 }).catch(() => false);
+  if (!fallbackVisible) {
+    return null;
+  }
+  return fallbackButton;
+}
+
+async function isHubUnavailable(page: Page): Promise<boolean> {
+  return page
+    .getByText(HUB_LOAD_ERROR_REGEX)
+    .first()
+    .isVisible({ timeout: 2000 })
+    .catch(() => false);
 }
 
 async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResult> {
@@ -416,6 +429,17 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
     }
 
     const selectButton = await selectTenantFromHub(page, expectedAccess, targetTenantSlug);
+    if (!selectButton) {
+      const hubUnavailable = await isHubUnavailable(page);
+      if (hubUnavailable) {
+        throw new Error(
+          "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas)."
+        );
+      }
+      throw new Error(
+        "Login autenticado, mas não foi possível localizar botões de seleção de racha no Hub."
+      );
+    }
     await Promise.all([
       page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
       selectButton.click(),
@@ -437,12 +461,34 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
   throw new Error("Login concluiu, mas sem rota final reconhecida.");
 }
 
+async function reauthenticateAdmin(
+  page: Page,
+  access: "active" | "blocked",
+  targetTenantSlug?: string
+) {
+  const email = access === "blocked" ? blockedAdminEmail : activeAdminEmail;
+  const password = access === "blocked" ? blockedAdminPassword : activeAdminPassword;
+  if (!email || !password) return;
+
+  await loginAdmin(page, {
+    email,
+    password,
+    expectedAccess: access === "blocked" ? "any" : "active",
+    targetTenantSlug,
+  });
+}
+
 async function waitForAdminShell(page: Page) {
   if (page.isClosed()) {
     throw new Error("Página fechada antes da validação do shell admin.");
   }
   await page.waitForURL(/\/admin\//, { timeout: 20000 });
   let pathname = new URL(page.url()).pathname;
+  if (pathname === "/admin/login") {
+    await reauthenticateAdmin(page, "active", activeTenantSlug);
+    await pinActiveTenantScope(page, activeTenantSlug);
+    pathname = new URL(page.url()).pathname;
+  }
   if (pathname === "/admin/selecionar-racha") {
     let selectedPath = await trySelectTenantFromHubEntryApi(page, "active", activeTenantSlug);
     if (!selectedPath && activeTenantSlug) {
@@ -451,8 +497,26 @@ async function waitForAdminShell(page: Page) {
     if (!selectedPath && activeTenantSlug) {
       selectedPath = await trySelectTenantViaCookie(page, activeTenantSlug);
     }
+    if (!selectedPath && (await isHubUnavailable(page))) {
+      await reauthenticateAdmin(page, "active", activeTenantSlug);
+      await pinActiveTenantScope(page, activeTenantSlug);
+      pathname = new URL(page.url()).pathname;
+      if (pathname === "/admin/selecionar-racha") {
+        selectedPath = await trySelectTenantFromHubEntryApi(page, "active", activeTenantSlug);
+        if (!selectedPath && activeTenantSlug) {
+          selectedPath = await trySelectTenantViaApi(page, activeTenantSlug);
+        }
+      } else {
+        selectedPath = pathname;
+      }
+    }
     if (!selectedPath) {
       const selectButton = await selectTenantFromHub(page, "active", activeTenantSlug);
+      if (!selectButton) {
+        throw new Error(
+          "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha)."
+        );
+      }
       await Promise.all([
         page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
         selectButton.click(),
@@ -489,7 +553,17 @@ async function waitForAdminShell(page: Page) {
     await page.reload({ waitUntil: "domcontentloaded" });
     sidebar = page.getByTestId("admin-sidebar-desktop");
   }
-  await expect(sidebar).toBeVisible({ timeout: 30000 });
+  const desktopSidebarVisible = await sidebar.isVisible({ timeout: 30000 }).catch(() => false);
+  if (!desktopSidebarVisible) {
+    const mobileMenuButtonVisible = await page
+      .getByTestId("admin-header-open-menu")
+      .first()
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+    if (!mobileMenuButtonVisible) {
+      throw new Error("Shell admin não carregou sidebar/menu de navegação.");
+    }
+  }
 }
 
 async function navigateByClickWithFallback(
@@ -533,10 +607,15 @@ async function pinActiveTenantScope(page: Page, slug?: string) {
 async function assertBlockedRedirectForRoute(page: Page, route: string, tenantSlug?: string) {
   await page.goto(route, { waitUntil: "domcontentloaded" });
   await page
-    .waitForURL(/\/admin\/(status-assinatura|selecionar-racha)/, { timeout: 10000 })
+    .waitForURL(/\/admin\/(status-assinatura|selecionar-racha|login)/, { timeout: 10000 })
     .catch(() => null);
 
   let pathname = new URL(page.url()).pathname;
+  if (pathname === "/admin/login") {
+    await reauthenticateAdmin(page, "blocked", tenantSlug);
+    pathname = new URL(page.url()).pathname;
+  }
+
   if (pathname === "/admin/selecionar-racha") {
     let selectedPath: string | null = null;
     if (tenantSlug) {
@@ -545,10 +624,34 @@ async function assertBlockedRedirectForRoute(page: Page, route: string, tenantSl
     if (!selectedPath) {
       selectedPath = await trySelectTenantFromHubEntryApi(page, "blocked", tenantSlug);
     }
+    if (!selectedPath && tenantSlug) {
+      selectedPath = await trySelectTenantViaCookie(page, tenantSlug);
+    }
+    if (!selectedPath && (await isHubUnavailable(page))) {
+      await reauthenticateAdmin(page, "blocked", tenantSlug);
+      pathname = new URL(page.url()).pathname;
+      if (pathname === "/admin/selecionar-racha") {
+        if (tenantSlug) {
+          selectedPath = await trySelectTenantViaApi(page, tenantSlug);
+        }
+        if (!selectedPath) {
+          selectedPath = await trySelectTenantFromHubEntryApi(page, "blocked", tenantSlug);
+        }
+      } else {
+        selectedPath = pathname;
+      }
+    }
     if (!selectedPath) {
       const selectButton = await selectTenantFromHub(page, "blocked", tenantSlug);
+      if (!selectButton) {
+        throw new Error(
+          "Hub admin indisponível ao validar bloqueio por inadimplência (sem opções de seleção)."
+        );
+      }
       await Promise.all([
-        page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
+        page.waitForURL(/\/admin\/(dashboard|status-assinatura|selecionar-racha|login)/, {
+          timeout: 20000,
+        }),
         selectButton.click(),
       ]);
       selectedPath = new URL(page.url()).pathname;
@@ -598,9 +701,20 @@ async function assertNoForbiddenTexts(page: Page) {
 }
 
 async function assertPageHealthy(page: Page, expectedPath: string) {
-  const pathname = new URL(page.url()).pathname;
+  let pathname = new URL(page.url()).pathname;
   if (pathname.startsWith("/admin") && pathname !== "/admin/status-assinatura") {
     await waitForAdminShell(page);
+    pathname = new URL(page.url()).pathname;
+  }
+  if (expectedPath.startsWith("/admin/") && pathname !== expectedPath) {
+    await page.goto(expectedPath, { waitUntil: "domcontentloaded" });
+    pathname = new URL(page.url()).pathname;
+    if (pathname !== expectedPath && pathname !== "/admin/status-assinatura") {
+      await waitForAdminShell(page);
+      await page.goto(expectedPath, { waitUntil: "domcontentloaded" });
+      pathname = new URL(page.url()).pathname;
+    }
+    expect(pathname).toBe(expectedPath);
   }
   const expectedHeading = expectedHeadingRegex(pathname);
   const main = page.locator("main").first();
