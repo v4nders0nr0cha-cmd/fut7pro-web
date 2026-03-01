@@ -27,6 +27,7 @@
     "setup:env": "node -e \"const fs=require('fs'); const content='# API Configuration\\nNEXT_PUBLIC_API_URL=https://api.fut7pro.com.br\\n\\n# Mercado Pago (opcional - para desenvolvimento local)\\nNEXT_PUBLIC_MP_PUBLIC_KEY=your_mp_public_key_here\\n\\n# Tenant ID (em produção, viria do contexto de autenticação)\\nNEXT_PUBLIC_DEMO_TENANT_ID=demo-tenant\\n\\n# Environment\\nNODE_ENV=development\\n'; fs.writeFileSync('.env.local', content); console.log('✅ Arquivo .env.local criado!');\"",
     "test:billing": "node scripts/test-billing.js",
     "analyze": "ANALYZE=true npm run build",
+    "security:sca:allowlist": "node scripts/security/validate-sca-allowlist.js",
     "clean": "rm -rf .next out",
     "db:generate": "prisma generate",
     "prisma:generate": "prisma generate",

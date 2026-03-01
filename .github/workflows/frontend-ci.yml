@@ -188,6 +188,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate SCA allowlist policy
+        run: pnpm run security:sca:allowlist
+
       - name: Run blocking security audit (critical/prod)
         run: pnpm audit --prod --audit-level=critical
 
