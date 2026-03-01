@@ -6,12 +6,22 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
+const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
   return NextResponse.json(body, { ...init, headers });
+}
+
+function normalizeLookupSuccess(payload: unknown) {
+  const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  return {
+    ok: true,
+    message: LOOKUP_UNIFORM_MESSAGE,
+    ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+  };
 }
 
 export async function POST(req: NextRequest) {
@@ -35,14 +45,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (rachaSlug.toLowerCase() === "vitrine") {
-    return json({
-      exists: false,
-      userExists: false,
-      providers: [],
-      hasPassword: false,
-      membershipStatus: "BLOCKED",
-      nextAction: "BLOCKED_MESSAGE",
-    });
+    return json(normalizeLookupSuccess(null), { status: 200 });
   }
 
   try {
@@ -64,30 +67,46 @@ export async function POST(req: NextRequest) {
         captchaToken: captchaToken || undefined,
       }),
     });
-    const text = await response.text();
-    let parsed: unknown = text;
-    try {
-      parsed = text ? JSON.parse(text) : null;
-    } catch {
-      parsed = text;
-    }
+
+    const parsed = await response.json().catch(() => null);
+    const parsedRecord =
+      typeof parsed === "object" && parsed ? (parsed as Record<string, unknown>) : null;
 
     if (!response.ok) {
-      return json(
-        typeof parsed === "object" && parsed ? parsed : { error: text || "Falha ao consultar" },
-        { status: response.status }
-      );
+      const code = typeof parsedRecord?.code === "string" ? parsedRecord.code : "";
+      if (code === "CAPTCHA_REQUIRED" || code === "CAPTCHA_INVALID") {
+        return json(
+          {
+            code,
+            message:
+              typeof parsedRecord?.message === "string"
+                ? parsedRecord.message
+                : "Nao foi possivel validar o captcha.",
+            requiresCaptcha: true,
+          },
+          { status: response.status || 429 }
+        );
+      }
+
+      if (code === "RACHA_NOT_FOUND") {
+        return json(
+          {
+            code,
+            message:
+              typeof parsedRecord?.message === "string"
+                ? parsedRecord.message
+                : "Racha nao encontrado.",
+          },
+          { status: 404 }
+        );
+      }
+
+      const status = response.status >= 500 ? 502 : response.status || 400;
+      return json({ error: "Nao foi possivel verificar o e-mail." }, { status });
     }
 
-    return new NextResponse(text, {
-      status: response.status,
-      headers: {
-        "Content-Type": response.headers.get("content-type") || "application/json",
-        "Cache-Control": "no-store, max-age=0, must-revalidate",
-      },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return json({ error: "Falha ao consultar e-mail", details: message }, { status: 500 });
+    return json(normalizeLookupSuccess(parsed), { status: 200 });
+  } catch {
+    return json({ error: "Falha ao consultar e-mail" }, { status: 502 });
   }
 }

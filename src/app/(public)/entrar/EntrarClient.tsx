@@ -10,19 +10,8 @@ import { useTema } from "@/hooks/useTema";
 import { persistPublicAuthContext } from "@/utils/public-auth-flow";
 
 type LookupResponse = {
-  exists: boolean;
-  userExists?: boolean;
-  providers: string[];
-  hasPassword: boolean;
-  availableAuthMethods?: Array<"google" | "password">;
-  membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
-  nextAction?:
-    | "REGISTER"
-    | "LOGIN"
-    | "REQUEST_JOIN"
-    | "WAIT_APPROVAL"
-    | "BLOCKED_MESSAGE"
-    | "RACHA_NOT_FOUND";
+  ok: true;
+  message: string;
   requiresCaptcha?: boolean;
 };
 
@@ -42,29 +31,9 @@ const CAPTCHA_INVALID_MESSAGE =
   'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
-const LOOKUP_STATE_ERROR_MESSAGE = "Falha ao verificar conta, tente novamente.";
+const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 const VITRINE_AUTH_BLOCKED_MESSAGE =
   "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
-const VALID_NEXT_ACTIONS = new Set([
-  "REGISTER",
-  "LOGIN",
-  "REQUEST_JOIN",
-  "WAIT_APPROVAL",
-  "BLOCKED_MESSAGE",
-]);
-const VALID_MEMBERSHIP_STATUSES = new Set(["NONE", "PENDING", "ACTIVE", "REJECTED", "BLOCKED"]);
-
-function hasResolvedLookupState(payload: LookupResponse | null): payload is LookupResponse & {
-  nextAction: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
-  membershipStatus: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
-} {
-  if (!payload) return false;
-  if (!payload.nextAction || !VALID_NEXT_ACTIONS.has(payload.nextAction)) return false;
-  if (!payload.membershipStatus || !VALID_MEMBERSHIP_STATUSES.has(payload.membershipStatus)) {
-    return false;
-  }
-  return true;
-}
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -144,7 +113,7 @@ export default function EntrarClient() {
         const body = await response.json().catch(() => null);
         if (!response.ok) {
           if (body?.code === "CAPTCHA_REQUIRED" || body?.code === "CAPTCHA_INVALID") {
-            setResult({ exists: false, providers: [], hasPassword: false, requiresCaptcha: true });
+            setResult({ ok: true, message: LOOKUP_UNIFORM_MESSAGE, requiresCaptcha: true });
             setCaptchaToken(null);
             setError(
               body?.code === "CAPTCHA_INVALID"
@@ -160,7 +129,7 @@ export default function EntrarClient() {
             setError("Racha não encontrado.");
             return null;
           }
-          setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
+          setError(body?.message || body?.error || "Nao foi possivel verificar o e-mail.");
           return null;
         }
 
@@ -175,62 +144,19 @@ export default function EntrarClient() {
     [publicSlug, turnstileSiteKey]
   );
 
-  const redirectFromResolvedState = useCallback(
-    (
-      lookup: LookupResponse & {
-        nextAction: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
-        membershipStatus: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
-      },
-      normalizedEmail: string,
-      options?: { fromGoogle?: boolean }
-    ) => {
-      if (lookup.nextAction === "BLOCKED_MESSAGE") {
-        setResult(lookup);
-        setRedirectingMessage("");
-        return;
-      }
-
+  const redirectToLogin = useCallback(
+    (normalizedEmail: string, message?: string) => {
       persistPublicAuthContext({
         email: normalizedEmail,
         slug: publicSlug,
       });
       setResult(null);
       setError("");
-      setRedirectingMessage("Verificando seu e-mail...");
+      setRedirectingMessage(message || LOOKUP_UNIFORM_MESSAGE);
       setAutoFlowLoading(true);
-
-      if (lookup.nextAction === "WAIT_APPROVAL") {
-        router.replace(publicHref("/aguardando-aprovacao"));
-        return;
-      }
-
-      if (lookup.nextAction === "LOGIN") {
-        if (
-          options?.fromGoogle &&
-          lookup.membershipStatus === "ACTIVE" &&
-          lookup.availableAuthMethods?.includes("google")
-        ) {
-          router.replace(destinationHref);
-          return;
-        }
-
-        const params = new URLSearchParams();
-        params.set("callbackUrl", destinationHref);
-        router.replace(`${publicHref("/login")}?${params.toString()}`);
-        return;
-      }
-
-      if (lookup.nextAction === "REQUEST_JOIN") {
-        const params = new URLSearchParams();
-        params.set("callbackUrl", destinationHref);
-        params.set("intent", "request-join");
-        router.replace(`${publicHref("/login")}?${params.toString()}`);
-        return;
-      }
-
       const params = new URLSearchParams();
       params.set("callbackUrl", destinationHref);
-      router.replace(`${publicHref("/register")}?${params.toString()}`);
+      router.replace(`${publicHref("/login")}?${params.toString()}`);
     },
     [destinationHref, publicHref, publicSlug, router]
   );
@@ -263,15 +189,8 @@ export default function EntrarClient() {
 
     const lookup = await runLookup(normalized, captchaToken);
     if (lookup) {
-      if (!hasResolvedLookupState(lookup)) {
-        if (process.env.NODE_ENV !== "production") {
-          console.error("[EntrarClient] lookup-email sem estado resolvido", lookup);
-        }
-        setResult(null);
-        setError(LOOKUP_STATE_ERROR_MESSAGE);
-        return;
-      }
-      redirectFromResolvedState(lookup, normalized);
+      setResult(lookup);
+      redirectToLogin(normalized, lookup.message);
     }
   };
 
@@ -288,9 +207,21 @@ export default function EntrarClient() {
   };
 
   const requestJoin = useCallback(async () => {
-    const response = await fetch(`/api/public/${publicSlug}/auth/request-join`, {
-      method: "POST",
-    });
+    if (!publicSlug) {
+      throw new Error("Slug do racha nao encontrado.");
+    }
+
+    const performJoin = () =>
+      fetch(`/api/public/${publicSlug}/auth/request-join`, {
+        method: "POST",
+      });
+
+    let response = await performJoin();
+    if (response.status === 401) {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      response = await performJoin();
+    }
+
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
@@ -303,7 +234,6 @@ export default function EntrarClient() {
     return body as {
       status?: string;
       membershipStatus?: string;
-      nextAction?: string;
     };
   }, [publicSlug]);
 
@@ -329,43 +259,31 @@ export default function EntrarClient() {
     setAutoFlowLoading(true);
 
     void (async () => {
-      const lookup = await runLookup(sessionEmail);
-      if (!lookup) return;
-      if (!hasResolvedLookupState(lookup)) {
-        if (process.env.NODE_ENV !== "production") {
-          console.error("[EntrarClient] auto-flow Google sem estado resolvido", lookup);
-        }
-        setResult(null);
-        setError(LOOKUP_STATE_ERROR_MESSAGE);
-        return;
-      }
+      persistPublicAuthContext({
+        email: sessionEmail,
+        slug: publicSlug,
+      });
+      setRedirectingMessage(LOOKUP_UNIFORM_MESSAGE);
 
-      if (lookup.nextAction === "REQUEST_JOIN") {
-        try {
-          const join = await requestJoin();
-          const joinStatus = String(join?.status || "").toUpperCase();
-          const joinMembershipStatus = String(join?.membershipStatus || "").toUpperCase();
-          const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+      try {
+        const join = await requestJoin();
+        const joinStatus = String(join?.status || "").toUpperCase();
+        const joinMembershipStatus = String(join?.membershipStatus || "").toUpperCase();
+        const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
 
-          if (isActive) {
-            router.replace(destinationHref);
-            return;
-          }
-
-          router.replace(publicHref("/aguardando-aprovacao"));
-          return;
-        } catch (joinError) {
-          const message =
-            joinError instanceof Error
-              ? joinError.message
-              : "Não foi possível solicitar entrada neste racha.";
-          setError(message);
-          setAutoFlowLoading(false);
+        if (isActive) {
+          router.replace(destinationHref);
           return;
         }
-      }
 
-      redirectFromResolvedState(lookup, sessionEmail, { fromGoogle: true });
+        router.replace(publicHref("/aguardando-aprovacao"));
+      } catch (joinError) {
+        const message =
+          joinError instanceof Error
+            ? joinError.message
+            : "Nao foi possivel solicitar entrada neste racha.";
+        setError(message);
+      }
     })().finally(() => setAutoFlowLoading(false));
   }, [
     destinationHref,
@@ -374,15 +292,10 @@ export default function EntrarClient() {
     publicSlug,
     publicHref,
     requestJoin,
-    redirectFromResolvedState,
     router,
-    runLookup,
     sessionStatus,
     sessionUser?.email,
   ]);
-
-  const blockedResult = hasResolvedLookupState(result) && result.nextAction === "BLOCKED_MESSAGE";
-  const blockedMembershipStatus = blockedResult ? result.membershipStatus : null;
 
   useEffect(() => {
     if (!needsCaptcha || !turnstileSiteKey || !turnstileReady) return;
@@ -407,7 +320,7 @@ export default function EntrarClient() {
 
   useEffect(() => {
     setCaptchaToken(null);
-    setResult((previous) => (previous?.nextAction === "BLOCKED_MESSAGE" ? null : previous));
+    setResult(null);
     setRedirectingMessage("");
   }, [email]);
 
@@ -458,8 +371,7 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Você pode continuar com Google ou informar seu e-mail. Vamos indicar o próximo passo
-            para este racha.
+            Voce pode continuar com Google ou informar seu e-mail para seguir com seguranca.
           </p>
         </div>
 
@@ -529,32 +441,14 @@ export default function EntrarClient() {
           <div className="mt-3 min-h-[120px]">
             {(loading || autoFlowLoading || redirectingMessage) && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                {redirectingMessage || "Verificando seu e-mail..."}
+                {redirectingMessage || LOOKUP_UNIFORM_MESSAGE}
               </div>
             )}
 
-            {!loading && !autoFlowLoading && !redirectingMessage && !blockedResult && (
+            {!loading && !autoFlowLoading && !redirectingMessage && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Esta tela identifica o próximo passo. Após clicar em continuar, você será
-                redirecionado automaticamente para login, cadastro ou aprovação.
-              </div>
-            )}
-
-            {!loading && !autoFlowLoading && !redirectingMessage && blockedResult && (
-              <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                <div className="mb-1 font-semibold text-white">Acesso indisponível</div>
-                <p className="mb-4">
-                  {blockedMembershipStatus === "REJECTED"
-                    ? "Sua solicitação foi recusada para este racha. Fale com o administrador para uma nova análise."
-                    : "Seu acesso a este racha está bloqueado no momento. Entre em contato com o administrador."}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setResult(null)}
-                  className="w-full rounded-lg border border-white/10 bg-transparent py-2 text-sm font-semibold text-white/80 hover:border-white/30"
-                >
-                  Voltar
-                </button>
+                Ao continuar, voce segue para o login do racha. Se estiver tudo certo, enviamos seu
+                codigo.
               </div>
             )}
           </div>

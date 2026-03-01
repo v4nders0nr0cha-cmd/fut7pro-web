@@ -15,11 +15,10 @@ jest.mock("next/script", () => ({
   default: () => null,
 }));
 
-const pushMock = jest.fn();
 const replaceMock = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock, replace: replaceMock }),
+  useRouter: () => ({ replace: replaceMock }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -48,26 +47,20 @@ describe("EntrarClient", () => {
       publicSlug: "casa-do-gamer",
       publicHref: (path: string) => `/casa-do-gamer${path}`,
     });
-    pushMock.mockReset();
     replaceMock.mockReset();
+    sessionStorage.clear();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("redireciona para login com intent request-join quando conta existe sem vínculo", async () => {
+  it("redireciona para login com resposta uniforme do lookup", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
-        exists: true,
-        userExists: true,
-        providers: ["credentials"],
-        hasPassword: true,
-        availableAuthMethods: ["password"],
-        membershipStatus: "NONE",
-        nextAction: "REQUEST_JOIN",
-        requiresCaptcha: false,
+        ok: true,
+        message: "Se estiver tudo certo, enviamos seu codigo.",
       }),
     }) as any;
 
@@ -80,7 +73,7 @@ describe("EntrarClient", () => {
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
+        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F"
       );
     });
 
