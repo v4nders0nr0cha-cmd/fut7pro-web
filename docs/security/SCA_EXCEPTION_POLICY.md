@@ -1,14 +1,17 @@
 # SCA Exception Policy (Fut7Pro Web)
 
 ## Objetivo
+
 Definir o fluxo de excecao temporaria para vulnerabilities identificadas no gate SCA (`pnpm audit`/Snyk), sem liberar risco indefinidamente.
 
 ## Regra obrigatoria
+
 - Excecao so e permitida quando houver bloqueio tecnico comprovado para upgrade imediato.
 - Toda excecao precisa de owner, justificativa e data de expiracao.
 - Prazo maximo por excecao: 30 dias corridos.
 
 ## Onde registrar
+
 - Arquivo: `security/sca-allowlist.json`
 - Formato:
 
@@ -27,6 +30,7 @@ Definir o fluxo de excecao temporaria para vulnerabilities identificadas no gate
 ```
 
 ## Enforcement em CI
+
 - Script: `node scripts/security/validate-sca-allowlist.js`
 - Falha quando:
   - campos obrigatorios faltam;
@@ -34,5 +38,6 @@ Definir o fluxo de excecao temporaria para vulnerabilities identificadas no gate
   - `expiresOn` excede 30 dias.
 
 ## Encerramento de excecao
+
 - Remover a entrada da allowlist na mesma PR que corrige a dependencia.
 - Registrar evidencia no PR (pacote corrigido + versão aplicada).

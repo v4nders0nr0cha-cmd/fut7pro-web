@@ -24,7 +24,9 @@ function applySecurityHeaders(response: NextResponse, csp: string) {
 }
 
 function isAdminAuthPublicPath(pathname: string) {
-  return ADMIN_AUTH_PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return ADMIN_AUTH_PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
 }
 
 function isSuperAdminAuthPublicPath(pathname: string) {
@@ -37,7 +39,8 @@ function isUserProtectedPath(pathname: string) {
   if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
   if (pathname === "/perfil" || pathname.startsWith("/perfil/")) return true;
   if (pathname === "/minha-conta" || pathname.startsWith("/minha-conta/")) return true;
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return !isAdminAuthPublicPath(pathname);
+  if (pathname === "/admin" || pathname.startsWith("/admin/"))
+    return !isAdminAuthPublicPath(pathname);
   return false;
 }
 

@@ -24,5 +24,6 @@ describe("buildWebCsp", () => {
     const scriptSrc = getDirective(csp, "script-src");
 
     expect(scriptSrc).toContain("'unsafe-eval'");
+    expect(scriptSrc).toContain("'unsafe-inline'");
   });
 });

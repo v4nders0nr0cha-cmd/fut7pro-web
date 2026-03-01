@@ -3,14 +3,17 @@ type BuildWebCspOptions = {
   isProd?: boolean;
 };
 
-export function buildWebCsp({ nonce, isProd = process.env.NODE_ENV === "production" }: BuildWebCspOptions): string {
+export function buildWebCsp({
+  nonce,
+  isProd = process.env.NODE_ENV === "production",
+}: BuildWebCspOptions): string {
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
     "https://challenges.cloudflare.com",
-    ...(isProd ? [] : ["'unsafe-eval'"]),
+    ...(isProd ? [] : ["'unsafe-inline'", "'unsafe-eval'"]),
   ].join(" ");
 
   return [
