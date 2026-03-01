@@ -2,17 +2,43 @@ import { withAuth } from "next-auth/middleware";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { buildWebCsp, WEB_SECURITY_HEADERS } from "./src/lib/security/csp";
 
+const ADMIN_AUTH_PUBLIC_PATHS = ["/admin/login", "/admin/register"];
 const SUPERADMIN_AUTH_PUBLIC_PATHS = [
   "/superadmin/login",
   "/superadmin/mfa",
   "/superadmin/recuperar-senha",
 ];
 
+function createNonce() {
+  return btoa(crypto.randomUUID()).replace(/=+$/g, "");
+}
+
+function applySecurityHeaders(response: NextResponse, csp: string) {
+  response.headers.set("Content-Security-Policy", csp);
+  for (const { key, value } of WEB_SECURITY_HEADERS) {
+    response.headers.set(key, value);
+  }
+  return response;
+}
+
+function isAdminAuthPublicPath(pathname: string) {
+  return ADMIN_AUTH_PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
 function isSuperAdminAuthPublicPath(pathname: string) {
   return SUPERADMIN_AUTH_PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
+}
+
+function isUserProtectedPath(pathname: string) {
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
+  if (pathname === "/perfil" || pathname.startsWith("/perfil/")) return true;
+  if (pathname === "/minha-conta" || pathname.startsWith("/minha-conta/")) return true;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return !isAdminAuthPublicPath(pathname);
+  return false;
 }
 
 async function resolveSuperAdminToken(req: NextRequest) {
@@ -41,15 +67,29 @@ async function resolveSuperAdminToken(req: NextRequest) {
 export default withAuth(
   async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
+    const nonce = createNonce();
+    const csp = buildWebCsp({ nonce });
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-nonce", nonce);
+
+    const secureNext = () =>
+      applySecurityHeaders(
+        NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        }),
+        csp
+      );
+
+    const secureRedirect = (destination: URL) =>
+      applySecurityHeaders(NextResponse.redirect(destination), csp);
+
     // @ts-ignore
     const token = req.nextauth.token as any;
 
-    if (
-      pathname.startsWith("/admin/login") ||
-      pathname.startsWith("/admin/register") ||
-      pathname.startsWith("/cadastrar-racha")
-    ) {
-      return NextResponse.next();
+    if (isAdminAuthPublicPath(pathname) || pathname.startsWith("/cadastrar-racha")) {
+      return secureNext();
     }
 
     if (pathname.startsWith("/admin") && token && token.role !== "SUPERADMIN") {
@@ -61,7 +101,7 @@ export default withAuth(
         if (token.tenantSlug) {
           redirectUrl.searchParams.set("slug", token.tenantSlug);
         }
-        return NextResponse.redirect(redirectUrl);
+        return secureRedirect(redirectUrl);
       }
     }
 
@@ -75,9 +115,9 @@ export default withAuth(
 
       if (isPublicAuthPath) {
         if (isSuperAdmin) {
-          return NextResponse.redirect(new URL("/superadmin/dashboard", req.url));
+          return secureRedirect(new URL("/superadmin/dashboard", req.url));
         }
-        return NextResponse.next();
+        return secureNext();
       }
 
       if (!isSuperAdmin) {
@@ -85,11 +125,11 @@ export default withAuth(
         if (pathname !== "/superadmin/login") {
           redirectUrl.searchParams.set("callbackUrl", pathname);
         }
-        return NextResponse.redirect(redirectUrl);
+        return secureRedirect(redirectUrl);
       }
     }
 
-    return NextResponse.next();
+    return secureNext();
   },
   {
     callbacks: {
@@ -99,19 +139,23 @@ export default withAuth(
           // A protecao de superadmin e feita dentro do middleware com cookie dedicado.
           return true;
         }
-        if (
-          path.startsWith("/admin/login") ||
-          path.startsWith("/admin/register") ||
-          path.startsWith("/cadastrar-racha")
-        ) {
+        if (path.startsWith("/cadastrar-racha")) {
           return true;
         }
-        return !!token;
+        if (isAdminAuthPublicPath(path)) {
+          return true;
+        }
+        if (isUserProtectedPath(path)) {
+          return !!token;
+        }
+        return true;
       },
     },
   }
 );
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/perfil", "/minha-conta", "/admin/:path*", "/superadmin/:path*"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|map|txt|xml|woff|woff2)$).*)",
+  ],
 };

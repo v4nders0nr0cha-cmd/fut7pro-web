@@ -1,6 +1,5 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 
-const isProd = process.env.NODE_ENV === "production";
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const defaultRachaSlug = (process.env.NEXT_PUBLIC_DEFAULT_RACHA_SLUG || "vitrine")
   .trim()
@@ -12,39 +11,6 @@ try {
 } catch {
   supabaseHost = null;
 }
-
-// CSP enxuta e compatível (sem 'unsafe-eval' em prod)
-const scriptSrc = isProd
-  ? "'self' 'unsafe-inline' https://www.googletagmanager.com"
-  : "'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com";
-const cspBase = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "img-src 'self' data: blob: https: https://www.google-analytics.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  `script-src ${scriptSrc}`,
-  "connect-src 'self' https://api.fut7pro.com.br https://www.google-analytics.com https://www.googletagmanager.com",
-  "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com",
-  "frame-ancestors 'none'",
-  "form-action 'self'",
-  "upgrade-insecure-requests",
-].join("; ");
-
-const CSP = cspBase;
-
-// Headers de segurança
-const securityHeaders = [
-  { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-  { key: "X-Frame-Options", value: "DENY" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
-  },
-  { key: "Content-Security-Policy", value: CSP },
-];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -61,9 +27,6 @@ const nextConfig = {
   // Headers de segurança
   async headers() {
     return [
-      // Headers de segurança para TUDO
-      { source: "/:path*", headers: securityHeaders },
-
       // Noindex apenas nas áreas privadas (não em APIs públicas)
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       {
