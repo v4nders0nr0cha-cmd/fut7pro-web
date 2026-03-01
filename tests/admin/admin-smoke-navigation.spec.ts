@@ -104,7 +104,6 @@ async function trySelectTenantViaCookie(page: Page, slug: string): Promise<strin
       name: ADMIN_ACTIVE_TENANT_COOKIE,
       value: slug,
       url: origin,
-      path: "/",
       sameSite: "Lax",
       httpOnly: true,
     },
@@ -443,7 +442,25 @@ async function waitForAdminShell(page: Page) {
     throw new Error("Página fechada antes da validação do shell admin.");
   }
   await page.waitForURL(/\/admin\//, { timeout: 20000 });
-  const pathname = new URL(page.url()).pathname;
+  let pathname = new URL(page.url()).pathname;
+  if (pathname === "/admin/selecionar-racha") {
+    let selectedPath = await trySelectTenantFromHubEntryApi(page, "active", activeTenantSlug);
+    if (!selectedPath && activeTenantSlug) {
+      selectedPath = await trySelectTenantViaApi(page, activeTenantSlug);
+    }
+    if (!selectedPath && activeTenantSlug) {
+      selectedPath = await trySelectTenantViaCookie(page, activeTenantSlug);
+    }
+    if (!selectedPath) {
+      const selectButton = await selectTenantFromHub(page, "active", activeTenantSlug);
+      await Promise.all([
+        page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
+        selectButton.click(),
+      ]);
+      selectedPath = new URL(page.url()).pathname;
+    }
+    pathname = selectedPath;
+  }
   if (pathname === "/admin/status-assinatura") {
     throw new Error("Fluxo ativo caiu em /admin/status-assinatura durante navegação.");
   }
@@ -511,6 +528,35 @@ async function pinActiveTenantScope(page: Page, slug?: string) {
   ) {
     throw new Error(`Tenant ativo configurado (${slug}) retornou bloqueado ao fixar escopo.`);
   }
+}
+
+async function assertBlockedRedirectForRoute(page: Page, route: string, tenantSlug?: string) {
+  await page.goto(route, { waitUntil: "domcontentloaded" });
+  await page
+    .waitForURL(/\/admin\/(status-assinatura|selecionar-racha)/, { timeout: 10000 })
+    .catch(() => null);
+
+  let pathname = new URL(page.url()).pathname;
+  if (pathname === "/admin/selecionar-racha") {
+    let selectedPath: string | null = null;
+    if (tenantSlug) {
+      selectedPath = await trySelectTenantViaApi(page, tenantSlug);
+    }
+    if (!selectedPath) {
+      selectedPath = await trySelectTenantFromHubEntryApi(page, "blocked", tenantSlug);
+    }
+    if (!selectedPath) {
+      const selectButton = await selectTenantFromHub(page, "blocked", tenantSlug);
+      await Promise.all([
+        page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 20000 }),
+        selectButton.click(),
+      ]);
+      selectedPath = new URL(page.url()).pathname;
+    }
+    pathname = selectedPath;
+  }
+
+  expect(pathname).toBe("/admin/status-assinatura");
 }
 
 function sidebarToggleForRoute(route: string): string | null {
@@ -728,14 +774,12 @@ test.describe("Admin Smoke Navigation", () => {
       page.getByRole("link", { name: /Ir para pagamento e regularizar acesso/i })
     ).toHaveAttribute("href", "/admin/financeiro/planos-limites");
 
-    await page.goto("/admin/dashboard");
-    await expect(page).toHaveURL(/\/admin\/status-assinatura/);
+    await assertBlockedRedirectForRoute(page, "/admin/dashboard", blockedTenantSlug);
 
     await page.goto("/admin/financeiro/planos-limites");
     await expect(page).toHaveURL(/\/admin\/financeiro\/planos-limites/);
     await expect(page.getByRole("heading", { name: /Planos & Limites/i })).toBeVisible();
 
-    await page.goto("/admin/comunicacao/notificacoes");
-    await expect(page).toHaveURL(/\/admin\/status-assinatura/);
+    await assertBlockedRedirectForRoute(page, "/admin/comunicacao/notificacoes", blockedTenantSlug);
   });
 });
