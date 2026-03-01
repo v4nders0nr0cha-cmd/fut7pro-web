@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { buildWebCsp, WEB_SECURITY_HEADERS } from "./src/lib/security/csp";
+import { buildSecurityRequestHeaders } from "./src/lib/security/requestHeaders";
 
 const ADMIN_AUTH_PUBLIC_PATHS = ["/admin/login", "/admin/register"];
 const SUPERADMIN_AUTH_PUBLIC_PATHS = [
@@ -63,8 +64,7 @@ export default withAuth(
     const { pathname } = req.nextUrl;
     const nonce = createNonce();
     const csp = buildWebCsp({ nonce });
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-nonce", nonce);
+    const requestHeaders = buildSecurityRequestHeaders(req.headers, nonce, csp);
 
     const secureNext = () =>
       applySecurityHeaders(
