@@ -35,15 +35,6 @@ function isSuperAdminAuthPublicPath(pathname: string) {
   );
 }
 
-function isUserProtectedPath(pathname: string) {
-  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
-  if (pathname === "/perfil" || pathname.startsWith("/perfil/")) return true;
-  if (pathname === "/minha-conta" || pathname.startsWith("/minha-conta/")) return true;
-  if (pathname === "/admin" || pathname.startsWith("/admin/"))
-    return !isAdminAuthPublicPath(pathname);
-  return false;
-}
-
 async function resolveSuperAdminToken(req: NextRequest) {
   const preferredCookie = `next-auth.session-token-superadmin${
     process.env.NODE_ENV === "development" ? "-dev" : ""
@@ -148,17 +139,12 @@ export default withAuth(
         if (isAdminAuthPublicPath(path)) {
           return true;
         }
-        if (isUserProtectedPath(path)) {
-          return !!token;
-        }
-        return true;
+        return !!token;
       },
     },
   }
 );
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|sitemaps|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|map|txt|xml|woff|woff2)$).*)",
-  ],
+  matcher: ["/dashboard/:path*", "/perfil", "/minha-conta", "/admin/:path*", "/superadmin/:path*"],
 };
