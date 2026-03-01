@@ -108,11 +108,8 @@ type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid" 
 type BillingInterval = "month" | "year";
 type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error";
 type LookupEmailResponse = {
-  exists?: boolean;
-  userExists?: boolean;
-  providers?: string[];
-  hasPassword?: boolean;
-  availableAuthMethods?: Array<"google" | "password">;
+  ok?: boolean;
+  requiresCaptcha?: boolean;
   error?: string;
   message?: string;
 };
@@ -169,7 +166,7 @@ function CadastroRachaPageContent() {
   const [lookupEmail, setLookupEmail] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
-  const [existingHasPassword, setExistingHasPassword] = useState(true);
+  const [, setExistingHasPassword] = useState(true);
   const [existingLoginLoading, setExistingLoginLoading] = useState(false);
   const [existingLoginError, setExistingLoginError] = useState("");
   const [showExistingSenha, setShowExistingSenha] = useState(false);
@@ -570,35 +567,14 @@ function CadastroRachaPageContent() {
         return;
       }
 
-      const userExists = Boolean(body?.userExists ?? body?.exists);
       setAdminEmail(normalizedEmail);
-
-      if (userExists) {
-        const hasPassword = Boolean(body?.hasPassword);
-        const methods = Array.isArray(body?.availableAuthMethods) ? body.availableAuthMethods : [];
-        const passwordAllowed = hasPassword || methods.includes("password");
-
-        setUseExistingGlobalAccount(true);
-        setExistingHasPassword(passwordAllowed);
-        setAdminSenha("");
-        setAdminConfirmSenha("");
-        setShowExistingSenha(false);
-        setAccessFlow("existing-password");
-        return;
-      }
-
-      const fallbackName = resolveFirstNameFromEmail(normalizedEmail);
       setUseExistingGlobalAccount(false);
       setExistingHasPassword(true);
-      if (!adminNome) {
-        setAdminNome(fallbackName);
-      }
-      if (!adminPosicao) {
-        setAdminPosicao(POSICOES[0]);
-      }
-      setStep(1);
-      setAccessFlow("wizard");
-      setSucesso("Conta global não encontrada. Preencha os dados para criar sua conta.");
+      setAdminSenha("");
+      setAdminConfirmSenha("");
+      setShowExistingSenha(false);
+      setAccessFlow("existing-password");
+      setSucesso(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
     } catch {
       setLookupError("Não foi possível verificar agora. Tente novamente.");
     } finally {
@@ -854,10 +830,6 @@ function CadastroRachaPageContent() {
     }
 
     if (accessFlow === "existing-password") {
-      if (!existingHasPassword) {
-        setExistingLoginError("Esta conta não possui senha. Continue com Google para avançar.");
-        return;
-      }
       await handleExistingGlobalLogin();
       return;
     }
@@ -943,11 +915,9 @@ function CadastroRachaPageContent() {
         ? "Verificando..."
         : "Continuar"
       : accessFlow === "existing-password"
-        ? !existingHasPassword
-          ? "Use o Google para continuar"
-          : existingLoginLoading
-            ? "Entrando..."
-            : "Entrar e ir para etapa 2"
+        ? existingLoginLoading
+          ? "Entrando..."
+          : "Entrar e ir para etapa 2"
         : step === 3
           ? isLoading
             ? "Finalizando..."
@@ -958,7 +928,7 @@ function CadastroRachaPageContent() {
     accessFlow === "identify"
       ? lookupLoading
       : accessFlow === "existing-password"
-        ? existingLoginLoading || !existingHasPassword || !adminSenha.trim()
+        ? existingLoginLoading || !adminSenha.trim()
         : isLoading;
 
   const showWizardBackButton = accessFlow === "wizard" && step > 1;
@@ -1022,7 +992,7 @@ function CadastroRachaPageContent() {
                   />
                   <h2 className="text-2xl font-bold text-white">Entrar no Fut7Pro</h2>
                   <p className="text-sm text-gray-300">
-                    Continue com Google ou informe seu e-mail para identificar o próximo passo.
+                    Continue com Google ou informe seu e-mail para seguir com seguranca.
                   </p>
                 </div>
 
@@ -1069,8 +1039,8 @@ function CadastroRachaPageContent() {
                 )}
 
                 <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                  Esta etapa identifica se você já possui conta global Fut7Pro ou se precisa criar
-                  uma conta antes de cadastrar o racha.
+                  Por seguranca, esta etapa nao mostra o status da conta. Se estiver tudo certo,
+                  enviamos seu codigo e voce segue para continuar.
                 </div>
               </div>
             )}
@@ -1078,43 +1048,39 @@ function CadastroRachaPageContent() {
             {accessFlow === "existing-password" && (
               <div className="space-y-4">
                 <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4">
-                  <h2 className="text-sm font-semibold text-white">Conta global encontrada</h2>
+                  <h2 className="text-sm font-semibold text-white">Continuar acesso</h2>
                   <p className="mt-1 text-xs text-gray-300">
-                    E-mail identificado:{" "}
-                    <span className="font-semibold text-white">{adminEmail}</span>
+                    E-mail informado: <span className="font-semibold text-white">{adminEmail}</span>
                   </p>
                   <p className="mt-2 text-xs text-gray-400">
-                    {existingHasPassword
-                      ? "Informe sua senha para avançar direto para a etapa 2."
-                      : "Esta conta não possui senha. Continue com Google para seguir."}
+                    Se voce ja possui conta, entre com sua senha para avancar direto para a etapa 2.
+                    Se nao possuir conta, continue para criar uma nova.
                   </p>
                 </div>
 
-                {existingHasPassword && (
-                  <label className="text-xs text-gray-400">
-                    Senha da conta global
-                    <div className="relative mt-2">
-                      <input
-                        type={showExistingSenha ? "text" : "password"}
-                        value={adminSenha}
-                        onChange={(e) => {
-                          setAdminSenha(e.target.value);
-                          setExistingLoginError("");
-                        }}
-                        autoComplete="current-password"
-                        className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        placeholder="Digite sua senha"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowExistingSenha((prev) => !prev)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
-                      >
-                        {showExistingSenha ? "Ocultar" : "Mostrar"}
-                      </button>
-                    </div>
-                  </label>
-                )}
+                <label className="text-xs text-gray-400">
+                  Senha da conta global
+                  <div className="relative mt-2">
+                    <input
+                      type={showExistingSenha ? "text" : "password"}
+                      value={adminSenha}
+                      onChange={(e) => {
+                        setAdminSenha(e.target.value);
+                        setExistingLoginError("");
+                      }}
+                      autoComplete="current-password"
+                      className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      placeholder="Digite sua senha"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowExistingSenha((prev) => !prev)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                    >
+                      {showExistingSenha ? "Ocultar" : "Mostrar"}
+                    </button>
+                  </div>
+                </label>
 
                 <button
                   type="button"
@@ -1134,6 +1100,32 @@ function CadastroRachaPageContent() {
                   className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
                 >
                   Usar outro e-mail
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const fallbackName = resolveFirstNameFromEmail(adminEmail);
+                    setUseExistingGlobalAccount(false);
+                    setExistingHasPassword(true);
+                    setAdminSenha("");
+                    setAdminConfirmSenha("");
+                    setShowExistingSenha(false);
+                    if (!adminNome) {
+                      setAdminNome(fallbackName);
+                    }
+                    if (!adminPosicao) {
+                      setAdminPosicao(POSICOES[0]);
+                    }
+                    setStep(1);
+                    setAccessFlow("wizard");
+                    setSucesso(
+                      "Continue preenchendo os dados para criar sua conta e cadastrar o racha."
+                    );
+                  }}
+                  className="w-full rounded-lg border border-yellow-300/40 bg-yellow-300/10 px-3 py-2 text-xs font-semibold text-yellow-100 hover:border-yellow-200/70"
+                >
+                  Nao tenho conta, criar agora
                 </button>
 
                 {existingLoginError && (
