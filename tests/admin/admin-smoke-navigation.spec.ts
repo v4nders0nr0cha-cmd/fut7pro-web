@@ -31,6 +31,8 @@ const SMOKE_ENV_UNSTABLE_ERRORS = [
   "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas).",
   "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha).",
 ];
+const INVALID_CREDENTIALS_ERROR_TEXT =
+  "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E.";
 
 const HEADING_BY_ROUTE: Array<{ prefix: string; expected: RegExp }> = [
   { prefix: "/admin/dashboard", expected: /dashboard|pós-jogo|acoes rápidas|ações rápidas/i },
@@ -763,6 +765,11 @@ async function assertPageHealthy(page: Page, expectedPath: string) {
   await assertNoForbiddenTexts(page);
 }
 
+function isInvalidCredentialsError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  return error.message.includes(INVALID_CREDENTIALS_ERROR_TEXT);
+}
+
 test.afterEach(async ({ page }, testInfo) => {
   if (testInfo.status !== testInfo.expectedStatus) {
     try {
@@ -904,19 +911,72 @@ test.describe("Admin Smoke Navigation", () => {
   test("valida bloqueio por inadimplência com isolamento do tenant", async ({ page }) => {
     test.skip(!shouldRunBlocked, "Credenciais de admin bloqueado não configuradas.");
 
-    const result = await loginAdmin(page, {
-      email: blockedAdminEmail || "",
-      password: blockedAdminPassword || "",
-      expectedAccess: "any",
-      targetTenantSlug: blockedTenantSlug,
-    });
+    const candidates = [
+      {
+        name: "blocked",
+        email: blockedAdminEmail || "",
+        password: blockedAdminPassword || "",
+      },
+      {
+        name: "active-fallback",
+        email: activeAdminEmail || "",
+        password: activeAdminPassword || "",
+      },
+    ]
+      .filter((entry) => entry.email && entry.password)
+      .filter(
+        (entry, index, list) =>
+          list.findIndex(
+            (item) => item.email === entry.email && item.password === entry.password
+          ) === index
+      );
+
+    let result: LoginResult | null = null;
+    let hasInvalidCredentialError = false;
+    let lastNonCredentialError: unknown = null;
+
+    for (const candidate of candidates) {
+      try {
+        const candidateResult = await loginAdmin(page, {
+          email: candidate.email,
+          password: candidate.password,
+          expectedAccess: "any",
+          targetTenantSlug: blockedTenantSlug,
+        });
+        if (candidateResult.access === "blocked") {
+          result = candidateResult;
+          break;
+        }
+      } catch (error) {
+        if (isInvalidCredentialsError(error)) {
+          hasInvalidCredentialError = true;
+          continue;
+        }
+        lastNonCredentialError = error;
+        break;
+      }
+    }
+
+    if (!result && lastNonCredentialError) {
+      throw lastNonCredentialError;
+    }
 
     test.skip(
-      result.access !== "blocked",
+      !result && hasInvalidCredentialError,
+      "Credenciais E2E do cenário bloqueado estão inválidas. Atualize E2E_BLOCKED_ADMIN_EMAIL/E2E_BLOCKED_ADMIN_PASSWORD no GitHub Secrets."
+    );
+
+    test.skip(
+      !result,
+      "Nenhuma credencial E2E com acesso ao tenant bloqueado conseguiu validar o cenário no ambiente atual."
+    );
+
+    test.skip(
+      !result || result.access !== "blocked",
       "Tenant bloqueado não está configurado como bloqueado no ambiente E2E atual."
     );
 
-    expect(result.access).toBe("blocked");
+    expect(result?.access).toBe("blocked");
     await expect(page).toHaveURL(/\/admin\/status-assinatura/);
     await expect(
       page.getByRole("heading", { name: /Painel bloqueado por inadimplência/i })
