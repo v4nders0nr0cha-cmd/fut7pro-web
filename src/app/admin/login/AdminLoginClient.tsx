@@ -348,7 +348,8 @@ export default function AdminLoginClient() {
                     </label>
                   ) : (
                     <div className="rounded-lg border border-yellow-400/20 bg-yellow-400/5 px-3 py-2 text-xs text-yellow-100">
-                      Entre com código por e-mail. A senha fica como fallback legado.
+                      Entre com um código enviado para seu e-mail. Se preferir, você também pode
+                      usar sua senha.
                     </div>
                   )}
                 </>
@@ -411,7 +412,7 @@ export default function AdminLoginClient() {
                 }}
                 className="w-full rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
               >
-                {usarSenhaLegado ? "Voltar para código por e-mail" : "Usar senha (legado)"}
+                {usarSenhaLegado ? "Voltar para código por e-mail" : "Entrar com senha"}
               </button>
             </form>
 
