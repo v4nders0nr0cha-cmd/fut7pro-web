@@ -39,8 +39,14 @@ test.describe("comunicados modal", () => {
 
     await adminPage.goto("/admin/login");
     await adminPage.getByLabel("E-mail").fill(adminEmail || "");
-    await adminPage.getByLabel("Senha").fill(adminPassword || "");
-    await adminPage.getByRole("button", { name: /Entrar no painel/i }).click();
+    const adminPasswordInput = adminPage.getByLabel(/Senha/i).first();
+    const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
+    if (!adminPasswordVisible) {
+      await adminPage.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await adminPasswordInput.fill(adminPassword || "");
+    await adminPage.getByRole("button", { name: /Entrar no painel|Entrar com senha/i }).click();
 
     await adminPage.waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 });
     if (adminPage.url().includes("/admin/selecionar-racha")) {
@@ -67,8 +73,14 @@ test.describe("comunicados modal", () => {
 
     await athletePage.goto(`/${slug}/login`);
     await athletePage.getByLabel("E-mail").fill(athleteEmail || "");
-    await athletePage.getByLabel("Senha").fill(athletePassword || "");
-    await athletePage.getByRole("button", { name: /^Entrar$/i }).click();
+    const athletePasswordInput = athletePage.getByLabel(/Senha/i).first();
+    const athletePasswordVisible = await athletePasswordInput.isVisible().catch(() => false);
+    if (!athletePasswordVisible) {
+      await athletePage.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await expect(athletePasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await athletePasswordInput.fill(athletePassword || "");
+    await athletePage.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
 
     await expect(athletePage.getByText(title)).toBeVisible({ timeout: 20000 });
     await athletePage.getByRole("button", { name: /Fechar/i }).click();
@@ -79,8 +91,14 @@ test.describe("comunicados modal", () => {
     const athletePage2 = await athleteContext2.newPage();
     await athletePage2.goto(`/${slug}/login`);
     await athletePage2.getByLabel("E-mail").fill(athleteEmail || "");
-    await athletePage2.getByLabel("Senha").fill(athletePassword || "");
-    await athletePage2.getByRole("button", { name: /^Entrar$/i }).click();
+    const athletePasswordInput2 = athletePage2.getByLabel(/Senha/i).first();
+    const athletePasswordVisible2 = await athletePasswordInput2.isVisible().catch(() => false);
+    if (!athletePasswordVisible2) {
+      await athletePage2.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await expect(athletePasswordInput2).toBeVisible({ timeout: 10000 });
+    }
+    await athletePasswordInput2.fill(athletePassword || "");
+    await athletePage2.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
     await expect(athletePage2.getByText(title)).toBeVisible({ timeout: 20000 });
     await athletePage2.getByRole("button", { name: /Fechar/i }).click();
     await athleteContext2.close();
@@ -89,8 +107,14 @@ test.describe("comunicados modal", () => {
     const adminPage2 = await adminContext2.newPage();
     await adminPage2.goto("/admin/login");
     await adminPage2.getByLabel("E-mail").fill(adminEmail || "");
-    await adminPage2.getByLabel("Senha").fill(adminPassword || "");
-    await adminPage2.getByRole("button", { name: /Entrar no painel/i }).click();
+    const adminPasswordInput2 = adminPage2.getByLabel(/Senha/i).first();
+    const adminPasswordVisible2 = await adminPasswordInput2.isVisible().catch(() => false);
+    if (!adminPasswordVisible2) {
+      await adminPage2.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await expect(adminPasswordInput2).toBeVisible({ timeout: 10000 });
+    }
+    await adminPasswordInput2.fill(adminPassword || "");
+    await adminPage2.getByRole("button", { name: /Entrar no painel|Entrar com senha/i }).click();
     await adminPage2.waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 });
     if (adminPage2.url().includes("/admin/selecionar-racha")) {
       await adminPage2
@@ -110,8 +134,14 @@ test.describe("comunicados modal", () => {
     const athletePage3 = await athleteContext3.newPage();
     await athletePage3.goto(`/${slug}/login`);
     await athletePage3.getByLabel("E-mail").fill(athleteEmail || "");
-    await athletePage3.getByLabel("Senha").fill(athletePassword || "");
-    await athletePage3.getByRole("button", { name: /^Entrar$/i }).click();
+    const athletePasswordInput3 = athletePage3.getByLabel(/Senha/i).first();
+    const athletePasswordVisible3 = await athletePasswordInput3.isVisible().catch(() => false);
+    if (!athletePasswordVisible3) {
+      await athletePage3.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await expect(athletePasswordInput3).toBeVisible({ timeout: 10000 });
+    }
+    await athletePasswordInput3.fill(athletePassword || "");
+    await athletePage3.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
 
     await athletePage3.waitForTimeout(2000);
     await expect(athletePage3.getByText(title)).toHaveCount(0);

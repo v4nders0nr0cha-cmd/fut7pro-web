@@ -51,6 +51,10 @@ export default function LoginClient() {
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [codigoEnviado, setCodigoEnviado] = useState(false);
+  const [usarSenhaLegado, setUsarSenhaLegado] = useState(false);
+  const [infoMessage, setInfoMessage] = useState("");
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -88,6 +92,18 @@ export default function LoginClient() {
     prefillAppliedRef.current = true;
     requestAnimationFrame(() => passwordInputRef.current?.focus());
   }, [publicSlug]);
+
+  useEffect(() => {
+    setCodigo("");
+    setCodigoEnviado(false);
+    setInfoMessage("");
+  }, [email]);
+
+  useEffect(() => {
+    if (requestJoinIntent) {
+      setUsarSenhaLegado(true);
+    }
+  }, [requestJoinIntent]);
 
   useEffect(() => {
     if (status !== "authenticated" || !isAthleteSession) return;
@@ -154,8 +170,14 @@ export default function LoginClient() {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail || !senha.trim()) {
-      setNotMemberMessage("Informe e-mail e senha para solicitar entrada.");
+    if (!normalizedEmail) {
+      setNotMemberMessage("Informe e-mail para solicitar entrada.");
+      return;
+    }
+    if (!senha.trim()) {
+      setNotMemberMessage(
+        "Para solicitar entrada com conta existente, use o modo 'Entrar com senha (legado)'."
+      );
       return;
     }
 
@@ -217,6 +239,149 @@ export default function LoginClient() {
     }
   };
 
+  const handleAuthFailure = (body: any) => {
+    const code =
+      typeof body?.code === "string"
+        ? body.code
+        : typeof body?.error?.code === "string"
+          ? body.error.code
+          : typeof body?.message?.code === "string"
+            ? body.message.code
+            : null;
+    const message =
+      typeof body?.message === "string"
+        ? body.message
+        : typeof body?.error === "string"
+          ? body.error
+          : "Não foi possível autenticar.";
+    const isEmailNotVerified =
+      code === "EMAIL_NOT_VERIFIED" ||
+      message.toLowerCase().includes("confirme seu e-mail") ||
+      message.toLowerCase().includes("verifique seu e-mail");
+
+    if (code === "REQUEST_PENDING") {
+      setPendingModalOpen(true);
+      return true;
+    }
+
+    if (code === "NOT_MEMBER") {
+      setNotMemberModalOpen(true);
+      return true;
+    }
+
+    if (code === "REQUEST_REJECTED") {
+      setErro("Sua solicitação foi rejeitada. Fale com o administrador do racha.");
+      return true;
+    }
+
+    if (isEmailNotVerified) {
+      const normalizedEmail = email.trim().toLowerCase();
+      const query = new URLSearchParams();
+      if (normalizedEmail) {
+        query.set("email", normalizedEmail);
+      }
+      const queryString = query.toString();
+      const confirmationHref = queryString
+        ? `${publicHref("/confirmar-email")}?${queryString}`
+        : publicHref("/confirmar-email");
+      router.replace(confirmationHref);
+      return true;
+    }
+
+    setErro(message);
+    return true;
+  };
+
+  const loginWithTokens = async (body: any, authProvider: "credentials" | "passwordless") => {
+    const accessToken = body?.accessToken;
+    const refreshToken = body?.refreshToken;
+    if (!accessToken || !refreshToken) {
+      setErro("Não foi possível concluir o login.");
+      return;
+    }
+
+    const signInResult = await signIn("credentials", {
+      redirect: false,
+      accessToken,
+      refreshToken,
+      authProvider,
+    });
+
+    if (signInResult?.error) {
+      setErro("Não foi possível concluir o login.");
+      return;
+    }
+
+    clearPublicAuthContext();
+    router.replace(redirectTo);
+  };
+
+  const loginWithPassword = async () => {
+    const response = await fetch(`/api/public/${publicSlug}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password: senha }),
+    });
+
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      handleAuthFailure(body);
+      return;
+    }
+
+    await loginWithTokens(body, "credentials");
+  };
+
+  const requestPasswordlessCode = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setErro("Informe um e-mail válido.");
+      return;
+    }
+
+    const response = await fetch(`/api/public/${publicSlug}/auth/passwordless/request`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: normalizedEmail }),
+    });
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      setErro(body?.message || body?.error || "Não foi possível enviar o código.");
+      return;
+    }
+
+    setCodigoEnviado(true);
+    setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
+  };
+
+  const loginWithPasswordlessCode = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedCode = codigo.replace(/\D+/g, "");
+    if (!normalizedEmail) {
+      setErro("Informe um e-mail válido.");
+      return;
+    }
+    if (normalizedCode.length !== 6) {
+      setErro("Informe o código de 6 dígitos.");
+      return;
+    }
+
+    const response = await fetch(`/api/public/${publicSlug}/auth/passwordless/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: normalizedEmail, code: normalizedCode }),
+    });
+    const body = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      handleAuthFailure(body);
+      return;
+    }
+
+    await loginWithTokens(body, "passwordless");
+  };
+
   const handleEmailLogin = async (event: FormEvent) => {
     event.preventDefault();
     setErro("");
@@ -237,86 +402,17 @@ export default function LoginClient() {
         return;
       }
 
-      const response = await fetch(`/api/public/${publicSlug}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: senha }),
-      });
-
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        const code =
-          typeof body?.code === "string"
-            ? body.code
-            : typeof body?.error?.code === "string"
-              ? body.error.code
-              : typeof body?.message?.code === "string"
-                ? body.message.code
-                : null;
-        const message =
-          typeof body?.message === "string"
-            ? body.message
-            : typeof body?.error === "string"
-              ? body.error
-              : "Não foi possível autenticar.";
-        const isEmailNotVerified =
-          code === "EMAIL_NOT_VERIFIED" ||
-          message.toLowerCase().includes("confirme seu e-mail") ||
-          message.toLowerCase().includes("verifique seu e-mail");
-
-        if (code === "REQUEST_PENDING") {
-          setPendingModalOpen(true);
-          return;
-        }
-
-        if (code === "NOT_MEMBER") {
-          setNotMemberModalOpen(true);
-          return;
-        }
-
-        if (code === "REQUEST_REJECTED") {
-          setErro("Sua solicitação foi rejeitada. Fale com o administrador do racha.");
-          return;
-        }
-        if (isEmailNotVerified) {
-          const normalizedEmail = email.trim().toLowerCase();
-          const query = new URLSearchParams();
-          if (normalizedEmail) {
-            query.set("email", normalizedEmail);
-          }
-          const queryString = query.toString();
-          const confirmationHref = queryString
-            ? `${publicHref("/confirmar-email")}?${queryString}`
-            : publicHref("/confirmar-email");
-          router.replace(confirmationHref);
-          return;
-        }
-
-        setErro(message);
+      if (usarSenhaLegado) {
+        await loginWithPassword();
         return;
       }
 
-      const accessToken = body?.accessToken;
-      const refreshToken = body?.refreshToken;
-      if (!accessToken || !refreshToken) {
-        setErro("Não foi possível concluir o login.");
+      if (!codigoEnviado) {
+        await requestPasswordlessCode();
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        redirect: false,
-        accessToken,
-        refreshToken,
-        authProvider: "credentials",
-      });
-
-      if (signInResult?.error) {
-        setErro("Não foi possível concluir o login.");
-        return;
-      }
-
-      clearPublicAuthContext();
-      router.replace(redirectTo);
+      await loginWithPasswordlessCode();
     } finally {
       setIsSubmitting(false);
     }
@@ -424,46 +520,98 @@ export default function LoginClient() {
               className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
             />
           </label>
-          <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-            Senha
-            <div className="relative">
-              <input
-                type={senhaVisivel ? "text" : "password"}
-                ref={passwordInputRef}
-                value={senha}
-                onChange={(event) => setSenha(event.target.value)}
-                required
-                autoComplete="current-password"
-                placeholder="Digite sua senha"
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-              <button
-                type="button"
-                onClick={() => setSenhaVisivel((visivel) => !visivel)}
-                aria-label={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 transition hover:text-brand-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
-              >
-                {senhaVisivel ? <FaEyeSlash /> : <FaEye />}
-              </button>
+
+          {!usarSenhaLegado && (
+            <>
+              {codigoEnviado ? (
+                <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                  Código de acesso
+                  <input
+                    type="text"
+                    value={codigo}
+                    onChange={(event) =>
+                      setCodigo(event.target.value.replace(/\D+/g, "").slice(0, 6))
+                    }
+                    required
+                    inputMode="numeric"
+                    placeholder="Digite os 6 dígitos"
+                    className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+              ) : (
+                <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
+                  Use código por e-mail como método principal. Senha permanece como fallback legado.
+                </div>
+              )}
+            </>
+          )}
+
+          {usarSenhaLegado && (
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+              Senha (legado)
+              <div className="relative">
+                <input
+                  type={senhaVisivel ? "text" : "password"}
+                  ref={passwordInputRef}
+                  value={senha}
+                  onChange={(event) => setSenha(event.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Digite sua senha"
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
+                />
+                <button
+                  type="button"
+                  onClick={() => setSenhaVisivel((visivel) => !visivel)}
+                  aria-label={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 transition hover:text-brand-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                >
+                  {senhaVisivel ? <FaEyeSlash /> : <FaEye />}
+                </button>
+              </div>
+            </label>
+          )}
+
+          {!usarSenhaLegado && infoMessage && (
+            <div className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
+              {infoMessage}
             </div>
-          </label>
+          )}
           <button
             type="submit"
             disabled={isSubmitting}
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {isSubmitting ? "Entrando..." : "Entrar"}
+            {isSubmitting
+              ? "Processando..."
+              : usarSenhaLegado
+                ? "Entrar com senha"
+                : codigoEnviado
+                  ? "Entrar com código"
+                  : "Enviar código de acesso"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setUsarSenhaLegado((prev) => !prev);
+              setErro("");
+            }}
+            className="w-full rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
+          >
+            {usarSenhaLegado ? "Voltar para código por e-mail" : "Entrar com senha (legado)"}
           </button>
         </form>
 
-        <div className="mt-3 text-center">
-          <a
-            href={publicHref("/esqueci-senha")}
-            className="text-sm font-semibold text-brand-soft underline hover:text-brand"
-          >
-            Esqueci minha senha
-          </a>
-        </div>
+        {usarSenhaLegado && (
+          <div className="mt-3 text-center">
+            <a
+              href={publicHref("/esqueci-senha")}
+              className="text-sm font-semibold text-brand-soft underline hover:text-brand"
+            >
+              Esqueci minha senha
+            </a>
+          </div>
+        )}
 
         <div className="mt-5 text-center text-sm text-gray-300">
           Ainda não tem conta?{" "}

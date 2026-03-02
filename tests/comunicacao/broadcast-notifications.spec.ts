@@ -25,8 +25,14 @@ test.describe("broadcast notifications", () => {
 
     await adminPage.goto("/admin/login");
     await adminPage.getByLabel("E-mail").fill(adminEmail || "");
-    await adminPage.getByLabel("Senha").fill(adminPassword || "");
-    await adminPage.getByRole("button", { name: /Entrar no painel/i }).click();
+    const adminPasswordInput = adminPage.getByLabel(/Senha/i).first();
+    const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
+    if (!adminPasswordVisible) {
+      await adminPage.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await adminPasswordInput.fill(adminPassword || "");
+    await adminPage.getByRole("button", { name: /Entrar no painel|Entrar com senha/i }).click();
 
     await adminPage.waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 });
     if (adminPage.url().includes("/admin/selecionar-racha")) {
@@ -49,8 +55,14 @@ test.describe("broadcast notifications", () => {
 
     await athletePage.goto(`/${slug}/login`);
     await athletePage.getByLabel("E-mail").fill(athleteEmail || "");
-    await athletePage.getByLabel("Senha").fill(athletePassword || "");
-    await athletePage.getByRole("button", { name: /^Entrar$/i }).click();
+    const athletePasswordInput = athletePage.getByLabel(/Senha/i).first();
+    const athletePasswordVisible = await athletePasswordInput.isVisible().catch(() => false);
+    if (!athletePasswordVisible) {
+      await athletePage.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await expect(athletePasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await athletePasswordInput.fill(athletePassword || "");
+    await athletePage.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
 
     await athletePage.waitForURL(new RegExp(`/${slug}`), { timeout: 20000 });
     await athletePage.goto(`/${slug}/comunicacao/notificacoes`);

@@ -208,9 +208,26 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
   await expect(submit.first()).toBeEnabled({ timeout: 30000 });
 
   const emailInput = page.locator('[data-testid="admin-login-email"], input[type="email"]').first();
+  const passwordInputLocator = page
+    .locator('[data-testid="admin-login-password"], input[type="password"]')
+    .first();
+
+  const passwordInputVisible = await passwordInputLocator
+    .isVisible({ timeout: 2000 })
+    .catch(() => false);
+  if (!passwordInputVisible) {
+    const legacyToggle = page.getByRole("button", { name: /Usar senha \(legado\)/i }).first();
+    const toggleVisible = await legacyToggle.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!toggleVisible) {
+      throw new Error("Login admin não exibiu campo de senha nem botão de modo legado.");
+    }
+    await legacyToggle.click();
+  }
+
   const passwordInput = page
     .locator('[data-testid="admin-login-password"], input[type="password"]')
     .first();
+  await expect(passwordInput).toBeVisible({ timeout: 10000 });
 
   await emailInput.fill(email);
   await passwordInput.fill(password);

@@ -20,8 +20,14 @@ test.describe("athlete pending login", () => {
 
     await page.goto(`/${slug}/login`);
     await page.getByLabel("E-mail").fill(pendingEmail || "");
-    await page.getByLabel("Senha").fill(pendingPassword || "");
-    await page.getByRole("button", { name: /^Entrar$/i }).click();
+    const pendingPasswordInput = page.getByLabel(/Senha/i).first();
+    const pendingPasswordVisible = await pendingPasswordInput.isVisible().catch(() => false);
+    if (!pendingPasswordVisible) {
+      await page.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await expect(pendingPasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await pendingPasswordInput.fill(pendingPassword || "");
+    await page.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
 
     await expect(page.getByRole("heading", { name: /Solicitacao pendente/i })).toBeVisible({
       timeout: 10000,
@@ -31,8 +37,14 @@ test.describe("athlete pending login", () => {
 
     await page.goto("/admin/login");
     await page.getByLabel("E-mail").fill(adminEmail || "");
-    await page.getByLabel("Senha").fill(adminPassword || "");
-    await page.getByRole("button", { name: /Entrar no painel/i }).click();
+    const adminPasswordInput = page.getByLabel(/Senha/i).first();
+    const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
+    if (!adminPasswordVisible) {
+      await page.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
+    }
+    await adminPasswordInput.fill(adminPassword || "");
+    await page.getByRole("button", { name: /Entrar no painel|Entrar com senha/i }).click();
 
     await page.waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 });
     if (page.url().includes("/admin/selecionar-racha")) {
