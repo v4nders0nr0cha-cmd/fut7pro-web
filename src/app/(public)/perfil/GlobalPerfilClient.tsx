@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
+import SecurityRecoveryPanel from "@/components/profile/SecurityRecoveryPanel";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
@@ -825,6 +826,8 @@ export default function GlobalPerfilClient() {
               </div>
             </div>
           )}
+
+          <SecurityRecoveryPanel initialStatus={profile.securityRecovery ?? null} />
         </div>
       </section>
 

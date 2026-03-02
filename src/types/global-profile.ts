@@ -62,6 +62,31 @@ export type GlobalProfileResponse = {
   user: GlobalProfileUser;
   stats: GlobalProfileStats;
   totalTitulos?: number;
+  securityRecovery?: {
+    enabled: boolean;
+    hasMinimumMethod: boolean;
+    requiredAt: string | null;
+    checkedAt: string | null;
+    methods: {
+      recoveryEmail: {
+        configured: boolean;
+        verified: boolean;
+        maskedValue: string | null;
+        verifiedAt: string | null;
+      };
+      whatsapp: {
+        configured: boolean;
+        verified: boolean;
+        maskedValue: string | null;
+        verifiedAt: string | null;
+      };
+      recoveryCodes: {
+        configured: boolean;
+        activeCount: number;
+        rotatedAt: string | null;
+      };
+    };
+  };
   conquistas: {
     titulosGrandesTorneios: GlobalTitle[];
     titulosAnuais: GlobalTitle[];
