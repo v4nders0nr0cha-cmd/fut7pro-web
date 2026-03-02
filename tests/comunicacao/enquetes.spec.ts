@@ -28,8 +28,14 @@ const toLocalInputValue = (date: Date) => {
 async function loginAdmin(page: any, email: string, password: string) {
   await page.goto("/admin/login");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(password);
-  await page.getByRole("button", { name: /Entrar no painel/i }).click();
+  const adminPassword = page.getByLabel(/Senha/i).first();
+  const adminPasswordVisible = await adminPassword.isVisible().catch(() => false);
+  if (!adminPasswordVisible) {
+    await page.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+    await expect(adminPassword).toBeVisible({ timeout: 10000 });
+  }
+  await adminPassword.fill(password);
+  await page.getByRole("button", { name: /Entrar no painel|Entrar com senha/i }).click();
   await page.waitForURL(/\/admin\/(selecionar-racha|dashboard)/, { timeout: 20000 });
   if (page.url().includes("/admin/selecionar-racha")) {
     await page
@@ -43,8 +49,14 @@ async function loginAdmin(page: any, email: string, password: string) {
 async function loginAthlete(page: any, slugValue: string, email: string, password: string) {
   await page.goto(`/${slugValue}/login`);
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(password);
-  await page.getByRole("button", { name: /^Entrar$/i }).click();
+  const athletePassword = page.getByLabel(/Senha/i).first();
+  const athletePasswordVisible = await athletePassword.isVisible().catch(() => false);
+  if (!athletePasswordVisible) {
+    await page.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+    await expect(athletePassword).toBeVisible({ timeout: 10000 });
+  }
+  await athletePassword.fill(password);
+  await page.getByRole("button", { name: /^Entrar$|Entrar com senha/i }).click();
 }
 
 test.describe("enquetes", () => {
