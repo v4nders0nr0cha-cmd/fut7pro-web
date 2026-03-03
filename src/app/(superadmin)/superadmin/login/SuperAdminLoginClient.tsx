@@ -16,6 +16,11 @@ type MfaSetupStartResponse = {
 
 type AuthAttemptResult = { ok: true } | { ok: false; errorCode: string; rawError?: string | null };
 
+function getAuthErrorCode(result: AuthAttemptResult) {
+  if (result.ok === false) return result.errorCode;
+  return "UNKNOWN";
+}
+
 export default function SuperAdminLoginClient() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -32,6 +37,9 @@ export default function SuperAdminLoginClient() {
   const router = useRouter();
   const { nome } = useBranding({ scope: "superadmin" });
   const brandName = nome || "Fut7Pro";
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
+  const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
 
   useEffect(() => {
     let mounted = true;
@@ -72,7 +80,11 @@ export default function SuperAdminLoginClient() {
     if (value.includes("SUPERADMIN_MFA_INVALID")) {
       return "SUPERADMIN_MFA_INVALID";
     }
-    if (value.includes("CREDENTIALSSIGNIN") || value.includes("AUTH_FAILED")) {
+    if (
+      value.includes("CREDENTIALSSIGNIN") ||
+      value.includes("CREDENTIALS_SIGNIN") ||
+      value.includes("AUTH_FAILED")
+    ) {
       return "AUTH_FAILED";
     }
     return "UNKNOWN";
@@ -117,6 +129,67 @@ export default function SuperAdminLoginClient() {
     }
   }
 
+  async function loginViaBackendAndHydrateSession(
+    codeOverride?: string
+  ): Promise<AuthAttemptResult> {
+    const normalizedCode = String(codeOverride ?? mfaCode).trim();
+
+    try {
+      const payload: Record<string, string> = {
+        email: email.trim(),
+        password: senha,
+      };
+      if (normalizedCode) {
+        payload.mfaCode = normalizedCode;
+      }
+
+      const response = await fetch(`${apiBase}${loginPath}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await response.json().catch(() => null)) as {
+        accessToken?: string;
+        refreshToken?: string;
+        code?: string;
+        message?: string;
+        error?: string;
+      } | null;
+
+      if (!response.ok) {
+        const raw = String(body?.code || body?.message || body?.error || "");
+        return { ok: false, errorCode: extractAuthCode(raw), rawError: raw || null };
+      }
+
+      const accessToken = String(body?.accessToken || "").trim();
+      const refreshToken = String(body?.refreshToken || "").trim();
+      if (!accessToken || !refreshToken) {
+        return { ok: false, errorCode: "UNKNOWN", rawError: "TOKENS_MISSING" };
+      }
+
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        email,
+        accessToken,
+        refreshToken,
+        callbackUrl: "/superadmin/dashboard",
+      });
+
+      if (!signInResult?.ok) {
+        return {
+          ok: false,
+          errorCode: extractAuthCode(signInResult?.error),
+          rawError: signInResult?.error || null,
+        };
+      }
+
+      router.push("/superadmin/dashboard");
+      return { ok: true };
+    } catch {
+      return { ok: false, errorCode: "UNKNOWN", rawError: null };
+    }
+  }
+
   async function handleAutoStartMfaSetup() {
     setErro("");
     setInfo("");
@@ -131,7 +204,7 @@ export default function SuperAdminLoginClient() {
 
       if (!challengeRes.ok) {
         setErro("Nao foi possivel iniciar a configuracao segura do MFA.");
-        return;
+        return false;
       }
 
       const res = await fetch("/api/superadmin/mfa/setup/start", {
@@ -145,7 +218,7 @@ export default function SuperAdminLoginClient() {
 
       if (!res.ok) {
         setErro(body.message || "Nao foi possivel iniciar a configuracao segura do MFA.");
-        return;
+        return false;
       }
 
       setSetupToken(String(body.setupToken || ""));
@@ -156,6 +229,10 @@ export default function SuperAdminLoginClient() {
       setInfo(
         "Conta sem MFA configurado. Finalize o setup com o app autenticador para concluir o login."
       );
+      return true;
+    } catch {
+      setErro("Nao foi possivel iniciar a configuracao segura do MFA.");
+      return false;
     } finally {
       setLoading(false);
     }
@@ -163,19 +240,32 @@ export default function SuperAdminLoginClient() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    const result = await performLogin();
+    let result = await performLogin();
     if (result.ok) {
       return;
     }
+    let errorCode = getAuthErrorCode(result);
 
-    if (result.ok === false && result.errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
+    if (errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
       await handleAutoStartMfaSetup();
       return;
     }
 
-    if (result.ok === false) {
-      setErro(mapAuthError(result.errorCode));
+    if (errorCode === "UNKNOWN" || errorCode === "AUTH_FAILED") {
+      result = await loginViaBackendAndHydrateSession();
+      if (result.ok) {
+        return;
+      }
+      errorCode = getAuthErrorCode(result);
+      if (errorCode === "SUPERADMIN_MFA_SETUP_REQUIRED") {
+        const setupStarted = await handleAutoStartMfaSetup();
+        if (setupStarted) {
+          return;
+        }
+      }
     }
+
+    setErro(mapAuthError(errorCode));
   }
 
   async function handleConfirmMfaSetup() {
@@ -206,7 +296,10 @@ export default function SuperAdminLoginClient() {
       setInfo("MFA habilitado com sucesso. Realizando login...");
       const result = await performLogin(setupCode.trim());
       if (result.ok === false) {
-        setErro(mapAuthError(result.errorCode));
+        const fallbackResult = await loginViaBackendAndHydrateSession(setupCode.trim());
+        if (!fallbackResult.ok) {
+          setErro(mapAuthError(getAuthErrorCode(fallbackResult)));
+        }
       }
     } finally {
       setLoading(false);

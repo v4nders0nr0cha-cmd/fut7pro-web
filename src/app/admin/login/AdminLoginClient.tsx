@@ -114,6 +114,22 @@ export default function AdminLoginClient() {
       });
 
       const body = await resp.json().catch(() => ({}) as any);
+
+      if (resp.ok && body?.accessToken && body?.refreshToken) {
+        const tokenSignIn = await signIn("credentials", {
+          redirect: false,
+          email,
+          accessToken: body.accessToken,
+          refreshToken: body.refreshToken,
+          authProvider: "credentials",
+        });
+
+        if (tokenSignIn?.ok) {
+          redirectAfterLogin();
+          return;
+        }
+      }
+
       if (handleAuthError(body)) {
         return;
       }

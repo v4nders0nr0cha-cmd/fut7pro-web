@@ -95,8 +95,67 @@ export const superAdminAuthOptions = {
         email: { label: "E-mail", type: "text" },
         password: { label: "Senha", type: "password" },
         mfaCode: { label: "Codigo MFA", type: "text" },
+        accessToken: { label: "Access Token", type: "text" },
+        refreshToken: { label: "Refresh Token", type: "text" },
+        tenantSlug: { label: "Tenant Slug", type: "text" },
+        tenantId: { label: "Tenant Id", type: "text" },
+        role: { label: "Role", type: "text" },
+        name: { label: "Name", type: "text" },
       },
       async authorize(credentials) {
+        if ((credentials as any)?.accessToken) {
+          const accessToken = String((credentials as any).accessToken || "").trim();
+          const refreshToken = String((credentials as any).refreshToken || "").trim() || null;
+          if (!accessToken) {
+            return null;
+          }
+
+          try {
+            const meResponse = await fetch(`${API_BASE_URL}${ME_PATH}`, {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            });
+            if (!meResponse.ok) {
+              return null;
+            }
+
+            const userData = await meResponse.json();
+            const role = String(userData?.role || "").toUpperCase();
+            const isSuperAdmin = role === "SUPERADMIN" || userData?.superadmin === true;
+            if (!isSuperAdmin) {
+              throw new Error("Acesso restrito ao superadmin");
+            }
+
+            const resolvedTenantSlug =
+              userData?.tenantSlug ||
+              userData?.slug ||
+              userData?.tenant?.slug ||
+              userData?.racha?.slug ||
+              (credentials as any).tenantSlug ||
+              null;
+            const resolvedTenantId =
+              userData?.tenantId || userData?.tenant?.id || (credentials as any).tenantId || null;
+            const resolvedImage =
+              userData?.image || userData?.avatar || userData?.avatarUrl || userData?.foto || null;
+
+            return {
+              id: userData.id,
+              name: userData.name,
+              email: userData.email,
+              role: "SUPERADMIN",
+              tenantId: resolvedTenantId,
+              tenantSlug: resolvedTenantSlug,
+              accessToken,
+              refreshToken,
+              image: resolvedImage,
+            } as any;
+          } catch (error) {
+            if (error instanceof Error) {
+              throw error;
+            }
+            throw new Error("AUTH_FAILED");
+          }
+        }
+
         if (!credentials?.email || !credentials?.password) return null;
         try {
           const payload: Record<string, string> = {
