@@ -89,16 +89,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (code === "RACHA_NOT_FOUND") {
-        return json(
-          {
-            code,
-            message:
-              typeof parsedRecord?.message === "string"
-                ? parsedRecord.message
-                : "Racha nao encontrado.",
-          },
-          { status: 404 }
-        );
+        return json(normalizeLookupSuccess(null), { status: 200 });
       }
 
       const status = response.status >= 500 ? 502 : response.status || 400;
