@@ -6,12 +6,22 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
+const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
   return NextResponse.json(body, { ...init, headers });
+}
+
+function normalizePasswordlessStartResponse(payload: unknown) {
+  const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  return {
+    ok: true,
+    message: UNIFORM_AUTH_MESSAGE,
+    ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+  };
 }
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
@@ -49,12 +59,33 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       }),
     });
     const parsed = await response.json().catch(() => null);
-    const body =
-      typeof parsed === "object" && parsed
-        ? parsed
-        : { ok: true, message: "Se estiver tudo certo, enviamos seu codigo." };
+    const parsedRecord =
+      typeof parsed === "object" && parsed ? (parsed as Record<string, unknown>) : null;
 
-    return json(body, { status: response.status || 200 });
+    if (!response.ok) {
+      const code = typeof parsedRecord?.code === "string" ? parsedRecord.code : "";
+      if (code === "CAPTCHA_REQUIRED" || code === "CAPTCHA_INVALID") {
+        return json(
+          {
+            code,
+            message:
+              typeof parsedRecord?.message === "string"
+                ? parsedRecord.message
+                : "Nao foi possivel validar o captcha.",
+            requiresCaptcha: true,
+          },
+          { status: response.status || 429 }
+        );
+      }
+
+      if (response.status >= 500) {
+        return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
+      }
+
+      return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
+    }
+
+    return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
   } catch {
     return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
   }

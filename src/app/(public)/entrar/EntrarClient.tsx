@@ -124,11 +124,6 @@ export default function EntrarClient() {
             );
             return null;
           }
-          if (body?.code === "RACHA_NOT_FOUND") {
-            setResult(null);
-            setError("Racha não encontrado.");
-            return null;
-          }
           setError(body?.message || body?.error || "Nao foi possivel verificar o e-mail.");
           return null;
         }
