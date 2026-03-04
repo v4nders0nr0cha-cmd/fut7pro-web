@@ -2,11 +2,10 @@
 
 import { useMemo, useState } from "react";
 import Head from "next/head";
-import Image from "next/image";
-import Link from "next/link";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import ResponsiveAthleteRanking from "@/components/estatisticas/ResponsiveAthleteRanking";
 
 const quadrimestres = [
   { value: 1, label: "1º Quadrimestre (Jan-Abr)" },
@@ -112,78 +111,24 @@ export default function RankingQuadrimestralPage() {
           />
         </div>
 
-        <div className="overflow-x-auto">
+        <section className="w-full">
           {isLoading && (
-            <div className="text-center text-gray-400 py-8">
-              Carregando ranking quadrimestral...
-            </div>
+            <div className="py-8 text-center text-gray-400">Carregando ranking quadrimestral...</div>
           )}
           {isError && !isLoading && (
-            <div className="text-center text-red-400 py-8">
+            <div className="py-8 text-center text-red-400">
               Erro ao carregar ranking quadrimestral.
-              {error && <div className="text-xs text-red-300 mt-1">{error}</div>}
+              {error && <div className="mt-1 text-xs text-red-300">{error}</div>}
             </div>
           )}
           {!isLoading && !isError && (
-            <table className="w-full text-xs sm:text-sm border border-gray-700 min-w-[600px]">
-              <thead className="bg-[#2a2a2a] text-gray-300">
-                <tr>
-                  <th className="p-2 text-left">#</th>
-                  <th className="p-2 text-left">Atleta</th>
-                  <th className="p-2 text-right text-brand text-base">Pontos</th>
-                  <th className="p-2 text-right">Jogos</th>
-                  <th className="p-2 text-right">Vitórias</th>
-                  <th className="p-2 text-right">Empates</th>
-                  <th className="p-2 text-right">Derrotas</th>
-                  <th className="p-2 text-right">Gols</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rankingFiltrado.map((atleta, idx) => {
-                  let rowClass = "";
-                  if (idx === 0) rowClass = "border-2 border-brand bg-[#232100]";
-                  if (idx === 1) rowClass = "border-2 border-gray-400 bg-[#1e1e1e]";
-                  if (idx === 2) rowClass = "border-2 border-orange-600 bg-[#231c00]";
-
-                  return (
-                    <tr
-                      key={atleta.id}
-                      className={`border-t border-gray-700 hover:bg-[#2a2a2a] transition-all ${rowClass}`}
-                    >
-                      <td className="p-2 font-bold text-brand">{idx + 1}</td>
-                      <td className="flex items-center gap-2 p-2 whitespace-nowrap">
-                        <Link href={publicHref(`/atletas/${atleta.slug}`)}>
-                          <Image
-                            src={atleta.foto}
-                            alt={`Foto de ${atleta.nome}`}
-                            width={32}
-                            height={32}
-                            className="rounded-full border border-brand"
-                          />
-                        </Link>
-                        <Link
-                          href={publicHref(`/atletas/${atleta.slug}`)}
-                          className="text-brand-soft hover:underline font-semibold"
-                          title={`Ver perfil de ${atleta.nome}`}
-                        >
-                          <span className="break-words">{atleta.nome}</span>
-                        </Link>
-                      </td>
-                      <td className="text-right p-2 font-extrabold text-brand text-base">
-                        {atleta.pontos}
-                      </td>
-                      <td className="text-right p-2">{atleta.jogos}</td>
-                      <td className="text-right p-2">{atleta.vitorias}</td>
-                      <td className="text-right p-2">{atleta.empates}</td>
-                      <td className="text-right p-2">{atleta.derrotas}</td>
-                      <td className="text-right p-2">{atleta.gols}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <ResponsiveAthleteRanking
+              athletes={rankingFiltrado}
+              publicHref={publicHref}
+              highlightMode="podium"
+            />
           )}
-        </div>
+        </section>
       </main>
     </>
   );
