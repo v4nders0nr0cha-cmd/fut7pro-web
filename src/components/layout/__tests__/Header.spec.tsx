@@ -14,4 +14,12 @@ describe("Header", () => {
     expect(screen.getByText(/Entrar/i)).toBeInTheDocument();
     expect(screen.getByText(/Atletas do/i)).toBeInTheDocument();
   });
+
+  it("mantem fallback de nome completo no title do nome do racha", () => {
+    render(<Header />);
+    const homeLink = screen.getByRole("link", { name: /Página inicial/i });
+    const tenantNameEl = homeLink.querySelector("span[title]");
+    expect(tenantNameEl).not.toBeNull();
+    expect(tenantNameEl).toHaveAttribute("title");
+  });
 });

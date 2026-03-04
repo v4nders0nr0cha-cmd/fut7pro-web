@@ -80,11 +80,11 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-h-[62px] relative">
+      <div className="relative mx-auto flex min-h-[62px] max-w-7xl items-center gap-1 px-2.5 py-2 sm:px-4">
         {/* Logo e nome */}
         <Link
           href={homeHref}
-          className="flex items-center gap-3 hover:opacity-90 transition-all"
+          className="flex min-w-0 flex-1 items-center gap-2 pr-1 transition-all hover:opacity-90"
           aria-label={`Página inicial ${nome}`}
         >
           <Image
@@ -92,10 +92,13 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             alt={`Logo ${nome} - sistema de futebol`}
             width={44}
             height={44}
-            className="object-contain rounded"
+            className="h-10 w-10 shrink-0 rounded object-contain md:h-11 md:w-11"
             priority
           />
-          <span className="text-2xl font-bold text-brand truncate max-w-[140px] md:max-w-none">
+          <span
+            className="min-w-0 flex-1 truncate whitespace-nowrap text-[1.2rem] font-bold leading-tight text-brand sm:text-[1.28rem] md:text-2xl"
+            title={nome}
+          >
             {nome}
           </span>
         </Link>
@@ -214,7 +217,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </div>
         {/* Botão Mobile */}
         <button
-          className="md:hidden flex h-11 w-11 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand md:hidden"
           onClick={onOpenSidebar}
           aria-label="Abrir menu"
         >
