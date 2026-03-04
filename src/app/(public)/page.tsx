@@ -1,18 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { Shuffle } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import ChampionBanner from "@/components/cards/ChampionBanner";
-import GamesOfTheDayMobileModal from "@/components/cards/GamesOfTheDayMobileModal";
-import TopTeamsCard from "@/components/cards/TopTeamsCard";
 import Card from "@/components/cards/Card";
-import Sidebar from "@/components/layout/Sidebar";
 import PlayerCard from "@/components/cards/PlayerCard";
-import GamesOfTheDay from "@/components/cards/GamesOfTheDay";
-import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
 import { useJogosDoDia } from "@/hooks/useJogosDoDia";
 import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicDestaquesDoDia } from "@/hooks/usePublicDestaquesDoDia";
@@ -27,6 +23,34 @@ const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_TEAM_IMAGE = "/images/torneios/torneio-matador.jpg";
 const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
 const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";
+
+const GamesOfTheDay = dynamic(() => import("@/components/cards/GamesOfTheDay"), {
+  loading: () => (
+    <div className="h-48 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+  ),
+});
+
+const TopTeamsCard = dynamic(() => import("@/components/cards/TopTeamsCard"), {
+  loading: () => (
+    <div className="h-48 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+  ),
+});
+
+const Sidebar = dynamic(() => import("@/components/layout/Sidebar"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[540px] rounded-2xl border border-white/10 bg-white/5 animate-pulse" />
+  ),
+});
+
+const GamesOfTheDayMobileModal = dynamic(
+  () => import("@/components/cards/GamesOfTheDayMobileModal"),
+  { ssr: false }
+);
+
+const DestaquesRegrasModal = dynamic(() => import("@/components/modals/DestaquesRegrasModal"), {
+  ssr: false,
+});
 
 type PositionCode = "ATA" | "MEIA" | "ZAG" | "GOL" | "";
 
@@ -252,6 +276,8 @@ export default function Home() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [regrasOpen, setRegrasOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const [showSecondaryCards, setShowSecondaryCards] = useState(false);
   const {
     jogos: jogosDoDia,
     isLoading: isLoadingJogos,
@@ -513,6 +539,38 @@ export default function Home() {
 
   const hasHighlights = highlightCards.length > 0;
 
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncDesktop = () => setIsDesktop(media.matches);
+    syncDesktop();
+    media.addEventListener("change", syncDesktop);
+    return () => media.removeEventListener("change", syncDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const idleCallback = (window as any).requestIdleCallback as
+      | ((cb: () => void, opts?: { timeout: number }) => number)
+      | undefined;
+    const cancelIdleCallback = (window as any).cancelIdleCallback as
+      | ((id: number) => void)
+      | undefined;
+
+    if (typeof idleCallback === "function") {
+      const idleId = idleCallback(() => setShowSecondaryCards(true), { timeout: 1200 });
+      return () => {
+        if (typeof cancelIdleCallback === "function") {
+          cancelIdleCallback(idleId);
+        }
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => setShowSecondaryCards(true), 350);
+    return () => window.clearTimeout(timeoutId);
+  }, []);
+
   return (
     <>
       <div className="w-full max-w-[1440px] mx-auto px-1 pt-[40px] pb-10 flex flex-col lg:flex-row gap-8">
@@ -560,13 +618,15 @@ export default function Home() {
             >
               Ver todos os destaques do dia
             </button>
-            <GamesOfTheDayMobileModal
-              open={modalOpen}
-              onClose={() => setModalOpen(false)}
-              destaques={modalDestaques}
-              artilheiroMaestro={modalArtilheiroMaestro}
-              isLoading={isLoadingHighlights}
-            />
+            {modalOpen ? (
+              <GamesOfTheDayMobileModal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                destaques={modalDestaques}
+                artilheiroMaestro={modalArtilheiroMaestro}
+                isLoading={isLoadingHighlights}
+              />
+            ) : null}
           </div>
 
           {/* CARDS PRINCIPAIS COM LINKS E ORDEM CORRETA */}
@@ -613,23 +673,36 @@ export default function Home() {
 
           {/* GRID "JOGOS DO DIA" + "CLASSIFICACAO DOS TIMES" */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-            <div className="cursor-pointer">
-              <GamesOfTheDay
-                partidas={jogosDoDia}
-                isLoading={isLoadingJogos}
-                isError={isErrorJogos}
-              />
-            </div>
-            <TopTeamsCard />
+            {showSecondaryCards ? (
+              <>
+                <div className="cursor-pointer">
+                  <GamesOfTheDay
+                    partidas={jogosDoDia}
+                    isLoading={isLoadingJogos}
+                    isError={isErrorJogos}
+                  />
+                </div>
+                <TopTeamsCard />
+              </>
+            ) : (
+              <>
+                <div className="h-48 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+                <div className="h-48 rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+              </>
+            )}
           </div>
         </div>
 
         {/* Sidebar (desktop only) */}
-        <aside className="hidden lg:block w-[340px] flex-shrink-0">
-          <Sidebar />
-        </aside>
+        {isDesktop ? (
+          <aside className="hidden lg:block w-[340px] flex-shrink-0">
+            <Sidebar />
+          </aside>
+        ) : null}
       </div>
-      <DestaquesRegrasModal open={regrasOpen} onClose={() => setRegrasOpen(false)} />
+      {regrasOpen ? (
+        <DestaquesRegrasModal open={regrasOpen} onClose={() => setRegrasOpen(false)} />
+      ) : null}
     </>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Eye, EyeOff } from "lucide-react";
 
 const HIGHLIGHTS = [
   {
@@ -241,13 +241,16 @@ export default function AdminLoginClient() {
   return (
     <main className="relative min-h-screen w-full overflow-hidden bg-[#0b0f16] text-white">
       <div className="absolute inset-0">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage:
-              "linear-gradient(135deg, rgba(11,15,22,0.65) 0%, rgba(14,21,37,0.55) 50%, rgba(11,15,22,0.75) 100%), url('/images/Capa%20trofeu.jpg')",
-          }}
+        <Image
+          src="/images/Capa%20trofeu.jpg"
+          alt=""
+          fill
+          priority
+          quality={65}
+          sizes="100vw"
+          className="object-cover"
         />
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(11,15,22,0.65)_0%,rgba(14,21,37,0.55)_50%,rgba(11,15,22,0.75)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(250,204,21,0.18),_transparent_55%)]" />
         <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-yellow-400/10 blur-3xl animate-pulse" />
         <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-sky-500/10 blur-3xl animate-pulse" />
@@ -392,7 +395,7 @@ export default function AdminLoginClient() {
                       aria-label={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
                       title={senhaVisivel ? "Ocultar senha" : "Mostrar senha"}
                     >
-                      {senhaVisivel ? <FaEyeSlash /> : <FaEye />}
+                      {senhaVisivel ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </label>
