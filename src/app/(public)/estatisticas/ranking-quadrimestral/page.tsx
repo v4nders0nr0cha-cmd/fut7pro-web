@@ -8,9 +8,9 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import ResponsiveAthleteRanking from "@/components/estatisticas/ResponsiveAthleteRanking";
 
 const quadrimestres = [
-  { value: 1, label: "1º Quadrimestre (Jan-Abr)" },
-  { value: 2, label: "2º Quadrimestre (Mai-Ago)" },
-  { value: 3, label: "3º Quadrimestre (Set-Dez)" },
+  { value: 1, label: "Q1 (Jan-Abr)" },
+  { value: 2, label: "Q2 (Mai-Ago)" },
+  { value: 3, label: "Q3 (Set-Dez)" },
 ];
 
 const anoAtual = new Date().getFullYear();
@@ -72,11 +72,11 @@ export default function RankingQuadrimestralPage() {
               sua posição. Use o seletor ao lado para mudar o ano e o quadrimestre da tabela.
             </p>
           </div>
-          <div className="flex flex-row gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <select
               value={anoSelecionado}
               onChange={(e) => setAno(Number(e.target.value))}
-              className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none"
+              className="w-full bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none sm:w-auto"
               aria-label="Selecionar ano"
             >
               {anosDisponiveis.map((anoOpt) => (
@@ -88,7 +88,7 @@ export default function RankingQuadrimestralPage() {
             <select
               value={quadrimestre}
               onChange={(e) => setQuadrimestre(Number(e.target.value))}
-              className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none"
+              className="w-full bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none sm:w-auto"
               aria-label="Selecionar quadrimestre"
             >
               {quadrimestres.map((q) => (
