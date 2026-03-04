@@ -113,7 +113,9 @@ export default function RankingQuadrimestralPage() {
 
         <section className="w-full">
           {isLoading && (
-            <div className="py-8 text-center text-gray-400">Carregando ranking quadrimestral...</div>
+            <div className="py-8 text-center text-gray-400">
+              Carregando ranking quadrimestral...
+            </div>
           )}
           {isError && !isLoading && (
             <div className="py-8 text-center text-red-400">

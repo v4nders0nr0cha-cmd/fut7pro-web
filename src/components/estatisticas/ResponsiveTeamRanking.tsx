@@ -62,7 +62,10 @@ export default function ResponsiveTeamRanking({
 
               <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
                 {teamStats.map((stat) => (
-                  <div key={stat.key} className="flex items-center justify-between rounded bg-[#202020] px-2 py-1">
+                  <div
+                    key={stat.key}
+                    className="flex items-center justify-between rounded bg-[#202020] px-2 py-1"
+                  >
                     <dt className="text-gray-400">{stat.label}</dt>
                     <dd className="font-semibold text-white">{team[stat.key]}</dd>
                   </div>
@@ -109,7 +112,9 @@ export default function ResponsiveTeamRanking({
                       <span>{team.nome}</span>
                     </div>
                   </td>
-                  <td className="p-2 text-right text-base font-extrabold text-brand">{team.pontos}</td>
+                  <td className="p-2 text-right text-base font-extrabold text-brand">
+                    {team.pontos}
+                  </td>
                   <td className="p-2 text-right">{team.jogos}</td>
                   <td className="p-2 text-right">{team.vitorias}</td>
                   <td className="p-2 text-right">{team.empates}</td>

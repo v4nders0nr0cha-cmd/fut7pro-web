@@ -84,7 +84,9 @@ export default function ClassificacaoTimesPage() {
 
         <section className="w-full px-2 pb-8 sm:px-4">
           {isLoading && (
-            <div className="py-8 text-center text-gray-400">Carregando classificação dos times...</div>
+            <div className="py-8 text-center text-gray-400">
+              Carregando classificação dos times...
+            </div>
           )}
           {isError && !isLoading && (
             <div className="py-8 text-center text-red-400">
