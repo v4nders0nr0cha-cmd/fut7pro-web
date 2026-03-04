@@ -142,7 +142,7 @@ export default function PlayerCard({
               type="button"
               onClick={handleRulesClick}
               aria-label="Regras dos Destaques do Dia"
-              className="rounded-full border border-white/10 bg-white/5 p-1 text-gray-200 hover:text-brand-soft"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 text-gray-200 hover:text-brand-soft"
             >
               <Info size={14} />
             </button>
