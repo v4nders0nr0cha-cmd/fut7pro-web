@@ -69,7 +69,7 @@ export default function RankingAnualPage() {
           <select
             value={anoSelecionado}
             onChange={(e) => setAno(Number(e.target.value))}
-            className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm focus:outline-none"
+            className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none"
             aria-label="Selecionar ano"
           >
             {anosDisponiveis.map((anoOpt) => (
