@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { isSuperAdminLegacyEnabled } from "@/lib/feature-flags";
+import { buildWebCsp, WEB_SECURITY_HEADERS } from "@/lib/security/csp";
+import { buildSecurityRequestHeaders } from "@/lib/security/requestHeaders";
 
 const SUPERADMIN_LEGACY_PATHS = [
   "/superadmin/automacoes",
@@ -62,22 +64,34 @@ async function resolveSuperAdminToken(req: NextRequest) {
   });
 }
 
+function applyWebSecurityHeaders(res: NextResponse, csp: string) {
+  res.headers.set("Content-Security-Policy", csp);
+  for (const header of WEB_SECURITY_HEADERS) {
+    res.headers.set(header.key, header.value);
+  }
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Não mexa em headers de cache das APIs
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  const nonce = crypto.randomUUID().replace(/-/g, "");
+  const csp = buildWebCsp({ nonce });
+
   if (!isSuperAdminLegacyEnabled() && isLegacySuperAdminPath(pathname)) {
-    return new NextResponse("Not Found", {
+    const legacyResponse = new NextResponse("Not Found", {
       status: 404,
       headers: {
         "Cache-Control": "no-store, max-age=0, must-revalidate",
         "X-Robots-Tag": "noindex, nofollow",
       },
     });
-  }
-
-  // Não mexa em headers de cache das APIs
-  if (pathname.startsWith("/api")) {
-    return NextResponse.next();
+    return applyWebSecurityHeaders(legacyResponse, csp);
   }
 
   if (shouldProtectSuperAdminPath(pathname)) {
@@ -90,7 +104,7 @@ export async function middleware(req: NextRequest) {
       if (nextPath && nextPath !== "/superadmin/login") {
         loginUrl.searchParams.set("next", nextPath);
       }
-      return NextResponse.redirect(loginUrl);
+      return applyWebSecurityHeaders(NextResponse.redirect(loginUrl), csp);
     }
   }
 
@@ -98,14 +112,15 @@ export async function middleware(req: NextRequest) {
   if (adminMatch) {
     const redirectUrl = new URL("/admin/selecionar-racha", req.url);
     redirectUrl.search = req.nextUrl.search;
-    return NextResponse.redirect(redirectUrl, 308);
+    return applyWebSecurityHeaders(NextResponse.redirect(redirectUrl, 308), csp);
   }
 
-  const requestHeaders = new Headers(req.headers);
+  let requestHeaders = new Headers(req.headers);
   const publicSlug = resolvePublicTenantSlug(pathname);
   if (publicSlug) {
     requestHeaders.set("x-public-tenant-slug", publicSlug);
   }
+  requestHeaders = buildSecurityRequestHeaders(requestHeaders, nonce, csp);
 
   const res = NextResponse.next({
     request: {
@@ -121,7 +136,7 @@ export async function middleware(req: NextRequest) {
   // Cache para páginas (não-API) - só se não for API
   res.headers.set("Cache-Control", "public, max-age=0, must-revalidate");
 
-  return res;
+  return applyWebSecurityHeaders(res, csp);
 }
 
 // reduz custo: não roda em _next/static, imagens, favicon, robots, sitemap

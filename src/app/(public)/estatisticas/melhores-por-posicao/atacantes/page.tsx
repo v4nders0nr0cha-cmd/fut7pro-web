@@ -84,7 +84,7 @@ export default function RankingAtacantesPage() {
               <select
                 value={periodo}
                 onChange={(e) => setPeriodo(e.target.value)}
-                className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm focus:outline-none"
+                className="bg-zinc-900 text-brand border border-brand rounded px-3 py-2 text-sm min-h-[44px] focus:outline-none"
                 aria-label="Selecionar período do ranking"
               >
                 {periodos.map((p) => (

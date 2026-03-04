@@ -20,18 +20,21 @@ export default function CookieConsent() {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 max-w-xl w-[92%] rounded-md bg-neutral-800 text-white p-4 shadow-lg border border-neutral-700">
+    <div className="fixed bottom-4 left-1/2 z-50 w-[92%] max-w-xl -translate-x-1/2 rounded-md border border-neutral-700 bg-neutral-800 p-4 text-white shadow-lg">
       <p className="text-sm">
         Usamos cookies essenciais para funcionamento e, opcionalmente, para analytics após seu
         consentimento. Leia nossos{" "}
-        <a href={publicHref("/privacidade")} className="underline">
+        <a
+          href={publicHref("/privacidade")}
+          className="inline-flex min-h-[44px] items-center underline underline-offset-2"
+        >
           termos de privacidade
         </a>
         .
       </p>
-      <div className="mt-3 flex gap-2 justify-end">
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-end">
         <button
-          className="px-3 py-1 rounded bg-neutral-600 hover:bg-neutral-500 text-sm"
+          className="min-h-[44px] rounded bg-neutral-600 px-4 py-2 text-sm font-semibold hover:bg-neutral-500"
           onClick={() => {
             try {
               localStorage.setItem(STORAGE_KEY, "rejected");
@@ -42,7 +45,7 @@ export default function CookieConsent() {
           Rejeitar
         </button>
         <button
-          className="px-3 py-1 rounded bg-green-600 hover:bg-green-500 text-sm"
+          className="min-h-[44px] rounded bg-green-600 px-4 py-2 text-sm font-semibold hover:bg-green-500"
           onClick={() => {
             try {
               localStorage.setItem(STORAGE_KEY, "accepted");

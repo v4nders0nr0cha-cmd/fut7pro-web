@@ -120,7 +120,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               <Link
                 key={item.href}
                 href={publicHref(item.href)}
-                className="relative flex items-center gap-2 group px-2 py-1 rounded-lg transition"
+                className="group relative flex min-h-[44px] items-center gap-2 rounded-lg px-2 py-2 transition"
                 aria-label={item.label}
                 onClick={handleClick}
               >
@@ -214,12 +214,12 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </div>
         {/* Botão Mobile */}
         <button
-          className="md:hidden text-white focus:outline-none"
+          className="md:hidden flex h-11 w-11 items-center justify-center rounded-lg text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           onClick={onOpenSidebar}
           aria-label="Abrir menu"
         >
           <svg
-            className="w-7 h-7"
+            className="h-6 w-6"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"

@@ -53,8 +53,8 @@ export default function TopNavMenu() {
   const { publicHref } = usePublicLinks();
 
   return (
-    <nav className="w-full border-b border-[#232323] bg-[#181818] flex justify-center z-40 select-none animate-slide-down">
-      <ul className="flex gap-6 md:gap-12 py-3">
+    <nav className="w-full border-b border-[#232323] bg-[#181818] z-40 select-none animate-slide-down">
+      <ul className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 py-3 md:gap-x-8 lg:gap-x-12">
         {pages.map(({ href, label, icon }) => {
           const resolvedHref = publicHref(href);
           const isActive =
@@ -69,7 +69,7 @@ export default function TopNavMenu() {
             <li key={href} className="relative">
               <Link
                 href={resolvedHref}
-                className={`flex items-center px-2 transition-all duration-300 ${
+                className={`flex min-h-[44px] items-center px-1 py-2 transition-all duration-300 ${
                   isActive
                     ? "text-brand font-extrabold"
                     : "text-zinc-200 hover:text-brand font-semibold"
@@ -78,7 +78,7 @@ export default function TopNavMenu() {
                 aria-current={isActive ? "page" : undefined}
               >
                 {icon}
-                <span className="text-base uppercase">{label}</span>
+                <span className="text-sm uppercase md:text-base">{label}</span>
               </Link>
               {isActive && (
                 <span className="absolute left-0 -bottom-1 w-full h-[2px] bg-brand rounded animate-pulse" />
