@@ -104,6 +104,8 @@ const RESERVED_SLUGS = new Set([
 type UploadTarget = "logo" | "avatar";
 type Step = 1 | 2 | 3;
 type AccessFlow = "identify" | "existing-password" | "wizard";
+type ExistingAuthMethod = "code" | "password";
+type ExistingGlobalAuthMode = "none" | "code" | "password" | "google";
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid" | "error";
 type BillingInterval = "month" | "year";
 type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error";
@@ -148,6 +150,8 @@ const resolveFirstNameFromEmail = (email?: string | null) => {
   return resolveFirstName(normalized);
 };
 
+const PASSWORDLESS_RESEND_COOLDOWN_SECONDS = 60;
+
 function CadastroRachaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -155,6 +159,8 @@ function CadastroRachaPageContent() {
   const isGoogle = (session?.user as any)?.authProvider === "google";
   const googleIntent = searchParams.get("google") === "1";
   const handledGoogleIntentRef = useRef(false);
+  const googlePrefillAppliedRef = useRef(false);
+  const lookupEmailInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>(1);
   const [accessFlow, setAccessFlow] = useState<AccessFlow>("identify");
@@ -166,10 +172,17 @@ function CadastroRachaPageContent() {
   const [lookupEmail, setLookupEmail] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
+  const [existingAuthMethod, setExistingAuthMethod] = useState<ExistingAuthMethod>("code");
+  const [existingCode, setExistingCode] = useState("");
+  const [existingCodeSent, setExistingCodeSent] = useState(false);
+  const [existingCodeInfo, setExistingCodeInfo] = useState("");
+  const [existingCodeCooldown, setExistingCodeCooldown] = useState(0);
   const [, setExistingHasPassword] = useState(true);
   const [existingLoginLoading, setExistingLoginLoading] = useState(false);
   const [existingLoginError, setExistingLoginError] = useState("");
   const [showExistingSenha, setShowExistingSenha] = useState(false);
+  const [existingGlobalAuthMode, setExistingGlobalAuthMode] =
+    useState<ExistingGlobalAuthMode>("none");
 
   const [adminNome, setAdminNome] = useState("");
   const [adminNomeTouched, setAdminNomeTouched] = useState(false);
@@ -339,19 +352,35 @@ function CadastroRachaPageContent() {
   }, []);
 
   useEffect(() => {
-    if (!isGoogle) return;
-    const googleEmailInner = (session?.user as any)?.email as string | undefined;
-    const googleName = (session?.user as any)?.name as string | undefined;
-    if (googleEmailInner && adminEmail !== googleEmailInner) {
-      setAdminEmail(googleEmailInner);
+    if (!isGoogle) {
+      googlePrefillAppliedRef.current = false;
+      return;
     }
-    if (googleEmailInner && lookupEmail !== googleEmailInner) {
-      setLookupEmail(googleEmailInner);
+    if (googlePrefillAppliedRef.current) return;
+
+    const googleEmailInner = String((session?.user as any)?.email || "")
+      .trim()
+      .toLowerCase();
+    const googleName = (session?.user as any)?.name as string | undefined;
+
+    if (googleEmailInner) {
+      setAdminEmail((prev) => (prev.trim() ? prev : googleEmailInner));
+      setLookupEmail((prev) => (prev.trim() ? prev : googleEmailInner));
     }
     if (googleName && !adminNome && !adminNomeTouched) {
       setAdminNome(googleName.split(" ")[0]);
     }
-  }, [adminEmail, adminNome, adminNomeTouched, isGoogle, lookupEmail, session?.user]);
+
+    googlePrefillAppliedRef.current = true;
+  }, [adminNome, adminNomeTouched, isGoogle, session?.user]);
+
+  useEffect(() => {
+    if (existingCodeCooldown <= 0) return;
+    const timer = window.setTimeout(() => {
+      setExistingCodeCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [existingCodeCooldown]);
 
   useEffect(() => {
     if (!isGoogle) {
@@ -381,9 +410,14 @@ function CadastroRachaPageContent() {
 
     setLookupError("");
     setExistingLoginError("");
+    setExistingCodeInfo("");
+    setExistingCode("");
+    setExistingCodeSent(false);
+    setExistingCodeCooldown(0);
     setFormError("");
     setSucesso("Conta global conectada com Google. Continue com os dados do racha.");
     setUseExistingGlobalAccount(true);
+    setExistingGlobalAuthMode("google");
     setAdminEmail(sessionEmail);
     setLookupEmail(sessionEmail);
     if (!adminNome) {
@@ -568,13 +602,20 @@ function CadastroRachaPageContent() {
       }
 
       setAdminEmail(normalizedEmail);
+      setLookupEmail(normalizedEmail);
       setUseExistingGlobalAccount(false);
+      setExistingGlobalAuthMode("none");
       setExistingHasPassword(true);
+      setExistingAuthMethod("code");
+      setExistingCode("");
+      setExistingCodeSent(false);
+      setExistingCodeInfo("");
+      setExistingCodeCooldown(0);
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
       setAccessFlow("existing-password");
-      setSucesso(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
+      setExistingCodeInfo(body?.message || "Se estiver tudo certo, enviamos seu código.");
     } catch {
       setLookupError("Não foi possível verificar agora. Tente novamente.");
     } finally {
@@ -583,15 +624,153 @@ function CadastroRachaPageContent() {
   }
 
   function handleBackToIdentify() {
+    googlePrefillAppliedRef.current = true;
     setAccessFlow("identify");
     setUseExistingGlobalAccount(false);
+    setExistingGlobalAuthMode("none");
+    setExistingAuthMethod("code");
+    setExistingCode("");
+    setExistingCodeSent(false);
+    setExistingCodeInfo("");
+    setExistingCodeCooldown(0);
     setExistingLoginError("");
     setLookupError("");
     setFormError("");
     setSucesso("");
+    setLookupEmail("");
+    setAdminEmail("");
     setAdminSenha("");
     setAdminConfirmSenha("");
     setShowExistingSenha(false);
+    requestAnimationFrame(() => {
+      lookupEmailInputRef.current?.focus();
+    });
+  }
+
+  async function handleRequestPasswordlessCode(isResend = false) {
+    const email = adminEmail.trim().toLowerCase();
+    if (!email) {
+      setExistingLoginError("Informe um e-mail válido.");
+      return;
+    }
+    if (isResend && existingCodeCooldown > 0) {
+      return;
+    }
+
+    setExistingLoginLoading(true);
+    setExistingLoginError("");
+    setFormError("");
+    setSucesso("");
+
+    try {
+      const response = await fetch("/api/auth/passwordless/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          body?.message || body?.error || "Não foi possível enviar o código de acesso agora.";
+        setExistingLoginError(message);
+        return;
+      }
+
+      setExistingCodeSent(true);
+      setExistingCode("");
+      setExistingCodeInfo(
+        isResend
+          ? "Se estiver tudo certo, enviamos um novo código para seu e-mail."
+          : body?.message || "Se estiver tudo certo, enviamos seu código."
+      );
+      setExistingCodeCooldown(PASSWORDLESS_RESEND_COOLDOWN_SECONDS);
+    } catch {
+      setExistingLoginError("Não foi possível enviar o código agora. Tente novamente.");
+    } finally {
+      setExistingLoginLoading(false);
+    }
+  }
+
+  async function handleExistingCodeLogin() {
+    const email = adminEmail.trim().toLowerCase();
+    const normalizedCode = existingCode.replace(/\D+/g, "");
+
+    if (!email) {
+      setExistingLoginError("Informe um e-mail válido.");
+      return;
+    }
+    if (normalizedCode.length !== 6) {
+      setExistingLoginError("Informe o código de acesso com 6 dígitos.");
+      return;
+    }
+
+    setExistingLoginLoading(true);
+    setExistingLoginError("");
+    setFormError("");
+    setSucesso("");
+
+    try {
+      const response = await fetch("/api/auth/passwordless/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: normalizedCode }),
+      });
+      const body = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const code = String(body?.code || "")
+          .trim()
+          .toUpperCase();
+        if (response.status === 429 || code === "PASSWORDLESS_TOO_MANY_ATTEMPTS") {
+          setExistingLoginError("Muitas tentativas, aguarde alguns minutos.");
+          return;
+        }
+        setExistingLoginError("Código inválido ou expirado, tente novamente.");
+        return;
+      }
+
+      const accessToken = body?.accessToken;
+      const refreshToken = body?.refreshToken;
+      if (!accessToken || !refreshToken) {
+        setExistingLoginError("Não foi possível concluir o acesso por código.");
+        return;
+      }
+
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        accessToken,
+        refreshToken,
+        authProvider: "passwordless",
+      });
+      if (signInResult?.error) {
+        setExistingLoginError("Não foi possível concluir o acesso por código.");
+        return;
+      }
+
+      const fallbackName = resolveFirstNameFromEmail(email) || "Administrador";
+
+      if (!adminNome) {
+        setAdminNome(fallbackName);
+      }
+      if (!adminPosicao) {
+        setAdminPosicao(POSICOES[0]);
+      }
+
+      setUseExistingGlobalAccount(true);
+      setExistingGlobalAuthMode("code");
+      setAdminSenha("");
+      setAdminConfirmSenha("");
+      setShowExistingSenha(false);
+      setStep(2);
+      setErrors({});
+      setAccessFlow("wizard");
+      setSucesso("Conta global validada por código. Continue com os dados do racha.");
+    } catch {
+      setExistingLoginError("Não foi possível validar o código agora. Tente novamente.");
+    } finally {
+      setExistingLoginLoading(false);
+    }
   }
 
   async function handleExistingGlobalLogin() {
@@ -616,7 +795,7 @@ function CadastroRachaPageContent() {
       });
 
       if (!result?.ok || result.error) {
-        setExistingLoginError("E-mail ou senha inválidos.");
+        setExistingLoginError("Senha incorreta.");
         return;
       }
 
@@ -629,6 +808,10 @@ function CadastroRachaPageContent() {
         setAdminPosicao(POSICOES[0]);
       }
       setUseExistingGlobalAccount(true);
+      setExistingGlobalAuthMode("password");
+      setAdminSenha("");
+      setAdminConfirmSenha("");
+      setShowExistingSenha(false);
       setStep(2);
       setErrors({});
       setAccessFlow("wizard");
@@ -711,13 +894,15 @@ function CadastroRachaPageContent() {
         setFormError("Não foi possível identificar o primeiro nome do administrador.");
         return;
       }
-      if (useExistingGlobalAccount && !isGoogle && !normalizedPassword) {
+      if (useExistingGlobalAccount && existingGlobalAuthMode === "none") {
         setAccessFlow("existing-password");
-        setFormError("Confirme a senha da conta global para concluir o cadastro do racha.");
+        setFormError("Valide sua conta antes de concluir o cadastro do racha.");
         return;
       }
 
-      const endpoint = isGoogle ? "/api/admin/register-google" : "/api/admin/register";
+      const endpoint = useExistingGlobalAccount
+        ? "/api/admin/register-session"
+        : "/api/admin/register";
       const payload = {
         rachaNome: rachaNome.trim(),
         rachaSlug: rachaSlug.trim(),
@@ -729,7 +914,11 @@ function CadastroRachaPageContent() {
         adminApelido: adminApelido.trim() || undefined,
         adminPosicao: normalizedPosition,
         adminEmail: normalizedEmail,
-        adminSenha: normalizedPassword,
+        adminSenha: useExistingGlobalAccount
+          ? isGoogle && defineSenha
+            ? normalizedPassword
+            : undefined
+          : normalizedPassword,
         adminAvatarBase64: adminAvatar,
         planKey: selectedPlanKey,
         couponCode: couponStatus === "valid" ? couponCode.trim() : undefined,
@@ -753,7 +942,7 @@ function CadastroRachaPageContent() {
       const slugParaConfirmar = body?.tenantSlug || rachaSlug.trim();
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
 
-      if (useExistingGlobalAccount && !isGoogle) {
+      if (useExistingGlobalAccount) {
         setSucesso("Racha cadastrado com conta global. Redirecionando para o painel.");
         const accessToken = body?.accessToken;
         const refreshToken = body?.refreshToken;
@@ -765,7 +954,7 @@ function CadastroRachaPageContent() {
             refreshToken,
             email: normalizedEmail,
             name: normalizedName,
-            authProvider: "credentials",
+            authProvider: existingGlobalAuthMode === "google" ? "google" : "credentials",
           });
 
           if (signInResult?.error) {
@@ -791,27 +980,7 @@ function CadastroRachaPageContent() {
         return;
       }
 
-      if (isGoogle) {
-        setSucesso("Cadastro realizado! Redirecionando para o painel.");
-        const accessToken = body?.accessToken;
-        const refreshToken = body?.refreshToken;
-        if (accessToken && refreshToken) {
-          const signInResult = await signIn("credentials", {
-            redirect: false,
-            accessToken,
-            refreshToken,
-            authProvider: "google",
-          });
-          if (signInResult?.error) {
-            setFormError("Nao foi possivel finalizar o acesso. Tente novamente.");
-            return;
-          }
-        }
-        router.push("/admin/selecionar-racha");
-        return;
-      }
-
-      setSucesso("Cadastro realizado! Agora faca login para acessar o painel.");
+      setSucesso("Cadastro realizado! Agora faça login para acessar o painel.");
       setTimeout(() => router.push("/admin/login"), 1200);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
@@ -830,7 +999,15 @@ function CadastroRachaPageContent() {
     }
 
     if (accessFlow === "existing-password") {
-      await handleExistingGlobalLogin();
+      if (existingAuthMethod === "password") {
+        await handleExistingGlobalLogin();
+        return;
+      }
+      if (!existingCodeSent) {
+        await handleRequestPasswordlessCode(false);
+        return;
+      }
+      await handleExistingCodeLogin();
       return;
     }
 
@@ -915,9 +1092,17 @@ function CadastroRachaPageContent() {
         ? "Verificando..."
         : "Continuar"
       : accessFlow === "existing-password"
-        ? existingLoginLoading
-          ? "Entrando..."
-          : "Entrar e ir para etapa 2"
+        ? existingAuthMethod === "password"
+          ? existingLoginLoading
+            ? "Entrando..."
+            : "Entrar com senha e ir para etapa 2"
+          : existingLoginLoading
+            ? existingCodeSent
+              ? "Validando código..."
+              : "Enviando código..."
+            : existingCodeSent
+              ? "Entrar com código e ir para etapa 2"
+              : "Enviar código de acesso"
         : step === 3
           ? isLoading
             ? "Finalizando..."
@@ -928,10 +1113,15 @@ function CadastroRachaPageContent() {
     accessFlow === "identify"
       ? lookupLoading
       : accessFlow === "existing-password"
-        ? existingLoginLoading || !adminSenha.trim()
+        ? existingAuthMethod === "password"
+          ? existingLoginLoading || !adminSenha.trim()
+          : existingLoginLoading ||
+            (existingCodeSent && existingCode.replace(/\D+/g, "").length !== 6)
         : isLoading;
 
   const showWizardBackButton = accessFlow === "wizard" && step > 1;
+  const showInlineExistingActions = accessFlow === "existing-password";
+  const showFooterActions = !showInlineExistingActions;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -992,7 +1182,7 @@ function CadastroRachaPageContent() {
                   />
                   <h2 className="text-2xl font-bold text-white">Entrar no Fut7Pro</h2>
                   <p className="text-sm text-gray-300">
-                    Continue com Google ou informe seu e-mail para seguir com seguranca.
+                    Continue com Google ou informe seu e-mail para seguir com segurança.
                   </p>
                 </div>
 
@@ -1018,6 +1208,7 @@ function CadastroRachaPageContent() {
                   Seu e-mail
                 </label>
                 <input
+                  ref={lookupEmailInputRef}
                   type="email"
                   value={lookupEmail}
                   onChange={(event) => {
@@ -1026,7 +1217,8 @@ function CadastroRachaPageContent() {
                   }}
                   placeholder="ex: seuemail@dominio.com"
                   autoCapitalize="none"
-                  autoComplete="email"
+                  autoComplete="off"
+                  autoFocus
                   inputMode="email"
                   spellCheck={false}
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -1039,100 +1231,222 @@ function CadastroRachaPageContent() {
                 )}
 
                 <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                  Por seguranca, esta etapa nao mostra o status da conta. Se estiver tudo certo,
-                  enviamos seu codigo e voce segue para continuar.
+                  Por segurança, esta etapa não mostra o status da conta. Se estiver tudo certo,
+                  enviamos seu código e você segue para continuar.
                 </div>
               </div>
             )}
 
             {accessFlow === "existing-password" && (
               <div className="space-y-4">
-                <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4">
-                  <h2 className="text-sm font-semibold text-white">Continuar acesso</h2>
-                  <p className="mt-1 text-xs text-gray-300">
-                    E-mail informado: <span className="font-semibold text-white">{adminEmail}</span>
-                  </p>
-                  <p className="mt-2 text-xs text-gray-400">
-                    Se voce ja possui conta, entre com sua senha para avancar direto para a etapa 2.
-                    Se nao possuir conta, continue para criar uma nova.
-                  </p>
-                </div>
+                <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4 space-y-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-white">Continuar acesso</h2>
+                    <p className="mt-1 text-xs text-gray-300">
+                      E-mail informado:{" "}
+                      <span className="font-semibold text-white break-all">{adminEmail}</span>
+                    </p>
+                    <p className="mt-2 text-xs text-gray-400">
+                      Escolha como deseja continuar com este e-mail. Depois da validação, você segue
+                      direto para a etapa 2.
+                    </p>
+                  </div>
 
-                <label className="text-xs text-gray-400">
-                  Senha da conta global
-                  <div className="relative mt-2">
-                    <input
-                      type={showExistingSenha ? "text" : "password"}
-                      value={adminSenha}
-                      onChange={(e) => {
-                        setAdminSenha(e.target.value);
-                        setExistingLoginError("");
-                      }}
-                      autoComplete="current-password"
-                      className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      placeholder="Digite sua senha"
-                    />
+                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#111522] p-1">
                     <button
                       type="button"
-                      onClick={() => setShowExistingSenha((prev) => !prev)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                      onClick={() => {
+                        setExistingAuthMethod("code");
+                        setExistingLoginError("");
+                      }}
+                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
+                        existingAuthMethod === "code"
+                          ? "bg-yellow-400 text-black"
+                          : "text-gray-300 hover:text-white"
+                      }`}
                     >
-                      {showExistingSenha ? "Ocultar" : "Mostrar"}
+                      Código por e-mail
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExistingAuthMethod("password");
+                        setExistingLoginError("");
+                      }}
+                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
+                        existingAuthMethod === "password"
+                          ? "bg-yellow-400 text-black"
+                          : "text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      Entrar com senha
                     </button>
                   </div>
-                </label>
 
-                <button
-                  type="button"
-                  onClick={() => signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })}
-                  disabled={sessionStatus === "loading"}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
-                    Entrar com Google
-                  </span>
-                </button>
+                  {existingAuthMethod === "code" ? (
+                    <div className="space-y-3">
+                      {!existingCodeSent && (
+                        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
+                          Use o código enviado para o seu e-mail. Essa é a forma principal de
+                          continuar o acesso.
+                        </div>
+                      )}
 
-                <button
-                  type="button"
-                  onClick={handleBackToIdentify}
-                  className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
-                >
-                  Usar outro e-mail
-                </button>
+                      {existingCodeSent && (
+                        <label className="text-xs text-gray-300">
+                          Código de acesso (6 dígitos)
+                          <input
+                            type="text"
+                            value={existingCode}
+                            onChange={(event) => {
+                              setExistingCode(event.target.value.replace(/\D+/g, "").slice(0, 6));
+                              setExistingLoginError("");
+                            }}
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            placeholder="Digite os 6 dígitos"
+                            className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          />
+                        </label>
+                      )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fallbackName = resolveFirstNameFromEmail(adminEmail);
-                    setUseExistingGlobalAccount(false);
-                    setExistingHasPassword(true);
-                    setAdminSenha("");
-                    setAdminConfirmSenha("");
-                    setShowExistingSenha(false);
-                    if (!adminNome) {
-                      setAdminNome(fallbackName);
-                    }
-                    if (!adminPosicao) {
-                      setAdminPosicao(POSICOES[0]);
-                    }
-                    setStep(1);
-                    setAccessFlow("wizard");
-                    setSucesso(
-                      "Continue preenchendo os dados para criar sua conta e cadastrar o racha."
-                    );
-                  }}
-                  className="w-full rounded-lg border border-yellow-300/40 bg-yellow-300/10 px-3 py-2 text-xs font-semibold text-yellow-100 hover:border-yellow-200/70"
-                >
-                  Nao tenho conta, criar agora
-                </button>
+                      {existingCodeSent && (
+                        <button
+                          type="button"
+                          onClick={() => void handleRequestPasswordlessCode(true)}
+                          disabled={existingLoginLoading || existingCodeCooldown > 0}
+                          className="text-xs text-yellow-300 underline disabled:opacity-60 disabled:no-underline"
+                        >
+                          {existingCodeCooldown > 0
+                            ? `Reenviar em ${existingCodeCooldown}s`
+                            : "Reenviar código"}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="text-xs text-gray-300">
+                      Senha da conta global
+                      <div className="relative mt-2">
+                        <input
+                          type={showExistingSenha ? "text" : "password"}
+                          value={adminSenha}
+                          onChange={(e) => {
+                            setAdminSenha(e.target.value);
+                            setExistingLoginError("");
+                          }}
+                          autoComplete="current-password"
+                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          placeholder="Digite sua senha"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowExistingSenha((prev) => !prev)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                        >
+                          {showExistingSenha ? "Ocultar" : "Mostrar"}
+                        </button>
+                      </div>
+                    </label>
+                  )}
 
-                {existingLoginError && (
-                  <div className="rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-xs text-red-200">
-                    {existingLoginError}
-                  </div>
-                )}
+                  {existingAuthMethod === "code" && existingCodeInfo && (
+                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                      {existingCodeInfo}
+                    </div>
+                  )}
+                  {existingLoginError && (
+                    <div className="rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-xs text-red-200">
+                      {existingLoginError}
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (existingAuthMethod === "password") {
+                        void handleExistingGlobalLogin();
+                        return;
+                      }
+                      if (!existingCodeSent) {
+                        void handleRequestPasswordlessCode(false);
+                        return;
+                      }
+                      void handleExistingCodeLogin();
+                    }}
+                    disabled={isPrimaryDisabled}
+                    className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {primaryActionLabel}
+                  </button>
+                </div>
+
+                <div className="rounded-xl border border-[#23283a] bg-[#131724] p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-white">Entrar com outra conta</h3>
+                  <p className="text-xs text-gray-400">
+                    Troque o e-mail atual ou continue com outro login para não misturar contas.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleBackToIdentify}
+                    className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
+                  >
+                    Usar outro e-mail
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })}
+                    disabled={sessionStatus === "loading"}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
+                      Entrar com Google
+                    </span>
+                  </button>
+                </div>
+
+                <div className="rounded-xl border border-yellow-300/30 bg-yellow-300/10 p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-yellow-100">
+                    Não tenho conta, criar agora
+                  </h3>
+                  <p className="text-xs text-yellow-50/90">
+                    Vamos criar sua conta global Fut7Pro e seguir para o cadastro completo do racha.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fallbackName = resolveFirstNameFromEmail(adminEmail);
+                      setUseExistingGlobalAccount(false);
+                      setExistingGlobalAuthMode("none");
+                      setExistingHasPassword(true);
+                      setExistingAuthMethod("code");
+                      setExistingCode("");
+                      setExistingCodeSent(false);
+                      setExistingCodeInfo("");
+                      setExistingCodeCooldown(0);
+                      setExistingLoginError("");
+                      setAdminSenha("");
+                      setAdminConfirmSenha("");
+                      setShowExistingSenha(false);
+                      if (!adminNome) {
+                        setAdminNome(fallbackName);
+                      }
+                      if (!adminPosicao) {
+                        setAdminPosicao(POSICOES[0]);
+                      }
+                      setStep(1);
+                      setAccessFlow("wizard");
+                      setSucesso(
+                        "Conta nova selecionada. Continue preenchendo os dados para criar seu acesso."
+                      );
+                    }}
+                    className="w-full rounded-lg border border-yellow-200/70 bg-yellow-300/20 px-3 py-2 text-xs font-semibold text-yellow-100 hover:border-yellow-100"
+                  >
+                    Criar conta e continuar
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1697,7 +2011,7 @@ function CadastroRachaPageContent() {
                   )}
                   {couponStatus === "error" && (
                     <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-                      Nao foi possivel validar agora. Tente novamente.
+                      Não foi possível validar agora. Tente novamente.
                     </div>
                   )}
                 </div>
@@ -1719,35 +2033,37 @@ function CadastroRachaPageContent() {
               </>
             )}
 
-            {formError && (
+            {formError && !showInlineExistingActions && (
               <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-sm text-red-200">
                 {formError}
               </div>
             )}
-            {sucesso && (
+            {sucesso && !showInlineExistingActions && (
               <div className="rounded-lg border border-emerald-500/60 bg-emerald-600/20 px-3 py-2 text-sm text-emerald-200">
                 {sucesso}
               </div>
             )}
 
-            <div className="hidden sm:flex items-center gap-3">
-              {showWizardBackButton && (
+            {showFooterActions && (
+              <div className="hidden sm:flex items-center gap-3">
+                {showWizardBackButton && (
+                  <button
+                    type="button"
+                    onClick={handleWizardBack}
+                    className="flex-1 rounded-lg border border-white/10 px-4 py-3 text-sm text-gray-300 hover:text-white"
+                  >
+                    Voltar
+                  </button>
+                )}
                 <button
-                  type="button"
-                  onClick={handleWizardBack}
-                  className="flex-1 rounded-lg border border-white/10 px-4 py-3 text-sm text-gray-300 hover:text-white"
+                  type="submit"
+                  disabled={isPrimaryDisabled}
+                  className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Voltar
+                  {primaryActionLabel}
                 </button>
-              )}
-              <button
-                type="submit"
-                disabled={isPrimaryDisabled}
-                className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {primaryActionLabel}
-              </button>
-            </div>
+              </div>
+            )}
 
             <div className="text-center text-sm text-gray-300">
               Já tem cadastro?{" "}
@@ -1796,16 +2112,18 @@ function CadastroRachaPageContent() {
         </div>
       </section>
 
-      <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f1118]/95 px-4 py-3 backdrop-blur sm:hidden">
-        <button
-          type="button"
-          onClick={() => void handlePrimaryAction()}
-          disabled={isPrimaryDisabled}
-          className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {primaryActionLabel}
-        </button>
-      </div>
+      {showFooterActions && (
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f1118]/95 px-4 py-3 backdrop-blur sm:hidden">
+          <button
+            type="button"
+            onClick={() => void handlePrimaryAction()}
+            disabled={isPrimaryDisabled}
+            className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {primaryActionLabel}
+          </button>
+        </div>
+      )}
 
       <ImageCropperModal
         open={!!cropImage && !!cropTarget}
