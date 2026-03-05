@@ -80,11 +80,11 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-[#121212] border-b border-[#232323] shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between min-h-[62px] relative">
+      <div className="max-w-7xl mx-auto px-2.5 sm:px-4 py-2 flex items-center min-h-[62px] relative gap-2">
         {/* Logo e nome */}
         <Link
           href={homeHref}
-          className="flex items-center gap-3 hover:opacity-90 transition-all"
+          className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 hover:opacity-90 transition-all"
           aria-label={`Página inicial ${nome}`}
         >
           <Image
@@ -92,10 +92,13 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             alt={`Logo ${nome} - sistema de futebol`}
             width={44}
             height={44}
-            className="object-contain rounded"
+            className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 object-contain rounded shrink-0"
             priority
           />
-          <span className="text-2xl font-bold text-brand truncate max-w-[140px] md:max-w-none">
+          <span
+            className="min-w-0 flex-1 truncate text-lg sm:text-xl md:text-2xl font-bold text-brand leading-none"
+            title={nome}
+          >
             {nome}
           </span>
         </Link>
@@ -214,7 +217,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
         </div>
         {/* Botão Mobile */}
         <button
-          className="md:hidden text-white focus:outline-none"
+          className="md:hidden shrink-0 text-white focus:outline-none p-1"
           onClick={onOpenSidebar}
           aria-label="Abrir menu"
         >
