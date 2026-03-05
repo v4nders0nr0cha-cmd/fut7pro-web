@@ -34,29 +34,39 @@ export async function GET(req: NextRequest) {
   const slug = value.trim().toLowerCase();
 
   if (!slug) {
-    return Response.json({ available: false });
+    return Response.json({ available: false, reason: "invalid" });
   }
 
   if (!SLUG_REGEX.test(slug) || RESERVED_SLUGS.has(slug)) {
-    return Response.json({ available: false });
+    return Response.json({ available: false, reason: "invalid" });
   }
 
   const baseUrl = getApiBase().replace(/\/+$/, "");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
 
   try {
     const res = await fetch(
       `${baseUrl}/public/slug-disponibilidade?slug=${encodeURIComponent(slug)}`,
-      { cache: "no-store" }
+      { cache: "no-store", signal: controller.signal }
     );
+    if (res.status === 429) {
+      return Response.json({ available: null, reason: "rate_limited" });
+    }
     if (!res.ok) {
-      return Response.json({ available: false });
+      return Response.json({ available: null, reason: "temporary_error" });
     }
     const data = await res.json().catch(() => null);
     if (!data || typeof data.available !== "boolean") {
-      return Response.json({ available: false });
+      return Response.json({ available: null, reason: "temporary_error" });
     }
     return Response.json({ available: data.available });
-  } catch {
-    return Response.json({ available: false });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return Response.json({ available: null, reason: "temporary_error" });
+    }
+    return Response.json({ available: null, reason: "temporary_error" });
+  } finally {
+    clearTimeout(timeout);
   }
 }
