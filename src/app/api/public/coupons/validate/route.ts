@@ -12,20 +12,26 @@ export async function POST(req: NextRequest) {
   try {
     payload = (await req.json()) as { code?: string; planKey?: string };
   } catch {
-    return Response.json({ valid: false });
+    return Response.json({ valid: false, reason: "invalid_payload" });
   }
 
-  const code = String(payload?.code || "").trim();
+  const code = String(payload?.code || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "");
   if (!code) {
-    return Response.json({ valid: false });
+    return Response.json({ valid: false, reason: "invalid_code" });
   }
 
   const baseUrl = normalizeBase(getApiBase());
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
 
   try {
     const res = await fetch(`${baseUrl}/public/coupons/validate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({
         code,
         planKey: payload?.planKey || undefined,
@@ -33,12 +39,23 @@ export async function POST(req: NextRequest) {
     });
 
     const data = await res.json().catch(() => null);
-    if (!res.ok || !data) {
-      return Response.json({ valid: false });
+    if (res.status === 429) {
+      return Response.json({ valid: false, reason: "rate_limited" });
+    }
+    if (!res.ok) {
+      return Response.json({ valid: false, reason: data?.reason || "temporary_error" });
+    }
+    if (!data) {
+      return Response.json({ valid: false, reason: "temporary_error" });
     }
 
     return Response.json(data);
-  } catch {
-    return Response.json({ valid: false });
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      return Response.json({ valid: false, reason: "timeout" });
+    }
+    return Response.json({ valid: false, reason: "temporary_error" });
+  } finally {
+    clearTimeout(timeout);
   }
 }

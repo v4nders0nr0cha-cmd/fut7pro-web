@@ -106,16 +106,27 @@ type Step = 1 | 2 | 3;
 type AccessFlow = "identify" | "existing-password" | "wizard";
 type ExistingAuthMethod = "code" | "password";
 type ExistingGlobalAuthMode = "none" | "code" | "password" | "google";
-type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid" | "error";
+type SlugStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "unavailable"
+  | "invalid"
+  | "error"
+  | "rate_limited";
 type BillingInterval = "month" | "year";
-type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error";
+type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error" | "rate_limited" | "timeout";
 type FunnelEventName =
   | "email_submit"
   | "code_sent"
   | "code_verified_ok"
   | "code_verified_fail"
   | "account_created"
-  | "tenant_created";
+  | "tenant_created"
+  | "coupon_apply_click"
+  | "coupon_apply_success"
+  | "coupon_apply_fail"
+  | "coupon_remove";
 type FunnelEventPayload = Record<string, string | number | boolean | null | undefined>;
 
 type FieldErrors = Partial<{
@@ -153,6 +164,10 @@ const resolveFirstNameFromEmail = (email?: string | null) => {
 };
 
 const PASSWORDLESS_RESEND_COOLDOWN_SECONDS = 60;
+const SLUG_CHECK_DEBOUNCE_MS = 700;
+const COUPON_CODE_MIN_LENGTH = 6;
+const COUPON_CODE_REGEX = /^[A-Z0-9]+$/;
+const normalizeCouponInput = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 function trackCadastroFunnelEvent(eventName: FunnelEventName, payload: FunnelEventPayload = {}) {
   if (typeof window === "undefined") return;
@@ -189,6 +204,7 @@ function CadastroRachaPageContent() {
   const googlePrefillAppliedRef = useRef(false);
   const lookupEmailInputRef = useRef<HTMLInputElement | null>(null);
   const existingCodeInputRef = useRef<HTMLInputElement | null>(null);
+  const slugAvailabilityCacheRef = useRef<Record<string, boolean>>({});
 
   const [step, setStep] = useState<Step>(1);
   const [accessFlow, setAccessFlow] = useState<AccessFlow>("identify");
@@ -246,6 +262,8 @@ function CadastroRachaPageContent() {
   const [planError, setPlanError] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [couponStatus, setCouponStatus] = useState<CouponStatus>("idle");
+  const [couponErrorMessage, setCouponErrorMessage] = useState("");
+  const [couponInputHint, setCouponInputHint] = useState("");
   const [couponBenefits, setCouponBenefits] = useState<{
     extraTrialDays: number;
     firstPaymentDiscountPercent: number;
@@ -317,6 +335,11 @@ function CadastroRachaPageContent() {
       return;
     }
 
+    if (typeof slugAvailabilityCacheRef.current[slug] === "boolean") {
+      setSlugStatus(slugAvailabilityCacheRef.current[slug] ? "available" : "unavailable");
+      return;
+    }
+
     setSlugStatus("checking");
     const controller = new AbortController();
     const timer = setTimeout(async () => {
@@ -325,16 +348,21 @@ function CadastroRachaPageContent() {
           signal: controller.signal,
         });
         const data = await res.json().catch(() => null);
+        if (res.status === 429 || data?.reason === "rate_limited") {
+          setSlugStatus("rate_limited");
+          return;
+        }
         if (!data || typeof data.available !== "boolean") {
           setSlugStatus("error");
           return;
         }
+        slugAvailabilityCacheRef.current[slug] = data.available;
         setSlugStatus(data.available ? "available" : "unavailable");
       } catch (err: any) {
         if (err?.name === "AbortError") return;
         setSlugStatus("error");
       }
-    }, 400);
+    }, SLUG_CHECK_DEBOUNCE_MS);
 
     return () => {
       controller.abort();
@@ -483,10 +511,16 @@ function CadastroRachaPageContent() {
       return { text: "Slug indisponivel.", tone: "error" };
     }
     if (slugStatus === "invalid") {
-      return { text: "Slug invalido ou reservado.", tone: "error" };
+      return { text: "Slug inválido ou reservado.", tone: "error" };
+    }
+    if (slugStatus === "rate_limited") {
+      return {
+        text: "Muitas verificações em sequência. Aguarde alguns segundos e tente novamente.",
+        tone: "warning",
+      };
     }
     if (slugStatus === "error") {
-      return { text: "Nao foi possivel verificar agora.", tone: "warning" };
+      return { text: "Não foi possível verificar agora.", tone: "warning" };
     }
     return { text: "", tone: "muted" };
   }, [rachaSlug, slugStatus]);
@@ -524,7 +558,14 @@ function CadastroRachaPageContent() {
     return baseTrialDays + extra;
   }, [baseTrialDays, couponBenefits]);
 
+  const bonusTrialDays = couponBenefits?.extraTrialDays ?? 0;
   const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
+  const hasAppliedCoupon = couponStatus === "valid" && Boolean(couponBenefits);
+  const ambassadorDisplayName = (couponBenefits?.ambassadorName || "").trim() || "Fut7Pro";
+  const discountPercentLabel = discountPercent.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 
   useEffect(() => {
     if (!availablePlans.length) return;
@@ -532,13 +573,6 @@ function CadastroRachaPageContent() {
     const preferred = availablePlans.find((plan) => plan.highlight) ?? availablePlans[0];
     setSelectedPlanKey(preferred.key);
   }, [availablePlans, selectedPlanKey]);
-
-  useEffect(() => {
-    if (couponStatus === "valid") {
-      setCouponStatus("idle");
-      setCouponBenefits(null);
-    }
-  }, [selectedPlanKey, couponStatus]);
 
   async function toBase64(file: File) {
     return new Promise<string>((resolve, reject) => {
@@ -569,20 +603,29 @@ function CadastroRachaPageContent() {
   }
 
   async function handleApplyCoupon() {
-    const code = couponCode.trim();
-    if (!code) {
+    const code = normalizeCouponInput(couponCode.trim());
+    setCouponCode(code);
+    trackCadastroFunnelEvent("coupon_apply_click", { codeLength: code.length });
+
+    if (!code || code.length < COUPON_CODE_MIN_LENGTH || !COUPON_CODE_REGEX.test(code)) {
       setCouponStatus("invalid");
       setCouponBenefits(null);
+      setCouponErrorMessage("Use apenas letras e números, sem espaços.");
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "input_invalid" });
       return;
     }
 
     setCouponStatus("loading");
-    setCouponBenefits(null);
+    setCouponErrorMessage("");
+    setCouponInputHint("");
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
 
     try {
       const res = await fetch("/api/public/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           code,
           planKey: selectedPlanKey || undefined,
@@ -603,13 +646,78 @@ function CadastroRachaPageContent() {
               : null,
           couponType: typeof data.couponType === "string" ? data.couponType : null,
         });
+        setCouponErrorMessage("");
+        trackCadastroFunnelEvent("coupon_apply_success", {
+          ambassadorName:
+            typeof data.ambassadorName === "string" && data.ambassadorName.trim()
+              ? data.ambassadorName.trim()
+              : null,
+          extraTrialDays: Number(data.extraTrialDays || 0),
+          discountPct: Number(data.firstPaymentDiscountPercent || data.discountPct || 0),
+        });
+        return;
+      }
+
+      const reason = String(data?.reason || "")
+        .trim()
+        .toLowerCase();
+      if (reason === "inactive") {
+        setCouponStatus("invalid");
+        setCouponBenefits(null);
+        setCouponErrorMessage("Este cupom não está ativo no momento.");
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "inactive" });
+        return;
+      }
+      if (reason === "rate_limited") {
+        setCouponStatus("rate_limited");
+        setCouponBenefits(null);
+        setCouponErrorMessage("Aguarde alguns segundos e tente novamente.");
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "rate_limited" });
+        return;
+      }
+      if (reason === "timeout") {
+        setCouponStatus("timeout");
+        setCouponBenefits(null);
+        setCouponErrorMessage("A validação demorou mais do que o esperado. Tente novamente.");
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout" });
+        return;
+      }
+      if (reason === "plan_not_allowed") {
+        setCouponStatus("invalid");
+        setCouponBenefits(null);
+        setCouponErrorMessage("Este cupom não é válido para o plano selecionado.");
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "plan_not_allowed" });
         return;
       }
 
       setCouponStatus("invalid");
-    } catch {
+      setCouponBenefits(null);
+      setCouponErrorMessage("Não encontramos esse cupom. Confira o código e tente novamente.");
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: reason || "invalid" });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        setCouponStatus("timeout");
+        setCouponBenefits(null);
+        setCouponErrorMessage("A validação demorou mais do que o esperado. Tente novamente.");
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout" });
+        return;
+      }
       setCouponStatus("error");
+      setCouponBenefits(null);
+      setCouponErrorMessage("Não foi possível validar o cupom agora. Tente novamente.");
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "request_error" });
+    } finally {
+      clearTimeout(timeout);
     }
+  }
+
+  function handleRemoveCoupon() {
+    setCouponCode("");
+    setCouponStatus("idle");
+    setCouponBenefits(null);
+    setCouponErrorMessage("");
+    setCouponInputHint("");
+    trackCadastroFunnelEvent("coupon_remove");
   }
 
   async function handleLookupGlobalAccount() {
@@ -939,9 +1047,11 @@ function CadastroRachaPageContent() {
     } else if (slugStatus === "unavailable") {
       nextErrors.rachaSlug = "Slug indisponivel.";
     } else if (slugStatus === "checking") {
-      nextErrors.rachaSlug = "Aguarde a verificacao.";
+      nextErrors.rachaSlug = "Aguarde a verificação.";
+    } else if (slugStatus === "rate_limited") {
+      nextErrors.rachaSlug = "Aguarde alguns segundos antes de verificar novamente.";
     } else if (slugStatus === "error") {
-      nextErrors.rachaSlug = "Nao foi possivel verificar agora.";
+      nextErrors.rachaSlug = "Não foi possível verificar agora.";
     }
     const uf = estadoUf.trim().toUpperCase();
     if (!uf) nextErrors.estado = "Selecione o estado.";
@@ -1005,7 +1115,7 @@ function CadastroRachaPageContent() {
           : normalizedPassword,
         adminAvatarBase64: adminAvatar,
         planKey: selectedPlanKey,
-        couponCode: couponStatus === "valid" ? couponCode.trim() : undefined,
+        couponCode: couponStatus === "valid" ? couponCode.trim().toUpperCase() : undefined,
         useExistingGlobalAccount,
       };
 
@@ -2002,11 +2112,11 @@ function CadastroRachaPageContent() {
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-white">
-                      Cupom de embaixador ou influencer
+                      Cupom de embaixador ou influencer (opcional)
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Aplique um cupom para ganhar 30 dias de teste (20 + 10) e 33,33% de desconto
-                      na primeira cobrança.
+                      Se você recebeu um cupom, aplique aqui para ganhar benefícios no teste e no
+                      primeiro pagamento.
                     </p>
                   </div>
 
@@ -2015,63 +2125,95 @@ function CadastroRachaPageContent() {
                       type="text"
                       value={couponCode}
                       onChange={(e) => {
-                        setCouponCode(e.target.value.toUpperCase());
+                        const rawValue = e.target.value;
+                        const normalizedValue = normalizeCouponInput(rawValue);
+                        setCouponCode(normalizedValue);
+                        setCouponInputHint(
+                          /[^A-Z0-9]/.test(rawValue.toUpperCase())
+                            ? "Use apenas letras e números, sem espaços."
+                            : ""
+                        );
                         if (couponStatus !== "idle") {
                           setCouponStatus("idle");
                           setCouponBenefits(null);
+                          setCouponErrorMessage("");
                         }
                       }}
-                      placeholder="Digite seu cupom (ex: NAYARA10)"
+                      placeholder="Digite seu cupom (ex: FUT7PROVR7)"
                       className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                     />
                     <button
                       type="button"
                       onClick={() => void handleApplyCoupon()}
-                      disabled={couponStatus === "loading" || !couponCode.trim()}
+                      disabled={
+                        couponStatus === "loading" ||
+                        normalizeCouponInput(couponCode).length < COUPON_CODE_MIN_LENGTH
+                      }
                       className="rounded-lg bg-[#23283a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c3146] disabled:opacity-70"
                     >
                       {couponStatus === "loading" ? "Aplicando..." : "Aplicar"}
                     </button>
                   </div>
 
-                  {couponStatus === "valid" && (
-                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-                      {couponBenefits?.ambassadorName
-                        ? `Cupom do embaixador ${couponBenefits.ambassadorName} aplicado com sucesso.`
-                        : "Cupom aplicado com sucesso."}{" "}
-                      +{couponBenefits?.extraTrialDays ?? 0} dias no teste e{" "}
-                      {discountPercent.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 2,
-                      })}
-                      % de desconto na primeira cobrança.
-                    </div>
-                  )}
-                  {couponStatus === "invalid" && (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
-                      Cupom não encontrado. Você pode continuar sem cupom.
-                    </div>
-                  )}
-                  {couponStatus === "error" && (
+                  {!!couponInputHint && (
                     <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-                      Não foi possível validar agora. Tente novamente.
+                      {couponInputHint}
+                    </div>
+                  )}
+                  {couponStatus === "loading" && (
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
+                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-yellow-300 animate-pulse" />
+                      Validando cupom...
+                    </div>
+                  )}
+                  {hasAppliedCoupon && (
+                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                      <p>Cupom aplicado com sucesso. Embaixador: {ambassadorDisplayName}.</p>
+                      <p className="mt-1">
+                        Agora você tem {totalTrialDays} dias de teste grátis e{" "}
+                        {discountPercentLabel}% de desconto na primeira cobrança.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="mt-2 text-[11px] font-semibold text-emerald-100 underline hover:text-white"
+                      >
+                        Remover cupom
+                      </button>
+                    </div>
+                  )}
+                  {(couponStatus === "invalid" ||
+                    couponStatus === "error" ||
+                    couponStatus === "rate_limited" ||
+                    couponStatus === "timeout") && (
+                    <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                      {couponErrorMessage ||
+                        "Não encontramos esse cupom. Confira o código e tente novamente."}
                     </div>
                   )}
                 </div>
 
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span>Seu teste grátis: {totalTrialDays} dias.</span>
-                    {discountPercent > 0 && (
-                      <span>
-                        {discountPercent.toLocaleString("pt-BR", {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        })}
-                        % de desconto na primeira cobrança.
-                      </span>
-                    )}
-                  </div>
+                  {hasAppliedCoupon ? (
+                    <div className="space-y-1">
+                      <p className="font-semibold text-emerald-200">
+                        Parabéns. O cupom do embaixador {ambassadorDisplayName} foi aplicado com
+                        sucesso.
+                      </p>
+                      <p className="text-[11px] text-emerald-100">
+                        Você ganhou {bonusTrialDays} dias extras, totalizando {totalTrialDays} dias
+                        de teste grátis, e {discountPercentLabel}% de desconto na primeira cobrança.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p>Seu teste grátis: {baseTrialDays} dias.</p>
+                      <p className="text-[11px] text-gray-400">
+                        Você pode aplicar um cupom acima para aumentar seu teste e receber desconto
+                        no primeiro pagamento.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </>
             )}
