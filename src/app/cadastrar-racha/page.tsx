@@ -644,9 +644,13 @@ function CadastroRachaPageContent() {
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
+      const codeSent = await handleRequestPasswordlessCode(false, normalizedEmail, {
+        reportToLookup: true,
+      });
+      if (!codeSent) {
+        return;
+      }
       setAccessFlow("existing-password");
-
-      await handleRequestPasswordlessCode(false, normalizedEmail);
     } catch {
       setLookupError("Não foi possível iniciar o acesso agora. Tente novamente.");
     } finally {
@@ -678,20 +682,32 @@ function CadastroRachaPageContent() {
     });
   }
 
-  async function handleRequestPasswordlessCode(isResend = false, emailOverride?: string) {
+  async function handleRequestPasswordlessCode(
+    isResend = false,
+    emailOverride?: string,
+    options?: { reportToLookup?: boolean }
+  ) {
+    const reportToLookup = Boolean(options?.reportToLookup);
     const email = (emailOverride || adminEmail).trim().toLowerCase();
     if (!email) {
-      setExistingLoginError("Informe um e-mail válido.");
-      return;
+      if (reportToLookup) {
+        setLookupError("Informe um e-mail válido.");
+      } else {
+        setExistingLoginError("Informe um e-mail válido.");
+      }
+      return false;
     }
     if (isResend && existingCodeCooldown > 0) {
-      return;
+      return false;
     }
 
     setAdminEmail(email);
     setLookupEmail(email);
     setExistingLoginLoading(true);
     setExistingLoginError("");
+    if (reportToLookup) {
+      setLookupError("");
+    }
     setFormError("");
     setSucesso("");
 
@@ -706,8 +722,12 @@ function CadastroRachaPageContent() {
       if (!response.ok) {
         const message =
           body?.message || body?.error || "Não foi possível enviar o código de acesso agora.";
-        setExistingLoginError(message);
-        return;
+        if (reportToLookup) {
+          setLookupError(message);
+        } else {
+          setExistingLoginError(message);
+        }
+        return false;
       }
 
       setExistingCodeSent(true);
@@ -715,8 +735,14 @@ function CadastroRachaPageContent() {
       setExistingCodeInfo(`Enviamos um código para ${email}. Digite abaixo para continuar.`);
       setExistingCodeCooldown(PASSWORDLESS_RESEND_COOLDOWN_SECONDS);
       trackCadastroFunnelEvent("code_sent", { resend: isResend });
+      return true;
     } catch {
-      setExistingLoginError("Não foi possível enviar o código agora. Tente novamente.");
+      if (reportToLookup) {
+        setLookupError("Não foi possível enviar o código agora. Tente novamente.");
+      } else {
+        setExistingLoginError("Não foi possível enviar o código agora. Tente novamente.");
+      }
+      return false;
     } finally {
       setExistingLoginLoading(false);
     }
