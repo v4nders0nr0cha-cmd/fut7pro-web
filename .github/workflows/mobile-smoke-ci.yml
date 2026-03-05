@@ -1,0 +1,86 @@
+name: Mobile Smoke CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.19.0"
+
+jobs:
+  mobile-smoke:
+    name: Mobile Smoke Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create local env for CI web server
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        run: |
+          API_URL_VALUE="${NEXT_PUBLIC_API_URL:-https://api.fut7pro.com.br}"
+          NEXTAUTH_SECRET_VALUE="${NEXTAUTH_SECRET:-ci-mobile-smoke-secret}"
+          {
+            echo "NEXT_PUBLIC_API_URL=${API_URL_VALUE}"
+            echo "API_URL=${API_URL_VALUE}"
+            echo "BACKEND_URL=${API_URL_VALUE}"
+            echo "NEXT_PUBLIC_APP_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_URL=http://127.0.0.1:3000"
+            echo "NEXTAUTH_SECRET=${NEXTAUTH_SECRET_VALUE}"
+            echo "DISABLE_WEB_DIRECT_DB=true"
+            echo "NODE_ENV=test"
+          } > .env.local
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Run mobile smoke gate (mandatory)
+        env:
+          PLAYWRIGHT_WEB_SERVER: "1"
+          PLAYWRIGHT_BASE_URL: "http://127.0.0.1:3000"
+          PLAYWRIGHT_JSON_OUTPUT_FILE: tmp-artifacts/mobile-smoke/playwright-mobile-smoke.json
+        run: |
+          mkdir -p tmp-artifacts/mobile-smoke
+          pnpm exec playwright test tests/mobile --project=chromium --project=mobile-iphone --project=mobile-pixel --workers=1 --reporter=line,json
+
+      - name: Generate mobile smoke summary
+        if: always()
+        run: |
+          node -e "const fs=require('fs'); const report='tmp-artifacts/mobile-smoke/playwright-mobile-smoke.json'; if(!fs.existsSync(report)){console.log('json report not found'); process.exit(0);} const data=JSON.parse(fs.readFileSync(report,'utf8')); const stats=data.stats||{}; const summary={expected:stats.expected??0, unexpected:stats.unexpected??0, flaky:stats.flaky??0, skipped:stats.skipped??0, interrupted:stats.interrupted??0, duration:stats.duration??0}; fs.writeFileSync('tmp-artifacts/mobile-smoke/summary.json', JSON.stringify(summary,null,2)); console.log(JSON.stringify(summary));"
+
+      - name: Upload mobile smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-smoke-artifacts
+          path: |
+            tmp-artifacts/mobile-smoke
+            playwright-report
+            test-results
+          if-no-files-found: ignore

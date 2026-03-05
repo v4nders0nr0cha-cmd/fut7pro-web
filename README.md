@@ -154,6 +154,14 @@ Para rodar os testes E2E:
 npm run test:e2e
 ```
 
+Gate mobile obrigatorio (CI/CD + local):
+
+```bash
+PLAYWRIGHT_WEB_SERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 pnpm run test:e2e:mobile-gate
+```
+
+Documentacao: `docs/mobile-smoke-gate.md`.
+
 Variáveis mínimas para cenários autenticados:
 
 ```env

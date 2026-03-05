@@ -23,6 +23,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
+    "test:e2e:mobile-gate": "playwright test tests/mobile --project=chromium --project=mobile-iphone --project=mobile-pixel --workers=1 --reporter=line",
     "test:seo": "playwright test tests/seo/robots-header.spec.ts",
     "setup:env": "node -e \"const fs=require('fs'); const content='# API Configuration\\nNEXT_PUBLIC_API_URL=https://api.fut7pro.com.br\\n\\n# Mercado Pago (opcional - para desenvolvimento local)\\nNEXT_PUBLIC_MP_PUBLIC_KEY=your_mp_public_key_here\\n\\n# Tenant ID (em produção, viria do contexto de autenticação)\\nNEXT_PUBLIC_DEMO_TENANT_ID=demo-tenant\\n\\n# Environment\\nNODE_ENV=development\\n'; fs.writeFileSync('.env.local', content); console.log('✅ Arquivo .env.local criado!');\"",
     "test:billing": "node scripts/test-billing.js",
