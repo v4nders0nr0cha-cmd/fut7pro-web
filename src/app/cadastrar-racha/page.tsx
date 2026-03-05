@@ -109,12 +109,14 @@ type ExistingGlobalAuthMode = "none" | "code" | "password" | "google";
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid" | "error";
 type BillingInterval = "month" | "year";
 type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error";
-type LookupEmailResponse = {
-  ok?: boolean;
-  requiresCaptcha?: boolean;
-  error?: string;
-  message?: string;
-};
+type FunnelEventName =
+  | "email_submit"
+  | "code_sent"
+  | "code_verified_ok"
+  | "code_verified_fail"
+  | "account_created"
+  | "tenant_created";
+type FunnelEventPayload = Record<string, string | number | boolean | null | undefined>;
 
 type FieldErrors = Partial<{
   adminNome: string;
@@ -152,6 +154,31 @@ const resolveFirstNameFromEmail = (email?: string | null) => {
 
 const PASSWORDLESS_RESEND_COOLDOWN_SECONDS = 60;
 
+function trackCadastroFunnelEvent(eventName: FunnelEventName, payload: FunnelEventPayload = {}) {
+  if (typeof window === "undefined") return;
+
+  const eventPayload = {
+    ...payload,
+    screen: "cadastrar-racha",
+  };
+
+  const analyticsWindow = window as Window & {
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: Array<Record<string, unknown>>;
+  };
+
+  if (typeof analyticsWindow.gtag === "function") {
+    analyticsWindow.gtag("event", eventName, eventPayload);
+  }
+
+  if (Array.isArray(analyticsWindow.dataLayer)) {
+    analyticsWindow.dataLayer.push({
+      event: eventName,
+      ...eventPayload,
+    });
+  }
+}
+
 function CadastroRachaPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,6 +188,7 @@ function CadastroRachaPageContent() {
   const handledGoogleIntentRef = useRef(false);
   const googlePrefillAppliedRef = useRef(false);
   const lookupEmailInputRef = useRef<HTMLInputElement | null>(null);
+  const existingCodeInputRef = useRef<HTMLInputElement | null>(null);
 
   const [step, setStep] = useState<Step>(1);
   const [accessFlow, setAccessFlow] = useState<AccessFlow>("identify");
@@ -383,6 +411,16 @@ function CadastroRachaPageContent() {
   }, [existingCodeCooldown]);
 
   useEffect(() => {
+    if (accessFlow !== "existing-password") return;
+    if (existingAuthMethod !== "code") return;
+    if (!existingCodeSent) return;
+
+    requestAnimationFrame(() => {
+      existingCodeInputRef.current?.focus();
+    });
+  }, [accessFlow, existingAuthMethod, existingCodeSent]);
+
+  useEffect(() => {
     if (!isGoogle) {
       setAdminNomeTouched(false);
     }
@@ -589,17 +627,9 @@ function CadastroRachaPageContent() {
     setSucesso("");
 
     try {
-      const response = await fetch("/api/auth/lookup-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: normalizedEmail }),
+      trackCadastroFunnelEvent("email_submit", {
+        authMethod: "code",
       });
-
-      const body = (await response.json().catch(() => null)) as LookupEmailResponse | null;
-      if (!response.ok) {
-        setLookupError(body?.error || body?.message || "Não foi possível verificar o e-mail.");
-        return;
-      }
 
       setAdminEmail(normalizedEmail);
       setLookupEmail(normalizedEmail);
@@ -615,9 +645,10 @@ function CadastroRachaPageContent() {
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
       setAccessFlow("existing-password");
-      setExistingCodeInfo(body?.message || "Se estiver tudo certo, enviamos seu código.");
+
+      await handleRequestPasswordlessCode(false, normalizedEmail);
     } catch {
-      setLookupError("Não foi possível verificar agora. Tente novamente.");
+      setLookupError("Não foi possível iniciar o acesso agora. Tente novamente.");
     } finally {
       setLookupLoading(false);
     }
@@ -647,8 +678,8 @@ function CadastroRachaPageContent() {
     });
   }
 
-  async function handleRequestPasswordlessCode(isResend = false) {
-    const email = adminEmail.trim().toLowerCase();
+  async function handleRequestPasswordlessCode(isResend = false, emailOverride?: string) {
+    const email = (emailOverride || adminEmail).trim().toLowerCase();
     if (!email) {
       setExistingLoginError("Informe um e-mail válido.");
       return;
@@ -657,6 +688,8 @@ function CadastroRachaPageContent() {
       return;
     }
 
+    setAdminEmail(email);
+    setLookupEmail(email);
     setExistingLoginLoading(true);
     setExistingLoginError("");
     setFormError("");
@@ -679,12 +712,9 @@ function CadastroRachaPageContent() {
 
       setExistingCodeSent(true);
       setExistingCode("");
-      setExistingCodeInfo(
-        isResend
-          ? "Se estiver tudo certo, enviamos um novo código para seu e-mail."
-          : body?.message || "Se estiver tudo certo, enviamos seu código."
-      );
+      setExistingCodeInfo(`Enviamos um código para ${email}. Digite abaixo para continuar.`);
       setExistingCodeCooldown(PASSWORDLESS_RESEND_COOLDOWN_SECONDS);
+      trackCadastroFunnelEvent("code_sent", { resend: isResend });
     } catch {
       setExistingLoginError("Não foi possível enviar o código agora. Tente novamente.");
     } finally {
@@ -723,9 +753,15 @@ function CadastroRachaPageContent() {
           .trim()
           .toUpperCase();
         if (response.status === 429 || code === "PASSWORDLESS_TOO_MANY_ATTEMPTS") {
+          trackCadastroFunnelEvent("code_verified_fail", {
+            reason: "too_many_attempts",
+          });
           setExistingLoginError("Muitas tentativas, aguarde alguns minutos.");
           return;
         }
+        trackCadastroFunnelEvent("code_verified_fail", {
+          reason: "invalid_or_expired",
+        });
         setExistingLoginError("Código inválido ou expirado, tente novamente.");
         return;
       }
@@ -733,6 +769,9 @@ function CadastroRachaPageContent() {
       const accessToken = body?.accessToken;
       const refreshToken = body?.refreshToken;
       if (!accessToken || !refreshToken) {
+        trackCadastroFunnelEvent("code_verified_fail", {
+          reason: "missing_tokens",
+        });
         setExistingLoginError("Não foi possível concluir o acesso por código.");
         return;
       }
@@ -744,11 +783,15 @@ function CadastroRachaPageContent() {
         authProvider: "passwordless",
       });
       if (signInResult?.error) {
+        trackCadastroFunnelEvent("code_verified_fail", {
+          reason: "session_signin_failed",
+        });
         setExistingLoginError("Não foi possível concluir o acesso por código.");
         return;
       }
 
       const fallbackName = resolveFirstNameFromEmail(email) || "Administrador";
+      const isNewUser = Boolean(body?.isNewUser);
 
       if (!adminNome) {
         setAdminNome(fallbackName);
@@ -765,8 +808,23 @@ function CadastroRachaPageContent() {
       setStep(2);
       setErrors({});
       setAccessFlow("wizard");
-      setSucesso("Conta global validada por código. Continue com os dados do racha.");
+      trackCadastroFunnelEvent("code_verified_ok", {
+        isNewUser,
+      });
+      if (isNewUser) {
+        trackCadastroFunnelEvent("account_created", {
+          method: "passwordless",
+        });
+      }
+      setSucesso(
+        isNewUser
+          ? "Primeiro acesso, vamos criar sua conta global Fut7Pro agora e seguir para o cadastro do racha."
+          : "Bem-vindo de volta. Continue com os dados do racha."
+      );
     } catch {
+      trackCadastroFunnelEvent("code_verified_fail", {
+        reason: "verify_request_error",
+      });
       setExistingLoginError("Não foi possível validar o código agora. Tente novamente.");
     } finally {
       setExistingLoginLoading(false);
@@ -938,6 +996,17 @@ function CadastroRachaPageContent() {
         return;
       }
 
+      if (body?.tenantId || body?.tenant?.id) {
+        trackCadastroFunnelEvent("tenant_created", {
+          flow: useExistingGlobalAccount ? "session" : "register",
+        });
+      }
+      if (!useExistingGlobalAccount) {
+        trackCadastroFunnelEvent("account_created", {
+          method: isGoogle ? "google" : "password",
+        });
+      }
+
       const emailParaConfirmar = (body?.email || normalizedEmail).toLowerCase();
       const slugParaConfirmar = body?.tenantSlug || rachaSlug.trim();
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
@@ -1089,20 +1158,20 @@ function CadastroRachaPageContent() {
   const primaryActionLabel =
     accessFlow === "identify"
       ? lookupLoading
-        ? "Verificando..."
+        ? "Enviando código..."
         : "Continuar"
       : accessFlow === "existing-password"
         ? existingAuthMethod === "password"
           ? existingLoginLoading
             ? "Entrando..."
-            : "Entrar com senha e ir para etapa 2"
+            : "Entrar com senha"
           : existingLoginLoading
             ? existingCodeSent
               ? "Validando código..."
               : "Enviando código..."
             : existingCodeSent
-              ? "Entrar com código e ir para etapa 2"
-              : "Enviar código de acesso"
+              ? "Validar código e continuar"
+              : "Enviar código novamente"
         : step === 3
           ? isLoading
             ? "Finalizando..."
@@ -1182,7 +1251,7 @@ function CadastroRachaPageContent() {
                   />
                   <h2 className="text-2xl font-bold text-white">Entrar no Fut7Pro</h2>
                   <p className="text-sm text-gray-300">
-                    Continue com Google ou informe seu e-mail para seguir com segurança.
+                    Informe seu e-mail para receber um código de acesso e continuar.
                   </p>
                 </div>
 
@@ -1231,8 +1300,8 @@ function CadastroRachaPageContent() {
                 )}
 
                 <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                  Por segurança, esta etapa não mostra o status da conta. Se estiver tudo certo,
-                  enviamos seu código e você segue para continuar.
+                  Ao continuar, vamos enviar um código para o e-mail informado. Digite o código na
+                  próxima etapa para seguir.
                 </div>
               </div>
             )}
@@ -1247,8 +1316,7 @@ function CadastroRachaPageContent() {
                       <span className="font-semibold text-white break-all">{adminEmail}</span>
                     </p>
                     <p className="mt-2 text-xs text-gray-400">
-                      Escolha como deseja continuar com este e-mail. Depois da validação, você segue
-                      direto para a etapa 2.
+                      Enviamos um código para {adminEmail}. Digite abaixo para continuar.
                     </p>
                   </div>
 
@@ -1285,43 +1353,33 @@ function CadastroRachaPageContent() {
 
                   {existingAuthMethod === "code" ? (
                     <div className="space-y-3">
-                      {!existingCodeSent && (
-                        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
-                          Use o código enviado para o seu e-mail. Essa é a forma principal de
-                          continuar o acesso.
-                        </div>
-                      )}
+                      <label className="text-xs text-gray-300">
+                        Código de acesso (6 dígitos)
+                        <input
+                          ref={existingCodeInputRef}
+                          type="text"
+                          value={existingCode}
+                          onChange={(event) => {
+                            setExistingCode(event.target.value.replace(/\D+/g, "").slice(0, 6));
+                            setExistingLoginError("");
+                          }}
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                          placeholder="Digite os 6 dígitos"
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                      </label>
 
-                      {existingCodeSent && (
-                        <label className="text-xs text-gray-300">
-                          Código de acesso (6 dígitos)
-                          <input
-                            type="text"
-                            value={existingCode}
-                            onChange={(event) => {
-                              setExistingCode(event.target.value.replace(/\D+/g, "").slice(0, 6));
-                              setExistingLoginError("");
-                            }}
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            placeholder="Digite os 6 dígitos"
-                            className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                          />
-                        </label>
-                      )}
-
-                      {existingCodeSent && (
-                        <button
-                          type="button"
-                          onClick={() => void handleRequestPasswordlessCode(true)}
-                          disabled={existingLoginLoading || existingCodeCooldown > 0}
-                          className="text-xs text-yellow-300 underline disabled:opacity-60 disabled:no-underline"
-                        >
-                          {existingCodeCooldown > 0
-                            ? `Reenviar em ${existingCodeCooldown}s`
-                            : "Reenviar código"}
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => void handleRequestPasswordlessCode(true)}
+                        disabled={existingLoginLoading || existingCodeCooldown > 0}
+                        className="text-xs text-yellow-300 underline disabled:opacity-60 disabled:no-underline"
+                      >
+                        {existingCodeCooldown > 0
+                          ? `Não chegou? Reenviar em ${existingCodeCooldown}s.`
+                          : "Não chegou? Reenviar código."}
+                      </button>
                     </div>
                   ) : (
                     <label className="text-xs text-gray-300">
@@ -1404,47 +1462,6 @@ function CadastroRachaPageContent() {
                       <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
                       Entrar com Google
                     </span>
-                  </button>
-                </div>
-
-                <div className="rounded-xl border border-yellow-300/30 bg-yellow-300/10 p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-yellow-100">
-                    Não tenho conta, criar agora
-                  </h3>
-                  <p className="text-xs text-yellow-50/90">
-                    Vamos criar sua conta global Fut7Pro e seguir para o cadastro completo do racha.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const fallbackName = resolveFirstNameFromEmail(adminEmail);
-                      setUseExistingGlobalAccount(false);
-                      setExistingGlobalAuthMode("none");
-                      setExistingHasPassword(true);
-                      setExistingAuthMethod("code");
-                      setExistingCode("");
-                      setExistingCodeSent(false);
-                      setExistingCodeInfo("");
-                      setExistingCodeCooldown(0);
-                      setExistingLoginError("");
-                      setAdminSenha("");
-                      setAdminConfirmSenha("");
-                      setShowExistingSenha(false);
-                      if (!adminNome) {
-                        setAdminNome(fallbackName);
-                      }
-                      if (!adminPosicao) {
-                        setAdminPosicao(POSICOES[0]);
-                      }
-                      setStep(1);
-                      setAccessFlow("wizard");
-                      setSucesso(
-                        "Conta nova selecionada. Continue preenchendo os dados para criar seu acesso."
-                      );
-                    }}
-                    className="w-full rounded-lg border border-yellow-200/70 bg-yellow-300/20 px-3 py-2 text-xs font-semibold text-yellow-100 hover:border-yellow-100"
-                  >
-                    Criar conta e continuar
                   </button>
                 </div>
               </div>

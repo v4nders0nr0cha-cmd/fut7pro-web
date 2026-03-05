@@ -176,3 +176,6 @@ next-env.d.ts
 # Playwright
 playwright-report/
 test-results/
+
+# Local temporary artifacts
+tmp-artifacts/
