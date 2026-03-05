@@ -44,6 +44,8 @@ export default defineConfig({
   use: {
     baseURL,
     trace: "on-first-retry",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
   projects: [
     {
@@ -58,13 +60,21 @@ export default defineConfig({
       name: "webkit",
       use: { ...devices["Desktop Safari"] },
     },
+    {
+      name: "mobile-iphone",
+      use: { ...devices["iPhone 13"] },
+    },
+    {
+      name: "mobile-pixel",
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   webServer: useLocalWebServer
     ? {
         command: "pnpm dev",
         url: `${baseURL.replace(/\/+$/, "")}/admin/login`,
         reuseExistingServer: !process.env.CI,
-        timeout: 240_000,
+        timeout: 600_000,
       }
     : undefined,
 });
