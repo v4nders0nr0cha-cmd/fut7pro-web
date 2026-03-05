@@ -92,11 +92,11 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             alt={`Logo ${nome} - sistema de futebol`}
             width={44}
             height={44}
-            className="h-10 w-10 shrink-0 rounded object-contain md:h-11 md:w-11"
+            className="h-9 w-9 shrink-0 rounded object-contain sm:h-10 sm:w-10 md:h-11 md:w-11"
             priority
           />
           <span
-            className="min-w-0 flex-1 truncate whitespace-nowrap text-[1.2rem] font-bold leading-tight text-brand sm:text-[1.28rem] md:text-2xl"
+            className="min-w-0 flex-1 truncate whitespace-nowrap text-lg font-bold leading-tight text-brand sm:text-xl md:text-2xl"
             title={nome}
           >
             {nome}
