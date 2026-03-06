@@ -40,10 +40,48 @@ function normalizeLogoUrl(value?: string | null) {
   const trimmed = String(value || "").trim();
   if (!trimmed) return null;
 
+  const rewriteSignedSupabase = (raw: string) => {
+    const signedRegex = /^\/storage\/v1\/object\/sign\/(?:public\/)?([^\/?#]+)\/([^?#]+)$/i;
+
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        const url = new URL(raw);
+        const match = url.pathname.match(signedRegex);
+        if (!match) return null;
+        const [, bucket, path] = match;
+        url.pathname = `/storage/v1/object/public/${bucket}/${path}`;
+        url.search = "";
+        return url.toString();
+      } catch {
+        return null;
+      }
+    }
+
+    const normalizedPath = raw.startsWith("/")
+      ? raw
+      : `/${raw.replace(/^\.\/+/, "").replace(/^\/+/, "")}`;
+    const cleanPath = normalizedPath.split("?")[0].split("#")[0] || "";
+    const match = cleanPath.match(signedRegex);
+    if (!match) return null;
+    const [, bucket, path] = match;
+    return `/storage/v1/object/public/${bucket}/${path}`;
+  };
+
   const lower = trimmed.toLowerCase();
   if (lower.startsWith("javascript:")) return null;
   if (lower.startsWith("blob:")) return null;
   if (lower.startsWith("data:") && !lower.startsWith("data:image/")) return null;
+
+  const rewrittenSigned = rewriteSignedSupabase(trimmed);
+  if (rewrittenSigned) {
+    if (/^https?:\/\//i.test(rewrittenSigned)) return rewrittenSigned;
+    const apiBase = String(process.env.NEXT_PUBLIC_API_URL || "")
+      .trim()
+      .replace(/\/+$/, "");
+    if (apiBase) return `${apiBase}${rewrittenSigned}`;
+    return rewrittenSigned;
+  }
+
   if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:image/")) return trimmed;
   if (trimmed.startsWith("//")) return `https:${trimmed}`;
   if (/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) return `https://${trimmed}`;

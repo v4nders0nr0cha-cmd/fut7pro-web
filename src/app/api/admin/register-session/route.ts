@@ -204,7 +204,6 @@ export async function POST(req: NextRequest) {
 
   const accessToken = body?.accessToken || user.accessToken;
   const refreshToken = body?.refreshToken || null;
-  await primeBranding(baseUrl, payload, accessToken);
 
   if (!accessToken || !body?.tenantId) {
     return jsonResponse("Não foi possível iniciar o teste grátis.", 500);
@@ -222,6 +221,8 @@ export async function POST(req: NextRequest) {
       );
     }
   }
+
+  await primeBranding(baseUrl, payload, accessToken);
 
   const requiresEmailVerification = body?.requiresEmailVerification ?? false;
   const verificationSent = body?.verificationSent ?? false;

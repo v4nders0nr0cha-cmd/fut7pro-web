@@ -328,7 +328,6 @@ export async function POST(req: NextRequest) {
     if (!accessToken) {
       return jsonResponse("Nao foi possivel iniciar o teste gratis.", 500);
     }
-    await primeBranding(baseUrl, payload, accessToken);
 
     if (!tenantInfo?.id) {
       return jsonResponse("Tenant nao encontrado para criar assinatura.", 500);
@@ -345,6 +344,8 @@ export async function POST(req: NextRequest) {
         );
       }
     }
+
+    await primeBranding(baseUrl, payload, accessToken);
   }
 
   return new Response(

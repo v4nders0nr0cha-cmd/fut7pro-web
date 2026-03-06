@@ -58,6 +58,7 @@ export type Jogador = {
   } | null;
   membershipRole?: string | null;
   membershipStatus?: string | null;
+  managedByGlobalProfile?: boolean;
   isAdministrativeMember?: boolean;
   managedByAdmin?: boolean;
 };
