@@ -118,8 +118,10 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
   const jogadoresNormalizados = useMemo(() => {
     if (!Array.isArray(data)) return [];
     return data.map((jogador: any) => {
-      const nome = jogador?.nome ?? jogador?.name ?? jogador?.user?.name ?? "";
-      const apelido = jogador?.apelido ?? jogador?.nickname ?? "";
+      const nomeRaw = jogador?.nome ?? jogador?.name ?? jogador?.user?.name ?? "";
+      const nome = typeof nomeRaw === "string" ? nomeRaw.trim() : "";
+      const apelidoRaw = jogador?.apelido ?? jogador?.nickname ?? "";
+      const apelido = typeof apelidoRaw === "string" ? apelidoRaw.trim() : "";
       const posicao = jogador?.posicao ?? jogador?.position ?? "Meia";
       const posicaoSecundaria = jogador?.posicaoSecundaria ?? jogador?.positionSecondary ?? null;
       const avatar =
@@ -134,12 +136,14 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
             : Boolean(jogador?.isMember);
       const isBot = Boolean(jogador?.isBot);
       const status = jogador?.status ?? "Ativo";
-      const email = jogador?.email ?? "";
+      const emailRaw = jogador?.email ?? "";
+      const email = typeof emailRaw === "string" ? emailRaw.trim().toLowerCase() : "";
       const timeId = jogador?.timeId ?? "";
       const userId = jogador?.userId ?? jogador?.user?.id ?? null;
       const user = jogador?.user ?? null;
       const membershipRole = jogador?.membershipRole ?? null;
       const membershipStatus = jogador?.membershipStatus ?? null;
+      const managedByGlobalProfile = Boolean(jogador?.managedByGlobalProfile ?? userId);
       const isAdministrativeMember = Boolean(
         jogador?.isAdministrativeMember ?? jogador?.managedByAdmin
       );
@@ -160,6 +164,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         userId,
         membershipRole,
         membershipStatus,
+        managedByGlobalProfile,
         isAdministrativeMember,
         managedByAdmin: isAdministrativeMember,
         user: user

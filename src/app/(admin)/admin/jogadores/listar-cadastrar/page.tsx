@@ -576,7 +576,7 @@ function isAdminManagedJogador(jogador?: Partial<Jogador> | null) {
 
 function isGlobalManagedJogador(jogador?: Partial<Jogador> | null) {
   if (!jogador) return false;
-  return Boolean(jogador.userId);
+  return Boolean(jogador.userId || jogador.managedByGlobalProfile);
 }
 
 // --- BADGE DE STATUS ---
@@ -691,7 +691,7 @@ export default function Page() {
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
   const npcsDisponiveis = useMemo(
-    () => jogadores.filter((j) => !j.userId && !j.isBot),
+    () => jogadores.filter((j) => !isGlobalManagedJogador(j) && !j.isBot),
     [jogadores]
   );
 
@@ -1363,7 +1363,7 @@ export default function Page() {
                                 {adminRoleLabel || "Administrador"}
                               </span>
                             )}
-                            {j.userId ? (
+                            {globalManaged ? (
                               <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
                                 Com login
                               </span>
@@ -1386,7 +1386,7 @@ export default function Page() {
                             Gerenciado pelo módulo de administração
                           </span>
                         )}
-                        {!j.userId && (
+                        {!globalManaged && (
                           <button
                             className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
                               podeVincular
