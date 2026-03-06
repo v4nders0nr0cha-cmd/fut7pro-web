@@ -73,7 +73,32 @@ describe("admin-options jwt refresh flow", () => {
     expect((result as any).accessTokenExp).toBeGreaterThan(now);
   });
 
-  it("invalidates session fields when refresh fails", async () => {
+  it("keeps current token when refresh fails but token is still valid", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+    const currentAccessToken = buildJwt(now + 20);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    });
+
+    const result = await jwt({
+      token: {
+        accessToken: currentAccessToken,
+        refreshToken: "refresh-fail",
+        accessTokenExp: now + 20,
+      } as any,
+    } as any);
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect((result as any).accessToken).toBe(currentAccessToken);
+    expect((result as any).refreshToken).toBe("refresh-fail");
+    expect((result as any).accessTokenExp).toBe(now + 20);
+    expect((result as any).error).toBe("RefreshAccessTokenRetry");
+  });
+
+  it("invalidates session fields when refresh fails and token is expired", async () => {
     const jwt = await loadJwtCallback();
     const now = Math.floor(Date.now() / 1000);
 
@@ -84,9 +109,9 @@ describe("admin-options jwt refresh flow", () => {
 
     const result = await jwt({
       token: {
-        accessToken: buildJwt(now + 20),
-        refreshToken: "refresh-fail",
-        accessTokenExp: now + 20,
+        accessToken: buildJwt(now - 5),
+        refreshToken: "refresh-expired",
+        accessTokenExp: now - 5,
       } as any,
     } as any);
 
