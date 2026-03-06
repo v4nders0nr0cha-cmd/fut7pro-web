@@ -532,6 +532,15 @@ const POSICAO_LABEL: Record<string, string> = {
   atacante: "Atacante",
 };
 
+const ADMIN_ROLE_LABELS: Record<string, string> = {
+  PRESIDENTE: "Presidente",
+  VICE_PRESIDENTE: "Vice-presidente",
+  DIRETOR_FUTEBOL: "Diretor de futebol",
+  DIRETOR_FINANCEIRO: "Diretor financeiro",
+  ADMIN: "Administrador",
+  SUPERADMIN: "Superadmin",
+};
+
 function formatPosicao(value?: string | null) {
   if (!value) return "-";
   const key = value.toLowerCase();
@@ -546,6 +555,23 @@ function formatDateTime(value?: string | Date | null) {
     dateStyle: "short",
     timeStyle: "short",
   }).format(date);
+}
+
+function resolveAdminRoleLabel(role?: string | null) {
+  const normalized = String(role || "")
+    .trim()
+    .toUpperCase();
+  if (!normalized) return null;
+  return ADMIN_ROLE_LABELS[normalized] || "Administrador";
+}
+
+function isAdminManagedJogador(jogador?: Partial<Jogador> | null) {
+  if (!jogador) return false;
+  if (jogador.isAdministrativeMember || jogador.managedByAdmin) return true;
+  const normalizedRole = String(jogador.membershipRole || "")
+    .trim()
+    .toUpperCase();
+  return Boolean(normalizedRole && normalizedRole !== "ATLETA");
 }
 
 // --- BADGE DE STATUS ---
@@ -1282,81 +1308,97 @@ export default function Page() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               <AnimatePresence>
-                {jogadoresFiltrados.map((j, i) => (
-                  <motion.div
-                    key={j.id}
-                    custom={i}
-                    initial="hidden"
-                    animate="visible"
-                    exit="exit"
-                    variants={cardVariants}
-                    layout
-                    className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
-                  >
-                    <div className="flex items-center">
-                      <AvatarFut7Pro
-                        src={j.avatarUrl || j.avatar || j.foto || j.photoUrl}
-                        alt={j.nome}
-                        width={48}
-                        height={48}
-                        className="rounded-full object-cover"
-                      />
-                      <div className="pl-4 flex-1">
-                        <div className="font-bold text-white">
-                          {j.nome} <span className="text-gray-400">({j.apelido})</span>
-                        </div>
-                        <div className="text-sm text-gray-300">{j.posicao}</div>
-                        <div className="text-xs mt-1 flex gap-1 items-center">
-                          <StatusBadge status={j.status} />
-                          {j.mensalista && (
-                            <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
-                              Mensalista
-                            </span>
-                          )}
-                          {j.userId ? (
-                            <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
-                              Com login
-                            </span>
-                          ) : (
-                            <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5 text-xs">
-                              Sem login
-                            </span>
-                          )}
+                {jogadoresFiltrados.map((j, i) => {
+                  const adminManaged = isAdminManagedJogador(j);
+                  const adminRoleLabel = resolveAdminRoleLabel(j.membershipRole);
+                  return (
+                    <motion.div
+                      key={j.id}
+                      custom={i}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      variants={cardVariants}
+                      layout
+                      className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
+                    >
+                      <div className="flex items-center">
+                        <AvatarFut7Pro
+                          src={j.avatarUrl || j.avatar || j.foto || j.photoUrl}
+                          alt={j.nome}
+                          width={48}
+                          height={48}
+                          className="rounded-full object-cover"
+                        />
+                        <div className="pl-4 flex-1">
+                          <div className="font-bold text-white">
+                            {j.nome} <span className="text-gray-400">({j.apelido})</span>
+                          </div>
+                          <div className="text-sm text-gray-300">{j.posicao}</div>
+                          <div className="text-xs mt-1 flex gap-1 items-center">
+                            <StatusBadge status={j.status} />
+                            {j.mensalista && (
+                              <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
+                                Mensalista
+                              </span>
+                            )}
+                            {adminManaged && (
+                              <span className="bg-amber-700 text-amber-100 font-bold rounded px-2 py-0.5 text-xs">
+                                {adminRoleLabel || "Administrador"}
+                              </span>
+                            )}
+                            {j.userId ? (
+                              <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
+                                Com login
+                              </span>
+                            ) : (
+                              <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5 text-xs">
+                                Sem login
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
-                      {!j.userId && (
+                      <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                        {adminManaged && (
+                          <span className="mr-auto bg-zinc-700 text-zinc-200 rounded px-2 py-1 text-[11px] font-semibold">
+                            Gerenciado pelo módulo de administração
+                          </span>
+                        )}
+                        {!j.userId && (
+                          <button
+                            className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                              podeVincular
+                                ? "bg-indigo-700 hover:bg-indigo-800 text-white"
+                                : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                            }`}
+                            disabled={!podeVincular}
+                            onClick={() => abrirModalVinculo(j)}
+                          >
+                            <FaLink /> Vincular
+                          </button>
+                        )}
                         <button
-                          className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
-                            podeVincular
-                              ? "bg-indigo-700 hover:bg-indigo-800 text-white"
-                              : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                          }`}
-                          disabled={!podeVincular}
-                          onClick={() => abrirModalVinculo(j)}
+                          className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                          onClick={() => abrirModalEditar(j)}
                         >
-                          <FaLink /> Vincular
+                          <FaEdit /> Editar
                         </button>
-                      )}
-                      <button
-                        className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                        onClick={() => abrirModalEditar(j)}
-                      >
-                        <FaEdit /> Editar
-                      </button>
-                      <button
-                        className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                        onClick={() => {
-                          setExcluirJogador(j);
-                          setShowModalExcluir(true);
-                        }}
-                      >
-                        <FaTrash /> Excluir
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                        {!adminManaged && (
+                          <button
+                            className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                            onClick={() => {
+                              setExcluirJogador(j);
+                              setShowModalExcluir(true);
+                            }}
+                          >
+                            <FaTrash /> Excluir
+                          </button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}
@@ -1368,7 +1410,9 @@ export default function Page() {
         jogador={excluirJogador}
         onClose={() => setShowModalExcluir(false)}
         onConfirm={() => {
-          if (excluirJogador) deleteJogador(excluirJogador.id);
+          if (excluirJogador && !isAdminManagedJogador(excluirJogador)) {
+            deleteJogador(excluirJogador.id);
+          }
           setShowModalExcluir(false);
         }}
       />

@@ -12,6 +12,8 @@ type HubRacha = {
   tenantName: string;
   role: string;
   logoUrl?: string | null;
+  logo?: string | null;
+  branding?: { logoUrl?: string | null } | null;
   subscription?: {
     status?: "ATIVO" | "ALERTA" | "BLOQUEADO";
     blocked?: boolean;
@@ -36,7 +38,34 @@ function getTenantInitials(name: string) {
 
 function normalizeLogoUrl(value?: string | null) {
   const trimmed = String(value || "").trim();
-  return trimmed.length ? trimmed : null;
+  if (!trimmed) return null;
+
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith("javascript:")) return null;
+  if (lower.startsWith("data:") && !lower.startsWith("data:image/")) return null;
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:image/")) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  if (!trimmed.startsWith("/")) return trimmed;
+
+  const apiBase = String(process.env.NEXT_PUBLIC_API_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
+  const backendPath = /^\/(uploads|storage|files|public-media|private-media|temp-uploads)\//i.test(
+    trimmed
+  );
+  if (backendPath && apiBase) {
+    return `${apiBase}${trimmed}`;
+  }
+  return trimmed;
+}
+
+function resolveHubLogoUrl(racha: HubRacha) {
+  return (
+    normalizeLogoUrl(racha.logoUrl) ||
+    normalizeLogoUrl(racha.logo) ||
+    normalizeLogoUrl(racha.branding?.logoUrl) ||
+    null
+  );
 }
 
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
@@ -415,7 +444,7 @@ export default function AdminHubClient() {
               const blocked = racha.subscription?.blocked || statusKey === "BLOQUEADO";
               const isSelecting = selectingSlug === racha.tenantSlug;
               const hasBrokenLogo = Boolean(brokenLogos[racha.tenantId]);
-              const logoUrl = hasBrokenLogo ? null : normalizeLogoUrl(racha.logoUrl);
+              const logoUrl = hasBrokenLogo ? null : resolveHubLogoUrl(racha);
               const initials = getTenantInitials(racha.tenantName);
 
               return (

@@ -16,6 +16,8 @@ type NextAuthOptionsLike = {
   secret?: string;
 };
 
+type RefreshResult = { ok: true; accessToken: string; refreshToken: string } | { ok: false };
+
 const API_BASE_URL =
   process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -35,6 +37,8 @@ const LOGIN_PATH = normalizeAuthPath(process.env.AUTH_LOGIN_PATH, "/auth/login")
 const REFRESH_PATH = normalizeAuthPath(process.env.AUTH_REFRESH_PATH, "/auth/refresh");
 const ME_PATH = normalizeAuthPath(process.env.AUTH_ME_PATH, "/auth/me");
 const GOOGLE_PATH = "/auth/google";
+const ADMIN_REFRESH_MARGIN_SECONDS = 120;
+const adminRefreshFlights = new Map<string, Promise<RefreshResult>>();
 const useSecureCookies = process.env.NODE_ENV === "production";
 const cookiePrefix = useSecureCookies ? "__Secure-" : "";
 const csrfPrefix = useSecureCookies ? "__Host-" : "";
@@ -55,6 +59,52 @@ function decodeExp(token?: string | null): number | null {
   } catch {
     return null;
   }
+}
+
+async function requestAdminRefresh(refreshToken: string): Promise<RefreshResult> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        refreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      return { ok: false };
+    }
+
+    const data = await response.json().catch(() => null);
+    const nextAccessToken = String((data as any)?.accessToken || "").trim();
+    const nextRefreshToken = String((data as any)?.refreshToken || "").trim();
+    if (!nextAccessToken || !nextRefreshToken) {
+      return { ok: false };
+    }
+
+    return {
+      ok: true,
+      accessToken: nextAccessToken,
+      refreshToken: nextRefreshToken,
+    };
+  } catch {
+    return { ok: false };
+  }
+}
+
+async function refreshAdminTokenSingleFlight(refreshToken: string): Promise<RefreshResult> {
+  const existing = adminRefreshFlights.get(refreshToken);
+  if (existing) {
+    return existing;
+  }
+
+  const promise = requestAdminRefresh(refreshToken).finally(() => {
+    adminRefreshFlights.delete(refreshToken);
+  });
+  adminRefreshFlights.set(refreshToken, promise);
+  return promise;
 }
 
 export const authOptions: NextAuthOptionsLike = {
@@ -307,6 +357,7 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).emailVerified = (token as any).emailVerified ?? false;
         (session.user as any).emailVerifiedAt = (token as any).emailVerifiedAt ?? null;
         (session.user as any).image = (token as any).image ?? (session.user as any).image ?? null;
+        (session.user as any).tokenError = (token as any).error ?? null;
       }
       return session;
     },
@@ -326,35 +377,35 @@ export const authOptions: NextAuthOptionsLike = {
         (token as any).emailVerified = (user as any).emailVerified ?? false;
         (token as any).emailVerifiedAt = (user as any).emailVerifiedAt ?? null;
         (token as any).image = (user as any).image ?? (token as any).image ?? null;
+        (token as any).error = null;
       }
 
       if (token.accessToken && token.refreshToken) {
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 
-        if (tokenExp && tokenExp < now + 300) {
-          try {
-            const response = await fetch(`${API_BASE_URL}${REFRESH_PATH}`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                refreshToken: token.refreshToken,
-              }),
-            });
-
-            if (response.ok) {
-              const data = await response.json();
-              token.accessToken = data.accessToken;
-              token.refreshToken = data.refreshToken;
-              (token as any).accessTokenExp = decodeExp(token.accessToken as string);
-            }
-          } catch (error) {
-            if (process.env.NODE_ENV === "development") {
-              console.log("Erro no refresh token:", error);
-            }
+        if (tokenExp && tokenExp < now + ADMIN_REFRESH_MARGIN_SECONDS) {
+          const refreshResult = await refreshAdminTokenSingleFlight(String(token.refreshToken));
+          if (refreshResult.ok) {
+            token.accessToken = refreshResult.accessToken;
+            token.refreshToken = refreshResult.refreshToken;
+            (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
+            (token as any).error = null;
+          } else {
+            (token as any).accessToken = undefined;
+            (token as any).refreshToken = undefined;
+            (token as any).accessTokenExp = null;
+            (token as any).error = "RefreshAccessTokenError";
           }
+        }
+      } else if (token.accessToken) {
+        const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
+        const now = Math.floor(Date.now() / 1000);
+        if (tokenExp && tokenExp <= now) {
+          (token as any).accessToken = undefined;
+          (token as any).refreshToken = undefined;
+          (token as any).accessTokenExp = null;
+          (token as any).error = "AccessTokenExpired";
         }
       }
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ChangeEvent, FormEvent } from "react";
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
@@ -12,6 +12,12 @@ import { UF_LIST } from "@/data/br/ufs";
 import { loadCitiesByUf, type CityOption } from "@/data/br/cidades";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
+const POSITION_LABEL_BY_VALUE: Record<string, (typeof POSICOES)[number]> = {
+  goleiro: "Goleiro",
+  zagueiro: "Zagueiro",
+  meia: "Meia",
+  atacante: "Atacante",
+};
 
 const BENEFITS = [
   {
@@ -163,6 +169,13 @@ const resolveFirstNameFromEmail = (email?: string | null) => {
   return resolveFirstName(normalized);
 };
 
+const resolvePositionLabel = (value?: string | null) => {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  return POSITION_LABEL_BY_VALUE[normalized] || null;
+};
+
 const PASSWORDLESS_RESEND_COOLDOWN_SECONDS = 60;
 const SLUG_CHECK_DEBOUNCE_MS = 700;
 const COUPON_CODE_MIN_LENGTH = 6;
@@ -273,6 +286,54 @@ function CadastroRachaPageContent() {
   const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState("");
   const [cidadeLoading, setCidadeLoading] = useState(false);
+
+  const hydrateAdminIdentityFromGlobalProfile = useCallback(async () => {
+    try {
+      const response = await fetch("/api/perfil/global", { cache: "no-store" });
+      if (!response.ok) return null;
+
+      const body = await response.json().catch(() => null);
+      const globalUser = body?.user;
+      if (!globalUser || typeof globalUser !== "object") return null;
+
+      const profileEmail = String(globalUser.email || "")
+        .trim()
+        .toLowerCase();
+      const profileName =
+        resolveFirstName(globalUser.name as string | undefined) ||
+        resolveFirstNameFromEmail(profileEmail);
+      const profileNickname = String(globalUser.nickname || "").trim();
+      const profilePosition = resolvePositionLabel(globalUser.position as string | undefined);
+      const profileAvatar = String(globalUser.avatarUrl || "").trim();
+
+      if (profileEmail) {
+        setAdminEmail(profileEmail);
+        setLookupEmail(profileEmail);
+      }
+      if (profileName) {
+        setAdminNome(profileName);
+      }
+      if (profileNickname) {
+        setAdminApelido(profileNickname);
+      }
+      if (profilePosition) {
+        setAdminPosicao(profilePosition);
+      }
+      if (profileAvatar) {
+        setAdminAvatar(profileAvatar);
+      }
+
+      return {
+        profileEmail,
+        profileName,
+        profileNickname,
+        profilePosition,
+        profileAvatar,
+      };
+    } catch {
+      return null;
+    }
+  }, []);
 
   const slugSugerido = useMemo(() => {
     if (!rachaNome) return "";
@@ -486,16 +547,27 @@ function CadastroRachaPageContent() {
     setExistingGlobalAuthMode("google");
     setAdminEmail(sessionEmail);
     setLookupEmail(sessionEmail);
-    if (!adminNome) {
-      setAdminNome(fallbackName);
-    }
-    if (!adminPosicao) {
-      setAdminPosicao(POSICOES[0]);
-    }
+    void hydrateAdminIdentityFromGlobalProfile().then((identity) => {
+      if (!identity?.profileName && !adminNome) {
+        setAdminNome(fallbackName);
+      }
+      if (!identity?.profilePosition && !adminPosicao) {
+        setAdminPosicao(POSICOES[0]);
+      }
+    });
     setStep(2);
     setAccessFlow("wizard");
     router.replace("/cadastrar-racha");
-  }, [adminNome, adminPosicao, googleIntent, isGoogle, router, session?.user, sessionStatus]);
+  }, [
+    adminNome,
+    adminPosicao,
+    googleIntent,
+    hydrateAdminIdentityFromGlobalProfile,
+    isGoogle,
+    router,
+    session?.user,
+    sessionStatus,
+  ]);
 
   const slugInfo = useMemo(() => {
     if (!rachaSlug) {
@@ -924,13 +996,15 @@ function CadastroRachaPageContent() {
         return;
       }
 
-      const fallbackName = resolveFirstNameFromEmail(email) || "Administrador";
+      const identity = await hydrateAdminIdentityFromGlobalProfile();
+      const fallbackName =
+        identity?.profileName || resolveFirstNameFromEmail(email) || "Administrador";
       const isNewUser = Boolean(body?.isNewUser);
 
-      if (!adminNome) {
+      if (!identity?.profileName && !adminNome) {
         setAdminNome(fallbackName);
       }
-      if (!adminPosicao) {
+      if (!identity?.profilePosition && !adminPosicao) {
         setAdminPosicao(POSICOES[0]);
       }
 
@@ -991,12 +1065,14 @@ function CadastroRachaPageContent() {
         return;
       }
 
-      const fallbackName = resolveFirstNameFromEmail(email) || "Administrador";
+      const identity = await hydrateAdminIdentityFromGlobalProfile();
+      const fallbackName =
+        identity?.profileName || resolveFirstNameFromEmail(email) || "Administrador";
 
-      if (!adminNome) {
+      if (!identity?.profileName && !adminNome) {
         setAdminNome(fallbackName);
       }
-      if (!adminPosicao) {
+      if (!identity?.profilePosition && !adminPosicao) {
         setAdminPosicao(POSICOES[0]);
       }
       setUseExistingGlobalAccount(true);

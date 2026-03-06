@@ -56,6 +56,10 @@ export type Jogador = {
     email?: string | null;
     avatarUrl?: string | null;
   } | null;
+  membershipRole?: string | null;
+  membershipStatus?: string | null;
+  isAdministrativeMember?: boolean;
+  managedByAdmin?: boolean;
 };
 
 export type AtletaPendente = {

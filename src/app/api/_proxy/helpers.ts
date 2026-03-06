@@ -87,6 +87,18 @@ const SUPERADMIN_SESSION_COOKIE_CANDIDATES = [
   "__Secure-next-auth.session-token-superadmin",
 ];
 
+function decodeExp(token?: string | null): number | null {
+  if (!token) return null;
+  const parts = token.split(".");
+  if (parts.length < 2) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
+    return typeof payload.exp === "number" ? payload.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveRequestMeta() {
   const headers = nextHeaders();
   const forwardedFor = headers.get("x-forwarded-for") || "";
@@ -139,6 +151,15 @@ function tokenToUser(token: any, fallback?: UserLike | null): UserLike | null {
   const id = String(token?.id || token?.sub || fallback?.id || "").trim();
   if (!id) return null;
 
+  const now = Math.floor(Date.now() / 1000);
+  const accessTokenExp =
+    (token?.accessTokenExp as number | null | undefined) ??
+    fallback?.accessTokenExp ??
+    decodeExp(accessToken);
+  if (accessTokenExp && accessTokenExp <= now) {
+    return null;
+  }
+
   return {
     id,
     email: (token?.email as string | null | undefined) ?? fallback?.email ?? null,
@@ -149,8 +170,7 @@ function tokenToUser(token: any, fallback?: UserLike | null): UserLike | null {
     accessToken,
     refreshToken:
       (token?.refreshToken as string | null | undefined) ?? fallback?.refreshToken ?? null,
-    accessTokenExp:
-      (token?.accessTokenExp as number | null | undefined) ?? fallback?.accessTokenExp ?? null,
+    accessTokenExp: accessTokenExp ?? null,
   };
 }
 

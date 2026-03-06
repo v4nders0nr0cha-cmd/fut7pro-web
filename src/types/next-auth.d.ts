@@ -13,6 +13,11 @@ declare module "next-auth" {
       tenantSlug?: string | null;
       accessToken: string;
       refreshToken: string;
+      accessTokenExp?: number | null;
+      tokenError?: string | null;
+      authProvider?: string | null;
+      emailVerified?: boolean;
+      emailVerifiedAt?: string | null;
     };
   }
 
@@ -25,6 +30,11 @@ declare module "next-auth" {
     tenantSlug?: string | null;
     accessToken: string;
     refreshToken: string;
+    accessTokenExp?: number | null;
+    tokenError?: string | null;
+    authProvider?: string | null;
+    emailVerified?: boolean;
+    emailVerifiedAt?: string | null;
   }
 }
 
@@ -36,5 +46,10 @@ declare module "next-auth/jwt" {
     tenantSlug?: string | null;
     accessToken: string;
     refreshToken: string;
+    accessTokenExp?: number | null;
+    tokenError?: string | null;
+    authProvider?: string | null;
+    emailVerified?: boolean;
+    emailVerifiedAt?: string | null;
   }
 }

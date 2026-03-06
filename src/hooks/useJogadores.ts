@@ -138,6 +138,11 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       const timeId = jogador?.timeId ?? "";
       const userId = jogador?.userId ?? jogador?.user?.id ?? null;
       const user = jogador?.user ?? null;
+      const membershipRole = jogador?.membershipRole ?? null;
+      const membershipStatus = jogador?.membershipStatus ?? null;
+      const isAdministrativeMember = Boolean(
+        jogador?.isAdministrativeMember ?? jogador?.managedByAdmin
+      );
 
       return {
         ...jogador,
@@ -153,6 +158,10 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         email,
         timeId,
         userId,
+        membershipRole,
+        membershipStatus,
+        isAdministrativeMember,
+        managedByAdmin: isAdministrativeMember,
         user: user
           ? {
               id: user.id,
