@@ -42,14 +42,34 @@ function normalizeLogoUrl(value?: string | null) {
 
   const lower = trimmed.toLowerCase();
   if (lower.startsWith("javascript:")) return null;
+  if (lower.startsWith("blob:")) return null;
   if (lower.startsWith("data:") && !lower.startsWith("data:image/")) return null;
   if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith("data:image/")) return trimmed;
   if (trimmed.startsWith("//")) return `https:${trimmed}`;
-  if (!trimmed.startsWith("/")) return trimmed;
+  if (/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(trimmed)) return `https://${trimmed}`;
 
   const apiBase = String(process.env.NEXT_PUBLIC_API_URL || "")
     .trim()
     .replace(/\/+$/, "");
+  const cleanedRelative = trimmed.replace(/^\.\/+/, "").replace(/^\/+/, "");
+
+  if (!trimmed.startsWith("/")) {
+    if (!cleanedRelative) return null;
+    const normalizedRelativePath = `/${cleanedRelative}`;
+    const isBackendRelativePath =
+      /^(uploads|storage|files|public-media|private-media|temp-uploads)\//i.test(cleanedRelative);
+    if (isBackendRelativePath && apiBase) {
+      return `${apiBase}${normalizedRelativePath}`;
+    }
+    if (isBackendRelativePath) {
+      return normalizedRelativePath;
+    }
+    if (/^(images|img|assets)\//i.test(cleanedRelative)) {
+      return normalizedRelativePath;
+    }
+    return trimmed;
+  }
+
   const backendPath = /^\/(uploads|storage|files|public-media|private-media|temp-uploads)\//i.test(
     trimmed
   );
