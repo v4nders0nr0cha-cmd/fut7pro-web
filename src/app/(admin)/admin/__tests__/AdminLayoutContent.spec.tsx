@@ -1,6 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import AdminLayoutContent from "../AdminLayoutContent";
 
+const signOutMock = jest.fn();
+
+jest.mock("next-auth/react", () => ({
+  signOut: (...args: unknown[]) => signOutMock(...args),
+  useSession: () => ({
+    data: { user: {} },
+    status: "authenticated",
+  }),
+}));
+
 jest.mock("@/hooks/useAdminAccess", () => ({
   useAdminAccess: () => ({
     access: {

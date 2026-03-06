@@ -11,7 +11,7 @@ import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
@@ -50,11 +50,14 @@ function AdminLoading() {
 export default function AdminLayoutContent({ children }: { children: ReactNode }) {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [tenantResolutionError, setTenantResolutionError] = useState(false);
+  const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const { tenantSlug, rachaId, setTenantSlug, setRachaId } = useRacha();
   const { access, isLoading: accessLoading, error: accessError } = useAdminAccess();
   const perfLoggedRef = useRef(false);
+  const tokenErrorHandledRef = useRef(false);
+  const tokenError = String((session?.user as any)?.tokenError || "").trim();
 
   const isStatusRoute = useMemo(() => pathname.startsWith("/admin/status-assinatura"), [pathname]);
   const isBillingRoute = useMemo(
@@ -64,6 +67,12 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);
   const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
   const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
+
+  useEffect(() => {
+    if (!tokenError || tokenErrorHandledRef.current) return;
+    tokenErrorHandledRef.current = true;
+    signOut({ callbackUrl: "/admin/login?expired=1" });
+  }, [tokenError]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;

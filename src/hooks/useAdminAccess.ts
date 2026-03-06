@@ -67,7 +67,11 @@ export function useAdminAccess(enabled = true) {
   const { data, error, isLoading, mutate } = useSWR<AdminAccessResponse>(
     enabled ? "/api/admin/access" : null,
     fetcher,
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: false,
+      refreshInterval: 60_000,
+      dedupingInterval: 5_000,
+    }
   );
 
   return {

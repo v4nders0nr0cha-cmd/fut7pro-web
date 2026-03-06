@@ -14,6 +14,9 @@ type HubItem = {
   tenantSlug: string;
   tenantName: string;
   role: string;
+  logoUrl?: string | null;
+  logo?: string | null;
+  branding?: { logoUrl?: string | null } | null;
   subscription?: {
     status?: "ATIVO" | "ALERTA" | "BLOQUEADO";
     blocked?: boolean;
