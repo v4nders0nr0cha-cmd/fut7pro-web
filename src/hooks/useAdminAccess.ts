@@ -21,25 +21,38 @@ export type AdminAccessResponse = {
 };
 
 const ADMIN_ACCESS_TIMEOUT_MS = 12000;
+const ADMIN_ACCESS_MAX_ATTEMPTS = 2;
+const ADMIN_ACCESS_RETRY_DELAY_MS = 250;
 
 const fetcher = async (url: string): Promise<AdminAccessResponse> => {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), ADMIN_ACCESS_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, {
-      cache: "no-store",
-      credentials: "include",
-      signal: controller.signal,
-    });
-    const text = await res.text();
-    let body: any = text;
-    try {
-      body = text ? JSON.parse(text) : null;
-    } catch {
-      body = text;
-    }
-    if (!res.ok) {
+    for (let attempt = 0; attempt < ADMIN_ACCESS_MAX_ATTEMPTS; attempt += 1) {
+      const res = await fetch(url, {
+        cache: "no-store",
+        credentials: "include",
+        signal: controller.signal,
+      });
+      const text = await res.text();
+      let body: any = text;
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch {
+        body = text;
+      }
+
+      if (res.ok) {
+        return body as AdminAccessResponse;
+      }
+
+      const canRetryUnauthorized = res.status === 401 && attempt + 1 < ADMIN_ACCESS_MAX_ATTEMPTS;
+      if (canRetryUnauthorized) {
+        await new Promise((resolve) => window.setTimeout(resolve, ADMIN_ACCESS_RETRY_DELAY_MS));
+        continue;
+      }
+
       const error = new Error(
         typeof body?.message === "string" ? body.message : "Falha ao validar acesso"
       ) as Error & { status?: number; body?: unknown };
@@ -47,7 +60,13 @@ const fetcher = async (url: string): Promise<AdminAccessResponse> => {
       error.body = body;
       throw error;
     }
-    return body as AdminAccessResponse;
+
+    const fallbackError = new Error("Falha ao validar acesso") as Error & {
+      status?: number;
+      body?: unknown;
+    };
+    fallbackError.status = 500;
+    throw fallbackError;
   } catch (cause) {
     if (cause instanceof DOMException && cause.name === "AbortError") {
       const timeoutError = new Error(

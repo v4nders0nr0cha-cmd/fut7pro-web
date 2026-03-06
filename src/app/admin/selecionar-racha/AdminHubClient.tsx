@@ -117,13 +117,48 @@ function normalizeLogoUrl(value?: string | null) {
   return trimmed;
 }
 
-function resolveHubLogoUrl(racha: HubRacha) {
-  return (
-    normalizeLogoUrl(racha.logoUrl) ||
-    normalizeLogoUrl(racha.logo) ||
-    normalizeLogoUrl(racha.branding?.logoUrl) ||
-    null
-  );
+function normalizeSignedStoragePath(value: string) {
+  const match = value.match(/^\/storage\/v1\/object\/sign\/(?:public\/)?([^/]+)\/(.+)$/i);
+  if (!match) return null;
+  return `/storage/v1/object/public/${match[1]}/${match[2]}`;
+}
+
+function buildLogoCandidates(racha: HubRacha) {
+  const seeds = [racha.logoUrl, racha.logo, racha.branding?.logoUrl];
+  const candidates = new Set<string>();
+
+  for (const seed of seeds) {
+    const normalized = normalizeLogoUrl(seed);
+    if (!normalized) continue;
+    candidates.add(normalized);
+
+    if (normalized.startsWith("http://")) {
+      candidates.add(`https://${normalized.slice("http://".length)}`);
+    }
+
+    if (normalized.startsWith("/")) {
+      const rewritten = normalizeSignedStoragePath(normalized);
+      if (rewritten) {
+        const apiBase = String(process.env.NEXT_PUBLIC_API_URL || "")
+          .trim()
+          .replace(/\/+$/, "");
+        candidates.add(apiBase ? `${apiBase}${rewritten}` : rewritten);
+      }
+      continue;
+    }
+
+    try {
+      const parsed = new URL(normalized);
+      const rewritten = normalizeSignedStoragePath(parsed.pathname);
+      if (rewritten) {
+        candidates.add(`${parsed.origin}${rewritten}`);
+      }
+    } catch {
+      // ignore malformed URL and keep existing candidates
+    }
+  }
+
+  return Array.from(candidates);
 }
 
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
@@ -251,7 +286,7 @@ export default function AdminHubClient() {
   const [selectingSlug, setSelectingSlug] = useState<string | null>(null);
   const [selectError, setSelectError] = useState("");
   const autoRedirectedRef = useRef(false);
-  const [brokenLogos, setBrokenLogos] = useState<Record<string, boolean>>({});
+  const [logoAttemptIndex, setLogoAttemptIndex] = useState<Record<string, number>>({});
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
   const count = typeof data?.count === "number" ? data.count : items.length;
@@ -501,8 +536,9 @@ export default function AdminHubClient() {
               const roleBadge = ROLE_BADGES[roleKey] || ROLE_BADGES.ADMIN;
               const blocked = racha.subscription?.blocked || statusKey === "BLOQUEADO";
               const isSelecting = selectingSlug === racha.tenantSlug;
-              const hasBrokenLogo = Boolean(brokenLogos[racha.tenantId]);
-              const logoUrl = hasBrokenLogo ? null : resolveHubLogoUrl(racha);
+              const logoCandidates = buildLogoCandidates(racha);
+              const attemptIndex = logoAttemptIndex[racha.tenantId] ?? 0;
+              const logoUrl = logoCandidates[attemptIndex] || null;
               const initials = getTenantInitials(racha.tenantName);
 
               return (
@@ -518,12 +554,19 @@ export default function AdminHubClient() {
                           src={logoUrl}
                           alt={`Logo do ${racha.tenantName}`}
                           className="h-12 w-12 rounded-xl object-cover"
-                          onError={() =>
-                            setBrokenLogos((prev) => ({
+                          onError={() => {
+                            if (attemptIndex >= logoCandidates.length - 1) {
+                              setLogoAttemptIndex((prev) => ({
+                                ...prev,
+                                [racha.tenantId]: logoCandidates.length,
+                              }));
+                              return;
+                            }
+                            setLogoAttemptIndex((prev) => ({
                               ...prev,
-                              [racha.tenantId]: true,
-                            }))
-                          }
+                              [racha.tenantId]: attemptIndex + 1,
+                            }));
+                          }}
                         />
                       ) : (
                         <div

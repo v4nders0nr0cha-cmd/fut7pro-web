@@ -58,6 +58,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const tokenError = String((session?.user as any)?.tokenError || "").trim();
+  const shouldForceSignOutForTokenError =
+    tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
 
   const isStatusRoute = useMemo(() => pathname.startsWith("/admin/status-assinatura"), [pathname]);
   const isBillingRoute = useMemo(
@@ -69,10 +71,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
 
   useEffect(() => {
-    if (!tokenError || tokenErrorHandledRef.current) return;
+    if (!shouldForceSignOutForTokenError || tokenErrorHandledRef.current) return;
     tokenErrorHandledRef.current = true;
     signOut({ callbackUrl: "/admin/login?expired=1" });
-  }, [tokenError]);
+  }, [shouldForceSignOutForTokenError]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
