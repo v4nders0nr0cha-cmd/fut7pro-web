@@ -215,12 +215,12 @@ function ModalVincularJogador({
             este jogador, mantendo todo o histórico, rankings e estatísticas do NPC.
           </p>
           <p className="mb-2">
-            Os dados da conta escolhida (nome, apelido, foto, posição, status) passam a substituir
-            os dados atuais do NPC.
+            Os dados pessoais passam a vir do Perfil Global da conta escolhida (nome, apelido, foto
+            e posições).
           </p>
           <p>
-            Se a conta escolhida já tiver histórico, o vínculo será bloqueado para evitar
-            duplicidade.
+            Se a conta escolhida já tiver histórico no racha, as estatísticas serão mescladas e
+            somadas automaticamente, sem perda de dados.
           </p>
         </div>
 
@@ -574,6 +574,11 @@ function isAdminManagedJogador(jogador?: Partial<Jogador> | null) {
   return Boolean(normalizedRole && normalizedRole !== "ATLETA");
 }
 
+function isGlobalManagedJogador(jogador?: Partial<Jogador> | null) {
+  if (!jogador) return false;
+  return Boolean(jogador.userId);
+}
+
 // --- BADGE DE STATUS ---
 function StatusBadge({ status }: { status: Jogador["status"] }) {
   const color =
@@ -738,6 +743,9 @@ export default function Page() {
   };
 
   const abrirModalEditar = (jogador: Jogador) => {
+    if (isGlobalManagedJogador(jogador)) {
+      return;
+    }
     setJogadorEditar(jogador);
     setEditarErro(null);
     setEditarLoading(false);
@@ -976,6 +984,9 @@ export default function Page() {
 
   const confirmarEdicao = async (jogador: Partial<Jogador>, fotoFile?: File | null) => {
     if (!jogadorEditar || editarLoading) return;
+    if (isGlobalManagedJogador(jogadorEditar)) {
+      return;
+    }
     setEditarLoading(true);
     setEditarErro(null);
 
@@ -1310,6 +1321,8 @@ export default function Page() {
               <AnimatePresence>
                 {jogadoresFiltrados.map((j, i) => {
                   const adminManaged = isAdminManagedJogador(j);
+                  const globalManaged = isGlobalManagedJogador(j);
+                  const canEditNpc = !globalManaged;
                   const adminRoleLabel = resolveAdminRoleLabel(j.membershipRole);
                   return (
                     <motion.div
@@ -1332,7 +1345,10 @@ export default function Page() {
                         />
                         <div className="pl-4 flex-1">
                           <div className="font-bold text-white">
-                            {j.nome} <span className="text-gray-400">({j.apelido})</span>
+                            {j.nome}
+                            {j.apelido ? (
+                              <span className="text-gray-400"> ({j.apelido})</span>
+                            ) : null}
                           </div>
                           <div className="text-sm text-gray-300">{j.posicao}</div>
                           <div className="text-xs mt-1 flex gap-1 items-center">
@@ -1360,8 +1376,13 @@ export default function Page() {
                         </div>
                       </div>
                       <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
+                        {globalManaged && (
+                          <span className="mr-auto bg-indigo-700 text-indigo-100 rounded px-2 py-1 text-[11px] font-semibold">
+                            Gerenciado pelo Perfil Global
+                          </span>
+                        )}
                         {adminManaged && (
-                          <span className="mr-auto bg-zinc-700 text-zinc-200 rounded px-2 py-1 text-[11px] font-semibold">
+                          <span className="bg-zinc-700 text-zinc-200 rounded px-2 py-1 text-[11px] font-semibold">
                             Gerenciado pelo módulo de administração
                           </span>
                         )}
@@ -1378,12 +1399,14 @@ export default function Page() {
                             <FaLink /> Vincular
                           </button>
                         )}
-                        <button
-                          className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                          onClick={() => abrirModalEditar(j)}
-                        >
-                          <FaEdit /> Editar
-                        </button>
+                        {canEditNpc && (
+                          <button
+                            className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                            onClick={() => abrirModalEditar(j)}
+                          >
+                            <FaEdit /> Editar
+                          </button>
+                        )}
                         {!adminManaged && (
                           <button
                             className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
