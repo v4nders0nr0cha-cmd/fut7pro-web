@@ -343,8 +343,8 @@ export default function EntrarClient() {
             </p>
             <p className="mt-3">
               Aqui no Racha Vitrine, nao existe administrador nem cadastro de atletas. Por isso o
-              botao <strong>&quot;Entrar&quot;</strong> leva para esta explicacao, evitando
-              confusao e cadastros indevidos.
+              botao <strong>&quot;Entrar&quot;</strong> leva para esta explicacao, evitando confusao
+              e cadastros indevidos.
             </p>
           </div>
 
@@ -366,7 +366,9 @@ export default function EntrarClient() {
                 href="/cadastrar-racha"
                 className="rounded-xl border border-brand bg-brand/15 p-4 text-left text-brand transition hover:bg-brand hover:text-black"
               >
-                <span className="block text-sm font-bold">Criar o site do meu racha no Fut7Pro</span>
+                <span className="block text-sm font-bold">
+                  Criar o site do meu racha no Fut7Pro
+                </span>
                 <span className="mt-1 block text-xs leading-relaxed text-brand-soft">
                   Em poucos minutos voce cria sua pagina exclusiva e ativa seu painel
                   administrativo.
