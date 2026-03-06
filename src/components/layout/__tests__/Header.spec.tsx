@@ -7,12 +7,26 @@ jest.mock("next-auth/react", () => ({
 }));
 
 describe("Header", () => {
+  const usePathname = require("next/navigation").usePathname as jest.Mock;
+
+  beforeEach(() => {
+    usePathname.mockReturnValue("/ruimdebola");
+  });
+
   it("exibe quick actions", () => {
     render(<Header />);
     expect(screen.getByLabelText("Comunicação")).toBeInTheDocument();
     expect(screen.getByLabelText("Sugestões")).toBeInTheDocument();
     expect(screen.getByText(/Entrar/i)).toBeInTheDocument();
     expect(screen.getByText(/Atletas do/i)).toBeInTheDocument();
+  });
+
+  it("no vitrine mostra Entrar e Criar meu racha como CTAs separados", () => {
+    usePathname.mockReturnValue("/vitrine");
+    render(<Header />);
+    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Criar meu racha/i)).toBeInTheDocument();
+    expect(screen.getByText(/Demonstração do Fut7Pro/i)).toBeInTheDocument();
   });
 
   it("mantem fallback de nome completo no title do nome do racha", () => {
