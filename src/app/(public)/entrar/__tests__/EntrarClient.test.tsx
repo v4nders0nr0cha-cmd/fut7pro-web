@@ -47,6 +47,10 @@ describe("EntrarClient", () => {
       publicSlug: "casa-do-gamer",
       publicHref: (path: string) => `/casa-do-gamer${path}`,
     });
+    if (!global.fetch) {
+      (global as any).fetch = jest.fn();
+    }
+    (global.fetch as jest.Mock).mockReset();
     replaceMock.mockReset();
     sessionStorage.clear();
   });
@@ -79,5 +83,25 @@ describe("EntrarClient", () => {
 
     expect(sessionStorage.getItem("fut7pro_auth_email")).toBe("atleta@teste.com");
     expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
+  });
+
+  it("no vitrine mostra fluxo educativo sem abrir login/cadastro", () => {
+    mockedUsePublicLinks.mockReturnValue({
+      publicSlug: "vitrine",
+      publicHref: (path: string) => `/vitrine${path}`,
+    });
+
+    render(<EntrarClient />);
+
+    expect(screen.getByRole("heading", { name: /Entrar no Racha Vitrine/i })).toBeInTheDocument();
+    expect(screen.getByText(/No site do seu racha, o botao/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Voltar e continuar explorando o Racha Vitrine/i })
+    ).toHaveAttribute("href", "/vitrine/");
+    expect(
+      screen.getByRole("link", { name: /Criar o site do meu racha no Fut7Pro/i })
+    ).toHaveAttribute("href", "/cadastrar-racha");
+    expect(screen.queryByPlaceholderText("ex: seuemail@dominio.com")).not.toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 });

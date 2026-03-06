@@ -5,7 +5,6 @@ import { useComunicacao } from "@/hooks/useComunicacao";
 import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 
 const menu = [
@@ -20,7 +19,6 @@ export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const { data: session } = useSession();
-  const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
@@ -40,26 +38,55 @@ export default function BottomMenu() {
 
   function handleClick(href: string, label: string) {
     if (label === "Perfil" && !isLoggedIn) {
-      router.push(isVitrineSlug ? "/cadastrar-racha" : publicHref("/entrar"));
+      router.push(publicHref("/entrar"));
     } else {
       router.push(publicHref(href));
     }
   }
 
-  // SE NÃO LOGADO: mostra botão entrar/cadastrar-se
+  // SE NÃO LOGADO: CTA de entrada (e onboarding adicional no vitrine)
   if (!isLoggedIn) {
+    if (isVitrineSlug) {
+      return (
+        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center gap-2 px-2 py-2 md:hidden animate-slide-down">
+          <button
+            type="button"
+            onClick={() => router.push(publicHref("/entrar"))}
+            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-2 font-bold text-[13px] uppercase text-white transition-all hover:border-brand/70 hover:text-brand"
+            style={{ letterSpacing: 0.7 }}
+            title="Entrar no Racha Vitrine"
+            aria-label="Entrar no Racha Vitrine"
+          >
+            <FaUser size={18} />
+            Entrar
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/cadastrar-racha")}
+            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
+            style={{ letterSpacing: 0.7 }}
+            title="Criar meu racha no Fut7Pro"
+            aria-label="Criar meu racha no Fut7Pro"
+          >
+            <FaUser size={18} />
+            Criar meu racha
+          </button>
+        </nav>
+      );
+    }
+
     return (
       <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-center items-center px-1 py-2 md:hidden animate-slide-down">
         <button
           type="button"
-          onClick={() => router.push(isVitrineSlug ? "/cadastrar-racha" : publicHref("/entrar"))}
+          onClick={() => router.push(publicHref("/entrar"))}
           className="flex items-center gap-2 border border-brand bg-[#222] text-brand px-4 py-2 rounded-full font-bold text-[15px] uppercase shadow-md hover:bg-brand hover:text-black transition-all"
           style={{ letterSpacing: 1 }}
-          title={isVitrineSlug ? "Criar racha no Fut7Pro" : "Area do atleta"}
-          aria-label={isVitrineSlug ? "Criar racha no Fut7Pro" : "Entrar - area do atleta"}
+          title="Area do atleta"
+          aria-label="Entrar - area do atleta"
         >
           <FaUser size={20} className="text-brand" />
-          {isVitrineSlug ? "Criar racha" : "Entrar"}
+          Entrar
         </button>
       </nav>
     );

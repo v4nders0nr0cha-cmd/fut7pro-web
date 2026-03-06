@@ -111,11 +111,11 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
             if (item.label === "Mensagens" && badgeMensagem > 0) badgeValue = badgeMensagem;
             if (item.label === "Sugestões" && badgeSugestoes > 0) badgeValue = badgeSugestoes;
 
-            // Se não logado, permite navegação mas redireciona para login
+            // Se não logado, permite navegação mas direciona para fluxo de entrada do racha.
             const handleClick = (e: React.MouseEvent) => {
               if (!isAthleteLoggedIn) {
                 e.preventDefault();
-                router.push(isVitrineSlug ? createRachaHref : loginHref);
+                router.push(loginHref);
               }
             };
 
@@ -140,21 +140,50 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
           {/* Perfil/Login - à direita dos ícones */}
           {!showUserMenu ? (
-            <Link
-              href={isVitrineSlug ? createRachaHref : loginHref}
-              className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
-              style={{ letterSpacing: 1 }}
-            >
-              <FaUser size={18} className="text-brand shrink-0" />
-              <span className="flex flex-col leading-tight text-left">
-                <span className="text-[13px] font-bold uppercase">
-                  {isVitrineSlug ? "Criar racha" : "Entrar"}
+            isVitrineSlug ? (
+              <div className="ml-2 flex items-center gap-2">
+                <Link
+                  href={loginHref}
+                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-white shadow-md transition-all hover:border-brand/70 hover:text-brand"
+                  style={{ letterSpacing: 1 }}
+                >
+                  <FaUser size={16} className="shrink-0" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span className="text-[12px] font-bold uppercase">Entrar</span>
+                    <span className="max-w-[130px] truncate text-[10px] font-semibold normal-case text-gray-300">
+                      Demonstração do Fut7Pro
+                    </span>
+                  </span>
+                </Link>
+                <Link
+                  href={createRachaHref}
+                  className="flex items-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-1.5 text-brand shadow-md transition-all hover:bg-brand hover:text-black"
+                  style={{ letterSpacing: 1 }}
+                >
+                  <FaUser size={16} className="shrink-0" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span className="text-[12px] font-bold uppercase">Criar meu racha</span>
+                    <span className="max-w-[130px] truncate text-[10px] font-semibold normal-case text-brand-soft">
+                      Comece no Fut7Pro
+                    </span>
+                  </span>
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href={loginHref}
+                className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
+                style={{ letterSpacing: 1 }}
+              >
+                <FaUser size={18} className="text-brand shrink-0" />
+                <span className="flex flex-col leading-tight text-left">
+                  <span className="text-[13px] font-bold uppercase">Entrar</span>
+                  <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
+                    {`Atletas do ${nome}`}
+                  </span>
                 </span>
-                <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
-                  {isVitrineSlug ? "Comece no Fut7Pro" : `Atletas do ${nome}`}
-                </span>
-              </span>
-            </Link>
+              </Link>
+            )
           ) : (
             <div className="relative flex items-center gap-3 ml-3">
               <button

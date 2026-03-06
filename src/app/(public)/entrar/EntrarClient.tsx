@@ -33,7 +33,7 @@ const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
 const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
+  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas ficam disponiveis no site do seu racha.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -322,29 +322,63 @@ export default function EntrarClient() {
   if (isVitrineSlug) {
     return (
       <section className="w-full px-4">
-        <div className="mx-auto w-full max-w-2xl rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
-          <div className="mb-4 flex flex-col items-center gap-2 text-center">
+        <div className="mx-auto w-full max-w-3xl rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl md:p-7">
+          <div className="mb-5 flex flex-col items-center gap-2 text-center">
             <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
-            <h1 className="text-2xl font-bold text-white md:text-3xl">Racha Vitrine</h1>
-            <p className="text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
+            <span className="rounded-full border border-amber-400/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+              Racha vitrine
+            </span>
+            <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Racha Vitrine</h1>
+            <p className="max-w-2xl text-sm text-amber-100">
+              Este racha e apenas uma demonstracao para voce ver como fica o site do seu racha no
+              Fut7Pro.
+            </p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-            Este ambiente e somente de demonstracao. Para usar o Fut7Pro de verdade, crie seu
-            proprio racha.
+
+          <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm leading-relaxed text-gray-200 md:p-5">
+            <p>
+              No site do seu racha, o botao <strong>&quot;Entrar&quot;</strong> serve para o atleta
+              se cadastrar e participar do racha (com aprovacao do administrador, se esse controle
+              estiver ativo).
+            </p>
+            <p className="mt-3">
+              Aqui no Racha Vitrine, nao existe administrador nem cadastro de atletas. Por isso o
+              botao <strong>&quot;Entrar&quot;</strong> leva para esta explicacao, evitando confusao
+              e cadastros indevidos.
+            </p>
           </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <a
-              href="/cadastrar-racha"
-              className="inline-flex items-center justify-center rounded-lg bg-brand py-2.5 font-bold text-black hover:bg-brand-soft"
-            >
-              Criar meu racha
-            </a>
-            <a
-              href={publicHref("/")}
-              className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"
-            >
-              Voltar para vitrine
-            </a>
+
+          <div className="mt-6">
+            <h2 className="text-lg font-bold text-white">O que voce quer fazer agora?</h2>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <a
+                href={publicHref("/")}
+                className="rounded-xl border border-white/10 bg-[#141824] p-4 text-left text-white transition hover:border-white/30"
+              >
+                <span className="block text-sm font-bold text-white">
+                  Voltar e continuar explorando o Racha Vitrine
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-gray-300">
+                  Ver partidas, rankings, destaques e como o site do seu racha vai ficar.
+                </span>
+              </a>
+              <a
+                href="/cadastrar-racha"
+                className="rounded-xl border border-brand bg-brand/15 p-4 text-left text-brand transition hover:bg-brand hover:text-black"
+              >
+                <span className="block text-sm font-bold">
+                  Criar o site do meu racha no Fut7Pro
+                </span>
+                <span className="mt-1 block text-xs leading-relaxed text-brand-soft">
+                  Em poucos minutos voce cria sua pagina exclusiva e ativa seu painel
+                  administrativo.
+                </span>
+              </a>
+            </div>
+            <p className="mt-4 text-center text-xs text-gray-400">
+              Sem compromisso. Voce pode testar antes e personalizar depois (nome, logo, cores e
+              patrocinadores).
+            </p>
           </div>
         </div>
       </section>

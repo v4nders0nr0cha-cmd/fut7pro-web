@@ -47,6 +47,17 @@ describe("BottomMenu", () => {
     rerender(<BottomMenu />);
   });
 
+  it("no vitrine mantém Entrar e exibe CTA extra de criar racha", () => {
+    useSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    usePathname.mockReturnValue("/vitrine");
+    useMe.mockReturnValue({ me: null });
+
+    render(<BottomMenu />);
+
+    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
+    expect(screen.getByText(/Criar meu racha/i)).toBeInTheDocument();
+  });
+
   it("mostra itens do menu e badges quando autenticado", () => {
     useSession.mockReturnValue({
       data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
