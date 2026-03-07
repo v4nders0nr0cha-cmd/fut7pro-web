@@ -30,15 +30,17 @@ const fetcher = async (url: string) => {
 export function useAdminBadges() {
   const { unreadCount: notificationsCount } = useAdminNotifications({
     includeList: false,
-    refreshInterval: 30000,
+    refreshInterval: 60000,
   });
 
   const { data } = useSWR<{ count?: number }>(
     "/api/admin/solicitacoes?status=PENDENTE&count=1",
     fetcher,
     {
-      refreshInterval: 30000,
+      refreshInterval: 60000,
       revalidateOnFocus: false,
+      refreshWhenHidden: false,
+      dedupingInterval: 10000,
     }
   );
 

@@ -30,7 +30,12 @@ type EditState = {
   fisico?: number | null;
 };
 
-type SaveStatus = "saving" | "saved" | "error";
+type SaveStatus = "saved" | "error";
+
+type SaveOverlayState = {
+  athleteId: string;
+  athleteName: string;
+};
 
 type AtletaNivel = {
   jogador: Jogador;
@@ -123,7 +128,7 @@ function ModalHistorico({
         {!loading && !error && (
           <div className="space-y-3 max-h-[380px] overflow-y-auto">
             {historico.length === 0 && (
-              <div className="text-sm text-gray-400">Nenhuma alteracao registrada.</div>
+              <div className="text-sm text-gray-400">Nenhuma alteração registrada.</div>
             )}
             {historico.map((item) => (
               <div key={item.id} className="border border-zinc-800 rounded-lg p-3 bg-[#1f1f1f]">
@@ -137,11 +142,11 @@ function ModalHistorico({
                     <span className="font-semibold">{item.habilidade ?? "-"}</span>
                   </div>
                   <div>
-                    <span className="block text-gray-500">Fisico</span>
+                    <span className="block text-gray-500">Físico</span>
                     <span className="font-semibold">{item.fisico ?? "-"}</span>
                   </div>
                   <div>
-                    <span className="block text-gray-500">Nivel</span>
+                    <span className="block text-gray-500">Nível</span>
                     <span className="font-semibold">{formatNivel(item.nivelFinal)}</span>
                   </div>
                 </div>
@@ -154,11 +159,71 @@ function ModalHistorico({
   );
 }
 
+function ModalSalvamento({ saving }: { saving: SaveOverlayState | null }) {
+  if (!saving) return null;
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-[2px] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-2xl border border-yellow-500/30 bg-[#121212]/95 p-6 shadow-[0_24px_80px_-28px_rgba(251,191,36,0.45)]">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-500/10">
+          <span className="h-7 w-7 rounded-full border-2 border-yellow-400/30 border-t-yellow-300 animate-spin" />
+        </div>
+        <h3 className="text-center text-base font-semibold text-yellow-200">
+          Atualizando a avaliação de {saving.athleteName || "atleta"}...
+        </h3>
+        <p className="mt-2 text-center text-sm text-zinc-300">
+          Aguarde um instante para concluir o salvamento com segurança.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NivelAtletasSkeleton() {
+  return (
+    <div className="mt-4 space-y-4 animate-pulse">
+      <div className="rounded-xl border border-zinc-800 bg-[#202020] p-3">
+        <div className="h-4 w-40 rounded bg-zinc-700/70" />
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+          <div className="h-10 rounded-lg bg-zinc-800/80" />
+          <div className="h-10 rounded-lg bg-zinc-800/80" />
+          <div className="h-10 rounded-lg bg-zinc-800/80" />
+          <div className="h-10 rounded-lg bg-zinc-800/80" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div
+            key={`skeleton-card-${index + 1}`}
+            className="rounded-xl border border-zinc-800 bg-[#232323] p-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-zinc-700/70" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 rounded bg-zinc-700/70" />
+                <div className="h-3 w-1/2 rounded bg-zinc-800/80" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <div className="h-4 w-full rounded bg-zinc-800/80" />
+              <div className="h-4 w-full rounded bg-zinc-800/80" />
+              <div className="h-4 w-2/3 rounded bg-zinc-700/70" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function NivelDosAtletasPage() {
   const { rachaId } = useRacha();
   const { me } = useMe();
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
-  const { niveis, isLoading: loadingNiveis, atualizarNivel } = useNiveisAtletas(rachaId);
+  const { niveis, isLoading: loadingNiveis, atualizarNivel, revalidarNiveis } = useNiveisAtletas(
+    rachaId
+  );
 
   const [busca, setBusca] = useState("");
   const [posicao, setPosicao] = useState("todas");
@@ -167,9 +232,10 @@ export default function NivelDosAtletasPage() {
   const [ordenacao, setOrdenacao] = useState("nivel");
 
   const [edits, setEdits] = useState<Record<string, EditState>>({});
-  const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const [statusById, setStatusById] = useState<Record<string, SaveStatus>>({});
   const statusTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [activeSave, setActiveSave] = useState<SaveOverlayState | null>(null);
+  const lastPayloadByAthleteRef = useRef<Record<string, string>>({});
 
   const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({});
   const [bulkHabilidade, setBulkHabilidade] = useState("");
@@ -181,6 +247,16 @@ export default function NivelDosAtletasPage() {
 
   const role = (me?.membership?.role || "").toUpperCase();
   const canEdit = ROLES_PODEM_EDITAR.includes(role);
+  const isUiLocked = bulkLoading || Boolean(activeSave);
+  const [showSkeleton, setShowSkeleton] = useState(false);
+
+  const jogadoresMap = useMemo(() => {
+    const map: Record<string, Jogador> = {};
+    (jogadores || []).forEach((jogador) => {
+      map[jogador.id] = jogador;
+    });
+    return map;
+  }, [jogadores]);
 
   const niveisMap = useMemo(() => {
     const map: Record<string, (typeof niveis)[number]> = {};
@@ -191,10 +267,8 @@ export default function NivelDosAtletasPage() {
   }, [niveis]);
 
   useEffect(() => {
-    const timers = timersRef.current;
     const statusTimers = statusTimersRef.current;
     return () => {
-      Object.values(timers).forEach((timer) => clearTimeout(timer));
       Object.values(statusTimers).forEach((timer) => clearTimeout(timer));
     };
   }, []);
@@ -300,13 +374,136 @@ export default function NivelDosAtletasPage() {
     [selectedIds]
   );
 
+  const isInitialLoading = (loadingJogadores || loadingNiveis) && atletas.length === 0;
+
+  useEffect(() => {
+    if (!isInitialLoading) {
+      setShowSkeleton(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setShowSkeleton(true);
+    }, 180);
+
+    return () => window.clearTimeout(timer);
+  }, [isInitialLoading]);
+
+  const setStatus = (id: string, status: SaveStatus, ttlMs = 2800) => {
+    if (statusTimersRef.current[id]) {
+      clearTimeout(statusTimersRef.current[id]);
+    }
+    setStatusById((prev) => ({ ...prev, [id]: status }));
+    statusTimersRef.current[id] = setTimeout(() => {
+      setStatusById((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }, ttlMs);
+  };
+
+  const limparEdicao = (id: string) => {
+    setEdits((current) => {
+      if (!current[id]) return current;
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
+  };
+
+  const salvarAtleta = async (
+    athleteId: string,
+    habilidade: number,
+    fisico: number,
+    options?: { silentError?: boolean }
+  ) => {
+    const jogador = jogadoresMap[athleteId];
+    const athleteName = jogador?.nome || "atleta";
+    const nivelAtual = niveisMap[athleteId];
+    const habilidadeSalva = typeof nivelAtual?.habilidade === "number" ? nivelAtual.habilidade : null;
+    const fisicoSalvo = typeof nivelAtual?.fisico === "number" ? nivelAtual.fisico : null;
+
+    if (habilidadeSalva === habilidade && fisicoSalvo === fisico) {
+      limparEdicao(athleteId);
+      setStatus(athleteId, "saved");
+      return true;
+    }
+
+    const payloadKey = `${habilidade}:${fisico}`;
+    if (lastPayloadByAthleteRef.current[athleteId] === payloadKey) {
+      return true;
+    }
+    lastPayloadByAthleteRef.current[athleteId] = payloadKey;
+
+    setActiveSave({ athleteId, athleteName });
+    const result = await atualizarNivel({ athleteId, habilidade, fisico });
+    setActiveSave(null);
+
+    if (result.ok) {
+      limparEdicao(athleteId);
+      setStatus(athleteId, "saved");
+      await revalidarNiveis().catch(() => {
+        // Mantém o valor confirmado no POST se a revalidação falhar.
+      });
+      return true;
+    }
+
+    limparEdicao(athleteId);
+    delete lastPayloadByAthleteRef.current[athleteId];
+    setStatus(athleteId, "error", 3600);
+
+    if (!options?.silentError) {
+      const fallbackMessage = "Não foi possível salvar a avaliação deste atleta. Tente novamente.";
+      const isRateLimitError = "error" in result && result.error.isRateLimit;
+      const message = isRateLimitError
+        ? "Muitas tentativas em sequência. Aguarde alguns segundos e tente novamente."
+        : fallbackMessage;
+      toast.error(message);
+    }
+
+    return false;
+  };
+
+  const handleHabilidadeChange = async (id: string, value: number) => {
+    if (!canEdit || isUiLocked) return;
+    const base = niveisMap[id];
+    const prev = edits[id] || {};
+    const fisicoAtual = prev.fisico ?? base?.fisico ?? null;
+
+    setEdits((current) => ({
+      ...current,
+      [id]: { ...current[id], habilidade: value },
+    }));
+
+    if (typeof fisicoAtual === "number") {
+      await salvarAtleta(id, value, fisicoAtual);
+    }
+  };
+
+  const handleFisicoChange = async (id: string, value: number) => {
+    if (!canEdit || isUiLocked) return;
+    const base = niveisMap[id];
+    const prev = edits[id] || {};
+    const habilidadeAtual = prev.habilidade ?? base?.habilidade ?? null;
+
+    setEdits((current) => ({
+      ...current,
+      [id]: { ...current[id], fisico: value },
+    }));
+
+    if (typeof habilidadeAtual === "number") {
+      await salvarAtleta(id, habilidadeAtual, value);
+    }
+  };
+
   const toggleSelecionado = (id: string) => {
-    if (!canEdit) return;
+    if (!canEdit || isUiLocked) return;
     setSelectedIds((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   const selecionarTodos = () => {
-    if (!canEdit) return;
+    if (!canEdit || isUiLocked) return;
     const next: Record<string, boolean> = {};
     atletasFiltrados.forEach((item) => {
       next[item.jogador.id] = true;
@@ -314,104 +511,35 @@ export default function NivelDosAtletasPage() {
     setSelectedIds(next);
   };
 
-  const limparSelecao = () => setSelectedIds({});
-
-  const setStatus = (id: string, status: SaveStatus, ttlMs = 2000) => {
-    if (statusTimersRef.current[id]) {
-      clearTimeout(statusTimersRef.current[id]);
-    }
-    setStatusById((prev) => ({ ...prev, [id]: status }));
-    if (status !== "saving") {
-      statusTimersRef.current[id] = setTimeout(() => {
-        setStatusById((prev) => {
-          const next = { ...prev };
-          delete next[id];
-          return next;
-        });
-      }, ttlMs);
-    }
-  };
-
-  const scheduleSave = (id: string, habilidade: number | null, fisico: number | null) => {
-    if (!canEdit) return;
-
-    if (timersRef.current[id]) {
-      clearTimeout(timersRef.current[id]);
-    }
-
-    if (typeof habilidade === "number" && typeof fisico === "number") {
-      setStatus(id, "saving");
-    }
-
-    timersRef.current[id] = setTimeout(async () => {
-      if (typeof habilidade !== "number" || typeof fisico !== "number") return;
-      const result = await atualizarNivel({ athleteId: id, habilidade, fisico });
-      if (result) {
-        setStatus(id, "saved");
-        setEdits((current) => {
-          if (!current[id]) return current;
-          const next = { ...current };
-          delete next[id];
-          return next;
-        });
-      } else {
-        setStatus(id, "error", 3200);
-      }
-    }, 300);
-  };
-
-  const handleHabilidadeChange = (id: string, value: number) => {
-    if (!canEdit) return;
-    const base = niveisMap[id];
-    const prev = edits[id] || {};
-    const fisicoAtual = prev.fisico ?? base?.fisico ?? null;
-    setEdits((current) => ({
-      ...current,
-      [id]: { ...current[id], habilidade: value },
-    }));
-    scheduleSave(id, value, fisicoAtual);
-  };
-
-  const handleFisicoChange = (id: string, value: number) => {
-    if (!canEdit) return;
-    const base = niveisMap[id];
-    const prev = edits[id] || {};
-    const habilidadeAtual = prev.habilidade ?? base?.habilidade ?? null;
-    setEdits((current) => ({
-      ...current,
-      [id]: { ...current[id], fisico: value },
-    }));
-    scheduleSave(id, habilidadeAtual, value);
+  const limparSelecao = () => {
+    if (isUiLocked) return;
+    setSelectedIds({});
   };
 
   const abrirHistorico = (atleta: Jogador) => {
+    if (isUiLocked) return;
     setHistoricoAtleta(atleta);
     setHistoricoOpen(true);
   };
 
   const aplicarEdicaoLote = async () => {
-    if (!canEdit) return;
+    if (!canEdit || isUiLocked) return;
     if (selectedList.length === 0) {
       toast.error("Selecione ao menos um atleta.");
       return;
     }
 
-    selectedList.forEach((id) => {
-      if (timersRef.current[id]) {
-        clearTimeout(timersRef.current[id]);
-      }
-    });
-
     const habilidadeValor = bulkHabilidade ? Number(bulkHabilidade) : null;
     const fisicoValor = bulkFisico ? Number(bulkFisico) : null;
 
     if (habilidadeValor === null && fisicoValor === null) {
-      toast.error("Defina habilidade e/ou fisico para aplicar.");
+      toast.error("Defina habilidade e/ou físico para aplicar.");
       return;
     }
 
     setBulkLoading(true);
-    let skipped = 0;
+    let atualizados = 0;
+    let falhas = 0;
 
     for (const id of selectedList) {
       const base = niveisMap[id];
@@ -422,7 +550,7 @@ export default function NivelDosAtletasPage() {
       const fisico = fisicoValor ?? fisicoAtual;
 
       if (typeof habilidade !== "number" || typeof fisico !== "number") {
-        skipped += 1;
+        falhas += 1;
         continue;
       }
 
@@ -431,42 +559,41 @@ export default function NivelDosAtletasPage() {
         [id]: { habilidade, fisico },
       }));
 
-      setStatus(id, "saving");
-      const result = await atualizarNivel({ athleteId: id, habilidade, fisico });
-      if (result) {
-        setStatus(id, "saved");
-        setEdits((current) => {
-          if (!current[id]) return current;
-          const next = { ...current };
-          delete next[id];
-          return next;
-        });
+      const ok = await salvarAtleta(id, habilidade, fisico, { silentError: true });
+      if (ok) {
+        atualizados += 1;
       } else {
-        setStatus(id, "error", 3200);
-        skipped += 1;
+        falhas += 1;
       }
     }
 
     setBulkLoading(false);
-    if (skipped > 0) {
-      toast.error(`${skipped} atletas não foram atualizados.`);
+
+    if (atualizados > 0) {
+      toast.success(
+        `${atualizados} atleta${atualizados > 1 ? "s" : ""} atualizado${atualizados > 1 ? "s" : ""}.`
+      );
     }
-    toast.success("Atualizado");
+    if (falhas > 0) {
+      toast.error(
+        `${falhas} atleta${falhas > 1 ? "s" : ""} não puderam ser atualizados neste momento.`
+      );
+    }
     limparSelecao();
   };
 
   return (
-    <div className="w-full max-w-[1440px] mx-auto px-2 sm:px-4 pt-6 pb-12">
+    <div className="w-full max-w-[1440px] mx-auto px-2 sm:px-4 pt-6 pb-12" aria-busy={isUiLocked}>
       <Head>
-        <title>Nivel dos Atletas | Fut7Pro</title>
+        <title>Nível dos Atletas | Fut7Pro</title>
         <meta
           name="description"
-          content="Defina habilidade e fisico dos atletas para gerar um nivel final mais justo no sorteio inteligente do Fut7Pro."
+          content="Defina habilidade e físico dos atletas para gerar um nível final mais justo no sorteio inteligente do Fut7Pro."
         />
-        <meta property="og:title" content="Nivel dos Atletas | Fut7Pro" />
+        <meta property="og:title" content="Nível dos Atletas | Fut7Pro" />
         <meta
           property="og:description"
-          content="Defina habilidade e fisico dos atletas para gerar um nivel final mais justo no sorteio inteligente do Fut7Pro."
+          content="Defina habilidade e físico dos atletas para gerar um nível final mais justo no sorteio inteligente do Fut7Pro."
         />
         <meta property="og:type" content="website" />
         <meta
@@ -474,10 +601,10 @@ export default function NivelDosAtletasPage() {
           content="https://app.fut7pro.com.br/admin/jogadores/nivel-dos-atletas"
         />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Nivel dos Atletas | Fut7Pro" />
+        <meta name="twitter:title" content="Nível dos Atletas | Fut7Pro" />
         <meta
           name="twitter:description"
-          content="Defina habilidade e fisico dos atletas para gerar um nivel final mais justo no sorteio inteligente do Fut7Pro."
+          content="Defina habilidade e físico dos atletas para gerar um nível final mais justo no sorteio inteligente do Fut7Pro."
         />
         <link rel="canonical" href="https://app.fut7pro.com.br/admin/jogadores/nivel-dos-atletas" />
       </Head>
@@ -485,9 +612,9 @@ export default function NivelDosAtletasPage() {
       <div className="bg-[#1A1A1A] rounded-2xl p-4 sm:p-6 text-white shadow">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-yellow-400">Nivel dos atletas</h1>
+            <h1 className="text-2xl font-bold text-yellow-400">Nível dos atletas</h1>
             <p className="text-sm text-gray-300">
-              Defina habilidade (1-5) e nivel fisico (1-3) para gerar o nivel final usado no
+              Defina habilidade (1-5) e nível físico (1-3) para gerar o nível final usado no
               sorteio.
             </p>
           </div>
@@ -501,8 +628,8 @@ export default function NivelDosAtletasPage() {
 
         {!canEdit && (
           <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-200">
-            Apenas Presidente, Vice Presidente ou Diretor de Futebol pode editar niveis. A pagina
-            esta em modo de leitura.
+            Apenas Presidente, Vice-Presidente ou Diretor de Futebol pode editar níveis. A página
+            está em modo de leitura.
           </div>
         )}
 
@@ -516,16 +643,18 @@ export default function NivelDosAtletasPage() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
               placeholder="Buscar atleta..."
-              className="w-full pl-9 pr-3 py-2 bg-[#232323] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              className="w-full pl-9 pr-3 py-2 bg-[#232323] rounded-lg text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+              disabled={isUiLocked}
             />
           </div>
 
           <select
             value={posicao}
             onChange={(e) => setPosicao(e.target.value)}
-            className="px-3 py-2 bg-[#232323] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="px-3 py-2 bg-[#232323] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+            disabled={isUiLocked}
           >
-            <option value="todas">Todas as posicoes</option>
+            <option value="todas">Todas as posições</option>
             {POSICOES.map((item) => (
               <option key={item} value={item}>
                 {item}
@@ -536,14 +665,15 @@ export default function NivelDosAtletasPage() {
           <select
             value={ordenacao}
             onChange={(e) => setOrdenacao(e.target.value)}
-            className="px-3 py-2 bg-[#232323] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            className="px-3 py-2 bg-[#232323] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:opacity-60"
+            disabled={isUiLocked}
           >
-            <option value="nivel">Nivel final (maior)</option>
+            <option value="nivel">Nível final (maior)</option>
             <option value="habilidade">Habilidade (maior)</option>
-            <option value="fisico">Fisico (maior)</option>
-            <option value="atualizado">Ultima alteracao</option>
+            <option value="fisico">Físico (maior)</option>
+            <option value="atualizado">Última alteração</option>
             <option value="nome">Nome (A-Z)</option>
-            <option value="posicao">Posicao</option>
+            <option value="posicao">Posição</option>
           </select>
 
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-300">
@@ -553,6 +683,7 @@ export default function NivelDosAtletasPage() {
                 checked={apenasMensalistas}
                 onChange={(e) => setApenasMensalistas(e.target.checked)}
                 className="accent-yellow-400"
+                disabled={isUiLocked}
               />
               Mensalistas
             </label>
@@ -562,8 +693,9 @@ export default function NivelDosAtletasPage() {
                 checked={semNivel}
                 onChange={(e) => setSemNivel(e.target.checked)}
                 className="accent-yellow-400"
+                disabled={isUiLocked}
               />
-              Sem nivel
+              Sem nível
             </label>
           </div>
         </div>
@@ -574,16 +706,16 @@ export default function NivelDosAtletasPage() {
             <button
               type="button"
               onClick={selecionarTodos}
-              className="px-2 py-1 rounded bg-[#2b2b2b] hover:bg-[#333] transition"
-              disabled={!canEdit || atletasFiltrados.length === 0}
+              className="px-2 py-1 rounded bg-[#2b2b2b] hover:bg-[#333] transition disabled:opacity-40"
+              disabled={!canEdit || isUiLocked || atletasFiltrados.length === 0}
             >
               Selecionar todos
             </button>
             <button
               type="button"
               onClick={limparSelecao}
-              className="px-2 py-1 rounded bg-[#2b2b2b] hover:bg-[#333] transition"
-              disabled={!canEdit}
+              className="px-2 py-1 rounded bg-[#2b2b2b] hover:bg-[#333] transition disabled:opacity-40"
+              disabled={!canEdit || isUiLocked}
             >
               Limpar
             </button>
@@ -593,8 +725,8 @@ export default function NivelDosAtletasPage() {
             <select
               value={bulkHabilidade}
               onChange={(e) => setBulkHabilidade(e.target.value)}
-              className="px-2 py-1 rounded bg-[#2b2b2b] text-white"
-              disabled={!canEdit}
+              className="px-2 py-1 rounded bg-[#2b2b2b] text-white disabled:opacity-40"
+              disabled={!canEdit || isUiLocked}
             >
               <option value="">Habilidade</option>
               {[1, 2, 3, 4, 5].map((val) => (
@@ -606,10 +738,10 @@ export default function NivelDosAtletasPage() {
             <select
               value={bulkFisico}
               onChange={(e) => setBulkFisico(e.target.value)}
-              className="px-2 py-1 rounded bg-[#2b2b2b] text-white"
-              disabled={!canEdit}
+              className="px-2 py-1 rounded bg-[#2b2b2b] text-white disabled:opacity-40"
+              disabled={!canEdit || isUiLocked}
             >
-              <option value="">Fisico</option>
+              <option value="">Físico</option>
               {[1, 2, 3].map((val) => (
                 <option key={val} value={val}>
                   {val}
@@ -620,44 +752,38 @@ export default function NivelDosAtletasPage() {
               type="button"
               onClick={aplicarEdicaoLote}
               className="px-3 py-1 rounded bg-yellow-400 text-black font-semibold hover:bg-yellow-500 transition disabled:opacity-40"
-              disabled={!canEdit || bulkLoading}
+              disabled={!canEdit || isUiLocked}
             >
               {bulkLoading ? "Aplicando..." : "Aplicar"}
             </button>
           </div>
         </div>
 
-        {(loadingJogadores || loadingNiveis) && (
-          <div className="mt-4 text-sm text-gray-300">Carregando atletas e niveis...</div>
+        {showSkeleton && isInitialLoading && <NivelAtletasSkeleton />}
+
+        {!showSkeleton && isInitialLoading && (
+          <div className="mt-4 text-sm text-gray-300">Carregando atletas e níveis...</div>
         )}
 
-        {!loadingJogadores && atletasFiltrados.length === 0 && (
+        {!isInitialLoading && !loadingJogadores && atletasFiltrados.length === 0 && (
           <div className="mt-4 text-sm text-gray-400">Nenhum atleta encontrado com os filtros.</div>
         )}
 
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {!isInitialLoading && <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {atletasFiltrados.map((item) => {
             const { jogador, habilidade, fisico, nivelFinal, atualizadoEm, atualizadoPorNome } =
               item;
-            const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Fisico ${typeof fisico === "number" ? fisico : "-"}`;
+            const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Físico ${typeof fisico === "number" ? fisico : "-"}`;
             const nivelTexto = formatNivel(nivelFinal);
             const semHabilidade = typeof habilidade !== "number";
             const selecionado = Boolean(selectedIds[jogador.id]);
             const status = statusById[jogador.id];
             const statusLabel =
-              status === "saving"
-                ? "Salvando..."
-                : status === "saved"
-                  ? "Salvo"
-                  : status === "error"
-                    ? "Falha ao salvar"
-                    : null;
+              status === "saved" ? "Salvo" : status === "error" ? "Falha ao salvar" : null;
             const statusClass =
-              status === "saving"
-                ? "border-yellow-500/40 text-yellow-200 bg-yellow-500/10"
-                : status === "saved"
-                  ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
-                  : "border-red-500/40 text-red-300 bg-red-500/10";
+              status === "saved"
+                ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                : "border-red-500/40 text-red-300 bg-red-500/10";
 
             return (
               <div
@@ -708,8 +834,9 @@ export default function NivelDosAtletasPage() {
                         selecionado
                           ? "bg-yellow-400 border-yellow-400 text-black"
                           : "border-gray-500 text-gray-400"
-                      }`}
-                      title={selecionado ? "Remover selecao" : "Selecionar atleta"}
+                      } disabled:opacity-40`}
+                      title={selecionado ? "Remover seleção" : "Selecionar atleta"}
+                      disabled={isUiLocked}
                     >
                       {selecionado ? <FaCheckCircle size={12} /> : <FaTimes size={10} />}
                     </button>
@@ -718,21 +845,25 @@ export default function NivelDosAtletasPage() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-400">Habilidade na posicao</span>
+                    <span className="text-xs text-gray-400">Habilidade na posição</span>
                     <EditorEstrelas
                       value={habilidade || 0}
-                      onChange={(val) => handleHabilidadeChange(jogador.id, val)}
-                      disabled={!canEdit}
+                      onChange={(val) => {
+                        void handleHabilidadeChange(jogador.id, val);
+                      }}
+                      disabled={!canEdit || isUiLocked}
                       max={5}
                       size={16}
                     />
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-400">Nivel fisico</span>
+                    <span className="text-xs text-gray-400">Nível físico</span>
                     <EditorEstrelas
                       value={fisico || 0}
-                      onChange={(val) => handleFisicoChange(jogador.id, val)}
-                      disabled={!canEdit}
+                      onChange={(val) => {
+                        void handleFisicoChange(jogador.id, val);
+                      }}
+                      disabled={!canEdit || isUiLocked}
                       max={3}
                       size={16}
                     />
@@ -742,15 +873,12 @@ export default function NivelDosAtletasPage() {
                 <div className="flex items-center justify-between gap-2" title={tooltip}>
                   <div className="flex items-center gap-2">
                     <StarRatingDisplay value={nivelFinal ?? 0} size={14} />
-                    <span className="text-sm text-yellow-300">Nivel do atleta: {nivelTexto}</span>
+                    <span className="text-sm text-yellow-300">Nível do atleta: {nivelTexto}</span>
                   </div>
                   {statusLabel && (
                     <span
                       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusClass}`}
                     >
-                      {status === "saving" && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-yellow-300 animate-pulse" />
-                      )}
                       {status === "saved" && <FaCheckCircle size={10} />}
                       {status === "error" && <FaTimes size={10} />}
                       {statusLabel}
@@ -760,12 +888,13 @@ export default function NivelDosAtletasPage() {
 
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>
-                    Ultima alteracao: {atualizadoPorNome || "-"} {formatarDataHora(atualizadoEm)}
+                    Última alteração: {atualizadoPorNome || "-"} {formatarDataHora(atualizadoEm)}
                   </span>
                   <button
                     type="button"
                     onClick={() => abrirHistorico(jogador)}
-                    className="flex items-center gap-1 text-yellow-300 hover:text-yellow-200"
+                    className="flex items-center gap-1 text-yellow-300 hover:text-yellow-200 disabled:opacity-40"
+                    disabled={isUiLocked}
                   >
                     <FaHistory size={12} />
                     Histórico
@@ -774,7 +903,7 @@ export default function NivelDosAtletasPage() {
               </div>
             );
           })}
-        </div>
+        </div>}
       </div>
 
       <ModalHistorico
@@ -782,6 +911,7 @@ export default function NivelDosAtletasPage() {
         atleta={historicoAtleta}
         onClose={() => setHistoricoOpen(false)}
       />
+      <ModalSalvamento saving={activeSave} />
     </div>
   );
 }
