@@ -47,6 +47,24 @@ type UseAdminNotificationsOptions = {
   refreshInterval?: number;
 };
 
+type FetchHttpError = Error & {
+  status?: number;
+  retryAfterMs?: number;
+};
+
+const parseRetryAfterMs = (headerValue: string | null): number | undefined => {
+  if (!headerValue) return undefined;
+  const seconds = Number(headerValue);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+  const retryDate = new Date(headerValue).getTime();
+  if (Number.isFinite(retryDate)) {
+    return Math.max(0, retryDate - Date.now());
+  }
+  return undefined;
+};
+
 const fetchJson = async <T>(url: string): Promise<T> => {
   const response = await fetch(url, { cache: "no-store" });
   const text = await response.text();
@@ -58,7 +76,12 @@ const fetchJson = async <T>(url: string): Promise<T> => {
   }
 
   if (!response.ok) {
-    throw new Error(payload?.error || payload?.message || "Falha ao carregar notificações.");
+    const error = new Error(
+      payload?.error || payload?.message || "Falha ao carregar notificações."
+    ) as FetchHttpError;
+    error.status = response.status;
+    error.retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+    throw error;
   }
 
   return payload as T;
@@ -77,7 +100,13 @@ const buildListKey = (options: UseAdminNotificationsOptions) => {
 export function useAdminNotifications(options: UseAdminNotificationsOptions = {}) {
   const enabled = options.enabled ?? true;
   const includeList = options.includeList ?? true;
-  const refreshInterval = options.refreshInterval ?? 30_000;
+  const refreshInterval = options.refreshInterval ?? 60_000;
+  const resolveRefreshInterval = () => {
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return 0;
+    }
+    return refreshInterval;
+  };
 
   const countKey = enabled ? "/api/admin/notifications/unread-count" : null;
   const listKey = enabled && includeList ? buildListKey(options) : null;
@@ -88,8 +117,22 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
     isLoading: isCountLoading,
     mutate: mutateCount,
   } = useSWR<AdminNotificationsCountResponse>(countKey, fetchJson, {
-    refreshInterval,
-    revalidateOnFocus: true,
+    refreshInterval: resolveRefreshInterval,
+    revalidateOnFocus: false,
+    refreshWhenHidden: false,
+    dedupingInterval: 10_000,
+    shouldRetryOnError: true,
+    onErrorRetry: (error, _key, _config, revalidate, opts) => {
+      const httpError = error as FetchHttpError;
+      const status = httpError.status ?? 0;
+      if (opts.retryCount >= 2 || [400, 401, 403, 404].includes(status)) {
+        return;
+      }
+      const fallbackDelay = 1_000 * 2 ** opts.retryCount;
+      const retryDelayMs =
+        status === 429 ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay) : fallbackDelay;
+      window.setTimeout(() => revalidate({ retryCount: opts.retryCount + 1 }), retryDelayMs);
+    },
   });
 
   const {
@@ -98,8 +141,22 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
     isLoading: isListLoading,
     mutate: mutateList,
   } = useSWR<AdminNotificationsListResponse>(listKey, fetchJson, {
-    refreshInterval: includeList ? refreshInterval : 0,
-    revalidateOnFocus: true,
+    refreshInterval: includeList ? resolveRefreshInterval : 0,
+    revalidateOnFocus: false,
+    refreshWhenHidden: false,
+    dedupingInterval: 10_000,
+    shouldRetryOnError: true,
+    onErrorRetry: (error, _key, _config, revalidate, opts) => {
+      const httpError = error as FetchHttpError;
+      const status = httpError.status ?? 0;
+      if (opts.retryCount >= 2 || [400, 401, 403, 404].includes(status)) {
+        return;
+      }
+      const fallbackDelay = 1_000 * 2 ** opts.retryCount;
+      const retryDelayMs =
+        status === 429 ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay) : fallbackDelay;
+      window.setTimeout(() => revalidate({ retryCount: opts.retryCount + 1 }), retryDelayMs);
+    },
   });
 
   const markAsRead = async (id: string) => {
