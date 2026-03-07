@@ -7,6 +7,7 @@ import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import SecurityRecoveryPanel from "@/components/profile/SecurityRecoveryPanel";
+import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 
@@ -611,7 +612,7 @@ export default function GlobalPerfilClient() {
                 />
               </label>
               <label className="text-sm text-zinc-300">
-                Posicao principal *
+                Posição principal *
                 <select
                   value={form.position}
                   onChange={(event) => updateFormField("position", event.target.value as Posicao)}
@@ -626,7 +627,7 @@ export default function GlobalPerfilClient() {
                 </select>
               </label>
               <label className="text-sm text-zinc-300">
-                Posicao secundaria
+                Posição secundária
                 <select
                   value={form.positionSecondary}
                   onChange={(event) =>
@@ -641,6 +642,7 @@ export default function GlobalPerfilClient() {
                     </option>
                   ))}
                 </select>
+                <SecondaryPositionHint className="text-zinc-400" />
               </label>
               <div className="grid grid-cols-3 gap-3 sm:col-span-2">
                 <label className="text-sm text-zinc-300">

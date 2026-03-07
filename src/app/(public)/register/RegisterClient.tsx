@@ -19,6 +19,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
+import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -770,7 +771,7 @@ export default function RegisterClient() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-              Posicao principal
+              Posição principal
               <select
                 value={posicao}
                 onChange={(event) => setPosicao(event.target.value)}
@@ -786,7 +787,7 @@ export default function RegisterClient() {
               </select>
             </label>
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-              Posicao secundaria
+              Posição secundária
               <select
                 value={posicaoSecundaria}
                 onChange={(event) => setPosicaoSecundaria(event.target.value)}
@@ -799,6 +800,7 @@ export default function RegisterClient() {
                   </option>
                 ))}
               </select>
+              <SecondaryPositionHint className="normal-case tracking-normal font-normal text-gray-400" />
             </label>
           </div>
 
