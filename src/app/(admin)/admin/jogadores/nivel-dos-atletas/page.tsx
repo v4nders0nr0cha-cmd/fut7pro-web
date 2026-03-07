@@ -221,9 +221,12 @@ export default function NivelDosAtletasPage() {
   const { rachaId } = useRacha();
   const { me } = useMe();
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
-  const { niveis, isLoading: loadingNiveis, atualizarNivel, revalidarNiveis } = useNiveisAtletas(
-    rachaId
-  );
+  const {
+    niveis,
+    isLoading: loadingNiveis,
+    atualizarNivel,
+    revalidarNiveis,
+  } = useNiveisAtletas(rachaId);
 
   const [busca, setBusca] = useState("");
   const [posicao, setPosicao] = useState("todas");
@@ -421,7 +424,8 @@ export default function NivelDosAtletasPage() {
     const jogador = jogadoresMap[athleteId];
     const athleteName = jogador?.nome || "atleta";
     const nivelAtual = niveisMap[athleteId];
-    const habilidadeSalva = typeof nivelAtual?.habilidade === "number" ? nivelAtual.habilidade : null;
+    const habilidadeSalva =
+      typeof nivelAtual?.habilidade === "number" ? nivelAtual.habilidade : null;
     const fisicoSalvo = typeof nivelAtual?.fisico === "number" ? nivelAtual.fisico : null;
 
     if (habilidadeSalva === habilidade && fisicoSalvo === fisico) {
@@ -769,141 +773,143 @@ export default function NivelDosAtletasPage() {
           <div className="mt-4 text-sm text-gray-400">Nenhum atleta encontrado com os filtros.</div>
         )}
 
-        {!isInitialLoading && <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {atletasFiltrados.map((item) => {
-            const { jogador, habilidade, fisico, nivelFinal, atualizadoEm, atualizadoPorNome } =
-              item;
-            const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Físico ${typeof fisico === "number" ? fisico : "-"}`;
-            const nivelTexto = formatNivel(nivelFinal);
-            const semHabilidade = typeof habilidade !== "number";
-            const selecionado = Boolean(selectedIds[jogador.id]);
-            const status = statusById[jogador.id];
-            const statusLabel =
-              status === "saved" ? "Salvo" : status === "error" ? "Falha ao salvar" : null;
-            const statusClass =
-              status === "saved"
-                ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
-                : "border-red-500/40 text-red-300 bg-red-500/10";
+        {!isInitialLoading && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {atletasFiltrados.map((item) => {
+              const { jogador, habilidade, fisico, nivelFinal, atualizadoEm, atualizadoPorNome } =
+                item;
+              const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Físico ${typeof fisico === "number" ? fisico : "-"}`;
+              const nivelTexto = formatNivel(nivelFinal);
+              const semHabilidade = typeof habilidade !== "number";
+              const selecionado = Boolean(selectedIds[jogador.id]);
+              const status = statusById[jogador.id];
+              const statusLabel =
+                status === "saved" ? "Salvo" : status === "error" ? "Falha ao salvar" : null;
+              const statusClass =
+                status === "saved"
+                  ? "border-emerald-500/40 text-emerald-300 bg-emerald-500/10"
+                  : "border-red-500/40 text-red-300 bg-red-500/10";
 
-            return (
-              <div
-                key={jogador.id}
-                className="bg-[#232323] border border-zinc-800 rounded-xl p-4 shadow-sm flex flex-col gap-3"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-3">
-                    <AvatarFut7Pro
-                      src={
-                        jogador.avatarUrl ||
-                        jogador.avatar ||
-                        jogador.foto ||
-                        "/images/jogadores/jogador_padrao_01.jpg"
-                      }
-                      alt={`Foto de ${jogador.nome || "Atleta"}`}
-                      width={48}
-                      height={48}
-                      className="rounded-lg object-cover"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-base font-semibold text-white">
-                          {jogador.nome || "Atleta"}
-                        </h2>
-                        {item.mensalista && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400 text-black">
-                            Mensalista
-                          </span>
+              return (
+                <div
+                  key={jogador.id}
+                  className="bg-[#232323] border border-zinc-800 rounded-xl p-4 shadow-sm flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <AvatarFut7Pro
+                        src={
+                          jogador.avatarUrl ||
+                          jogador.avatar ||
+                          jogador.foto ||
+                          "/images/jogadores/jogador_padrao_01.jpg"
+                        }
+                        alt={`Foto de ${jogador.nome || "Atleta"}`}
+                        width={48}
+                        height={48}
+                        className="rounded-lg object-cover"
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-semibold text-white">
+                            {jogador.nome || "Atleta"}
+                          </h2>
+                          {item.mensalista && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-yellow-400 text-black">
+                              Mensalista
+                            </span>
+                          )}
+                          {semHabilidade && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/80 text-white">
+                              Definir
+                            </span>
+                          )}
+                        </div>
+                        {jogador.apelido && (
+                          <div className="text-xs text-gray-400">{jogador.apelido}</div>
                         )}
-                        {semHabilidade && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/80 text-white">
-                            Definir
-                          </span>
-                        )}
+                        <div className="text-xs text-gray-400">{item.posicao}</div>
                       </div>
-                      {jogador.apelido && (
-                        <div className="text-xs text-gray-400">{jogador.apelido}</div>
-                      )}
-                      <div className="text-xs text-gray-400">{item.posicao}</div>
+                    </div>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => toggleSelecionado(jogador.id)}
+                        className={`w-6 h-6 rounded-full flex items-center justify-center border ${
+                          selecionado
+                            ? "bg-yellow-400 border-yellow-400 text-black"
+                            : "border-gray-500 text-gray-400"
+                        } disabled:opacity-40`}
+                        title={selecionado ? "Remover seleção" : "Selecionar atleta"}
+                        disabled={isUiLocked}
+                      >
+                        {selecionado ? <FaCheckCircle size={12} /> : <FaTimes size={10} />}
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-gray-400">Habilidade na posição</span>
+                      <EditorEstrelas
+                        value={habilidade || 0}
+                        onChange={(val) => {
+                          void handleHabilidadeChange(jogador.id, val);
+                        }}
+                        disabled={!canEdit || isUiLocked}
+                        max={5}
+                        size={16}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs text-gray-400">Nível físico</span>
+                      <EditorEstrelas
+                        value={fisico || 0}
+                        onChange={(val) => {
+                          void handleFisicoChange(jogador.id, val);
+                        }}
+                        disabled={!canEdit || isUiLocked}
+                        max={3}
+                        size={16}
+                      />
                     </div>
                   </div>
-                  {canEdit && (
+
+                  <div className="flex items-center justify-between gap-2" title={tooltip}>
+                    <div className="flex items-center gap-2">
+                      <StarRatingDisplay value={nivelFinal ?? 0} size={14} />
+                      <span className="text-sm text-yellow-300">Nível do atleta: {nivelTexto}</span>
+                    </div>
+                    {statusLabel && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusClass}`}
+                      >
+                        {status === "saved" && <FaCheckCircle size={10} />}
+                        {status === "error" && <FaTimes size={10} />}
+                        {statusLabel}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <span>
+                      Última alteração: {atualizadoPorNome || "-"} {formatarDataHora(atualizadoEm)}
+                    </span>
                     <button
                       type="button"
-                      onClick={() => toggleSelecionado(jogador.id)}
-                      className={`w-6 h-6 rounded-full flex items-center justify-center border ${
-                        selecionado
-                          ? "bg-yellow-400 border-yellow-400 text-black"
-                          : "border-gray-500 text-gray-400"
-                      } disabled:opacity-40`}
-                      title={selecionado ? "Remover seleção" : "Selecionar atleta"}
+                      onClick={() => abrirHistorico(jogador)}
+                      className="flex items-center gap-1 text-yellow-300 hover:text-yellow-200 disabled:opacity-40"
                       disabled={isUiLocked}
                     >
-                      {selecionado ? <FaCheckCircle size={12} /> : <FaTimes size={10} />}
+                      <FaHistory size={12} />
+                      Histórico
                     </button>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-400">Habilidade na posição</span>
-                    <EditorEstrelas
-                      value={habilidade || 0}
-                      onChange={(val) => {
-                        void handleHabilidadeChange(jogador.id, val);
-                      }}
-                      disabled={!canEdit || isUiLocked}
-                      max={5}
-                      size={16}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-400">Nível físico</span>
-                    <EditorEstrelas
-                      value={fisico || 0}
-                      onChange={(val) => {
-                        void handleFisicoChange(jogador.id, val);
-                      }}
-                      disabled={!canEdit || isUiLocked}
-                      max={3}
-                      size={16}
-                    />
                   </div>
                 </div>
-
-                <div className="flex items-center justify-between gap-2" title={tooltip}>
-                  <div className="flex items-center gap-2">
-                    <StarRatingDisplay value={nivelFinal ?? 0} size={14} />
-                    <span className="text-sm text-yellow-300">Nível do atleta: {nivelTexto}</span>
-                  </div>
-                  {statusLabel && (
-                    <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-semibold ${statusClass}`}
-                    >
-                      {status === "saved" && <FaCheckCircle size={10} />}
-                      {status === "error" && <FaTimes size={10} />}
-                      {statusLabel}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <span>
-                    Última alteração: {atualizadoPorNome || "-"} {formatarDataHora(atualizadoEm)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => abrirHistorico(jogador)}
-                    className="flex items-center gap-1 text-yellow-300 hover:text-yellow-200 disabled:opacity-40"
-                    disabled={isUiLocked}
-                  >
-                    <FaHistory size={12} />
-                    Histórico
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>}
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <ModalHistorico

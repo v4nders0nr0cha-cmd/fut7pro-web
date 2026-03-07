@@ -130,9 +130,7 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       }
       const fallbackDelay = 1_000 * 2 ** opts.retryCount;
       const retryDelayMs =
-        status === 429
-          ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay)
-          : fallbackDelay;
+        status === 429 ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay) : fallbackDelay;
       window.setTimeout(() => revalidate({ retryCount: opts.retryCount + 1 }), retryDelayMs);
     },
   });
@@ -156,9 +154,7 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       }
       const fallbackDelay = 1_000 * 2 ** opts.retryCount;
       const retryDelayMs =
-        status === 429
-          ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay)
-          : fallbackDelay;
+        status === 429 ? Math.max(httpError.retryAfterMs ?? 0, fallbackDelay) : fallbackDelay;
       window.setTimeout(() => revalidate({ retryCount: opts.retryCount + 1 }), retryDelayMs);
     },
   });

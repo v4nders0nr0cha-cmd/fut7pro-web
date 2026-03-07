@@ -102,8 +102,12 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const { tenantSlug, rachaId, setTenantSlug, setRachaId } = useRacha();
-  const { access, isLoading: accessLoading, error: accessError, mutate: mutateAccess } =
-    useAdminAccess();
+  const {
+    access,
+    isLoading: accessLoading,
+    error: accessError,
+    mutate: mutateAccess,
+  } = useAdminAccess();
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
