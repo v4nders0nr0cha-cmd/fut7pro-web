@@ -10,6 +10,7 @@ import BillingAPI, {
   type PixChargeResponse,
 } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
+import { useRacha } from "@/context/RachaContext";
 
 function formatDate(value?: string | null) {
   if (!value) return "N/D";
@@ -133,19 +134,65 @@ function buildPixPricingFromInvoice(
     totalCents,
   };
 }
+
+function BillingSkeleton() {
+  return (
+    <div data-testid="billing-planos-skeleton" className="mb-10 animate-pulse">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <div className="rounded-2xl border border-[#2b2b2b] bg-[#23272F] p-6 shadow-lg">
+          <div className="h-5 w-40 rounded bg-zinc-700/70 mb-3" />
+          <div className="h-4 w-64 rounded bg-zinc-700/50 mb-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#2b2b2b] bg-[#23272F] p-6 shadow-lg">
+          <div className="h-5 w-32 rounded bg-zinc-700/70 mb-3" />
+          <div className="h-4 w-56 rounded bg-zinc-700/50 mb-6" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-14 rounded bg-zinc-700/40" />
+            <div className="h-14 rounded bg-zinc-700/40" />
+          </div>
+        </div>
+      </div>
+      <div className="h-10 w-72 mx-auto rounded-xl bg-zinc-700/50 mb-8" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="h-72 rounded-2xl bg-zinc-800/70 border border-zinc-700" />
+        <div className="h-72 rounded-2xl bg-zinc-800/70 border border-zinc-700" />
+        <div className="h-72 rounded-2xl bg-zinc-800/70 border border-zinc-700" />
+      </div>
+    </div>
+  );
+}
+
 export default function PlanosLimitesPage() {
   const { data: session } = useSession();
+  const { rachaId } = useRacha();
   const user = session?.user as any;
-  const tenantId = user?.tenantId;
   const payerEmail = user?.email;
   const payerName = user?.name || payerEmail || "Administrador";
+  const hasActiveTenant = Boolean(rachaId);
 
-  const { subscription, plans, planMeta, subscriptionStatus, loading, error, refreshSubscription } =
-    useSubscription(tenantId);
+  const {
+    subscription,
+    plans,
+    planMeta,
+    subscriptionStatus,
+    loading,
+    error,
+    errorTitle,
+    errorStatus,
+    refreshSubscription,
+    refreshPlans,
+  } = useSubscription(rachaId || undefined);
 
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<"switch" | "payment" | "pix" | null>(null);
+  const [retryingLoad, setRetryingLoad] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
   const [showEnterpriseModal, setShowEnterpriseModal] = useState(false);
@@ -187,7 +234,21 @@ export default function PlanosLimitesPage() {
     }
   }, []);
 
-  const statusMeta = resolveStatusMeta(subscription?.status);
+  const statusMeta = useMemo(() => {
+    if (!subscription && loading) {
+      return {
+        label: "Sincronizando",
+        className: "bg-sky-500/15 text-sky-200 border-sky-500/30",
+      };
+    }
+    if (!subscription && !error) {
+      return {
+        label: "Em configuração",
+        className: "bg-indigo-500/15 text-indigo-200 border-indigo-500/30",
+      };
+    }
+    return resolveStatusMeta(subscription?.status);
+  }, [subscription, loading, error]);
   const isTrial = subscription?.status === "trialing";
   const pendingPayment =
     subscription?.status === "past_due" ||
@@ -208,7 +269,7 @@ export default function PlanosLimitesPage() {
       subscription?.status === "expired");
   const canSwitchPlan = subscription?.status === "trialing";
 
-  const planLabel = planoAtual?.label || subscription?.planKey || "Plano nao definido";
+  const planLabel = planoAtual?.label || subscription?.planKey || "Sincronizando assinatura";
   const intervalLabel = resolveIntervalLabel(subscription?.planKey, subscription?.interval);
   const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 
@@ -232,10 +293,11 @@ export default function PlanosLimitesPage() {
   );
   const hasFirstPaymentDiscount = Boolean(paymentPricing?.firstPaymentDiscountApplied);
   const hasCouponBenefits = Boolean(subscription?.couponCode && hasFirstPaymentDiscount);
+  const showSkeleton = loading && !subscription && plans.length === 0;
 
   const openPaymentModal = () => {
     if (!subscription?.id) {
-      setActionError("Assinatura nao encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este racha.");
       return;
     }
 
@@ -250,7 +312,7 @@ export default function PlanosLimitesPage() {
 
   const handleRecurringPayment = async () => {
     if (!subscription?.id) {
-      setActionError("Assinatura nao encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este racha.");
       return;
     }
 
@@ -267,7 +329,7 @@ export default function PlanosLimitesPage() {
         window.location.href = result.checkoutUrl;
         return;
       }
-      setActionError("Nao foi possivel gerar o link de pagamento. Tente novamente.");
+      setActionError("Não foi possível gerar o link de pagamento. Tente novamente.");
     } catch (err) {
       console.error(err);
       setActionError(extractApiError(err, "Erro ao atualizar pagamento. Tente novamente."));
@@ -278,7 +340,7 @@ export default function PlanosLimitesPage() {
 
   const handleCreatePixCharge = async () => {
     if (!subscription?.id) {
-      setActionError("Assinatura nao encontrada para este racha.");
+      setActionError("Assinatura não encontrada para este racha.");
       return;
     }
 
@@ -325,7 +387,7 @@ export default function PlanosLimitesPage() {
 
   const handleConfirmSwitch = async () => {
     if (!subscription?.id || !selectedPlan) {
-      setActionError("Assinatura nao encontrada para esta troca.");
+      setActionError("Assinatura não encontrada para esta troca.");
       return;
     }
 
@@ -344,10 +406,16 @@ export default function PlanosLimitesPage() {
       setSelectedPlan(null);
     } catch (err) {
       console.error(err);
-      setActionError(extractApiError(err, "Nao foi possivel trocar o plano. Tente novamente."));
+      setActionError(extractApiError(err, "Não foi possível trocar o plano. Tente novamente."));
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleRetryLoad = async () => {
+    setRetryingLoad(true);
+    await Promise.all([refreshPlans(), refreshSubscription()]);
+    setRetryingLoad(false);
   };
 
   return (
@@ -370,9 +438,10 @@ export default function PlanosLimitesPage() {
           quando quiser.
         </p>
 
-        {!tenantId && (
+        {!hasActiveTenant && (
           <div className="mb-6 rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-red-100">
-            Nao foi possivel identificar seu tenant. Refaca login para visualizar a assinatura.
+            Não foi possível identificar o racha ativo. Volte para a seleção de racha e tente
+            novamente.
           </div>
         )}
 
@@ -400,108 +469,138 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-          <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
-                <p className="text-sm text-gray-400">
-                  O plano escolhido define o valor após o teste e mantem o painel ativo.
-                </p>
+        {!showSkeleton && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+            <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
+                  <p className="text-sm text-gray-400">
+                    O plano escolhido define o valor após o teste e mantem o painel ativo.
+                  </p>
+                </div>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.className}`}
+                >
+                  {statusMeta.label}
+                </span>
               </div>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.className}`}
-              >
-                {statusMeta.label}
-              </span>
+
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+                <div>
+                  <span className="text-xs text-gray-500">Plano atual</span>
+                  <p className="text-base font-semibold text-white">
+                    {planLabel} · {intervalLabel}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Periodo</span>
+                  <p className="text-base font-semibold text-white">{periodLabel}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Valor de referencia</span>
+                  <p className="text-base font-semibold text-white">
+                    {formatCurrencyFromCents(subscription?.amount)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Status do pagamento</span>
+                  <p className="text-base font-semibold text-white">
+                    {pendingPayment ? "Pendente" : "Em dia"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={openPaymentModal}
+                  disabled={actionLoading !== null}
+                  className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {actionLoading === "payment" ? "Atualizando..." : "Atualizar pagamento"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowInvoicesModal(true)}
+                  className="px-4 py-2 rounded-lg bg-[#1f2937] text-white border border-[#384152] hover:border-yellow-400"
+                >
+                  Ver faturas
+                </button>
+              </div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
-              <div>
-                <span className="text-xs text-gray-500">Plano atual</span>
-                <p className="text-base font-semibold text-white">
-                  {planLabel} · {intervalLabel}
-                </p>
+            <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
+                  <p className="text-sm text-gray-400">
+                    {isTrial ? "Periodo de teste ativo" : "Ciclo atual de assinatura"}
+                  </p>
+                </div>
+                <span className="text-2xl font-extrabold text-yellow-300">{cycleLabel} dias</span>
               </div>
-              <div>
-                <span className="text-xs text-gray-500">Periodo</span>
-                <p className="text-base font-semibold text-white">{periodLabel}</p>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Valor de referencia</span>
-                <p className="text-base font-semibold text-white">
-                  {formatCurrencyFromCents(subscription?.amount)}
-                </p>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Status do pagamento</span>
-                <p className="text-base font-semibold text-white">
-                  {pendingPayment ? "Pendente" : "Em dia"}
-                </p>
+
+              <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+                <div>
+                  <span className="text-xs text-gray-500">Proximo vencimento</span>
+                  <p className="text-base font-semibold text-white">{formatDate(cycleEnd)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Mensagem</span>
+                  <p className="text-base font-semibold text-white">
+                    {isTrial
+                      ? "Pagando agora, voce nao perde o teste, o tempo comprado é acumulado."
+                      : pendingPayment
+                        ? "Pagamento pendente, regularize para manter o painel desbloqueado."
+                        : "Ciclo em andamento. Tudo certo por aqui."}
+                  </p>
+                </div>
               </div>
             </div>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={openPaymentModal}
-                disabled={actionLoading !== null}
-                className="px-4 py-2 rounded-lg bg-yellow-400 text-black font-semibold hover:bg-yellow-300 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {actionLoading === "payment" ? "Atualizando..." : "Atualizar pagamento"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowInvoicesModal(true)}
-                className="px-4 py-2 rounded-lg bg-[#1f2937] text-white border border-[#384152] hover:border-yellow-400"
-              >
-                Ver faturas
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
-                <p className="text-sm text-gray-400">
-                  {isTrial ? "Periodo de teste ativo" : "Ciclo atual de assinatura"}
-                </p>
-              </div>
-              <span className="text-2xl font-extrabold text-yellow-300">{cycleLabel} dias</span>
-            </div>
-
-            <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
-              <div>
-                <span className="text-xs text-gray-500">Proximo vencimento</span>
-                <p className="text-base font-semibold text-white">{formatDate(cycleEnd)}</p>
-              </div>
-              <div>
-                <span className="text-xs text-gray-500">Mensagem</span>
-                <p className="text-base font-semibold text-white">
-                  {isTrial
-                    ? "Pagando agora, voce nao perde o teste, o tempo comprado é acumulado."
-                    : pendingPayment
-                      ? "Pagamento pendente, regularize para manter o painel desbloqueado."
-                      : "Ciclo em andamento. Tudo certo por aqui."}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <FaSpinner className="animate-spin text-2xl text-yellow-400 mr-3" />
-            <span className="text-lg text-gray-300">Carregando planos...</span>
           </div>
         )}
 
+        {showSkeleton && <BillingSkeleton />}
+
         {error && (
-          <div className="mb-6 flex justify-center">
-            <div className="bg-red-600/90 text-white font-semibold rounded-xl px-6 py-3 shadow-lg text-lg text-center w-full md:w-auto">
-              Erro ao carregar dados: {error}
+          <div
+            data-testid="billing-planos-friendly-error"
+            className="mb-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-4 text-red-100"
+          >
+            <p className="text-base font-semibold">
+              {errorTitle || "Não foi possível carregar os dados do plano"}
+            </p>
+            <p className="mt-1 text-sm text-red-50">{error}</p>
+            {errorStatus === 403 && (
+              <p className="mt-2 text-xs text-red-100/80">
+                Verifique se o racha selecionado no painel corresponde ao racha que voce deseja
+                administrar.
+              </p>
+            )}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleRetryLoad}
+                disabled={retryingLoad}
+                className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-yellow-300 disabled:opacity-60"
+              >
+                {retryingLoad ? "Atualizando..." : "Tentar novamente"}
+              </button>
             </div>
+          </div>
+        )}
+
+        {!loading && !error && !subscription && (
+          <div
+            data-testid="billing-planos-sync-state"
+            className="mb-6 rounded-2xl border border-blue-400/30 bg-blue-500/10 px-5 py-4 text-blue-100"
+          >
+            <p className="text-base font-semibold">Assinatura em sincronização</p>
+            <p className="mt-1 text-sm text-blue-100/90">
+              Recebemos o plano do seu racha e estamos finalizando a sincronização dos dados de
+              cobranca.
+            </p>
           </div>
         )}
 
@@ -513,136 +612,142 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
-        <div className="flex justify-center mb-10">
-          <button
-            className={`px-6 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-            onClick={() => setPlanoAtivo("mensal")}
-          >
-            Pagamento Mensal
-          </button>
-          <button
-            className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-            onClick={() => setPlanoAtivo("anual")}
-          >
-            Pagamento Anual{" "}
-            {annualNoteLabel ? <span className="ml-1 text-xs">({annualNoteLabel})</span> : null}
-          </button>
-        </div>
+        {!showSkeleton && (
+          <>
+            <div className="flex justify-center mb-10">
+              <button
+                className={`px-6 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+                onClick={() => setPlanoAtivo("mensal")}
+              >
+                Pagamento Mensal
+              </button>
+              <button
+                className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
+                onClick={() => setPlanoAtivo("anual")}
+              >
+                Pagamento Anual{" "}
+                {annualNoteLabel ? <span className="ml-1 text-xs">({annualNoteLabel})</span> : null}
+              </button>
+            </div>
 
-        {!loading && !error && planosDisponiveis.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {planosDisponiveis
-              .filter((plan) =>
-                planoAtivo === "anual" ? plan.interval === "year" : plan.interval === "month"
-              )
-              .map((plan) => {
-                const isCurrentPlan = subscription?.planKey === plan.key;
-                const features = plan.features?.length ? plan.features : [];
-                const limits = plan.limits?.length ? plan.limits : ["Limites conforme contrato"];
-                const isHighlight = Boolean(plan.highlight);
-                const isContact = plan.ctaType === "contact";
-                const buttonLabel = isCurrentPlan
-                  ? "Plano atual"
-                  : isContact
-                    ? plan.ctaLabel || "Solicitar Enterprise"
-                    : "Trocar para este plano";
+            {!loading && !error && planosDisponiveis.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {planosDisponiveis
+                  .filter((plan) =>
+                    planoAtivo === "anual" ? plan.interval === "year" : plan.interval === "month"
+                  )
+                  .map((plan) => {
+                    const isCurrentPlan = subscription?.planKey === plan.key;
+                    const features = plan.features?.length ? plan.features : [];
+                    const limits = plan.limits?.length
+                      ? plan.limits
+                      : ["Limites conforme contrato"];
+                    const isHighlight = Boolean(plan.highlight);
+                    const isContact = plan.ctaType === "contact";
+                    const buttonLabel = isCurrentPlan
+                      ? "Plano atual"
+                      : isContact
+                        ? plan.ctaLabel || "Solicitar Enterprise"
+                        : "Trocar para este plano";
 
-                return (
-                  <div
-                    key={plan.key}
-                    className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${isHighlight ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
-                  >
-                    {plan.badge && (
-                      <span
-                        className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
+                    return (
+                      <div
+                        key={plan.key}
+                        className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${isHighlight ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
                       >
-                        {plan.badge}
-                      </span>
-                    )}
-                    {isCurrentPlan && (
-                      <span className="absolute top-4 left-4 px-3 py-1 rounded-xl text-xs font-bold bg-green-500 text-white shadow-sm">
-                        Plano atual
-                      </span>
-                    )}
-                    <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
-                    <div className="text-xl font-bold mb-1">
-                      {plan.amount.toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                        minimumFractionDigits: 2,
-                      })}
-                      <span className="text-sm text-neutral-400">
-                        /{plan.interval === "year" ? "ano" : "mes"}
-                      </span>
-                    </div>
-                    {plan.paymentNote && (
-                      <p
-                        className={`mb-3 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
-                      >
-                        {plan.paymentNote}
-                      </p>
-                    )}
-                    {plan.description && (
-                      <p
-                        className={`mb-4 text-sm ${isHighlight ? "text-black/80" : "text-neutral-300"}`}
-                      >
-                        {plan.description}
-                      </p>
-                    )}
-                    <ul className="mb-4 space-y-1">
-                      {features.map((item, i) => (
-                        <li key={i} className="flex items-start gap-2 text-base">
+                        {plan.badge && (
                           <span
-                            className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}
+                            className={`absolute top-4 right-4 px-3 py-1 rounded-xl text-xs font-bold shadow-sm ${isHighlight ? "bg-black text-yellow-300" : "bg-yellow-300 text-black"}`}
                           >
-                            V
+                            {plan.badge}
                           </span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {limits.map((limite, i) => (
-                        <span
-                          key={i}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${isHighlight ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                        )}
+                        {isCurrentPlan && (
+                          <span className="absolute top-4 left-4 px-3 py-1 rounded-xl text-xs font-bold bg-green-500 text-white shadow-sm">
+                            Plano atual
+                          </span>
+                        )}
+                        <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
+                        <div className="text-xl font-bold mb-1">
+                          {plan.amount.toLocaleString("pt-BR", {
+                            style: "currency",
+                            currency: "BRL",
+                            minimumFractionDigits: 2,
+                          })}
+                          <span className="text-sm text-neutral-400">
+                            /{plan.interval === "year" ? "ano" : "mes"}
+                          </span>
+                        </div>
+                        {plan.paymentNote && (
+                          <p
+                            className={`mb-3 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
+                          >
+                            {plan.paymentNote}
+                          </p>
+                        )}
+                        {plan.description && (
+                          <p
+                            className={`mb-4 text-sm ${isHighlight ? "text-black/80" : "text-neutral-300"}`}
+                          >
+                            {plan.description}
+                          </p>
+                        )}
+                        <ul className="mb-4 space-y-1">
+                          {features.map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-base">
+                              <span
+                                className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}
+                              >
+                                V
+                              </span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mb-4 flex flex-wrap gap-2">
+                          {limits.map((limite, i) => (
+                            <span
+                              key={i}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold ${isHighlight ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
+                            >
+                              {limite}
+                            </span>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPlan(plan)}
+                          disabled={actionLoading !== null || isCurrentPlan}
+                          className={`mt-auto px-6 py-2 rounded-xl font-bold ${
+                            isCurrentPlan
+                              ? "bg-green-500 text-white cursor-not-allowed"
+                              : isHighlight
+                                ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black"
+                                : isContact
+                                  ? "bg-neutral-800 text-yellow-200 hover:bg-neutral-700 border border-yellow-400"
+                                  : "bg-yellow-400 text-black hover:bg-yellow-500"
+                          } transition disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
-                          {limite}
-                        </span>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenPlan(plan)}
-                      disabled={actionLoading !== null || isCurrentPlan}
-                      className={`mt-auto px-6 py-2 rounded-xl font-bold ${
-                        isCurrentPlan
-                          ? "bg-green-500 text-white cursor-not-allowed"
-                          : isHighlight
-                            ? "bg-black text-yellow-300 hover:bg-yellow-400 hover:text-black border-2 border-black"
-                            : isContact
-                              ? "bg-neutral-800 text-yellow-200 hover:bg-neutral-700 border border-yellow-400"
-                              : "bg-yellow-400 text-black hover:bg-yellow-500"
-                      } transition disabled:opacity-50 disabled:cursor-not-allowed`}
-                    >
-                      {actionLoading === "switch" && selectedPlan?.key === plan.key ? (
-                        <>
-                          <FaSpinner className="animate-spin inline mr-2" />
-                          Processando...
-                        </>
-                      ) : isCurrentPlan ? (
-                        <>
-                          <FaCheckCircle className="inline mr-2" />
-                          Plano atual
-                        </>
-                      ) : (
-                        buttonLabel
-                      )}
-                    </button>
-                  </div>
-                );
-              })}
-          </div>
+                          {actionLoading === "switch" && selectedPlan?.key === plan.key ? (
+                            <>
+                              <FaSpinner className="animate-spin inline mr-2" />
+                              Processando...
+                            </>
+                          ) : isCurrentPlan ? (
+                            <>
+                              <FaCheckCircle className="inline mr-2" />
+                              Plano atual
+                            </>
+                          ) : (
+                            buttonLabel
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </>
         )}
       </main>
 

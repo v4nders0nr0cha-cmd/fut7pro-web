@@ -2,6 +2,18 @@
 
 const API_BASE_URL = "/api/admin/billing";
 
+export class BillingApiError extends Error {
+  status: number;
+  body: unknown;
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message);
+    this.name = "BillingApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
 export type PlanCtaType = "checkout" | "contact";
 
 export interface Plan {
@@ -105,6 +117,44 @@ export interface PixChargeResponse {
 }
 
 export class BillingAPI {
+  private static parseBody(raw: string) {
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
+  }
+
+  private static extractMessage(body: unknown) {
+    if (!body) return "";
+    if (typeof body === "string") return body.trim();
+
+    const payload = body as { message?: unknown; error?: unknown };
+    if (typeof payload.message === "string" && payload.message.trim()) {
+      return payload.message.trim();
+    }
+    if (Array.isArray(payload.message) && payload.message.length > 0) {
+      return payload.message
+        .map((item) => String(item))
+        .join(" ")
+        .trim();
+    }
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return payload.error.trim();
+    }
+    return "";
+  }
+
+  private static defaultMessage(status: number) {
+    if (status === 401) return "Sessão expirada. Entre novamente para continuar.";
+    if (status === 403) return "Acesso negado ao tenant ativo.";
+    if (status === 404) return "Dados de assinatura não encontrados para este racha.";
+    if (status === 409) return "Conflito de assinatura. Atualize e tente novamente.";
+    if (status >= 500) return "Serviço de assinatura indisponível no momento.";
+    return "Falha ao carregar os dados de assinatura.";
+  }
+
   private static async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
@@ -116,12 +166,22 @@ export class BillingAPI {
       ...options,
     });
 
+    const rawBody = await response.text();
+    const parsedBody = this.parseBody(rawBody);
+
     if (!response.ok) {
-      const message = await response.text();
-      throw new Error(message || `API Error: ${response.status} ${response.statusText}`);
+      const message =
+        this.extractMessage(parsedBody) ||
+        this.defaultMessage(response.status) ||
+        response.statusText;
+      throw new BillingApiError(message, response.status, parsedBody);
     }
 
-    return response.json();
+    if (!rawBody) {
+      return null as T;
+    }
+
+    return parsedBody as T;
   }
 
   // Buscar todos os planos disponiveis
@@ -130,8 +190,13 @@ export class BillingAPI {
   }
 
   // Buscar assinatura por tenant
-  static async getSubscriptionByTenant(tenantId: string): Promise<Subscription | null> {
-    return this.request<Subscription | null>(`/subscription/tenant/${tenantId}`);
+  static async getSubscriptionByTenant(tenantId?: string): Promise<Subscription | null> {
+    if (tenantId) {
+      return this.request<Subscription | null>(
+        `/subscription/tenant/${encodeURIComponent(tenantId)}`
+      );
+    }
+    return this.request<Subscription | null>("/subscription/tenant");
   }
 
   // Buscar status da assinatura
