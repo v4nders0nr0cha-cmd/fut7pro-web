@@ -24,16 +24,17 @@ type Props = {
   pagamentos: Record<string, boolean>;
   onTogglePagamento: (id: string) => void | Promise<void>;
   onTogglePagamentoAll: (checked: boolean, athleteIds: string[]) => void | Promise<void>;
+  allowDaySelection?: boolean;
 };
 
 const DIAS_SEMANA_LABEL = [
   "Domingo",
   "Segunda-feira",
-  "Terca-feira",
+  "Terça-feira",
   "Quarta-feira",
   "Quinta-feira",
   "Sexta-feira",
-  "Sabado",
+  "Sábado",
 ];
 
 export default function TabelaMensalistas({
@@ -44,6 +45,7 @@ export default function TabelaMensalistas({
   pagamentos,
   onTogglePagamento,
   onTogglePagamentoAll,
+  allowDaySelection = true,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalJogador, setModalJogador] = useState<MensalistaResumo | null>(null);
@@ -77,8 +79,11 @@ export default function TabelaMensalistas({
   }, [someChecked]);
 
   const athleteIds = useMemo(() => mensalistas.map((mensalista) => mensalista.id), [mensalistas]);
+  const canDefineDias = allowDaySelection && agendaOptions.length > 1;
+  const singleAgendaLabel = agendaOptions.length === 1 ? agendaOptions[0]?.label : null;
 
   const abrirModalDias = (mensalista: MensalistaResumo) => {
+    if (!canDefineDias) return;
     const selected = getDiasSelecionados(mensalista.id);
     const available = new Set(agendaOptions.map((item) => item.id));
     const filtered = selected.filter((id) => available.has(id));
@@ -133,7 +138,7 @@ export default function TabelaMensalistas({
                 <span>Pago</span>
               </label>
             </th>
-            <th className="text-left px-2 py-2"></th>
+            <th className="text-left px-2 py-2">Dias</th>
           </tr>
         </thead>
         <tbody>
@@ -163,25 +168,28 @@ export default function TabelaMensalistas({
                 />
               </td>
               <td className="px-2 py-1">
-                <button
-                  className="text-xs text-yellow-400 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
-                  onClick={() => abrirModalDias(m)}
-                  disabled={agendaOptions.length === 0}
-                  title={
-                    agendaOptions.length === 0
-                      ? "Cadastre dias e horarios do racha para habilitar"
-                      : "Definir dias"
-                  }
-                >
-                  Definir dias
-                </button>
+                {agendaOptions.length === 0 ? (
+                  <span className="text-xs text-zinc-500">Sem agenda cadastrada</span>
+                ) : canDefineDias ? (
+                  <button
+                    className="text-xs text-yellow-400 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
+                    onClick={() => abrirModalDias(m)}
+                    title="Definir dias"
+                  >
+                    Definir dias
+                  </button>
+                ) : (
+                  <span className="text-xs text-zinc-300">
+                    Automático: <span className="text-zinc-400">{singleAgendaLabel}</span>
+                  </span>
+                )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {modalOpen && modalJogador && (
+      {modalOpen && modalJogador && canDefineDias && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
           aria-modal="true"

@@ -4,6 +4,7 @@ import type { ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
 import type { Jogador, PosicaoJogador } from "@/types/jogador";
 import ImageCropperModal from "@/components/ImageCropperModal";
+import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 
 const POSICOES: { label: string; value: PosicaoJogador }[] = [
   { label: "Atacante", value: "atacante" },
@@ -246,7 +247,7 @@ export default function JogadorForm({
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Posicao secundaria</label>
+          <label className="block font-medium text-yellow-500 mb-1">Posição secundária</label>
           <select
             name="posicaoSecundaria"
             value={form.posicaoSecundaria ?? ""}
@@ -260,6 +261,7 @@ export default function JogadorForm({
               </option>
             ))}
           </select>
+          <SecondaryPositionHint />
         </div>
       </div>
       <div className="flex gap-4">

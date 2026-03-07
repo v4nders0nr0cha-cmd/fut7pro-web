@@ -3,6 +3,7 @@
 import { useEffect, useState, type ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
 import ImageCropperModal from "@/components/ImageCropperModal";
+import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 type Posicao = (typeof POSICOES)[number] | "";
@@ -192,7 +193,7 @@ export default function ProfileForm({
               />
             </label>
             <label className="text-sm text-zinc-300">
-              Posicao *
+              Posição *
               <select
                 value={position}
                 onChange={(e) => setPosition(e.target.value as Posicao)}
@@ -208,7 +209,7 @@ export default function ProfileForm({
               </select>
             </label>
             <label className="text-sm text-zinc-300">
-              Posicao secundaria
+              Posição secundária
               <select
                 value={positionSecondary}
                 onChange={(e) => setPositionSecondary(e.target.value as Posicao | "")}
@@ -222,6 +223,7 @@ export default function ProfileForm({
                   </option>
                 ))}
               </select>
+              <SecondaryPositionHint className="text-zinc-400" />
             </label>
           </div>
         </div>

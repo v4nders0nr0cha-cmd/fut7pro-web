@@ -105,6 +105,8 @@ export default function MensalistasPage() {
   }, [agendaItems]);
 
   const agendaIds = useMemo(() => agendaOrdenada.map((item) => item.id), [agendaOrdenada]);
+  const agendaIdsSet = useMemo(() => new Set(agendaIds), [agendaIds]);
+  const agendaUnicaId = agendaIds.length === 1 ? agendaIds[0] : null;
 
   const [diasSelecionados, setDiasSelecionados] = useState<Record<string, string[]>>({});
   const [pagamentos, setPagamentos] = useState<Record<string, boolean>>({});
@@ -130,11 +132,23 @@ export default function MensalistasPage() {
   const getDiasSelecionados = useCallback(
     (id: string) => {
       if (Object.prototype.hasOwnProperty.call(diasSelecionados, id)) {
-        return diasSelecionados[id] || [];
+        const selecionados = (diasSelecionados[id] || []).filter((agendaId) =>
+          agendaIdsSet.has(agendaId)
+        );
+        if (selecionados.length > 0) {
+          return selecionados;
+        }
+        if (agendaUnicaId) {
+          return [agendaUnicaId];
+        }
+        return selecionados;
+      }
+      if (agendaUnicaId) {
+        return [agendaUnicaId];
       }
       return agendaIds;
     },
-    [diasSelecionados, agendaIds]
+    [agendaIds, agendaIdsSet, agendaUnicaId, diasSelecionados]
   );
 
   const salvarDiasSelecionados = useCallback(
@@ -196,6 +210,58 @@ export default function MensalistasPage() {
           : "Agenda nao configurada";
 
   const mensalistasBase = useMemo(() => mapMensalistas(jogadores), [jogadores]);
+  const autoAgendaSyncingRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (
+      !agendaUnicaId ||
+      isAgendaLoading ||
+      isJogadoresLoading ||
+      isCompetenciasLoading ||
+      mensalistasBase.length === 0
+    ) {
+      return;
+    }
+
+    const athleteIdsToSync = mensalistasBase
+      .map((mensalista) => mensalista.id)
+      .filter((athleteId) => {
+        if (autoAgendaSyncingRef.current.has(athleteId)) return false;
+        const diasAtuais = getDiasSelecionados(athleteId);
+        return diasAtuais.length !== 1 || diasAtuais[0] !== agendaUnicaId;
+      });
+
+    if (athleteIdsToSync.length === 0) return;
+
+    setDiasSelecionados((prev) => {
+      const next = { ...prev };
+      athleteIdsToSync.forEach((athleteId) => {
+        next[athleteId] = [agendaUnicaId];
+      });
+      return next;
+    });
+
+    void Promise.all(
+      athleteIdsToSync.map(async (athleteId) => {
+        autoAgendaSyncingRef.current.add(athleteId);
+        try {
+          await updateCompetencia(athleteId, { agendaIds: [agendaUnicaId] });
+        } catch {
+          // Ignore erro transitório; a UI mantém fallback automático para agenda única.
+        } finally {
+          autoAgendaSyncingRef.current.delete(athleteId);
+        }
+      })
+    );
+  }, [
+    agendaUnicaId,
+    getDiasSelecionados,
+    isAgendaLoading,
+    isCompetenciasLoading,
+    isJogadoresLoading,
+    mensalistasBase,
+    updateCompetencia,
+  ]);
 
   const [valorPorDia, setValorPorDia] = useState<number>(10);
   const [descontos, setDescontos] = useState<Record<string, number>>({});
@@ -350,6 +416,15 @@ export default function MensalistasPage() {
             O valor de cada atleta é proporcional ao número de jogos dos dias em que ele é
             mensalista, em cada mês.
           </span>
+          {agendaUnicaId && (
+            <>
+              <br />
+              <span className="text-emerald-300">
+                Como o racha tem apenas 1 dia e horário, ele é aplicado automaticamente para todos
+                os mensalistas.
+              </span>
+            </>
+          )}
         </p>
         <div className="mb-4 flex flex-wrap gap-4 items-end">
           <div>
@@ -420,6 +495,7 @@ export default function MensalistasPage() {
             pagamentos={pagamentos}
             onTogglePagamento={togglePagamento}
             onTogglePagamentoAll={togglePagamentoAll}
+            allowDaySelection={agendaOrdenada.length > 1}
           />
         )}
       </section>

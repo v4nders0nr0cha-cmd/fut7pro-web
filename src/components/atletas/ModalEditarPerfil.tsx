@@ -5,6 +5,7 @@ import type { ChangeEvent } from "react";
 import Image from "next/image";
 import { usePerfil } from "./PerfilContext";
 import type { PosicaoAtleta } from "@/types/atletas";
+import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -179,7 +180,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             />
           </label>
           <label className="text-sm text-brand-soft">
-            Posicao
+            Posição
             <select
               value={posicao}
               onChange={(e) => setPosicao(e.target.value as PosicaoAtleta | "")}
@@ -194,7 +195,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             </select>
           </label>
           <label className="text-sm text-brand-soft">
-            Posicao secundaria (opcional)
+            Posição secundária (opcional)
             <select
               value={posicaoSecundaria}
               onChange={(e) => setPosicaoSecundaria(e.target.value as PosicaoAtleta | "")}
@@ -207,6 +208,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               <option value="Meia">Meia</option>
               <option value="Atacante">Atacante</option>
             </select>
+            <SecondaryPositionHint className="text-zinc-400" />
           </label>
         </div>
         {erro && <div className="text-red-400 text-sm mt-2">{erro}</div>}

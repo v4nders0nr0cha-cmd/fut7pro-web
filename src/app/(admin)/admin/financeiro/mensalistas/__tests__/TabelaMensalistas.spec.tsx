@@ -102,7 +102,7 @@ describe("TabelaMensalistas", () => {
     expect(screen.getByText("Dias de mensalista")).toBeInTheDocument();
 
     const segundaCheckbox = screen.getByLabelText("Segunda-feira 19:00") as HTMLInputElement;
-    const sabadoCheckbox = screen.getByLabelText("Sabado 06:00") as HTMLInputElement;
+    const sabadoCheckbox = screen.getByLabelText("Sábado 06:00") as HTMLInputElement;
     expect(segundaCheckbox).not.toBeChecked();
     expect(sabadoCheckbox).not.toBeChecked();
 
@@ -112,5 +112,28 @@ describe("TabelaMensalistas", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
     expect(onSaveDias).toHaveBeenCalledWith("m1", ["a1", "a2"]);
+  });
+
+  it("não exige definir dias quando existe apenas 1 dia e horário", () => {
+    const onSaveDias = jest.fn();
+    const pagamentos = { m1: false, m2: false, m3: false };
+    const agendaUnica = [{ id: "a1", weekday: 1, time: "19:00" }];
+
+    render(
+      <TabelaMensalistas
+        mensalistas={mensalistas}
+        agendaItems={agendaUnica}
+        getDiasSelecionados={() => []}
+        onSaveDias={onSaveDias}
+        pagamentos={pagamentos}
+        onTogglePagamento={() => {}}
+        onTogglePagamentoAll={() => {}}
+        allowDaySelection={false}
+      />
+    );
+
+    expect(screen.queryByRole("button", { name: /Definir dias/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Automático:/i)).toHaveLength(mensalistas.length);
+    expect(screen.getAllByText(/Segunda-feira 19:00/i)).toHaveLength(mensalistas.length);
   });
 });

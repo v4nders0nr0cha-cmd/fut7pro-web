@@ -81,7 +81,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
       target: { value: "123456" },
     });
-    fireEvent.change(screen.getByLabelText("Posicao principal"), {
+    fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
@@ -125,7 +125,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
       target: { value: "123456" },
     });
-    fireEvent.change(screen.getByLabelText("Posicao principal"), {
+    fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
