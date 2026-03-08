@@ -31,9 +31,9 @@ const CAPTCHA_INVALID_MESSAGE =
   'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
-const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
+const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu código.";
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
+  "Racha Vitrine é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -124,7 +124,7 @@ export default function EntrarClient() {
             );
             return null;
           }
-          setError(body?.message || body?.error || "Nao foi possivel verificar o e-mail.");
+          setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
           return null;
         }
 
@@ -203,7 +203,7 @@ export default function EntrarClient() {
 
   const requestJoin = useCallback(async () => {
     if (!publicSlug) {
-      throw new Error("Slug do racha nao encontrado.");
+      throw new Error("Slug do racha não encontrado.");
     }
 
     const performJoin = () =>
@@ -276,7 +276,7 @@ export default function EntrarClient() {
         const message =
           joinError instanceof Error
             ? joinError.message
-            : "Nao foi possivel solicitar entrada neste racha.";
+            : "Não foi possível solicitar entrada neste racha.";
         setError(message);
       }
     })().finally(() => setAutoFlowLoading(false));
@@ -329,8 +329,8 @@ export default function EntrarClient() {
             <p className="text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-            Este ambiente e somente de demonstracao. Para usar o Fut7Pro de verdade, crie seu
-            proprio racha.
+            Este ambiente é somente de demonstração. Para usar o Fut7Pro de verdade, crie seu
+            próprio racha.
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <a
@@ -366,7 +366,7 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Voce pode continuar com Google ou informar seu e-mail para seguir com seguranca.
+            Você pode continuar com Google ou informar seu e-mail para seguir com segurança.
           </p>
         </div>
 
@@ -442,8 +442,8 @@ export default function EntrarClient() {
 
             {!loading && !autoFlowLoading && !redirectingMessage && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Ao continuar, voce segue para o login do racha. Se estiver tudo certo, enviamos seu
-                codigo.
+                Ao continuar, você segue para o login do racha. Se estiver tudo certo, enviamos seu
+                código.
               </div>
             )}
           </div>
