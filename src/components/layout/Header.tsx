@@ -35,7 +35,6 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
   const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
@@ -66,7 +65,6 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
-  const createRachaHref = "/cadastrar-racha";
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = activeSlug || fallbackSlug || "";
   const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
@@ -140,50 +138,19 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
           {/* Perfil/Login - à direita dos ícones */}
           {!showUserMenu ? (
-            isVitrineSlug ? (
-              <div className="ml-2 flex items-center gap-2">
-                <Link
-                  href={loginHref}
-                  className="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-white shadow-md transition-all hover:border-brand/70 hover:text-brand"
-                  style={{ letterSpacing: 1 }}
-                >
-                  <FaUser size={16} className="shrink-0" />
-                  <span className="flex flex-col leading-tight text-left">
-                    <span className="text-[12px] font-bold uppercase">Entrar</span>
-                    <span className="max-w-[130px] truncate text-[10px] font-semibold normal-case text-gray-300">
-                      Demonstração do Fut7Pro
-                    </span>
-                  </span>
-                </Link>
-                <Link
-                  href={createRachaHref}
-                  className="flex items-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-1.5 text-brand shadow-md transition-all hover:bg-brand hover:text-black"
-                  style={{ letterSpacing: 1 }}
-                >
-                  <FaUser size={16} className="shrink-0" />
-                  <span className="flex flex-col leading-tight text-left">
-                    <span className="text-[12px] font-bold uppercase">Criar meu racha</span>
-                    <span className="max-w-[130px] truncate text-[10px] font-semibold normal-case text-brand-soft">
-                      Comece no Fut7Pro
-                    </span>
-                  </span>
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href={loginHref}
-                className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
-                style={{ letterSpacing: 1 }}
-              >
-                <FaUser size={18} className="text-brand shrink-0" />
-                <span className="flex flex-col leading-tight text-left">
-                  <span className="text-[13px] font-bold uppercase">Entrar</span>
-                  <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
-                    {`Atletas do ${nome}`}
-                  </span>
+            <Link
+              href={loginHref}
+              className="ml-2 flex items-center gap-2 border border-brand bg-[#222] text-brand px-3 py-1.5 rounded-full shadow-md hover:bg-brand hover:text-black transition-all"
+              style={{ letterSpacing: 1 }}
+            >
+              <FaUser size={18} className="text-brand shrink-0" />
+              <span className="flex flex-col leading-tight text-left">
+                <span className="text-[13px] font-bold uppercase">Entrar</span>
+                <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
+                  {`Atletas do ${nome}`}
                 </span>
-              </Link>
-            )
+              </span>
+            </Link>
           ) : (
             <div className="relative flex items-center gap-3 ml-3">
               <button
