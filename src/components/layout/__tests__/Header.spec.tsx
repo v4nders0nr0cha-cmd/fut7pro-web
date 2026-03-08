@@ -21,12 +21,12 @@ describe("Header", () => {
     expect(screen.getByText(/Atletas do/i)).toBeInTheDocument();
   });
 
-  it("no vitrine mostra Entrar e Criar meu racha como CTAs separados", () => {
+  it("no vitrine exibe apenas CTA de Entrar", () => {
     usePathname.mockReturnValue("/vitrine");
     render(<Header />);
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
-    expect(screen.getByText(/Criar meu racha/i)).toBeInTheDocument();
-    expect(screen.getByText(/Demonstração do Fut7Pro/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Criar meu racha/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Demonstração do Fut7Pro/i)).not.toBeInTheDocument();
   });
 
   it("mantem fallback de nome completo no title do nome do racha", () => {
