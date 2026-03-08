@@ -64,7 +64,7 @@ describe("EntrarClient", () => {
       ok: true,
       json: async () => ({
         ok: true,
-        message: "Se estiver tudo certo, enviamos seu codigo.",
+        message: "Se estiver tudo certo, enviamos seu código.",
       }),
     }) as any;
 
@@ -94,7 +94,7 @@ describe("EntrarClient", () => {
     render(<EntrarClient />);
 
     expect(screen.getByRole("heading", { name: /Entrar no Racha Vitrine/i })).toBeInTheDocument();
-    expect(screen.getByText(/No site do seu racha, o botao/i)).toBeInTheDocument();
+    expect(screen.getByText(/No site do seu racha, o botão/i)).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /Voltar e continuar explorando o Racha Vitrine/i })
     ).toHaveAttribute("href", "/vitrine/");
