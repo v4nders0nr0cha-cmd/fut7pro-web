@@ -31,9 +31,9 @@ const CAPTCHA_INVALID_MESSAGE =
   'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
-const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
+const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu código.";
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas ficam disponiveis no site do seu racha.";
+  "Racha Vitrine é apenas demonstrativo. Login e cadastro de atletas ficam disponíveis no site do seu racha.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -124,7 +124,7 @@ export default function EntrarClient() {
             );
             return null;
           }
-          setError(body?.message || body?.error || "Nao foi possivel verificar o e-mail.");
+          setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
           return null;
         }
 
@@ -203,7 +203,7 @@ export default function EntrarClient() {
 
   const requestJoin = useCallback(async () => {
     if (!publicSlug) {
-      throw new Error("Slug do racha nao encontrado.");
+      throw new Error("Slug do racha não encontrado.");
     }
 
     const performJoin = () =>
@@ -276,7 +276,7 @@ export default function EntrarClient() {
         const message =
           joinError instanceof Error
             ? joinError.message
-            : "Nao foi possivel solicitar entrada neste racha.";
+            : "Não foi possível solicitar entrada neste racha.";
         setError(message);
       }
     })().finally(() => setAutoFlowLoading(false));
@@ -330,26 +330,25 @@ export default function EntrarClient() {
             </span>
             <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Racha Vitrine</h1>
             <p className="max-w-2xl text-sm text-amber-100">
-              Este racha e apenas uma demonstracao para voce ver como fica o site do seu racha no
+              Este racha é apenas uma demonstração para você ver como fica o site do seu racha no
               Fut7Pro.
             </p>
           </div>
-
           <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm leading-relaxed text-gray-200 md:p-5">
             <p>
-              No site do seu racha, o botao <strong>&quot;Entrar&quot;</strong> serve para o atleta
-              se cadastrar e participar do racha (com aprovacao do administrador, se esse controle
+              No site do seu racha, o botão <strong>&quot;Entrar&quot;</strong> serve para o atleta
+              se cadastrar e participar do racha (com aprovação do administrador, se esse controle
               estiver ativo).
             </p>
             <p className="mt-3">
-              Aqui no Racha Vitrine, nao existe administrador nem cadastro de atletas. Por isso o
-              botao <strong>&quot;Entrar&quot;</strong> leva para esta explicacao, evitando confusao
+              Aqui no Racha Vitrine, não existe administrador nem cadastro de atletas. Por isso o
+              botão <strong>&quot;Entrar&quot;</strong> leva para esta explicação, evitando confusão
               e cadastros indevidos.
             </p>
           </div>
 
           <div className="mt-6">
-            <h2 className="text-lg font-bold text-white">O que voce quer fazer agora?</h2>
+            <h2 className="text-lg font-bold text-white">O que você quer fazer agora?</h2>
             <div className="mt-3 grid gap-3 md:grid-cols-2">
               <a
                 href={publicHref("/")}
@@ -370,13 +369,13 @@ export default function EntrarClient() {
                   Criar o site do meu racha no Fut7Pro
                 </span>
                 <span className="mt-1 block text-xs leading-relaxed text-brand-soft">
-                  Em poucos minutos voce cria sua pagina exclusiva e ativa seu painel
+                  Em poucos minutos você cria sua página exclusiva e ativa seu painel
                   administrativo.
                 </span>
               </a>
             </div>
             <p className="mt-4 text-center text-xs text-gray-400">
-              Sem compromisso. Voce pode testar antes e personalizar depois (nome, logo, cores e
+              Sem compromisso. Você pode testar antes e personalizar depois (nome, logo, cores e
               patrocinadores).
             </p>
           </div>
@@ -400,7 +399,7 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Voce pode continuar com Google ou informar seu e-mail para seguir com seguranca.
+            Você pode continuar com Google ou informar seu e-mail para seguir com segurança.
           </p>
         </div>
 
@@ -476,8 +475,8 @@ export default function EntrarClient() {
 
             {!loading && !autoFlowLoading && !redirectingMessage && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Ao continuar, voce segue para o login do racha. Se estiver tudo certo, enviamos seu
-                codigo.
+                Ao continuar, você segue para o login do racha. Se estiver tudo certo, enviamos seu
+                código.
               </div>
             )}
           </div>
