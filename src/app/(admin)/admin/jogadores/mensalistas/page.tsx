@@ -464,10 +464,10 @@ export default function MensalistasPage() {
     return map;
   }, [competencias]);
 
-  const normalizeAgendaIds = useCallback(
-    (ids: string[]) => {
+  const normalizeSelectedAgendaIds = useCallback(
+    (ids: unknown) => {
       const available = new Set(agendaIds);
-      return ids.filter((id) => available.has(id));
+      return normalizeAgendaIds(ids).filter((id) => available.has(id));
     },
     [agendaIds]
   );
@@ -476,14 +476,14 @@ export default function MensalistasPage() {
     (athleteId: string) => {
       const hasSaved = Object.prototype.hasOwnProperty.call(mensalistaAgendaMap, athleteId);
       if (hasSaved) {
-        return normalizeAgendaIds(mensalistaAgendaMap[athleteId] ?? []);
+        return normalizeSelectedAgendaIds(mensalistaAgendaMap[athleteId] ?? []);
       }
       if (agendaIds.length === 1) {
         return [...agendaIds];
       }
       return [];
     },
-    [agendaIds, mensalistaAgendaMap, normalizeAgendaIds]
+    [agendaIds, mensalistaAgendaMap, normalizeSelectedAgendaIds]
   );
 
   const getDiasCadastroInicial = useCallback(() => {
@@ -736,7 +736,7 @@ export default function MensalistasPage() {
               ? (payload as Array<{ athleteId?: string; agendaIds?: unknown }>)
               : [];
         const competencia = items.find((item) => item?.athleteId === athleteId);
-        const agendaIdsPersistidos = normalizeAgendaIds(competencia?.agendaIds);
+        const agendaIdsPersistidos = normalizeSelectedAgendaIds(competencia?.agendaIds);
         return hasSameAgendaIds(orderedIds, agendaIdsPersistidos);
       };
 
@@ -755,7 +755,7 @@ export default function MensalistasPage() {
       const savedAgenda = await updateCompetencia(athleteId, { agendaIds: orderedIds });
       competenciaSyncInFlightRef.current.delete(athleteId);
 
-      const savedAgendaIds = normalizeAgendaIds(
+      const savedAgendaIds = normalizeSelectedAgendaIds(
         savedAgenda && typeof savedAgenda === "object"
           ? (savedAgenda as { agendaIds?: unknown }).agendaIds
           : []
