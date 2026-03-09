@@ -1,6 +1,7 @@
 "use client";
 import Head from "next/head";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useRacha } from "@/context/RachaContext";
 import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useJogadores } from "@/hooks/useJogadores";
@@ -70,6 +71,7 @@ function mapMensalistas(jogadores: Jogador[]): MensalistaResumo[] {
 }
 
 export default function MensalistasPage() {
+  const router = useRouter();
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
   const mesAtual = hoje.getMonth();
@@ -146,20 +148,20 @@ export default function MensalistasPage() {
       if (agendaUnicaId) {
         return [agendaUnicaId];
       }
-      return agendaIds;
+      if (agendaIds.length === 1) {
+        return [...agendaIds];
+      }
+      return [];
     },
     [agendaIds, agendaIdsSet, agendaUnicaId, diasSelecionados]
   );
 
-  const salvarDiasSelecionados = useCallback(
-    async (id: string, dias: string[]) => {
-      setDiasSelecionados((prev) => ({
-        ...prev,
-        [id]: dias,
-      }));
-      await updateCompetencia(id, { agendaIds: dias });
+  const abrirGestaoDias = useCallback(
+    (athleteId: string) => {
+      const query = new URLSearchParams({ editarDias: athleteId }).toString();
+      router.push(`/admin/jogadores/mensalistas?${query}`);
     },
-    [updateCompetencia]
+    [router]
   );
 
   const togglePagamento = useCallback(
@@ -206,8 +208,8 @@ export default function MensalistasPage() {
       : isAgendaLoading
         ? "Carregando agenda"
         : isAgendaError
-          ? "Agenda indisponivel"
-          : "Agenda nao configurada";
+          ? "Agenda indisponível"
+          : "Agenda não configurada";
 
   const mensalistasBase = useMemo(() => mapMensalistas(jogadores), [jogadores]);
   const autoAgendaSyncingRef = useRef<Set<string>>(new Set());
@@ -400,7 +402,7 @@ export default function MensalistasPage() {
         <title>Mensalistas | Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie os mensalistas do racha, valores por dia jogado, descontos individuais, dias semanais e controle de pagamentos."
+          content="Gerencie cobrança de mensalistas com valor por dia jogado, cálculo automático e controle de pagamento."
         />
       </Head>
       <section className="max-w-4xl mx-auto pt-20 pb-24 md:pt-6 md:pb-8 px-2">
@@ -409,8 +411,10 @@ export default function MensalistasPage() {
           Defina o valor por dia jogado e o sistema calculará a mensalidade de cada atleta
           automaticamente.
           <br />
-          <b>O sistema usa a agenda dos dias do seu racha:</b>{" "}
-          <span className="text-yellow-300">{agendaDiasLabel}</span>
+          <b>Os dias do mensalista são definidos em Jogadores &gt; Mensalistas.</b> Esta página
+          apenas consome os vínculos para calcular cobranças.
+          <br />
+          <b>Agenda oficial do racha:</b> <span className="text-yellow-300">{agendaDiasLabel}</span>
           .<br />
           <span className="text-yellow-400">
             O valor de cada atleta é proporcional ao número de jogos dos dias em que ele é
@@ -458,7 +462,7 @@ export default function MensalistasPage() {
                 ))
               ) : (
                 <span className="text-sm text-gray-400">
-                  {isAgendaError ? "Agenda indisponivel" : "Cadastre dias e horarios para calcular"}
+                  {isAgendaError ? "Agenda indisponível" : "Cadastre dias e horários para calcular"}
                 </span>
               )}
               <span className="ml-2 text-gray-300 text-sm font-normal">
@@ -491,11 +495,10 @@ export default function MensalistasPage() {
             }))}
             agendaItems={agendaOrdenada}
             getDiasSelecionados={getDiasSelecionados}
-            onSaveDias={salvarDiasSelecionados}
             pagamentos={pagamentos}
             onTogglePagamento={togglePagamento}
             onTogglePagamentoAll={togglePagamentoAll}
-            allowDaySelection={agendaOrdenada.length > 1}
+            onOpenGestaoDias={abrirGestaoDias}
           />
         )}
       </section>
