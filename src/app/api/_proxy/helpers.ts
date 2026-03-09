@@ -251,12 +251,14 @@ export function resolveTenantSlug(user: UserLike, slug?: string) {
     nextCookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
     nextCookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim();
   const sessionSlug = String(user.tenantSlug || (user as any).slug || "").trim();
+  const tenantId = String(user.tenantId || "").trim();
   const requestedSlug = String(slug || "").trim();
 
   // Segurança multi-tenant: o escopo ativo vem do cookie/hub; não permitimos
   // que query/body do client sobrescreva um tenant já definido na sessão.
   if (cookieSlug) return cookieSlug;
   if (sessionSlug) return sessionSlug;
+  if (tenantId) return tenantId;
   if (requestedSlug) return requestedSlug;
   return null;
 }
@@ -306,6 +308,8 @@ export function buildHeaders(
 
   if (tenantSlug) {
     headers["x-tenant-slug"] = tenantSlug;
+    // Header de compatibilidade: alguns fluxos ainda encaminham tenantId nesse argumento.
+    headers["x-tenant-id"] = tenantSlug;
   }
 
   if (options?.includeContentType) {
