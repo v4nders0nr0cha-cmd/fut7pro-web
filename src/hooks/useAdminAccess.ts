@@ -82,21 +82,30 @@ const fetcher = async (url: string): Promise<AdminAccessResponse> => {
   }
 };
 
-export function useAdminAccess(enabled = true) {
-  const { data, error, isLoading, mutate } = useSWR<AdminAccessResponse>(
+type UseAdminAccessOptions = {
+  enabled?: boolean;
+  tenantSlug?: string | null;
+};
+
+export function useAdminAccess(options: UseAdminAccessOptions = {}) {
+  const enabled = options.enabled ?? true;
+  const { data, error, isLoading, isValidating, mutate } = useSWR<AdminAccessResponse>(
     enabled ? "/api/admin/access" : null,
     fetcher,
     {
       revalidateOnFocus: false,
       refreshInterval: 60_000,
       dedupingInterval: 5_000,
+      keepPreviousData: true,
     }
   );
+  const isBootLoading = enabled ? !data && (isLoading || isValidating) : false;
 
   return {
     access: data ?? null,
-    isLoading,
+    isLoading: isBootLoading,
     error,
+    isValidating,
     mutate,
   };
 }

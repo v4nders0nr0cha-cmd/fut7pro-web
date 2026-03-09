@@ -203,6 +203,16 @@ async function resolveTokenOnlyUser(scope: AuthScope): Promise<UserLike | null> 
 }
 
 export async function requireUser(): Promise<UserLike | null> {
+  const adminTokenUser = await resolveTokenOnlyUser("admin");
+  if (adminTokenUser) {
+    return adminTokenUser;
+  }
+
+  const superAdminTokenUser = await resolveTokenOnlyUser("superadmin");
+  if (superAdminTokenUser) {
+    return superAdminTokenUser;
+  }
+
   const adminSession = await getServerSession?.(authOptions as any);
   const adminUser = await resolveSessionUser(adminSession, "admin");
   if (adminUser) {
@@ -215,7 +225,7 @@ export async function requireUser(): Promise<UserLike | null> {
     return superAdminUser;
   }
 
-  return (await resolveTokenOnlyUser("admin")) ?? (await resolveTokenOnlyUser("superadmin"));
+  return null;
 }
 
 export async function requireSuperAdminUser(): Promise<UserLike | null> {
@@ -242,13 +252,11 @@ export function resolveTenantSlug(user: UserLike, slug?: string) {
     nextCookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim();
   const sessionSlug = String(user.tenantSlug || (user as any).slug || "").trim();
   const requestedSlug = String(slug || "").trim();
-  const tenantId = String(user.tenantId || "").trim();
 
   // Segurança multi-tenant: o escopo ativo vem do cookie/hub; não permitimos
   // que query/body do client sobrescreva um tenant já definido na sessão.
   if (cookieSlug) return cookieSlug;
   if (sessionSlug) return sessionSlug;
-  if (tenantId) return tenantId;
   if (requestedSlug) return requestedSlug;
   return null;
 }
@@ -298,8 +306,6 @@ export function buildHeaders(
 
   if (tenantSlug) {
     headers["x-tenant-slug"] = tenantSlug;
-    // header auxiliar para compatibilidade / diagnóstico
-    headers["x-tenant-id"] = tenantSlug;
   }
 
   if (options?.includeContentType) {
