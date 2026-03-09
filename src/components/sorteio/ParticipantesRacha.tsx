@@ -38,6 +38,26 @@ function slugify(value: string) {
     .replace(/(^-|-$)+/g, "");
 }
 
+function parseDataPartida(value?: string | null) {
+  if (!value) return null;
+
+  const normalized = String(value).trim();
+  const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const ano = Number(match[1]);
+    const mes = Number(match[2]);
+    const dia = Number(match[3]);
+    if (!Number.isNaN(ano) && !Number.isNaN(mes) && !Number.isNaN(dia)) {
+      const parsed = new Date(ano, mes - 1, dia);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+  }
+
+  const fallback = new Date(normalized);
+  if (Number.isNaN(fallback.getTime())) return null;
+  return new Date(fallback.getFullYear(), fallback.getMonth(), fallback.getDate());
+}
+
 function PopoverSelecionarJogador({
   open,
   onClose,
@@ -143,20 +163,31 @@ export default function ParticipantesRacha({
   const dataPartida = config?.dataPartida ?? "";
   const horaPartida = config?.horaPartida ?? "";
   const dataSelecionada = useMemo(() => {
-    if (!dataPartida) return null;
-    const [ano, mes, dia] = dataPartida.split("-").map(Number);
-    if (!ano || !mes || !dia) return null;
-    const parsed = new Date(ano, mes - 1, dia);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return parsed;
+    return parseDataPartida(dataPartida);
   }, [dataPartida]);
   const competenciaBase = dataSelecionada ?? new Date();
   const competenciaAno = competenciaBase.getFullYear();
   const competenciaMes = competenciaBase.getMonth() + 1;
+  const hoje = useMemo(() => new Date(), []);
+  const competenciaAtualAno = hoje.getFullYear();
+  const competenciaAtualMes = hoje.getMonth() + 1;
+  const competenciaSelecionadaEhPassada =
+    competenciaAno < competenciaAtualAno ||
+    (competenciaAno === competenciaAtualAno && competenciaMes < competenciaAtualMes);
+  const usarFallbackCompetenciaAtual =
+    Boolean(dataSelecionada) &&
+    !competenciaSelecionadaEhPassada &&
+    (competenciaAno !== competenciaAtualAno || competenciaMes !== competenciaAtualMes);
+
   const { items: competencias } = useMensalistaCompetencias(
     competenciaAno,
     competenciaMes,
     Boolean(dataSelecionada)
+  );
+  const { items: competenciasBaseFallback } = useMensalistaCompetencias(
+    competenciaAtualAno,
+    competenciaAtualMes,
+    usarFallbackCompetenciaAtual
   );
 
   const estrelasGlobais = useMemo(() => {
@@ -320,14 +351,30 @@ export default function ParticipantesRacha({
     return map;
   }, [competencias]);
 
+  const mensalistaAgendaMapFallback = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    (competenciasBaseFallback || []).forEach((competencia) => {
+      map[competencia.athleteId] = Array.isArray(competencia.agendaIds)
+        ? competencia.agendaIds
+        : [];
+    });
+    return map;
+  }, [competenciasBaseFallback]);
+
   const resolveAgendaIds = useCallback(
     (athleteId: string) => {
       if (Object.prototype.hasOwnProperty.call(mensalistaAgendaMap, athleteId)) {
         return mensalistaAgendaMap[athleteId] ?? [];
       }
-      return agendaIdsPadrao;
+      if (Object.prototype.hasOwnProperty.call(mensalistaAgendaMapFallback, athleteId)) {
+        return mensalistaAgendaMapFallback[athleteId] ?? [];
+      }
+      if (agendaIdsPadrao.length === 1) {
+        return agendaIdsPadrao;
+      }
+      return [];
     },
-    [agendaIdsPadrao, mensalistaAgendaMap]
+    [agendaIdsPadrao, mensalistaAgendaMap, mensalistaAgendaMapFallback]
   );
 
   const mensalistasParaDia = useMemo(() => {

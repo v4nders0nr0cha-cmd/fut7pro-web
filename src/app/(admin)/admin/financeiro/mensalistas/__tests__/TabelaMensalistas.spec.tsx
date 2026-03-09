@@ -15,20 +15,20 @@ const agendaItems = [
   { id: "a2", weekday: 6, time: "06:00" },
 ];
 
-function TestWrapper({ onSaveDias }: { onSaveDias: jest.Mock }) {
+const diasSelecionados: Record<string, string[]> = {
+  m1: ["a1", "a2"],
+  m2: ["a2"],
+  m3: [],
+};
+
+function TestWrapper({ onOpenGestaoDias }: { onOpenGestaoDias: jest.Mock }) {
   const [pagamentos, setPagamentos] = useState<Record<string, boolean>>({
     m1: false,
     m2: false,
     m3: false,
   });
-  const [diasSelecionados, setDiasSelecionados] = useState<Record<string, string[]>>({});
 
   const getDiasSelecionados = (id: string) => diasSelecionados[id] ?? [];
-
-  const handleSaveDias = (id: string, dias: string[]) => {
-    setDiasSelecionados((prev) => ({ ...prev, [id]: dias }));
-    onSaveDias(id, dias);
-  };
 
   const togglePagamento = (id: string) => {
     setPagamentos((prev) => ({
@@ -52,18 +52,18 @@ function TestWrapper({ onSaveDias }: { onSaveDias: jest.Mock }) {
       mensalistas={mensalistas}
       agendaItems={agendaItems}
       getDiasSelecionados={getDiasSelecionados}
-      onSaveDias={handleSaveDias}
       pagamentos={pagamentos}
       onTogglePagamento={togglePagamento}
       onTogglePagamentoAll={togglePagamentoAll}
+      onOpenGestaoDias={onOpenGestaoDias}
     />
   );
 }
 
 describe("TabelaMensalistas", () => {
-  it("renderiza lista e controla pagamento", () => {
-    const onSaveDias = jest.fn();
-    render(<TestWrapper onSaveDias={onSaveDias} />);
+  it("renderiza lista, dias vinculados e controla pagamento", () => {
+    const onOpenGestaoDias = jest.fn();
+    render(<TestWrapper onOpenGestaoDias={onOpenGestaoDias} />);
 
     expect(screen.getAllByRole("row")).toHaveLength(mensalistas.length + 1);
 
@@ -71,6 +71,7 @@ describe("TabelaMensalistas", () => {
     expect(within(primeiraLinha).getByText("Alice")).toBeInTheDocument();
     expect(within(primeiraLinha).getByText("Em dia")).toHaveClass("text-green-400");
     expect(within(primeiraLinha).getByText("R$ 120.00")).toBeInTheDocument();
+    expect(within(primeiraLinha).getByText(/Segunda-feira 19:00/i)).toBeInTheDocument();
 
     const headerCheckbox = screen.getByLabelText("Marcar todos como pago") as HTMLInputElement;
     const aliceCheckbox = screen.getByLabelText("Marcar Alice como pago") as HTMLInputElement;
@@ -95,45 +96,10 @@ describe("TabelaMensalistas", () => {
     expect(headerCheckbox).not.toBeChecked();
     expect(aliceCheckbox).not.toBeChecked();
 
-    const definirDiasButtons = screen.getAllByRole("button", { name: /Definir dias/i });
-    expect(definirDiasButtons).toHaveLength(mensalistas.length);
+    const botoesEditar = screen.getAllByRole("button", { name: /Editar em Jogadores/i });
+    expect(botoesEditar).toHaveLength(mensalistas.length);
 
-    fireEvent.click(definirDiasButtons[0]);
-    expect(screen.getByText("Dias de mensalista")).toBeInTheDocument();
-
-    const segundaCheckbox = screen.getByLabelText("Segunda-feira 19:00") as HTMLInputElement;
-    const sabadoCheckbox = screen.getByLabelText("Sábado 06:00") as HTMLInputElement;
-    expect(segundaCheckbox).not.toBeChecked();
-    expect(sabadoCheckbox).not.toBeChecked();
-
-    fireEvent.click(screen.getByRole("button", { name: /Marcar todos/i }));
-    expect(segundaCheckbox).toBeChecked();
-    expect(sabadoCheckbox).toBeChecked();
-
-    fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
-    expect(onSaveDias).toHaveBeenCalledWith("m1", ["a1", "a2"]);
-  });
-
-  it("não exige definir dias quando existe apenas 1 dia e horário", () => {
-    const onSaveDias = jest.fn();
-    const pagamentos = { m1: false, m2: false, m3: false };
-    const agendaUnica = [{ id: "a1", weekday: 1, time: "19:00" }];
-
-    render(
-      <TabelaMensalistas
-        mensalistas={mensalistas}
-        agendaItems={agendaUnica}
-        getDiasSelecionados={() => []}
-        onSaveDias={onSaveDias}
-        pagamentos={pagamentos}
-        onTogglePagamento={() => {}}
-        onTogglePagamentoAll={() => {}}
-        allowDaySelection={false}
-      />
-    );
-
-    expect(screen.queryByRole("button", { name: /Definir dias/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Automático:/i)).toHaveLength(mensalistas.length);
-    expect(screen.getAllByText(/Segunda-feira 19:00/i)).toHaveLength(mensalistas.length);
+    fireEvent.click(botoesEditar[0]);
+    expect(onOpenGestaoDias).toHaveBeenCalledWith("m1");
   });
 });
