@@ -107,7 +107,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     isLoading: accessLoading,
     error: accessError,
     mutate: mutateAccess,
-  } = useAdminAccess();
+  } = useAdminAccess({ tenantSlug });
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
