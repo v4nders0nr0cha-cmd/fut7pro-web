@@ -73,6 +73,47 @@ function formatAgendaLabel(weekday: number, time: string) {
   return `${dia} ${hora}`.trim();
 }
 
+function readBoolField(record: Record<string, unknown>, field: string) {
+  const value = record[field];
+  return typeof value === "boolean" ? value : null;
+}
+
+function extractMensalistaFlag(payload: unknown): boolean | null {
+  if (!payload || typeof payload !== "object") return null;
+
+  const record = payload as Record<string, unknown>;
+  const direct =
+    readBoolField(record, "isMensalista") ??
+    readBoolField(record, "mensalista") ??
+    readBoolField(record, "isMember");
+  if (direct !== null) return direct;
+
+  const athlete = record.athlete;
+  if (!athlete || typeof athlete !== "object") return null;
+  const athleteRecord = athlete as Record<string, unknown>;
+  return (
+    readBoolField(athleteRecord, "isMensalista") ??
+    readBoolField(athleteRecord, "mensalista") ??
+    readBoolField(athleteRecord, "isMember")
+  );
+}
+
+function normalizeAgendaIds(ids: unknown) {
+  if (!Array.isArray(ids)) return [];
+  const unique = new Set<string>();
+  ids.forEach((id) => {
+    const value = String(id ?? "").trim();
+    if (value) unique.add(value);
+  });
+  return Array.from(unique);
+}
+
+function hasSameAgendaIds(expectedIds: string[], receivedIds: string[]) {
+  if (expectedIds.length !== receivedIds.length) return false;
+  const expectedSet = new Set(expectedIds);
+  return receivedIds.every((id) => expectedSet.has(id));
+}
+
 function ModalMensalista({
   open,
   onClose,
@@ -666,9 +707,45 @@ export default function MensalistasPage() {
     setLoadingId(athleteId);
 
     try {
+      const confirmarAtletaMensalista = async () => {
+        const response = await fetch(`/api/jogadores/${encodeURIComponent(athleteId)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) return false;
+        const payload = await response.json().catch(() => null);
+        return extractMensalistaFlag(payload) === true;
+      };
+
+      const confirmarCompetenciaAgenda = async () => {
+        const response = await fetch(
+          `/api/admin/financeiro/mensalistas/competencias?year=${competenciaAno}&month=${competenciaMes}`,
+          { cache: "no-store" }
+        );
+        if (!response.ok) return false;
+
+        const payload = await response.json().catch(() => null);
+        const items =
+          payload &&
+          typeof payload === "object" &&
+          Array.isArray((payload as { items?: unknown }).items)
+            ? ((payload as { items: unknown[] }).items as Array<{
+                athleteId?: string;
+                agendaIds?: unknown;
+              }>)
+            : Array.isArray(payload)
+              ? (payload as Array<{ athleteId?: string; agendaIds?: unknown }>)
+              : [];
+        const competencia = items.find((item) => item?.athleteId === athleteId);
+        const agendaIdsPersistidos = normalizeAgendaIds(competencia?.agendaIds);
+        return hasSameAgendaIds(orderedIds, agendaIdsPersistidos);
+      };
+
       if (modalDiasContexto === "create") {
         const setMensalista = await updateJogador(athleteId, { mensalista: true });
-        if (!setMensalista) {
+        const mensalistaConfirmadoDireto = extractMensalistaFlag(setMensalista) === true;
+        const mensalistaConfirmadoBackend =
+          mensalistaConfirmadoDireto || (await confirmarAtletaMensalista());
+        if (!setMensalista || !mensalistaConfirmadoBackend) {
           setAcaoErro("Não foi possível cadastrar o jogador como mensalista.");
           return;
         }
@@ -678,20 +755,102 @@ export default function MensalistasPage() {
       const savedAgenda = await updateCompetencia(athleteId, { agendaIds: orderedIds });
       competenciaSyncInFlightRef.current.delete(athleteId);
 
-      if (!savedAgenda) {
-        if (modalDiasContexto === "create") {
-          await updateJogador(athleteId, { mensalista: false });
-          setAcaoErro("Não foi possível salvar os dias do mensalista. Tente novamente.");
-        } else {
-          setAcaoErro("Não foi possível atualizar os dias do mensalista.");
-        }
+      const savedAgendaIds = normalizeAgendaIds(
+        savedAgenda && typeof savedAgenda === "object"
+          ? (savedAgenda as { agendaIds?: unknown }).agendaIds
+          : []
+      );
+      const agendaConfirmadaDireto = hasSameAgendaIds(orderedIds, savedAgendaIds);
+      const agendaConfirmadaBackend =
+        agendaConfirmadaDireto || (await confirmarCompetenciaAgenda());
+
+      if (!savedAgenda || !agendaConfirmadaBackend) {
+        setAcaoErro("Não foi possível confirmar os dias do mensalista. Tente novamente.");
         return;
       }
 
-      await Promise.all([mutate(), mutateCompetencias()]);
+      if (modalDiasContexto === "create") {
+        const mensalistaConfirmadoAntesDeFechar = await confirmarAtletaMensalista();
+        if (!mensalistaConfirmadoAntesDeFechar) {
+          setAcaoErro("Não foi possível confirmar o jogador como mensalista. Tente novamente.");
+          return;
+        }
+      }
+
+      if (!(await confirmarCompetenciaAgenda())) {
+        setAcaoErro("Não foi possível confirmar os dias salvos do mensalista. Tente novamente.");
+        return;
+      }
+
+      await mutate((current) => {
+        if (!Array.isArray(current)) return current;
+        return current.map((item) =>
+          item.id === athleteId
+            ? {
+                ...item,
+                mensalista: true,
+                isMensalista: true,
+                isMember: true,
+              }
+            : item
+        );
+      }, false);
+
+      await mutateCompetencias((current: unknown) => {
+        const upsertItem = {
+          athleteId,
+          year: competenciaAno,
+          month: competenciaMes,
+          isPaid:
+            savedAgenda && typeof savedAgenda === "object"
+              ? Boolean((savedAgenda as { isPaid?: unknown }).isPaid)
+              : false,
+          agendaIds: [...orderedIds],
+        };
+
+        if (Array.isArray(current)) {
+          const next = current.filter(
+            (item) =>
+              !(
+                item &&
+                typeof item === "object" &&
+                (item as { athleteId?: string }).athleteId === athleteId
+              )
+          );
+          return [...next, upsertItem];
+        }
+
+        if (current && typeof current === "object") {
+          const payload = current as { items?: unknown[]; total?: number };
+          const items = Array.isArray(payload.items) ? payload.items : [];
+          const nextItems = items.filter(
+            (item) =>
+              !(
+                item &&
+                typeof item === "object" &&
+                (item as { athleteId?: string }).athleteId === athleteId
+              )
+          );
+          nextItems.push(upsertItem);
+          return {
+            ...payload,
+            items: nextItems,
+            total: nextItems.length,
+          };
+        }
+
+        return [upsertItem];
+      }, false);
+
       setModalDiasOpen(false);
       setModalDiasJogador(null);
       setDiasDraft([]);
+
+      // Revalida em segundo plano para sincronizar caches sem travar o fluxo de sucesso.
+      void Promise.all([
+        mutate().catch(() => undefined),
+        mutateCompetencias().catch(() => undefined),
+      ]);
     } catch (saveError) {
       setAcaoErro(
         saveError instanceof Error

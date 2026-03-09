@@ -189,7 +189,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         body: JSON.stringify(payload),
       });
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response;
     });
   };
@@ -202,7 +202,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         body: JSON.stringify(payload),
       });
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response;
     });
   };
@@ -213,7 +213,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         method: "DELETE",
       });
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response;
     });
   };
