@@ -99,7 +99,7 @@ describe("TabelaMensalistas", () => {
     expect(definirDiasButtons).toHaveLength(mensalistas.length);
 
     fireEvent.click(definirDiasButtons[0]);
-    expect(screen.getByText("Dias de mensalista")).toBeInTheDocument();
+    expect(screen.getByText("Editar dias do mensalista")).toBeInTheDocument();
 
     const segundaCheckbox = screen.getByLabelText("Segunda-feira 19:00") as HTMLInputElement;
     const sabadoCheckbox = screen.getByLabelText("Sabado 06:00") as HTMLInputElement;

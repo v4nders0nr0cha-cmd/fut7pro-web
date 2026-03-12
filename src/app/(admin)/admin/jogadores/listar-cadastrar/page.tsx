@@ -3,6 +3,7 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import { toast } from "react-hot-toast";
 import {
   FaUserPlus,
   FaSearch,
@@ -17,10 +18,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useAthleteRequests } from "@/hooks/useAthleteRequests";
 import { useAutoApproveAthletes } from "@/hooks/useAutoApproveAthletes";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useRacha } from "@/context/RachaContext";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
+import MensalistaDiasModal from "@/components/admin/MensalistaDiasModal";
 import { Switch } from "@/components/ui/Switch";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
@@ -582,6 +585,9 @@ export default function Page() {
   }, [sessionUser?.tenantId, sessionUser?.tenantSlug, setRachaId, setTenantSlug]);
 
   const allowRequests = Boolean(resolvedSlug);
+  const hoje = new Date();
+  const competenciaAno = hoje.getFullYear();
+  const competenciaMes = hoje.getMonth() + 1;
 
   const {
     jogadores,
@@ -593,6 +599,7 @@ export default function Page() {
     addJogador,
     updateJogador,
   } = useJogadores(resolvedRachaId);
+  const { items: agendaItems } = useRachaAgenda({ enabled: Boolean(resolvedRachaId) });
   const {
     solicitacoes,
     isLoading: solicitacoesLoading,
@@ -614,7 +621,15 @@ export default function Page() {
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
   const [showModalCadastro, setShowModalCadastro] = useState(false);
   const [cadastroErro, setCadastroErro] = useState<string | null>(null);
+  const [cadastroAviso, setCadastroAviso] = useState<string | null>(null);
   const [cadastroLoading, setCadastroLoading] = useState(false);
+  const [cadastroMensalistaDiasOpen, setCadastroMensalistaDiasOpen] = useState(false);
+  const [cadastroMensalistaDiasSaving, setCadastroMensalistaDiasSaving] = useState(false);
+  const [cadastroMensalistaDiasErro, setCadastroMensalistaDiasErro] = useState<string | null>(null);
+  const [cadastroMensalistaPendente, setCadastroMensalistaPendente] = useState<{
+    id: string;
+    nome: string;
+  } | null>(null);
   const [posicaoFiltro, setPosicaoFiltro] = useState("todas");
   const [showModalEditar, setShowModalEditar] = useState(false);
   const [jogadorEditar, setJogadorEditar] = useState<Jogador | undefined>();
@@ -700,6 +715,7 @@ export default function Page() {
 
   const abrirModalCadastro = () => {
     setCadastroErro(null);
+    setCadastroAviso(null);
     setCadastroLoading(false);
     setShowModalCadastro(true);
   };
@@ -915,6 +931,84 @@ export default function Page() {
     return url;
   };
 
+  const atualizarDiasMensalista = async (athleteId: string, agendaIds: string[]) => {
+    const response = await fetch(
+      `/api/admin/financeiro/mensalistas/competencias/${encodeURIComponent(athleteId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year: competenciaAno,
+          month: competenciaMes,
+          agendaIds,
+        }),
+      }
+    );
+
+    const text = await response.text();
+    let body: unknown = null;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text || null;
+    }
+
+    if (!response.ok) {
+      const payload = typeof body === "object" && body ? (body as Record<string, unknown>) : null;
+      const message =
+        (typeof payload?.message === "string" ? payload.message : null) ||
+        (typeof payload?.error === "string" ? payload.error : null) ||
+        "Nao foi possivel salvar os dias do mensalista.";
+      throw new Error(message);
+    }
+  };
+
+  const salvarDiasCadastroMensalista = async (agendaIds: string[]) => {
+    if (!cadastroMensalistaPendente || cadastroMensalistaDiasSaving) return;
+    setCadastroMensalistaDiasSaving(true);
+    setCadastroMensalistaDiasErro(null);
+
+    try {
+      await atualizarDiasMensalista(cadastroMensalistaPendente.id, agendaIds);
+      await mutateJogadores();
+      setCadastroMensalistaDiasOpen(false);
+      setCadastroMensalistaPendente(null);
+      toast.success("Jogador mensalista cadastrado com dias vinculados.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Nao foi possivel salvar os dias do mensalista.";
+      setCadastroMensalistaDiasErro(message);
+    } finally {
+      setCadastroMensalistaDiasSaving(false);
+    }
+  };
+
+  const cancelarCadastroMensalistaDias = async () => {
+    if (!cadastroMensalistaPendente || cadastroMensalistaDiasSaving) return;
+    setCadastroMensalistaDiasSaving(true);
+    setCadastroMensalistaDiasErro(null);
+
+    let aviso =
+      "Jogador cadastrado como mensalista, mas ainda sem dias vinculados. Conclua depois em Mensalistas.";
+
+    try {
+      await atualizarDiasMensalista(cadastroMensalistaPendente.id, []);
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Nao foi possivel registrar o atleta como mensalista sem dias.";
+      aviso = `${aviso} ${message}`;
+    } finally {
+      setCadastroMensalistaDiasSaving(false);
+      setCadastroMensalistaDiasOpen(false);
+      setCadastroMensalistaPendente(null);
+    }
+
+    setCadastroAviso(aviso);
+    toast(aviso);
+  };
+
   const confirmarCadastro = async (jogador: Partial<Jogador>, fotoFile?: File | null) => {
     if (cadastroLoading) return;
     setCadastroLoading(true);
@@ -939,7 +1033,39 @@ export default function Page() {
         throw new Error("Não foi possível cadastrar o jogador.");
       }
 
+      const isMensalista = Boolean(jogador.mensalista);
+      if (isMensalista) {
+        const createdPayload = result as Record<string, unknown>;
+        const createdAthleteId =
+          typeof createdPayload.id === "string" && createdPayload.id.trim().length > 0
+            ? createdPayload.id
+            : null;
+        const createdAthleteName =
+          typeof createdPayload.name === "string" && createdPayload.name.trim().length > 0
+            ? createdPayload.name
+            : typeof jogador.nome === "string" && jogador.nome.trim().length > 0
+              ? jogador.nome
+              : "jogador";
+
+        if (!createdAthleteId) {
+          throw new Error(
+            "Jogador criado, mas nao foi possivel abrir a etapa de dias do mensalista."
+          );
+        }
+
+        setCadastroMensalistaPendente({
+          id: createdAthleteId,
+          nome: createdAthleteName,
+        });
+        setCadastroMensalistaDiasErro(null);
+        setCadastroMensalistaDiasSaving(false);
+        setCadastroMensalistaDiasOpen(true);
+        setShowModalCadastro(false);
+        return;
+      }
+
       setShowModalCadastro(false);
+      toast.success("Jogador cadastrado com sucesso.");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Não foi possível cadastrar o jogador.";
       setCadastroErro(message);
@@ -1054,6 +1180,12 @@ export default function Page() {
           <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
             Não foi possível identificar o racha ativo. Acesse o Hub e selecione o racha antes de
             gerenciar jogadores.
+          </div>
+        )}
+
+        {cadastroAviso && (
+          <div className="mb-6 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+            {cadastroAviso}
           </div>
         )}
 
@@ -1379,6 +1511,18 @@ export default function Page() {
         onSave={confirmarCadastro}
         loading={cadastroLoading}
         error={cadastroErro}
+      />
+
+      <MensalistaDiasModal
+        open={cadastroMensalistaDiasOpen && Boolean(cadastroMensalistaPendente)}
+        athleteName={cadastroMensalistaPendente?.nome}
+        agendaItems={agendaItems}
+        selectedAgendaIds={[]}
+        onClose={cancelarCadastroMensalistaDias}
+        onSave={salvarDiasCadastroMensalista}
+        saving={cadastroMensalistaDiasSaving}
+        error={cadastroMensalistaDiasErro}
+        ariaLabel="Editar dias do mensalista"
       />
 
       <ModalEditarJogador

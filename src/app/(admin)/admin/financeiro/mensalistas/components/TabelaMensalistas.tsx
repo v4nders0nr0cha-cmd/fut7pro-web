@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import MensalistaDiasModal from "@/components/admin/MensalistaDiasModal";
 
 export type MensalistaResumo = {
   id: string;
@@ -26,16 +27,6 @@ type Props = {
   onTogglePagamentoAll: (checked: boolean, athleteIds: string[]) => void | Promise<void>;
 };
 
-const DIAS_SEMANA_LABEL = [
-  "Domingo",
-  "Segunda-feira",
-  "Terca-feira",
-  "Quarta-feira",
-  "Quinta-feira",
-  "Sexta-feira",
-  "Sabado",
-];
-
 export default function TabelaMensalistas({
   mensalistas,
   agendaItems,
@@ -47,20 +38,18 @@ export default function TabelaMensalistas({
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalJogador, setModalJogador] = useState<MensalistaResumo | null>(null);
-  const [diasDraft, setDiasDraft] = useState<string[]>([]);
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
-  const agendaOptions = useMemo(() => {
-    return [...agendaItems]
-      .sort((a, b) => {
-        if (a.weekday !== b.weekday) return a.weekday - b.weekday;
-        return a.time.localeCompare(b.time);
-      })
-      .map((item) => ({
-        ...item,
-        label: `${DIAS_SEMANA_LABEL[item.weekday] ?? "Dia"} ${item.time}`,
-      }));
+  const agendaOrdenada = useMemo(() => {
+    return [...agendaItems].sort((a, b) => {
+      if (a.weekday !== b.weekday) return a.weekday - b.weekday;
+      return a.time.localeCompare(b.time);
+    });
   }, [agendaItems]);
+
+  const agendaIds = useMemo(() => agendaOrdenada.map((item) => item.id), [agendaOrdenada]);
 
   const checkedCount = useMemo(
     () => mensalistas.reduce((count, mensalista) => count + (pagamentos[mensalista.id] ? 1 : 0), 0),
@@ -79,35 +68,44 @@ export default function TabelaMensalistas({
   const athleteIds = useMemo(() => mensalistas.map((mensalista) => mensalista.id), [mensalistas]);
 
   const abrirModalDias = (mensalista: MensalistaResumo) => {
-    const selected = getDiasSelecionados(mensalista.id);
-    const available = new Set(agendaOptions.map((item) => item.id));
-    const filtered = selected.filter((id) => available.has(id));
-    setDiasDraft(filtered);
     setModalJogador(mensalista);
+    setModalError(null);
+    setModalSaving(false);
     setModalOpen(true);
   };
 
   const fecharModal = () => {
+    if (modalSaving) return;
     setModalOpen(false);
     setModalJogador(null);
-    setDiasDraft([]);
+    setModalError(null);
+    setModalSaving(false);
   };
 
-  const toggleDia = (id: string) => {
-    setDiasDraft((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
+  const modalSelectedDias = useMemo(() => {
+    if (!modalJogador) return [];
+    const selected = getDiasSelecionados(modalJogador.id);
+    const available = new Set(agendaIds);
+    return selected.filter((id) => available.has(id));
+  }, [agendaIds, getDiasSelecionados, modalJogador]);
 
-  const marcarTodos = () => {
-    setDiasDraft(agendaOptions.map((item) => item.id));
-  };
-
-  const salvarDias = () => {
-    if (!modalJogador) return;
-    const ordered = agendaOptions.map((item) => item.id).filter((id) => diasDraft.includes(id));
-    void onSaveDias(modalJogador.id, ordered);
-    fecharModal();
+  const salvarDias = async (diasSelecionados: string[]) => {
+    if (!modalJogador || modalSaving) return;
+    setModalSaving(true);
+    setModalError(null);
+    try {
+      await onSaveDias(modalJogador.id, diasSelecionados);
+      setModalOpen(false);
+      setModalJogador(null);
+    } catch (saveError) {
+      setModalError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Nao foi possivel salvar os dias do mensalista."
+      );
+    } finally {
+      setModalSaving(false);
+    }
   };
 
   return (
@@ -166,9 +164,9 @@ export default function TabelaMensalistas({
                 <button
                   className="text-xs text-yellow-400 hover:underline disabled:opacity-60 disabled:cursor-not-allowed"
                   onClick={() => abrirModalDias(m)}
-                  disabled={agendaOptions.length === 0}
+                  disabled={agendaOrdenada.length === 0}
                   title={
-                    agendaOptions.length === 0
+                    agendaOrdenada.length === 0
                       ? "Cadastre dias e horarios do racha para habilitar"
                       : "Definir dias"
                   }
@@ -181,66 +179,17 @@ export default function TabelaMensalistas({
         </tbody>
       </table>
 
-      {modalOpen && modalJogador && (
-        <div
-          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center"
-          aria-modal="true"
-          aria-label="Dias de mensalista"
-          tabIndex={-1}
-        >
-          <div className="bg-zinc-900 rounded-2xl shadow-xl p-6 w-full max-w-lg mx-2 relative">
-            <h2 className="text-xl font-bold text-white mb-1">Dias de mensalista</h2>
-            <p className="text-sm text-zinc-400 mb-4">
-              Selecione os dias em que {modalJogador.nome} paga como mensalista.
-            </p>
-
-            {agendaOptions.length === 0 ? (
-              <div className="text-sm text-zinc-400">
-                Nenhum dia cadastrado. Configure os dias e horarios no racha.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {agendaOptions.map((item) => (
-                  <label key={item.id} className="flex items-center gap-2 text-sm text-zinc-200">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 accent-yellow-400 rounded-none"
-                      checked={diasDraft.includes(item.id)}
-                      onChange={() => toggleDia(item.id)}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center justify-between gap-2 mt-6">
-              <button
-                className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white rounded px-4 py-2 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
-                onClick={marcarTodos}
-                disabled={agendaOptions.length === 0}
-              >
-                Marcar todos
-              </button>
-              <div className="flex gap-2">
-                <button
-                  className="bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white rounded px-4 py-2 text-sm font-semibold transition"
-                  onClick={fecharModal}
-                >
-                  Cancelar
-                </button>
-                <button
-                  className="bg-yellow-500 hover:bg-yellow-600 text-black rounded px-4 py-2 text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  onClick={salvarDias}
-                  disabled={agendaOptions.length === 0}
-                >
-                  Salvar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MensalistaDiasModal
+        open={modalOpen && Boolean(modalJogador)}
+        athleteName={modalJogador?.nome}
+        agendaItems={agendaOrdenada}
+        selectedAgendaIds={modalSelectedDias}
+        onClose={fecharModal}
+        onSave={salvarDias}
+        saving={modalSaving}
+        error={modalError}
+        ariaLabel="Editar dias do mensalista"
+      />
     </div>
   );
 }

@@ -4,9 +4,12 @@ import Head from "next/head";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { FaPlus, FaTrash, FaInfoCircle } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
+import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
 import { useRacha } from "@/context/RachaContext";
 import type { Jogador } from "@/types/jogador";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import MensalistaDiasModal, { formatAgendaLabel } from "@/components/admin/MensalistaDiasModal";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICAO_LABEL: Record<string, string> = {
@@ -30,6 +33,9 @@ type MensalistaRequestItem = {
     avatarUrl?: string | null;
   };
 };
+
+type FiltroSituacaoDias = "todos" | "com_dias" | "sem_dias";
+type FiltroQuantidadeDias = "todos" | "1_dia" | "2_ou_mais";
 
 function formatPosicao(value?: string | null) {
   if (!value) return "-";
@@ -196,9 +202,18 @@ function ModalRemoverMensalista({
 export default function MensalistasPage() {
   const { rachaId } = useRacha();
   const resolvedRachaId = rachaId || "";
+  const hoje = new Date();
+  const competenciaAno = hoje.getFullYear();
+  const competenciaMes = hoje.getMonth() + 1;
   const missingTenantScope = !resolvedRachaId;
   const { jogadores, isLoading, isError, error, updateJogador, mutate } =
     useJogadores(resolvedRachaId);
+  const { items: agendaItems } = useRachaAgenda({ enabled: Boolean(resolvedRachaId) });
+  const { items: competencias, updateCompetencia } = useMensalistaCompetencias(
+    competenciaAno,
+    competenciaMes,
+    Boolean(resolvedRachaId)
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [removerOpen, setRemoverOpen] = useState(false);
   const [removerJogador, setRemoverJogador] = useState<Jogador | null>(null);
@@ -209,8 +224,43 @@ export default function MensalistasPage() {
   const [requestsError, setRequestsError] = useState<string | null>(null);
   const [requestActionId, setRequestActionId] = useState<string | null>(null);
   const [showAllRequests, setShowAllRequests] = useState(false);
+  const [diasModalOpen, setDiasModalOpen] = useState(false);
+  const [diasModalJogador, setDiasModalJogador] = useState<Jogador | null>(null);
+  const [diasModalSaving, setDiasModalSaving] = useState(false);
+  const [diasModalError, setDiasModalError] = useState<string | null>(null);
+  const [filtroBusca, setFiltroBusca] = useState("");
+  const [filtroSituacaoDias, setFiltroSituacaoDias] = useState<FiltroSituacaoDias>("todos");
+  const [filtroDia, setFiltroDia] = useState("todos");
+  const [filtroQuantidadeDias, setFiltroQuantidadeDias] = useState<FiltroQuantidadeDias>("todos");
 
   const mensalistas = useMemo(() => jogadores.filter((j) => j.mensalista), [jogadores]);
+  const agendaOrdenada = useMemo(
+    () =>
+      [...agendaItems].sort((a, b) => {
+        if (a.weekday !== b.weekday) return a.weekday - b.weekday;
+        return a.time.localeCompare(b.time);
+      }),
+    [agendaItems]
+  );
+  const agendaOptions = useMemo(
+    () =>
+      agendaOrdenada.map((item) => ({
+        ...item,
+        label: formatAgendaLabel(item),
+      })),
+    [agendaOrdenada]
+  );
+  const agendaLabelById = useMemo(
+    () => new Map(agendaOptions.map((item) => [item.id, item.label])),
+    [agendaOptions]
+  );
+  const competenciaDiasByAthlete = useMemo(() => {
+    const map = new Map<string, string[]>();
+    competencias.forEach((competencia) => {
+      map.set(competencia.athleteId, competencia.agendaIds || []);
+    });
+    return map;
+  }, [competencias]);
   const pendingRequests = useMemo(
     () =>
       [...mensalistaRequests]
@@ -218,6 +268,39 @@ export default function MensalistasPage() {
         .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
     [mensalistaRequests]
   );
+  const mensalistasFiltrados = useMemo(() => {
+    const termo = filtroBusca.trim().toLowerCase();
+    return mensalistas.filter((jogador) => {
+      if (termo) {
+        const nome = (jogador.nome || "").toLowerCase();
+        const apelido = (jogador.apelido || "").toLowerCase();
+        if (!nome.includes(termo) && !apelido.includes(termo)) return false;
+      }
+
+      const diasVinculados = competenciaDiasByAthlete.get(jogador.id) || [];
+      const quantidadeDias = diasVinculados.length;
+      const hasDias = quantidadeDias > 0;
+
+      if (filtroSituacaoDias === "com_dias" && !hasDias) return false;
+      if (filtroSituacaoDias === "sem_dias" && hasDias) return false;
+      if (filtroDia !== "todos" && !diasVinculados.includes(filtroDia)) return false;
+      if (filtroQuantidadeDias === "1_dia" && quantidadeDias !== 1) return false;
+      if (filtroQuantidadeDias === "2_ou_mais" && quantidadeDias < 2) return false;
+
+      return true;
+    });
+  }, [
+    competenciaDiasByAthlete,
+    filtroBusca,
+    filtroDia,
+    filtroQuantidadeDias,
+    filtroSituacaoDias,
+    mensalistas,
+  ]);
+  const diasSelecionadosModal = useMemo(() => {
+    if (!diasModalJogador) return [];
+    return competenciaDiasByAthlete.get(diasModalJogador.id) || [];
+  }, [competenciaDiasByAthlete, diasModalJogador]);
   const visibleRequests = useMemo(
     () => (showAllRequests ? pendingRequests : pendingRequests.slice(0, 3)),
     [pendingRequests, showAllRequests]
@@ -280,6 +363,14 @@ export default function MensalistasPage() {
     loadMensalistaRequests();
   }, [loadMensalistaRequests]);
 
+  useEffect(() => {
+    if (filtroDia === "todos") return;
+    const existe = agendaOptions.some((item) => item.id === filtroDia);
+    if (!existe) {
+      setFiltroDia("todos");
+    }
+  }, [agendaOptions, filtroDia]);
+
   async function handleAddMensalista(id: string) {
     if (loadingId) return;
     setLoadingId(id);
@@ -321,6 +412,47 @@ export default function MensalistasPage() {
     }
     setLoadingId(null);
   }
+
+  function abrirModalDias(jogador: Jogador) {
+    setDiasModalJogador(jogador);
+    setDiasModalError(null);
+    setDiasModalSaving(false);
+    setDiasModalOpen(true);
+  }
+
+  function fecharModalDias() {
+    if (diasModalSaving) return;
+    setDiasModalOpen(false);
+    setDiasModalJogador(null);
+    setDiasModalError(null);
+  }
+
+  async function salvarDiasMensalista(diasSelecionados: string[]) {
+    if (!diasModalJogador || diasModalSaving) return;
+    setDiasModalSaving(true);
+    setDiasModalError(null);
+
+    const result = await updateCompetencia(diasModalJogador.id, {
+      agendaIds: diasSelecionados,
+    });
+
+    if (!result) {
+      setDiasModalError("Nao foi possivel salvar os dias do mensalista.");
+      setDiasModalSaving(false);
+      return;
+    }
+
+    setDiasModalSaving(false);
+    setDiasModalOpen(false);
+    setDiasModalJogador(null);
+  }
+
+  const limparFiltros = () => {
+    setFiltroBusca("");
+    setFiltroSituacaoDias("todos");
+    setFiltroDia("todos");
+    setFiltroQuantidadeDias("todos");
+  };
 
   async function handleApproveRequest(requestId: string) {
     if (requestActionId) return;
@@ -566,6 +698,84 @@ export default function MensalistasPage() {
 
         {pageError && <div className="text-center text-sm text-red-300 mb-6">{pageError}</div>}
 
+        <section className="mb-6 rounded-xl border border-cyan-400/25 bg-[#141a22] p-4">
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-cyan-200">
+              Filtros de mensalistas
+            </h2>
+            <button
+              type="button"
+              onClick={limparFiltros}
+              className="w-fit rounded-md border border-zinc-600 bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-200 transition hover:bg-zinc-700"
+            >
+              Limpar filtros
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-300">
+              Busca por nome/apelido
+              <input
+                type="text"
+                value={filtroBusca}
+                onChange={(event) => setFiltroBusca(event.target.value)}
+                placeholder="Ex: Joao ou Juninho"
+                className="rounded-md border border-zinc-700 bg-[#0f131a] px-3 py-2 text-sm font-normal text-white outline-none transition focus:border-cyan-500"
+              />
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-300">
+              Situacao de vinculo
+              <select
+                value={filtroSituacaoDias}
+                onChange={(event) =>
+                  setFiltroSituacaoDias(event.target.value as FiltroSituacaoDias)
+                }
+                className="rounded-md border border-zinc-700 bg-[#0f131a] px-3 py-2 text-sm font-normal text-white outline-none transition focus:border-cyan-500"
+              >
+                <option value="todos">Todos</option>
+                <option value="com_dias">Com dias vinculados</option>
+                <option value="sem_dias">Sem dias vinculados</option>
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-300">
+              Filtro por dia
+              <select
+                value={filtroDia}
+                onChange={(event) => setFiltroDia(event.target.value)}
+                className="rounded-md border border-zinc-700 bg-[#0f131a] px-3 py-2 text-sm font-normal text-white outline-none transition focus:border-cyan-500"
+              >
+                <option value="todos">Todos</option>
+                {agendaOptions.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-300">
+              Quantidade de dias
+              <select
+                value={filtroQuantidadeDias}
+                onChange={(event) =>
+                  setFiltroQuantidadeDias(event.target.value as FiltroQuantidadeDias)
+                }
+                className="rounded-md border border-zinc-700 bg-[#0f131a] px-3 py-2 text-sm font-normal text-white outline-none transition focus:border-cyan-500"
+              >
+                <option value="todos">Todos</option>
+                <option value="1_dia">1 dia</option>
+                <option value="2_ou_mais">2 ou mais dias</option>
+              </select>
+            </label>
+          </div>
+
+          <p className="mt-3 text-xs text-zinc-400">
+            Exibindo {mensalistasFiltrados.length} de {mensalistas.length} mensalista(s).
+          </p>
+        </section>
+
         <div className="flex flex-wrap justify-center gap-7">
           {isLoading ? (
             <div className="text-gray-400 font-semibold py-12 text-center w-full">
@@ -579,8 +789,12 @@ export default function MensalistasPage() {
             <div className="text-gray-400 font-semibold py-12 text-center w-full">
               Nenhum mensalista cadastrado.
             </div>
+          ) : mensalistasFiltrados.length === 0 ? (
+            <div className="text-gray-400 font-semibold py-12 text-center w-full">
+              Nenhum mensalista encontrado com os filtros aplicados.
+            </div>
           ) : (
-            mensalistas.map((j) => {
+            mensalistasFiltrados.map((j) => {
               const avatar = j.avatarUrl || j.avatar || j.foto || j.photoUrl || DEFAULT_AVATAR;
               const status = String(j.status || "Ativo");
               const statusKey = status.toLowerCase();
@@ -591,6 +805,10 @@ export default function MensalistasPage() {
                     ? "bg-gray-500"
                     : "bg-red-700";
               const posicao = formatPosicao(j.posicao || j.position);
+              const diasVinculados = competenciaDiasByAthlete.get(j.id) || [];
+              const diasLabels = diasVinculados
+                .map((agendaId) => agendaLabelById.get(agendaId) || null)
+                .filter((label): label is string => Boolean(label));
 
               return (
                 <div
@@ -631,6 +849,23 @@ export default function MensalistasPage() {
                       Mensalista
                     </span>
                   </div>
+                  <div className="mt-4 w-full rounded-lg border border-zinc-700 bg-black/20 px-3 py-2">
+                    <p className="text-[11px] uppercase tracking-[0.1em] text-zinc-400 mb-1">
+                      Dias vinculados
+                    </p>
+                    {diasLabels.length === 0 ? (
+                      <p className="text-xs font-semibold text-red-300">Sem dias vinculados</p>
+                    ) : (
+                      <p className="text-xs text-zinc-200">{diasLabels.join(" • ")}</p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => abrirModalDias(j)}
+                    className="mt-3 rounded-md bg-cyan-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-cyan-600"
+                  >
+                    Editar dias do mensalista
+                  </button>
                 </div>
               );
             })
@@ -653,6 +888,18 @@ export default function MensalistasPage() {
           onConfirm={confirmarRemocao}
           loading={Boolean(loadingId)}
           error={acaoErro}
+        />
+
+        <MensalistaDiasModal
+          open={diasModalOpen && Boolean(diasModalJogador)}
+          athleteName={diasModalJogador?.nome}
+          agendaItems={agendaOrdenada}
+          selectedAgendaIds={diasSelecionadosModal}
+          onClose={fecharModalDias}
+          onSave={salvarDiasMensalista}
+          saving={diasModalSaving}
+          error={diasModalError}
+          ariaLabel="Editar dias do mensalista"
         />
       </main>
     </>

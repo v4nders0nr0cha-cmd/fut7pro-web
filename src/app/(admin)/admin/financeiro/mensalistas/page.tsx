@@ -139,13 +139,25 @@ export default function MensalistasPage() {
 
   const salvarDiasSelecionados = useCallback(
     async (id: string, dias: string[]) => {
+      const previousDias = Object.prototype.hasOwnProperty.call(diasSelecionados, id)
+        ? diasSelecionados[id] || []
+        : agendaIds;
+
       setDiasSelecionados((prev) => ({
         ...prev,
         [id]: dias,
       }));
-      await updateCompetencia(id, { agendaIds: dias });
+
+      const result = await updateCompetencia(id, { agendaIds: dias });
+      if (!result) {
+        setDiasSelecionados((prev) => ({
+          ...prev,
+          [id]: previousDias,
+        }));
+        throw new Error("Nao foi possivel salvar os dias do mensalista.");
+      }
     },
-    [updateCompetencia]
+    [agendaIds, diasSelecionados, updateCompetencia]
   );
 
   const togglePagamento = useCallback(
