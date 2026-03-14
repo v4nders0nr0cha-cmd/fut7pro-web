@@ -1,11 +1,13 @@
 "use client";
 import Head from "next/head";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { toast } from "react-hot-toast";
 import { useFinanceiro } from "@/hooks/useFinanceiro";
 import { useMe } from "@/hooks/useMe";
 import type { LancamentoFinanceiro } from "@/types/financeiro";
+import { extractMensalidadeMetadata } from "@/lib/financeiro/mensalistas";
 import CardResumoFinanceiro from "./components/CardResumoFinanceiro";
 import TabelaLancamentos from "./components/TabelaLancamentos";
 import ModalLancamento from "./components/ModalLancamento";
@@ -119,6 +121,8 @@ const buildCategoriaSeries = (lancamentos: LancamentoFinanceiro[], tipo: "entrad
 
 export default function PrestacaoDeContasAdmin() {
   const { me } = useMe();
+  const searchParams = useSearchParams();
+  const filtrosQueryAplicadosRef = useRef(false);
   const tenantId = me?.tenant?.tenantId ?? "";
   const { data: tenantData, mutate: mutateTenant } = useSWR<TenantPayload>(
     tenantId ? `/api/admin/rachas/${tenantId}` : null,
@@ -150,6 +154,9 @@ export default function PrestacaoDeContasAdmin() {
   const [filtroTipo, setFiltroTipo] = useState<"todos" | "entrada" | "saida">("todos");
   const [filtroCategoria, setFiltroCategoria] = useState<string>("");
   const [ordenacao, setOrdenacao] = useState<Ordenacao>("data-desc");
+  const origemQuery = searchParams?.get("origem") || "";
+  const competenciaQuery = searchParams?.get("competencia") || "";
+  const destaqueLancamentoId = searchParams?.get("lancamento") || null;
 
   const categoriasDisponiveis = useMemo(() => {
     const valores = new Set<string>();
@@ -183,6 +190,24 @@ export default function PrestacaoDeContasAdmin() {
       setFiltroCategoria("");
     }
   }, [categoriasDisponiveis, filtroCategoria]);
+
+  useEffect(() => {
+    if (filtrosQueryAplicadosRef.current) return;
+    if (origemQuery !== "mensalistas") return;
+
+    filtrosQueryAplicadosRef.current = true;
+    setPeriodo("mes");
+    setTodosAnos(false);
+    setFiltroCategoria("Mensalidade");
+    setFiltroTipo("entrada");
+    setOrdenacao("data-desc");
+
+    const match = competenciaQuery.match(/^(\d{4})-(\d{2})$/);
+    if (match) {
+      setAno(match[1]);
+      setMes(match[2]);
+    }
+  }, [competenciaQuery, origemQuery]);
 
   async function handleToggle(valor: boolean) {
     if (!tenantId) return;
@@ -224,6 +249,16 @@ export default function PrestacaoDeContasAdmin() {
   }
 
   function handleEdit(item: LancamentoFinanceiro) {
+    if (extractMensalidadeMetadata(item)) {
+      toast(
+        "Este lançamento foi gerado automaticamente por Mensalistas e não pode ser editado aqui.",
+        {
+          icon: "ℹ️",
+        }
+      );
+      return;
+    }
+
     const tipoNormalizado =
       item.tipo?.toLowerCase().includes("desp") || (item.valor ?? 0) < 0 ? "saida" : "entrada";
     setErroLancamento(null);
@@ -379,11 +414,11 @@ export default function PrestacaoDeContasAdmin() {
         <title>Prestação de Contas | Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie todas as receitas e despesas do racha, cadastre novos lancamentos e exporte relatorios financeiros."
+          content="Gerencie todas as receitas e despesas do racha, cadastre novos lançamentos e exporte relatórios financeiros."
         />
         <meta
           name="keywords"
-          content="prestacao de contas, financeiro, admin, racha, fut7pro, SaaS, receitas, despesas"
+          content="prestação de contas, financeiro, admin, racha, fut7pro, SaaS, receitas, despesas"
         />
       </Head>
       <section>
@@ -419,6 +454,18 @@ export default function PrestacaoDeContasAdmin() {
             + Novo Lançamento
           </button>
         </div>
+
+        {origemQuery === "mensalistas" && (
+          <div className="mb-4 rounded border border-blue-500/50 bg-blue-500/10 p-3 text-xs text-blue-100">
+            Exibindo lançamentos originados do módulo <b>Mensalistas</b>.
+            {competenciaQuery ? (
+              <>
+                {" "}
+                Competência filtrada: <b>{competenciaQuery}</b>.
+              </>
+            ) : null}
+          </div>
+        )}
 
         {/* Filtro de periodo */}
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6 items-end">
@@ -555,10 +602,14 @@ export default function PrestacaoDeContasAdmin() {
 
         {/* Tabela */}
         <div className="overflow-x-auto">
-          <TabelaLancamentos lancamentos={lancamentosFiltrados} onEdit={handleEdit} />
+          <TabelaLancamentos
+            lancamentos={lancamentosFiltrados}
+            onEdit={handleEdit}
+            destaqueLancamentoId={destaqueLancamentoId}
+          />
         </div>
 
-        {/* Grafico evolucao financeira */}
+        {/* Gráfico evolução financeira */}
         <div className="w-full mt-8 mb-4 bg-neutral-900 rounded-lg shadow-sm p-4">
           <h3 className="text-lg font-bold text-yellow-500 mb-2">Evolução Financeira</h3>
           <ResponsiveContainer width="100%" height={220}>
@@ -625,7 +676,7 @@ export default function PrestacaoDeContasAdmin() {
           </div>
         </div>
 
-        {/* Modal de lancamento */}
+        {/* Modal de lançamento */}
         <ModalLancamento
           open={modalOpen}
           onClose={fecharModal}

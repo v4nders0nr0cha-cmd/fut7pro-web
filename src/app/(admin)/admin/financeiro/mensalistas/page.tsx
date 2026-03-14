@@ -1,18 +1,70 @@
 "use client";
+
 import Head from "next/head";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { toast } from "react-hot-toast";
 import { useRacha } from "@/context/RachaContext";
-import { useRachaAgenda } from "@/hooks/useRachaAgenda";
+import { useFinanceiro } from "@/hooks/useFinanceiro";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useMensalistaCompetencias } from "@/hooks/useMensalistaCompetencias";
-import { useFinanceiro } from "@/hooks/useFinanceiro";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
+import {
+  buildCompetenciaKey,
+  extractMensalidadeMetadata,
+  isMensalidadeLancamento,
+} from "@/lib/financeiro/mensalistas";
 import type { LancamentoFinanceiro } from "@/types/financeiro";
 import type { Jogador } from "@/types/jogador";
-import type { MensalistaResumo } from "./components/TabelaMensalistas";
-import TabelaMensalistas from "./components/TabelaMensalistas";
+import TabelaMensalistas, { type MensalistaResumo } from "./components/TabelaMensalistas";
 
 const DIAS_SEMANA_LABEL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+
+const MESES = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+type FiltroRapido = "todos" | "pagos" | "pendentes" | "segunda" | "sabado" | "segunda-sabado";
+
+type ModalConfirmacaoPagamento = {
+  athleteId: string;
+};
+
+type ModalConfirmacaoCancelamento = {
+  athleteId: string;
+};
+
+type MensalistaCalculado = MensalistaResumo & {
+  diasSelecionados: string[];
+  valorSemDesconto: number;
+  desconto: number;
+};
+
+type LancamentoCreateResponse = {
+  lancamentoId?: string;
+  status?: "created" | "already_registered";
+};
+
+function mapMensalistas(jogadores: Jogador[]): Array<{ id: string; nome: string }> {
+  return jogadores
+    .filter((j) => j.mensalista || j.isMensalista || j.isMember)
+    .map((j) => ({
+      id: j.id,
+      nome: (j.nome || j.nickname || "Atleta").trim(),
+    }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
 
 function countJogosAtletaNoMes(ano: number, mes: number, diasSemanaAtleta: number[]) {
   let count = 0;
@@ -40,46 +92,179 @@ function getWeekNumber(date: Date) {
   return Math.ceil(((temp.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
-const mesesNomes = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
-];
+function classifyDias(weekdays: Set<number>): MensalistaResumo["classificacaoDia"] {
+  const hasSegunda = weekdays.has(1);
+  const hasSabado = weekdays.has(6);
+  if (hasSegunda && hasSabado) return "segunda-sabado";
+  if (hasSegunda) return "segunda";
+  if (hasSabado) return "sabado";
+  return "outros";
+}
 
-const AUTO_MENSALISTAS_CATEGORY = "Mensalistas";
-const AUTO_MENSALISTAS_OBSERVACOES = "auto: mensalistas";
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(value || 0);
+}
 
-function mapMensalistas(jogadores: Jogador[]): MensalistaResumo[] {
-  return jogadores
-    .filter((j) => j.mensalista || j.isMensalista || j.isMember)
-    .map((j) => ({
-      id: j.id,
-      nome: j.nome || j.nickname || "Jogador",
-      status: "Em dia" as const,
-      valor: 0,
-      ultimoPagamento: null,
-    }));
+function formatCompetenciaTexto(mes: number, ano: number): string {
+  return `${MESES[mes - 1]} ${ano}`;
+}
+
+function parseLancamentoCreateResponse(value: unknown): LancamentoCreateResponse {
+  if (!value || typeof value !== "object") return {};
+  const obj = value as {
+    id?: unknown;
+    lancamentoId?: unknown;
+    status?: unknown;
+    lancamento?: { id?: unknown };
+  };
+  const nestedId =
+    obj.lancamento && typeof obj.lancamento.id === "string" ? obj.lancamento.id : undefined;
+  return {
+    lancamentoId:
+      typeof obj.id === "string"
+        ? obj.id
+        : typeof obj.lancamentoId === "string"
+          ? obj.lancamentoId
+          : nestedId,
+    status:
+      obj.status === "created" || obj.status === "already_registered" ? obj.status : undefined,
+  };
+}
+
+type ConfirmacaoModalProps = {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  cancelLabel: string;
+  confirmVariant?: "primary" | "danger";
+  isLoading?: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  children?: ReactNode;
+};
+
+function ConfirmacaoModal({
+  open,
+  title,
+  description,
+  confirmLabel,
+  cancelLabel,
+  confirmVariant = "primary",
+  isLoading = false,
+  onClose,
+  onConfirm,
+  children,
+}: ConfirmacaoModalProps) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
+      <div className="w-full max-w-lg rounded-2xl border border-neutral-700 bg-neutral-900 p-5 shadow-2xl">
+        <h2 className="text-lg font-bold text-yellow-400">{title}</h2>
+        <p className="mt-2 text-sm text-gray-300">{description}</p>
+        {children ? (
+          <div className="mt-4 rounded-xl border border-neutral-700 bg-neutral-800/70 p-3">
+            {children}
+          </div>
+        ) : null}
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-neutral-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-neutral-800"
+            disabled={isLoading}
+          >
+            {cancelLabel}
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className={`rounded-md px-4 py-2 text-sm font-bold text-black disabled:opacity-60 ${
+              confirmVariant === "danger"
+                ? "bg-red-400 hover:bg-red-300"
+                : "bg-yellow-400 hover:bg-yellow-300"
+            }`}
+            disabled={isLoading}
+          >
+            {isLoading ? "Processando..." : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type SucessoModalProps = {
+  open: boolean;
+  title: string;
+  description: string;
+  onClose: () => void;
+  onVerLancamento?: () => void;
+};
+
+function SucessoModal({ open, title, description, onClose, onVerLancamento }: SucessoModalProps) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
+      <div className="w-full max-w-md rounded-2xl border border-emerald-500/30 bg-neutral-900 p-5 shadow-2xl">
+        <h2 className="text-lg font-bold text-emerald-300">{title}</h2>
+        <p className="mt-2 text-sm text-gray-200">{description}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-neutral-600 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-neutral-800"
+          >
+            Fechar
+          </button>
+          {onVerLancamento && (
+            <button
+              type="button"
+              onClick={onVerLancamento}
+              className="rounded-md bg-emerald-400 px-4 py-2 text-sm font-bold text-black hover:bg-emerald-300"
+            >
+              Ver lançamento
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function MensalistasPage() {
+  const hoje = useMemo(() => new Date(), []);
   const router = useRouter();
-  const hoje = new Date();
-  const anoAtual = hoje.getFullYear();
-  const mesAtual = hoje.getMonth();
-  const nomeMes = mesesNomes[mesAtual];
-  const competenciaAno = anoAtual;
-  const competenciaMes = mesAtual + 1;
-
   const { rachaId } = useRacha();
+
+  const [competenciaAno, setCompetenciaAno] = useState(hoje.getFullYear());
+  const [competenciaMes, setCompetenciaMes] = useState(hoje.getMonth() + 1);
+  const [valorPorDia, setValorPorDia] = useState<number>(10);
+  const [busca, setBusca] = useState("");
+  const [filtroRapido, setFiltroRapido] = useState<FiltroRapido>("todos");
+  const [descontos] = useState<Record<string, number>>({});
+  const [diasSelecionados, setDiasSelecionados] = useState<Record<string, string[]>>({});
+  const [processandoAthleteId, setProcessandoAthleteId] = useState<string | null>(null);
+  const [processandoLote, setProcessandoLote] = useState(false);
+  const [confirmacaoPagamento, setConfirmacaoPagamento] =
+    useState<ModalConfirmacaoPagamento | null>(null);
+  const [confirmacaoLoteAberta, setConfirmacaoLoteAberta] = useState(false);
+  const [confirmacaoCancelamento, setConfirmacaoCancelamento] =
+    useState<ModalConfirmacaoCancelamento | null>(null);
+  const [sucessoModal, setSucessoModal] = useState<{
+    title: string;
+    description: string;
+    lancamentoId?: string;
+  } | null>(null);
+
+  const competenciaKey = buildCompetenciaKey(competenciaAno, competenciaMes);
+  const competenciaTexto = formatCompetenciaTexto(competenciaMes, competenciaAno);
+
   const {
     items: agendaItems,
     isLoading: isAgendaLoading,
@@ -89,15 +274,12 @@ export default function MensalistasPage() {
   const {
     items: competencias,
     updateCompetencia,
+    registerPagamento: registerPagamentoCompetencia,
+    registerPagamentoLote,
+    cancelPagamento: cancelPagamentoCompetencia,
     isLoading: isCompetenciasLoading,
   } = useMensalistaCompetencias(competenciaAno, competenciaMes);
-  const {
-    lancamentos,
-    addLancamento,
-    updateLancamento,
-    deleteLancamento,
-    isLoading: isFinanceiroLoading,
-  } = useFinanceiro();
+  const { lancamentos, mutate: mutateFinanceiro, isLoading: isFinanceiroLoading } = useFinanceiro();
 
   const agendaOrdenada = useMemo(() => {
     return [...agendaItems].sort((a, b) => {
@@ -107,11 +289,6 @@ export default function MensalistasPage() {
   }, [agendaItems]);
 
   const agendaIds = useMemo(() => agendaOrdenada.map((item) => item.id), [agendaOrdenada]);
-  const agendaIdsSet = useMemo(() => new Set(agendaIds), [agendaIds]);
-  const agendaUnicaId = agendaIds.length === 1 ? agendaIds[0] : null;
-
-  const [diasSelecionados, setDiasSelecionados] = useState<Record<string, string[]>>({});
-  const [pagamentos, setPagamentos] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setDiasSelecionados(() => {
@@ -121,75 +298,205 @@ export default function MensalistasPage() {
       });
       return next;
     });
-
-    setPagamentos(() => {
-      const next: Record<string, boolean> = {};
-      competencias.forEach((competencia) => {
-        next[competencia.athleteId] = Boolean(competencia.isPaid);
-      });
-      return next;
-    });
   }, [competencias]);
 
   const getDiasSelecionados = useCallback(
-    (id: string) => {
-      if (Object.prototype.hasOwnProperty.call(diasSelecionados, id)) {
-        const selecionados = (diasSelecionados[id] || []).filter((agendaId) =>
-          agendaIdsSet.has(agendaId)
-        );
-        if (selecionados.length > 0) {
-          return selecionados;
-        }
-        if (agendaUnicaId) {
-          return [agendaUnicaId];
-        }
-        return selecionados;
-      }
-      if (agendaUnicaId) {
-        return [agendaUnicaId];
-      }
-      if (agendaIds.length === 1) {
-        return [...agendaIds];
-      }
-      return [];
-    },
-    [agendaIds, agendaIdsSet, agendaUnicaId, diasSelecionados]
-  );
-
-  const abrirGestaoDias = useCallback(
     (athleteId: string) => {
-      const query = new URLSearchParams({ editarDias: athleteId }).toString();
-      router.push(`/admin/jogadores/mensalistas?${query}`);
+      if (Object.prototype.hasOwnProperty.call(diasSelecionados, athleteId)) {
+        return diasSelecionados[athleteId] || [];
+      }
+      return agendaIds;
     },
-    [router]
+    [diasSelecionados, agendaIds]
   );
 
-  const togglePagamento = useCallback(
-    async (id: string) => {
-      const nextValue = !Boolean(pagamentos[id]);
-      setPagamentos((prev) => ({
+  const salvarDiasSelecionados = useCallback(
+    async (athleteId: string, dias: string[]) => {
+      const previous = Object.prototype.hasOwnProperty.call(diasSelecionados, athleteId)
+        ? diasSelecionados[athleteId] || []
+        : agendaIds;
+
+      setDiasSelecionados((prev) => ({
         ...prev,
-        [id]: nextValue,
+        [athleteId]: dias,
       }));
-      await updateCompetencia(id, { isPaid: nextValue });
+
+      const result = await updateCompetencia(athleteId, { agendaIds: dias });
+      if (!result) {
+        setDiasSelecionados((prev) => ({
+          ...prev,
+          [athleteId]: previous,
+        }));
+        throw new Error("Não foi possível salvar os dias vinculados do mensalista.");
+      }
     },
-    [pagamentos, updateCompetencia]
+    [agendaIds, diasSelecionados, updateCompetencia]
   );
 
-  const togglePagamentoAll = useCallback(
-    async (checked: boolean, athleteIds: string[]) => {
-      if (athleteIds.length === 0) return;
-      setPagamentos((prev) => {
-        const next = { ...prev };
-        athleteIds.forEach((id) => {
-          next[id] = checked;
-        });
-        return next;
-      });
-      await Promise.all(athleteIds.map((id) => updateCompetencia(id, { isPaid: checked })));
-    },
-    [updateCompetencia]
+  const competenciaByAthlete = useMemo(() => {
+    const map = new Map<string, (typeof competencias)[number]>();
+    competencias.forEach((competencia) => {
+      map.set(competencia.athleteId, competencia);
+    });
+    return map;
+  }, [competencias]);
+
+  const lancamentosMensalidadePorAthlete = useMemo(() => {
+    const map = new Map<string, LancamentoFinanceiro>();
+
+    (lancamentos || []).forEach((lancamento) => {
+      if (!isMensalidadeLancamento(lancamento, { competencia: competenciaKey })) return;
+
+      const metadata = extractMensalidadeMetadata(lancamento);
+      if (!metadata) return;
+
+      const previous = map.get(metadata.athleteId);
+      if (!previous) {
+        map.set(metadata.athleteId, lancamento);
+        return;
+      }
+
+      const previousDate = `${previous.createdAt || previous.data || ""}`;
+      const currentDate = `${lancamento.createdAt || lancamento.data || ""}`;
+      if (currentDate > previousDate) {
+        map.set(metadata.athleteId, lancamento);
+      }
+    });
+
+    return map;
+  }, [competenciaKey, lancamentos]);
+
+  const mensalistasBase = useMemo(() => mapMensalistas(jogadores), [jogadores]);
+
+  const jogosPorAgendaId = useMemo(() => {
+    const map: Record<string, number> = {};
+    agendaOrdenada.forEach((item) => {
+      map[item.id] = countJogosAtletaNoMes(competenciaAno, competenciaMes, [item.weekday]);
+    });
+    return map;
+  }, [agendaOrdenada, competenciaAno, competenciaMes]);
+
+  const agendaById = useMemo(() => {
+    const map = new Map<string, (typeof agendaOrdenada)[number]>();
+    agendaOrdenada.forEach((item) => {
+      map.set(item.id, item);
+    });
+    return map;
+  }, [agendaOrdenada]);
+
+  const mensalistasCalculados = useMemo<MensalistaCalculado[]>(() => {
+    return mensalistasBase.map((mensalista) => {
+      const diasSelecionadosAtleta = getDiasSelecionados(mensalista.id);
+      const agendaSelecionada = diasSelecionadosAtleta
+        .map((agendaId) => agendaById.get(agendaId))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+      const jogosAtleta = diasSelecionadosAtleta.reduce(
+        (sum, agendaId) => sum + (jogosPorAgendaId[agendaId] || 0),
+        0
+      );
+
+      const valorSemDesconto = valorPorDia * jogosAtleta;
+      const desconto = descontos[mensalista.id] || 0;
+      const valorFinal = Math.max(Number((valorSemDesconto - desconto).toFixed(2)), 0);
+
+      const weekdays = new Set(agendaSelecionada.map((item) => item.weekday));
+      const classificacaoDia = classifyDias(weekdays);
+      const diasResumo =
+        agendaSelecionada.length > 0
+          ? agendaSelecionada
+              .map((item) => `${DIAS_SEMANA_LABEL[item.weekday]} ${item.time}`)
+              .join(" • ")
+          : "Sem dias vinculados";
+
+      const lancamento = lancamentosMensalidadePorAthlete.get(mensalista.id);
+      const competenciaItem = competenciaByAthlete.get(mensalista.id);
+
+      return {
+        id: mensalista.id,
+        nome: mensalista.nome,
+        valor: valorFinal,
+        statusPagamento: lancamento ? "pago" : "pendente",
+        pagamentoData: lancamento?.data || null,
+        diasResumo,
+        jogosNoMes: jogosAtleta,
+        classificacaoDia,
+        ultimoLancamentoId: lancamento?.id || null,
+        marcadoSemLancamento: Boolean(competenciaItem?.isPaid) && !lancamento,
+        diasSelecionados: diasSelecionadosAtleta,
+        valorSemDesconto,
+        desconto,
+      };
+    });
+  }, [
+    mensalistasBase,
+    getDiasSelecionados,
+    agendaById,
+    jogosPorAgendaId,
+    valorPorDia,
+    descontos,
+    lancamentosMensalidadePorAthlete,
+    competenciaByAthlete,
+  ]);
+
+  const totalPrevisto = useMemo(
+    () => mensalistasCalculados.reduce((sum, item) => sum + item.valor, 0),
+    [mensalistasCalculados]
   );
+
+  const totalRecebido = useMemo(
+    () =>
+      mensalistasCalculados
+        .filter((item) => item.statusPagamento === "pago")
+        .reduce((sum, item) => sum + item.valor, 0),
+    [mensalistasCalculados]
+  );
+
+  const totalPendente = useMemo(
+    () =>
+      mensalistasCalculados
+        .filter((item) => item.statusPagamento === "pendente")
+        .reduce((sum, item) => sum + item.valor, 0),
+    [mensalistasCalculados]
+  );
+
+  const quantidadePagos = useMemo(
+    () => mensalistasCalculados.filter((item) => item.statusPagamento === "pago").length,
+    [mensalistasCalculados]
+  );
+  const quantidadePendentes = mensalistasCalculados.length - quantidadePagos;
+  const progressoRecebimento =
+    totalPrevisto > 0 ? Math.min((totalRecebido / totalPrevisto) * 100, 100) : 0;
+
+  const mensalistasPendentes = useMemo(
+    () => mensalistasCalculados.filter((item) => item.statusPagamento === "pendente"),
+    [mensalistasCalculados]
+  );
+
+  const mensalistasFiltrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    return mensalistasCalculados.filter((mensalista) => {
+      if (termo && !mensalista.nome.toLowerCase().includes(termo)) {
+        return false;
+      }
+
+      switch (filtroRapido) {
+        case "pagos":
+          return mensalista.statusPagamento === "pago";
+        case "pendentes":
+          return mensalista.statusPagamento === "pendente";
+        case "segunda":
+          return mensalista.classificacaoDia === "segunda";
+        case "sabado":
+          return mensalista.classificacaoDia === "sabado";
+        case "segunda-sabado":
+          return mensalista.classificacaoDia === "segunda-sabado";
+        case "todos":
+        default:
+          return true;
+      }
+    });
+  }, [busca, filtroRapido, mensalistasCalculados]);
 
   const diasDaSemanaDoRacha = useMemo(() => {
     const dias = new Set<number>();
@@ -202,6 +509,16 @@ export default function MensalistasPage() {
     return Array.from(dias).sort((a, b) => a - b);
   }, [agendaItems]);
 
+  const totalJogosPorDia = useMemo(
+    () =>
+      diasDaSemanaDoRacha.map((dia) =>
+        countJogosAtletaNoMes(competenciaAno, competenciaMes, [dia])
+      ),
+    [competenciaAno, competenciaMes, diasDaSemanaDoRacha]
+  );
+  const totalJogosNoMes = totalJogosPorDia.reduce((acc, current) => acc + current, 0);
+  const totalSemanasNoMes = countSemanasNoMes(competenciaAno, competenciaMes);
+
   const agendaDiasLabel =
     diasDaSemanaDoRacha.length > 0
       ? diasDaSemanaDoRacha.map((idx) => DIAS_SEMANA_LABEL[idx]).join(" e ")
@@ -211,190 +528,205 @@ export default function MensalistasPage() {
           ? "Agenda indisponível"
           : "Agenda não configurada";
 
-  const mensalistasBase = useMemo(() => mapMensalistas(jogadores), [jogadores]);
-  const autoAgendaSyncingRef = useRef<Set<string>>(new Set());
+  const loadingInicial =
+    isJogadoresLoading || isAgendaLoading || isCompetenciasLoading || isFinanceiroLoading;
 
-  useEffect(() => {
-    if (
-      !agendaUnicaId ||
-      isAgendaLoading ||
-      isJogadoresLoading ||
-      isCompetenciasLoading ||
-      mensalistasBase.length === 0
-    ) {
-      return;
-    }
+  const yearsOptions = useMemo(() => {
+    const currentYear = hoje.getFullYear();
+    return [currentYear - 1, currentYear, currentYear + 1, currentYear + 2];
+  }, [hoje]);
 
-    const athleteIdsToSync = mensalistasBase
-      .map((mensalista) => mensalista.id)
-      .filter((athleteId) => {
-        if (autoAgendaSyncingRef.current.has(athleteId)) return false;
-        const diasAtuais = getDiasSelecionados(athleteId);
-        return diasAtuais.length !== 1 || diasAtuais[0] !== agendaUnicaId;
+  const abrirPrestacaoComLancamento = useCallback(
+    (lancamentoId: string) => {
+      const params = new URLSearchParams({
+        origem: "mensalistas",
+        competencia: competenciaKey,
+        lancamento: lancamentoId,
       });
-
-    if (athleteIdsToSync.length === 0) return;
-
-    setDiasSelecionados((prev) => {
-      const next = { ...prev };
-      athleteIdsToSync.forEach((athleteId) => {
-        next[athleteId] = [agendaUnicaId];
-      });
-      return next;
-    });
-
-    void Promise.all(
-      athleteIdsToSync.map(async (athleteId) => {
-        autoAgendaSyncingRef.current.add(athleteId);
-        try {
-          await updateCompetencia(athleteId, { agendaIds: [agendaUnicaId] });
-        } catch {
-          // Ignore erro transitório; a UI mantém fallback automático para agenda única.
-        } finally {
-          autoAgendaSyncingRef.current.delete(athleteId);
-        }
-      })
-    );
-  }, [
-    agendaUnicaId,
-    getDiasSelecionados,
-    isAgendaLoading,
-    isCompetenciasLoading,
-    isJogadoresLoading,
-    mensalistasBase,
-    updateCompetencia,
-  ]);
-
-  const [valorPorDia, setValorPorDia] = useState<number>(10);
-  const [descontos, setDescontos] = useState<Record<string, number>>({});
-
-  const totalJogosPorDia = diasDaSemanaDoRacha.map((dia) =>
-    countJogosAtletaNoMes(anoAtual, mesAtual + 1, [dia])
+      router.push(`/admin/financeiro/prestacao-de-contas?${params.toString()}`);
+    },
+    [competenciaKey, router]
   );
-  const totalJogosNoMes = totalJogosPorDia.reduce((a, b) => a + b, 0);
-  const totalSemanasNoMes = countSemanasNoMes(anoAtual, mesAtual + 1);
 
-  const jogosPorAgendaId = useMemo(() => {
-    const map: Record<string, number> = {};
-    agendaOrdenada.forEach((item) => {
-      map[item.id] = countJogosAtletaNoMes(anoAtual, mesAtual + 1, [item.weekday]);
-    });
-    return map;
-  }, [agendaOrdenada, anoAtual, mesAtual]);
-
-  const valoresMensais = mensalistasBase.map((m) => {
-    const diasSelecionadosAtleta = getDiasSelecionados(m.id);
-    const jogosAtleta = diasSelecionadosAtleta.reduce(
-      (sum, agendaId) => sum + (jogosPorAgendaId[agendaId] || 0),
-      0
-    );
-    const valorSemDesconto = valorPorDia * jogosAtleta;
-    const desconto = descontos[m.id] || 0;
-    return {
-      ...m,
-      jogosAtleta,
-      valorSemDesconto,
-      valorFinal: Math.max(valorSemDesconto - desconto, 0),
-      labelDias: diasDaSemanaDoRacha.map((idx) => DIAS_SEMANA_LABEL[idx]).join(" e "),
-      desconto,
-    };
-  });
-
-  const totalMensalistas = valoresMensais.reduce((sum, m) => sum + m.valorFinal, 0);
-  const competenciaKey = `${competenciaAno}-${String(competenciaMes).padStart(2, "0")}`;
-  const autoMensalistasDescricao = `Mensalistas ${competenciaKey}`;
-  const autoMensalistasData = `${competenciaKey}-01`;
-
-  const autoMensalistasLancamento = useMemo(() => {
-    const descricaoAlvo = autoMensalistasDescricao.toLowerCase();
-    return (lancamentos || []).find((item) => {
-      const categoria = (item.categoria || "").trim().toLowerCase();
-      const descricao = (item.descricao || "").trim().toLowerCase();
-      return categoria === AUTO_MENSALISTAS_CATEGORY.toLowerCase() && descricao === descricaoAlvo;
-    });
-  }, [autoMensalistasDescricao, lancamentos]);
-
-  const autoSyncRef = useRef(false);
-
-  useEffect(() => {
-    if (
-      isAgendaLoading ||
-      isJogadoresLoading ||
-      isCompetenciasLoading ||
-      isFinanceiroLoading ||
-      autoSyncRef.current
-    ) {
-      return;
-    }
-
-    const totalArredondado = Number.isFinite(totalMensalistas)
-      ? Number(totalMensalistas.toFixed(2))
-      : 0;
-
-    if (totalArredondado <= 0) {
-      if (autoMensalistasLancamento?.id) {
-        autoSyncRef.current = true;
-        deleteLancamento(autoMensalistasLancamento.id)
-          .catch(() => {})
-          .finally(() => {
-            autoSyncRef.current = false;
-          });
+  const registrarPagamento = useCallback(
+    async (mensalista: MensalistaCalculado): Promise<LancamentoCreateResponse> => {
+      const lancamentoExistente = lancamentosMensalidadePorAthlete.get(mensalista.id);
+      if (lancamentoExistente?.id) {
+        return { lancamentoId: lancamentoExistente.id, status: "already_registered" };
       }
-      return;
-    }
 
-    const payload: Partial<LancamentoFinanceiro> = {
-      data: autoMensalistasData,
-      categoria: AUTO_MENSALISTAS_CATEGORY,
-      descricao: autoMensalistasDescricao,
-      valor: totalArredondado,
-      tipo: "entrada",
-      observacoes: AUTO_MENSALISTAS_OBSERVACOES,
-    };
+      if (mensalista.valor <= 0) {
+        throw new Error(
+          `O valor da mensalidade do atleta ${mensalista.nome} precisa ser maior que zero para registrar o pagamento.`
+        );
+      }
 
-    if (autoMensalistasLancamento?.id) {
-      const valorAtual = Math.abs(autoMensalistasLancamento.valor ?? 0);
-      const dataAtual = (autoMensalistasLancamento.data || "").slice(0, 10);
-      const categoriaAtual = (autoMensalistasLancamento.categoria || "").trim();
-      const descricaoAtual = (autoMensalistasLancamento.descricao || "").trim();
-      const observacoesAtual = (autoMensalistasLancamento.observacoes || "").trim();
-      const precisaAtualizar =
-        Math.abs(valorAtual - totalArredondado) > 0.01 ||
-        dataAtual !== autoMensalistasData ||
-        categoriaAtual !== AUTO_MENSALISTAS_CATEGORY ||
-        descricaoAtual !== autoMensalistasDescricao ||
-        observacoesAtual !== AUTO_MENSALISTAS_OBSERVACOES;
-
-      if (!precisaAtualizar) return;
-
-      autoSyncRef.current = true;
-      updateLancamento(autoMensalistasLancamento.id, payload)
-        .catch(() => {})
-        .finally(() => {
-          autoSyncRef.current = false;
-        });
-      return;
-    }
-
-    autoSyncRef.current = true;
-    addLancamento(payload)
-      .catch(() => {})
-      .finally(() => {
-        autoSyncRef.current = false;
+      const response = await registerPagamentoCompetencia(mensalista.id, {
+        value: Number(mensalista.valor.toFixed(2)),
+        athleteName: mensalista.nome,
+        agendaResumo: mensalista.diasResumo
+          .split(" • ")
+          .map((item) => item.trim())
+          .filter(Boolean),
       });
-  }, [
-    addLancamento,
-    autoMensalistasData,
-    autoMensalistasDescricao,
-    autoMensalistasLancamento,
-    deleteLancamento,
-    isAgendaLoading,
-    isCompetenciasLoading,
-    isFinanceiroLoading,
-    isJogadoresLoading,
-    totalMensalistas,
-    updateLancamento,
-  ]);
+      await mutateFinanceiro();
+      return parseLancamentoCreateResponse(response);
+    },
+    [lancamentosMensalidadePorAthlete, mutateFinanceiro, registerPagamentoCompetencia]
+  );
+
+  const cancelarPagamento = useCallback(
+    async (mensalista: MensalistaCalculado) => {
+      const response = await cancelPagamentoCompetencia(mensalista.id);
+      await mutateFinanceiro();
+      return response as { canceled?: boolean };
+    },
+    [cancelPagamentoCompetencia, mutateFinanceiro]
+  );
+
+  const atletaSelecionadoPagamento = useMemo(
+    () =>
+      confirmacaoPagamento
+        ? mensalistasCalculados.find((item) => item.id === confirmacaoPagamento.athleteId) || null
+        : null,
+    [confirmacaoPagamento, mensalistasCalculados]
+  );
+
+  const atletaSelecionadoCancelamento = useMemo(
+    () =>
+      confirmacaoCancelamento
+        ? mensalistasCalculados.find((item) => item.id === confirmacaoCancelamento.athleteId) ||
+          null
+        : null,
+    [confirmacaoCancelamento, mensalistasCalculados]
+  );
+
+  async function confirmarPagamentoIndividual() {
+    if (!atletaSelecionadoPagamento) return;
+    setProcessandoAthleteId(atletaSelecionadoPagamento.id);
+
+    try {
+      const { lancamentoId, status } = await registrarPagamento(atletaSelecionadoPagamento);
+      const isDuplicado = status === "already_registered";
+      const mensagem = isDuplicado
+        ? `A mensalidade de ${atletaSelecionadoPagamento.nome}, referente a ${competenciaTexto}, já estava registrada no financeiro.`
+        : `Pagamento registrado com sucesso. A mensalidade de ${atletaSelecionadoPagamento.nome}, referente a ${competenciaTexto}, foi lançada no financeiro.`;
+      toast.success(
+        isDuplicado
+          ? "Pagamento já registrado para esta competência."
+          : "Pagamento registrado com sucesso."
+      );
+      setSucessoModal({
+        title: isDuplicado ? "Pagamento já registrado" : "Pagamento registrado com sucesso",
+        description: mensagem,
+        lancamentoId,
+      });
+      setConfirmacaoPagamento(null);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Não foi possível registrar o pagamento.";
+      toast.error(message);
+    } finally {
+      setProcessandoAthleteId(null);
+    }
+  }
+
+  async function confirmarPagamentoEmLote() {
+    if (mensalistasPendentes.length === 0) return;
+    setProcessandoLote(true);
+
+    try {
+      const itensLote = mensalistasPendentes
+        .filter((item) => item.valor > 0)
+        .map((item) => ({
+          athleteId: item.id,
+          value: Number(item.valor.toFixed(2)),
+          athleteName: item.nome,
+          agendaResumo: item.diasResumo
+            .split(" • ")
+            .map((dia) => dia.trim())
+            .filter(Boolean),
+        }));
+
+      if (itensLote.length === 0) {
+        throw new Error("Nenhum mensalista pendente com valor válido para registrar em lote.");
+      }
+
+      const response = (await registerPagamentoLote({
+        items: itensLote,
+      })) as {
+        createdCount?: number;
+        alreadyRegisteredCount?: number;
+        items?: Array<{ lancamentoId?: string }>;
+      };
+
+      await mutateFinanceiro();
+
+      const createdCount = Number(response.createdCount ?? 0);
+      const alreadyRegisteredCount = Number(response.alreadyRegisteredCount ?? 0);
+      const totalProcessado = createdCount + alreadyRegisteredCount;
+      const ultimoLancamentoId =
+        response.items
+          ?.map((item) => item.lancamentoId)
+          .filter((id): id is string => Boolean(id))
+          .at(-1) ?? undefined;
+
+      if (totalProcessado > 0) {
+        const mensagemResumo =
+          alreadyRegisteredCount > 0
+            ? `${createdCount} novo(s) pagamento(s) registrado(s) e ${alreadyRegisteredCount} já estavam lançados.`
+            : "Todos os pendentes foram lançados com sucesso.";
+
+        toast.success("Pagamentos processados com sucesso.");
+        setSucessoModal({
+          title: "Pagamentos registrados com sucesso",
+          description: `Os mensalistas pendentes de ${competenciaTexto} foram lançados no financeiro. ${mensagemResumo}`,
+          lancamentoId: ultimoLancamentoId,
+        });
+      } else {
+        toast("Nenhum lançamento novo foi necessário para esta competência.", {
+          icon: "ℹ️",
+        });
+      }
+
+      setConfirmacaoLoteAberta(false);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível registrar os pagamentos em lote.";
+      toast.error(message);
+    } finally {
+      setProcessandoAthleteId(null);
+      setProcessandoLote(false);
+    }
+  }
+
+  async function confirmarCancelamentoPagamento() {
+    if (!atletaSelecionadoCancelamento) return;
+    setProcessandoAthleteId(atletaSelecionadoCancelamento.id);
+
+    try {
+      const response = await cancelarPagamento(atletaSelecionadoCancelamento);
+      if (response?.canceled === false) {
+        toast("Este pagamento já estava cancelado.", { icon: "ℹ️" });
+      } else {
+        toast.success("Pagamento cancelado com sucesso.");
+      }
+      setConfirmacaoCancelamento(null);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Não foi possível cancelar o pagamento.";
+      toast.error(message);
+    } finally {
+      setProcessandoAthleteId(null);
+    }
+  }
+
+  const cardBaseClass =
+    "rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-yellow-400";
+  const cardAtivoClass = "border-yellow-400 bg-yellow-400/10";
+  const cardInativoClass = "border-neutral-700 bg-neutral-900/80 hover:border-yellow-500/50";
 
   return (
     <>
@@ -402,106 +734,382 @@ export default function MensalistasPage() {
         <title>Mensalistas | Admin - Fut7Pro</title>
         <meta
           name="description"
-          content="Gerencie cobrança de mensalistas com valor por dia jogado, cálculo automático e controle de pagamento."
+          content="Acompanhe, registre e controle os pagamentos mensais dos atletas vinculados, com integração automática ao financeiro do racha."
         />
       </Head>
-      <section className="max-w-4xl mx-auto pt-20 pb-24 md:pt-6 md:pb-8 px-2">
-        <h1 className="text-3xl font-bold text-yellow-500 mb-1 break-words">Mensalistas</h1>
-        <p className="text-sm text-gray-300 mb-3">
-          Defina o valor por dia jogado e o sistema calculará a mensalidade de cada atleta
-          automaticamente.
-          <br />
-          <b>Os dias do mensalista são definidos em Jogadores &gt; Mensalistas.</b> Esta página
-          apenas consome os vínculos para calcular cobranças.
-          <br />
-          <b>Agenda oficial do racha:</b> <span className="text-yellow-300">{agendaDiasLabel}</span>
-          .<br />
-          <span className="text-yellow-400">
-            O valor de cada atleta é proporcional ao número de jogos dos dias em que ele é
-            mensalista, em cada mês.
-          </span>
-          {agendaUnicaId && (
-            <>
-              <br />
-              <span className="text-emerald-300">
-                Como o racha tem apenas 1 dia e horário, ele é aplicado automaticamente para todos
-                os mensalistas.
-              </span>
-            </>
-          )}
+
+      <section className="mx-auto max-w-6xl px-2 pb-24 pt-20 md:pb-10 md:pt-6">
+        <h1 className="mb-1 text-3xl font-bold text-yellow-500 break-words">Mensalistas</h1>
+        <p className="mb-1 text-sm text-gray-300">
+          Acompanhe, registre e controle os pagamentos mensais dos atletas vinculados, com
+          integração automática ao financeiro do racha.
         </p>
-        <div className="mb-4 flex flex-wrap gap-4 items-end">
+        <p className="mb-5 text-xs text-yellow-300">
+          O valor de cada mensalidade é calculado com base nos dias vinculados do atleta e na agenda
+          oficial do racha no período selecionado.
+        </p>
+
+        <div className="mb-4 grid grid-cols-1 gap-3 rounded-2xl border border-neutral-700 bg-neutral-900/80 p-4 md:grid-cols-2 lg:grid-cols-5">
           <div>
-            <label className="block text-sm text-gray-300 font-bold mb-1">
-              Valor por dia jogado (R$)
-            </label>
+            <label className="mb-1 block text-xs font-bold text-gray-300">Competência</label>
+            <div className="rounded-md border border-yellow-500/50 bg-yellow-500/10 px-3 py-2 text-sm font-semibold text-yellow-300">
+              {competenciaTexto}
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-gray-300">Mês</label>
+            <select
+              value={String(competenciaMes)}
+              onChange={(event) => setCompetenciaMes(Number(event.target.value))}
+              className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white"
+            >
+              {MESES.map((mesNome, index) => (
+                <option key={mesNome} value={String(index + 1)}>
+                  {mesNome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-gray-300">Ano</label>
+            <select
+              value={String(competenciaAno)}
+              onChange={(event) => setCompetenciaAno(Number(event.target.value))}
+              className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white"
+            >
+              {yearsOptions.map((year) => (
+                <option key={year} value={String(year)}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-gray-300">Valor por dia (R$)</label>
             <input
               type="number"
               min={1}
               step="0.01"
               value={valorPorDia}
-              onChange={(e) => setValorPorDia(Number(e.target.value))}
-              className="bg-neutral-800 border border-neutral-700 text-white rounded px-2 py-1 text-left"
-              required
+              onChange={(event) => setValorPorDia(Number(event.target.value || 0))}
+              className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white"
             />
           </div>
-          <div className="w-full md:w-auto">
-            <div className="mb-2 flex flex-wrap items-center gap-2 text-base font-semibold">
-              <span>
-                {nomeMes} {anoAtual}:
-              </span>
-              {diasDaSemanaDoRacha.length > 0 ? (
-                diasDaSemanaDoRacha.map((dia, i) => (
-                  <span
-                    key={dia}
-                    title={`${DIAS_SEMANA_LABEL[dia]}: ${totalJogosPorDia[i]} jogos`}
-                    className="bg-neutral-700 px-3 py-1 rounded-full text-yellow-400 border border-yellow-700 text-sm shadow hover:bg-yellow-800 transition"
-                  >
-                    {DIAS_SEMANA_LABEL[dia].slice(0, 3)} <b>({totalJogosPorDia[i]})</b>
-                  </span>
-                ))
-              ) : (
-                <span className="text-sm text-gray-400">
-                  {isAgendaError ? "Agenda indisponível" : "Cadastre dias e horários para calcular"}
-                </span>
-              )}
-              <span className="ml-2 text-gray-300 text-sm font-normal">
-                | Total: <b>{totalJogosNoMes}</b> jogos · {totalSemanasNoMes} semanas
-              </span>
-            </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              className="w-full rounded-md bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
+              onClick={() => setConfirmacaoLoteAberta(true)}
+              disabled={mensalistasPendentes.length === 0 || loadingInicial || processandoLote}
+            >
+              Registrar pagamento de todos os pendentes
+            </button>
           </div>
-        </div>
-        {totalSemanasNoMes === 5 && (
-          <div className="mb-3 p-3 rounded-lg border border-yellow-700 bg-yellow-900/70 text-yellow-300 text-sm">
-            <b>Atenção:</b> Este mês ({nomeMes}/{anoAtual}) possui <b>5 semanas</b> com racha
-            agendado. O valor já considera todos os jogos previstos para este mês!
-          </div>
-        )}
-        <div className="mb-4 font-bold text-base text-gray-200">
-          Valor total dos mensalistas do mês:{" "}
-          <span className="text-green-400">R$ {totalMensalistas.toFixed(2)}</span>
         </div>
 
-        {isJogadoresLoading ? (
-          <div className="py-6 text-gray-300">Carregando jogadores...</div>
+        <div className="mb-4 rounded-2xl border border-neutral-700 bg-neutral-900/60 p-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-200">
+            <span className="text-yellow-300">Agenda oficial:</span>
+            {diasDaSemanaDoRacha.length > 0 ? (
+              diasDaSemanaDoRacha.map((dia, index) => (
+                <span
+                  key={dia}
+                  className="rounded-full border border-yellow-600/60 bg-neutral-800 px-3 py-1 text-xs text-yellow-300"
+                  title={`${DIAS_SEMANA_LABEL[dia]}: ${totalJogosPorDia[index]} jogo(s) no mês`}
+                >
+                  {DIAS_SEMANA_LABEL[dia].slice(0, 3)} ({totalJogosPorDia[index]})
+                </span>
+              ))
+            ) : (
+              <span className="text-xs text-gray-400">
+                {isAgendaError
+                  ? "Agenda indisponível"
+                  : "Cadastre os dias da agenda para calcular."}
+              </span>
+            )}
+            <span className="text-xs text-gray-400">
+              Total: {totalJogosNoMes} jogo(s) • {totalSemanasNoMes} semana(s)
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-gray-300">
+            A mensalidade é calculada automaticamente com base nos dias vinculados de cada atleta e
+            na agenda oficial do racha para o mês selecionado.
+          </p>
+          <p className="mt-1 text-xs text-yellow-300">
+            Referência de agenda: <span className="font-semibold">{agendaDiasLabel}</span>
+          </p>
+        </div>
+
+        {totalSemanasNoMes === 5 && (
+          <div className="mb-4 rounded-xl border border-yellow-700 bg-yellow-900/60 p-3 text-sm text-yellow-200">
+            Este período possui 5 semanas com jogos na agenda. O cálculo já considera todas as
+            partidas previstas.
+          </div>
+        )}
+
+        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-4">
+          <button
+            type="button"
+            className={`${cardBaseClass} ${filtroRapido === "todos" ? cardAtivoClass : cardInativoClass}`}
+            onClick={() => setFiltroRapido("todos")}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Total previsto
+            </p>
+            <p className="mt-2 text-2xl font-bold text-white">{formatCurrency(totalPrevisto)}</p>
+            <p className="mt-1 text-xs text-gray-400">Valor estimado para recebimento no mês.</p>
+          </button>
+
+          <button
+            type="button"
+            className={`${cardBaseClass} ${filtroRapido === "pagos" ? cardAtivoClass : cardInativoClass}`}
+            onClick={() => setFiltroRapido("pagos")}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Total recebido
+            </p>
+            <p className="mt-2 text-2xl font-bold text-emerald-300">
+              {formatCurrency(totalRecebido)}
+            </p>
+            <p className="mt-1 text-xs text-gray-400">Pagamentos já confirmados neste período.</p>
+          </button>
+
+          <button
+            type="button"
+            className={`${cardBaseClass} ${filtroRapido === "pendentes" ? cardAtivoClass : cardInativoClass}`}
+            onClick={() => setFiltroRapido("pendentes")}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Total pendente
+            </p>
+            <p className="mt-2 text-2xl font-bold text-amber-300">
+              {formatCurrency(totalPendente)}
+            </p>
+            <p className="mt-1 text-xs text-gray-400">Valores ainda aguardando confirmação.</p>
+          </button>
+
+          <div className={`${cardBaseClass} ${cardInativoClass}`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              Situação dos atletas
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setFiltroRapido("pagos")}
+                className={`rounded-md border px-3 py-1 text-xs font-semibold ${
+                  filtroRapido === "pagos"
+                    ? "border-emerald-400 bg-emerald-400/20 text-emerald-200"
+                    : "border-neutral-600 text-gray-200 hover:border-emerald-400/70"
+                }`}
+              >
+                Pagos: {quantidadePagos}
+              </button>
+              <button
+                type="button"
+                onClick={() => setFiltroRapido("pendentes")}
+                className={`rounded-md border px-3 py-1 text-xs font-semibold ${
+                  filtroRapido === "pendentes"
+                    ? "border-amber-400 bg-amber-400/20 text-amber-200"
+                    : "border-neutral-600 text-gray-200 hover:border-amber-400/70"
+                }`}
+              >
+                Pendentes: {quantidadePendentes}
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-gray-400">
+              Quantidade de mensalistas pagos e pendentes no mês.
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-neutral-700 bg-neutral-900/70 p-4">
+          <div className="mb-2 flex items-center justify-between text-sm">
+            <span className="font-semibold text-gray-200">
+              Progresso financeiro: {formatCurrency(totalRecebido)} de{" "}
+              {formatCurrency(totalPrevisto)}
+            </span>
+            <span className="text-xs text-gray-400">
+              {quantidadePagos} de {mensalistasCalculados.length} atleta(s) com pagamento confirmado
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-neutral-800">
+            <div
+              className="h-2 rounded-full bg-emerald-400 transition-all"
+              style={{ width: `${progressoRecebimento}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-6">
+          <div className="lg:col-span-2">
+            <label className="mb-1 block text-xs font-bold text-gray-300">Busca por atleta</label>
+            <input
+              value={busca}
+              onChange={(event) => setBusca(event.target.value)}
+              className="w-full rounded-md border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-white"
+              placeholder="Digite o nome do atleta"
+            />
+          </div>
+          <div className="lg:col-span-4 flex flex-wrap items-end gap-2">
+            {[
+              { key: "todos", label: "Todos" },
+              { key: "pagos", label: "Pagos" },
+              { key: "pendentes", label: "Pendentes" },
+              { key: "segunda", label: "Segunda" },
+              { key: "sabado", label: "Sábado" },
+              { key: "segunda-sabado", label: "Segunda e Sábado" },
+            ].map((filtro) => (
+              <button
+                key={filtro.key}
+                type="button"
+                className={`rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                  filtroRapido === (filtro.key as FiltroRapido)
+                    ? "border-yellow-400 bg-yellow-400/20 text-yellow-200"
+                    : "border-neutral-700 bg-neutral-900 text-gray-200 hover:border-yellow-500/70"
+                }`}
+                onClick={() => setFiltroRapido(filtro.key as FiltroRapido)}
+              >
+                {filtro.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loadingInicial ? (
+          <div className="rounded-xl border border-neutral-700 bg-neutral-900/70 p-6 text-sm text-gray-300">
+            Carregando mensalistas e dados financeiros...
+          </div>
+        ) : mensalistasCalculados.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-neutral-600 bg-neutral-900/70 p-8 text-center">
+            <h2 className="text-lg font-semibold text-yellow-300">Nenhum mensalista encontrado</h2>
+            <p className="mt-2 text-sm text-gray-300">
+              Não há atletas mensalistas vinculados para esta competência. Cadastre mensalistas em{" "}
+              <span className="font-semibold text-yellow-300">Jogadores &gt; Mensalistas</span> para
+              iniciar os lançamentos financeiros.
+            </p>
+          </div>
         ) : (
-          <TabelaMensalistas
-            mensalistas={valoresMensais.map((m) => ({
-              id: m.id,
-              nome: m.nome,
-              status: m.status,
-              valor: m.valorFinal,
-              ultimoPagamento: m.ultimoPagamento,
-            }))}
-            agendaItems={agendaOrdenada}
-            getDiasSelecionados={getDiasSelecionados}
-            pagamentos={pagamentos}
-            onTogglePagamento={togglePagamento}
-            onTogglePagamentoAll={togglePagamentoAll}
-            onOpenGestaoDias={abrirGestaoDias}
-          />
+          <>
+            <div className="mb-2 text-xs text-gray-400">
+              Exibindo {mensalistasFiltrados.length} de {mensalistasCalculados.length} atleta(s).
+            </div>
+            <TabelaMensalistas
+              mensalistas={mensalistasFiltrados}
+              agendaItems={agendaOrdenada}
+              getDiasSelecionados={getDiasSelecionados}
+              onSaveDias={salvarDiasSelecionados}
+              onRegistrarPagamento={(athleteId) => setConfirmacaoPagamento({ athleteId })}
+              onVerLancamento={(lancamentoId) => abrirPrestacaoComLancamento(lancamentoId)}
+              onCancelarPagamento={(athleteId) => setConfirmacaoCancelamento({ athleteId })}
+              processandoAthleteId={processandoAthleteId}
+              processandoLote={processandoLote}
+            />
+          </>
         )}
       </section>
+
+      <ConfirmacaoModal
+        open={Boolean(atletaSelecionadoPagamento)}
+        title="Confirmar pagamento da mensalidade"
+        description={
+          atletaSelecionadoPagamento
+            ? `Você está prestes a registrar o pagamento da mensalidade de ${atletaSelecionadoPagamento.nome}, referente a ${competenciaTexto}.`
+            : ""
+        }
+        confirmLabel="Confirmar pagamento"
+        cancelLabel="Cancelar"
+        isLoading={Boolean(processandoAthleteId)}
+        onClose={() => setConfirmacaoPagamento(null)}
+        onConfirm={confirmarPagamentoIndividual}
+      >
+        {atletaSelecionadoPagamento && (
+          <div className="space-y-1 text-xs text-gray-200">
+            <div>
+              <span className="text-gray-400">Atleta:</span> {atletaSelecionadoPagamento.nome}
+            </div>
+            <div>
+              <span className="text-gray-400">Competência:</span> {competenciaTexto}
+            </div>
+            <div>
+              <span className="text-gray-400">Valor:</span>{" "}
+              {formatCurrency(atletaSelecionadoPagamento.valor)}
+            </div>
+            <div>
+              <span className="text-gray-400">Dias vinculados:</span>{" "}
+              {atletaSelecionadoPagamento.diasResumo}
+            </div>
+            <div>
+              <span className="text-gray-400">Tipo do lançamento:</span> Receita
+            </div>
+            <div>
+              <span className="text-gray-400">Categoria:</span> Mensalidade
+            </div>
+            <p className="pt-1 text-[11px] text-gray-400">
+              Você está confirmando o pagamento da mensalidade deste atleta. O lançamento será
+              enviado automaticamente para Prestação de Contas.
+            </p>
+          </div>
+        )}
+      </ConfirmacaoModal>
+
+      <ConfirmacaoModal
+        open={confirmacaoLoteAberta}
+        title="Confirmar pagamento em massa"
+        description={`Você está prestes a registrar o pagamento de todos os mensalistas pendentes em ${competenciaTexto}. Essa ação criará os lançamentos financeiros correspondentes para os atletas que ainda não possuem pagamento registrado neste período.`}
+        confirmLabel="Confirmar pagamentos"
+        cancelLabel="Voltar"
+        isLoading={processandoLote}
+        onClose={() => setConfirmacaoLoteAberta(false)}
+        onConfirm={confirmarPagamentoEmLote}
+      >
+        <div className="space-y-1 text-xs text-gray-200">
+          <div>
+            <span className="text-gray-400">Competência:</span> {competenciaTexto}
+          </div>
+          <div>
+            <span className="text-gray-400">Atletas pendentes:</span> {mensalistasPendentes.length}
+          </div>
+          <div>
+            <span className="text-gray-400">Valor total a receber:</span>{" "}
+            {formatCurrency(totalPendente)}
+          </div>
+          <p className="pt-1 text-[11px] text-gray-400">
+            Essa ação confirmará os pagamentos pendentes do período selecionado e lançará os valores
+            automaticamente no financeiro.
+          </p>
+        </div>
+      </ConfirmacaoModal>
+
+      <ConfirmacaoModal
+        open={Boolean(atletaSelecionadoCancelamento)}
+        title="Cancelar pagamento registrado"
+        description={
+          atletaSelecionadoCancelamento
+            ? `Você está prestes a cancelar o pagamento de ${atletaSelecionadoCancelamento.nome} em ${competenciaTexto}. O lançamento será marcado como cancelado, com auditoria administrativa, e deixará de compor o saldo da Prestação de Contas.`
+            : ""
+        }
+        confirmLabel="Confirmar cancelamento"
+        cancelLabel="Voltar"
+        confirmVariant="danger"
+        isLoading={Boolean(processandoAthleteId)}
+        onClose={() => setConfirmacaoCancelamento(null)}
+        onConfirm={confirmarCancelamentoPagamento}
+      />
+
+      <SucessoModal
+        open={Boolean(sucessoModal)}
+        title={sucessoModal?.title || ""}
+        description={sucessoModal?.description || ""}
+        onClose={() => setSucessoModal(null)}
+        onVerLancamento={
+          sucessoModal?.lancamentoId
+            ? () => {
+                abrirPrestacaoComLancamento(sucessoModal.lancamentoId || "");
+                setSucessoModal(null);
+              }
+            : undefined
+        }
+      />
     </>
   );
 }

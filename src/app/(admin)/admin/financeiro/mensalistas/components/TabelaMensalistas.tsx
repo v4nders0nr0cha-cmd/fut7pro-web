@@ -1,13 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useState } from "react";
+import MensalistaDiasModal from "@/components/admin/MensalistaDiasModal";
 
 export type MensalistaResumo = {
   id: string;
   nome: string;
-  status: "Em dia" | "Inadimplente" | "A receber";
   valor: number;
-  ultimoPagamento: string | null;
+  statusPagamento: "pago" | "pendente";
+  pagamentoData: string | null;
+  diasResumo: string;
+  jogosNoMes: number;
+  classificacaoDia: "segunda" | "sabado" | "segunda-sabado" | "outros";
+  ultimoLancamentoId?: string | null;
+  marcadoSemLancamento?: boolean;
 };
 
 type AgendaItem = {
@@ -20,149 +26,222 @@ type Props = {
   mensalistas: MensalistaResumo[];
   agendaItems: AgendaItem[];
   getDiasSelecionados: (id: string) => string[];
-  pagamentos: Record<string, boolean>;
-  onTogglePagamento: (id: string) => void | Promise<void>;
-  onTogglePagamentoAll: (checked: boolean, athleteIds: string[]) => void | Promise<void>;
-  onOpenGestaoDias: (athleteId: string) => void;
+  onSaveDias: (id: string, diasSelecionados: string[]) => void | Promise<void>;
+  onRegistrarPagamento: (athleteId: string) => void | Promise<void>;
+  onVerLancamento: (lancamentoId: string, athleteId: string) => void;
+  onCancelarPagamento?: (athleteId: string) => void | Promise<void>;
+  processandoAthleteId?: string | null;
+  processandoLote?: boolean;
 };
-
-const DIAS_SEMANA_LABEL = [
-  "Domingo",
-  "Segunda-feira",
-  "Terça-feira",
-  "Quarta-feira",
-  "Quinta-feira",
-  "Sexta-feira",
-  "Sábado",
-];
-
-function formatAgendaLabel(weekday: number, time: string) {
-  const dia = DIAS_SEMANA_LABEL[weekday] ?? "Dia";
-  const hora = (time || "").slice(0, 5);
-  return `${dia} ${hora}`.trim();
-}
 
 export default function TabelaMensalistas({
   mensalistas,
   agendaItems,
   getDiasSelecionados,
-  pagamentos,
-  onTogglePagamento,
-  onTogglePagamentoAll,
-  onOpenGestaoDias,
+  onSaveDias,
+  onRegistrarPagamento,
+  onVerLancamento,
+  onCancelarPagamento,
+  processandoAthleteId,
+  processandoLote = false,
 }: Props) {
-  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalJogador, setModalJogador] = useState<MensalistaResumo | null>(null);
+  const [modalSaving, setModalSaving] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
-  const agendaOptions = useMemo(() => {
-    return [...agendaItems]
-      .sort((a, b) => {
-        if (a.weekday !== b.weekday) return a.weekday - b.weekday;
-        return a.time.localeCompare(b.time);
-      })
-      .map((item) => ({
-        ...item,
-        label: formatAgendaLabel(item.weekday, item.time),
-      }));
+  const agendaOrdenada = useMemo(() => {
+    return [...agendaItems].sort((a, b) => {
+      if (a.weekday !== b.weekday) return a.weekday - b.weekday;
+      return a.time.localeCompare(b.time);
+    });
   }, [agendaItems]);
 
-  const agendaLabelById = useMemo(() => {
-    const map: Record<string, string> = {};
-    agendaOptions.forEach((item) => {
-      map[item.id] = item.label;
-    });
-    return map;
-  }, [agendaOptions]);
+  const agendaIds = useMemo(() => agendaOrdenada.map((item) => item.id), [agendaOrdenada]);
 
-  const checkedCount = useMemo(
-    () => mensalistas.reduce((count, mensalista) => count + (pagamentos[mensalista.id] ? 1 : 0), 0),
-    [mensalistas, pagamentos]
-  );
+  const abrirModalDias = (mensalista: MensalistaResumo) => {
+    setModalJogador(mensalista);
+    setModalError(null);
+    setModalSaving(false);
+    setModalOpen(true);
+  };
 
-  const allChecked = mensalistas.length > 0 && checkedCount === mensalistas.length;
-  const someChecked = checkedCount > 0 && checkedCount < mensalistas.length;
+  const fecharModal = () => {
+    if (modalSaving) return;
+    setModalOpen(false);
+    setModalJogador(null);
+    setModalError(null);
+    setModalSaving(false);
+  };
 
-  useEffect(() => {
-    if (headerCheckboxRef.current) {
-      headerCheckboxRef.current.indeterminate = someChecked;
+  const modalSelectedDias = useMemo(() => {
+    if (!modalJogador) return [];
+    const selected = getDiasSelecionados(modalJogador.id);
+    const available = new Set(agendaIds);
+    return selected.filter((id) => available.has(id));
+  }, [agendaIds, getDiasSelecionados, modalJogador]);
+
+  const salvarDias = async (diasSelecionados: string[]) => {
+    if (!modalJogador || modalSaving) return;
+    setModalSaving(true);
+    setModalError(null);
+    try {
+      await onSaveDias(modalJogador.id, diasSelecionados);
+      setModalOpen(false);
+      setModalJogador(null);
+    } catch (saveError) {
+      setModalError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Não foi possível salvar os dias do mensalista."
+      );
+    } finally {
+      setModalSaving(false);
     }
-  }, [someChecked]);
+  };
 
-  const athleteIds = useMemo(() => mensalistas.map((mensalista) => mensalista.id), [mensalistas]);
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+    }).format(value ?? 0);
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return "-";
+    const dateBase = value.includes("T") ? value.slice(0, 10) : value;
+    if (!dateBase.includes("-")) return dateBase;
+    return dateBase.split("-").reverse().join("/");
+  };
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full border-separate border-spacing-y-2 text-sm">
+      <table className="min-w-[980px] w-full text-sm border-separate border-spacing-y-2">
         <thead>
           <tr className="text-xs text-gray-400">
-            <th className="px-2 py-2 text-left">Nome</th>
-            <th className="px-2 py-2 text-left">Status</th>
-            <th className="px-2 py-2 text-left">Valor</th>
-            <th className="px-2 py-2 text-left">Dias vinculados</th>
-            <th className="px-2 py-2 text-left">
-              <label className="flex items-center gap-2">
-                <input
-                  ref={headerCheckboxRef}
-                  type="checkbox"
-                  className="h-4 w-4 rounded-none accent-yellow-400"
-                  checked={allChecked}
-                  onChange={(event) => void onTogglePagamentoAll(event.target.checked, athleteIds)}
-                  aria-label="Marcar todos como pago"
-                  title="Marcar todos"
-                  disabled={mensalistas.length === 0}
-                />
-                <span>Pago</span>
-              </label>
-            </th>
-            <th className="px-2 py-2 text-left"></th>
+            <th className="text-left px-3 py-2">Atleta</th>
+            <th className="text-left px-3 py-2">Status</th>
+            <th className="text-left px-3 py-2">Valor</th>
+            <th className="text-left px-3 py-2">Dias vinculados</th>
+            <th className="text-left px-3 py-2">Pagamento</th>
+            <th className="text-left px-3 py-2">Ações</th>
           </tr>
         </thead>
         <tbody>
-          {mensalistas.map((m) => {
-            const diasIds = getDiasSelecionados(m.id);
-            const diasLabel =
-              diasIds.length > 0
-                ? diasIds.map((id) => agendaLabelById[id] || "Dia removido").join(", ")
-                : "Nenhum dia vinculado";
-
-            return (
-              <tr key={m.id} className="rounded-lg bg-neutral-800 transition hover:bg-neutral-700">
-                <td className="px-2 py-1 font-semibold">{m.nome}</td>
-                <td
-                  className={
-                    "px-2 py-1 font-bold " +
-                    (m.status === "Em dia"
-                      ? "text-green-400"
-                      : m.status === "A receber"
-                        ? "text-yellow-400"
-                        : "text-red-400")
+          {mensalistas.length === 0 && (
+            <tr>
+              <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">
+                Nenhum mensalista encontrado para o período selecionado.
+              </td>
+            </tr>
+          )}
+          {mensalistas.map((m) => (
+            <tr
+              key={m.id}
+              className="bg-neutral-900/90 hover:bg-neutral-800 transition rounded-xl border border-neutral-800"
+            >
+              <td className="px-3 py-3">
+                <div className="font-semibold text-white">{m.nome}</div>
+                <div className="text-xs text-gray-400">{m.jogosNoMes} jogo(s) no mês</div>
+              </td>
+              <td className="px-3 py-3">
+                {m.statusPagamento === "pago" ? (
+                  <span className="inline-flex items-center rounded-full border border-emerald-500/60 bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-300">
+                    Pago
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-amber-500/60 bg-amber-500/15 px-3 py-1 text-xs font-semibold text-amber-300">
+                    Pendente
+                  </span>
+                )}
+              </td>
+              <td className="px-3 py-3 text-base font-bold text-emerald-300">
+                {formatCurrency(m.valor)}
+              </td>
+              <td className="px-3 py-3">
+                <div className="text-xs text-gray-300 leading-relaxed">{m.diasResumo}</div>
+                <button
+                  className="mt-2 text-xs text-yellow-400 hover:text-yellow-300 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => abrirModalDias(m)}
+                  disabled={agendaOrdenada.length === 0 || Boolean(processandoAthleteId)}
+                  title={
+                    agendaOrdenada.length === 0
+                      ? "Cadastre dias e horários do racha para habilitar."
+                      : "Definir dias vinculados."
                   }
                 >
-                  {m.status}
-                </td>
-                <td className="px-2 py-1">R$ {m.valor.toFixed(2)}</td>
-                <td className="px-2 py-1 text-xs text-zinc-200">{diasLabel}</td>
-                <td className="px-2 py-1">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 cursor-pointer rounded-none accent-yellow-400"
-                    checked={Boolean(pagamentos[m.id])}
-                    onChange={() => void onTogglePagamento(m.id)}
-                    aria-label={`Marcar ${m.nome} como pago`}
-                  />
-                </td>
-                <td className="px-2 py-1">
-                  <button
-                    className="text-xs text-yellow-400 hover:underline"
-                    onClick={() => onOpenGestaoDias(m.id)}
-                  >
-                    Editar em Jogadores
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
+                  Definir dias
+                </button>
+              </td>
+              <td className="px-3 py-3">
+                {m.statusPagamento === "pago" ? (
+                  <div>
+                    <div className="text-xs font-semibold text-emerald-300">
+                      Pago em {formatDate(m.pagamentoData)}
+                    </div>
+                    {m.marcadoSemLancamento && (
+                      <div className="mt-1 text-[11px] text-amber-300">
+                        Marcado como pago sem lançamento financeiro.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400">Aguardando pagamento</span>
+                )}
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-wrap gap-2">
+                  {m.statusPagamento === "pago" ? (
+                    <>
+                      <button
+                        type="button"
+                        className="rounded-md border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-50"
+                        onClick={() =>
+                          m.ultimoLancamentoId && onVerLancamento(m.ultimoLancamentoId, m.id)
+                        }
+                        disabled={!m.ultimoLancamentoId || Boolean(processandoAthleteId)}
+                      >
+                        Ver lançamento
+                      </button>
+                      {onCancelarPagamento && (
+                        <button
+                          type="button"
+                          className="rounded-md border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/10 disabled:opacity-50"
+                          onClick={() => void onCancelarPagamento(m.id)}
+                          disabled={processandoAthleteId === m.id || processandoLote}
+                        >
+                          {processandoAthleteId === m.id ? "Cancelando..." : "Cancelar pagamento"}
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="rounded-md bg-yellow-400 px-3 py-1.5 text-xs font-bold text-black hover:bg-yellow-300 disabled:opacity-50"
+                      onClick={() => void onRegistrarPagamento(m.id)}
+                      disabled={processandoAthleteId === m.id || processandoLote}
+                    >
+                      {processandoAthleteId === m.id ? "Registrando..." : "Registrar pagamento"}
+                    </button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
+
+      <MensalistaDiasModal
+        open={modalOpen && Boolean(modalJogador)}
+        athleteName={modalJogador?.nome}
+        agendaItems={agendaOrdenada}
+        selectedAgendaIds={modalSelectedDias}
+        onClose={fecharModal}
+        onSave={salvarDias}
+        saving={modalSaving}
+        error={modalError}
+        ariaLabel="Editar dias do mensalista"
+      />
     </div>
   );
 }

@@ -24,12 +24,18 @@ export interface LancamentoFinanceiro {
   rachaId?: string;
   tenantId?: string;
   tenantSlug?: string;
+  sourceType?: string;
+  sourceId?: string;
+  athleteId?: string;
+  auto?: boolean;
   comprovanteUrl?: string;
   categoria?: string;
   adminNome?: string;
   adminEmail?: string;
   metodoPagamento?: string;
   competencia?: string;
+  competenciaAno?: number;
+  competenciaMes?: number;
   observacoes?: string;
   recorrente?: boolean;
   anexos?: string[];
@@ -39,6 +45,10 @@ export interface LancamentoFinanceiro {
   referenciaSlug?: string;
   createdAt?: string;
   updatedAt?: string;
+  canceledAt?: string | null;
+  canceledById?: string | null;
+  cancelReason?: string | null;
+  createdById?: string | null;
 }
 
 export interface ResumoFinanceiro {

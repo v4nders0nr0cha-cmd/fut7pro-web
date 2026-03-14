@@ -23,6 +23,19 @@ type FinanceiroApiItem = {
   tenantId?: string;
   comprovanteUrl?: string;
   observacoes?: string;
+  sourceType?: string;
+  sourceId?: string;
+  athleteId?: string;
+  auto?: boolean;
+  competencia?: string;
+  competenciaAno?: number;
+  competenciaMes?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  canceledAt?: string | null;
+  canceledById?: string | null;
+  cancelReason?: string | null;
+  createdById?: string | null;
 };
 
 const fetcher = async (url: string): Promise<FinanceiroApiItem[]> => {
@@ -56,6 +69,19 @@ const normalizeLancamento = (item: FinanceiroApiItem): LancamentoFinanceiro => {
     observacoes: item.observacoes,
     responsavel: item.responsavel ?? item.adminNome ?? "",
     tenantId: item.tenantId,
+    sourceType: item.sourceType,
+    sourceId: item.sourceId,
+    athleteId: item.athleteId,
+    auto: typeof item.auto === "boolean" ? item.auto : undefined,
+    competencia: item.competencia,
+    competenciaAno: item.competenciaAno,
+    competenciaMes: item.competenciaMes,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    canceledAt: item.canceledAt,
+    canceledById: item.canceledById,
+    cancelReason: item.cancelReason,
+    createdById: item.createdById,
   };
 };
 
