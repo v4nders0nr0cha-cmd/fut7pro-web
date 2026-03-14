@@ -126,7 +126,7 @@ export function useMensalistaCompetencias(year: number, month: number, enabled =
       }
 
       const body = await response.json();
-      await mutate();
+      await mutate().catch(() => undefined);
       return body;
     });
 
@@ -151,7 +151,7 @@ export function useMensalistaCompetencias(year: number, month: number, enabled =
       }
 
       const body = await response.json();
-      await mutate();
+      await mutate().catch(() => undefined);
       return body;
     });
 
@@ -176,7 +176,7 @@ export function useMensalistaCompetencias(year: number, month: number, enabled =
       }
 
       const body = await response.json();
-      await mutate();
+      await mutate().catch(() => undefined);
       return body;
     });
 
