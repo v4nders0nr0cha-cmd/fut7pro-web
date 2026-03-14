@@ -1,5 +1,6 @@
 import type { LancamentoFinanceiro } from "@/types/financeiro";
 import { useState } from "react";
+import { extractMensalidadeMetadata } from "@/lib/financeiro/mensalistas";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -30,9 +31,14 @@ const formatDate = (value?: string) => {
 type Props = {
   lancamentos: LancamentoFinanceiro[];
   onEdit?: (item: LancamentoFinanceiro) => void;
+  destaqueLancamentoId?: string | null;
 };
 
-export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
+export default function TabelaLancamentos({
+  lancamentos,
+  onEdit,
+  destaqueLancamentoId = null,
+}: Props) {
   const [showAll, setShowAll] = useState(false);
   const limit = 6;
 
@@ -69,9 +75,18 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                   : "Receita";
             const valor = l.valor ?? 0;
             const comprovanteKind = resolveComprovanteKind(l.comprovanteUrl);
+            const metadataMensalistas = extractMensalidadeMetadata(l);
+            const isMensalistas = Boolean(metadataMensalistas);
 
             return (
-              <tr key={l.id} className="bg-neutral-800 hover:bg-neutral-700 transition rounded-lg">
+              <tr
+                key={l.id}
+                className={`rounded-lg transition ${
+                  destaqueLancamentoId === l.id
+                    ? "bg-emerald-600/15 ring-1 ring-emerald-400/60"
+                    : "bg-neutral-800 hover:bg-neutral-700"
+                }`}
+              >
                 <td className="px-2 py-1 font-mono">{formatDate(l.data)}</td>
                 <td
                   className={`px-2 py-1 ${tipo === "Receita" ? "text-green-400" : "text-red-400"}`}
@@ -81,7 +96,17 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                 <td className="px-2 py-1">{l.categoria || "-"}</td>
                 <td className="px-2 py-1">
                   <div className="text-white">{l.descricao || "-"}</div>
-                  {l.observacoes && (
+                  {isMensalistas && metadataMensalistas && (
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
+                      <span className="rounded border border-blue-400/40 bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-200">
+                        Origem: Mensalistas
+                      </span>
+                      <span className="text-[11px] text-gray-400">
+                        {metadataMensalistas.athleteNome} • {metadataMensalistas.competencia}
+                      </span>
+                    </div>
+                  )}
+                  {l.observacoes && !isMensalistas && (
                     <div className="text-xs text-gray-400 mt-1">Obs: {l.observacoes}</div>
                   )}
                 </td>
@@ -115,13 +140,17 @@ export default function TabelaLancamentos({ lancamentos, onEdit }: Props) {
                   )}
                 </td>
                 <td className="px-2 py-1">
-                  <button
-                    className="text-xs text-yellow-400 hover:underline"
-                    onClick={() => onEdit && onEdit(l)}
-                    type="button"
-                  >
-                    Editar
-                  </button>
+                  {isMensalistas ? (
+                    <span className="text-xs text-gray-500">Gerado automaticamente</span>
+                  ) : (
+                    <button
+                      className="text-xs text-yellow-400 hover:underline"
+                      onClick={() => onEdit && onEdit(l)}
+                      type="button"
+                    >
+                      Editar
+                    </button>
+                  )}
                 </td>
               </tr>
             );

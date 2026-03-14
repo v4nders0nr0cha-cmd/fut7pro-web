@@ -17,6 +17,25 @@ type UpdateCompetenciaPayload = {
   isPaid?: boolean;
 };
 
+type RegisterPagamentoPayload = {
+  value: number;
+  athleteName?: string;
+  agendaResumo?: string[];
+};
+
+type CancelPagamentoPayload = {
+  reason?: string;
+};
+
+type RegisterPagamentoLotePayload = {
+  items: Array<{
+    athleteId: string;
+    value: number;
+    athleteName?: string;
+    agendaResumo?: string[];
+  }>;
+};
+
 const fetcher = async (url: string) => {
   const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
@@ -86,6 +105,81 @@ export function useMensalistaCompetencias(year: number, month: number, enabled =
       return body;
     });
 
+  const registerPagamento = async (athleteId: string, payload: RegisterPagamentoPayload) =>
+    apiState.handleAsync(async () => {
+      const response = await fetch(
+        `/api/admin/financeiro/mensalistas/pagamentos/${encodeURIComponent(athleteId)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            year,
+            month,
+            ...payload,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const message = await readErrorMessage(response, "Erro ao registrar pagamento mensalista");
+        throw new Error(message);
+      }
+
+      const body = await response.json();
+      await mutate().catch(() => undefined);
+      return body;
+    });
+
+  const registerPagamentoLote = async (payload: RegisterPagamentoLotePayload) =>
+    apiState.handleAsync(async () => {
+      const response = await fetch("/api/admin/financeiro/mensalistas/pagamentos/lote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          year,
+          month,
+          ...payload,
+        }),
+      });
+
+      if (!response.ok) {
+        const message = await readErrorMessage(
+          response,
+          "Erro ao registrar pagamentos em lote de mensalistas"
+        );
+        throw new Error(message);
+      }
+
+      const body = await response.json();
+      await mutate().catch(() => undefined);
+      return body;
+    });
+
+  const cancelPagamento = async (athleteId: string, payload?: CancelPagamentoPayload) =>
+    apiState.handleAsync(async () => {
+      const response = await fetch(
+        `/api/admin/financeiro/mensalistas/pagamentos/${encodeURIComponent(athleteId)}/cancelar`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            year,
+            month,
+            reason: payload?.reason,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const message = await readErrorMessage(response, "Erro ao cancelar pagamento mensalista");
+        throw new Error(message);
+      }
+
+      const body = await response.json();
+      await mutate().catch(() => undefined);
+      return body;
+    });
+
   const errorMessage = apiState.error || (error instanceof Error ? error.message : null);
 
   return {
@@ -94,6 +188,9 @@ export function useMensalistaCompetencias(year: number, month: number, enabled =
     isError: Boolean(error) || apiState.isError,
     error: errorMessage,
     updateCompetencia,
+    registerPagamento,
+    registerPagamentoLote,
+    cancelPagamento,
     mutate,
   };
 }
