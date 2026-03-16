@@ -24,60 +24,95 @@ function parseCurrencyPtBr(value: string): number {
 
 async function loginAdmin(page: Page) {
   await page.goto("/admin/login", { waitUntil: "domcontentloaded", timeout: 60000 });
-  const origin = new URL(page.url()).origin;
-  let sessionEstablished = false;
-  for (let attempt = 0; attempt < 3 && !sessionEstablished; attempt += 1) {
-    const csrfResponse = await page.request.get("/api/auth/csrf");
-    const csrfBody = (await csrfResponse.json().catch(() => ({}))) as { csrfToken?: string };
-    const csrfToken = String(csrfBody?.csrfToken || "");
-    if (!csrfToken) {
-      await page.waitForTimeout(1000);
-      continue;
+  const submit = page.locator(
+    '[data-testid="admin-login-submit"], button:has-text("Entrar no painel")'
+  );
+  await expect(submit.first()).toBeEnabled({ timeout: 30000 });
+
+  const emailInput = page.locator('[data-testid="admin-login-email"], input[type="email"]').first();
+  const passwordInputLocator = page
+    .locator('[data-testid="admin-login-password"], input[type="password"]')
+    .first();
+  const passwordInputVisible = await passwordInputLocator
+    .isVisible({ timeout: 2000 })
+    .catch(() => false);
+  if (!passwordInputVisible) {
+    const legacyToggle = page
+      .getByRole("button", { name: /Usar senha \(legado\)|Entrar com senha/i })
+      .first();
+    const toggleVisible = await legacyToggle.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!toggleVisible) {
+      throw new Error("Login admin não exibiu campo de senha nem botão de modo legado.");
     }
+    await legacyToggle.click();
+  }
 
-    const callbackResponse = await page.request.post("/api/auth/callback/credentials?json=true", {
-      form: {
-        csrfToken,
-        email: adminEmail || "",
-        password: adminPassword || "",
-        callbackUrl: `${origin}/admin/selecionar-racha`,
-        json: "true",
-      },
-    });
+  const passwordInput = page
+    .locator('[data-testid="admin-login-password"], input[type="password"]')
+    .first();
+  await expect(passwordInput).toBeVisible({ timeout: 10000 });
 
-    const callbackBody = (await callbackResponse.json().catch(() => ({}))) as {
-      url?: string;
-      error?: string;
-    };
+  await emailInput.fill(adminEmail || "");
+  await passwordInput.fill(adminPassword || "");
+  await expect(emailInput).toHaveValue(adminEmail || "");
+  await expect(passwordInput).toHaveValue(adminPassword || "");
 
-    if (callbackBody?.error) {
-      throw new Error(
-        "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E."
-      );
-    }
+  const waitLoginState = async () =>
+    Promise.race([
+      page
+        .waitForURL(/\/admin\/(selecionar-racha|dashboard|status-assinatura)/, { timeout: 45000 })
+        .then(() => "redirect" as const)
+        .catch(() => null),
+      page
+        .locator('[role="alert"], [aria-live="polite"]')
+        .filter({ hasText: /E-mail ou senha inválidos|E-mail ou senha invalidos/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 12000 })
+        .then(() => "invalid_credentials" as const)
+        .catch(() => null),
+    ]);
 
-    if (!callbackResponse.ok()) {
-      await page.waitForTimeout(1000);
-      continue;
-    }
+  await submit.first().click();
+  let loginState = await waitLoginState();
 
-    const sessionResponse = await page.request.get("/api/auth/session");
-    const sessionBody = (await sessionResponse.json().catch(() => ({}))) as {
-      user?: { accessToken?: string };
-    };
-    sessionEstablished = Boolean(sessionBody?.user?.accessToken);
-    if (!sessionEstablished) {
-      await page.waitForTimeout(1000);
+  if (!loginState) {
+    for (let attempt = 0; attempt < 2 && !loginState; attempt += 1) {
+      await page.waitForTimeout(3000);
+      const currentPath = new URL(page.url()).pathname;
+      if (
+        currentPath === "/admin/selecionar-racha" ||
+        currentPath === "/admin/dashboard" ||
+        currentPath === "/admin/status-assinatura"
+      ) {
+        loginState = "redirect";
+        break;
+      }
+      const canRetry = await submit
+        .first()
+        .isEnabled()
+        .catch(() => false);
+      if (canRetry) {
+        await submit.first().click();
+      }
+      loginState = await waitLoginState();
     }
   }
 
-  if (!sessionEstablished) {
-    throw new Error("Sessão de admin não foi estabelecida após o login.");
+  if (loginState === "invalid_credentials") {
+    throw new Error(
+      "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E."
+    );
+  }
+
+  if (loginState !== "redirect") {
+    throw new Error(
+      "Login não redirecionou para /admin/selecionar-racha ou /admin/dashboard dentro do tempo esperado."
+    );
   }
 
   let currentPathname = "";
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    await page.goto("/admin/selecionar-racha", { waitUntil: "domcontentloaded", timeout: 60000 });
+    await page.goto("/admin/selecionar-racha", { waitUntil: "domcontentloaded", timeout: 45000 });
     currentPathname = new URL(page.url()).pathname;
     if (currentPathname !== "/admin/login") {
       break;
@@ -88,12 +123,23 @@ async function loginAdmin(page: Page) {
   if (page.url().includes("/admin/selecionar-racha")) {
     if (activeTenantSlug) {
       let selected = false;
+      let redirectTo: string | null = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const selectResponse = await page.request.post("/api/admin/hub/select", {
           data: { slug: activeTenantSlug },
           timeout: 60000,
         });
         if (selectResponse.ok()) {
+          const selectBody = (await selectResponse.json().catch(() => ({}))) as {
+            redirectTo?: string;
+            blocked?: boolean;
+          };
+          redirectTo =
+            typeof selectBody?.redirectTo === "string"
+              ? selectBody.redirectTo
+              : selectBody?.blocked
+                ? "/admin/status-assinatura"
+                : "/admin/dashboard";
           selected = true;
           break;
         }
@@ -110,6 +156,11 @@ async function loginAdmin(page: Page) {
       if (!hasActiveTenantCookie) {
         throw new Error("Cookie de tenant ativo não foi persistido após seleção do racha.");
       }
+
+      await page.goto(redirectTo || "/admin/dashboard", {
+        waitUntil: "domcontentloaded",
+        timeout: 60000,
+      });
     }
 
     await page
@@ -125,10 +176,20 @@ async function loginAdmin(page: Page) {
     })();
 
     if (afterSelectPathname === "/admin/selecionar-racha" && !activeTenantSlug) {
-      const selectButton = page
+      const selectDashboardButton = page
         .locator('[data-testid^="admin-hub-select-"], [data-testid="admin-hub-list"] button')
-        .filter({ hasText: /Acessar painel|Ver status/i })
+        .filter({ hasText: /Acessar painel/i })
         .first();
+      const useFallbackButton = !(await selectDashboardButton
+        .isVisible({ timeout: 4000 })
+        .catch(() => false));
+
+      const selectButton = useFallbackButton
+        ? page
+            .locator('[data-testid^="admin-hub-select-"], [data-testid="admin-hub-list"] button')
+            .filter({ hasText: /Acessar painel|Ver status/i })
+            .first()
+        : selectDashboardButton;
       await expect(selectButton).toBeVisible({ timeout: 20000 });
       await Promise.all([
         page.waitForURL(/\/admin\/(dashboard|status-assinatura)/, { timeout: 30000 }),
@@ -137,22 +198,30 @@ async function loginAdmin(page: Page) {
     }
   }
 
+  if (/\/admin\/status-assinatura/.test(page.url())) {
+    throw new Error("Conta de teste bloqueada para acesso ao painel.");
+  }
+
   let financeiroProbeOk = false;
+  let financeiroProbeStatus: number | null = null;
+  let financeiroProbeBody = "";
   for (let attempt = 0; attempt < 3; attempt += 1) {
     const financeiroProbe = await page.request.get("/api/admin/financeiro");
+    financeiroProbeStatus = financeiroProbe.status();
     if (financeiroProbe.ok()) {
       financeiroProbeOk = true;
       break;
     }
+    financeiroProbeBody = (await financeiroProbe.text().catch(() => "")).trim();
     await page.waitForTimeout(1000);
   }
   if (!financeiroProbeOk) {
-    throw new Error("Sessão autenticada, mas o acesso ao módulo financeiro retornou erro.");
+    const bodySnippet = financeiroProbeBody ? ` body=${financeiroProbeBody.slice(0, 220)}` : "";
+    throw new Error(
+      `Sessão autenticada, mas o acesso ao módulo financeiro retornou erro. status=${financeiroProbeStatus ?? "desconhecido"}${bodySnippet}`
+    );
   }
 
-  if (/\/admin\/status-assinatura/.test(page.url())) {
-    throw new Error("Conta de teste bloqueada para acesso ao painel.");
-  }
   if (/\/admin\/login/.test(page.url())) {
     throw new Error("Sessão de admin não foi mantida após autenticação.");
   }
