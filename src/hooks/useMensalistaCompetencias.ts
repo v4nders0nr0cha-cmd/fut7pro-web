@@ -9,6 +9,7 @@ export type MensalistaCompetenciaItem = {
   year: number;
   month: number;
   isPaid: boolean;
+  paidAt?: string | null;
   agendaIds: string[];
 };
 

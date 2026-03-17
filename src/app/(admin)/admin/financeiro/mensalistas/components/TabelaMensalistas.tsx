@@ -176,9 +176,15 @@ export default function TabelaMensalistas({
               <td className="px-3 py-3">
                 {m.statusPagamento === "pago" ? (
                   <div>
-                    <div className="text-xs font-semibold text-emerald-300">
-                      Pago em {formatDate(m.pagamentoData)}
-                    </div>
+                    {m.pagamentoData ? (
+                      <div className="text-xs font-semibold text-emerald-300">
+                        Pago em {formatDate(m.pagamentoData)}
+                      </div>
+                    ) : (
+                      <div className="text-xs font-semibold text-emerald-300">
+                        Pagamento confirmado
+                      </div>
+                    )}
                     {m.marcadoSemLancamento && (
                       <div className="mt-1 text-[11px] text-amber-300">
                         Marcado como pago sem lançamento financeiro.

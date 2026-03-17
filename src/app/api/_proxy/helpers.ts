@@ -301,6 +301,7 @@ export function buildHeaders(
   options?: { includeContentType?: boolean }
 ) {
   const headers: Record<string, string> = {};
+  const tenantId = String(user.tenantId || "").trim();
 
   if (user.accessToken) {
     headers.Authorization = `Bearer ${user.accessToken}`;
@@ -308,8 +309,10 @@ export function buildHeaders(
 
   if (tenantSlug) {
     headers["x-tenant-slug"] = tenantSlug;
-    // Header de compatibilidade: alguns fluxos ainda encaminham tenantId nesse argumento.
-    headers["x-tenant-id"] = tenantSlug;
+  }
+
+  if (tenantId) {
+    headers["x-tenant-id"] = tenantId;
   }
 
   if (options?.includeContentType) {

@@ -38,10 +38,66 @@ type FinanceiroApiItem = {
   createdById?: string | null;
 };
 
+class FinanceiroFetchError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "FinanceiroFetchError";
+    this.status = status;
+  }
+}
+
+function sanitizeFinanceiroUserMessage(message: string, fallback: string) {
+  const blockedTerms = [
+    "backend",
+    "forbidden",
+    "payload",
+    "request",
+    "internal server error",
+  ];
+  const normalized = message.toLowerCase();
+  if (blockedTerms.some((term) => normalized.includes(term))) {
+    return fallback;
+  }
+  return message;
+}
+
+async function readFinanceiroErrorMessage(response: Response): Promise<string> {
+  const fallbackByStatus: Record<number, string> = {
+    401: "Sua sessão expirou. Faça login novamente para continuar.",
+    403: "Você não tem permissão para visualizar os lançamentos financeiros deste racha.",
+    429: "Muitas tentativas em pouco tempo. Aguarde alguns instantes e tente novamente.",
+  };
+
+  const fallback =
+    fallbackByStatus[response.status] ||
+    "Não foi possível carregar os lançamentos financeiros agora. Tente novamente em instantes.";
+
+  const text = await response.text();
+  if (!text) return fallback;
+
+  try {
+    const parsed = JSON.parse(text) as { message?: unknown; error?: unknown };
+    const message =
+      typeof parsed.message === "string"
+        ? parsed.message
+        : typeof parsed.error === "string"
+          ? parsed.error
+          : "";
+    const trimmed = message.trim();
+    if (!trimmed) return fallback;
+    return sanitizeFinanceiroUserMessage(trimmed, fallback);
+  } catch {
+    return fallback;
+  }
+}
+
 const fetcher = async (url: string): Promise<FinanceiroApiItem[]> => {
-  const response = await fetch(url);
+  const response = await fetch(url, { cache: "no-store" });
   if (!response.ok) {
-    throw new Error("Erro ao buscar dados financeiros");
+    const message = await readFinanceiroErrorMessage(response);
+    throw new FinanceiroFetchError(message, response.status);
   }
   return response.json();
 };
@@ -125,10 +181,20 @@ export function useFinanceiro() {
 
   const tenantId = me?.tenant?.tenantId;
 
-  const { data, error, isLoading, mutate } = useSWR<FinanceiroApiItem[]>(
+  const { data, error, isLoading, mutate } = useSWR<FinanceiroApiItem[], FinanceiroFetchError>(
     tenantId ? "/api/admin/financeiro" : null,
     fetcher,
     {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 8000,
+      shouldRetryOnError: (fetchError) => {
+        if (!fetchError) return false;
+        if ([401, 403, 404, 429].includes(fetchError.status)) return false;
+        return fetchError.status >= 500;
+      },
+      errorRetryCount: 1,
+      errorRetryInterval: 8000,
       onError: (err) => {
         if (process.env.NODE_ENV === "development") {
           console.error("Erro ao carregar dados financeiros:", err);
@@ -156,11 +222,11 @@ export function useFinanceiro() {
       });
 
       if (!response.ok) {
-        const body = await response.text();
-        throw new Error(body || "Erro ao salvar lancamento financeiro");
+        const message = await readFinanceiroErrorMessage(response);
+        throw new Error(message || "Não foi possível salvar o lançamento financeiro.");
       }
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
@@ -177,11 +243,11 @@ export function useFinanceiro() {
       });
 
       if (!response.ok) {
-        const body = await response.text();
-        throw new Error(body || "Erro ao atualizar lancamento financeiro");
+        const message = await readFinanceiroErrorMessage(response);
+        throw new Error(message || "Não foi possível atualizar o lançamento financeiro.");
       }
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
@@ -193,11 +259,11 @@ export function useFinanceiro() {
       const response = await fetch(`/api/admin/financeiro/${id}`, { method: "DELETE" });
 
       if (!response.ok) {
-        const body = await response.text();
-        throw new Error(body || "Erro ao remover lancamento financeiro");
+        const message = await readFinanceiroErrorMessage(response);
+        throw new Error(message || "Não foi possível remover o lançamento financeiro.");
       }
 
-      await mutate();
+      await mutate().catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
@@ -239,7 +305,7 @@ export function useFinanceiro() {
     lancamentos,
     isLoading: isLoading || apiState.isLoading,
     isError: !!error || apiState.isError,
-    error: apiState.error,
+    error: apiState.error || (error instanceof Error ? error.message : null),
     isSuccess: apiState.isSuccess,
     mutate,
     addLancamento,

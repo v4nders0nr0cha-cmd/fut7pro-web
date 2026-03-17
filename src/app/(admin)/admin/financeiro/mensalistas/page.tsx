@@ -411,18 +411,21 @@ export default function MensalistasPage() {
 
       const lancamento = lancamentosMensalidadePorAthlete.get(mensalista.id);
       const competenciaItem = competenciaByAthlete.get(mensalista.id);
+      const pagoPorLancamento = Boolean(lancamento);
+      const pagoPorCompetencia = Boolean(competenciaItem?.isPaid);
+      const pagamentoConfirmado = pagoPorLancamento || pagoPorCompetencia;
 
       return {
         id: mensalista.id,
         nome: mensalista.nome,
         valor: valorFinal,
-        statusPagamento: lancamento ? "pago" : "pendente",
-        pagamentoData: lancamento?.data || null,
+        statusPagamento: pagamentoConfirmado ? "pago" : "pendente",
+        pagamentoData: lancamento?.data || competenciaItem?.paidAt || null,
         diasResumo,
         jogosNoMes: jogosAtleta,
         classificacaoDia,
         ultimoLancamentoId: lancamento?.id || null,
-        marcadoSemLancamento: Boolean(competenciaItem?.isPaid) && !lancamento,
+        marcadoSemLancamento: pagoPorCompetencia && !pagoPorLancamento,
         diasSelecionados: diasSelecionadosAtleta,
         valorSemDesconto,
         desconto,
@@ -569,7 +572,7 @@ export default function MensalistasPage() {
           .map((item) => item.trim())
           .filter(Boolean),
       });
-      await mutateFinanceiro();
+      await mutateFinanceiro().catch(() => undefined);
       return parseLancamentoCreateResponse(response);
     },
     [lancamentosMensalidadePorAthlete, mutateFinanceiro, registerPagamentoCompetencia]
@@ -578,7 +581,7 @@ export default function MensalistasPage() {
   const cancelarPagamento = useCallback(
     async (mensalista: MensalistaCalculado) => {
       const response = await cancelPagamentoCompetencia(mensalista.id);
-      await mutateFinanceiro();
+      await mutateFinanceiro().catch(() => undefined);
       return response as { canceled?: boolean };
     },
     [cancelPagamentoCompetencia, mutateFinanceiro]
@@ -660,7 +663,7 @@ export default function MensalistasPage() {
         items?: Array<{ lancamentoId?: string }>;
       };
 
-      await mutateFinanceiro();
+      await mutateFinanceiro().catch(() => undefined);
 
       const createdCount = Number(response.createdCount ?? 0);
       const alreadyRegisteredCount = Number(response.alreadyRegisteredCount ?? 0);
