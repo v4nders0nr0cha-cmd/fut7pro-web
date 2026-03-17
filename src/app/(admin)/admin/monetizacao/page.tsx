@@ -16,20 +16,8 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import Link from "next/link";
-
-// ATUALIZE o tipo Plano incluindo o Enterprise White Label (mensal e anual)
-type Plano =
-  | "gratuito"
-  | "mensal-essencial"
-  | "anual-essencial"
-  | "mensal-marketing"
-  | "anual-marketing"
-  | "mensal-enterprise"
-  | "anual-enterprise";
-
-// Troque aqui para simular o cenário desejado
-let plano = "gratuito" as Plano; // Troque aqui para simular o cenário desejado
-const premiumLiberado = plano !== "gratuito";
+import { useMe } from "@/hooks/useMe";
+import useSubscription from "@/hooks/useSubscription";
 const observacaoExtras =
   "Os extras sugeridos podem exigir investimento adicional, conforme a ação combinada entre o racha e o patrocinador.";
 
@@ -83,6 +71,22 @@ const planosPatrocinioOficiais = [
 ];
 
 export default function MonetizacaoPage() {
+  const { me } = useMe();
+  const tenantId = me?.tenant?.tenantId;
+  const { subscription, loading: loadingSubscription } = useSubscription(tenantId);
+  const planKey = String(subscription?.planKey || "")
+    .trim()
+    .toLowerCase();
+  const premiumPlanKeys = new Set([
+    "mensal-marketing",
+    "anual-marketing",
+    "mensal-enterprise",
+    "anual-enterprise",
+  ]);
+  const premiumLiberado = Boolean(
+    subscription?.marketingEnabled || (planKey && premiumPlanKeys.has(planKey))
+  );
+
   return (
     <>
       <Head>
@@ -107,7 +111,7 @@ export default function MonetizacaoPage() {
         </p>
 
         {/* Aviso para planos gratuitos */}
-        {!premiumLiberado && (
+        {!loadingSubscription && !premiumLiberado && (
           <div className="bg-gradient-to-br from-yellow-800 to-yellow-900 border-l-4 border-yellow-400 text-yellow-300 px-4 py-4 rounded-xl mb-8 flex items-center gap-4 shadow">
             <FaLock className="text-2xl" />
             <div>
@@ -116,7 +120,10 @@ export default function MonetizacaoPage() {
                 Os PNGs do kit comercial já estão disponíveis nesta página. Os PSDs editáveis e
                 personalizados ficam liberados nos planos com recursos avançados de marketing.
                 <br />
-                <Link href="/admin/config" className="text-yellow-300 underline font-bold">
+                <Link
+                  href="/admin/financeiro/planos-limites"
+                  className="text-yellow-300 underline font-bold"
+                >
                   Liberar agora
                 </Link>
               </div>
