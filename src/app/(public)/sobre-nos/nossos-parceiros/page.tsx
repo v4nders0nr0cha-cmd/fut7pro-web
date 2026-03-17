@@ -22,9 +22,11 @@ const resolveCategoria = (ramo?: string | null) => {
     normalized === "plano basic" ||
     normalized === "plano plus" ||
     normalized === "plano pro" ||
+    normalized === "plano naming rights" ||
     normalized === "basic" ||
     normalized === "plus" ||
-    normalized === "pro"
+    normalized === "pro" ||
+    normalized === "naming rights"
   ) {
     return "Parceiro do racha";
   }

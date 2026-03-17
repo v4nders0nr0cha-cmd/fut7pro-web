@@ -1,0 +1,39 @@
+LEIA-ME GERAL DOS PLANOS | Fut7Pro
+
+Esta pasta reúne o mini kit comercial de patrocínio por plano.
+
+Estrutura
+- basico/
+  - plano-patrocinio-basico.png
+  - plano-patrocinio-basico-editavel.psd
+  - LEIA-ME-PLANO-BASICO.txt
+
+- plus/
+  - plano-patrocinio-plus.png
+  - plano-patrocinio-plus-editavel.psd
+  - LEIA-ME-PLANO-PLUS.txt
+
+- naming-rights/
+  - plano-patrocinio-naming-rights.png
+  - plano-patrocinio-naming-rights-editavel.psd
+  - caso-de-sucesso-naming-rights.png
+  - aplicacao-visual-naming-rights-no-racha.png
+  - uniforme-naming-rights-editavel.psd
+  - LEIA-ME-PLANO-NAMING-RIGHTS.txt
+
+Como usar
+1. Escolha o plano conforme perfil do patrocinador.
+2. Personalize a arte (logo, valores, benefícios e contatos).
+3. Use o LEIA-ME do plano para conduzir abordagem e negociação.
+4. Envie a arte final por WhatsApp, Instagram, apresentação ou e-mail.
+5. No Naming Rights, use também os materiais extras para prova visual e fechamento comercial.
+
+Regras de manutenção
+- Mantenha os mesmos nomes de arquivo para não quebrar links do sistema.
+- Substitua PNGs e PSDs por versões finais mantendo os nomes.
+- Valores e benefícios são sugestivos e podem ser ajustados conforme a realidade do racha.
+
+Observação comercial
+Os materiais desta pasta foram criados para ajudar o administrador do racha a apresentar planos de patrocínio com mais profissionalismo. Todos os valores, benefícios e exemplos são sugestivos e podem ser ajustados conforme a realidade local.
+
+Os extras sugeridos podem exigir investimento adicional, conforme a ação combinada entre o racha e o patrocinador.

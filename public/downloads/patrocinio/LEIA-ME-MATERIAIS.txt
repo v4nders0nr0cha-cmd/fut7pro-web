@@ -1,0 +1,48 @@
+KIT DE PATROCÍNIO FUT7PRO
+
+Localização:
+public/downloads/patrocinio/
+
+1) PLANOS DE PATROCÍNIO
+Pasta: planos/
+- basico/
+  - plano-patrocinio-basico.png
+  - plano-patrocinio-basico-editavel.psd
+  - LEIA-ME-PLANO-BASICO.txt
+- plus/
+  - plano-patrocinio-plus.png
+  - plano-patrocinio-plus-editavel.psd
+  - LEIA-ME-PLANO-PLUS.txt
+- naming-rights/
+  - plano-patrocinio-naming-rights.png
+  - plano-patrocinio-naming-rights-editavel.psd
+  - caso-de-sucesso-naming-rights.png
+  - aplicacao-visual-naming-rights-no-racha.png
+  - uniforme-naming-rights-editavel.psd
+  - LEIA-ME-PLANO-NAMING-RIGHTS.txt
+- LEIA-ME-PLANOS.txt
+
+Referência comercial sugerida
+- Plano Básico: R$ 15/mês | R$ 150/ano
+- Plano Plus: R$ 30/mês | R$ 300/ano
+- Plano Naming Rights: R$ 60/mês | R$ 600/ano
+
+2) REDES SOCIAIS
+Pasta: redes-sociais/
+- destaque-instagram-patrocinador.png
+- post-instagram-patrocinador.png
+- post-facebook-patrocinador.png
+- midia-social-patrocinio-editavel.psd (em breve)
+
+3) KIT COMPLETO
+Arquivo: kit-patrocinio-fut7pro.zip
+Contém os materiais atuais e este LEIA-ME.
+
+4) COMO SUBSTITUIR DEPOIS
+- Mantenha os mesmos nomes de arquivo para não alterar os links.
+- Substitua PNGs e PSDs diretamente nas pastas correspondentes.
+- Se atualizar nomes, ajuste os links da página /admin/monetizacao.
+
+5) OBSERVAÇÃO COMERCIAL
+- Valores e benefícios são sugestivos e podem ser ajustados por cidade, porte do racha e capacidade de entrega.
+- Os extras sugeridos podem exigir investimento adicional, conforme a ação combinada entre o racha e o patrocinador.

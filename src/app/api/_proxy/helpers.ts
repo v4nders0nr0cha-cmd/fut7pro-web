@@ -301,15 +301,22 @@ export function buildHeaders(
   options?: { includeContentType?: boolean }
 ) {
   const headers: Record<string, string> = {};
+  const tenantId = String(user.tenantId || "").trim();
+  const scopedTenant = String(tenantSlug || "").trim();
 
   if (user.accessToken) {
     headers.Authorization = `Bearer ${user.accessToken}`;
   }
 
-  if (tenantSlug) {
-    headers["x-tenant-slug"] = tenantSlug;
-    // Header de compatibilidade: alguns fluxos ainda encaminham tenantId nesse argumento.
-    headers["x-tenant-id"] = tenantSlug;
+  if (scopedTenant) {
+    headers["x-tenant-slug"] = scopedTenant;
+    // Mantem compatibilidade com endpoints que ainda validam x-tenant-id,
+    // usando sempre o tenant explicitamente solicitado pelo fluxo atual.
+    headers["x-tenant-id"] = scopedTenant;
+  }
+
+  if (!scopedTenant && tenantId) {
+    headers["x-tenant-id"] = tenantId;
   }
 
   if (options?.includeContentType) {

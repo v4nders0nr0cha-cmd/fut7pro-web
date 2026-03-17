@@ -132,6 +132,7 @@ export default function PrestacaoDeContasAdmin() {
     lancamentos,
     isLoading: carregandoLancamentos,
     isError,
+    error: erroFinanceiro,
     addLancamento,
     updateLancamento,
     deleteLancamento,
@@ -594,7 +595,8 @@ export default function PrestacaoDeContasAdmin() {
         )}
         {isError && (
           <div className="text-xs text-red-400 mb-2">
-            Não foi possível carregar os lançamentos do backend agora. Tente novamente em instantes.
+            {erroFinanceiro ||
+              "Não foi possível carregar os lançamentos financeiros agora. Tente novamente em instantes."}
           </div>
         )}
 
@@ -690,9 +692,7 @@ export default function PrestacaoDeContasAdmin() {
         />
         {erroLancamento && <div className="mt-2 text-xs text-red-400">{erroLancamento}</div>}
         {salvandoLancamento && (
-          <div className="mt-1 text-xs text-yellow-400">
-            Sincronizando lançamento com o backend...
-          </div>
+          <div className="mt-1 text-xs text-yellow-400">Sincronizando lançamento financeiro...</div>
         )}
       </section>
     </>
