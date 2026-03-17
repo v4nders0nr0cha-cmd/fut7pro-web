@@ -44,10 +44,7 @@ const planosPatrocinioOficiais = [
       "Link clicável do logo para rede social/WhatsApp do patrocinador",
       "Divulgação garantida nas redes do racha",
     ],
-    extras: [
-      "Menção semanal nos stories",
-      "Cupom de desconto exclusivo para atletas",
-    ],
+    extras: ["Menção semanal nos stories", "Cupom de desconto exclusivo para atletas"],
   },
   {
     nome: "Plano Plus",
@@ -221,9 +218,9 @@ export default function MonetizacaoPage() {
             <FaTrophy className="text-yellow-400" /> Referência Oficial dos Planos de Patrocínio
           </h2>
           <p className="text-gray-300 mb-4">
-            Use esta base comercial para apresentar propostas com linguagem profissional e ajuste
-            os valores conforme porte do racha, cidade, alcance real das redes sociais e capacidade
-            de entrega.
+            Use esta base comercial para apresentar propostas com linguagem profissional e ajuste os
+            valores conforme porte do racha, cidade, alcance real das redes sociais e capacidade de
+            entrega.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
             {planosPatrocinioOficiais.map((planoOficial) => (

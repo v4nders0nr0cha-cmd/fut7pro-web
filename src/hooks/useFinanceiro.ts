@@ -49,13 +49,7 @@ class FinanceiroFetchError extends Error {
 }
 
 function sanitizeFinanceiroUserMessage(message: string, fallback: string) {
-  const blockedTerms = [
-    "backend",
-    "forbidden",
-    "payload",
-    "request",
-    "internal server error",
-  ];
+  const blockedTerms = ["backend", "forbidden", "payload", "request", "internal server error"];
   const normalized = message.toLowerCase();
   if (blockedTerms.some((term) => normalized.includes(term))) {
     return fallback;

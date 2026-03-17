@@ -692,9 +692,7 @@ export default function PrestacaoDeContasAdmin() {
         />
         {erroLancamento && <div className="mt-2 text-xs text-red-400">{erroLancamento}</div>}
         {salvandoLancamento && (
-          <div className="mt-1 text-xs text-yellow-400">
-            Sincronizando lançamento financeiro...
-          </div>
+          <div className="mt-1 text-xs text-yellow-400">Sincronizando lançamento financeiro...</div>
         )}
       </section>
     </>
