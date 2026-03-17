@@ -220,7 +220,7 @@ export function useFinanceiro() {
         throw new Error(message || "Não foi possível salvar o lançamento financeiro.");
       }
 
-      await mutate().catch(() => undefined);
+      await Promise.resolve(mutate()).catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
@@ -241,7 +241,7 @@ export function useFinanceiro() {
         throw new Error(message || "Não foi possível atualizar o lançamento financeiro.");
       }
 
-      await mutate().catch(() => undefined);
+      await Promise.resolve(mutate()).catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
@@ -257,7 +257,7 @@ export function useFinanceiro() {
         throw new Error(message || "Não foi possível remover o lançamento financeiro.");
       }
 
-      await mutate().catch(() => undefined);
+      await Promise.resolve(mutate()).catch(() => undefined);
       return response.json().catch(() => null);
     });
   };
