@@ -27,10 +27,18 @@ type LogoData = {
 type SlugStatus = "idle" | "checking" | "available" | "unavailable" | "invalid";
 
 export default function LogoDoRachaPage() {
-  const { about, update, isLoading } = useAboutAdmin();
-  const { me, isLoading: isLoadingMe } = useMe();
-  const { setTenantSlug } = useRacha();
-  const tenantSlug = me?.tenant?.tenantSlug || "";
+  const { about, update, isLoading, isError: aboutLoadError, mutate: retryAbout } = useAboutAdmin();
+  const {
+    me,
+    isLoading: isLoadingMe,
+    isError: isMeError,
+    error: meErrorMessage,
+    mutate: retryMe,
+  } = useMe({ context: "admin" });
+  const { tenantSlug: contextTenantSlug, setTenantSlug } = useRacha();
+  const tenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || "";
+  const hasLoadError = Boolean(aboutLoadError) || isMeError;
+  const loadErrorMessage = meErrorMessage || "Falha ao carregar dados de personalização.";
   const missingTenantScope = !tenantSlug;
   const membershipRole = (me?.membership?.role || "").toUpperCase();
   const presidenteEmail = about?.presidente?.email?.toLowerCase() || null;
@@ -203,6 +211,27 @@ export default function LogoDoRachaPage() {
     return (
       <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4 text-center">
         <div className="text-gray-300">Carregando perfil...</div>
+      </div>
+    );
+  }
+
+  if (hasLoadError) {
+    return (
+      <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4">
+        <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-5 text-center">
+          <div className="text-red-200 font-semibold">Não foi possível carregar o perfil.</div>
+          <div className="text-sm text-red-100 mt-2">{loadErrorMessage}</div>
+          <button
+            type="button"
+            className="mt-4 rounded-lg bg-yellow-400 px-4 py-2 text-black font-semibold"
+            onClick={() => {
+              retryAbout();
+              retryMe();
+            }}
+          >
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }

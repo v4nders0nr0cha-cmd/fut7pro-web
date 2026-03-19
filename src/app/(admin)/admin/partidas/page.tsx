@@ -3,7 +3,6 @@
 import Head from "next/head";
 import Link from "next/link";
 import { useMemo } from "react";
-import { useSession } from "next-auth/react";
 import { FaClipboardList, FaHistory, FaExternalLinkAlt } from "react-icons/fa";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import { useMe } from "@/hooks/useMe";
@@ -40,14 +39,12 @@ function isSameLocalDay(left: Date, right: Date) {
 }
 
 export default function PartidasPage() {
-  const { data: session } = useSession();
-  const { me } = useMe();
+  const { me } = useMe({ context: "admin" });
   const { tenantSlug } = useRacha();
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
   const resolvedSlug = useMemo(() => {
-    const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
-    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || "";
-  }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+    return tenantSlug || me?.tenant?.tenantSlug || "";
+  }, [tenantSlug, me?.tenant?.tenantSlug]);
   const missingTenantScope = !resolvedSlug;
   const publicBaseUrl = useMemo(() => {
     if (!resolvedSlug) return null;

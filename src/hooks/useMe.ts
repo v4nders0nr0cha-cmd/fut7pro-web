@@ -3,13 +3,43 @@
 import useSWR from "swr";
 import type { MeResponse } from "@/types/me";
 
+const ME_TIMEOUT_MS = 12000;
+
 const fetcher = async (url: string): Promise<MeResponse> => {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(body || "Falha ao carregar perfil");
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), ME_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+
+    if (!res.ok) {
+      const message =
+        (body as { message?: string; error?: string } | null)?.message ||
+        (body as { message?: string; error?: string } | null)?.error ||
+        (typeof body === "string" ? body : "") ||
+        "Falha ao carregar perfil";
+      throw new Error(message);
+    }
+
+    return (body as MeResponse) ?? ({} as MeResponse);
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw new Error("Tempo limite ao carregar perfil.");
+    }
+    throw cause;
+  } finally {
+    globalThis.clearTimeout(timeout);
   }
-  return res.json();
 };
 
 export function useMe(options?: {

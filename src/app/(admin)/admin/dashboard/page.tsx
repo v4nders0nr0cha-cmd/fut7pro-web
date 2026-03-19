@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import Head from "next/head";
-import { useSession } from "next-auth/react";
-import type { Session } from "next-auth";
 import Link from "next/link";
 import Image from "next/image";
 import { FaRandom, FaUsers, FaMoneyBillWave, FaMedal, FaBirthdayCake } from "react-icons/fa";
@@ -23,6 +21,7 @@ import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 import useSubscription from "@/hooks/useSubscription";
 import FinanceiroChart from "@/components/admin/FinanceiroChart";
 import type { PublicMatch } from "@/types/partida";
+import { useMe } from "@/hooks/useMe";
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
@@ -48,24 +47,10 @@ function isSameMonth(date: Date, compare: Date) {
 }
 
 export default function AdminDashboard() {
-  const { data: session } = useSession();
-  const { rachaId, tenantSlug: contextTenantSlug, setRachaId, setTenantSlug } = useRacha();
-  const sessionUser = session?.user as
-    | (Session["user"] & { tenantId?: string; tenantSlug?: string })
-    | undefined;
-  const tenantId = sessionUser?.tenantId;
-  const tenantSlug = sessionUser?.tenantSlug;
-
-  useEffect(() => {
-    if (tenantId) {
-      setRachaId(tenantId);
-    }
-    if (tenantSlug) {
-      setTenantSlug(tenantSlug);
-    }
-  }, [tenantId, tenantSlug, setRachaId, setTenantSlug]);
-
-  const slug = tenantSlug || contextTenantSlug || "";
+  const { me } = useMe({ context: "admin" });
+  const { rachaId, tenantSlug: contextTenantSlug } = useRacha();
+  const tenantId = rachaId || me?.tenant?.tenantId || "";
+  const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
 
   const { lancamentos, isLoading: loadingFinanceiro } = useFinanceiro();
   const { matches: upcomingMatches, isLoading: loadingUpcoming } = usePublicMatches({
