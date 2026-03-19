@@ -3,16 +3,27 @@ KIT DE PATROCÍNIO FUT7PRO
 Localização:
 public/downloads/patrocinio/
 
+Este kit foi organizado para ajudar o administrador do racha a apresentar propostas comerciais
+com mais profissionalismo, padronizar redes sociais e facilitar a captação de patrocinadores locais.
+
+=====================================================================
 1) PLANOS DE PATROCÍNIO
-Pasta: planos/
+=====================================================================
+
+Pasta:
+planos/
+
+Estrutura:
 - basico/
   - plano-patrocinio-basico.png
   - plano-patrocinio-basico-editavel.psd
   - LEIA-ME-PLANO-BASICO.txt
+
 - plus/
   - plano-patrocinio-plus.png
   - plano-patrocinio-plus-editavel.psd
   - LEIA-ME-PLANO-PLUS.txt
+
 - naming-rights/
   - plano-patrocinio-naming-rights.png
   - plano-patrocinio-naming-rights-editavel.psd
@@ -20,29 +31,67 @@ Pasta: planos/
   - aplicacao-visual-naming-rights-no-racha.png
   - uniforme-naming-rights-editavel.psd
   - LEIA-ME-PLANO-NAMING-RIGHTS.txt
+
 - LEIA-ME-PLANOS.txt
 
-Referência comercial sugerida
+Referência comercial sugerida:
 - Plano Básico: R$ 15/mês | R$ 150/ano
 - Plano Plus: R$ 30/mês | R$ 300/ano
 - Plano Naming Rights: R$ 60/mês | R$ 600/ano
 
-2) REDES SOCIAIS
-Pasta: redes-sociais/
-- destaque-instagram-patrocinador.png
-- post-instagram-patrocinador.png
-- post-facebook-patrocinador.png
-- midia-social-patrocinio-editavel.psd (em breve)
+=====================================================================
+2) REDES SOCIAIS (INSTAGRAM)
+=====================================================================
 
+Pasta:
+redes-sociais/instagram/
+
+2.1 Capas de destaques
+Pasta:
+redes-sociais/instagram/capas-destaques/
+
+Ordem oficial:
+1) 01-destaque-instagram-naming.png
+2) 02-destaque-instagram-patrocinios.png
+3) 03-destaque-instagram-numeros.png
+4) 04-destaque-instagram-campeoes.png
+5) 05-destaque-instagram-agenda.png
+6) 06-destaque-instagram-melhores-da-rodada.png
+7) 07-destaque-instagram-contato.png
+
+2.2 Time Campeão do Dia
+Pasta:
+redes-sociais/instagram/campeao-do-dia/
+
+Arquivos:
+- banner-time-campeao-do-dia.png
+- banner-time-campeao-do-dia-editavel.psd
+- Exemplo-como-fica-na-foto.png
+- LEIA-ME-TIME-CAMPEAO-DO-DIA.txt
+
+2.3 Guia de Instagram
+- LEIA-ME-INSTAGRAM.txt
+
+=====================================================================
 3) KIT COMPLETO
-Arquivo: kit-patrocinio-fut7pro.zip
-Contém os materiais atuais e este LEIA-ME.
+=====================================================================
 
-4) COMO SUBSTITUIR DEPOIS
-- Mantenha os mesmos nomes de arquivo para não alterar os links.
-- Substitua PNGs e PSDs diretamente nas pastas correspondentes.
-- Se atualizar nomes, ajuste os links da página /admin/monetizacao.
+Arquivo:
+- kit-patrocinio-fut7pro.zip
 
+O ZIP reúne os materiais principais e os guias desta pasta.
+
+=====================================================================
+4) COMO SUBSTITUIR OS ARQUIVOS SEM QUEBRAR LINKS
+=====================================================================
+
+- Mantenha os mesmos nomes de arquivo.
+- Substitua PNG/PSD diretamente no caminho correspondente.
+- Se alterar nomes, atualize também os links da página /admin/monetizacao.
+
+=====================================================================
 5) OBSERVAÇÃO COMERCIAL
-- Valores e benefícios são sugestivos e podem ser ajustados por cidade, porte do racha e capacidade de entrega.
+=====================================================================
+
+- Valores e benefícios são sugestivos e podem ser ajustados conforme cidade, porte do racha e capacidade de entrega.
 - Os extras sugeridos podem exigir investimento adicional, conforme a ação combinada entre o racha e o patrocinador.
