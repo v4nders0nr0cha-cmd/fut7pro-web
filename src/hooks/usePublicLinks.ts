@@ -9,9 +9,10 @@ import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 export function usePublicLinks() {
   const pathname = usePathname() ?? "";
   const { tenantSlug } = useRacha();
+  const isAdminScope = pathname.startsWith("/admin");
   const slugFromPath = resolvePublicTenantSlug(pathname);
-  const activeSlug = resolveActiveTenantSlug(pathname);
-  const publicSlug = activeSlug || slugFromPath || tenantSlug || "";
+  const activeSlug = isAdminScope ? null : resolveActiveTenantSlug(pathname);
+  const publicSlug = slugFromPath || tenantSlug || activeSlug || "";
 
   const publicHref = useCallback((href: string) => buildPublicHref(href, publicSlug), [publicSlug]);
 

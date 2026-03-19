@@ -2,7 +2,6 @@
 
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
 import {
   FaUserPlus,
   FaSearch,
@@ -596,21 +595,10 @@ function StatusBadge({ status }: { status: Jogador["status"] }) {
 
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
-  const { data: session } = useSession();
-  const { rachaId: contextRachaId, tenantSlug, setRachaId, setTenantSlug } = useRacha();
-  const sessionUser = session?.user as { tenantId?: string; tenantSlug?: string } | undefined;
-  const resolvedRachaId = sessionUser?.tenantId || contextRachaId || "";
-  const resolvedSlug = sessionUser?.tenantSlug || tenantSlug || "";
+  const { rachaId: contextRachaId, tenantSlug } = useRacha();
+  const resolvedRachaId = contextRachaId || "";
+  const resolvedSlug = tenantSlug || "";
   const missingTenantScope = !resolvedRachaId || !resolvedSlug;
-
-  useEffect(() => {
-    if (sessionUser?.tenantId) {
-      setRachaId(sessionUser.tenantId);
-    }
-    if (sessionUser?.tenantSlug) {
-      setTenantSlug(sessionUser.tenantSlug);
-    }
-  }, [sessionUser?.tenantId, sessionUser?.tenantSlug, setRachaId, setTenantSlug]);
 
   const allowRequests = Boolean(resolvedSlug);
 

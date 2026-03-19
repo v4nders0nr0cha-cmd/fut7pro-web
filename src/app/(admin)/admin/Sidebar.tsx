@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MdDashboard, MdPerson, MdSettings, MdPeopleAlt, MdPalette } from "react-icons/md";
 import { FaPiggyBank, FaRegBell, FaTrophy, FaFutbol, FaExternalLinkAlt } from "react-icons/fa";
 import Image from "next/image";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
 import { useBranding } from "@/hooks/useBranding";
 import { useRacha } from "@/context/RachaContext";
@@ -117,14 +117,12 @@ function slugifyTestId(value: string) {
 export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProps) {
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
-  const { data: session } = useSession();
   const { me } = useMe({ context: "admin" });
   const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
   const { tenantSlug } = useRacha();
   const resolvedSlug = useMemo(() => {
-    const sessionSlug = (session?.user as { tenantSlug?: string | null } | undefined)?.tenantSlug;
-    return me?.tenant?.tenantSlug || sessionSlug || tenantSlug || "";
-  }, [me?.tenant?.tenantSlug, session?.user, tenantSlug]);
+    return tenantSlug || me?.tenant?.tenantSlug || "";
+  }, [tenantSlug, me?.tenant?.tenantSlug]);
   const visibleMenu = useMemo(
     () => menu.filter((item) => item.label !== "Configurações/Extras" || isPresidente),
     [isPresidente]

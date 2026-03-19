@@ -48,9 +48,10 @@ export function RachaProvider({
   initialTenantSlug?: string | null;
 }) {
   const pathname = usePathname() ?? "";
+  const isAdminScope = pathname.startsWith("/admin");
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const defaultRachaId = Object.keys(rachaMap)[0] || "";
-  const allowStoredFallback = !slugFromPath && !initialTenantSlug;
+  const allowStoredFallback = !isAdminScope && !slugFromPath && !initialTenantSlug;
   const initialStoredSlug = typeof window !== "undefined" ? getStoredTenantSlug() : null;
   const initialSlug = (
     initialTenantSlug ||
@@ -84,7 +85,7 @@ export function RachaProvider({
 
   useEffect(() => {
     const slugFromPath = resolvePublicTenantSlug(pathname);
-    const shouldUseStoredFallback = !slugFromPath && !initialTenantSlug;
+    const shouldUseStoredFallback = !isAdminScope && !slugFromPath && !initialTenantSlug;
     if (slugFromPath) {
       setTenantSlugState(slugFromPath);
       setStoredTenantSlug(slugFromPath);
@@ -104,7 +105,7 @@ export function RachaProvider({
       setStoredTenantSlug(initialTenantSlug);
       return;
     }
-  }, [pathname, initialTenantSlug]);
+  }, [pathname, initialTenantSlug, isAdminScope]);
 
   const value = useMemo(
     () => ({

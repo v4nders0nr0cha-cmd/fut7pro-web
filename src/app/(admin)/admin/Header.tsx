@@ -14,6 +14,7 @@ import useSWR from "swr";
 import { setStoredTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ADMIN_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { useRacha } from "@/context/RachaContext";
 
 type BadgeKey = "notificacoes" | "mensagens" | "solicitacoes";
 
@@ -78,6 +79,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
   const { badges } = useAdminBadges();
   const { data: session } = useSession();
   const { me } = useMe({ context: "admin" });
+  const { tenantSlug: contextTenantSlug } = useRacha();
   const { nome: rachaNome } = useBranding({ scope: "admin" });
   const { data: hubData } = useSWR<HubRacha[]>(
     session?.user ? "/api/admin/hub" : null,
@@ -96,7 +98,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
     session?.user?.image || me?.user?.avatarUrl || me?.athlete?.avatarUrl,
     DEFAULT_ADMIN_AVATAR
   );
-  const tenantSlug = me?.tenant?.tenantSlug || (session?.user as any)?.tenantSlug || null;
+  const tenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || null;
   const rachaPerfilHref = tenantSlug ? buildPublicHref("/perfil", tenantSlug) : null;
   const athletePublicKey = me?.athlete?.slug || me?.athlete?.id || null;
   const publicProfileHref =

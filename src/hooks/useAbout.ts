@@ -1,7 +1,44 @@
 import useSWR from "swr";
 import type { AboutResponse, AboutData } from "@/types/about";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json()) as Promise<AboutResponse>;
+const ABOUT_TIMEOUT_MS = 12000;
+
+const fetcher = async (url: string): Promise<AboutResponse> => {
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), ABOUT_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+
+    if (!res.ok) {
+      const message =
+        (body as { message?: string; error?: string } | null)?.message ||
+        (body as { message?: string; error?: string } | null)?.error ||
+        (typeof body === "string" ? body : "") ||
+        "Falha ao carregar dados do racha";
+      throw new Error(message);
+    }
+
+    return (body as AboutResponse) ?? ({} as AboutResponse);
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") {
+      throw new Error("Tempo limite ao carregar dados do racha.");
+    }
+    throw cause;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+};
 
 export function useAboutPublic(slug?: string) {
   const { data, error, mutate, isLoading } = useSWR(
