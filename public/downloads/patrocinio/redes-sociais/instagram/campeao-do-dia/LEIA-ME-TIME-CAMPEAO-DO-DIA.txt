@@ -1,0 +1,153 @@
+## TIME CAMPEÃO DO DIA | COMO USAR
+
+Esta pasta foi criada para ajudar o seu racha a divulgar, de forma profissional, o **Time Campeão do Dia** no Instagram e em outras redes sociais.
+
+A lógica é simples: você prepara o layout uma única vez com os patrocinadores do racha e, após cada jogo, só precisa trocar a foto do time vencedor.
+
+---
+
+## ARQUIVOS DESTA PASTA
+
+### 1) `banner-time-campeao-do-dia.png`
+Arquivo em **PNG transparente**.
+
+Esse arquivo funciona como uma moldura pronta e pode ser usado em editores que suportam transparência.
+
+Para que ele serve:
+- aplicar sobre a foto do time campeão do dia;
+- manter padrão visual profissional nas postagens;
+- destacar patrocinadores do racha;
+- agilizar a criação de conteúdo após cada rodada.
+
+### 2) `banner-time-campeao-do-dia-editavel.psd`
+Arquivo em **PSD totalmente editável**.
+
+Esse é o formato ideal para quem quer personalização completa no Photoshop ou em editores compatíveis com PSD.
+
+Com ele você pode:
+- trocar patrocinadores;
+- reorganizar posições das logos;
+- ajustar tamanhos e alinhamentos;
+- alterar textos;
+- adaptar cores, sombras e efeitos;
+- criar versões específicas para campanhas.
+
+### 3) `Exemplo-como-fica-na-foto.png`
+Arquivo de exemplo para referência visual.
+
+Use este arquivo para entender proporção, posicionamento dos patrocinadores e acabamento final da arte aplicada em uma foto real.
+
+---
+
+## COMO USAR NA PRÁTICA
+
+### Opção 1 | Modo rápido
+Ideal para quem quer agilidade no dia a dia.
+
+1. Abra a foto do time campeão no editor.
+2. Coloque por cima o arquivo `banner-time-campeao-do-dia.png`.
+3. Adicione as logos dos patrocinadores na área prevista.
+4. Ajuste tamanho e alinhamento das logos.
+5. Exporte em PNG ou JPG.
+6. Publique no Instagram.
+
+### Opção 2 | Modo profissional
+Ideal para deixar tudo padronizado.
+
+1. Abra `banner-time-campeao-do-dia-editavel.psd`.
+2. Monte um modelo-base com patrocinadores oficiais do racha.
+3. Salve esse modelo pronto.
+4. Após cada rodada, troque apenas a foto do time campeão.
+5. Exporte e publique.
+
+---
+
+## DICAS IMPORTANTES
+
+### 1) Deixe os patrocinadores fixos no modelo-base
+Se os patrocinadores mudam pouco, deixe o layout pronto e substitua apenas a foto do time campeão.
+
+### 2) Valorize quem investe mais
+Patrocinadores premium podem ter maior destaque visual.
+
+Sugestões:
+- logos maiores;
+- primeiras posições da faixa;
+- melhor centralização;
+- mais respiro visual.
+
+### 3) Use logos em alta qualidade
+Prefira arquivos PNG com fundo transparente e boa resolução.
+Evite imagens borradas, prints e logos pequenas.
+
+### 4) Evite poluição visual
+Não sobrecarregue a arte com logos demais.
+Priorize organização, leitura clara e hierarquia visual.
+
+### 5) Escolha boas fotos
+Use fotos bem iluminadas, centralizadas e com clima de comemoração.
+Uma boa foto aumenta muito o impacto da postagem.
+
+### 6) Mantenha constância
+Postar toda semana com o mesmo padrão fortalece a identidade do racha e valoriza o patrocinador.
+
+---
+
+## ROTINA RECOMENDADA APÓS CADA JOGO
+
+1. Escolha a melhor foto do time vencedor.
+2. Abra o modelo-base já configurado.
+3. Substitua a foto anterior.
+4. Confira alinhamento das logos.
+5. Exporte a arte final.
+6. Publique com legenda e marcações.
+
+Com o modelo pronto, esse processo leva poucos minutos.
+
+---
+
+## ONDE USAR ESTA ARTE
+
+Você pode usar esse material em:
+- post do feed;
+- stories;
+- grupos de WhatsApp;
+- prestação de entrega para patrocinadores;
+- retrospectos semanais;
+- página do racha no Fut7Pro;
+- materiais comerciais do racha.
+
+---
+
+## DICA ESTRATÉGICA
+
+Esta arte não serve apenas para deixar o Instagram bonito.
+Ela ajuda o racha a:
+- mostrar organização;
+- gerar prova recorrente de entrega para patrocinadores;
+- aumentar percepção de valor do projeto;
+- facilitar renovação de apoio;
+- atrair novos parceiros comerciais.
+
+Quanto mais profissional for a divulgação, maior a percepção de retorno para a marca patrocinadora.
+
+---
+
+## RECOMENDAÇÃO FINAL
+
+Deixe um arquivo-base pronto com:
+- moldura posicionada;
+- patrocinadores organizados;
+- tamanhos ajustados;
+- espaço preparado para a nova foto.
+
+Assim, após cada jogo, você troca apenas a foto do campeão e exporta.
+Isso economiza tempo, melhora o visual do perfil e fortalece a imagem comercial do seu racha.
+
+---
+
+## FUT7PRO
+
+Use este material para valorizar o campeão do dia, fortalecer o Instagram do racha e ampliar a visibilidade de quem apoia o projeto.
+
+Para manter os links do painel funcionando, preserve os nomes originais dos arquivos ao substituir os materiais.

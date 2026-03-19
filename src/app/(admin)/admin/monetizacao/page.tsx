@@ -520,43 +520,120 @@ export default function MonetizacaoPage() {
             </div>
 
             <div className="rounded-xl border border-zinc-700 bg-[#23272F] p-5">
-              <h3 className="text-xl font-semibold text-yellow-300 mb-3">
-                Materiais para redes sociais
-              </h3>
-              <div className="grid gap-3 md:grid-cols-2">
-                <a
-                  href="/downloads/patrocinio/redes-sociais/destaque-instagram-patrocinador.png"
-                  download
-                  className="rounded-lg border border-zinc-600 px-4 py-3 hover:bg-zinc-800 transition flex items-center justify-between gap-4"
-                >
-                  <span className="text-gray-100">Destaque do Instagram (PNG)</span>
-                  <span className="text-yellow-300 text-sm font-semibold">Download</span>
-                </a>
-                <a
-                  href="/downloads/patrocinio/redes-sociais/post-instagram-patrocinador.png"
-                  download
-                  className="rounded-lg border border-zinc-600 px-4 py-3 hover:bg-zinc-800 transition flex items-center justify-between gap-4"
-                >
-                  <span className="text-gray-100">Post para Instagram (PNG)</span>
-                  <span className="text-yellow-300 text-sm font-semibold">Download</span>
-                </a>
-                <a
-                  href="/downloads/patrocinio/redes-sociais/post-facebook-patrocinador.png"
-                  download
-                  className="rounded-lg border border-zinc-600 px-4 py-3 hover:bg-zinc-800 transition flex items-center justify-between gap-4"
-                >
-                  <span className="text-gray-100">Post para Facebook (PNG)</span>
-                  <span className="text-yellow-300 text-sm font-semibold">Download</span>
-                </a>
-                <div className="rounded-lg border border-zinc-700 px-4 py-3 bg-zinc-900/40 flex items-center justify-between gap-4">
-                  <span className="text-zinc-200">Arquivo editável de mídias sociais (PSD)</span>
-                  <span className="text-amber-300 text-xs font-semibold uppercase">Em breve</span>
+              <h3 className="text-xl font-semibold text-yellow-300 mb-3">Instagram do racha</h3>
+              <p className="text-sm text-zinc-300 mb-4">
+                Organize seu perfil com aparência profissional, valorize patrocinadores premium e
+                use o Instagram como vitrine principal do racha.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-lg border border-zinc-700 bg-zinc-900/30 p-4 space-y-2">
+                  <p className="text-sm font-semibold text-yellow-200">Capas para destaques</p>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/01-destaque-instagram-naming.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">01 - Naming Rights (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/02-destaque-instagram-patrocinios.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">02 - Patrocínios (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/03-destaque-instagram-numeros.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">03 - Números (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/04-destaque-instagram-campeoes.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">04 - Campeões (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/05-destaque-instagram-agenda.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">05 - Agenda (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/06-destaque-instagram-melhores-da-rodada.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">06 - Melhores da Rodada (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/capas-destaques/07-destaque-instagram-contato.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">07 - Contato (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                </div>
+
+                <div className="rounded-lg border border-zinc-700 bg-zinc-900/30 p-4 space-y-2">
+                  <p className="text-sm font-semibold text-yellow-200">Time Campeão do Dia</p>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/campeao-do-dia/banner-time-campeao-do-dia.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">Banner pronto (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/campeao-do-dia/banner-time-campeao-do-dia-editavel.psd"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">Arquivo editável (PSD)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/campeao-do-dia/Exemplo-como-fica-na-foto.png"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">Exemplo de aplicação (PNG)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/campeao-do-dia/LEIA-ME-TIME-CAMPEAO-DO-DIA.txt"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">Guia do campeão do dia (TXT)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <a
+                    href="/downloads/patrocinio/redes-sociais/instagram/LEIA-ME-INSTAGRAM.txt"
+                    download
+                    className="rounded-lg border border-zinc-600 px-3 py-2 hover:bg-zinc-800 transition flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="text-gray-100">Guia de destaques do Instagram (TXT)</span>
+                    <span className="text-yellow-300 font-semibold">Baixar</span>
+                  </a>
+                  <p className="text-xs text-zinc-400 mt-2">
+                    Dica: coloque o link oficial do seu racha no Instagram:
+                    <code className="ml-1">app.fut7pro.com.br/[slugdoracha]</code>
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-zinc-400 mt-3">
-                Material editável de redes sociais (PSD) em preparação para publicação:
-                <code className="ml-1">midia-social-patrocinio-editavel.psd</code>
-              </p>
             </div>
 
             <div className="rounded-xl border border-zinc-700 bg-[#23272F] p-5">

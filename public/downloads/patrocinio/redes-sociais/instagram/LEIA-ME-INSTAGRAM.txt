@@ -1,0 +1,145 @@
+# Guia de Destaques do Instagram do Racha
+
+## 1. Introdução
+O Instagram do seu racha é uma vitrine pública. Antes de fechar parceria, patrocinadores observam organização, frequência, aparência profissional e provas reais de atividade.
+
+Os destaques ajudam a mostrar que o racha é ativo, organizado e comercialmente interessante. Por isso, o ideal é trabalhar com poucos destaques e priorizar os mais estratégicos na primeira linha.
+
+## 2. Ordem recomendada dos destaques
+Use esta ordem oficial do Fut7Pro:
+
+1. Naming Rights
+2. Patrocinadores
+3. Números
+4. Campeões
+5. Agenda
+6. Melhores da Rodada
+7. Contato
+
+Importante: os 5 primeiros são os mais relevantes porque aparecem primeiro no perfil.
+
+## 2.1 Resumo rápido para configurar os destaques
+- Naming Rights -> descrição: `PATROCÍNIO`
+- Patrocinadores -> descrição: `PATROCÍNIO`
+- Números -> descrição: `NÚMEROS`
+- Campeões do Dia -> descrição: `CAMPEÕES`
+- Agenda -> descrição: `AGENDA`
+- Melhores da Rodada -> descrição: `DESTAQUES`
+- Contato -> descrição: `CONTATO`
+
+## 3. Explicação de cada capa
+### 3.1 Capa: Naming Rights
+Descrição recomendada no Instagram: `Patrocínio`
+Arquivo da capa: `capas-destaques/01-destaque-instagram-naming.png`
+
+O que postar:
+- patrocinador master do racha
+- naming rights de time
+- naming de torneio ou quadrimestre
+- ativações premium e materiais exclusivos
+
+Por que é importante:
+Este destaque representa o plano premium do racha e comunica valor alto de marca para possíveis patrocinadores.
+
+### 3.2 Capa: Patrocinadores
+Descrição recomendada no Instagram: `Patrocínio`
+Arquivo da capa: `capas-destaques/02-destaque-instagram-patrocinios.png`
+
+O que postar:
+- patrocinadores dos planos básico e intermediário
+- logos e marcas parceiras
+- ações comerciais e divulgações combinadas
+- entregas recorrentes para parceiros
+
+Por que é importante:
+Mostra que o racha tem relacionamento comercial ativo e entrega visibilidade para marcas locais.
+
+### 3.3 Capa: Números
+Descrição recomendada no Instagram: `Números`
+Arquivo da capa: `capas-destaques/03-destaque-instagram-numeros.png`
+
+O que postar:
+- alcance de stories e feed
+- cliques e visitas
+- métricas de presença digital
+- tamanho da comunidade e sinais de engajamento
+
+Por que é importante:
+Números fortalecem a apresentação comercial e reduzem objeções na hora de fechar patrocínio.
+
+### 3.4 Capa: Campeões do Dia
+Descrição recomendada no Instagram: `Campeões`
+Arquivo da capa: `capas-destaques/04-destaque-instagram-campeoes.png`
+
+O que postar:
+- fotos dos times campeões
+- artes de campeão do dia
+- resultados e momentos de jogo
+- provas visuais de atividade real
+
+Por que é importante:
+É prova social direta de que o racha está vivo, ativo e com rotina consistente.
+
+### 3.5 Capa: Agenda
+Descrição recomendada no Instagram: `Agenda`
+Arquivo da capa: `capas-destaques/05-destaque-instagram-agenda.png`
+
+O que postar:
+- dias e horários dos jogos
+- programação da semana ou do mês
+- avisos operacionais de rotina
+
+Por que é importante:
+Passa constância, previsibilidade e organização para atletas e patrocinadores.
+
+### 3.6 Capa: Melhores da Rodada
+Descrição recomendada no Instagram: `Destaques`
+Arquivo da capa: `capas-destaques/06-destaque-instagram-melhores-da-rodada.png`
+
+O que postar:
+- artilheiro do dia
+- maestro do dia
+- melhor goleiro
+- melhor zagueiro
+- craques da rodada
+- outros destaques individuais
+
+Por que é importante:
+Substitui o foco limitado em artilharia e valoriza mais atletas, aumentando engajamento e recorrência de conteúdo.
+
+### 3.7 Capa: Contato
+Descrição recomendada no Instagram: `Contato`
+Arquivo da capa: `capas-destaques/07-destaque-instagram-contato.png`
+
+O que postar:
+- telefone ou WhatsApp oficial
+- responsável pelo racha
+- como anunciar no racha
+- como participar dos jogos
+
+Por que é importante:
+Facilita o contato de atletas, interessados e patrocinadores com o responsável.
+
+## 4. Boas práticas
+- Mantenha padrão visual em todas as capas e stories.
+- Use sempre as capas oficiais para não perder consistência.
+- Evite excesso de destaques; priorize clareza.
+- Atualize os destaques com frequência.
+- Deixe os destaques comerciais antes dos operacionais.
+- Use artes legíveis e organizadas.
+- Evite poluição visual.
+- Mostre provas reais de movimento, organização e engajamento.
+
+## 5. Dicas importantes para valorizar o perfil
+- Posicione patrocinadores premium primeiro.
+- Atualize Campeões, Agenda e Destaques toda semana.
+- Mostre resultados reais, não só promessas.
+- Use o site do racha como apoio comercial:
+  `app.fut7pro.com.br/[slugdoracha]`
+- Fortaleça a identidade visual do perfil.
+- Faça o Instagram parecer uma marca organizada, não um grupo improvisado.
+
+## 6. Fechamento
+Um Instagram bem organizado aumenta a percepção de valor do racha, atrai mais atletas, abre espaço para novos patrocinadores e fortalece a marca local do projeto.
+
+No Fut7Pro, esse material foi pensado para transformar o perfil do racha em uma vitrine comercial clara, profissional e patrocinável.
