@@ -98,6 +98,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [sessionExpiredModalOpen, setSessionExpiredModalOpen] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
   const [sessionModalError, setSessionModalError] = useState<string | null>(null);
+  const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -160,6 +161,19 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       trackLastTenantAccess(nextSlug);
     }
   }, [accessLoading, access, tenantSlug, rachaId, setTenantSlug, setRachaId]);
+
+  useEffect(() => {
+    if (!accessLoading) {
+      setLoadingTimeoutReached(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setLoadingTimeoutReached(true);
+    }, 15000);
+
+    return () => window.clearTimeout(timer);
+  }, [accessLoading]);
 
   useEffect(() => {
     if (accessLoading || accessError || access?.blocked || hasResolvedTenant || isHubRoute) {
@@ -268,10 +282,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     </>
   );
 
-  if (accessLoading) {
-    return withSessionModal(<AdminLoading />);
-  }
-
   if (accessError && !isRecoverableAccessError) {
     return withSessionModal(
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
@@ -300,6 +310,47 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         </div>
       </div>
     );
+  }
+
+  if (loadingTimeoutReached && !access) {
+    return withSessionModal(
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
+        <div className="max-w-md w-full rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
+          <h1 className="text-xl font-bold text-yellow-300 mb-2">Painel demorou para responder</h1>
+          <p className="text-sm text-zinc-200 mb-6">
+            O carregamento levou mais tempo que o esperado. Tente novamente ou volte ao Hub para
+            selecionar o racha.
+          </p>
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="rounded-lg bg-yellow-400 text-black font-semibold px-4 py-2"
+              onClick={() => mutateAccess()}
+            >
+              Tentar novamente
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-100 font-semibold px-4 py-2"
+              onClick={() => router.replace("/admin/selecionar-racha")}
+            >
+              Voltar para selecionar racha
+            </button>
+            <button
+              type="button"
+              className="rounded-lg border border-red-500/40 bg-red-500/10 text-red-200 font-semibold px-4 py-2"
+              onClick={() => signOut({ callbackUrl: "/admin/login" })}
+            >
+              Sair da conta
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessLoading) {
+    return withSessionModal(<AdminLoading />);
   }
 
   if (access?.blocked && isStatusRoute) {
