@@ -30,6 +30,7 @@ const SMOKE_ENV_UNSTABLE_ERRORS = [
   "Shell admin não carregou sidebar/menu de navegação.",
   "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas).",
   "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha).",
+  "Seleção por /api/admin/hub/entry levou para /admin/status-assinatura, mas o cenário exige acesso ativo.",
 ];
 const INVALID_CREDENTIALS_ERROR_TEXT =
   "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E.";
