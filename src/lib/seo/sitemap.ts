@@ -24,6 +24,7 @@ const FALLBACK_TENANT_SLUG = "vitrine";
 const TENANT_SLUG_REGEX = /^[a-z0-9-]{3,30}$/;
 const MAX_ATHLETE_SLUGS = 300;
 const MAX_TOURNAMENT_SLUGS = 200;
+const QA_TENANT_SLUG_PREFIXES = ["qa-", "qa_"];
 
 const TENANT_STATIC_PATHS: TenantPathEntry[] = [
   { path: "", changefreq: "daily", priority: 1.0 },
@@ -65,6 +66,7 @@ function normalizeTenantSlug(input?: string | null) {
   const slug = (input || "").trim().toLowerCase();
   if (!slug) return null;
   if (!TENANT_SLUG_REGEX.test(slug)) return null;
+  if (QA_TENANT_SLUG_PREFIXES.some((prefix) => slug.startsWith(prefix))) return null;
   if (resolvePublicTenantSlug(`/${slug}`) !== slug) return null;
   return slug;
 }
