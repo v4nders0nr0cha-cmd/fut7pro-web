@@ -37,8 +37,13 @@ export default function LogoDoRachaPage() {
   } = useMe({ context: "admin" });
   const { tenantSlug: contextTenantSlug, setTenantSlug } = useRacha();
   const tenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || "";
-  const hasLoadError = Boolean(aboutLoadError) || isMeError;
-  const loadErrorMessage = meErrorMessage || "Falha ao carregar dados de personalização.";
+  const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
+  const aboutErrorMessage =
+    aboutLoadError instanceof Error ? aboutLoadError.message : "Falha ao carregar dados do racha.";
+  const hasLoadError = Boolean(aboutLoadError) || isMeError || loadingTimeoutReached;
+  const loadErrorMessage = loadingTimeoutReached
+    ? "Carregamento acima do esperado. Tente novamente."
+    : meErrorMessage || aboutErrorMessage || "Falha ao carregar dados de personalização.";
   const missingTenantScope = !tenantSlug;
   const membershipRole = (me?.membership?.role || "").toUpperCase();
   const presidenteEmail = about?.presidente?.email?.toLowerCase() || null;
@@ -207,13 +212,17 @@ export default function LogoDoRachaPage() {
   const disableActions = saving || isLoading || isLoadingMe;
   const disableSave = disableActions || (slugChanged && slugStatus !== "available");
 
-  if (isLoadingMe || isLoading) {
-    return (
-      <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4 text-center">
-        <div className="text-gray-300">Carregando perfil...</div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!(isLoadingMe || isLoading)) {
+      setLoadingTimeoutReached(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setLoadingTimeoutReached(true);
+    }, 15000);
+
+    return () => window.clearTimeout(timer);
+  }, [isLoadingMe, isLoading]);
 
   if (hasLoadError) {
     return (
@@ -225,6 +234,7 @@ export default function LogoDoRachaPage() {
             type="button"
             className="mt-4 rounded-lg bg-yellow-400 px-4 py-2 text-black font-semibold"
             onClick={() => {
+              setLoadingTimeoutReached(false);
               retryAbout();
               retryMe();
             }}
@@ -232,6 +242,17 @@ export default function LogoDoRachaPage() {
             Tentar novamente
           </button>
         </div>
+      </div>
+    );
+  }
+
+  if (isLoadingMe || isLoading) {
+    return (
+      <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-2xl mx-auto px-4 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-white mb-4">
+          Identidade Visual do Racha
+        </h1>
+        <div className="text-gray-300">Carregando perfil...</div>
       </div>
     );
   }

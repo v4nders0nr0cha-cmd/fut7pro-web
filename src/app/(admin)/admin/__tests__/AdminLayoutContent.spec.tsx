@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import AdminLayoutContent from "../AdminLayoutContent";
 
 const signOutMock = jest.fn();
+const mockUseAdminAccess = jest.fn();
 
 jest.mock("next-auth/react", () => ({
   signOut: (...args: unknown[]) => signOutMock(...args),
@@ -12,15 +13,7 @@ jest.mock("next-auth/react", () => ({
 }));
 
 jest.mock("@/hooks/useAdminAccess", () => ({
-  useAdminAccess: () => ({
-    access: {
-      tenant: { slug: "racha-1", id: "tenant-1" },
-      blocked: false,
-      reason: "",
-    },
-    isLoading: false,
-    error: null,
-  }),
+  useAdminAccess: (...args: unknown[]) => mockUseAdminAccess(...args),
 }));
 
 jest.mock("@/context/RachaContext", () => ({
@@ -82,6 +75,18 @@ jest.mock("@/context/NotificationContext", () => ({
 describe("AdminLayoutContent", () => {
   beforeEach(() => {
     mockSidebar.mockClear();
+    mockUseAdminAccess.mockReset();
+    mockUseAdminAccess.mockReturnValue({
+      access: {
+        tenant: { slug: "racha-1", id: "tenant-1" },
+        blocked: false,
+        reason: "",
+      },
+      isLoading: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+    jest.useRealTimers();
   });
 
   it("renderiza layout com children", () => {
@@ -105,5 +110,30 @@ describe("AdminLayoutContent", () => {
       (call) => call[0]?.mobile && call[0]?.isOpen
     );
     expect(hasOpenMobileSidebar).toBe(true);
+  });
+
+  it("mostra fallback quando o loading do acesso passa do timeout", () => {
+    jest.useFakeTimers();
+    const retryAccess = jest.fn();
+
+    mockUseAdminAccess.mockReturnValue({
+      access: null,
+      isLoading: true,
+      error: null,
+      mutate: retryAccess,
+    });
+
+    render(<AdminLayoutContent>child</AdminLayoutContent>);
+
+    expect(screen.getByText("Carregando painel...")).toBeInTheDocument();
+
+    act(() => {
+      jest.advanceTimersByTime(15000);
+    });
+
+    expect(screen.getByText("Painel demorou para responder")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    expect(retryAccess).toHaveBeenCalledTimes(1);
   });
 });
