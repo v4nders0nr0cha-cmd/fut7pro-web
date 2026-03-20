@@ -80,7 +80,11 @@ export default function ListaAtletasSlugPage() {
                 key={atleta.slug || atleta.id}
                 className="bg-neutral-900 rounded-xl p-4 shadow-md border border-neutral-800 hover:border-brand transition"
               >
-                <div className="flex items-center gap-3 mb-3">
+                <Link
+                  href={publicHref(`/atletas/${profileSlug}`)}
+                  aria-label={`Abrir perfil de ${atleta.nome}`}
+                  className="flex items-center gap-3 mb-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                >
                   <Image
                     src={atleta.foto || "/images/jogadores/jogador_padrao_01.jpg"}
                     alt={`Foto do atleta ${atleta.nome}`}
@@ -89,10 +93,10 @@ export default function ListaAtletasSlugPage() {
                     className="rounded-full border border-neutral-700"
                   />
                   <div>
-                    <h2 className="text-lg font-bold text-brand">{atleta.nome}</h2>
+                    <h2 className="text-lg font-bold text-brand hover:underline">{atleta.nome}</h2>
                     {slugLabel && <p className="text-sm text-gray-400">{slugLabel}</p>}
                   </div>
-                </div>
+                </Link>
                 <div className="text-sm text-gray-300 space-y-1 mb-3">
                   <p>
                     <span className="font-bold text-brand">Jogos:</span> {atleta.jogos}
