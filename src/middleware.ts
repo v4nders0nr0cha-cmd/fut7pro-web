@@ -120,6 +120,8 @@ export async function middleware(req: NextRequest) {
   if (publicSlug) {
     requestHeaders.set("x-public-tenant-slug", publicSlug);
   }
+  // Header interno estável para resolver canonical por subrota no generateMetadata.
+  requestHeaders.set("x-fut7pro-pathname", pathname);
   requestHeaders = buildSecurityRequestHeaders(requestHeaders, nonce, csp);
 
   const res = NextResponse.next({

@@ -82,6 +82,7 @@ function resolveSlugFromHeaders() {
   const hdrs = headers();
   const candidates = [
     hdrs.get("x-public-tenant-slug"),
+    hdrs.get("x-fut7pro-pathname"),
     hdrs.get("x-forwarded-uri"),
     hdrs.get("x-next-url"),
     hdrs.get("x-pathname"),
