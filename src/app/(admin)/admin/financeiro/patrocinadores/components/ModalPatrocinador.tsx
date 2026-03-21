@@ -4,6 +4,10 @@ import type { Patrocinador } from "@/types/financeiro";
 import Image from "next/image";
 import { FaUpload, FaTimes } from "react-icons/fa";
 import SponsorLogoCropperModal from "./SponsorLogoCropperModal";
+import {
+  handleFormInputValidationReset,
+  handleFormInvalidPtBr,
+} from "@/lib/forms/native-ptbr-validation";
 
 interface Props {
   open: boolean;
@@ -244,6 +248,8 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         )}
         <form
           className="flex flex-col gap-3"
+          onInvalidCapture={handleFormInvalidPtBr}
+          onInputCapture={handleFormInputValidationReset}
           onSubmit={(e) => {
             e.preventDefault();
             setFirstPaymentError(null);
