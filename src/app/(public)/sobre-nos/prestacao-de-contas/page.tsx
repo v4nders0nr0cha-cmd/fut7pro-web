@@ -2,7 +2,6 @@
 import Head from "next/head";
 import { useRacha as useRachaContext } from "@/context/RachaContext";
 import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
-import { notFound } from "next/navigation";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
 import TabelaLancamentos from "@/components/financeiro/TabelaLancamentos";
 import { rachaConfig } from "@/config/racha.config";
@@ -22,16 +21,27 @@ export default function PrestacaoDeContasPage() {
   } = useFinanceiroPublic(slug);
   const tenantName = tenant?.name || rachaConfig.nome;
 
-  // Se não estiver visível, retorna 404 do Next.js
-  if (!isLoadingFinanceiro && isNotFound) {
-    notFound();
-  }
-
   if (isLoadingFinanceiro) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
         <p className="mt-4 text-gray-300">Carregando prestação de contas...</p>
+      </div>
+    );
+  }
+
+  if (isNotFound) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo text-center px-4">
+        <h1 className="text-2xl font-bold text-brand-strong mb-3">
+          Prestação de contas indisponível
+        </h1>
+        <p className="text-gray-300 max-w-2xl">
+          Este racha ainda não publicou lançamentos financeiros nesta área.
+        </p>
+        <p className="text-gray-400 mt-2 max-w-2xl">
+          Quando houver movimentações registradas e visíveis, elas aparecerão aqui.
+        </p>
       </div>
     );
   }
