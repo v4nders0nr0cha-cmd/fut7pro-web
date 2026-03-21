@@ -70,6 +70,7 @@ export async function generateMetadata({
 
   const hdrs = headers();
   const canonicalPath = resolveCanonicalPathForPublicSlug(slug, [
+    hdrs.get("x-fut7pro-pathname"),
     hdrs.get("x-forwarded-uri"),
     hdrs.get("x-next-url"),
     hdrs.get("x-pathname"),
