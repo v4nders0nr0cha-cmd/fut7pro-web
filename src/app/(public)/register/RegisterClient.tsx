@@ -21,6 +21,10 @@ import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
+import {
+  handleFormInputValidationReset,
+  handleFormInvalidPtBr,
+} from "@/lib/forms/native-ptbr-validation";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
@@ -665,7 +669,12 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          onInvalidCapture={handleFormInvalidPtBr}
+          onInputCapture={handleFormInputValidationReset}
+          className="mt-6 space-y-4"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
               Nome

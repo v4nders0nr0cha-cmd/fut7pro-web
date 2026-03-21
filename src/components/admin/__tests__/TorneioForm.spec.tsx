@@ -46,4 +46,14 @@ describe("TorneioForm", () => {
 
     expect(onCancel).toHaveBeenCalled();
   });
+
+  it("aplica mensagem de validacao em portugues no campo obrigatorio", () => {
+    render(<TorneioForm onSave={jest.fn()} />);
+
+    const nomeInput = screen.getByPlaceholderText(/Nome do Torneio/i) as HTMLInputElement;
+    fireEvent.invalid(nomeInput);
+
+    expect(nomeInput.validationMessage).toBe("Este campo é obrigatório.");
+    expect(nomeInput).toHaveAttribute("aria-invalid", "true");
+  });
 });

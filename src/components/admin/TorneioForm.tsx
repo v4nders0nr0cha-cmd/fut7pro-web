@@ -1,6 +1,10 @@
 "use client";
 import { useState } from "react";
 import type { Torneio } from "@/types/torneio";
+import {
+  handleFormInputValidationReset,
+  handleFormInvalidPtBr,
+} from "@/lib/forms/native-ptbr-validation";
 
 type Props = {
   onSave: (torneio: Partial<Torneio>) => void;
@@ -24,6 +28,8 @@ export default function TorneioForm({ onSave, initialData = {}, onCancel }: Prop
   return (
     <form
       onSubmit={handleSubmit}
+      onInvalidCapture={handleFormInvalidPtBr}
+      onInputCapture={handleFormInputValidationReset}
       className="flex flex-col gap-4 bg-card rounded-2xl shadow-md w-full max-w-md mx-auto"
     >
       <h2 className="text-xl font-bold text-yellow-400 text-center">Adicionar/Editar Torneio</h2>

@@ -5,6 +5,10 @@ import { toast } from "react-hot-toast";
 import type { Jogador, PosicaoJogador } from "@/types/jogador";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
+import {
+  handleFormInputValidationReset,
+  handleFormInvalidPtBr,
+} from "@/lib/forms/native-ptbr-validation";
 
 const POSICOES: { label: string; value: PosicaoJogador }[] = [
   { label: "Atacante", value: "atacante" },
@@ -152,6 +156,8 @@ export default function JogadorForm({
   return (
     <form
       onSubmit={handleSubmit}
+      onInvalidCapture={handleFormInvalidPtBr}
+      onInputCapture={handleFormInputValidationReset}
       className="flex flex-col gap-4 bg-[#191919] rounded-xl shadow-lg p-4 border border-[#232323] max-w-xl"
     >
       <div className="flex gap-4">
