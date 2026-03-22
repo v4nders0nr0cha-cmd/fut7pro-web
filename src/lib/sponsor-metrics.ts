@@ -17,13 +17,7 @@ function normalizeUrl(url?: string | null) {
   return url.split("#")[0].trim();
 }
 
-function metricKey({
-  slug,
-  sponsorId,
-  type,
-  targetUrl,
-  currentUrl,
-}: SponsorMetricInput): string {
+function metricKey({ slug, sponsorId, type, targetUrl, currentUrl }: SponsorMetricInput): string {
   return [
     type,
     slug.trim().toLowerCase(),

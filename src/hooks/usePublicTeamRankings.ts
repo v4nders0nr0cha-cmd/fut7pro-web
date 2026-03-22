@@ -75,9 +75,7 @@ export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}
   if (!isAllPeriod && options.quarter) params.set("quarter", String(options.quarter));
 
   const search = params.toString();
-  const key = shouldFetch
-    ? `/api/public/${slug}/team-rankings${search ? `?${search}` : ""}`
-    : null;
+  const key = shouldFetch ? `/api/public/${slug}/team-rankings${search ? `?${search}` : ""}` : null;
   const teamsKey = shouldFetch ? `/api/public/${slug}/teams` : null;
 
   const { data, error, isLoading } = useSWR<TeamRankingsResponse>(key, fetcher, {
