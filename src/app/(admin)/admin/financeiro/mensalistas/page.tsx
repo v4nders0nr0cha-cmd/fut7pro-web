@@ -210,8 +210,8 @@ type SucessoModalProps = {
 function SucessoModal({ open, title, description, onClose, onVerLancamento }: SucessoModalProps) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
-      <div className="w-full max-w-md rounded-2xl border border-emerald-500/30 bg-neutral-900 p-5 shadow-2xl">
+    <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3">
+      <div className="pointer-events-auto w-full max-w-md rounded-2xl border border-emerald-500/30 bg-neutral-900 p-5 shadow-2xl">
         <h2 className="text-lg font-bold text-emerald-300">{title}</h2>
         <p className="mt-2 text-sm text-gray-200">{description}</p>
         <div className="mt-5 flex justify-end gap-2">
@@ -256,6 +256,9 @@ export default function MensalistasPage() {
   const [confirmacaoLoteAberta, setConfirmacaoLoteAberta] = useState(false);
   const [confirmacaoCancelamento, setConfirmacaoCancelamento] =
     useState<ModalConfirmacaoCancelamento | null>(null);
+  const [lancamentoIdsOtimizados, setLancamentoIdsOtimizados] = useState<Record<string, string>>(
+    {}
+  );
   const [sucessoModal, setSucessoModal] = useState<{
     title: string;
     description: string;
@@ -299,6 +302,10 @@ export default function MensalistasPage() {
       return next;
     });
   }, [competencias]);
+
+  useEffect(() => {
+    setLancamentoIdsOtimizados({});
+  }, [competenciaKey]);
 
   const getDiasSelecionados = useCallback(
     (athleteId: string) => {
@@ -424,7 +431,7 @@ export default function MensalistasPage() {
         diasResumo,
         jogosNoMes: jogosAtleta,
         classificacaoDia,
-        ultimoLancamentoId: lancamento?.id || null,
+        ultimoLancamentoId: lancamento?.id || lancamentoIdsOtimizados[mensalista.id] || null,
         marcadoSemLancamento: pagoPorCompetencia && !pagoPorLancamento,
         diasSelecionados: diasSelecionadosAtleta,
         valorSemDesconto,
@@ -439,6 +446,7 @@ export default function MensalistasPage() {
     valorPorDia,
     descontos,
     lancamentosMensalidadePorAthlete,
+    lancamentoIdsOtimizados,
     competenciaByAthlete,
   ]);
 
@@ -540,12 +548,14 @@ export default function MensalistasPage() {
   }, [hoje]);
 
   const abrirPrestacaoComLancamento = useCallback(
-    (lancamentoId: string) => {
+    (lancamentoId?: string | null) => {
       const params = new URLSearchParams({
         origem: "mensalistas",
         competencia: competenciaKey,
-        lancamento: lancamentoId,
       });
+      if (lancamentoId) {
+        params.set("lancamento", lancamentoId);
+      }
       router.push(`/admin/financeiro/prestacao-de-contas?${params.toString()}`);
     },
     [competenciaKey, router]
@@ -610,6 +620,12 @@ export default function MensalistasPage() {
 
     try {
       const { lancamentoId, status } = await registrarPagamento(atletaSelecionadoPagamento);
+      if (lancamentoId) {
+        setLancamentoIdsOtimizados((prev) => ({
+          ...prev,
+          [atletaSelecionadoPagamento.id]: lancamentoId,
+        }));
+      }
       const isDuplicado = status === "already_registered";
       const mensagem = isDuplicado
         ? `A mensalidade de ${atletaSelecionadoPagamento.nome}, referente a ${competenciaTexto}, já estava registrada no financeiro.`
@@ -673,6 +689,26 @@ export default function MensalistasPage() {
           ?.map((item) => item.lancamentoId)
           .filter((id): id is string => Boolean(id))
           .at(-1) ?? undefined;
+      const otimizadoEmLote = (response.items || []).reduce<Record<string, string>>((acc, item) => {
+        const athleteId =
+          item && typeof (item as { athleteId?: unknown }).athleteId === "string"
+            ? ((item as { athleteId: string }).athleteId ?? "")
+            : "";
+        const lancamentoId =
+          item && typeof (item as { lancamentoId?: unknown }).lancamentoId === "string"
+            ? ((item as { lancamentoId: string }).lancamentoId ?? "")
+            : "";
+        if (athleteId && lancamentoId) {
+          acc[athleteId] = lancamentoId;
+        }
+        return acc;
+      }, {});
+      if (Object.keys(otimizadoEmLote).length > 0) {
+        setLancamentoIdsOtimizados((prev) => ({
+          ...prev,
+          ...otimizadoEmLote,
+        }));
+      }
 
       if (totalProcessado > 0) {
         const mensagemResumo =
@@ -711,6 +747,14 @@ export default function MensalistasPage() {
 
     try {
       const response = await cancelarPagamento(atletaSelecionadoCancelamento);
+      setLancamentoIdsOtimizados((prev) => {
+        if (!Object.prototype.hasOwnProperty.call(prev, atletaSelecionadoCancelamento.id)) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[atletaSelecionadoCancelamento.id];
+        return next;
+      });
       if (response?.canceled === false) {
         toast("Este pagamento já estava cancelado.", { icon: "ℹ️" });
       } else {
