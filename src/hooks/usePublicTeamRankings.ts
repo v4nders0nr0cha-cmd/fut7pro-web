@@ -60,10 +60,13 @@ export interface UsePublicTeamRankingsOptions {
   year?: number;
   period?: "all" | "year" | "quarter";
   quarter?: number;
+  enabled?: boolean;
 }
 
 export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}) {
+  const enabled = options.enabled ?? true;
   const slug = options.slug?.trim() || "";
+  const shouldFetch = enabled && slug.length > 0;
 
   const params = new URLSearchParams();
   const isAllPeriod = options.period === "all";
@@ -72,11 +75,15 @@ export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}
   if (!isAllPeriod && options.quarter) params.set("quarter", String(options.quarter));
 
   const search = params.toString();
-  const key = slug ? `/api/public/${slug}/team-rankings${search ? `?${search}` : ""}` : null;
-  const teamsKey = slug ? `/api/public/${slug}/teams` : null;
+  const key = shouldFetch
+    ? `/api/public/${slug}/team-rankings${search ? `?${search}` : ""}`
+    : null;
+  const teamsKey = shouldFetch ? `/api/public/${slug}/teams` : null;
 
   const { data, error, isLoading } = useSWR<TeamRankingsResponse>(key, fetcher, {
     revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 10000,
   });
 
   const { data: teamsData, isLoading: teamsLoading } = useSWR<PublicTeamsResponse>(
@@ -84,6 +91,8 @@ export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}
     teamsFetcher,
     {
       revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 10000,
     }
   );
 
@@ -116,8 +125,8 @@ export function usePublicTeamRankings(options: UsePublicTeamRankingsOptions = {}
     posicao: index + 1,
   }));
 
-  const shouldWaitTeams = !rankingResults.length && teamsLoading;
-  const loading = isLoading || shouldWaitTeams;
+  const shouldWaitTeams = shouldFetch && !rankingResults.length && teamsLoading;
+  const loading = shouldFetch ? isLoading || shouldWaitTeams : false;
 
   return {
     teams: mergedTeams,

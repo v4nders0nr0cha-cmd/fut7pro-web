@@ -95,17 +95,22 @@ export interface UsePublicPlayerRankingsOptions {
   quarter?: number;
   limit?: number;
   position?: string;
+  enabled?: boolean;
 }
 
 export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions) {
+  const enabled = options.enabled ?? true;
   const slug = options.slug?.trim() || "";
-  const athletesKey = slug ? `/api/public/${slug}/athletes` : null;
+  const shouldFetch = enabled && slug.length > 0;
+  const athletesKey = shouldFetch ? `/api/public/${slug}/athletes` : null;
 
   const { data: athletesData, isLoading: athletesLoading } = useSWR<PublicAthletesResponse>(
     athletesKey,
     athletesFetcher,
     {
       revalidateOnFocus: false,
+      revalidateIfStale: false,
+      dedupingInterval: 10000,
     }
   );
 
@@ -121,10 +126,12 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
   if (resolvedLimit) params.set("limit", String(resolvedLimit));
   if (options.position) params.set("position", options.position);
 
-  const key = slug ? `/api/public/${slug}/player-rankings?${params.toString()}` : null;
+  const key = shouldFetch ? `/api/public/${slug}/player-rankings?${params.toString()}` : null;
 
   const { data, error, isLoading } = useSWR<PlayerRankingsResponse>(key, fetcher, {
     revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: 10000,
   });
 
   const rankingResults = data?.results ?? [];
@@ -175,8 +182,8 @@ export function usePublicPlayerRankings(options: UsePublicPlayerRankingsOptions)
 
   const mergedRankings = [...normalizedRankings, ...zeroEntries];
   const limitedRankings = options.limit ? mergedRankings.slice(0, options.limit) : mergedRankings;
-  const shouldWaitAthletes = !rankingResults.length && athletesLoading;
-  const loading = isLoading || shouldWaitAthletes;
+  const shouldWaitAthletes = shouldFetch && !rankingResults.length && athletesLoading;
+  const loading = shouldFetch ? isLoading || shouldWaitAthletes : false;
 
   return {
     rankings: limitedRankings,

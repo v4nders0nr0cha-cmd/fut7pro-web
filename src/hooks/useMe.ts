@@ -4,6 +4,7 @@ import useSWR from "swr";
 import type { MeResponse } from "@/types/me";
 
 const ME_TIMEOUT_MS = 12000;
+const ME_DEDUPE_MS = 15000;
 
 const fetcher = async (url: string): Promise<MeResponse> => {
   const controller = new AbortController();
@@ -61,6 +62,8 @@ export function useMe(options?: {
   const url = params.toString() ? `/api/me?${params.toString()}` : "/api/me";
   const { data, error, isLoading, mutate } = useSWR<MeResponse>(enabled ? url : null, fetcher, {
     revalidateOnFocus: false,
+    revalidateIfStale: false,
+    dedupingInterval: ME_DEDUPE_MS,
   });
 
   return {
