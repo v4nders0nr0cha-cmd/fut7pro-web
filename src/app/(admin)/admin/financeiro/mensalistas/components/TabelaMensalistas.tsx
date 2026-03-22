@@ -28,7 +28,7 @@ type Props = {
   getDiasSelecionados: (id: string) => string[];
   onSaveDias: (id: string, diasSelecionados: string[]) => void | Promise<void>;
   onRegistrarPagamento: (athleteId: string) => void | Promise<void>;
-  onVerLancamento: (lancamentoId: string, athleteId: string) => void;
+  onVerLancamento: (lancamentoId: string | null | undefined, athleteId: string) => void;
   onCancelarPagamento?: (athleteId: string) => void | Promise<void>;
   processandoAthleteId?: string | null;
   processandoLote?: boolean;
@@ -202,10 +202,13 @@ export default function TabelaMensalistas({
                       <button
                         type="button"
                         className="rounded-md border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-500/10 disabled:opacity-50"
-                        onClick={() =>
-                          m.ultimoLancamentoId && onVerLancamento(m.ultimoLancamentoId, m.id)
+                        onClick={() => onVerLancamento(m.ultimoLancamentoId, m.id)}
+                        disabled={Boolean(processandoAthleteId)}
+                        title={
+                          m.ultimoLancamentoId
+                            ? "Abrir lançamento no financeiro."
+                            : "Abrir prestação da competência para localizar o lançamento."
                         }
-                        disabled={!m.ultimoLancamentoId || Boolean(processandoAthleteId)}
                       >
                         Ver lançamento
                       </button>
