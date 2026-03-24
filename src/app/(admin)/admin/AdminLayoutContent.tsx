@@ -16,6 +16,26 @@ import { signOut, useSession } from "next-auth/react";
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
 const PERF_START_KEY = "fut7pro_admin_perf_start";
+const ADMIN_DEFAULT_TITLE = "Painel Admin | Fut7Pro";
+const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
+  { prefix: "/admin/dashboard", title: "Dashboard Admin | Fut7Pro" },
+  { prefix: "/admin/partidas", title: "Partidas Admin | Fut7Pro" },
+  { prefix: "/admin/jogadores", title: "Jogadores Admin | Fut7Pro" },
+  { prefix: "/admin/conquistas", title: "Conquistas Admin | Fut7Pro" },
+  { prefix: "/admin/financeiro", title: "Financeiro Admin | Fut7Pro" },
+  { prefix: "/admin/personalizacao", title: "Personalização Admin | Fut7Pro" },
+  { prefix: "/admin/administracao", title: "Administração | Fut7Pro" },
+  { prefix: "/admin/comunicacao", title: "Comunicação Admin | Fut7Pro" },
+  { prefix: "/admin/configuracoes", title: "Configurações Admin | Fut7Pro" },
+  { prefix: "/admin/monetizacao", title: "Monetização Admin | Fut7Pro" },
+  { prefix: "/admin/selecionar-racha", title: "Selecionar Racha | Fut7Pro" },
+  { prefix: "/admin/status-assinatura", title: "Status da Assinatura | Fut7Pro" },
+];
+
+function resolveAdminTitle(pathname: string) {
+  if (!pathname.startsWith("/admin")) return null;
+  return ADMIN_ROUTE_TITLES.find((entry) => pathname.startsWith(entry.prefix))?.title ?? ADMIN_DEFAULT_TITLE;
+}
 
 const clearActiveTenantCookie = () => {
   if (typeof window === "undefined") return;
@@ -136,6 +156,17 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     setSessionExpiredModalOpen(true);
   }, []);
 
+  const buildAdminLoginHref = useCallback(() => {
+    const returnTo = pathname && pathname !== "/admin/login" ? pathname : "/admin/dashboard";
+    return `/admin/login?expired=1&returnTo=${encodeURIComponent(returnTo)}`;
+  }, [pathname]);
+
+  useEffect(() => {
+    const nextTitle = resolveAdminTitle(pathname);
+    if (!nextTitle || typeof document === "undefined") return;
+    document.title = nextTitle;
+  }, [pathname]);
+
   useEffect(() => {
     if (!shouldForceSignOutForTokenError || tokenErrorHandledRef.current) return;
     tokenErrorHandledRef.current = true;
@@ -144,8 +175,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   useEffect(() => {
     if (sessionStatus !== "unauthenticated") return;
-    openSessionExpiredModal();
-  }, [sessionStatus, openSessionExpiredModal]);
+    router.replace(buildAdminLoginHref());
+  }, [buildAdminLoginHref, router, sessionStatus]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -191,6 +222,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     if (accessLoading || !accessError) return;
     const status = (accessError as { status?: number } | undefined)?.status;
     if (status === 401) {
+      if (sessionStatus === "unauthenticated") {
+        router.replace(buildAdminLoginHref());
+        return;
+      }
       if (sessionStatus === "authenticated" && unauthorizedRetryCountRef.current < 2) {
         unauthorizedRetryCountRef.current += 1;
         const retryDelay = 350 * unauthorizedRetryCountRef.current;
@@ -219,7 +254,15 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
 
     router.replace("/admin/selecionar-racha");
-  }, [accessLoading, accessError, sessionStatus, mutateAccess, router, openSessionExpiredModal]);
+  }, [
+    accessLoading,
+    accessError,
+    buildAdminLoginHref,
+    sessionStatus,
+    mutateAccess,
+    router,
+    openSessionExpiredModal,
+  ]);
 
   useEffect(() => {
     if (accessLoading || !access?.blocked) return;
@@ -265,8 +308,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   };
 
   const handleSignInAgain = () => {
-    const callbackUrl = `/admin/login?expired=1&returnTo=${encodeURIComponent(pathname || "/admin/dashboard")}`;
-    signOut({ callbackUrl });
+    signOut({ callbackUrl: buildAdminLoginHref() });
   };
 
   const withSessionModal = (content: ReactNode) => (

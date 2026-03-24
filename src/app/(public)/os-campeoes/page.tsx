@@ -235,6 +235,9 @@ export default function CampeoesPage() {
   if (isLoading) {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-10">
+        <h1 className="sr-only">
+          Os Campeões do Racha - Melhores do Ano, Rankings e Campeões por Quadrimestre
+        </h1>
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <span className="ml-4 text-lg text-textoSuave">Carregando campeões...</span>
