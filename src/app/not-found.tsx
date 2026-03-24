@@ -8,12 +8,9 @@ export default function GlobalNotFoundPage() {
           Página não encontrada
         </p>
         <h1 className="text-2xl font-bold">Não encontramos a página solicitada.</h1>
-        <p className="mt-3 text-sm text-gray-300">
-          Racha não encontrado ou página indisponível.
-        </p>
+        <p className="mt-3 text-sm text-gray-300">Racha não encontrado ou página indisponível.</p>
         <p className="mt-2 text-sm text-gray-300">
-          Verifique o endereço e tente novamente. Se quiser, volte para a página inicial do
-          Fut7Pro.
+          Verifique o endereço e tente novamente. Se quiser, volte para a página inicial do Fut7Pro.
         </p>
         <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row">
           <Link

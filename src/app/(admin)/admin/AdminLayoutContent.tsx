@@ -34,7 +34,10 @@ const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
 
 function resolveAdminTitle(pathname: string) {
   if (!pathname.startsWith("/admin")) return null;
-  return ADMIN_ROUTE_TITLES.find((entry) => pathname.startsWith(entry.prefix))?.title ?? ADMIN_DEFAULT_TITLE;
+  return (
+    ADMIN_ROUTE_TITLES.find((entry) => pathname.startsWith(entry.prefix))?.title ??
+    ADMIN_DEFAULT_TITLE
+  );
 }
 
 const clearActiveTenantCookie = () => {

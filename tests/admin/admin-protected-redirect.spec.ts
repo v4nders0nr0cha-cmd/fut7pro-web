@@ -8,4 +8,3 @@ test.describe("admin protected redirect", () => {
     await expect(page).toHaveURL(/\/admin\/login(\?|$)/);
   });
 });
-
