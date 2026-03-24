@@ -49,13 +49,10 @@ function resolveState(
   data: FinanceiroPublicData | undefined,
   error: FetchError | undefined
 ): PublicFinanceiroState {
-  const dataState = String(data?.publicState || "").toUpperCase();
-  if (dataState === "AVAILABLE") return "AVAILABLE";
-  if (dataState === "NO_DATA") return "NO_DATA";
-
   const errorState = String(error?.publicState || "").toUpperCase();
   if (errorState === "SLUG_NOT_FOUND") return "SLUG_NOT_FOUND";
   if (errorState === "MODULE_DISABLED") return "MODULE_DISABLED";
+  if (errorState === "UNAVAILABLE") return "UNAVAILABLE";
 
   if (error?.status === 404 || String(error?.code || "").toUpperCase() === "RACHA_NOT_FOUND") {
     return "SLUG_NOT_FOUND";
@@ -69,6 +66,10 @@ function resolveState(
   if (error) {
     return "UNAVAILABLE";
   }
+
+  const dataState = String(data?.publicState || "").toUpperCase();
+  if (dataState === "AVAILABLE") return "AVAILABLE";
+  if (dataState === "NO_DATA") return "NO_DATA";
 
   const lancamentosLength = Array.isArray(data?.lancamentos) ? data?.lancamentos.length : 0;
   return lancamentosLength > 0 ? "AVAILABLE" : "NO_DATA";
@@ -94,7 +95,17 @@ async function fetcher(url: string): Promise<FinanceiroPublicData> {
     throw error;
   }
 
-  return (parsedRecord ?? {}) as FinanceiroPublicData;
+  if (!parsedRecord) {
+    const error = new Error(
+      "Resposta inválida do servidor para prestação de contas."
+    ) as FetchError;
+    error.status = res.status;
+    error.code = "FINANCEIRO_INVALID_RESPONSE";
+    error.publicState = "UNAVAILABLE";
+    throw error;
+  }
+
+  return parsedRecord as FinanceiroPublicData;
 }
 
 /**
@@ -118,11 +129,11 @@ export function useFinanceiroPublic(slug: string) {
 
   const resumo: ResumoFinanceiro | undefined = data
     ? {
-        saldoAtual: data.resumo.saldoAtual ?? data.resumo.saldo ?? 0,
-        totalReceitas: data.resumo.totalReceitas ?? 0,
-        totalDespesas: data.resumo.totalDespesas ?? 0,
-        receitasPorMes: data.resumo.receitasPorMes ?? {},
-        despesasPorMes: data.resumo.despesasPorMes ?? {},
+        saldoAtual: data.resumo?.saldoAtual ?? data.resumo?.saldo ?? 0,
+        totalReceitas: data.resumo?.totalReceitas ?? 0,
+        totalDespesas: data.resumo?.totalDespesas ?? 0,
+        receitasPorMes: data.resumo?.receitasPorMes ?? {},
+        despesasPorMes: data.resumo?.despesasPorMes ?? {},
       }
     : undefined;
 
