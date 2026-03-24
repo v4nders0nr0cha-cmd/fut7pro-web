@@ -17,10 +17,21 @@ function json(body: unknown, init?: ResponseInit) {
 
 function normalizeLookupSuccess(payload: unknown) {
   const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  const nextAction =
+    typeof body.nextAction === "string" && body.nextAction.trim()
+      ? body.nextAction.trim().toUpperCase()
+      : null;
+  const membershipStatus =
+    typeof body.membershipStatus === "string" && body.membershipStatus.trim()
+      ? body.membershipStatus.trim().toUpperCase()
+      : null;
+
   return {
     ok: true,
     message: LOOKUP_UNIFORM_MESSAGE,
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+    ...(nextAction ? { nextAction } : {}),
+    ...(membershipStatus ? { membershipStatus } : {}),
   };
 }
 

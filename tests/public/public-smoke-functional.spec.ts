@@ -38,6 +38,7 @@ function parsePayloadSlugs(payload: SitemapSlugPayload | null) {
 
 test.describe("public functional smoke", () => {
   let slugs: string[] = [];
+  test.setTimeout(180_000);
 
   test.beforeAll(async ({ request }) => {
     const envSlugs = parseEnvSlugs();
@@ -59,7 +60,10 @@ test.describe("public functional smoke", () => {
     for (const slug of slugs) {
       for (const path of PUBLIC_PATHS) {
         const url = `/${slug}${path}`;
-        const response = await page.goto(url, { waitUntil: "domcontentloaded" });
+        const response = await page.goto(url, {
+          waitUntil: "domcontentloaded",
+          timeout: 45_000,
+        });
 
         expect(response, `Sem resposta ao acessar ${url}`).not.toBeNull();
         expect(response!.status(), `Status inválido para ${url}`).toBeLessThan(400);

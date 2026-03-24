@@ -13,6 +13,8 @@ type LookupResponse = {
   ok: true;
   message: string;
   requiresCaptcha?: boolean;
+  nextAction?: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
+  membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
 };
 
 type SessionUser = {
@@ -140,19 +142,40 @@ export default function EntrarClient() {
     [publicSlug, turnstileSiteKey]
   );
 
-  const redirectToLogin = useCallback(
-    (normalizedEmail: string, message?: string) => {
+  const redirectFromLookup = useCallback(
+    (normalizedEmail: string, lookup: LookupResponse) => {
+      const nextAction = String(lookup?.nextAction || "").toUpperCase();
+      const lookupMessage = lookup?.message || LOOKUP_UNIFORM_MESSAGE;
+
       persistPublicAuthContext({
         email: normalizedEmail,
         slug: publicSlug,
       });
       setResult(null);
       setError("");
-      setRedirectingMessage(message || LOOKUP_UNIFORM_MESSAGE);
+      setRedirectingMessage(lookupMessage);
       setAutoFlowLoading(true);
-      const params = new URLSearchParams();
-      params.set("callbackUrl", destinationHref);
-      router.replace(`${publicHref("/login")}?${params.toString()}`);
+
+      if (nextAction === "WAIT_APPROVAL") {
+        router.replace(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+
+      if (nextAction === "REGISTER") {
+        const registerParams = new URLSearchParams();
+        registerParams.set("callbackUrl", destinationHref);
+        router.replace(`${publicHref("/register")}?${registerParams.toString()}`);
+        return;
+      }
+
+      const loginParams = new URLSearchParams();
+      loginParams.set("callbackUrl", destinationHref);
+
+      if (nextAction === "REQUEST_JOIN") {
+        loginParams.set("intent", "request-join");
+      }
+
+      router.replace(`${publicHref("/login")}?${loginParams.toString()}`);
     },
     [destinationHref, publicHref, publicSlug, router]
   );
@@ -186,7 +209,7 @@ export default function EntrarClient() {
     const lookup = await runLookup(normalized, captchaToken);
     if (lookup) {
       setResult(lookup);
-      redirectToLogin(normalized, lookup.message);
+      redirectFromLookup(normalized, lookup);
     }
   };
 
