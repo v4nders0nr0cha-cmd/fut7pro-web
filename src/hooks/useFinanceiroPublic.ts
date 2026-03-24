@@ -3,7 +3,15 @@
 import useSWR from "swr";
 import type { ResumoFinanceiro, LancamentoFinanceiro } from "@/components/financeiro/types";
 
+type PublicFinanceiroState =
+  | "AVAILABLE"
+  | "NO_DATA"
+  | "MODULE_DISABLED"
+  | "SLUG_NOT_FOUND"
+  | "UNAVAILABLE";
+
 interface FinanceiroPublicData {
+  publicState?: "AVAILABLE" | "NO_DATA";
   tenant?: {
     id?: string;
     slug?: string;
@@ -31,20 +39,62 @@ interface FinanceiroPublicData {
   >;
 }
 
-type FetchError = Error & { status?: number };
+type FetchError = Error & {
+  status?: number;
+  code?: string;
+  publicState?: PublicFinanceiroState;
+};
+
+function resolveState(
+  data: FinanceiroPublicData | undefined,
+  error: FetchError | undefined
+): PublicFinanceiroState {
+  const dataState = String(data?.publicState || "").toUpperCase();
+  if (dataState === "AVAILABLE") return "AVAILABLE";
+  if (dataState === "NO_DATA") return "NO_DATA";
+
+  const errorState = String(error?.publicState || "").toUpperCase();
+  if (errorState === "SLUG_NOT_FOUND") return "SLUG_NOT_FOUND";
+  if (errorState === "MODULE_DISABLED") return "MODULE_DISABLED";
+
+  if (error?.status === 404 || String(error?.code || "").toUpperCase() === "RACHA_NOT_FOUND") {
+    return "SLUG_NOT_FOUND";
+  }
+  if (
+    error?.status === 403 ||
+    String(error?.code || "").toUpperCase() === "FINANCEIRO_MODULE_DISABLED"
+  ) {
+    return "MODULE_DISABLED";
+  }
+  if (error) {
+    return "UNAVAILABLE";
+  }
+
+  const lancamentosLength = Array.isArray(data?.lancamentos) ? data?.lancamentos.length : 0;
+  return lancamentosLength > 0 ? "AVAILABLE" : "NO_DATA";
+}
 
 async function fetcher(url: string): Promise<FinanceiroPublicData> {
   const res = await fetch(url);
+  const payload = await res.json().catch(() => null);
+  const parsedRecord = payload && typeof payload === "object" ? (payload as any) : null;
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Erro desconhecido" }));
-    const message = errorData.message || `HTTP ${res.status}: ${res.statusText}`;
+    const message =
+      parsedRecord?.message ||
+      parsedRecord?.error ||
+      "Não foi possível carregar a prestação de contas.";
     const error = new Error(message) as FetchError;
     error.status = res.status;
+    error.code = typeof parsedRecord?.code === "string" ? parsedRecord.code : undefined;
+    error.publicState =
+      typeof parsedRecord?.publicState === "string"
+        ? (parsedRecord.publicState as PublicFinanceiroState)
+        : undefined;
     throw error;
   }
 
-  return res.json();
+  return (parsedRecord ?? {}) as FinanceiroPublicData;
 }
 
 /**
@@ -53,7 +103,7 @@ async function fetcher(url: string): Promise<FinanceiroPublicData> {
  */
 export function useFinanceiroPublic(slug: string) {
   const slugValue = slug?.trim();
-  const { data, error, mutate, isLoading } = useSWR(
+  const { data, error, mutate, isLoading } = useSWR<FinanceiroPublicData, FetchError>(
     slugValue ? `/api/public/${encodeURIComponent(slugValue)}/financeiro` : null,
     fetcher,
     {
@@ -64,6 +114,7 @@ export function useFinanceiroPublic(slug: string) {
       errorRetryInterval: 5000, // 5 segundos
     }
   );
+  const state = resolveState(data, error);
 
   const resumo: ResumoFinanceiro | undefined = data
     ? {
@@ -86,12 +137,16 @@ export function useFinanceiroPublic(slug: string) {
   }));
 
   return {
+    state,
     tenant: data?.tenant ?? null,
     resumo,
     lancamentos,
     isLoading,
-    isError: error,
-    isNotFound: Boolean((error as FetchError | undefined)?.status === 404),
+    isError: state === "UNAVAILABLE" ? error : null,
+    isNotFound: state === "NO_DATA",
+    isSlugNotFound: state === "SLUG_NOT_FOUND",
+    isModuleDisabled: state === "MODULE_DISABLED",
+    isUnavailable: state === "UNAVAILABLE",
     error: error instanceof Error ? error.message : null,
     mutate,
   };

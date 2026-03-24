@@ -17,6 +17,8 @@ export default function PrestacaoDeContasPage() {
     isLoading: isLoadingFinanceiro,
     isError: isErrorFinanceiro,
     isNotFound,
+    isSlugNotFound,
+    isModuleDisabled,
     tenant,
   } = useFinanceiroPublic(slug);
   const tenantName = tenant?.name || rachaConfig.nome;
@@ -26,6 +28,30 @@ export default function PrestacaoDeContasPage() {
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
         <p className="mt-4 text-gray-300">Carregando prestação de contas...</p>
+      </div>
+    );
+  }
+
+  if (isSlugNotFound) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo text-center px-4">
+        <h1 className="text-2xl font-bold text-brand-strong mb-3">Racha não encontrado</h1>
+        <p className="text-gray-300 max-w-2xl">
+          Este endereço não corresponde a um racha válido no Fut7Pro.
+        </p>
+      </div>
+    );
+  }
+
+  if (isModuleDisabled) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo text-center px-4">
+        <h1 className="text-2xl font-bold text-brand-strong mb-3">
+          Prestação de contas não publicada
+        </h1>
+        <p className="text-gray-300 max-w-2xl">
+          A administração deste racha optou por não disponibilizar esta área publicamente.
+        </p>
       </div>
     );
   }
@@ -48,9 +74,13 @@ export default function PrestacaoDeContasPage() {
 
   if (isErrorFinanceiro) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
-        <h1 className="text-2xl font-bold text-red-400 mb-4">Erro ao carregar dados</h1>
-        <p className="text-red-300">Não foi possível carregar a prestação de contas.</p>
+      <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo text-center px-4">
+        <h1 className="text-2xl font-bold text-red-400 mb-4">
+          Prestação de contas temporariamente indisponível
+        </h1>
+        <p className="text-red-300 max-w-2xl">
+          Não foi possível carregar os dados financeiros agora. Tente novamente em instantes.
+        </p>
       </div>
     );
   }

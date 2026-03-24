@@ -47,4 +47,38 @@ describe("PrestacaoDeContasPage", () => {
       screen.queryByText(/Este racha não existe ou não está disponível/i)
     ).not.toBeInTheDocument();
   });
+
+  it("renderiza estado de modulo desativado", () => {
+    mockedUseFinanceiroPublic.mockReturnValue({
+      resumo: null,
+      lancamentos: [],
+      isLoading: false,
+      isError: null,
+      isNotFound: false,
+      isSlugNotFound: false,
+      isModuleDisabled: true,
+      tenant: { name: "Vitrine" },
+    });
+
+    render(<PrestacaoDeContasPage />);
+    expect(
+      screen.getByRole("heading", { name: "Prestação de contas não publicada" })
+    ).toBeInTheDocument();
+  });
+
+  it("renderiza estado de slug invalido", () => {
+    mockedUseFinanceiroPublic.mockReturnValue({
+      resumo: null,
+      lancamentos: [],
+      isLoading: false,
+      isError: null,
+      isNotFound: false,
+      isSlugNotFound: true,
+      isModuleDisabled: false,
+      tenant: null,
+    });
+
+    render(<PrestacaoDeContasPage />);
+    expect(screen.getByRole("heading", { name: "Racha não encontrado" })).toBeInTheDocument();
+  });
 });
