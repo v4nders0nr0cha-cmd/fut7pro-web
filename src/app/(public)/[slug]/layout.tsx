@@ -21,6 +21,56 @@ type PublicTenantLayoutData = {
   themeKey: string;
 };
 
+const PUBLIC_PATH_HEADER_CANDIDATES = [
+  "x-fut7pro-pathname",
+  "x-forwarded-uri",
+  "x-next-url",
+  "x-pathname",
+  "x-matched-path",
+  "x-nextjs-matched-path",
+  "x-invoke-path",
+] as const;
+
+function normalizePathnameCandidate(value?: string | null): string | null {
+  if (!value || typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  let pathname = trimmed;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    try {
+      pathname = new URL(trimmed).pathname;
+    } catch {
+      pathname = trimmed;
+    }
+  }
+
+  const withoutQuery = pathname.split("?")[0]?.split("#")[0] ?? "";
+  const normalized = withoutQuery
+    .trim()
+    .replace(/\/{2,}/g, "/")
+    .replace(/\/+$/, "");
+
+  if (!normalized) return "/";
+  return normalized.startsWith("/") ? normalized.toLowerCase() : `/${normalized.toLowerCase()}`;
+}
+
+function resolvePathnameFromHeaders(hdrs: { get(name: string): string | null }): string | null {
+  for (const headerName of PUBLIC_PATH_HEADER_CANDIDATES) {
+    const candidate = normalizePathnameCandidate(hdrs.get(headerName));
+    if (candidate) return candidate;
+  }
+  return null;
+}
+
+export function isPrestacaoDeContasPathForSlug(pathname: string | null, slug: string): boolean {
+  const normalizedSlug = slug.trim().toLowerCase();
+  if (!normalizedSlug) return false;
+  const normalizedPathname = normalizePathnameCandidate(pathname);
+  if (!normalizedPathname) return false;
+  return normalizedPathname === `/${normalizedSlug}/sobre-nos/prestacao-de-contas`;
+}
+
 const fetchPublicTenantLayoutData = cache(async (slug?: string | null) => {
   if (!slug) return null;
   const normalizedSlug = slug.trim().toLowerCase();
@@ -70,13 +120,7 @@ export async function generateMetadata({
 
   const hdrs = headers();
   const canonicalPath = resolveCanonicalPathForPublicSlug(slug, [
-    hdrs.get("x-fut7pro-pathname"),
-    hdrs.get("x-forwarded-uri"),
-    hdrs.get("x-next-url"),
-    hdrs.get("x-pathname"),
-    hdrs.get("x-matched-path"),
-    hdrs.get("x-nextjs-matched-path"),
-    hdrs.get("x-invoke-path"),
+    ...PUBLIC_PATH_HEADER_CANDIDATES.map((headerName) => hdrs.get(headerName)),
   ]);
 
   const canonicalUrl = `${APP_URL}${canonicalPath}`;
@@ -117,6 +161,16 @@ export default async function PublicSlugLayout({
 }) {
   const tenant = await fetchPublicTenantLayoutData(params?.slug ?? null);
   if (!tenant) {
+    const hdrs = headers();
+    const requestPathname = resolvePathnameFromHeaders(hdrs);
+    const requestedSlug = params?.slug ?? "";
+
+    // Permite que a rota de prestação pública trate slug inválido com UX dedicada,
+    // em vez de cair no 404 genérico do framework.
+    if (isPrestacaoDeContasPathForSlug(requestPathname, requestedSlug)) {
+      return <div data-theme={getRachaTheme(null).key}>{children}</div>;
+    }
+
     notFound();
   }
   return <div data-theme={tenant.themeKey}>{children}</div>;
