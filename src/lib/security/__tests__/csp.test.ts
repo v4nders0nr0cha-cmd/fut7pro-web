@@ -15,6 +15,7 @@ describe("buildWebCsp", () => {
     const scriptSrc = getDirective(csp, "script-src");
 
     expect(scriptSrc).toContain("'nonce-nonce-test'");
+    expect(scriptSrc).toContain("'sha256-UD+8zGDNZL1t7UbARE6w2M2yzWVpmyqGrMs2AanBW2w='");
     expect(scriptSrc).not.toContain("'unsafe-inline'");
     expect(scriptSrc).not.toContain("'unsafe-eval'");
   });
