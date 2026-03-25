@@ -44,32 +44,21 @@ export default function BottomMenu() {
     }
   }
 
-  // SE NÃO LOGADO: CTA de entrada (e onboarding adicional no vitrine)
+  // SE NÃO LOGADO: CTA de entrada
   if (!isLoggedIn) {
     if (isVitrineSlug) {
       return (
-        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center gap-2 px-2 py-2 md:hidden animate-slide-down">
+        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
-            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-2 font-bold text-[13px] uppercase text-white transition-all hover:border-brand/70 hover:text-brand"
+            className="w-full flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-2 font-bold text-[13px] uppercase text-white transition-all hover:border-brand/70 hover:text-brand"
             style={{ letterSpacing: 0.7 }}
             title="Entrar no Racha Vitrine"
             aria-label="Entrar no Racha Vitrine"
           >
             <FaUser size={18} />
             Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/cadastrar-racha")}
-            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
-            style={{ letterSpacing: 0.7 }}
-            title="Criar meu racha no Fut7Pro"
-            aria-label="Criar meu racha no Fut7Pro"
-          >
-            <FaUser size={18} />
-            Criar meu racha
           </button>
         </nav>
       );

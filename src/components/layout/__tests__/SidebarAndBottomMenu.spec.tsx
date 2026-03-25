@@ -47,7 +47,7 @@ describe("BottomMenu", () => {
     rerender(<BottomMenu />);
   });
 
-  it("no vitrine mantém Entrar e exibe CTA extra de criar racha", () => {
+  it("no vitrine mantém apenas CTA de Entrar", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
     usePathname.mockReturnValue("/vitrine");
     useMe.mockReturnValue({ me: null });
@@ -55,7 +55,7 @@ describe("BottomMenu", () => {
     render(<BottomMenu />);
 
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
-    expect(screen.getByText(/Criar meu racha/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Criar meu racha/i)).not.toBeInTheDocument();
   });
 
   it("mostra itens do menu e badges quando autenticado", () => {
