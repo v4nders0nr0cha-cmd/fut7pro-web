@@ -13,12 +13,20 @@ test.describe("athlete register", () => {
 
     await page.goto(`/${slug}/register`);
     const blockedHeading = page.getByRole("heading", { name: "Cadastro de atleta desabilitado" });
+    const requestHeading = page.getByRole("heading", { name: "Solicitar entrada no racha" });
+
+    // Aguarda um dos estados finais para evitar flake em CI quando a tela ainda está no fallback.
+    await Promise.race([
+      blockedHeading.waitFor({ state: "visible", timeout: 15000 }).catch(() => null),
+      requestHeading.waitFor({ state: "visible", timeout: 15000 }).catch(() => null),
+    ]);
+
     if (await blockedHeading.isVisible().catch(() => false)) {
       await expect(page.getByRole("link", { name: /Criar meu racha/i })).toBeVisible();
       return;
     }
 
-    await expect(page.getByRole("heading", { name: "Solicitar entrada no racha" })).toBeVisible();
+    await expect(requestHeading).toBeVisible();
     await expect(page.getByRole("button", { name: "Continuar com Google" })).toBeVisible();
     await expect(page.getByLabel("Nome")).toBeVisible();
     await expect(page.getByLabel("Apelido (opcional)")).toBeVisible();
