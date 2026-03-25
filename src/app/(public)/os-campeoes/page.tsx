@@ -235,9 +235,6 @@ export default function CampeoesPage() {
   if (isLoading) {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-4 pt-[40px] pb-10">
-        <h1 className="sr-only">
-          Os Campeões do Racha - Melhores do Ano, Rankings e Campeões por Quadrimestre
-        </h1>
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
           <span className="ml-4 text-lg text-textoSuave">Carregando campeões...</span>
@@ -524,7 +521,7 @@ function ChampionHighlightCard({
       )}
       {temporario && (
         <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full z-10">
-          temporariamente
+          dados parciais
         </span>
       )}
       {icon && (
