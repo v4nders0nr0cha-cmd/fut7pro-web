@@ -271,8 +271,9 @@ export default function SuperAdminNotificacoesPage() {
               )}
               {!isLoading && (isError || error) && (
                 <tr>
-                  <td colSpan={8} className="text-center py-6 text-red-400">
-                    Falha ao carregar campanhas.
+                  <td colSpan={8} className="space-y-1 py-6 text-center text-red-400">
+                    <p>Falha ao carregar campanhas.</p>
+                    {error ? <p className="text-xs text-red-300/90">{error}</p> : null}
                   </td>
                 </tr>
               )}
