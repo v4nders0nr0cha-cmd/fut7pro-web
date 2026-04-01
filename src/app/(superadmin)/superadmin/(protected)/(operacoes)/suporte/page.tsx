@@ -471,6 +471,9 @@ export default function SuperAdminSuportePage() {
     setPriorityDraft(selectedTicket.priority === "N/A" ? "NORMAL" : selectedTicket.priority);
     setCategoryDraft(selectedTicket.category || "EMBAIXADORES");
     setStatusNoteDraft("");
+    setReplyStatus(
+      selectedTicket.origin === "EMBAIXADOR" ? "AGUARDANDO_RETORNO_EMBAIXADOR" : "WAITING_ADMIN"
+    );
   }, [selectedTicket]);
 
   const stats = useMemo(() => {
@@ -790,7 +793,7 @@ export default function SuperAdminSuportePage() {
                   ticket.messages[ticket.messages.length - 1]?.message || "Sem mensagens ainda.";
                 return (
                   <button
-                    key={ticket.id}
+                    key={ticketKey(ticket)}
                     type="button"
                     onClick={() => setSelectedTicketKey(ticketKey(ticket))}
                     className={`w-full rounded border px-3 py-3 text-left transition ${
