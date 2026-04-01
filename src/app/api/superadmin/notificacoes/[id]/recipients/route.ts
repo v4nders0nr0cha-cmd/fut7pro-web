@@ -6,7 +6,6 @@ import {
   jsonResponse,
   proxyBackend,
   requireSuperAdminUser,
-  resolveTenantSlug,
 } from "../../../../_proxy/helpers";
 
 export const runtime = "nodejs";
@@ -19,10 +18,6 @@ export async function GET(req: NextRequest, { params }: { params: { id?: string 
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const tenantSlug = resolveTenantSlug(
-    user,
-    req.nextUrl.searchParams.get("tenantSlug") ?? undefined
-  );
   const id = params?.id;
   if (!id) {
     return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
@@ -30,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { id?: string 
 
   const targetUrl = `${getApiBase()}/superadmin/notificacoes/${encodeURIComponent(id)}/recipients`;
   const { response, body } = await proxyBackend(targetUrl, {
-    headers: buildHeaders(user, tenantSlug ?? undefined),
+    headers: buildHeaders(user, undefined, { includeTenantHeaders: false }),
     cache: "no-store",
   });
 
