@@ -6,6 +6,7 @@ import {
   jsonResponse,
   proxyBackend,
   requireSuperAdminUser,
+  resolveTenantSlug,
 } from "../../_proxy/helpers";
 
 export const runtime = "nodejs";
@@ -18,11 +19,15 @@ export async function GET(req: NextRequest) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
+  const tenantSlug = resolveTenantSlug(
+    user,
+    req.nextUrl.searchParams.get("tenantSlug") ?? undefined
+  );
   const params = req.nextUrl.searchParams.toString();
   const targetUrl = `${getApiBase()}/superadmin/notificacoes${params ? `?${params}` : ""}`;
 
   const { response, body } = await proxyBackend(targetUrl, {
-    headers: buildHeaders(user),
+    headers: buildHeaders(user, tenantSlug ?? undefined),
     cache: "no-store",
   });
 
@@ -37,12 +42,16 @@ export async function POST(req: NextRequest) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
+  const tenantSlug = resolveTenantSlug(
+    user,
+    req.nextUrl.searchParams.get("tenantSlug") ?? undefined
+  );
   const body = await req.text();
   const targetUrl = `${getApiBase()}/superadmin/notificacoes`;
 
   const { response, body: backendBody } = await proxyBackend(targetUrl, {
     method: "POST",
-    headers: buildHeaders(user, undefined, { includeContentType: true }),
+    headers: buildHeaders(user, tenantSlug ?? undefined, { includeContentType: true }),
     body,
   });
 
