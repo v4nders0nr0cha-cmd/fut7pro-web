@@ -13,6 +13,21 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function extractTenantSlugFromBody(body: string): string | undefined {
+  try {
+    const payload = JSON.parse(body) as { tenantSlug?: string; slug?: string };
+    if (typeof payload.tenantSlug === "string" && payload.tenantSlug.trim()) {
+      return payload.tenantSlug.trim();
+    }
+    if (typeof payload.slug === "string" && payload.slug.trim()) {
+      return payload.slug.trim();
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const user = await requireSuperAdminUser();
   if (!user) {
@@ -42,11 +57,11 @@ export async function POST(req: NextRequest) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
+  const body = await req.text();
   const tenantSlug = resolveTenantSlug(
     user,
-    req.nextUrl.searchParams.get("tenantSlug") ?? undefined
+    extractTenantSlugFromBody(body) ?? req.nextUrl.searchParams.get("tenantSlug") ?? undefined
   );
-  const body = await req.text();
   const targetUrl = `${getApiBase()}/superadmin/notificacoes`;
 
   const { response, body: backendBody } = await proxyBackend(targetUrl, {
