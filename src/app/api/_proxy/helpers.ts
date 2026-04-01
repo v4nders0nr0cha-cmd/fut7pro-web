@@ -298,25 +298,28 @@ export function appendSafeQueryParams(
 export function buildHeaders(
   user: UserLike,
   tenantSlug?: string,
-  options?: { includeContentType?: boolean }
+  options?: { includeContentType?: boolean; includeTenantHeaders?: boolean }
 ) {
   const headers: Record<string, string> = {};
   const tenantId = String(user.tenantId || "").trim();
   const scopedTenant = String(tenantSlug || "").trim();
+  const includeTenantHeaders = options?.includeTenantHeaders !== false;
 
   if (user.accessToken) {
     headers.Authorization = `Bearer ${user.accessToken}`;
   }
 
-  if (scopedTenant) {
-    headers["x-tenant-slug"] = scopedTenant;
-    // Mantem compatibilidade com endpoints que ainda validam x-tenant-id,
-    // usando sempre o tenant explicitamente solicitado pelo fluxo atual.
-    headers["x-tenant-id"] = scopedTenant;
-  }
+  if (includeTenantHeaders) {
+    if (scopedTenant) {
+      headers["x-tenant-slug"] = scopedTenant;
+      // Mantem compatibilidade com endpoints que ainda validam x-tenant-id,
+      // usando sempre o tenant explicitamente solicitado pelo fluxo atual.
+      headers["x-tenant-id"] = scopedTenant;
+    }
 
-  if (!scopedTenant && tenantId) {
-    headers["x-tenant-id"] = tenantId;
+    if (!scopedTenant && tenantId) {
+      headers["x-tenant-id"] = tenantId;
+    }
   }
 
   if (options?.includeContentType) {
