@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import {
   FaCheckCircle,
   FaFilter,
@@ -10,191 +9,285 @@ import {
   FaTimesCircle,
   FaUserShield,
 } from "react-icons/fa";
-import type {
-  SupportTicketCategory,
-  SupportTicketDetail,
-  SupportTicketItem,
-  SupportTicketStatus,
-} from "@/types/support-ticket";
-import {
-  supportTicketCategoryLabels,
-  supportTicketStatusClasses,
-  supportTicketStatusLabels,
-} from "@/types/support-ticket";
 
-type ApiListPayload = {
-  results?: SupportTicketItem[];
+type AmbassadorSupportStatus =
+  | "ABERTO"
+  | "EM_ANALISE"
+  | "AGUARDANDO_RETORNO_EMBAIXADOR"
+  | "RESOLVIDO"
+  | "ENCERRADO";
+
+type AmbassadorSupportPriority = "NORMAL" | "ALTA" | "CRITICA";
+
+type AmbassadorSupportMessage = {
+  id: string;
+  authorType: "EMBAIXADOR" | "SUPERADMIN";
+  authorDisplay: string | null;
+  message: string;
+  createdAt: string;
 };
 
-const categoryValues = Object.keys(supportTicketCategoryLabels) as SupportTicketCategory[];
-const statusValues = Object.keys(supportTicketStatusLabels) as SupportTicketStatus[];
+type AmbassadorSupportTicket = {
+  id: string;
+  influencerId: string;
+  influencerName: string;
+  influencerCoupon: string;
+  contractualStatus: string;
+  operationalStatus: string;
+  financialStatus: string;
+  panelAccessMode: string;
+  title: string;
+  category: string;
+  priority: AmbassadorSupportPriority;
+  status: AmbassadorSupportStatus;
+  openedAt: string;
+  updatedAt: string;
+  resolvedAt: string | null;
+  lastMessageAt: string;
+  messages: AmbassadorSupportMessage[];
+};
+
+type AmbassadorSupportListResponse = {
+  tickets?: AmbassadorSupportTicket[];
+  contactEmail?: string;
+  error?: string;
+  message?: string;
+};
+
+type StatusPatchResponse = {
+  ok?: boolean;
+  ticket?: {
+    id: string;
+    status: AmbassadorSupportStatus;
+    priority: AmbassadorSupportPriority;
+    category: string;
+    updatedAt: string;
+    resolvedAt: string | null;
+  };
+  error?: string;
+  message?: string;
+};
+
+const statusLabels: Record<AmbassadorSupportStatus, string> = {
+  ABERTO: "Aberto",
+  EM_ANALISE: "Em análise",
+  AGUARDANDO_RETORNO_EMBAIXADOR: "Aguardando embaixador",
+  RESOLVIDO: "Resolvido",
+  ENCERRADO: "Encerrado",
+};
+
+const statusClasses: Record<AmbassadorSupportStatus, string> = {
+  ABERTO: "bg-sky-900/50 text-sky-200",
+  EM_ANALISE: "bg-amber-900/50 text-amber-200",
+  AGUARDANDO_RETORNO_EMBAIXADOR: "bg-violet-900/50 text-violet-200",
+  RESOLVIDO: "bg-emerald-900/50 text-emerald-200",
+  ENCERRADO: "bg-zinc-800 text-zinc-300",
+};
+
+const priorityLabels: Record<AmbassadorSupportPriority, string> = {
+  NORMAL: "Normal",
+  ALTA: "Alta",
+  CRITICA: "Crítica",
+};
+
+const priorityClasses: Record<AmbassadorSupportPriority, string> = {
+  NORMAL: "bg-zinc-800 text-zinc-200",
+  ALTA: "bg-amber-900/50 text-amber-200",
+  CRITICA: "bg-rose-900/50 text-rose-200",
+};
+
+const statusValues = Object.keys(statusLabels) as AmbassadorSupportStatus[];
+const priorityValues = Object.keys(priorityLabels) as AmbassadorSupportPriority[];
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object";
 }
 
-function extractError(payload: unknown, fallback: string) {
+function extractError(payload: unknown, fallback: string): string {
   if (!isObjectRecord(payload)) return fallback;
+
   const message = payload.message;
-  if (typeof message === "string" && message.trim()) return message;
+  if (Array.isArray(message)) {
+    const compact = message
+      .map((entry) => String(entry || "").trim())
+      .filter(Boolean)
+      .join(" | ");
+    if (compact) return compact;
+  }
+
+  if (typeof message === "string" && message.trim()) {
+    return message;
+  }
+
   const error = payload.error;
-  if (typeof error === "string" && error.trim()) return error;
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
   return fallback;
 }
 
-function resolveList(payload: unknown): SupportTicketItem[] {
-  if (Array.isArray(payload)) return payload as SupportTicketItem[];
-  if (isObjectRecord(payload) && Array.isArray((payload as ApiListPayload).results)) {
-    return (payload as ApiListPayload).results || [];
-  }
-  return [];
-}
-
-function formatDateTime(value?: string | null) {
+function formatDateTime(value?: string | null): string {
   if (!value) return "--";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "--";
   return date.toLocaleString("pt-BR");
 }
 
-function truncate(value: string, max = 120) {
+function messageAuthorLabel(message: AmbassadorSupportMessage): string {
+  if (message.authorType === "SUPERADMIN") {
+    return message.authorDisplay?.trim() || "Equipe Fut7Pro";
+  }
+  return message.authorDisplay?.trim() || "Embaixador";
+}
+
+function truncate(value: string, max = 135): string {
   if (value.length <= max) return value;
   return `${value.slice(0, max).trimEnd()}...`;
 }
 
-function messageAuthorLabel(message: SupportTicketDetail["messages"][number]) {
-  if (message.authorType === "SUPERADMIN") return "Equipe Fut7Pro";
-  if (message.authorType === "ADMIN") {
-    const authorName = message.authorUser?.name?.trim();
-    return authorName ? `Admin (${authorName})` : "Admin do racha";
-  }
-  return "Sistema";
-}
-
 export default function SuperAdminSuportePage() {
-  const searchParams = useSearchParams();
-  const ticketFromQuery = searchParams?.get("open") ?? null;
-
   const [search, setSearch] = useState("");
-  const [tenantFilter, setTenantFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState<SupportTicketStatus | "ALL">("ALL");
-  const [categoryFilter, setCategoryFilter] = useState<SupportTicketCategory | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<AmbassadorSupportStatus | "ALL">("ALL");
+  const [priorityFilter, setPriorityFilter] = useState<AmbassadorSupportPriority | "ALL">("ALL");
 
-  const [tickets, setTickets] = useState<SupportTicketItem[]>([]);
+  const [tickets, setTickets] = useState<AmbassadorSupportTicket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicketDetail | null>(null);
 
   const [isListLoading, setIsListLoading] = useState(false);
-  const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isApplyingStatus, setIsApplyingStatus] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const [pageError, setPageError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const [replyMessage, setReplyMessage] = useState("");
-  const [replyStatus, setReplyStatus] = useState<SupportTicketStatus | "KEEP">("WAITING_ADMIN");
-  const [statusDraft, setStatusDraft] = useState<SupportTicketStatus>("IN_PROGRESS");
-  const [statusNote, setStatusNote] = useState("");
+  const [replyStatus, setReplyStatus] = useState<AmbassadorSupportStatus | "KEEP">(
+    "AGUARDANDO_RETORNO_EMBAIXADOR"
+  );
+
+  const [statusDraft, setStatusDraft] = useState<AmbassadorSupportStatus>("EM_ANALISE");
+  const [priorityDraft, setPriorityDraft] = useState<AmbassadorSupportPriority>("NORMAL");
+  const [categoryDraft, setCategoryDraft] = useState("EMBAIXADORES");
 
   const loadTickets = useCallback(async () => {
     setIsListLoading(true);
     setPageError(null);
 
     try {
-      const params = new URLSearchParams({ limit: "100" });
-      if (search.trim()) params.set("q", search.trim());
-      if (tenantFilter.trim()) params.set("tenantId", tenantFilter.trim());
+      const params = new URLSearchParams();
       if (statusFilter !== "ALL") params.set("status", statusFilter);
-      if (categoryFilter !== "ALL") params.set("category", categoryFilter);
+      if (priorityFilter !== "ALL") params.set("priority", priorityFilter);
 
-      const response = await fetch(`/api/superadmin/support/tickets?${params.toString()}`, {
-        cache: "no-store",
-      });
-      const payload = await response.json().catch(() => ({}));
+      const response = await fetch(
+        `/api/superadmin/embaixadores/support/tickets${
+          params.toString() ? `?${params.toString()}` : ""
+        }`,
+        { cache: "no-store" }
+      );
+      const payload = (await response.json().catch(() => ({}))) as AmbassadorSupportListResponse;
+
       if (!response.ok) {
         throw new Error(extractError(payload, "Não foi possível carregar os chamados."));
       }
 
-      const list = resolveList(payload);
+      const list = Array.isArray(payload.tickets) ? payload.tickets : [];
       setTickets(list);
 
-      if (selectedTicketId && !list.some((ticket) => ticket.id === selectedTicketId)) {
+      if (list.length === 0) {
         setSelectedTicketId(null);
-        setSelectedTicket(null);
+      } else if (!selectedTicketId || !list.some((ticket) => ticket.id === selectedTicketId)) {
+        setSelectedTicketId(list[0].id);
       }
     } catch (error) {
       setTickets([]);
+      setSelectedTicketId(null);
       setPageError(
         error instanceof Error ? error.message : "Erro inesperado ao carregar os chamados."
       );
     } finally {
       setIsListLoading(false);
     }
-  }, [search, tenantFilter, statusFilter, categoryFilter, selectedTicketId]);
-
-  const openTicket = useCallback(async (ticketId: string) => {
-    setSelectedTicketId(ticketId);
-    setIsDetailLoading(true);
-    setPageError(null);
-
-    try {
-      const response = await fetch(`/api/superadmin/support/tickets/${ticketId}`, {
-        cache: "no-store",
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(extractError(payload, "Não foi possível carregar o chamado."));
-      }
-
-      const detail = payload as SupportTicketDetail;
-      setSelectedTicket(detail);
-      setStatusDraft(detail.status === "OPEN" ? "IN_PROGRESS" : detail.status);
-      setReplyStatus("WAITING_ADMIN");
-    } catch (error) {
-      setSelectedTicket(null);
-      setPageError(error instanceof Error ? error.message : "Erro ao abrir o chamado.");
-    } finally {
-      setIsDetailLoading(false);
-    }
-  }, []);
+  }, [priorityFilter, selectedTicketId, statusFilter]);
 
   useEffect(() => {
     void loadTickets();
   }, [loadTickets]);
 
-  useEffect(() => {
-    if (!ticketFromQuery || !tickets.length) return;
-    if (!tickets.some((ticket) => ticket.id === ticketFromQuery)) return;
-    if (selectedTicketId === ticketFromQuery) return;
-    void openTicket(ticketFromQuery);
-  }, [ticketFromQuery, tickets, selectedTicketId, openTicket]);
+  const filteredTickets = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return tickets;
 
-  async function updateTicketStatus() {
+    return tickets.filter((ticket) => {
+      const haystack = [
+        ticket.title,
+        ticket.category,
+        ticket.influencerName,
+        ticket.influencerCoupon,
+        ticket.messages.at(-1)?.message || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [search, tickets]);
+
+  const selectedTicket = useMemo(
+    () => tickets.find((ticket) => ticket.id === selectedTicketId) || null,
+    [selectedTicketId, tickets]
+  );
+
+  useEffect(() => {
+    if (!selectedTicket) return;
+    setStatusDraft(selectedTicket.status === "ABERTO" ? "EM_ANALISE" : selectedTicket.status);
+    setPriorityDraft(selectedTicket.priority);
+    setCategoryDraft(selectedTicket.category || "EMBAIXADORES");
+  }, [selectedTicket]);
+
+  const stats = useMemo(() => {
+    return {
+      open: tickets.filter((ticket) => ticket.status === "ABERTO").length,
+      inReview: tickets.filter((ticket) => ticket.status === "EM_ANALISE").length,
+      waitingAmbassador: tickets.filter(
+        (ticket) => ticket.status === "AGUARDANDO_RETORNO_EMBAIXADOR"
+      ).length,
+      resolved: tickets.filter((ticket) => ticket.status === "RESOLVIDO").length,
+      closed: tickets.filter((ticket) => ticket.status === "ENCERRADO").length,
+    };
+  }, [tickets]);
+
+  const patchTicket = useCallback(async (ticketId: string, body: Record<string, unknown>) => {
+    const response = await fetch(
+      `/api/superadmin/embaixadores/support/tickets/${encodeURIComponent(ticketId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+
+    const payload = (await response.json().catch(() => ({}))) as StatusPatchResponse;
+    if (!response.ok) {
+      throw new Error(extractError(payload, "Não foi possível atualizar o chamado."));
+    }
+
+    return payload;
+  }, []);
+
+  async function applyStatusChanges() {
     if (!selectedTicket) return;
 
-    setIsUpdatingStatus(true);
+    setIsApplyingStatus(true);
     setPageError(null);
     setFeedback(null);
 
     try {
-      const response = await fetch(`/api/superadmin/support/tickets/${selectedTicket.id}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: statusDraft,
-          note: statusNote.trim() || undefined,
-        }),
+      await patchTicket(selectedTicket.id, {
+        status: statusDraft,
+        priority: priorityDraft,
+        category: categoryDraft.trim() || selectedTicket.category,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(extractError(payload, "Não foi possível atualizar o status."));
-      }
 
-      const updated = payload as SupportTicketDetail;
-      setSelectedTicket(updated);
-      setStatusDraft(updated.status === "OPEN" ? "IN_PROGRESS" : updated.status);
-      setStatusNote("");
       setFeedback({ success: true, message: "Status do chamado atualizado com sucesso." });
       await loadTickets();
     } catch (error) {
@@ -203,11 +296,11 @@ export default function SuperAdminSuportePage() {
         message: error instanceof Error ? error.message : "Erro ao atualizar status.",
       });
     } finally {
-      setIsUpdatingStatus(false);
+      setIsApplyingStatus(false);
     }
   }
 
-  async function replyTicket() {
+  async function sendReply() {
     if (!selectedTicket) return;
 
     const message = replyMessage.trim();
@@ -221,25 +314,14 @@ export default function SuperAdminSuportePage() {
     setFeedback(null);
 
     try {
-      const response = await fetch(`/api/superadmin/support/tickets/${selectedTicket.id}/replies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          status: replyStatus === "KEEP" ? undefined : replyStatus,
-        }),
+      await patchTicket(selectedTicket.id, {
+        message,
+        status: replyStatus === "KEEP" ? undefined : replyStatus,
       });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(extractError(payload, "Não foi possível enviar a resposta."));
-      }
 
-      const updated = payload as SupportTicketDetail;
-      setSelectedTicket(updated);
       setReplyMessage("");
-      setStatusDraft(updated.status === "OPEN" ? "IN_PROGRESS" : updated.status);
-      setReplyStatus("WAITING_ADMIN");
-      setFeedback({ success: true, message: "Resposta enviada para o administrador do racha." });
+      setReplyStatus("AGUARDANDO_RETORNO_EMBAIXADOR");
+      setFeedback({ success: true, message: "Resposta enviada para o embaixador." });
       await loadTickets();
     } catch (error) {
       setFeedback({
@@ -251,113 +333,98 @@ export default function SuperAdminSuportePage() {
     }
   }
 
-  const stats = useMemo(() => {
-    const open = tickets.filter((ticket) => ticket.status === "OPEN").length;
-    const inProgress = tickets.filter((ticket) => ticket.status === "IN_PROGRESS").length;
-    const waiting = tickets.filter((ticket) => ticket.status === "WAITING_ADMIN").length;
-    const resolved = tickets.filter((ticket) => ticket.status === "RESOLVED").length;
-    const closed = tickets.filter((ticket) => ticket.status === "CLOSED").length;
-
-    return { open, inProgress, waiting, resolved, closed };
-  }, [tickets]);
-
   return (
     <div className="space-y-5">
-      <header className="rounded-lg border border-zinc-800 bg-[#171717] p-4 space-y-3">
-        <h1 className="text-2xl font-semibold text-yellow-300 flex items-center gap-2">
+      <header className="space-y-3 rounded-lg border border-zinc-800 bg-[#171717] p-4">
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-yellow-300">
           <FaUserShield />
-          Suporte global Fut7Pro
+          Suporte oficial dos embaixadores
         </h1>
         <p className="text-sm text-zinc-300">
-          Painel de chamados dos administradores dos rachas. Gerencie prioridades, atualize status e
-          responda com rastreabilidade total entre Admin e SuperAdmin.
+          Monitore chamados abertos no painel do embaixador, responda direto da fila oficial e
+          mantenha o histórico sincronizado entre as duas pontas.
         </p>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <div className="rounded border border-zinc-700 bg-[#121212] px-3 py-2">
             <p className="text-xs uppercase tracking-wide text-zinc-500">Abertos</p>
-            <p className="text-xl font-semibold text-yellow-300">{stats.open}</p>
+            <p className="text-xl font-semibold text-sky-300">{stats.open}</p>
           </div>
           <div className="rounded border border-zinc-700 bg-[#121212] px-3 py-2">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Em andamento</p>
-            <p className="text-xl font-semibold text-blue-300">{stats.inProgress}</p>
+            <p className="text-xs uppercase tracking-wide text-zinc-500">Em análise</p>
+            <p className="text-xl font-semibold text-amber-300">{stats.inReview}</p>
           </div>
           <div className="rounded border border-zinc-700 bg-[#121212] px-3 py-2">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Aguardando admin</p>
-            <p className="text-xl font-semibold text-orange-300">{stats.waiting}</p>
+            <p className="text-xs uppercase tracking-wide text-zinc-500">Aguardando retorno</p>
+            <p className="text-xl font-semibold text-violet-300">{stats.waitingAmbassador}</p>
           </div>
           <div className="rounded border border-zinc-700 bg-[#121212] px-3 py-2">
             <p className="text-xs uppercase tracking-wide text-zinc-500">Resolvidos</p>
             <p className="text-xl font-semibold text-emerald-300">{stats.resolved}</p>
           </div>
           <div className="rounded border border-zinc-700 bg-[#121212] px-3 py-2">
-            <p className="text-xs uppercase tracking-wide text-zinc-500">Fechados</p>
+            <p className="text-xs uppercase tracking-wide text-zinc-500">Encerrados</p>
             <p className="text-xl font-semibold text-zinc-300">{stats.closed}</p>
           </div>
         </div>
       </header>
 
-      <section className="rounded-lg border border-zinc-800 bg-[#171717] p-4 space-y-3">
+      <section className="space-y-3 rounded-lg border border-zinc-800 bg-[#171717] p-4">
         <div className="flex items-center gap-2 text-sm font-semibold text-zinc-300">
           <FaFilter />
           Filtros
         </div>
 
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           <div className="relative">
             <FaSearch className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por assunto ou mensagem..."
+              placeholder="Buscar por embaixador, cupom ou mensagem..."
               className="w-full rounded border border-zinc-700 bg-zinc-900 py-2 pl-10 pr-3 text-sm text-zinc-100 outline-none focus:border-yellow-400"
             />
           </div>
 
-          <input
-            value={tenantFilter}
-            onChange={(event) => setTenantFilter(event.target.value)}
-            placeholder="Tenant (slug ou tenantId)"
-            className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
-          />
-
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as SupportTicketStatus | "ALL")}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as AmbassadorSupportStatus | "ALL")
+            }
             className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
           >
             <option value="ALL">Todos os status</option>
             {statusValues.map((status) => (
               <option key={status} value={status}>
-                {supportTicketStatusLabels[status]}
+                {statusLabels[status]}
               </option>
             ))}
           </select>
 
           <select
-            value={categoryFilter}
+            value={priorityFilter}
             onChange={(event) =>
-              setCategoryFilter(event.target.value as SupportTicketCategory | "ALL")
+              setPriorityFilter(event.target.value as AmbassadorSupportPriority | "ALL")
             }
             className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
           >
-            <option value="ALL">Todas as categorias</option>
-            {categoryValues.map((category) => (
-              <option key={category} value={category}>
-                {supportTicketCategoryLabels[category]}
+            <option value="ALL">Todas as prioridades</option>
+            {priorityValues.map((priority) => (
+              <option key={priority} value={priority}>
+                {priorityLabels[priority]}
               </option>
             ))}
           </select>
         </div>
       </section>
 
-      {pageError && (
+      {pageError ? (
         <div className="rounded border border-red-700 bg-red-900/30 px-3 py-2 text-sm text-red-200">
           {pageError}
         </div>
-      )}
+      ) : null}
 
-      {feedback && (
+      {feedback ? (
         <div
           className={`rounded px-3 py-2 text-sm font-semibold ${
             feedback.success
@@ -370,74 +437,81 @@ export default function SuperAdminSuportePage() {
             {feedback.message}
           </span>
         </div>
-      )}
+      ) : null}
 
       <section className="grid grid-cols-1 gap-4 xl:grid-cols-[390px_1fr]">
         <article className="rounded-lg border border-zinc-800 bg-[#171717] p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
-              Chamados globais
+              Chamados do programa
             </h2>
-            <span className="text-xs text-zinc-500">{tickets.length} itens</span>
+            <span className="text-xs text-zinc-500">{filteredTickets.length} itens</span>
           </div>
 
           {isListLoading ? (
             <p className="py-8 text-center text-sm text-zinc-400">Carregando chamados...</p>
-          ) : tickets.length === 0 ? (
+          ) : filteredTickets.length === 0 ? (
             <p className="py-8 text-center text-sm text-zinc-400">Nenhum chamado encontrado.</p>
           ) : (
-            <div className="space-y-3 max-h-[75vh] overflow-auto pr-1">
-              {tickets.map((ticket) => (
-                <button
-                  key={ticket.id}
-                  type="button"
-                  onClick={() => void openTicket(ticket.id)}
-                  className={`w-full rounded border px-3 py-3 text-left transition ${
-                    selectedTicketId === ticket.id
-                      ? "border-yellow-400 bg-yellow-500/10"
-                      : "border-zinc-700 bg-[#1f1f1f] hover:border-zinc-500"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-zinc-100">{ticket.subject}</p>
-                    <span
-                      className={`whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${supportTicketStatusClasses[ticket.status]}`}
-                    >
-                      {supportTicketStatusLabels[ticket.status]}
-                    </span>
-                  </div>
+            <div className="max-h-[75vh] space-y-3 overflow-auto pr-1">
+              {filteredTickets.map((ticket) => {
+                const lastMessage =
+                  ticket.messages[ticket.messages.length - 1]?.message || "Sem mensagens ainda.";
+                return (
+                  <button
+                    key={ticket.id}
+                    type="button"
+                    onClick={() => setSelectedTicketId(ticket.id)}
+                    className={`w-full rounded border px-3 py-3 text-left transition ${
+                      selectedTicketId === ticket.id
+                        ? "border-yellow-400 bg-yellow-500/10"
+                        : "border-zinc-700 bg-[#1f1f1f] hover:border-zinc-500"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-zinc-100">{ticket.title}</p>
+                      <span
+                        className={`whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-semibold ${statusClasses[ticket.status]}`}
+                      >
+                        {statusLabels[ticket.status]}
+                      </span>
+                    </div>
 
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {ticket.tenant?.name || "Racha não identificado"} •{" "}
-                    {ticket.tenant?.slug || ticket.tenantId}
-                  </p>
-                  <p className="mt-1 text-xs text-zinc-400">
-                    {supportTicketCategoryLabels[ticket.category]} • Aberto em{" "}
-                    {formatDateTime(ticket.createdAt)}
-                  </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {ticket.influencerName} • Cupom {ticket.influencerCoupon}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-400">
+                      {ticket.category} • Aberto em {formatDateTime(ticket.openedAt)}
+                    </p>
 
-                  <p className="mt-2 text-sm text-zinc-300">
-                    {truncate(ticket.lastMessage?.message || "Sem mensagens ainda.")}
-                  </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <span
+                        className={`rounded px-2 py-0.5 text-[11px] font-semibold ${priorityClasses[ticket.priority]}`}
+                      >
+                        {priorityLabels[ticket.priority]}
+                      </span>
+                      <span className="rounded bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-300">
+                        {ticket.panelAccessMode}
+                      </span>
+                    </div>
 
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Última atividade: {formatDateTime(ticket.lastMessageAt)} • {ticket.messageCount}{" "}
-                    mensagem(ns)
-                  </p>
-                </button>
-              ))}
+                    <p className="mt-2 text-sm text-zinc-300">{truncate(lastMessage)}</p>
+
+                    <p className="mt-2 text-xs text-zinc-500">
+                      Última atividade: {formatDateTime(ticket.lastMessageAt)} •{" "}
+                      {ticket.messages.length} mensagem(ns)
+                    </p>
+                  </button>
+                );
+              })}
             </div>
           )}
         </article>
 
         <article className="rounded-lg border border-zinc-800 bg-[#171717] p-4">
-          {!selectedTicketId ? (
+          {!selectedTicket ? (
             <div className="flex h-full min-h-[460px] items-center justify-center text-sm text-zinc-400">
               Selecione um chamado para acompanhar o histórico e responder.
-            </div>
-          ) : isDetailLoading || !selectedTicket ? (
-            <div className="flex h-full min-h-[460px] items-center justify-center text-sm text-zinc-400">
-              Carregando detalhes do chamado...
             </div>
           ) : (
             <div className="space-y-4">
@@ -445,46 +519,47 @@ export default function SuperAdminSuportePage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <h3 className="text-lg font-semibold text-yellow-300">
-                      {selectedTicket.subject}
+                      {selectedTicket.title}
                     </h3>
                     <p className="text-xs text-zinc-400">
-                      {selectedTicket.tenant?.name || "Racha sem nome"} •{" "}
-                      {selectedTicket.tenant?.slug || selectedTicket.tenantId}
+                      {selectedTicket.influencerName} • Cupom {selectedTicket.influencerCoupon}
                     </p>
                   </div>
                   <span
-                    className={`rounded px-2 py-1 text-xs font-semibold ${supportTicketStatusClasses[selectedTicket.status]}`}
+                    className={`rounded px-2 py-1 text-xs font-semibold ${statusClasses[selectedTicket.status]}`}
                   >
-                    {supportTicketStatusLabels[selectedTicket.status]}
+                    {statusLabels[selectedTicket.status]}
                   </span>
                 </div>
                 <p className="text-xs text-zinc-400">
-                  Categoria: {supportTicketCategoryLabels[selectedTicket.category]} • Aberto em{" "}
-                  {formatDateTime(selectedTicket.createdAt)}
+                  Categoria: {selectedTicket.category} • Prioridade:{" "}
+                  {priorityLabels[selectedTicket.priority]}
                 </p>
                 <p className="text-xs text-zinc-500">
-                  Criado por: {selectedTicket.createdByAdminUser?.name || "Admin do racha"} • Última
-                  atividade: {formatDateTime(selectedTicket.lastMessageAt)}
+                  Aberto em {formatDateTime(selectedTicket.openedAt)} • Última atividade:{" "}
+                  {formatDateTime(selectedTicket.lastMessageAt)}
                 </p>
               </header>
 
-              <div className="grid grid-cols-1 gap-3 rounded border border-zinc-800 bg-[#121212] p-3 md:grid-cols-[220px_1fr_auto] md:items-end">
+              <div className="grid grid-cols-1 gap-3 rounded border border-zinc-800 bg-[#121212] p-3 md:grid-cols-[220px_220px_1fr_auto] md:items-end">
                 <div>
                   <label
                     htmlFor="status-draft"
                     className="mb-1 block text-xs font-semibold text-zinc-300"
                   >
-                    Atualizar status
+                    Status
                   </label>
                   <select
                     id="status-draft"
                     value={statusDraft}
-                    onChange={(event) => setStatusDraft(event.target.value as SupportTicketStatus)}
+                    onChange={(event) =>
+                      setStatusDraft(event.target.value as AmbassadorSupportStatus)
+                    }
                     className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
                   >
                     {statusValues.map((status) => (
                       <option key={status} value={status}>
-                        {supportTicketStatusLabels[status]}
+                        {statusLabels[status]}
                       </option>
                     ))}
                   </select>
@@ -492,35 +567,55 @@ export default function SuperAdminSuportePage() {
 
                 <div>
                   <label
-                    htmlFor="status-note"
+                    htmlFor="priority-draft"
                     className="mb-1 block text-xs font-semibold text-zinc-300"
                   >
-                    Observação (opcional)
+                    Prioridade
+                  </label>
+                  <select
+                    id="priority-draft"
+                    value={priorityDraft}
+                    onChange={(event) =>
+                      setPriorityDraft(event.target.value as AmbassadorSupportPriority)
+                    }
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
+                  >
+                    {priorityValues.map((priority) => (
+                      <option key={priority} value={priority}>
+                        {priorityLabels[priority]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="category-draft"
+                    className="mb-1 block text-xs font-semibold text-zinc-300"
+                  >
+                    Categoria
                   </label>
                   <input
-                    id="status-note"
-                    value={statusNote}
-                    onChange={(event) => setStatusNote(event.target.value)}
-                    maxLength={300}
-                    placeholder="Ex.: aguardando validação de logs"
+                    id="category-draft"
+                    value={categoryDraft}
+                    onChange={(event) => setCategoryDraft(event.target.value)}
                     className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
                   />
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => void updateTicketStatus()}
-                  disabled={isUpdatingStatus}
+                  onClick={() => void applyStatusChanges()}
+                  disabled={isApplyingStatus}
                   className="rounded bg-yellow-400 px-4 py-2 text-sm font-semibold text-black transition hover:bg-yellow-300 disabled:opacity-60"
                 >
-                  {isUpdatingStatus ? "Salvando..." : "Salvar status"}
+                  {isApplyingStatus ? "Salvando..." : "Salvar status"}
                 </button>
               </div>
 
               <div className="max-h-[330px] space-y-3 overflow-auto rounded border border-zinc-800 bg-[#101010] p-3">
                 {selectedTicket.messages.map((message) => {
                   const fromSuperAdmin = message.authorType === "SUPERADMIN";
-                  const fromAdmin = message.authorType === "ADMIN";
                   return (
                     <div
                       key={message.id}
@@ -530,9 +625,7 @@ export default function SuperAdminSuportePage() {
                         className={`max-w-[92%] rounded-lg border px-3 py-2 text-sm ${
                           fromSuperAdmin
                             ? "border-emerald-600/50 bg-emerald-900/25 text-emerald-100"
-                            : fromAdmin
-                              ? "border-blue-600/50 bg-blue-900/25 text-blue-100"
-                              : "border-zinc-700 bg-zinc-900 text-zinc-200"
+                            : "border-zinc-700 bg-zinc-900 text-zinc-200"
                         }`}
                       >
                         <p className="mb-1 text-[11px] uppercase tracking-wide opacity-80">
@@ -546,7 +639,7 @@ export default function SuperAdminSuportePage() {
               </div>
 
               <section className="space-y-2 rounded border border-zinc-800 bg-[#121212] p-3">
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-[220px_1fr]">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-[260px_1fr]">
                   <div>
                     <label
                       htmlFor="reply-status"
@@ -558,31 +651,32 @@ export default function SuperAdminSuportePage() {
                       id="reply-status"
                       value={replyStatus}
                       onChange={(event) =>
-                        setReplyStatus(event.target.value as SupportTicketStatus | "KEEP")
+                        setReplyStatus(event.target.value as AmbassadorSupportStatus | "KEEP")
                       }
                       className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
                     >
                       <option value="KEEP">Manter status atual</option>
                       {statusValues.map((status) => (
                         <option key={status} value={status}>
-                          {supportTicketStatusLabels[status]}
+                          {statusLabels[status]}
                         </option>
                       ))}
                     </select>
                   </div>
+
                   <div>
                     <label
                       htmlFor="reply-message"
                       className="mb-1 block text-xs font-semibold text-zinc-300"
                     >
-                      Resposta para o admin
+                      Resposta para o embaixador
                     </label>
                     <textarea
                       id="reply-message"
                       value={replyMessage}
                       onChange={(event) => setReplyMessage(event.target.value)}
                       maxLength={4000}
-                      placeholder="Digite a orientação da equipe Fut7Pro para o administrador..."
+                      placeholder="Digite a orientação da equipe Fut7Pro para o embaixador..."
                       className="min-h-[120px] w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
                     />
                   </div>
@@ -591,7 +685,7 @@ export default function SuperAdminSuportePage() {
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    onClick={() => void replyTicket()}
+                    onClick={() => void sendReply()}
                     disabled={isReplying}
                     className="inline-flex items-center gap-2 rounded bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400 disabled:opacity-60"
                   >

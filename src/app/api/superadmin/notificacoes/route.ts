@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
     cache: "no-store",
   });
 
-  return forwardResponse(response.status, body);
+  const proxied = forwardResponse(response.status, body);
+  proxied.headers.set("Cache-Control", "no-store, max-age=0");
+  return proxied;
 }
 
 export async function POST(req: NextRequest) {
@@ -44,5 +46,7 @@ export async function POST(req: NextRequest) {
     body,
   });
 
-  return forwardResponse(response.status, backendBody);
+  const proxied = forwardResponse(response.status, backendBody);
+  proxied.headers.set("Cache-Control", "no-store, max-age=0");
+  return proxied;
 }
