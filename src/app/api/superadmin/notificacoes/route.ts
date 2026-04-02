@@ -15,19 +15,24 @@ export const revalidate = 0;
 function shouldReturnEmptyCampaignList(status: number, body: unknown) {
   if (status < 500) return false;
   const text =
-    typeof body === "string"
-      ? body
-      : typeof body === "object" && body
-        ? JSON.stringify(body)
-        : "";
+    typeof body === "string" ? body : typeof body === "object" && body ? JSON.stringify(body) : "";
   const normalized = text.toLowerCase();
+  const mentionsCampaignModel =
+    normalized.includes("notificationcampaign") || normalized.includes("notification_campaign");
+
+  if (!mentionsCampaignModel) {
+    return false;
+  }
+
   return (
-    normalized.includes("notificationcampaign") ||
     normalized.includes("createdby") ||
     normalized.includes("createdbyid") ||
     normalized.includes("p2021") ||
     normalized.includes("p2022") ||
-    normalized.includes("does not exist")
+    normalized.includes("unknown field") ||
+    normalized.includes("unknown arg") ||
+    normalized.includes("column") ||
+    normalized.includes("table")
   );
 }
 
