@@ -12,6 +12,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function shouldReturnEmptyCampaignList(status: number, body: unknown) {
+  if (status < 500) return false;
+  const text =
+    typeof body === "string"
+      ? body
+      : typeof body === "object" && body
+        ? JSON.stringify(body)
+        : "";
+  const normalized = text.toLowerCase();
+  return (
+    normalized.includes("notificationcampaign") ||
+    normalized.includes("createdby") ||
+    normalized.includes("createdbyid") ||
+    normalized.includes("p2021") ||
+    normalized.includes("p2022") ||
+    normalized.includes("does not exist")
+  );
+}
+
 export async function GET(req: NextRequest) {
   const user = await requireSuperAdminUser();
   if (!user) {
@@ -25,6 +44,13 @@ export async function GET(req: NextRequest) {
     headers: buildHeaders(user, undefined, { includeTenantHeaders: false }),
     cache: "no-store",
   });
+
+  if (shouldReturnEmptyCampaignList(response.status, body)) {
+    const fallback = forwardResponse(200, []);
+    fallback.headers.set("Cache-Control", "no-store, max-age=0");
+    fallback.headers.set("x-notificacoes-fallback", "legacy-schema");
+    return fallback;
+  }
 
   const proxied = forwardResponse(response.status, body);
   proxied.headers.set("Cache-Control", "no-store, max-age=0");
