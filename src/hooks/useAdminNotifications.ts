@@ -1,6 +1,6 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 export type AdminNotificationType =
   | "SUGGESTION_RECEIVED"
@@ -173,7 +173,11 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       );
     }
 
-    await Promise.all([includeCount ? mutateCount() : Promise.resolve(), mutateList()]);
+    await Promise.all([
+      includeCount ? mutateCount() : Promise.resolve(),
+      mutateList(),
+      globalMutate("/api/admin/notifications/unread-count"),
+    ]);
     return payload;
   };
 
@@ -188,7 +192,11 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       );
     }
 
-    await Promise.all([includeCount ? mutateCount() : Promise.resolve(), mutateList()]);
+    await Promise.all([
+      includeCount ? mutateCount() : Promise.resolve(),
+      mutateList(),
+      globalMutate("/api/admin/notifications/unread-count"),
+    ]);
     return payload;
   };
 
