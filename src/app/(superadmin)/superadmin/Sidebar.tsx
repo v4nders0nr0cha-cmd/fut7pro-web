@@ -17,6 +17,7 @@ import {
   FaBullhorn,
   FaEnvelope,
   FaNewspaper,
+  FaShieldAlt,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -42,6 +43,7 @@ const sections: Array<{ title: string; items: MenuItem[] }> = [
     items: [
       { label: "Financeiro", href: "/superadmin/financeiro", icon: FaMoneyBillWave },
       { label: "Planos", href: "/superadmin/planos", icon: FaListAlt },
+      { label: "Compensações", href: "/superadmin/compensacoes-acesso", icon: FaShieldAlt },
     ],
   },
   {
