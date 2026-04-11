@@ -71,6 +71,8 @@ type Tenant = {
     interval?: string | null;
     trialStart?: string | null;
     trialEnd?: string | null;
+    firstPaymentAt?: string | null;
+    currentPeriodEnd?: string | null;
   } | null;
   ownerName?: string | null;
   ownerEmail?: string | null;
@@ -103,6 +105,9 @@ const fetcher = async (url: string) => {
 const STATUS_BADGES = {
   ATIVO: "bg-green-700 text-green-200",
   TRIAL: "bg-yellow-700 text-yellow-200",
+  TRIAL_EXPIRADO: "bg-amber-800 text-amber-100",
+  SEM_CONVERSAO: "bg-orange-800 text-orange-100",
+  INADIMPLENTE_COM_HISTORICO: "bg-red-700 text-red-200",
   INADIMPLENTE: "bg-red-700 text-red-200",
   BLOQUEADO: "bg-gray-600 text-gray-200",
 };
@@ -110,6 +115,9 @@ const STATUS_BADGES = {
 const STATUS_LABELS = {
   ATIVO: "Racha ativo e operando normalmente.",
   TRIAL: "Período de teste, com limitação de recursos.",
+  TRIAL_EXPIRADO: "Trial encerrado sem conversão para pagamento.",
+  SEM_CONVERSAO: "Nunca pagou e está fora do período de trial.",
+  INADIMPLENTE_COM_HISTORICO: "Já pagou e está com cobrança em atraso.",
   INADIMPLENTE: "Pagamento em atraso, risco de bloqueio.",
   BLOQUEADO: "Acesso bloqueado por inadimplência ou infração.",
 };
@@ -123,14 +131,30 @@ const ADMIN_MEMBERSHIP_ROLES = new Set([
   "DIRETOR_FINANCEIRO",
 ]);
 
-function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
+function normalizeStatus(params: {
+  raw?: string | null;
+  blocked?: boolean | null;
+  trialEnd?: string | null;
+  firstPaymentAt?: string | null;
+}) {
+  const { raw, blocked, trialEnd, firstPaymentAt } = params;
   const value = (raw || "").toUpperCase();
+  const hasPaymentHistory = Boolean(firstPaymentAt);
+  const trialEndsAt = trialEnd ? new Date(trialEnd) : null;
+  const trialExpired =
+    trialEndsAt instanceof Date &&
+    !Number.isNaN(trialEndsAt.getTime()) &&
+    trialEndsAt.getTime() < Date.now();
+
   if (blocked) return "BLOQUEADO";
-  if (value.includes("INAD")) return "INADIMPLENTE";
-  if (value.includes("TRIAL")) return "TRIAL";
-  if (value.includes("TRIALING")) return "TRIAL";
+  if (value.includes("INAD")) return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
+  if (value.includes("TRIALING")) {
+    if (hasPaymentHistory) return "ATIVO";
+    return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
+  }
+  if (value.includes("TRIAL")) return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
   if (value.includes("PAUSE")) return "BLOQUEADO";
-  if (value.includes("EXPIRE")) return "INADIMPLENTE";
+  if (value.includes("EXPIRE")) return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
   if (value.includes("BLOCK")) return "BLOQUEADO";
   if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
   return value || "ATIVO";
@@ -376,12 +400,18 @@ export default function RachasCadastradosPage() {
 
   const rachas = useMemo(
     () =>
-      tenants.map((t) => {
+      tenants
+        .map((t) => {
         const subscription = t.subscription as any;
         const isVitrine = Boolean(t.isVitrine) || (t.slug || "").toLowerCase() === "vitrine";
         const status = isVitrine
           ? "ATIVO"
-          : normalizeStatus(subscription?.status ?? t.status, t.blocked);
+          : normalizeStatus({
+              raw: subscription?.status ?? t.status,
+              blocked: t.blocked,
+              trialEnd: subscription?.trialEnd ?? t.trialEndsAt ?? null,
+              firstPaymentAt: subscription?.firstPaymentAt ?? null,
+            });
         const planLabel = isVitrine
           ? "Vitrine (Sem limite)"
           : resolvePlanLabel(
@@ -401,7 +431,7 @@ export default function RachasCadastradosPage() {
           presidente: admin || "--",
           plano: planLabel,
           status,
-          ativo: status === "ATIVO" || status === "TRIAL",
+          ativo: status === "ATIVO" || status === "TRIAL" || status === "INADIMPLENTE_COM_HISTORICO",
           atletas:
             t.playersCount ??
             t.athletes ??
@@ -424,7 +454,12 @@ export default function RachasCadastradosPage() {
             ? { detalhes: "Bloqueado no backend", criadoEm: t.updatedAt }
             : null,
         };
-      }),
+      })
+        .sort((a, b) => {
+          const aTime = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
+          const bTime = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;
+          return bTime - aTime;
+        }),
     [tenants]
   );
 
@@ -457,7 +492,12 @@ export default function RachasCadastradosPage() {
   const total = rachasParaResumo.length;
   const ativos = rachasParaResumo.filter((r) => r.status === "ATIVO").length;
   const trials = rachasParaResumo.filter((r) => r.status === "TRIAL").length;
-  const inadimplentes = rachasParaResumo.filter((r) => r.status === "INADIMPLENTE").length;
+  const semConversao = rachasParaResumo.filter(
+    (r) => r.status === "TRIAL_EXPIRADO" || r.status === "SEM_CONVERSAO"
+  ).length;
+  const inadimplentesComHistorico = rachasParaResumo.filter(
+    (r) => r.status === "INADIMPLENTE_COM_HISTORICO" || r.status === "INADIMPLENTE"
+  ).length;
   const bloqueados = rachasParaResumo.filter((r) => r.status === "BLOQUEADO" || r.bloqueado).length;
   const hoje = format(new Date(), "yyyy-MM-dd");
   const novosHoje = rachasParaResumo.filter((r) => (r.criadoEm || "").startsWith(hoje)).length;
@@ -478,6 +518,9 @@ export default function RachasCadastradosPage() {
   function statusLabel(status: string) {
     if (status === "ATIVO") return "Ativo";
     if (status === "TRIAL") return "Trial";
+    if (status === "TRIAL_EXPIRADO") return "Trial expirado";
+    if (status === "SEM_CONVERSAO") return "Sem conversao";
+    if (status === "INADIMPLENTE_COM_HISTORICO") return "Inadimplente c/ historico";
     if (status === "INADIMPLENTE") return "Inadimplente";
     if (status === "BLOQUEADO") return "Bloqueado";
     return status;
@@ -619,13 +662,23 @@ export default function RachasCadastradosPage() {
         )}
 
         {/* RESUMO NO TOPO */}
-        <div className="mb-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div className="mb-6 grid w-full grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
           <ResumoCard title="Total" value={total} />
           <ResumoCard title="Ativos" value={ativos} badge="bg-green-700" />
           <ResumoCard title="Trials" value={trials} badge="bg-yellow-700" />
-          <ResumoCard title="Inadimplentes" value={inadimplentes} badge="bg-red-700" />
+          <ResumoCard title="Sem Conversao" value={semConversao} badge="bg-orange-700" />
+          <ResumoCard
+            title="Inad. c/ Historico"
+            value={inadimplentesComHistorico}
+            badge="bg-red-700"
+          />
           <ResumoCard title="Bloqueados" value={bloqueados} badge="bg-gray-700" />
           <ResumoCard title="Novos Hoje" value={novosHoje} badge="bg-blue-700" />
+          <ResumoCard
+            title="Trial Expirado"
+            value={rachasParaResumo.filter((r) => r.status === "TRIAL_EXPIRADO").length}
+            badge="bg-amber-700"
+          />
         </div>
 
         {/* BUSCA E FILTRO */}
@@ -647,10 +700,12 @@ export default function RachasCadastradosPage() {
             aria-label="Filtrar status"
           >
             <option value="">Todos os status</option>
-            <option value="Ativo">Ativos</option>
-            <option value="Trial">Trial</option>
-            <option value="Inadimplente">Inadimplentes</option>
-            <option value="Bloqueado">Bloqueados</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="TRIAL">Trial</option>
+            <option value="TRIAL_EXPIRADO">Trial expirado</option>
+            <option value="SEM_CONVERSAO">Sem conversao</option>
+            <option value="INADIMPLENTE_COM_HISTORICO">Inadimplente c/ historico</option>
+            <option value="BLOQUEADO">Bloqueados</option>
           </select>
           <select
             className="w-full rounded-lg bg-zinc-800 px-4 py-2 text-sm text-zinc-100 sm:w-auto"
