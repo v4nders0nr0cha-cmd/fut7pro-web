@@ -290,10 +290,15 @@ export const superAdminAuthOptions = {
             (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
             (token as any).error = null;
           } else {
-            (token as any).accessToken = undefined;
-            (token as any).refreshToken = undefined;
-            (token as any).accessTokenExp = null;
-            (token as any).error = "RefreshAccessTokenError";
+            if (tokenExp <= now) {
+              (token as any).accessToken = undefined;
+              (token as any).refreshToken = undefined;
+              (token as any).accessTokenExp = null;
+              (token as any).error = "RefreshAccessTokenError";
+            } else {
+              // Keep the current token while still valid and retry refresh on the next cycle.
+              (token as any).error = "RefreshAccessTokenRetry";
+            }
           }
         }
       } else if (token.accessToken) {

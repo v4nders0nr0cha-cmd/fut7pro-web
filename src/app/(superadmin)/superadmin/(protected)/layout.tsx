@@ -23,9 +23,10 @@ export default async function SuperAdminProtectedLayout({ children }: { children
   const role = String(session?.user?.role || "").toUpperCase();
   const accessToken = String(session?.user?.accessToken || "").trim();
   const tokenError = String(session?.user?.tokenError || "").trim();
+  const hasFatalTokenError = Boolean(tokenError) && tokenError !== "RefreshAccessTokenRetry";
 
   // SSR guard: nunca renderiza estrutura interna antes de validar sessão.
-  if (!session?.user || role !== "SUPERADMIN" || !accessToken || tokenError) {
+  if (!session?.user || role !== "SUPERADMIN" || !accessToken || hasFatalTokenError) {
     redirect("/superadmin/login");
   }
 

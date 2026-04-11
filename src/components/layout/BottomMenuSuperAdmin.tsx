@@ -13,11 +13,13 @@ import {
   FaBullhorn,
   FaNewspaper,
   FaShieldAlt,
+  FaRecycle,
 } from "react-icons/fa";
 
 const menu = [
   { label: "Dashboard", icon: FaTachometerAlt, href: "/superadmin/dashboard" },
   { label: "Rachas/SaaS", icon: FaBuilding, href: "/superadmin/rachas" },
+  { label: "Ciclo", icon: FaRecycle, href: "/superadmin/tenant-lifecycle" },
   { label: "Admins", icon: FaUsers, href: "/superadmin/admins" },
   { label: "Contas", icon: FaIdBadge, href: "/superadmin/contas" },
   { label: "Financeiro", icon: FaMoneyCheckAlt, href: "/superadmin/financeiro" },
