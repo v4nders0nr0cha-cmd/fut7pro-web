@@ -147,14 +147,16 @@ function normalizeStatus(params: {
     trialEndsAt.getTime() < Date.now();
 
   if (blocked) return "BLOQUEADO";
-  if (value.includes("INAD")) return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
+  if (value.includes("INAD"))
+    return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
   if (value.includes("TRIALING")) {
     if (hasPaymentHistory) return "ATIVO";
     return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
   }
   if (value.includes("TRIAL")) return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
   if (value.includes("PAUSE")) return "BLOQUEADO";
-  if (value.includes("EXPIRE")) return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
+  if (value.includes("EXPIRE"))
+    return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
   if (value.includes("BLOCK")) return "BLOQUEADO";
   if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
   return value || "ATIVO";
@@ -402,59 +404,60 @@ export default function RachasCadastradosPage() {
     () =>
       tenants
         .map((t) => {
-        const subscription = t.subscription as any;
-        const isVitrine = Boolean(t.isVitrine) || (t.slug || "").toLowerCase() === "vitrine";
-        const status = isVitrine
-          ? "ATIVO"
-          : normalizeStatus({
-              raw: subscription?.status ?? t.status,
-              blocked: t.blocked,
-              trialEnd: subscription?.trialEnd ?? t.trialEndsAt ?? null,
-              firstPaymentAt: subscription?.firstPaymentAt ?? null,
-            });
-        const planLabel = isVitrine
-          ? "Vitrine (Sem limite)"
-          : resolvePlanLabel(
-              subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
-              status,
-              subscription?.trialStart ?? null,
-              subscription?.trialEnd ?? null
-            );
-        const owner = resolveTenantOwner(t);
-        const admin = owner.name || owner.email || "--";
-        const atividade = resolveTenantLastActivity(t);
-        const ultimaAtividade = atividade.value;
+          const subscription = t.subscription as any;
+          const isVitrine = Boolean(t.isVitrine) || (t.slug || "").toLowerCase() === "vitrine";
+          const status = isVitrine
+            ? "ATIVO"
+            : normalizeStatus({
+                raw: subscription?.status ?? t.status,
+                blocked: t.blocked,
+                trialEnd: subscription?.trialEnd ?? t.trialEndsAt ?? null,
+                firstPaymentAt: subscription?.firstPaymentAt ?? null,
+              });
+          const planLabel = isVitrine
+            ? "Vitrine (Sem limite)"
+            : resolvePlanLabel(
+                subscription?.planKey ?? t.planKey ?? t.plan ?? subscription?.plan,
+                status,
+                subscription?.trialStart ?? null,
+                subscription?.trialEnd ?? null
+              );
+          const owner = resolveTenantOwner(t);
+          const admin = owner.name || owner.email || "--";
+          const atividade = resolveTenantLastActivity(t);
+          const ultimaAtividade = atividade.value;
 
-        return {
-          id: t.id,
-          nome: t.name || t.slug || "Racha sem nome",
-          presidente: admin || "--",
-          plano: planLabel,
-          status,
-          ativo: status === "ATIVO" || status === "TRIAL" || status === "INADIMPLENTE_COM_HISTORICO",
-          atletas:
-            t.playersCount ??
-            t.athletes ??
-            t.adminsCount ??
-            (t as any)?._count?.athletes ??
-            (t as any)?._count?.players ??
-            (t as any)?._count?.users ??
-            0,
-          criadoEm: t.createdAt || "",
-          ultimaAtividade,
-          diasInativo: daysSince(ultimaAtividade),
-          tipoInatividade: atividade.source,
-          bloqueado: status === "BLOQUEADO",
-          isVitrine,
-          historico: [
-            { acao: "Criado", criadoEm: t.createdAt || "" },
-            { acao: "Ultima atualizacao", criadoEm: t.updatedAt || "" },
-          ].filter((h) => h.criadoEm),
-          ultimoLogBloqueio: t.blocked
-            ? { detalhes: "Bloqueado no backend", criadoEm: t.updatedAt }
-            : null,
-        };
-      })
+          return {
+            id: t.id,
+            nome: t.name || t.slug || "Racha sem nome",
+            presidente: admin || "--",
+            plano: planLabel,
+            status,
+            ativo:
+              status === "ATIVO" || status === "TRIAL" || status === "INADIMPLENTE_COM_HISTORICO",
+            atletas:
+              t.playersCount ??
+              t.athletes ??
+              t.adminsCount ??
+              (t as any)?._count?.athletes ??
+              (t as any)?._count?.players ??
+              (t as any)?._count?.users ??
+              0,
+            criadoEm: t.createdAt || "",
+            ultimaAtividade,
+            diasInativo: daysSince(ultimaAtividade),
+            tipoInatividade: atividade.source,
+            bloqueado: status === "BLOQUEADO",
+            isVitrine,
+            historico: [
+              { acao: "Criado", criadoEm: t.createdAt || "" },
+              { acao: "Ultima atualizacao", criadoEm: t.updatedAt || "" },
+            ].filter((h) => h.criadoEm),
+            ultimoLogBloqueio: t.blocked
+              ? { detalhes: "Bloqueado no backend", criadoEm: t.updatedAt }
+              : null,
+          };
+        })
         .sort((a, b) => {
           const aTime = a.criadoEm ? new Date(a.criadoEm).getTime() : 0;
           const bTime = b.criadoEm ? new Date(b.criadoEm).getTime() : 0;

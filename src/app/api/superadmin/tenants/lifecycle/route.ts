@@ -45,7 +45,7 @@ export async function POST(_req: NextRequest) {
       method: "POST",
       headers: buildHeaders(user),
       cache: "no-store",
-    },
+    }
   );
 
   return forwardResponse(response.status, body);

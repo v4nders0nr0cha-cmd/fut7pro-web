@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id?: strin
       headers: buildHeaders(user, undefined, { includeContentType: true }),
       body: payload,
       cache: "no-store",
-    },
+    }
   );
 
   return forwardResponse(response.status, body);
