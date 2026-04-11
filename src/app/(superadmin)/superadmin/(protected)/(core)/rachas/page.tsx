@@ -153,10 +153,10 @@ function normalizeStatus(params: {
     if (hasPaymentHistory) return "ATIVO";
     return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
   }
-  if (value.includes("TRIAL")) return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
-  if (value.includes("PAUSE")) return "BLOQUEADO";
   if (value.includes("EXPIRE"))
     return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
+  if (value.includes("TRIAL")) return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
+  if (value.includes("PAUSE")) return "BLOQUEADO";
   if (value.includes("BLOCK")) return "BLOQUEADO";
   if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
   return value || "ATIVO";

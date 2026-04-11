@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
 
@@ -124,17 +124,24 @@ export default function TenantLifecyclePage() {
   const [lifecycleStatus, setLifecycleStatus] = useState("");
   const [billingStatus, setBillingStatus] = useState("");
   const [conversionStatus, setConversionStatus] = useState("");
+  const [page, setPage] = useState(1);
   const [isMutating, setIsMutating] = useState(false);
+
+  const PAGE_SIZE = 200;
 
   const query = useMemo(() => {
     const params = new URLSearchParams();
-    params.set("page", "1");
-    params.set("pageSize", "200");
+    params.set("page", String(page));
+    params.set("pageSize", String(PAGE_SIZE));
     if (search.trim()) params.set("search", search.trim());
     if (lifecycleStatus) params.set("lifecycleStatus", lifecycleStatus);
     if (billingStatus) params.set("billingStatus", billingStatus);
     if (conversionStatus) params.set("conversionStatus", conversionStatus);
     return params.toString();
+  }, [billingStatus, conversionStatus, lifecycleStatus, page, search]);
+
+  useEffect(() => {
+    setPage(1);
   }, [billingStatus, conversionStatus, lifecycleStatus, search]);
 
   const { data, error, isLoading, mutate } = useSWR<LifecycleResponse>(
@@ -180,6 +187,12 @@ export default function TenantLifecyclePage() {
       setIsMutating(false);
     }
   }
+
+  const totalPages = Math.max(data?.pagination.totalPages ?? 1, 1);
+  const totalRows = data?.pagination.total ?? 0;
+  const currentPage = Math.min(data?.pagination.page ?? page, totalPages);
+  const showingFrom = totalRows > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const showingTo = totalRows > 0 ? Math.min(currentPage * PAGE_SIZE, totalRows) : 0;
 
   return (
     <section className="space-y-5">
@@ -465,6 +478,31 @@ export default function TenantLifecyclePage() {
             })}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-xs text-zinc-400">
+          Exibindo {showingFrom}-{showingTo} de {totalRows} rachas
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+            disabled={isLoading || isMutating || currentPage <= 1}
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+          >
+            Pagina anterior
+          </button>
+          <span className="text-xs text-zinc-400">
+            Pagina {currentPage} de {totalPages}
+          </span>
+          <button
+            className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-40"
+            disabled={isLoading || isMutating || currentPage >= totalPages}
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+          >
+            Proxima pagina
+          </button>
+        </div>
       </div>
     </section>
   );
