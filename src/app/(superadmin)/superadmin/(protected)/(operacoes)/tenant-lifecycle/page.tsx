@@ -27,11 +27,7 @@ type LifecycleRow = {
   firstPaymentAt?: string | null;
   lastPaymentAt?: string | null;
   inactivityDays?: number | null;
-  billingStatus:
-    | "ADIMPLENTE"
-    | "INADIMPLENTE_COM_HISTORICO"
-    | "SEM_CONVERSAO"
-    | "ISENTO";
+  billingStatus: "ADIMPLENTE" | "INADIMPLENTE_COM_HISTORICO" | "SEM_CONVERSAO" | "ISENTO";
   conversionStatus: "NUNCA_PAGOU" | "JA_PAGOU_AO_MENOS_UMA_VEZ";
   lifecycleStatus:
     | "ATIVO"
@@ -144,7 +140,7 @@ export default function TenantLifecyclePage() {
   const { data, error, isLoading, mutate } = useSWR<LifecycleResponse>(
     `/api/superadmin/tenants/lifecycle?${query}`,
     fetcher,
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false }
   );
 
   async function runReconcile() {
@@ -190,7 +186,9 @@ export default function TenantLifecyclePage() {
       <header className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-xl font-bold text-zinc-100">Operacao de Ciclo de Vida dos Rachas</h1>
+            <h1 className="text-xl font-bold text-zinc-100">
+              Operacao de Ciclo de Vida dos Rachas
+            </h1>
             <p className="mt-1 text-sm text-zinc-400">
               Segmentacao de trial, sem conversao, inadimplencia com historico e limpeza automatica.
             </p>
@@ -205,14 +203,17 @@ export default function TenantLifecyclePage() {
         </div>
         <div className="mt-3 text-xs text-zinc-500">
           Politica ativa: abandono em {data?.policies.abandonedDays ?? "--"} dias, arquivamento
-          automatico em {data?.policies.autoArchiveDays ?? "--"} dias, exclusao apos
-          {" "}
+          automatico em {data?.policies.autoArchiveDays ?? "--"} dias, exclusao apos{" "}
           {data?.policies.autoDeleteGraceDays ?? "--"} dias de fila.
         </div>
       </header>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard title="Trial Ativo" value={data?.summary.trialAtivo ?? 0} accent="text-blue-300" />
+        <SummaryCard
+          title="Trial Ativo"
+          value={data?.summary.trialAtivo ?? 0}
+          accent="text-blue-300"
+        />
         <SummaryCard
           title="Trial Expirado"
           value={data?.summary.trialExpiradoSemConversao ?? 0}
@@ -228,7 +229,11 @@ export default function TenantLifecyclePage() {
           value={data?.summary.inadimplentesComHistorico ?? 0}
           accent="text-red-300"
         />
-        <SummaryCard title="Arquivados" value={data?.summary.arquivados ?? 0} accent="text-zinc-300" />
+        <SummaryCard
+          title="Arquivados"
+          value={data?.summary.arquivados ?? 0}
+          accent="text-zinc-300"
+        />
         <SummaryCard
           title="Exclusao Agendada"
           value={data?.summary.exclusaoAgendada ?? 0}
@@ -329,7 +334,7 @@ export default function TenantLifecyclePage() {
             {(data?.rows ?? []).map((row) => {
               const confirmDelete = () => {
                 const ok = window.confirm(
-                  `Excluir definitivamente o racha ${row.tenantName}? Esta acao remove todos os dados.`,
+                  `Excluir definitivamente o racha ${row.tenantName}? Esta acao remove todos os dados.`
                 );
                 if (ok) {
                   void applyAction(row.tenantId, "EXCLUIR_AGORA", "Exclusao manual imediata");
@@ -350,7 +355,9 @@ export default function TenantLifecyclePage() {
                     <div className="text-xs text-zinc-500">{row.ownerEmail || "--"}</div>
                   </td>
                   <td className="px-3 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${lifecycleClasses[row.lifecycleStatus]}`}>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${lifecycleClasses[row.lifecycleStatus]}`}
+                    >
                       {lifecycleLabels[row.lifecycleStatus]}
                     </span>
                   </td>
@@ -363,7 +370,9 @@ export default function TenantLifecyclePage() {
                   <td className="px-3 py-3 text-xs">{formatDate(row.lastPaymentAt)}</td>
                   <td className="px-3 py-3 text-xs">
                     {typeof row.inactivityDays === "number" ? `${row.inactivityDays} dias` : "--"}
-                    <div className="text-[11px] text-zinc-500">{formatDate(row.lastActivityAt)}</div>
+                    <div className="text-[11px] text-zinc-500">
+                      {formatDate(row.lastActivityAt)}
+                    </div>
                   </td>
                   <td className="px-3 py-3 text-xs">{formatDate(row.createdAt)}</td>
                   <td className="px-3 py-3 text-xs">{formatDate(row.archivedAt)}</td>
@@ -378,7 +387,7 @@ export default function TenantLifecyclePage() {
                             applyAction(
                               row.tenantId,
                               "REMOVER_PROTECAO",
-                              "Protecao removida manualmente no painel de lifecycle",
+                              "Protecao removida manualmente no painel de lifecycle"
                             )
                           }
                         >
@@ -392,7 +401,7 @@ export default function TenantLifecyclePage() {
                             applyAction(
                               row.tenantId,
                               "PROTEGER",
-                              "Protecao manual contra limpeza automatica",
+                              "Protecao manual contra limpeza automatica"
                             )
                           }
                         >
@@ -419,7 +428,7 @@ export default function TenantLifecyclePage() {
                               applyAction(
                                 row.tenantId,
                                 "CANCELAR_EXCLUSAO",
-                                "Cancelamento manual da exclusao agendada",
+                                "Cancelamento manual da exclusao agendada"
                               )
                             }
                           >
@@ -434,7 +443,7 @@ export default function TenantLifecyclePage() {
                             applyAction(
                               row.tenantId,
                               "ARQUIVAR",
-                              "Arquivamento manual pelo painel de lifecycle",
+                              "Arquivamento manual pelo painel de lifecycle"
                             )
                           }
                         >

@@ -41,8 +41,8 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
         : racha.status === "TRIAL_EXPIRADO" || racha.status === "SEM_CONVERSAO"
           ? "bg-amber-900 text-amber-100"
           : racha.status === "INADIMPLENTE" || racha.status === "INADIMPLENTE_COM_HISTORICO"
-          ? "bg-red-800 text-red-200"
-          : "bg-green-900 text-green-200";
+            ? "bg-red-800 text-red-200"
+            : "bg-green-900 text-green-200";
 
   const plano =
     racha.plano ||
