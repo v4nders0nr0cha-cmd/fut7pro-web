@@ -10,35 +10,14 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { type AdminNotificationItem, useAdminNotifications } from "@/hooks/useAdminNotifications";
+import AccessCompensationGrantedModal from "@/components/admin/AccessCompensationGrantedModal";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 import { signOut, useSession } from "next-auth/react";
 
 const LAST_TENANT_STORAGE = "fut7pro_last_tenants";
 const PERF_FLAG_KEY = "fut7pro_admin_perf_enabled";
 const PERF_START_KEY = "fut7pro_admin_perf_start";
-const ADMIN_DEFAULT_TITLE = "Painel Admin | Fut7Pro";
-const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
-  { prefix: "/admin/dashboard", title: "Dashboard Admin | Fut7Pro" },
-  { prefix: "/admin/partidas", title: "Partidas Admin | Fut7Pro" },
-  { prefix: "/admin/jogadores", title: "Jogadores Admin | Fut7Pro" },
-  { prefix: "/admin/conquistas", title: "Conquistas Admin | Fut7Pro" },
-  { prefix: "/admin/financeiro", title: "Financeiro Admin | Fut7Pro" },
-  { prefix: "/admin/personalizacao", title: "Personalização Admin | Fut7Pro" },
-  { prefix: "/admin/administracao", title: "Administração | Fut7Pro" },
-  { prefix: "/admin/comunicacao", title: "Comunicação Admin | Fut7Pro" },
-  { prefix: "/admin/configuracoes", title: "Configurações Admin | Fut7Pro" },
-  { prefix: "/admin/monetizacao", title: "Monetização Admin | Fut7Pro" },
-  { prefix: "/admin/selecionar-racha", title: "Selecionar Racha | Fut7Pro" },
-  { prefix: "/admin/status-assinatura", title: "Status da Assinatura | Fut7Pro" },
-];
-
-function resolveAdminTitle(pathname: string) {
-  if (!pathname.startsWith("/admin")) return null;
-  return (
-    ADMIN_ROUTE_TITLES.find((entry) => pathname.startsWith(entry.prefix))?.title ??
-    ADMIN_DEFAULT_TITLE
-  );
-}
 
 const clearActiveTenantCookie = () => {
   if (typeof window === "undefined") return;
@@ -121,6 +100,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [sessionExpiredModalOpen, setSessionExpiredModalOpen] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
   const [sessionModalError, setSessionModalError] = useState<string | null>(null);
+  const [compensationModalOpen, setCompensationModalOpen] = useState(false);
+  const [compensationModalProcessing, setCompensationModalProcessing] = useState(false);
+  const [activeCompensationNotification, setActiveCompensationNotification] =
+    useState<AdminNotificationItem | null>(null);
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const router = useRouter();
@@ -135,6 +118,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
+  const compensationModalTimerRef = useRef<number | null>(null);
+  const shownCompensationNotificationIdsRef = useRef<Set<string>>(new Set());
   const tokenError = String((session?.user as any)?.tokenError || "").trim();
   const shouldForceSignOutForTokenError =
     tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
@@ -153,6 +138,27 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);
   const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
   const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
+  const shouldEnableCompensationModalQuery =
+    hasResolvedTenant &&
+    !accessLoading &&
+    !access?.blocked &&
+    sessionStatus === "authenticated" &&
+    !sessionExpiredModalOpen;
+
+  const {
+    notifications: compensationNotifications,
+    markAsRead: markCompensationNotificationAsRead,
+  } = useAdminNotifications({
+    enabled: shouldEnableCompensationModalQuery,
+    includeCount: false,
+    unread: true,
+    type: "ACCESS_COMPENSATION_GRANTED",
+    page: 1,
+    limit: 1,
+    refreshInterval: 45000,
+  });
+
+  const latestCompensationNotification = compensationNotifications[0] ?? null;
 
   const openSessionExpiredModal = useCallback(() => {
     setSessionModalError(null);
@@ -162,12 +168,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const buildAdminLoginHref = useCallback(() => {
     const returnTo = pathname && pathname !== "/admin/login" ? pathname : "/admin/dashboard";
     return `/admin/login?expired=1&returnTo=${encodeURIComponent(returnTo)}`;
-  }, [pathname]);
-
-  useEffect(() => {
-    const nextTitle = resolveAdminTitle(pathname);
-    if (!nextTitle || typeof document === "undefined") return;
-    document.title = nextTitle;
   }, [pathname]);
 
   useEffect(() => {
@@ -314,9 +314,63 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     signOut({ callbackUrl: buildAdminLoginHref() });
   };
 
+  useEffect(() => {
+    if (!shouldEnableCompensationModalQuery) return;
+    if (!latestCompensationNotification || compensationModalOpen) return;
+    const notificationId = latestCompensationNotification.id;
+    if (shownCompensationNotificationIdsRef.current.has(notificationId)) return;
+
+    if (compensationModalTimerRef.current) {
+      window.clearTimeout(compensationModalTimerRef.current);
+    }
+
+    compensationModalTimerRef.current = window.setTimeout(() => {
+      shownCompensationNotificationIdsRef.current.add(notificationId);
+      setActiveCompensationNotification(latestCompensationNotification);
+      setCompensationModalOpen(true);
+    }, 620);
+
+    return () => {
+      if (compensationModalTimerRef.current) {
+        window.clearTimeout(compensationModalTimerRef.current);
+        compensationModalTimerRef.current = null;
+      }
+    };
+  }, [latestCompensationNotification, compensationModalOpen, shouldEnableCompensationModalQuery]);
+
+  const closeCompensationModal = useCallback(
+    async (navigateToDetails: boolean) => {
+      const notification = activeCompensationNotification;
+      if (!notification) return;
+
+      setCompensationModalProcessing(true);
+      try {
+        await markCompensationNotificationAsRead(notification.id);
+      } catch (error) {
+        console.warn("[admin] Falha ao marcar notificação de compensação como lida", error);
+      } finally {
+        setCompensationModalProcessing(false);
+        setCompensationModalOpen(false);
+        setActiveCompensationNotification(null);
+      }
+
+      if (navigateToDetails) {
+        router.push("/admin/comunicacao/notificacoes");
+      }
+    },
+    [activeCompensationNotification, markCompensationNotificationAsRead, router]
+  );
+
   const withSessionModal = (content: ReactNode) => (
     <>
       {content}
+      <AccessCompensationGrantedModal
+        open={compensationModalOpen}
+        notification={activeCompensationNotification}
+        processing={compensationModalProcessing}
+        onDismiss={() => void closeCompensationModal(false)}
+        onViewDetails={() => void closeCompensationModal(true)}
+      />
       <SessionExpiredModal
         open={sessionExpiredModalOpen}
         renewing={renewingSession}

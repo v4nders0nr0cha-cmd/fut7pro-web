@@ -5,6 +5,8 @@ const signOutMock = jest.fn();
 const mockUseAdminAccess = jest.fn();
 const replaceMock = jest.fn();
 const mockUseSession = jest.fn();
+const mockUseAdminNotifications = jest.fn();
+const modalPropsSpy = jest.fn();
 
 jest.mock("next-auth/react", () => ({
   signOut: (...args: unknown[]) => signOutMock(...args),
@@ -15,10 +17,15 @@ jest.mock("@/hooks/useAdminAccess", () => ({
   useAdminAccess: (...args: unknown[]) => mockUseAdminAccess(...args),
 }));
 
+jest.mock("@/hooks/useAdminNotifications", () => ({
+  useAdminNotifications: (...args: unknown[]) => mockUseAdminNotifications(...args),
+}));
+
 jest.mock("next/navigation", () => ({
   usePathname: () => "/admin/dashboard",
   useRouter: () => ({
     replace: replaceMock,
+    push: jest.fn(),
   }),
 }));
 
@@ -78,6 +85,21 @@ jest.mock("@/context/NotificationContext", () => ({
   }),
 }));
 
+jest.mock("@/components/admin/AccessCompensationGrantedModal", () => ({
+  __esModule: true,
+  default: (props: any) => {
+    modalPropsSpy(props);
+    if (!props.open) return null;
+    return (
+      <div data-testid="compensation-modal">
+        <button type="button" onClick={props.onDismiss}>
+          Fechar compensação
+        </button>
+      </div>
+    );
+  },
+}));
+
 describe("AdminLayoutContent", () => {
   beforeEach(() => {
     mockSidebar.mockClear();
@@ -89,6 +111,17 @@ describe("AdminLayoutContent", () => {
       status: "authenticated",
       update: jest.fn(),
     });
+    mockUseAdminNotifications.mockReset();
+    mockUseAdminNotifications.mockReturnValue({
+      notifications: [],
+      unreadCount: 0,
+      isLoading: false,
+      isError: false,
+      error: undefined,
+      markAsRead: jest.fn(),
+      markAllAsRead: jest.fn(),
+      mutate: jest.fn(),
+    });
     mockUseAdminAccess.mockReturnValue({
       access: {
         tenant: { slug: "racha-1", id: "tenant-1" },
@@ -99,6 +132,7 @@ describe("AdminLayoutContent", () => {
       error: null,
       mutate: jest.fn(),
     });
+    modalPropsSpy.mockClear();
     jest.useRealTimers();
   });
 
@@ -163,6 +197,52 @@ describe("AdminLayoutContent", () => {
       expect(replaceMock).toHaveBeenCalledWith(
         "/admin/login?expired=1&returnTo=%2Fadmin%2Fdashboard"
       );
+    });
+  });
+
+  it("abre modal de compensacao no primeiro acesso e marca notificacao como lida ao fechar", async () => {
+    jest.useFakeTimers();
+    const markAsRead = jest.fn().mockResolvedValue({});
+    mockUseAdminNotifications.mockReturnValue({
+      notifications: [
+        {
+          id: "comp-1",
+          recipientType: "ADMIN",
+          recipientId: "admin-1",
+          type: "ACCESS_COMPENSATION_GRANTED",
+          title: "Seu racha recebeu dias extras",
+          body: "Compensação concedida: +7 dia(s) de acesso.",
+          href: "/admin/comunicacao/notificacoes?highlight=comp-1",
+          readAt: null,
+          isRead: false,
+          metadata: {
+            daysGranted: 7,
+            newAccessUntil: "2026-05-01T00:00:00.000Z",
+          },
+          createdAt: "2026-04-11T10:00:00.000Z",
+          updatedAt: "2026-04-11T10:00:00.000Z",
+        },
+      ],
+      unreadCount: 0,
+      isLoading: false,
+      isError: false,
+      error: undefined,
+      markAsRead,
+      markAllAsRead: jest.fn(),
+      mutate: jest.fn(),
+    });
+
+    render(<AdminLayoutContent>child</AdminLayoutContent>);
+
+    act(() => {
+      jest.advanceTimersByTime(700);
+    });
+
+    expect(screen.getByTestId("compensation-modal")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Fechar compensação" }));
+
+    await waitFor(() => {
+      expect(markAsRead).toHaveBeenCalledWith("comp-1");
     });
   });
 });

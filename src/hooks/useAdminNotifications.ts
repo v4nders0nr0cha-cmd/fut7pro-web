@@ -1,13 +1,14 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate as globalMutate } from "swr";
 
 export type AdminNotificationType =
   | "SUGGESTION_RECEIVED"
   | "SUGGESTION_UPDATED"
   | "MESSAGE_RECEIVED"
   | "ATHLETE_REQUEST_PENDING"
-  | "SYSTEM_ANNOUNCEMENT";
+  | "SYSTEM_ANNOUNCEMENT"
+  | "ACCESS_COMPENSATION_GRANTED";
 
 export type AdminNotificationItem = {
   id: string;
@@ -39,6 +40,7 @@ type AdminNotificationsCountResponse = {
 
 type UseAdminNotificationsOptions = {
   enabled?: boolean;
+  includeCount?: boolean;
   includeList?: boolean;
   page?: number;
   limit?: number;
@@ -99,6 +101,7 @@ const buildListKey = (options: UseAdminNotificationsOptions) => {
 
 export function useAdminNotifications(options: UseAdminNotificationsOptions = {}) {
   const enabled = options.enabled ?? true;
+  const includeCount = options.includeCount ?? true;
   const includeList = options.includeList ?? true;
   const refreshInterval = options.refreshInterval ?? 60_000;
   const resolveRefreshInterval = () => {
@@ -108,7 +111,7 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
     return refreshInterval;
   };
 
-  const countKey = enabled ? "/api/admin/notifications/unread-count" : null;
+  const countKey = enabled && includeCount ? "/api/admin/notifications/unread-count" : null;
   const listKey = enabled && includeList ? buildListKey(options) : null;
 
   const {
@@ -170,7 +173,11 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       );
     }
 
-    await Promise.all([mutateCount(), mutateList()]);
+    await Promise.all([
+      includeCount ? mutateCount() : Promise.resolve(),
+      mutateList(),
+      globalMutate("/api/admin/notifications/unread-count"),
+    ]);
     return payload;
   };
 
@@ -185,7 +192,11 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
       );
     }
 
-    await Promise.all([mutateCount(), mutateList()]);
+    await Promise.all([
+      includeCount ? mutateCount() : Promise.resolve(),
+      mutateList(),
+      globalMutate("/api/admin/notifications/unread-count"),
+    ]);
     return payload;
   };
 
@@ -198,10 +209,11 @@ export function useAdminNotifications(options: UseAdminNotificationsOptions = {}
     limit: typeof listData?.limit === "number" ? listData.limit : (options.limit ?? 20),
     hasMore: Boolean(listData?.hasMore),
     unreadCount: typeof countData?.count === "number" ? countData.count : 0,
-    isLoading: enabled ? isCountLoading || (includeList ? isListLoading : false) : false,
-    isError: Boolean(countError || listError),
-    error: (countError || listError) as Error | undefined,
-    mutate: async () => Promise.all([mutateCount(), mutateList()]),
+    isLoading: enabled ? (includeCount && isCountLoading) || (includeList && isListLoading) : false,
+    isError: Boolean((includeCount ? countError : null) || listError),
+    error: ((includeCount ? countError : undefined) || listError) as Error | undefined,
+    mutate: async () =>
+      Promise.all([includeCount ? mutateCount() : Promise.resolve(), mutateList()]),
     markAsRead,
     markAllAsRead,
   };

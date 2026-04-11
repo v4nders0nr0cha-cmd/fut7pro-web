@@ -6,6 +6,7 @@ import {
   FaBell,
   FaCheckCircle,
   FaClock,
+  FaGift,
   FaInfoCircle,
   FaPaperPlane,
   FaUserPlus,
@@ -26,6 +27,7 @@ const typeLabels: Record<TypeFilter, string> = {
   MESSAGE_RECEIVED: "Mensagens",
   ATHLETE_REQUEST_PENDING: "Solicitações",
   SYSTEM_ANNOUNCEMENT: "Sistema",
+  ACCESS_COMPENSATION_GRANTED: "Compensações",
 };
 
 const typeStyles: Record<AdminNotificationType, { icon: JSX.Element; chip: string }> = {
@@ -48,6 +50,10 @@ const typeStyles: Record<AdminNotificationType, { icon: JSX.Element; chip: strin
   SYSTEM_ANNOUNCEMENT: {
     icon: <FaInfoCircle className="text-sky-300" />,
     chip: "bg-sky-900/50 text-sky-200 border-sky-700/40",
+  },
+  ACCESS_COMPENSATION_GRANTED: {
+    icon: <FaGift className="text-amber-300" />,
+    chip: "bg-amber-900/50 text-amber-200 border-amber-700/40",
   },
 };
 
