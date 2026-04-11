@@ -95,9 +95,9 @@ export default function AccessCompensationGrantedModal({
     let active = true;
     const burst = async () => {
       try {
-        const module = await import("canvas-confetti");
+        const confettiModule = await import("canvas-confetti");
         if (!active) return;
-        module.default({
+        confettiModule.default({
           particleCount: 80,
           spread: 65,
           startVelocity: 35,
