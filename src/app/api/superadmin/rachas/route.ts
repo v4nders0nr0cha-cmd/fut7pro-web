@@ -31,6 +31,7 @@ type BackendTenant = {
     planKey?: string | null;
     plan?: string | null;
     trialEnd?: string | null;
+    firstPaymentAt?: string | null;
   } | null;
   admins?: unknown[] | null;
   adminsCount?: number | null;
@@ -38,13 +39,32 @@ type BackendTenant = {
   _count?: { users?: number | null } | null;
 };
 
-function normalizeStatus(raw?: string | null, blocked?: boolean | null) {
+function normalizeStatus(params: {
+  raw?: string | null;
+  blocked?: boolean | null;
+  trialEnd?: string | null;
+  firstPaymentAt?: string | null;
+}) {
+  const { raw, blocked, trialEnd, firstPaymentAt } = params;
   const value = (raw || "").toUpperCase();
+  const hasPaymentHistory = Boolean(firstPaymentAt);
+  const trialEndsAt = trialEnd ? new Date(trialEnd) : null;
+  const trialExpired =
+    trialEndsAt instanceof Date &&
+    !Number.isNaN(trialEndsAt.getTime()) &&
+    trialEndsAt.getTime() < Date.now();
+
   if (blocked) return "BLOQUEADO";
-  if (value.includes("INAD")) return "INADIMPLENTE";
-  if (value.includes("TRIAL")) return "TRIAL";
+  if (value.includes("INAD"))
+    return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
+  if (value.includes("TRIALING")) {
+    if (hasPaymentHistory) return "ATIVO";
+    return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
+  }
+  if (value.includes("TRIAL")) return trialExpired ? "TRIAL_EXPIRADO" : "TRIAL";
   if (value.includes("PAUSE")) return "BLOQUEADO";
-  if (value.includes("EXPIRE")) return "INADIMPLENTE";
+  if (value.includes("EXPIRE"))
+    return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
   if (value.includes("BLOCK")) return "BLOQUEADO";
   if (value.includes("ATIVO") || value.includes("ACTIVE") || value.includes("PAID")) return "ATIVO";
   return value || "ATIVO";
@@ -56,7 +76,12 @@ function mapTenant(tenant: BackendTenant) {
   const isVitrine = Boolean(tenant.isVitrine) || slug.toLowerCase() === "vitrine";
   const status = isVitrine
     ? "ATIVO"
-    : normalizeStatus(subscription?.status ?? tenant.status, tenant.blocked);
+    : normalizeStatus({
+        raw: subscription?.status ?? tenant.status,
+        blocked: tenant.blocked,
+        trialEnd: subscription?.trialEnd ?? tenant.trialEndsAt ?? null,
+        firstPaymentAt: subscription?.firstPaymentAt ?? null,
+      });
   const nome = tenant.name ?? tenant.nome ?? tenant.slug ?? "Racha sem nome";
   const adminsCount = Array.isArray(tenant.admins) ? tenant.admins.length : tenant.adminsCount;
   const jogadoresCount = tenant.jogadoresCount ?? tenant._count?.users ?? undefined;
@@ -68,7 +93,7 @@ function mapTenant(tenant: BackendTenant) {
     tenantId: tenant.id ?? undefined,
     tenantSlug: tenant.slug ?? undefined,
     status,
-    ativo: status === "ATIVO" || status === "TRIAL",
+    ativo: status === "ATIVO" || status === "TRIAL" || status === "INADIMPLENTE_COM_HISTORICO",
     plano: isVitrine
       ? "vitrine"
       : (subscription?.planKey ?? tenant.planKey ?? tenant.plan ?? undefined),

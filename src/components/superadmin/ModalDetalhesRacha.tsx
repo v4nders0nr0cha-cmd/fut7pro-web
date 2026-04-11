@@ -38,13 +38,21 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
       ? "bg-red-900 text-red-200"
       : racha.status === "TRIAL"
         ? "bg-yellow-900 text-yellow-200"
-        : racha.status === "INADIMPLENTE"
-          ? "bg-red-800 text-red-200"
-          : "bg-green-900 text-green-200";
+        : racha.status === "TRIAL_EXPIRADO" || racha.status === "SEM_CONVERSAO"
+          ? "bg-amber-900 text-amber-100"
+          : racha.status === "INADIMPLENTE" || racha.status === "INADIMPLENTE_COM_HISTORICO"
+            ? "bg-red-800 text-red-200"
+            : "bg-green-900 text-green-200";
 
-  const plano = racha.plano || (racha.status === "TRIAL" ? "Trial" : "Plano n/d");
+  const plano =
+    racha.plano ||
+    (racha.status === "TRIAL" || racha.status === "TRIAL_EXPIRADO" ? "Trial" : "Plano n/d");
   const criadoEm = racha.criadoEm ? format(new Date(racha.criadoEm), "dd/MM/yyyy") : "--";
-  const ativo = racha.ativo ?? (racha.status === "ATIVO" || racha.status === "TRIAL");
+  const ativo =
+    racha.ativo ??
+    (racha.status === "ATIVO" ||
+      racha.status === "TRIAL" ||
+      racha.status === "INADIMPLENTE_COM_HISTORICO");
   const themeLabel = getRachaTheme(racha.themeKey ?? undefined).name;
 
   async function handleUnblock() {

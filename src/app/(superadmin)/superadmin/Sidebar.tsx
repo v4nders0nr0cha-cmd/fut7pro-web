@@ -18,6 +18,7 @@ import {
   FaEnvelope,
   FaNewspaper,
   FaShieldAlt,
+  FaRecycle,
 } from "react-icons/fa";
 import Image from "next/image";
 import { useBranding } from "@/hooks/useBranding";
@@ -49,6 +50,7 @@ const sections: Array<{ title: string; items: MenuItem[] }> = [
   {
     title: "Operação",
     items: [
+      { label: "Lifecycle Rachas", href: "/superadmin/tenant-lifecycle", icon: FaRecycle },
       { label: "Suporte", href: "/superadmin/suporte", icon: FaLifeRing },
       { label: "Cancelamentos", href: "/superadmin/cancelamentos", icon: FaUserSlash },
       { label: "Notificações", href: "/superadmin/notificacoes", icon: FaBell },

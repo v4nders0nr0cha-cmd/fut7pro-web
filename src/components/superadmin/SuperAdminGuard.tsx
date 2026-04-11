@@ -10,8 +10,9 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const role = (data?.user as any)?.role;
   const accessToken = String((data?.user as any)?.accessToken || "").trim();
   const tokenError = String((data?.user as any)?.tokenError || "").trim();
+  const hasFatalTokenError = Boolean(tokenError) && tokenError !== "RefreshAccessTokenRetry";
   const isSuperAdmin =
-    (role === "SUPERADMIN" || role === "superadmin") && Boolean(accessToken) && !tokenError;
+    (role === "SUPERADMIN" || role === "superadmin") && Boolean(accessToken) && !hasFatalTokenError;
   const signOutSuper = (params?: any) =>
     (signOut as any)({ basePath: "/api/superadmin-auth", ...params });
 
