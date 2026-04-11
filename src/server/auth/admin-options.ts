@@ -38,6 +38,8 @@ const REFRESH_PATH = normalizeAuthPath(process.env.AUTH_REFRESH_PATH, "/auth/ref
 const ME_PATH = normalizeAuthPath(process.env.AUTH_ME_PATH, "/auth/me");
 const GOOGLE_PATH = "/auth/google";
 const ADMIN_REFRESH_MARGIN_SECONDS = 120;
+const ADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS = 120_000;
+const ADMIN_EXPIRED_REFRESH_MAX_RETRIES = 3;
 const adminRefreshFlights = new Map<string, Promise<RefreshResult>>();
 const useSecureCookies = process.env.NODE_ENV === "production";
 const cookiePrefix = useSecureCookies ? "__Secure-" : "";
@@ -59,6 +61,19 @@ function decodeExp(token?: string | null): number | null {
   } catch {
     return null;
   }
+}
+
+function resetRefreshFailureState(token: JWT) {
+  delete (token as any).refreshFailureCount;
+  delete (token as any).refreshFirstFailureAtMs;
+}
+
+function invalidateAuthFields(token: JWT, errorCode: string) {
+  (token as any).accessToken = undefined;
+  (token as any).refreshToken = undefined;
+  (token as any).accessTokenExp = null;
+  (token as any).error = errorCode;
+  resetRefreshFailureState(token);
 }
 
 async function requestAdminRefresh(refreshToken: string): Promise<RefreshResult> {
@@ -378,6 +393,7 @@ export const authOptions: NextAuthOptionsLike = {
         (token as any).emailVerifiedAt = (user as any).emailVerifiedAt ?? null;
         (token as any).image = (user as any).image ?? (token as any).image ?? null;
         (token as any).error = null;
+        resetRefreshFailureState(token);
       }
 
       if (token.accessToken && token.refreshToken) {
@@ -391,12 +407,23 @@ export const authOptions: NextAuthOptionsLike = {
             token.refreshToken = refreshResult.refreshToken;
             (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
             (token as any).error = null;
+            resetRefreshFailureState(token);
           } else {
             if (tokenExp <= now) {
-              (token as any).accessToken = undefined;
-              (token as any).refreshToken = undefined;
-              (token as any).accessTokenExp = null;
-              (token as any).error = "RefreshAccessTokenError";
+              const nowMs = Date.now();
+              const previousFailureCount = Number((token as any).refreshFailureCount || 0);
+              const firstFailureAtMs = Number((token as any).refreshFirstFailureAtMs || nowMs);
+              const nextFailureCount = previousFailureCount + 1;
+              const withinGraceWindow =
+                nowMs - firstFailureAtMs <= ADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS;
+
+              if (withinGraceWindow && nextFailureCount <= ADMIN_EXPIRED_REFRESH_MAX_RETRIES) {
+                (token as any).refreshFailureCount = nextFailureCount;
+                (token as any).refreshFirstFailureAtMs = firstFailureAtMs;
+                (token as any).error = "RefreshAccessTokenRetry";
+              } else {
+                invalidateAuthFields(token, "RefreshAccessTokenError");
+              }
             } else {
               // Keep the current token while still valid and retry refresh on the next cycle.
               (token as any).error = "RefreshAccessTokenRetry";
@@ -407,10 +434,7 @@ export const authOptions: NextAuthOptionsLike = {
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
         if (tokenExp && tokenExp <= now) {
-          (token as any).accessToken = undefined;
-          (token as any).refreshToken = undefined;
-          (token as any).accessTokenExp = null;
-          (token as any).error = "AccessTokenExpired";
+          invalidateAuthFields(token, "AccessTokenExpired");
         }
       }
 

@@ -118,6 +118,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
+  const unauthenticatedRecoveryAttemptedRef = useRef(false);
+  const unauthenticatedRecoveryTimerRef = useRef<number | null>(null);
   const compensationModalTimerRef = useRef<number | null>(null);
   const shownCompensationNotificationIdsRef = useRef<Set<string>>(new Set());
   const tokenError = String((session?.user as any)?.tokenError || "").trim();
@@ -177,9 +179,65 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   }, [shouldForceSignOutForTokenError, openSessionExpiredModal]);
 
   useEffect(() => {
-    if (sessionStatus !== "unauthenticated") return;
-    router.replace(buildAdminLoginHref());
-  }, [buildAdminLoginHref, router, sessionStatus]);
+    if (sessionStatus !== "unauthenticated") {
+      unauthenticatedRecoveryAttemptedRef.current = false;
+      if (unauthenticatedRecoveryTimerRef.current) {
+        window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
+        unauthenticatedRecoveryTimerRef.current = null;
+      }
+      return;
+    }
+
+    if (sessionExpiredModalOpen || renewingSession) {
+      return;
+    }
+
+    if (unauthenticatedRecoveryAttemptedRef.current) {
+      openSessionExpiredModal();
+      return;
+    }
+
+    unauthenticatedRecoveryAttemptedRef.current = true;
+
+    if (unauthenticatedRecoveryTimerRef.current) {
+      window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
+    }
+
+    unauthenticatedRecoveryTimerRef.current = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const nextSession = await updateSession();
+          const nextTokenError = String((nextSession?.user as any)?.tokenError || "").trim();
+          if (nextSession?.user && !nextTokenError) {
+            unauthorizedRetryCountRef.current = 0;
+            tokenErrorHandledRef.current = false;
+            unauthenticatedRecoveryAttemptedRef.current = false;
+            setSessionExpiredModalOpen(false);
+            setSessionModalError(null);
+            await mutateAccess();
+            return;
+          }
+        } catch {
+          // ignore and keep fallback modal below
+        }
+        openSessionExpiredModal();
+      })();
+    }, 350);
+
+    return () => {
+      if (unauthenticatedRecoveryTimerRef.current) {
+        window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
+        unauthenticatedRecoveryTimerRef.current = null;
+      }
+    };
+  }, [
+    mutateAccess,
+    openSessionExpiredModal,
+    renewingSession,
+    sessionExpiredModalOpen,
+    sessionStatus,
+    updateSession,
+  ]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -226,7 +284,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     const status = (accessError as { status?: number } | undefined)?.status;
     if (status === 401) {
       if (sessionStatus === "unauthenticated") {
-        router.replace(buildAdminLoginHref());
+        openSessionExpiredModal();
         return;
       }
       if (sessionStatus === "authenticated" && unauthorizedRetryCountRef.current < 2) {
@@ -257,15 +315,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
 
     router.replace("/admin/selecionar-racha");
-  }, [
-    accessLoading,
-    accessError,
-    buildAdminLoginHref,
-    sessionStatus,
-    mutateAccess,
-    router,
-    openSessionExpiredModal,
-  ]);
+  }, [accessLoading, accessError, sessionStatus, mutateAccess, router, openSessionExpiredModal]);
 
   useEffect(() => {
     if (accessLoading || !access?.blocked) return;
@@ -298,6 +348,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       if (nextSession?.user && !nextTokenError) {
         unauthorizedRetryCountRef.current = 0;
         tokenErrorHandledRef.current = false;
+        unauthenticatedRecoveryAttemptedRef.current = false;
         setSessionExpiredModalOpen(false);
         await mutateAccess();
         return;

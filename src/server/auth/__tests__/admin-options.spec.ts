@@ -43,6 +43,7 @@ describe("admin-options jwt refresh flow", () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it("refreshes expiring access token and clears tokenError", async () => {
@@ -98,9 +99,11 @@ describe("admin-options jwt refresh flow", () => {
     expect((result as any).error).toBe("RefreshAccessTokenRetry");
   });
 
-  it("invalidates session fields when refresh fails and token is expired", async () => {
+  it("keeps expired token temporarily when refresh fails to absorb race conditions", async () => {
     const jwt = await loadJwtCallback();
-    const now = Math.floor(Date.now() / 1000);
+    const nowMs = Date.now();
+    const now = Math.floor(nowMs / 1000);
+    jest.spyOn(Date, "now").mockReturnValue(nowMs);
 
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: false,
@@ -116,10 +119,45 @@ describe("admin-options jwt refresh flow", () => {
     } as any);
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect((result as any).accessToken).toBeUndefined();
-    expect((result as any).refreshToken).toBeUndefined();
-    expect((result as any).accessTokenExp).toBeNull();
-    expect((result as any).error).toBe("RefreshAccessTokenError");
+    expect((result as any).accessToken).toBeDefined();
+    expect((result as any).refreshToken).toBe("refresh-expired");
+    expect((result as any).accessTokenExp).toBe(now - 5);
+    expect((result as any).refreshFailureCount).toBe(1);
+    expect((result as any).refreshFirstFailureAtMs).toBe(nowMs);
+    expect((result as any).error).toBe("RefreshAccessTokenRetry");
+  });
+
+  it("invalidates session fields after repeated expired refresh failures", async () => {
+    const jwt = await loadJwtCallback();
+    const nowMs = Date.now();
+    const now = Math.floor(nowMs / 1000);
+    jest.spyOn(Date, "now").mockReturnValue(nowMs);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    });
+
+    let token: any = {
+      accessToken: buildJwt(now - 5),
+      refreshToken: "refresh-expired",
+      accessTokenExp: now - 5,
+    };
+
+    for (let index = 0; index < 3; index += 1) {
+      token = await jwt({ token } as any);
+      expect((token as any).error).toBe("RefreshAccessTokenRetry");
+      expect((token as any).accessToken).toBeDefined();
+      expect((token as any).refreshToken).toBe("refresh-expired");
+    }
+
+    token = await jwt({ token } as any);
+
+    expect(global.fetch).toHaveBeenCalledTimes(4);
+    expect((token as any).accessToken).toBeUndefined();
+    expect((token as any).refreshToken).toBeUndefined();
+    expect((token as any).accessTokenExp).toBeNull();
+    expect((token as any).error).toBe("RefreshAccessTokenError");
   });
 
   it("uses single-flight refresh for concurrent jwt callbacks", async () => {

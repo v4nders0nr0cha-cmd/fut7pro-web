@@ -184,20 +184,29 @@ describe("AdminLayoutContent", () => {
     expect(retryAccess).toHaveBeenCalledTimes(1);
   });
 
-  it("redireciona imediatamente para login quando a sessao esta ausente", async () => {
+  it("tenta recuperar sessao silenciosamente e abre modal quando continua sem sessao", async () => {
+    jest.useFakeTimers();
+    const updateSessionMock = jest.fn().mockResolvedValue(null);
     mockUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
-      update: jest.fn(),
+      update: updateSessionMock,
     });
 
     render(<AdminLayoutContent>child</AdminLayoutContent>);
 
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith(
-        "/admin/login?expired=1&returnTo=%2Fadmin%2Fdashboard"
-      );
+    act(() => {
+      jest.advanceTimersByTime(400);
     });
+
+    await waitFor(() => {
+      expect(updateSessionMock).toHaveBeenCalledTimes(1);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Sua sessão expirou por segurança.")).toBeInTheDocument();
+    });
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("abre modal de compensacao no primeiro acesso e marca notificacao como lida ao fechar", async () => {

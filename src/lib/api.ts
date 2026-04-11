@@ -66,11 +66,9 @@ class ApiClient {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
 
-        // Se for erro de autenticação, redirecionar para login
+        // Nunca forcar redirect aqui: o fluxo de sessao (layouts/guards) decide a recuperacao.
         if (response.status === 401) {
-          if (typeof window !== "undefined") {
-            window.location.href = "/login";
-          }
+          throw new Error("Sessao nao autorizada. Tente renovar a sessao.");
         }
 
         throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
