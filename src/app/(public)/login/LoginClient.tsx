@@ -602,16 +602,14 @@ export default function LoginClient() {
           </button>
         </form>
 
-        {usarSenhaLegado && (
-          <div className="mt-3 text-center">
-            <a
-              href={publicHref("/esqueci-senha")}
-              className="text-sm font-semibold text-brand-soft underline hover:text-brand"
-            >
-              Esqueci minha senha
-            </a>
-          </div>
-        )}
+        <div className="mt-3 text-center">
+          <a
+            href={publicHref("/esqueci-senha")}
+            className="text-sm font-semibold text-brand-soft underline hover:text-brand"
+          >
+            Esqueci minha senha
+          </a>
+        </div>
 
         <div className="mt-5 text-center text-sm text-gray-300">
           Ainda não tem conta?{" "}

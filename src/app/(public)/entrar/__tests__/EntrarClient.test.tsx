@@ -85,6 +85,76 @@ describe("EntrarClient", () => {
     expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
   });
 
+  it("redireciona para cadastro quando lookup sinaliza REGISTER", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message: "Se estiver tudo certo, enviamos seu código.",
+        nextAction: "REGISTER",
+      }),
+    }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "novo@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F"
+      );
+    });
+  });
+
+  it("redireciona para login com intent request-join quando lookup sinaliza REQUEST_JOIN", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message: "Se estiver tudo certo, enviamos seu código.",
+        nextAction: "REQUEST_JOIN",
+      }),
+    }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
+      );
+    });
+  });
+
+  it("redireciona para aguardando aprovacao quando lookup sinaliza WAIT_APPROVAL", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message: "Se estiver tudo certo, enviamos seu código.",
+        nextAction: "WAIT_APPROVAL",
+      }),
+    }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "pendente@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+  });
+
   it("no vitrine mostra fluxo educativo sem abrir login/cadastro", () => {
     mockedUsePublicLinks.mockReturnValue({
       publicSlug: "vitrine",

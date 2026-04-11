@@ -23,7 +23,10 @@ export async function POST(req: NextRequest) {
 
   const { response, body: backendBody } = await proxyBackend(targetUrl, {
     method: "POST",
-    headers: buildHeaders(user, undefined, { includeContentType: true }),
+    headers: buildHeaders(user, undefined, {
+      includeContentType: true,
+      includeTenantHeaders: false,
+    }),
     body,
   });
 

@@ -21,7 +21,12 @@ export default function ConquistasAtletaPage() {
   });
 
   if (isLoading) {
-    return <div className="max-w-4xl mx-auto px-2 py-10 text-gray-300">Carregando...</div>;
+    return (
+      <div className="max-w-4xl mx-auto px-2 py-10 text-gray-300">
+        <h1 className="sr-only">Conquistas do atleta</h1>
+        Carregando...
+      </div>
+    );
   }
 
   if (isError || !athlete) {
@@ -34,6 +39,7 @@ export default function ConquistasAtletaPage() {
         <title>Conquistas | {athlete.firstName || "Atleta"} | Fut7Pro</title>
       </Head>
       <main className="max-w-4xl mx-auto px-2 py-10">
+        <h1 className="sr-only">Conquistas de {athlete.firstName || "atleta"}</h1>
         <Link href={publicHref(`/atletas/${athleteSlug}`)} className="text-brand underline text-sm">
           Voltar para o perfil
         </Link>

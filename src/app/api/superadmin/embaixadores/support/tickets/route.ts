@@ -6,26 +6,25 @@ import {
   jsonResponse,
   proxyBackend,
   requireSuperAdminUser,
-} from "../../../_proxy/helpers";
+} from "../../../../_proxy/helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function GET(req: NextRequest) {
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const id = params?.id;
-  if (!id) {
-    return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
-  }
+  const params = req.nextUrl.searchParams.toString();
+  const targetUrl = `${getApiBase()}/superadmin/influencers/support/tickets${
+    params ? `?${params}` : ""
+  }`;
 
-  const targetUrl = `${getApiBase()}/superadmin/notificacoes/${encodeURIComponent(id)}`;
   const { response, body } = await proxyBackend(targetUrl, {
-    headers: buildHeaders(user, undefined, { includeTenantHeaders: false }),
+    headers: buildHeaders(user),
     cache: "no-store",
   });
 

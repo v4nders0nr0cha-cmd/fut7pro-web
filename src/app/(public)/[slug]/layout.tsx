@@ -6,6 +6,11 @@ import { cache } from "react";
 import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
 import { resolveCanonicalPathForPublicSlug } from "@/lib/seo/public-canonical";
+import {
+  isPrestacaoDeContasPathForSlug,
+  PUBLIC_PATH_HEADER_CANDIDATES,
+  resolvePathnameFromHeaders,
+} from "./layout-path-utils";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -70,13 +75,7 @@ export async function generateMetadata({
 
   const hdrs = headers();
   const canonicalPath = resolveCanonicalPathForPublicSlug(slug, [
-    hdrs.get("x-fut7pro-pathname"),
-    hdrs.get("x-forwarded-uri"),
-    hdrs.get("x-next-url"),
-    hdrs.get("x-pathname"),
-    hdrs.get("x-matched-path"),
-    hdrs.get("x-nextjs-matched-path"),
-    hdrs.get("x-invoke-path"),
+    ...PUBLIC_PATH_HEADER_CANDIDATES.map((headerName) => hdrs.get(headerName)),
   ]);
 
   const canonicalUrl = `${APP_URL}${canonicalPath}`;
@@ -117,6 +116,16 @@ export default async function PublicSlugLayout({
 }) {
   const tenant = await fetchPublicTenantLayoutData(params?.slug ?? null);
   if (!tenant) {
+    const hdrs = headers();
+    const requestPathname = resolvePathnameFromHeaders(hdrs);
+    const requestedSlug = params?.slug ?? "";
+
+    // Permite que a rota de prestação pública trate slug inválido com UX dedicada,
+    // em vez de cair no 404 genérico do framework.
+    if (isPrestacaoDeContasPathForSlug(requestPathname, requestedSlug)) {
+      return <div data-theme={getRachaTheme(null).key}>{children}</div>;
+    }
+
     notFound();
   }
   return <div data-theme={tenant.themeKey}>{children}</div>;

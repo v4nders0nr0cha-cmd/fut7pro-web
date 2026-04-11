@@ -1,19 +1,25 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AdminLayoutContent from "../AdminLayoutContent";
 
 const signOutMock = jest.fn();
 const mockUseAdminAccess = jest.fn();
+const replaceMock = jest.fn();
+const mockUseSession = jest.fn();
 
 jest.mock("next-auth/react", () => ({
   signOut: (...args: unknown[]) => signOutMock(...args),
-  useSession: () => ({
-    data: { user: {} },
-    status: "authenticated",
-  }),
+  useSession: (...args: unknown[]) => mockUseSession(...args),
 }));
 
 jest.mock("@/hooks/useAdminAccess", () => ({
   useAdminAccess: (...args: unknown[]) => mockUseAdminAccess(...args),
+}));
+
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/admin/dashboard",
+  useRouter: () => ({
+    replace: replaceMock,
+  }),
 }));
 
 jest.mock("@/context/RachaContext", () => ({
@@ -76,6 +82,13 @@ describe("AdminLayoutContent", () => {
   beforeEach(() => {
     mockSidebar.mockClear();
     mockUseAdminAccess.mockReset();
+    replaceMock.mockReset();
+    mockUseSession.mockReset();
+    mockUseSession.mockReturnValue({
+      data: { user: {} },
+      status: "authenticated",
+      update: jest.fn(),
+    });
     mockUseAdminAccess.mockReturnValue({
       access: {
         tenant: { slug: "racha-1", id: "tenant-1" },
@@ -135,5 +148,21 @@ describe("AdminLayoutContent", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
     expect(retryAccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("redireciona imediatamente para login quando a sessao esta ausente", async () => {
+    mockUseSession.mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+      update: jest.fn(),
+    });
+
+    render(<AdminLayoutContent>child</AdminLayoutContent>);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/admin/login?expired=1&returnTo=%2Fadmin%2Fdashboard"
+      );
+    });
   });
 });

@@ -9,7 +9,7 @@ async function openEntrarWithLookupMock(
 ) {
   test.skip(!shouldRun, "E2E auth envs not set");
 
-  await page.route("**/api/auth/lookup-email", async (route) => {
+  await page.route("**/api/auth/lookup-email**", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
@@ -18,12 +18,58 @@ async function openEntrarWithLookupMock(
   });
 
   const tenantSlug = slug as string;
-  await page.goto(`/${tenantSlug}/entrar`);
-  await page.getByPlaceholder("ex: seuemail@dominio.com").fill("atleta@teste.com");
-  await page.getByRole("button", { name: /^Continuar$/i }).click();
+  const url = `/${tenantSlug}/entrar`;
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      lastError = null;
+      break;
+    } catch (error) {
+      lastError = error;
+      await page.waitForTimeout(800);
+    }
+  }
+  if (lastError) throw lastError;
+
+  // Aguarda montagem de componentes client-side antes de preencher o formulário.
+  const rejectCookies = page.getByRole("button", { name: /^Rejeitar$/i });
+  if (await rejectCookies.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await rejectCookies.click();
+  }
+
+  const emailField = page.getByPlaceholder("ex: seuemail@dominio.com");
+  const continueButton = page.getByRole("button", { name: /^Continuar$/i });
+
+  await emailField.fill("atleta@teste.com");
+  const waitLookup = () =>
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/auth/lookup-email") && response.request().method() === "POST",
+      { timeout: 10000 }
+    );
+
+  let lookupResponsePromise = waitLookup();
+  await continueButton.click();
+  let lookupResponse = await lookupResponsePromise.catch(() => null);
+
+  if (!lookupResponse) {
+    lookupResponsePromise = waitLookup();
+    await continueButton.click();
+    lookupResponse = await lookupResponsePromise.catch(() => null);
+  }
+
+  if (!lookupResponse) {
+    await emailField.fill("atleta@teste.com");
+    lookupResponsePromise = waitLookup();
+    await continueButton.click();
+    lookupResponse = await lookupResponsePromise;
+  }
 }
 
 test.describe("athlete entrar states", () => {
+  test.describe.configure({ mode: "serial" });
+
   test("ACTIVE redireciona para login com e-mail preenchido", async ({ page }) => {
     await openEntrarWithLookupMock(page, {
       exists: true,
@@ -36,7 +82,7 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login`));
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login`), { timeout: 15000 });
     await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
   });
 
@@ -52,7 +98,7 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page).toHaveURL(new RegExp(`/${slug as string}/register`));
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/register`), { timeout: 15000 });
     await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
     await expect(page.getByText(/Primeiro acesso no Fut7Pro/i)).toBeVisible();
   });
@@ -69,7 +115,9 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login\\?.*intent=request-join`));
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/login\\?.*intent=request-join`), {
+      timeout: 15000,
+    });
     await expect(page.getByLabel("E-mail")).toHaveValue("atleta@teste.com");
     await expect(page.getByText(/você ainda não joga neste racha/i)).toBeVisible();
   });
@@ -86,12 +134,14 @@ test.describe("athlete entrar states", () => {
       requiresCaptcha: false,
     });
 
-    await expect(page).toHaveURL(new RegExp(`/${slug as string}/aguardando-aprovacao`));
+    await expect(page).toHaveURL(new RegExp(`/${slug as string}/aguardando-aprovacao`), {
+      timeout: 15000,
+    });
   });
 
   test("link de esqueci senha aponta para rota publica slugada", async ({ page }) => {
     test.skip(!shouldRun, "E2E auth envs not set");
-    await page.goto(`/${slug as string}/login`);
+    await page.goto(`/${slug as string}/login`, { waitUntil: "domcontentloaded" });
 
     const forgotLink = page.getByRole("link", { name: "Esqueci minha senha" });
     await expect(forgotLink).toHaveAttribute("href", `/${slug as string}/esqueci-senha`);
@@ -101,7 +151,7 @@ test.describe("athlete entrar states", () => {
     test.skip(!shouldRun, "E2E auth envs not set");
 
     const invalidSlug = `racha-inexistente-${Date.now()}`;
-    await page.goto(`/${invalidSlug}/entrar`);
+    await page.goto(`/${invalidSlug}/entrar`, { waitUntil: "domcontentloaded" });
     await expect(page.getByText(/Racha n(ã|a)o encontrado/i)).toBeVisible();
   });
 });

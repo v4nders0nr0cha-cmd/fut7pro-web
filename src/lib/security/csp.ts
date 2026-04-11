@@ -7,9 +7,11 @@ export function buildWebCsp({
   nonce,
   isProd = process.env.NODE_ENV === "production",
 }: BuildWebCspOptions): string {
+  const cloudflareInlineBootstrapHash = "'sha256-UD+8zGDNZL1t7UbARE6w2M2yzWVpmyqGrMs2AanBW2w='";
   const scriptSrc = [
     "'self'",
     `'nonce-${nonce}'`,
+    cloudflareInlineBootstrapHash,
     "https://www.googletagmanager.com",
     "https://www.google-analytics.com",
     "https://challenges.cloudflare.com",

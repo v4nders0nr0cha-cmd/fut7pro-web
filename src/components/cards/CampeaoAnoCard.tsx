@@ -63,7 +63,7 @@ export default function CampeaoAnoCard({
     >
       {temporario && (
         <span className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 text-[10px] uppercase tracking-wider text-gray-200 bg-black/40 px-2 py-0.5 rounded-full">
-          temporariamente
+          dados parciais
         </span>
       )}
 

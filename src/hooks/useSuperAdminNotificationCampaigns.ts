@@ -48,11 +48,20 @@ type CampaignTestPayload = {
 };
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error("Erro ao carregar campanhas");
+  const payload = await requestJson<unknown>(url, { method: "GET", cache: "no-store" });
+  if (Array.isArray(payload)) {
+    return payload as NotificationCampaign[];
   }
-  return response.json();
+  if (payload && typeof payload === "object") {
+    const candidate = payload as { campaigns?: unknown; results?: unknown };
+    if (Array.isArray(candidate.campaigns)) {
+      return candidate.campaigns as NotificationCampaign[];
+    }
+    if (Array.isArray(candidate.results)) {
+      return candidate.results as NotificationCampaign[];
+    }
+  }
+  return [];
 };
 
 const buildKey = (filters: CampaignFilters) => {
@@ -66,7 +75,10 @@ const buildKey = (filters: CampaignFilters) => {
 };
 
 const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  const response = await fetch(url, init);
+  const response = await fetch(url, {
+    cache: "no-store",
+    ...init,
+  });
   const text = await response.text();
   let body: any = null;
   if (text) {
@@ -78,7 +90,10 @@ const requestJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   }
 
   if (!response.ok) {
-    const message = body?.message || body?.error || response.statusText;
+    const message =
+      (Array.isArray(body?.message) ? body.message.join(" | ") : body?.message) ||
+      body?.error ||
+      response.statusText;
     throw new Error(message || "Erro desconhecido");
   }
 
