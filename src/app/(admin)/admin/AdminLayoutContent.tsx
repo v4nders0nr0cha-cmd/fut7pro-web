@@ -10,10 +10,7 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
-import {
-  type AdminNotificationItem,
-  useAdminNotifications,
-} from "@/hooks/useAdminNotifications";
+import { type AdminNotificationItem, useAdminNotifications } from "@/hooks/useAdminNotifications";
 import AccessCompensationGrantedModal from "@/components/admin/AccessCompensationGrantedModal";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 import { signOut, useSession } from "next-auth/react";
@@ -339,11 +336,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         compensationModalTimerRef.current = null;
       }
     };
-  }, [
-    latestCompensationNotification,
-    compensationModalOpen,
-    shouldEnableCompensationModalQuery,
-  ]);
+  }, [latestCompensationNotification, compensationModalOpen, shouldEnableCompensationModalQuery]);
 
   const closeCompensationModal = useCallback(
     async (navigateToDetails: boolean) => {
@@ -365,7 +358,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         router.push("/admin/comunicacao/notificacoes");
       }
     },
-    [activeCompensationNotification, markCompensationNotificationAsRead, router],
+    [activeCompensationNotification, markCompensationNotificationAsRead, router]
   );
 
   const withSessionModal = (content: ReactNode) => (

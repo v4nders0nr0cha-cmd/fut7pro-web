@@ -157,11 +157,17 @@ export default function AccessCompensationGrantedModal({
               >
                 <motion.div
                   className="absolute inset-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-amber-300/35 via-amber-500/25 to-amber-700/30 shadow-[0_0_40px_rgba(251,191,36,0.35)]"
-                  animate={reduceMotion ? undefined : { boxShadow: [
-                    "0 0 20px rgba(251,191,36,0.25)",
-                    "0 0 45px rgba(251,191,36,0.45)",
-                    "0 0 20px rgba(251,191,36,0.25)",
-                  ] }}
+                  animate={
+                    reduceMotion
+                      ? undefined
+                      : {
+                          boxShadow: [
+                            "0 0 20px rgba(251,191,36,0.25)",
+                            "0 0 45px rgba(251,191,36,0.45)",
+                            "0 0 20px rgba(251,191,36,0.25)",
+                          ],
+                        }
+                  }
                   transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <motion.div
@@ -204,7 +210,8 @@ export default function AccessCompensationGrantedModal({
 
               <div className="mt-5 w-full rounded-2xl border border-zinc-700/80 bg-zinc-900/70 px-4 py-3 text-left">
                 <p className="text-sm text-zinc-100">
-                  Novo acesso válido até <strong className="text-amber-200">{formatDate(data.newAccessUntil)}</strong>
+                  Novo acesso válido até{" "}
+                  <strong className="text-amber-200">{formatDate(data.newAccessUntil)}</strong>
                 </p>
                 <p className="mt-1 text-sm text-zinc-300">Motivo: {data.reasonLabel}</p>
                 {data.reasonDetail ? (
