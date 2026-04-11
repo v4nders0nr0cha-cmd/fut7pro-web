@@ -10,6 +10,11 @@ import { NotificationProvider } from "@/context/NotificationContext";
 import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import {
+  type AdminNotificationItem,
+  useAdminNotifications,
+} from "@/hooks/useAdminNotifications";
+import AccessCompensationGrantedModal from "@/components/admin/AccessCompensationGrantedModal";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 import { signOut, useSession } from "next-auth/react";
 
@@ -98,6 +103,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [sessionExpiredModalOpen, setSessionExpiredModalOpen] = useState(false);
   const [renewingSession, setRenewingSession] = useState(false);
   const [sessionModalError, setSessionModalError] = useState<string | null>(null);
+  const [compensationModalOpen, setCompensationModalOpen] = useState(false);
+  const [compensationModalProcessing, setCompensationModalProcessing] = useState(false);
+  const [activeCompensationNotification, setActiveCompensationNotification] =
+    useState<AdminNotificationItem | null>(null);
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const router = useRouter();
@@ -112,6 +121,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
+  const compensationModalTimerRef = useRef<number | null>(null);
+  const shownCompensationNotificationIdsRef = useRef<Set<string>>(new Set());
   const tokenError = String((session?.user as any)?.tokenError || "").trim();
   const shouldForceSignOutForTokenError =
     tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
@@ -130,11 +141,37 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);
   const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
   const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
+  const shouldEnableCompensationModalQuery =
+    hasResolvedTenant &&
+    !accessLoading &&
+    !access?.blocked &&
+    sessionStatus === "authenticated" &&
+    !sessionExpiredModalOpen;
+
+  const {
+    notifications: compensationNotifications,
+    markAsRead: markCompensationNotificationAsRead,
+  } = useAdminNotifications({
+    enabled: shouldEnableCompensationModalQuery,
+    includeCount: false,
+    unread: true,
+    type: "ACCESS_COMPENSATION_GRANTED",
+    page: 1,
+    limit: 1,
+    refreshInterval: 45000,
+  });
+
+  const latestCompensationNotification = compensationNotifications[0] ?? null;
 
   const openSessionExpiredModal = useCallback(() => {
     setSessionModalError(null);
     setSessionExpiredModalOpen(true);
   }, []);
+
+  const buildAdminLoginHref = useCallback(() => {
+    const returnTo = pathname && pathname !== "/admin/login" ? pathname : "/admin/dashboard";
+    return `/admin/login?expired=1&returnTo=${encodeURIComponent(returnTo)}`;
+  }, [pathname]);
 
   useEffect(() => {
     if (!shouldForceSignOutForTokenError || tokenErrorHandledRef.current) return;
@@ -144,8 +181,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   useEffect(() => {
     if (sessionStatus !== "unauthenticated") return;
-    openSessionExpiredModal();
-  }, [sessionStatus, openSessionExpiredModal]);
+    router.replace(buildAdminLoginHref());
+  }, [buildAdminLoginHref, router, sessionStatus]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -191,6 +228,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     if (accessLoading || !accessError) return;
     const status = (accessError as { status?: number } | undefined)?.status;
     if (status === 401) {
+      if (sessionStatus === "unauthenticated") {
+        router.replace(buildAdminLoginHref());
+        return;
+      }
       if (sessionStatus === "authenticated" && unauthorizedRetryCountRef.current < 2) {
         unauthorizedRetryCountRef.current += 1;
         const retryDelay = 350 * unauthorizedRetryCountRef.current;
@@ -219,7 +260,15 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
 
     router.replace("/admin/selecionar-racha");
-  }, [accessLoading, accessError, sessionStatus, mutateAccess, router, openSessionExpiredModal]);
+  }, [
+    accessLoading,
+    accessError,
+    buildAdminLoginHref,
+    sessionStatus,
+    mutateAccess,
+    router,
+    openSessionExpiredModal,
+  ]);
 
   useEffect(() => {
     if (accessLoading || !access?.blocked) return;
@@ -265,13 +314,70 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   };
 
   const handleSignInAgain = () => {
-    const callbackUrl = `/admin/login?expired=1&returnTo=${encodeURIComponent(pathname || "/admin/dashboard")}`;
-    signOut({ callbackUrl });
+    signOut({ callbackUrl: buildAdminLoginHref() });
   };
+
+  useEffect(() => {
+    if (!shouldEnableCompensationModalQuery) return;
+    if (!latestCompensationNotification || compensationModalOpen) return;
+    const notificationId = latestCompensationNotification.id;
+    if (shownCompensationNotificationIdsRef.current.has(notificationId)) return;
+
+    if (compensationModalTimerRef.current) {
+      window.clearTimeout(compensationModalTimerRef.current);
+    }
+
+    compensationModalTimerRef.current = window.setTimeout(() => {
+      shownCompensationNotificationIdsRef.current.add(notificationId);
+      setActiveCompensationNotification(latestCompensationNotification);
+      setCompensationModalOpen(true);
+    }, 620);
+
+    return () => {
+      if (compensationModalTimerRef.current) {
+        window.clearTimeout(compensationModalTimerRef.current);
+        compensationModalTimerRef.current = null;
+      }
+    };
+  }, [
+    latestCompensationNotification,
+    compensationModalOpen,
+    shouldEnableCompensationModalQuery,
+  ]);
+
+  const closeCompensationModal = useCallback(
+    async (navigateToDetails: boolean) => {
+      const notification = activeCompensationNotification;
+      if (!notification) return;
+
+      setCompensationModalProcessing(true);
+      try {
+        await markCompensationNotificationAsRead(notification.id);
+      } catch (error) {
+        console.warn("[admin] Falha ao marcar notificação de compensação como lida", error);
+      } finally {
+        setCompensationModalProcessing(false);
+        setCompensationModalOpen(false);
+        setActiveCompensationNotification(null);
+      }
+
+      if (navigateToDetails) {
+        router.push("/admin/comunicacao/notificacoes");
+      }
+    },
+    [activeCompensationNotification, markCompensationNotificationAsRead, router],
+  );
 
   const withSessionModal = (content: ReactNode) => (
     <>
       {content}
+      <AccessCompensationGrantedModal
+        open={compensationModalOpen}
+        notification={activeCompensationNotification}
+        processing={compensationModalProcessing}
+        onDismiss={() => void closeCompensationModal(false)}
+        onViewDetails={() => void closeCompensationModal(true)}
+      />
       <SessionExpiredModal
         open={sessionExpiredModalOpen}
         renewing={renewingSession}
