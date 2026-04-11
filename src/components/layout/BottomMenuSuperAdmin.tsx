@@ -12,6 +12,7 @@ import {
   FaUserSlash,
   FaBullhorn,
   FaNewspaper,
+  FaShieldAlt,
 } from "react-icons/fa";
 
 const menu = [
@@ -20,6 +21,7 @@ const menu = [
   { label: "Admins", icon: FaUsers, href: "/superadmin/admins" },
   { label: "Contas", icon: FaIdBadge, href: "/superadmin/contas" },
   { label: "Financeiro", icon: FaMoneyCheckAlt, href: "/superadmin/financeiro" },
+  { label: "Compens.", icon: FaShieldAlt, href: "/superadmin/compensacoes-acesso" },
   { label: "Cancel.", icon: FaUserSlash, href: "/superadmin/cancelamentos" },
   { label: "Blog", icon: FaNewspaper, href: "/superadmin/blog" },
   { label: "Embaix.", icon: FaBullhorn, href: "/superadmin/embaixadores" },
