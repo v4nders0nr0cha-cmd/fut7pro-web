@@ -29,17 +29,18 @@ export function useCriticalSessionRefresh(options: UseCriticalSessionRefreshOpti
     if (!hasSessionContext) return;
     if (status === "loading") return;
 
-    const now = Date.now();
-    if (now - lastAttemptAtRef.current < minIntervalMs) {
-      return;
-    }
-
     if (inFlightRef.current) {
       return inFlightRef.current;
     }
 
-    if (status !== "authenticated" && !hasUsableSession(data)) {
+    const hasCurrentUsableSession = hasUsableSession(data);
+    if (!hasCurrentUsableSession) {
       throw new Error("Sessao expirada. Entre novamente.");
+    }
+
+    const now = Date.now();
+    if (now - lastAttemptAtRef.current < minIntervalMs) {
+      return;
     }
 
     lastAttemptAtRef.current = now;
