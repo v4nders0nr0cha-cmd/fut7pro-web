@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import useSWR from "swr";
 import { FaSearch, FaLock, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { useSessionRefreshScheduler } from "@/hooks/useSessionRefreshScheduler";
 
 type HubRacha = {
   tenantId: string;
@@ -263,16 +264,17 @@ const fetcher = async (url: string): Promise<HubEntryResponse> => {
 export default function AdminHubClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { status } = useSession();
+  const { data: session, status, update: updateSession } = useSession();
   const perfEnabled = searchParams?.get("perf") === "1";
   const requestStartRef = useRef<number | null>(null);
+  const authRecoveryAttemptedRef = useRef(false);
 
   const entryFetcher = async (url: string) => {
     requestStartRef.current = typeof performance !== "undefined" ? performance.now() : null;
     return fetcher(url);
   };
 
-  const { data, error, isLoading } = useSWR<HubEntryResponse>(
+  const { data, error, isLoading, mutate } = useSWR<HubEntryResponse>(
     "/api/admin/hub/entry",
     entryFetcher,
     {
@@ -287,6 +289,16 @@ export default function AdminHubClient() {
   const [selectError, setSelectError] = useState("");
   const autoRedirectedRef = useRef(false);
   const [logoAttemptIndex, setLogoAttemptIndex] = useState<Record<string, number>>({});
+
+  useSessionRefreshScheduler({
+    status: status as "loading" | "authenticated" | "unauthenticated",
+    session: session as any,
+    refreshSession: updateSession as any,
+    enabled: status === "authenticated",
+    onRefreshFailed: () => {
+      router.replace("/admin/login?expired=1");
+    },
+  });
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
   const count = typeof data?.count === "number" ? data.count : items.length;
@@ -318,10 +330,37 @@ export default function AdminHubClient() {
   }, [status, router]);
 
   useEffect(() => {
-    if (error && (error as { status?: number })?.status === 401) {
-      router.replace("/admin/login");
+    if (!error || (error as { status?: number })?.status !== 401) {
+      authRecoveryAttemptedRef.current = false;
+      return;
     }
-  }, [error, router]);
+
+    if (status === "unauthenticated") {
+      router.replace("/admin/login?expired=1");
+      return;
+    }
+
+    if (authRecoveryAttemptedRef.current) {
+      router.replace("/admin/login?expired=1");
+      return;
+    }
+
+    authRecoveryAttemptedRef.current = true;
+    void (async () => {
+      try {
+        const nextSession = await updateSession();
+        const nextToken = String((nextSession as any)?.user?.accessToken || "").trim();
+        if (nextToken) {
+          await mutate();
+          authRecoveryAttemptedRef.current = false;
+          return;
+        }
+      } catch {
+        // fallback redirect below
+      }
+      router.replace("/admin/login?expired=1");
+    })();
+  }, [error, mutate, router, status, updateSession]);
 
   useEffect(() => {
     if (!shouldAutoRedirect || autoRedirectedRef.current) return;

@@ -11,6 +11,7 @@ import ToastGlobal from "@/components/ui/ToastGlobal";
 import { useRacha } from "@/context/RachaContext";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { type AdminNotificationItem, useAdminNotifications } from "@/hooks/useAdminNotifications";
+import { useSessionRefreshScheduler } from "@/hooks/useSessionRefreshScheduler";
 import AccessCompensationGrantedModal from "@/components/admin/AccessCompensationGrantedModal";
 import PainelAdminBloqueado from "./PainelAdminBloqueado";
 import { signOut, useSession } from "next-auth/react";
@@ -171,6 +172,22 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     const returnTo = pathname && pathname !== "/admin/login" ? pathname : "/admin/dashboard";
     return `/admin/login?expired=1&returnTo=${encodeURIComponent(returnTo)}`;
   }, [pathname]);
+
+  useSessionRefreshScheduler({
+    status: sessionStatus,
+    session: session as any,
+    refreshSession: updateSession as any,
+    enabled: sessionStatus === "authenticated" && !sessionExpiredModalOpen && !renewingSession,
+    onRefreshSuccess: () => {
+      unauthorizedRetryCountRef.current = 0;
+      tokenErrorHandledRef.current = false;
+      setSessionExpiredModalOpen(false);
+      setSessionModalError(null);
+    },
+    onRefreshFailed: () => {
+      openSessionExpiredModal();
+    },
+  });
 
   useEffect(() => {
     if (!shouldForceSignOutForTokenError || tokenErrorHandledRef.current) return;

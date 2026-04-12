@@ -4,6 +4,8 @@ import type { JWT } from "next-auth/jwt";
 const API_BASE_URL =
   process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const SUPERADMIN_REFRESH_MARGIN_SECONDS = 120;
+const SUPERADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS = 120_000;
+const SUPERADMIN_EXPIRED_REFRESH_MAX_RETRIES = 3;
 
 type RefreshResult = { ok: true; accessToken: string; refreshToken: string } | { ok: false };
 
@@ -35,6 +37,19 @@ function decodeExp(token?: string | null): number | null {
   } catch {
     return null;
   }
+}
+
+function resetRefreshFailureState(token: JWT) {
+  delete (token as any).refreshFailureCount;
+  delete (token as any).refreshFirstFailureAtMs;
+}
+
+function invalidateAuthFields(token: JWT, errorCode: string) {
+  (token as any).accessToken = undefined;
+  (token as any).refreshToken = undefined;
+  (token as any).accessTokenExp = null;
+  (token as any).error = errorCode;
+  resetRefreshFailureState(token);
 }
 
 async function requestSuperAdminRefresh(refreshToken: string): Promise<RefreshResult> {
@@ -273,6 +288,7 @@ export const superAdminAuthOptions = {
         token.refreshToken = (user as any).refreshToken;
         (token as any).accessTokenExp = decodeExp(token.accessToken as string);
         (token as any).error = null;
+        resetRefreshFailureState(token);
       }
 
       if (token.accessToken && token.refreshToken) {
@@ -289,12 +305,23 @@ export const superAdminAuthOptions = {
             token.refreshToken = refreshResult.refreshToken;
             (token as any).accessTokenExp = decodeExp(refreshResult.accessToken);
             (token as any).error = null;
+            resetRefreshFailureState(token);
           } else {
             if (tokenExp <= now) {
-              (token as any).accessToken = undefined;
-              (token as any).refreshToken = undefined;
-              (token as any).accessTokenExp = null;
-              (token as any).error = "RefreshAccessTokenError";
+              const nowMs = Date.now();
+              const previousFailureCount = Number((token as any).refreshFailureCount || 0);
+              const firstFailureAtMs = Number((token as any).refreshFirstFailureAtMs || nowMs);
+              const nextFailureCount = previousFailureCount + 1;
+              const withinGraceWindow =
+                nowMs - firstFailureAtMs <= SUPERADMIN_EXPIRED_REFRESH_FAILURE_GRACE_MS;
+
+              if (withinGraceWindow && nextFailureCount <= SUPERADMIN_EXPIRED_REFRESH_MAX_RETRIES) {
+                (token as any).refreshFailureCount = nextFailureCount;
+                (token as any).refreshFirstFailureAtMs = firstFailureAtMs;
+                (token as any).error = "RefreshAccessTokenRetry";
+              } else {
+                invalidateAuthFields(token, "RefreshAccessTokenError");
+              }
             } else {
               // Keep the current token while still valid and retry refresh on the next cycle.
               (token as any).error = "RefreshAccessTokenRetry";
@@ -305,10 +332,7 @@ export const superAdminAuthOptions = {
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
         if (tokenExp && tokenExp <= now) {
-          (token as any).accessToken = undefined;
-          (token as any).refreshToken = undefined;
-          (token as any).accessTokenExp = null;
-          (token as any).error = "AccessTokenExpired";
+          invalidateAuthFields(token, "AccessTokenExpired");
         }
       }
       return token;
