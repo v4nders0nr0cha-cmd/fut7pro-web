@@ -94,7 +94,7 @@ type Tenant = {
   accessStatus?: string | null;
   accessReason?: string | null;
   trialEndsAt?: string | null;
-  lastLoginAt?: string | null;
+  lastActivityAt?: string | null;
   updatedAt?: string | null;
 };
 
@@ -260,18 +260,15 @@ function pickLatestDate(...values: Array<string | null | undefined>) {
 }
 
 function resolveTenantLastActivity(tenant: Tenant) {
-  const loginByMembership = (tenant.memberships ?? [])
-    .filter(isApprovedAdminMembership)
-    .map((membership) => membership.user?.lastLoginAt);
-  const lastLoginAt = pickLatestDate(tenant.lastLoginAt, ...loginByMembership);
-  if (lastLoginAt) {
-    return { value: lastLoginAt, source: "login" as const };
+  const tenantScopedActivity = pickLatestDate(tenant.lastActivityAt);
+  if (tenantScopedActivity) {
+    return { value: tenantScopedActivity, source: "tenant" as const };
   }
 
   const fallbackActivity = pickLatestDate(tenant.updatedAt, tenant.createdAt);
   return {
     value: fallbackActivity,
-    source: "activity" as const,
+    source: "fallback" as const,
   };
 }
 
@@ -878,7 +875,7 @@ export default function RachasCadastradosPage() {
                       {typeof r.diasInativo === "number" ? (
                         <span className="block text-xs text-zinc-400">
                           {r.diasInativo} dias sem{" "}
-                          {r.tipoInatividade === "login" ? "login" : "atividade"}
+                          {r.tipoInatividade === "tenant" ? "atividade real" : "atualizacao"}
                         </span>
                       ) : null}
                     </td>
