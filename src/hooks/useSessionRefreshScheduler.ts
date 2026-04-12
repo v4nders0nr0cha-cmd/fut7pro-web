@@ -22,12 +22,16 @@ type UseSessionRefreshSchedulerParams = {
   maxRetries?: number;
   refreshLeadMs?: number;
   fallbackIntervalMs?: number;
+  heartbeatIntervalMs?: number;
+  activityThrottleMs?: number;
   onRefreshSuccess?: (session: SessionLike) => void | Promise<void>;
   onRefreshFailed?: () => void | Promise<void>;
 };
 
 const DEFAULT_REFRESH_LEAD_MS = 90_000;
 const DEFAULT_FALLBACK_INTERVAL_MS = 180_000;
+const DEFAULT_HEARTBEAT_INTERVAL_MS = 60_000;
+const DEFAULT_ACTIVITY_THROTTLE_MS = 30_000;
 const MIN_REFRESH_DELAY_MS = 15_000;
 const RETRY_DELAY_MS = [2_000, 7_000, 12_000];
 
@@ -59,16 +63,21 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
     session,
     refreshSession,
     enabled = true,
-    maxRetries = 2,
+    maxRetries = 5,
     refreshLeadMs = DEFAULT_REFRESH_LEAD_MS,
     fallbackIntervalMs = DEFAULT_FALLBACK_INTERVAL_MS,
+    heartbeatIntervalMs = DEFAULT_HEARTBEAT_INTERVAL_MS,
+    activityThrottleMs = DEFAULT_ACTIVITY_THROTTLE_MS,
     onRefreshSuccess,
     onRefreshFailed,
   } = params;
 
   const timerRef = useRef<number | null>(null);
+  const heartbeatRef = useRef<number | null>(null);
   const retriesRef = useRef(0);
   const inFlightRef = useRef(false);
+  const lastRefreshAtRef = useRef(0);
+  const lastActivityRefreshAtRef = useRef(0);
   const latestSessionRef = useRef<SessionLike>(session);
   const runRefreshRef = useRef<() => Promise<void>>(async () => {});
 
@@ -78,6 +87,13 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
     if (timerRef.current) {
       window.clearTimeout(timerRef.current);
       timerRef.current = null;
+    }
+  }, []);
+
+  const clearHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      window.clearInterval(heartbeatRef.current);
+      heartbeatRef.current = null;
     }
   }, []);
 
@@ -125,6 +141,7 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
     try {
       const nextSession = await refreshSession();
       latestSessionRef.current = nextSession;
+      lastRefreshAtRef.current = Date.now();
 
       if (isSessionHealthy(nextSession)) {
         retriesRef.current = 0;
@@ -173,23 +190,35 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
     if (!enabled || status !== "authenticated") {
       retriesRef.current = 0;
       clearTimer();
+      clearHeartbeat();
       return;
     }
     scheduleNext(session);
-    return () => clearTimer();
-  }, [clearTimer, enabled, scheduleNext, session, status]);
+    clearHeartbeat();
+    heartbeatRef.current = window.setInterval(() => {
+      void runRefreshRef.current();
+    }, Math.max(MIN_REFRESH_DELAY_MS, heartbeatIntervalMs));
+
+    return () => {
+      clearTimer();
+      clearHeartbeat();
+    };
+  }, [clearHeartbeat, clearTimer, enabled, heartbeatIntervalMs, scheduleNext, session, status]);
 
   useEffect(() => {
     if (!enabled || status !== "authenticated") return;
 
     const maybeRefreshSoon = () => {
       const tokenExp = parseTokenExp(latestSessionRef.current);
+      const sinceLastRefresh = Date.now() - lastRefreshAtRef.current;
       if (!tokenExp) {
-        void runRefreshRef.current();
+        if (sinceLastRefresh >= activityThrottleMs) {
+          void runRefreshRef.current();
+        }
         return;
       }
       const remainingMs = tokenExp * 1000 - Date.now();
-      if (remainingMs <= refreshLeadMs + 10_000) {
+      if (remainingMs <= refreshLeadMs + 5 * 60_000 || sinceLastRefresh >= heartbeatIntervalMs) {
         void runRefreshRef.current();
       }
     };
@@ -200,13 +229,28 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
       }
     };
 
+    const onActivity = () => {
+      const now = Date.now();
+      if (now - lastActivityRefreshAtRef.current < activityThrottleMs) {
+        return;
+      }
+      lastActivityRefreshAtRef.current = now;
+      maybeRefreshSoon();
+    };
+
     window.addEventListener("focus", maybeRefreshSoon);
+    window.addEventListener("pointerdown", onActivity, { passive: true });
+    window.addEventListener("keydown", onActivity);
+    window.addEventListener("touchstart", onActivity, { passive: true });
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("focus", maybeRefreshSoon);
+      window.removeEventListener("pointerdown", onActivity);
+      window.removeEventListener("keydown", onActivity);
+      window.removeEventListener("touchstart", onActivity);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [enabled, refreshLeadMs, status]);
+  }, [activityThrottleMs, enabled, heartbeatIntervalMs, refreshLeadMs, status]);
 
   return {
     nextRefreshInMs: scheduleDelay,

@@ -14,6 +14,7 @@ import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
+import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
 import { logoPadrao } from "@/config/teamLogoMap";
 
 // SVG Loader animado de bola pulando (não precisa instalar nada)
@@ -159,6 +160,7 @@ export default function SorteioInteligenteAdmin() {
   const [sorteioAvisos, setSorteioAvisos] = useState<string[]>([]);
   const [sorteioReservas, setSorteioReservas] = useState<Participante[]>([]);
   const [sorteioErro, setSorteioErro] = useState<string | null>(null);
+  const { ensureFreshSession } = useCriticalSessionRefresh({ minIntervalMs: 10_000 });
 
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
@@ -293,6 +295,7 @@ export default function SorteioInteligenteAdmin() {
     setSorteioErro(null);
     setPublicando(true);
     try {
+      await ensureFreshSession();
       const res = await fetch("/api/sorteio/publicar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

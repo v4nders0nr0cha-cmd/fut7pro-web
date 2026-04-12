@@ -7,6 +7,7 @@ import { usePartidas } from "@/hooks/usePartidas";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
 import BannerUpload from "@/components/admin/BannerUpload";
+import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
 import { buildDestaquesDoDia } from "@/utils/destaquesDoDia";
 import type { DestaqueDiaResponse } from "@/types/destaques";
 
@@ -20,6 +21,7 @@ export default function TimeCampeaoDoDiaPage() {
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const { ensureFreshSession } = useCriticalSessionRefresh({ minIntervalMs: 10_000 });
 
   const { confrontos, times, dataReferencia } = useMemo(
     () => buildDestaquesDoDia(partidas as any),
@@ -102,6 +104,7 @@ export default function TimeCampeaoDoDiaPage() {
     setIsSaving(true);
     setActionError(null);
     try {
+      await ensureFreshSession();
       const response = await fetch("/api/admin/destaques-do-dia", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -127,6 +130,7 @@ export default function TimeCampeaoDoDiaPage() {
     setIsSaving(true);
     setActionError(null);
     try {
+      await ensureFreshSession();
       const formData = new FormData();
       formData.append("file", file);
       const response = await fetch("/api/admin/destaques-do-dia/upload", {
@@ -165,6 +169,7 @@ export default function TimeCampeaoDoDiaPage() {
     setIsSaving(true);
     setActionError(null);
     try {
+      await ensureFreshSession();
       const response = await fetch("/api/admin/destaques-do-dia/ausencia", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -191,6 +196,7 @@ export default function TimeCampeaoDoDiaPage() {
     setPublishError(null);
     setPublishMessage(null);
     try {
+      await ensureFreshSession();
       const response = await fetch("/api/admin/destaques-do-dia/publicar", {
         method: "POST",
       });

@@ -50,41 +50,29 @@ function AdminLoading() {
   );
 }
 
-function SessionExpiredModal({
+function SessionRecoveryNotice({
   open,
-  renewing,
   errorMessage,
-  onRetryRenew,
   onSignInAgain,
 }: {
   open: boolean;
-  renewing: boolean;
   errorMessage: string | null;
-  onRetryRenew: () => void;
   onSignInAgain: () => void;
 }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[90] bg-black/75 backdrop-blur-[2px] flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-yellow-500/35 bg-[#171717]/95 p-6 text-white shadow-[0_24px_80px_-28px_rgba(251,191,36,0.45)]">
-        <h2 className="text-xl font-bold text-yellow-300">Sua sessão expirou por segurança.</h2>
-        <p className="mt-2 text-sm text-zinc-200">
-          Para continuar no painel sem perder o fluxo, tente renovar a sessão ou entre novamente.
+    <div className="fixed bottom-4 right-4 z-[80] w-full max-w-sm px-3 sm:px-0">
+      <div className="rounded-xl border border-yellow-500/45 bg-[#171717]/95 px-4 py-3 text-white shadow-[0_16px_56px_-28px_rgba(251,191,36,0.45)]">
+        <h2 className="text-sm font-bold text-yellow-300">Reconectando sua sessão em segundo plano</h2>
+        <p className="mt-1 text-xs text-zinc-200">
+          O painel continua aberto. Se necessário, entre novamente sem perder sua edição atual.
         </p>
-        {errorMessage ? <p className="mt-3 text-sm text-red-300">{errorMessage}</p> : null}
-        <div className="mt-5 flex flex-col gap-2">
+        {errorMessage ? <p className="mt-2 text-xs text-red-300">{errorMessage}</p> : null}
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
-            className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-500 disabled:opacity-50"
-            onClick={onRetryRenew}
-            disabled={renewing}
-          >
-            {renewing ? "Tentando renovar..." : "Tentar renovar"}
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/15"
+            className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-500/15"
             onClick={onSignInAgain}
           >
             Entrar novamente
@@ -99,7 +87,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [tenantResolutionError, setTenantResolutionError] = useState(false);
   const [sessionExpiredModalOpen, setSessionExpiredModalOpen] = useState(false);
-  const [renewingSession, setRenewingSession] = useState(false);
   const [sessionModalError, setSessionModalError] = useState<string | null>(null);
   const [compensationModalOpen, setCompensationModalOpen] = useState(false);
   const [compensationModalProcessing, setCompensationModalProcessing] = useState(false);
@@ -119,7 +106,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const perfLoggedRef = useRef(false);
   const tokenErrorHandledRef = useRef(false);
   const unauthorizedRetryCountRef = useRef(0);
-  const unauthenticatedRecoveryAttemptedRef = useRef(false);
+  const unauthenticatedRecoveryInFlightRef = useRef(false);
+  const unauthenticatedRecoveryAttemptCountRef = useRef(0);
   const unauthenticatedRecoveryTimerRef = useRef<number | null>(null);
   const compensationModalTimerRef = useRef<number | null>(null);
   const shownCompensationNotificationIdsRef = useRef<Set<string>>(new Set());
@@ -145,8 +133,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     hasResolvedTenant &&
     !accessLoading &&
     !access?.blocked &&
-    sessionStatus === "authenticated" &&
-    !sessionExpiredModalOpen;
+    sessionStatus === "authenticated";
 
   const {
     notifications: compensationNotifications,
@@ -163,8 +150,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
 
   const latestCompensationNotification = compensationNotifications[0] ?? null;
 
-  const openSessionExpiredModal = useCallback(() => {
-    setSessionModalError(null);
+  const openSessionExpiredModal = useCallback((message?: string) => {
+    setSessionModalError(message ?? null);
     setSessionExpiredModalOpen(true);
   }, []);
 
@@ -177,27 +164,41 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     status: sessionStatus,
     session: session as any,
     refreshSession: updateSession as any,
-    enabled: sessionStatus === "authenticated" && !sessionExpiredModalOpen && !renewingSession,
+    enabled: sessionStatus === "authenticated",
+    maxRetries: 8,
+    refreshLeadMs: 180_000,
+    fallbackIntervalMs: 60_000,
+    heartbeatIntervalMs: 55_000,
+    activityThrottleMs: 20_000,
     onRefreshSuccess: () => {
       unauthorizedRetryCountRef.current = 0;
       tokenErrorHandledRef.current = false;
+      unauthenticatedRecoveryAttemptCountRef.current = 0;
       setSessionExpiredModalOpen(false);
       setSessionModalError(null);
     },
     onRefreshFailed: () => {
-      openSessionExpiredModal();
+      openSessionExpiredModal("A sessão está oscilando. Tentando reconectar automaticamente.");
     },
   });
 
   useEffect(() => {
     if (!shouldForceSignOutForTokenError || tokenErrorHandledRef.current) return;
     tokenErrorHandledRef.current = true;
-    openSessionExpiredModal();
+    openSessionExpiredModal("Detectamos instabilidade de autenticação e iniciamos reconexão.");
   }, [shouldForceSignOutForTokenError, openSessionExpiredModal]);
 
   useEffect(() => {
+    if (sessionStatus !== "authenticated") return;
+    if (shouldForceSignOutForTokenError) return;
+    setSessionExpiredModalOpen(false);
+    setSessionModalError(null);
+  }, [sessionStatus, shouldForceSignOutForTokenError]);
+
+  useEffect(() => {
     if (sessionStatus !== "unauthenticated") {
-      unauthenticatedRecoveryAttemptedRef.current = false;
+      unauthenticatedRecoveryInFlightRef.current = false;
+      unauthenticatedRecoveryAttemptCountRef.current = 0;
       if (unauthenticatedRecoveryTimerRef.current) {
         window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
         unauthenticatedRecoveryTimerRef.current = null;
@@ -205,56 +206,67 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       return;
     }
 
-    if (sessionExpiredModalOpen || renewingSession) {
+    if (unauthenticatedRecoveryInFlightRef.current) {
       return;
     }
-
-    if (unauthenticatedRecoveryAttemptedRef.current) {
-      openSessionExpiredModal();
-      return;
-    }
-
-    unauthenticatedRecoveryAttemptedRef.current = true;
 
     if (unauthenticatedRecoveryTimerRef.current) {
       window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
     }
 
-    unauthenticatedRecoveryTimerRef.current = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const nextSession = await updateSession();
-          const nextTokenError = String((nextSession?.user as any)?.tokenError || "").trim();
-          if (nextSession?.user && !nextTokenError) {
-            unauthorizedRetryCountRef.current = 0;
-            tokenErrorHandledRef.current = false;
-            unauthenticatedRecoveryAttemptedRef.current = false;
-            setSessionExpiredModalOpen(false);
-            setSessionModalError(null);
-            await mutateAccess();
-            return;
-          }
-        } catch {
-          // ignore and keep fallback modal below
+    const ATTEMPT_DELAYS = [350, 900, 1800, 3200, 5500, 8000, 12000];
+    const MAX_ATTEMPTS = 20;
+
+    const runAttempt = async () => {
+      if (unauthenticatedRecoveryAttemptCountRef.current >= MAX_ATTEMPTS) {
+        openSessionExpiredModal(
+          "Não foi possível reconectar automaticamente. Use 'Entrar novamente' quando estiver pronto."
+        );
+        unauthenticatedRecoveryInFlightRef.current = false;
+        return;
+      }
+
+      unauthenticatedRecoveryInFlightRef.current = true;
+      unauthenticatedRecoveryAttemptCountRef.current += 1;
+
+      try {
+        const nextSession = await updateSession();
+        const nextTokenError = String((nextSession?.user as any)?.tokenError || "").trim();
+        if (nextSession?.user && !nextTokenError) {
+          unauthorizedRetryCountRef.current = 0;
+          tokenErrorHandledRef.current = false;
+          unauthenticatedRecoveryAttemptCountRef.current = 0;
+          unauthenticatedRecoveryInFlightRef.current = false;
+          setSessionExpiredModalOpen(false);
+          setSessionModalError(null);
+          await mutateAccess();
+          return;
         }
-        openSessionExpiredModal();
-      })();
-    }, 350);
+      } catch {
+        // keep retry loop active
+      }
+
+      const attemptIdx = unauthenticatedRecoveryAttemptCountRef.current - 1;
+      const nextDelay = ATTEMPT_DELAYS[Math.min(attemptIdx, ATTEMPT_DELAYS.length - 1)] ?? 12000;
+      openSessionExpiredModal(
+        "Reconectando sessão automaticamente. Você pode continuar editando enquanto isso."
+      );
+      unauthenticatedRecoveryInFlightRef.current = false;
+      unauthenticatedRecoveryTimerRef.current = window.setTimeout(() => {
+        void runAttempt();
+      }, nextDelay);
+    };
+
+    void runAttempt();
 
     return () => {
       if (unauthenticatedRecoveryTimerRef.current) {
         window.clearTimeout(unauthenticatedRecoveryTimerRef.current);
         unauthenticatedRecoveryTimerRef.current = null;
       }
+      unauthenticatedRecoveryInFlightRef.current = false;
     };
-  }, [
-    mutateAccess,
-    openSessionExpiredModal,
-    renewingSession,
-    sessionExpiredModalOpen,
-    sessionStatus,
-    updateSession,
-  ]);
+  }, [mutateAccess, openSessionExpiredModal, sessionStatus, updateSession]);
 
   useEffect(() => {
     if (accessLoading || !access?.tenant) return;
@@ -300,19 +312,25 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     if (accessLoading || !accessError) return;
     const status = (accessError as { status?: number } | undefined)?.status;
     if (status === 401) {
-      if (sessionStatus === "unauthenticated") {
-        openSessionExpiredModal();
-        return;
-      }
-      if (sessionStatus === "authenticated" && unauthorizedRetryCountRef.current < 2) {
+      if (sessionStatus === "authenticated" && unauthorizedRetryCountRef.current < 4) {
         unauthorizedRetryCountRef.current += 1;
-        const retryDelay = 350 * unauthorizedRetryCountRef.current;
+        const retryDelay = 500 * unauthorizedRetryCountRef.current;
         window.setTimeout(() => {
-          void mutateAccess();
+          void (async () => {
+            try {
+              await updateSession();
+            } catch {
+              // keep retry cycle
+            }
+            await mutateAccess();
+          })();
         }, retryDelay);
         return;
       }
-      openSessionExpiredModal();
+
+      openSessionExpiredModal(
+        "Falha de autenticação temporária. Vamos manter a tentativa de reconexão em segundo plano."
+      );
       return;
     }
 
@@ -332,7 +350,15 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
 
     router.replace("/admin/selecionar-racha");
-  }, [accessLoading, accessError, sessionStatus, mutateAccess, router, openSessionExpiredModal]);
+  }, [
+    accessLoading,
+    accessError,
+    sessionStatus,
+    mutateAccess,
+    router,
+    openSessionExpiredModal,
+    updateSession,
+  ]);
 
   useEffect(() => {
     if (accessLoading || !access?.blocked) return;
@@ -355,28 +381,6 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }
     perfLoggedRef.current = true;
   }, [accessLoading, hasResolvedTenant]);
-
-  const handleRenewSession = async () => {
-    setRenewingSession(true);
-    setSessionModalError(null);
-    try {
-      const nextSession = await updateSession();
-      const nextTokenError = String((nextSession?.user as any)?.tokenError || "").trim();
-      if (nextSession?.user && !nextTokenError) {
-        unauthorizedRetryCountRef.current = 0;
-        tokenErrorHandledRef.current = false;
-        unauthenticatedRecoveryAttemptedRef.current = false;
-        setSessionExpiredModalOpen(false);
-        await mutateAccess();
-        return;
-      }
-      setSessionModalError("Não foi possível renovar a sessão agora.");
-    } catch {
-      setSessionModalError("Não foi possível renovar a sessão agora.");
-    } finally {
-      setRenewingSession(false);
-    }
-  };
 
   const handleSignInAgain = () => {
     signOut({ callbackUrl: buildAdminLoginHref() });
@@ -439,11 +443,9 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         onDismiss={() => void closeCompensationModal(false)}
         onViewDetails={() => void closeCompensationModal(true)}
       />
-      <SessionExpiredModal
+      <SessionRecoveryNotice
         open={sessionExpiredModalOpen}
-        renewing={renewingSession}
         errorMessage={sessionModalError}
-        onRetryRenew={handleRenewSession}
         onSignInAgain={handleSignInAgain}
       />
     </>

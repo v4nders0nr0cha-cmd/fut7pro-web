@@ -14,7 +14,7 @@ export function Providers({
   initialTenantSlug?: string | null;
 }) {
   return (
-    <SessionProvider refetchInterval={300} refetchOnWindowFocus={false}>
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
       <RachaProvider initialTenantSlug={initialTenantSlug}>
         <PerfilProvider>{children}</PerfilProvider>
       </RachaProvider>
