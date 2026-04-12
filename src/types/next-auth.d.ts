@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import { Role } from "@prisma/client";
+import type { AuthRealm } from "@/lib/auth/realm";
 
 declare module "next-auth" {
   interface Session {
@@ -18,6 +19,7 @@ declare module "next-auth" {
       authProvider?: string | null;
       emailVerified?: boolean;
       emailVerifiedAt?: string | null;
+      authRealm?: AuthRealm;
     };
   }
 
@@ -35,6 +37,7 @@ declare module "next-auth" {
     authProvider?: string | null;
     emailVerified?: boolean;
     emailVerifiedAt?: string | null;
+    authRealm?: AuthRealm;
   }
 }
 
@@ -51,5 +54,6 @@ declare module "next-auth/jwt" {
     authProvider?: string | null;
     emailVerified?: boolean;
     emailVerifiedAt?: string | null;
+    authRealm?: AuthRealm;
   }
 }

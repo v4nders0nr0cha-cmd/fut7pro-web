@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, { params }: { params: { slug: stri
     return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
 
-  const user = await requireUser();
+  const user = await requireUser({ scope: "athlete" });
   if (!user?.accessToken) {
     return json({ error: "Nao autenticado" }, { status: 401 });
   }

@@ -3,6 +3,7 @@ import { getToken } from "next-auth/jwt";
 import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
+import { resolveAuthRealm, type AuthRealm } from "@/lib/auth/realm";
 import {
   ADMIN_ACTIVE_TENANT_COOKIE,
   LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
@@ -67,11 +68,18 @@ type UserLike = {
   email?: string | null;
   name?: string | null;
   role?: string;
+  authRealm?: AuthRealm;
   tenantId?: string;
   tenantSlug?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
   accessTokenExp?: number | null;
+};
+
+type RequireUserScope = "any" | "athlete" | "admin" | "superadmin" | "adminOrSuperadmin";
+
+type RequireUserOptions = {
+  scope?: RequireUserScope;
 };
 
 const ADMIN_SESSION_COOKIE_CANDIDATES = [
@@ -165,6 +173,10 @@ function tokenToUser(token: any, fallback?: UserLike | null): UserLike | null {
     email: (token?.email as string | null | undefined) ?? fallback?.email ?? null,
     name: (token?.name as string | null | undefined) ?? fallback?.name ?? null,
     role: (token?.role as string | undefined) ?? fallback?.role,
+    authRealm: resolveAuthRealm({
+      role: (token?.role as string | undefined) ?? fallback?.role,
+      authRealm: (token?.authRealm as string | undefined) ?? fallback?.authRealm,
+    }),
     tenantId: (token?.tenantId as string | undefined) ?? fallback?.tenantId,
     tenantSlug: (token?.tenantSlug as string | null | undefined) ?? fallback?.tenantSlug ?? null,
     accessToken,
@@ -202,26 +214,44 @@ async function resolveTokenOnlyUser(scope: AuthScope): Promise<UserLike | null> 
   return tokenToUser(token, null);
 }
 
-export async function requireUser(): Promise<UserLike | null> {
+function matchesUserScope(user: UserLike | null, scope: RequireUserScope) {
+  if (!user) return false;
+  if (scope === "any") return true;
+
+  const realm = resolveAuthRealm({
+    role: user.role,
+    authRealm: user.authRealm,
+  });
+
+  if (scope === "athlete") return realm === "athlete";
+  if (scope === "admin") return realm === "admin";
+  if (scope === "superadmin") return realm === "superadmin";
+  if (scope === "adminOrSuperadmin") return realm === "admin" || realm === "superadmin";
+  return false;
+}
+
+export async function requireUser(options?: RequireUserOptions): Promise<UserLike | null> {
+  const scope = options?.scope ?? "any";
+
   const adminTokenUser = await resolveTokenOnlyUser("admin");
-  if (adminTokenUser) {
+  if (matchesUserScope(adminTokenUser, scope)) {
     return adminTokenUser;
   }
 
   const superAdminTokenUser = await resolveTokenOnlyUser("superadmin");
-  if (superAdminTokenUser) {
+  if (matchesUserScope(superAdminTokenUser, scope)) {
     return superAdminTokenUser;
   }
 
   const adminSession = await getServerSession?.(authOptions as any);
   const adminUser = await resolveSessionUser(adminSession, "admin");
-  if (adminUser) {
+  if (matchesUserScope(adminUser, scope)) {
     return adminUser;
   }
 
   const superAdminSession = await getServerSession?.(superAdminAuthOptions as any);
   const superAdminUser = await resolveSessionUser(superAdminSession, "superadmin");
-  if (superAdminUser) {
+  if (matchesUserScope(superAdminUser, scope)) {
     return superAdminUser;
   }
 

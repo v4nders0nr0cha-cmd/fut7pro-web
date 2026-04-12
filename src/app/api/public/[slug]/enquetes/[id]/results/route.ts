@@ -13,7 +13,7 @@ export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest, context: { params: { slug: string; id: string } }) {
-  const user = await requireUser();
+  const user = await requireUser({ scope: "athlete" });
   if (!user) {
     return jsonResponse({ error: "Não autenticado" }, { status: 401 });
   }

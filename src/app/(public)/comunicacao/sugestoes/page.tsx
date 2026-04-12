@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useMe } from "@/hooks/useMe";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 type SuggestionCategory =
   | "PLATFORM_IMPROVEMENT"
@@ -86,9 +87,9 @@ function resolveResults(payload: unknown): SuggestionItem[] {
 export default function SugestoesPage() {
   const { data: session, status: sessionStatus } = useSession();
   const { publicSlug, publicHref } = usePublicLinks();
-  const role = String((session?.user as { role?: string } | undefined)?.role || "").toUpperCase();
+  const isAthleteRealmSession = isAthleteRealm(session as any);
   const shouldLoadMe =
-    sessionStatus === "authenticated" && role === "ATLETA" && Boolean(publicSlug);
+    sessionStatus === "authenticated" && isAthleteRealmSession && Boolean(publicSlug);
   const { me, isLoading: isLoadingMe } = useMe({
     enabled: shouldLoadMe,
     tenantSlug: publicSlug,

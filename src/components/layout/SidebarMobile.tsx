@@ -22,6 +22,7 @@ import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -30,20 +31,21 @@ type SidebarMobileProps = {
 
 const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const { data: session } = useSession();
+  const isAthleteRealmSession = isAthleteRealm(session as any);
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const shouldCheckMe = Boolean(isAthleteRealmSession && session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
   const isAthleteLoggedIn = Boolean(me?.athlete?.id);
-  const showUserMenu = Boolean(session?.user);
+  const showUserMenu = Boolean(isAthleteRealmSession && session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileUser = globalProfile?.user;

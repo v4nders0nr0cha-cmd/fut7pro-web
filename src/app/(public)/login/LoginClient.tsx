@@ -10,6 +10,7 @@ import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
@@ -69,9 +70,8 @@ export default function LoginClient() {
     [searchParams, publicHref]
   );
 
-  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA";
-  const shouldLoadMe = status === "authenticated" && isAthleteSession && Boolean(publicSlug);
+  const isAthleteRealmSession = isAthleteRealm(session as any);
+  const shouldLoadMe = status === "authenticated" && isAthleteRealmSession && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
@@ -106,7 +106,7 @@ export default function LoginClient() {
   }, [requestJoinIntent]);
 
   useEffect(() => {
-    if (status !== "authenticated" || !isAthleteSession) return;
+    if (status !== "authenticated" || !isAthleteRealmSession) return;
     if (requestJoinInProgress) return;
 
     if (sessionUser?.authProvider === "google") {
@@ -142,7 +142,7 @@ export default function LoginClient() {
     router.replace(redirectTo);
   }, [
     status,
-    isAthleteSession,
+    isAthleteRealmSession,
     sessionUser,
     redirectTo,
     router,

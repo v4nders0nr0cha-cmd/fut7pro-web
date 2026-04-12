@@ -6,6 +6,7 @@ import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -19,11 +20,12 @@ export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const { data: session } = useSession();
+  const isAthleteRealmSession = isAthleteRealm(session as any);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const shouldCheckMe = Boolean(isAthleteRealmSession && session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,

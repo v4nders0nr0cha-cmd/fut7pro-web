@@ -8,6 +8,7 @@ import Script from "next/script";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
 import { persistPublicAuthContext } from "@/utils/public-auth-flow";
+import { isAthleteSession } from "@/lib/auth/realm";
 
 type LookupResponse = {
   ok: true;
@@ -66,6 +67,7 @@ export default function EntrarClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus } = useSession();
+  const isAthleteRealmSession = isAthleteSession(session as any);
   const sessionUser = session?.user as SessionUser | undefined;
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
@@ -257,7 +259,12 @@ export default function EntrarClient() {
   }, [publicSlug]);
 
   useEffect(() => {
-    if (!googleIntent || sessionStatus !== "authenticated") return;
+    if (!googleIntent) return;
+    if (sessionStatus === "authenticated" && !isAthleteRealmSession) {
+      setError("Sessao administrativa detectada. Faça login como atleta para continuar.");
+      return;
+    }
+    if (sessionStatus !== "authenticated" || !isAthleteRealmSession) return;
     if (isVitrineSlug) {
       setError(VITRINE_AUTH_BLOCKED_MESSAGE);
       return;
@@ -313,6 +320,7 @@ export default function EntrarClient() {
     requestJoin,
     router,
     sessionStatus,
+    isAthleteRealmSession,
     sessionUser?.email,
   ]);
 

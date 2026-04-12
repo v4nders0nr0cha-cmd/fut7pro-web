@@ -10,6 +10,7 @@ import { useMe } from "@/hooks/useMe";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { slugify } from "@/utils/slugify";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 interface PerfilContextType {
   usuario: Atleta | null;
@@ -137,7 +138,7 @@ export function usePerfil() {
 
 export function PerfilProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
-  const isAuthenticated = status === "authenticated";
+  const isAuthenticated = status === "authenticated" && isAthleteRealm(session as any);
   const sessionUser = session?.user as SessionUser | undefined;
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);

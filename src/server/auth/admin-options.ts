@@ -1,6 +1,7 @@
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
+import { inferAuthRealmFromRole } from "@/lib/auth/realm";
 
 type NextAuthOptionsLike = {
   providers: any[];
@@ -195,6 +196,7 @@ export const authOptions: NextAuthOptionsLike = {
               name: userData.name,
               email: userData.email,
               role: userData.role,
+              authRealm: inferAuthRealmFromRole(userData.role),
               tenantId: resolvedTenantId,
               tenantSlug: resolvedTenantSlug,
               accessToken,
@@ -279,6 +281,7 @@ export const authOptions: NextAuthOptionsLike = {
             name: userData.name,
             email: userData.email,
             role: userData.role,
+            authRealm: inferAuthRealmFromRole(userData.role),
             tenantId: resolvedTenantId,
             tenantSlug: resolvedTenantSlug,
             accessToken: data.accessToken,
@@ -324,6 +327,7 @@ export const authOptions: NextAuthOptionsLike = {
           (user as any).accessToken = data.accessToken;
           (user as any).refreshToken = data.refreshToken;
           (user as any).role = data.role;
+          (user as any).authRealm = inferAuthRealmFromRole(data.role);
           (user as any).tenantId = data.tenantId;
           (user as any).tenantSlug = data.tenantSlug ?? null;
           (user as any).authProvider = "google";
@@ -371,6 +375,8 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).authProvider = (token as any).authProvider ?? null;
         (session.user as any).emailVerified = (token as any).emailVerified ?? false;
         (session.user as any).emailVerifiedAt = (token as any).emailVerifiedAt ?? null;
+        (session.user as any).authRealm =
+          (token as any).authRealm ?? inferAuthRealmFromRole((token as any).role);
         (session.user as any).image = (token as any).image ?? (session.user as any).image ?? null;
         (session.user as any).tokenError = (token as any).error ?? null;
       }
@@ -383,6 +389,8 @@ export const authOptions: NextAuthOptionsLike = {
         token.email = user.email;
         token.name = user.name;
         token.role = (user as any).role;
+        (token as any).authRealm =
+          (user as any).authRealm ?? inferAuthRealmFromRole((user as any).role);
         token.tenantId = (user as any).tenantId;
         (token as any).tenantSlug = (user as any).tenantSlug ?? null;
         token.accessToken = (user as any).accessToken;
@@ -397,6 +405,8 @@ export const authOptions: NextAuthOptionsLike = {
       }
 
       if (token.accessToken && token.refreshToken) {
+        (token as any).authRealm =
+          (token as any).authRealm ?? inferAuthRealmFromRole((token as any).role);
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 

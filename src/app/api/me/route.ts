@@ -9,16 +9,18 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const user = await requireUser();
-  if (!user) {
-    return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
-  }
-
   const { searchParams } = new URL(request.url);
   const slugParam = searchParams.get("slug")?.trim().toLowerCase() || null;
   const contextParam = searchParams.get("context")?.trim().toLowerCase() || null;
   const authContext =
     contextParam === "athlete" ? "athlete" : contextParam === "admin" ? "admin" : null;
+  const requiredScope =
+    authContext === "athlete" ? "athlete" : authContext === "admin" ? "adminOrSuperadmin" : "any";
+  const user = await requireUser({ scope: requiredScope });
+
+  if (!user) {
+    return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
+  }
 
   if (authContext === "athlete" && !slugParam) {
     return new Response(JSON.stringify({ error: "Slug do racha obrigatorio" }), {

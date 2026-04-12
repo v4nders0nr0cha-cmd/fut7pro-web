@@ -25,6 +25,7 @@ import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
 } from "@/lib/forms/native-ptbr-validation";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
@@ -112,11 +113,11 @@ export default function RegisterClient() {
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
 
-  const isAuthenticated = status === "authenticated";
+  const isAthleteAuthenticated = status === "authenticated" && isAthleteRealm(session as any);
   const isGoogleSession = sessionUser?.authProvider === "google";
   const hasPublicSlug = Boolean(publicSlug);
   const isRegistrationBlocked = publicSlug?.toLowerCase() === "vitrine";
-  const shouldLoadMe = isAuthenticated && hasPublicSlug;
+  const shouldLoadMe = isAthleteAuthenticated && hasPublicSlug;
   const { me, isLoading: isLoadingMe } = useMe({
     enabled: shouldLoadMe,
     tenantSlug: publicSlug,
@@ -155,10 +156,10 @@ export default function RegisterClient() {
       me?.athlete?.birthDay &&
       me?.athlete?.birthMonth
   );
-  const shouldUseCompleteEndpoint = isAuthenticated;
+  const shouldUseCompleteEndpoint = isAthleteAuthenticated;
 
   useEffect(() => {
-    if (!isAuthenticated || !hasPublicSlug) return;
+    if (!isAthleteAuthenticated || !hasPublicSlug) return;
     if (shouldLoadMe && isLoadingMe) return;
 
     if (isPendingMembership) {
@@ -173,7 +174,7 @@ export default function RegisterClient() {
       router.replace(redirectTo);
     }
   }, [
-    isAuthenticated,
+    isAthleteAuthenticated,
     hasPublicSlug,
     shouldLoadMe,
     isLoadingMe,
@@ -186,10 +187,10 @@ export default function RegisterClient() {
     router,
   ]);
 
-  const shouldPrefill = isAuthenticated && hasPublicSlug;
+  const shouldPrefill = isAthleteAuthenticated && hasPublicSlug;
 
   useEffect(() => {
-    if (isAuthenticated || !publicSlug) {
+    if (isAthleteAuthenticated || !publicSlug) {
       setPrefilledFromEntrar(false);
       return;
     }
@@ -200,7 +201,7 @@ export default function RegisterClient() {
     }
     setEmail((previous) => previous || context.email);
     setPrefilledFromEntrar(true);
-  }, [isAuthenticated, publicSlug]);
+  }, [isAthleteAuthenticated, publicSlug]);
 
   useEffect(() => {
     if (!shouldPrefill) return;
@@ -602,7 +603,7 @@ export default function RegisterClient() {
           Sua solicitacao sera enviada ao administrador para aprovacao.
         </p>
 
-        {!isAuthenticated && prefilledFromEntrar ? (
+        {!isAthleteAuthenticated && prefilledFromEntrar ? (
           <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
             <p className="font-semibold text-emerald-200">Primeiro acesso no Fut7Pro</p>
             <p className="mt-1">
@@ -632,7 +633,7 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        {isAuthenticated ? (
+        {isAthleteAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
             {isGoogleSession
               ? "Complete seu cadastro para liberar o acesso ao racha."
@@ -663,7 +664,7 @@ export default function RegisterClient() {
           </div>
         )}
 
-        {isAuthenticated && isLoadingMe ? (
+        {isAthleteAuthenticated && isLoadingMe ? (
           <div className="mt-6 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300">
             Carregando seus dados...
           </div>
@@ -749,7 +750,7 @@ export default function RegisterClient() {
             </div>
           )}
 
-          {!isAuthenticated && (
+          {!isAthleteAuthenticated && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 E-mail
@@ -889,7 +890,7 @@ export default function RegisterClient() {
           >
             {isSubmitting
               ? "Enviando..."
-              : isAuthenticated
+              : isAthleteAuthenticated
                 ? isGoogleSession
                   ? "Concluir cadastro"
                   : "Solicitar entrada"
@@ -897,7 +898,7 @@ export default function RegisterClient() {
           </button>
         </form>
 
-        {!isAuthenticated && (
+        {!isAthleteAuthenticated && (
           <div className="mt-5 text-center text-sm text-gray-300">
             Ja tem conta?{" "}
             <a

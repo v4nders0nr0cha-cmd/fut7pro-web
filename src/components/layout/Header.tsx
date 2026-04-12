@@ -15,6 +15,7 @@ import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -29,20 +30,21 @@ const quickMenu = [
 const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { logo, nome } = useTema();
   const { data: session } = useSession();
+  const isAthleteRealmSession = isAthleteRealm(session as any);
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const shouldCheckMe = Boolean(isAthleteRealmSession && session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
   const isAthleteLoggedIn = Boolean(me?.athlete?.id);
-  const showUserMenu = Boolean(session?.user);
+  const showUserMenu = Boolean(isAthleteRealmSession && session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);

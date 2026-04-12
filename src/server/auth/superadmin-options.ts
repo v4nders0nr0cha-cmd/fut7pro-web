@@ -1,5 +1,6 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { JWT } from "next-auth/jwt";
+import { inferAuthRealmFromRole } from "@/lib/auth/realm";
 
 const API_BASE_URL =
   process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -274,6 +275,7 @@ export const superAdminAuthOptions = {
         session.user.refreshToken = token.refreshToken as string;
         session.user.accessTokenExp = (token as any).accessTokenExp ?? null;
         session.user.tokenError = (token as any).error ?? null;
+        session.user.authRealm = "superadmin";
       }
       return session;
     },
@@ -282,6 +284,7 @@ export const superAdminAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = "SUPERADMIN";
+        (token as any).authRealm = "superadmin";
         token.tenantId = (user as any).tenantId;
         (token as any).tenantSlug = (user as any).tenantSlug ?? null;
         token.accessToken = (user as any).accessToken;
@@ -292,6 +295,8 @@ export const superAdminAuthOptions = {
       }
 
       if (token.accessToken && token.refreshToken) {
+        (token as any).authRealm =
+          (token as any).authRealm ?? inferAuthRealmFromRole((token as any).role);
         const tokenExp = (token as any).accessTokenExp ?? decodeExp(token.accessToken as string);
         const now = Math.floor(Date.now() / 1000);
 
