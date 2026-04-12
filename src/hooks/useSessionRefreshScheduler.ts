@@ -40,9 +40,17 @@ function isSessionHealthy(session: SessionLike) {
   const tokenError = String(
     (session?.user as { tokenError?: string | null } | undefined)?.tokenError || ""
   ).trim();
-  return (
-    Boolean(session?.user?.accessToken) && (!tokenError || tokenError === "RefreshAccessTokenRetry")
-  );
+  const accessToken = String(session?.user?.accessToken || "").trim();
+  if (!accessToken) return false;
+
+  if (!tokenError) return true;
+  if (tokenError !== "RefreshAccessTokenRetry") return false;
+
+  const tokenExp = parseTokenExp(session);
+  if (!tokenExp) return false;
+
+  // When retrying refresh, keep session only while token is still effectively valid.
+  return tokenExp * 1000 > Date.now() + 15_000;
 }
 
 export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerParams) {
