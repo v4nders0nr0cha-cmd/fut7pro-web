@@ -36,10 +36,36 @@ export async function POST(req: NextRequest) {
     headers,
     body: rawBody,
   });
+  const requestId = response.headers.get("x-correlation-id");
+
+  if (!response.ok) {
+    const backendMessage =
+      typeof body === "object" && body
+        ? String((body as { message?: string; error?: string }).message || (body as { error?: string }).error || "")
+        : typeof body === "string"
+          ? body
+          : "";
+    const message = backendMessage.trim() || "Falha ao publicar times do dia.";
+    const payload = {
+      message,
+      requestId,
+    };
+    return new Response(JSON.stringify(payload), {
+      status: response.status,
+      headers: {
+        "Content-Type": "application/json",
+        ...(requestId ? { "x-correlation-id": requestId } : {}),
+      },
+    });
+  }
 
   if (response.ok) {
     await triggerPublicRevalidate(tenantSlug, buildSorteioPaths(tenantSlug));
   }
 
-  return forwardResponse(response.status, body);
+  const forwarded = forwardResponse(response.status, body);
+  if (requestId) {
+    forwarded.headers.set("x-correlation-id", requestId);
+  }
+  return forwarded;
 }

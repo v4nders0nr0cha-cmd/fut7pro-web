@@ -309,12 +309,39 @@ export default function SorteioInteligenteAdmin() {
       });
 
       if (!res.ok) {
-        throw new Error(await res.text());
+        const responseText = await res.text();
+        let message = "Falha ao publicar times do dia.";
+        try {
+          const parsed = JSON.parse(responseText) as {
+            message?: string;
+            error?: string;
+            requestId?: string | null;
+          };
+          const backendMessage = String(parsed?.message || parsed?.error || "").trim();
+          if (backendMessage) {
+            message = backendMessage;
+          }
+          if (parsed?.requestId) {
+            message = `${message} (requestId: ${parsed.requestId})`;
+          }
+        } catch {
+          const raw = responseText.trim();
+          if (raw) {
+            message = raw;
+          }
+        }
+        throw new Error(message);
       }
 
       setPublicado(true);
+      setSorteioErro(null);
     } catch (error) {
       console.error("Falha ao publicar sorteio", error);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Falha ao publicar times do dia.";
+      setSorteioErro(message);
     } finally {
       setPublicando(false);
     }
