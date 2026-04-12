@@ -48,6 +48,18 @@ type TenantAboutPage = {
   data?: unknown;
 } | null;
 
+type TenantAccess = {
+  status?: string | null;
+  blocked?: boolean | null;
+  reason?: string | null;
+  statusRaw?: string | null;
+  source?: string | null;
+  daysRemaining?: number | null;
+  effectiveAccessUntil?: string | null;
+  canAccess?: boolean | null;
+  compensationActive?: boolean | null;
+};
+
 type Tenant = {
   id: string;
   name?: string;
@@ -78,6 +90,9 @@ type Tenant = {
   ownerEmail?: string | null;
   createdAt?: string | null;
   blocked?: boolean | null;
+  access?: TenantAccess | null;
+  accessStatus?: string | null;
+  accessReason?: string | null;
   trialEndsAt?: string | null;
   lastLoginAt?: string | null;
   updatedAt?: string | null;
@@ -88,13 +103,16 @@ type TenantsResponse = { results?: Tenant[] };
 const fetcher = async (url: string) => {
   const res = await fetch(url, { cache: "no-store" });
   if (res.status === 401 || res.status === 403) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/superadmin/login?reason=session-expirada";
-    }
-    throw new Error("Sessao expirada");
+    const authError = new Error("Sessao expirada") as Error & { status?: number };
+    authError.status = res.status;
+    throw authError;
   }
   const text = await res.text();
-  if (!res.ok) throw new Error(text || `Request failed ${res.status}`);
+  if (!res.ok) {
+    const error = new Error(text || `Request failed ${res.status}`) as Error & { status?: number };
+    error.status = res.status;
+    throw error;
+  }
   try {
     return JSON.parse(text);
   } catch {
@@ -104,6 +122,7 @@ const fetcher = async (url: string) => {
 
 const STATUS_BADGES = {
   ATIVO: "bg-green-700 text-green-200",
+  ALERTA: "bg-yellow-700 text-yellow-200",
   TRIAL: "bg-yellow-700 text-yellow-200",
   TRIAL_EXPIRADO: "bg-amber-800 text-amber-100",
   SEM_CONVERSAO: "bg-orange-800 text-orange-100",
@@ -114,6 +133,7 @@ const STATUS_BADGES = {
 
 const STATUS_LABELS = {
   ATIVO: "Racha ativo e operando normalmente.",
+  ALERTA: "Racha ativo com alerta de ciclo/período próximo do vencimento.",
   TRIAL: "Período de teste, com limitação de recursos.",
   TRIAL_EXPIRADO: "Trial encerrado sem conversão para pagamento.",
   SEM_CONVERSAO: "Nunca pagou e está fora do período de trial.",
@@ -147,6 +167,7 @@ function normalizeStatus(params: {
     trialEndsAt.getTime() < Date.now();
 
   if (blocked) return "BLOQUEADO";
+  if (value.includes("ALERTA")) return "ALERTA";
   if (value.includes("INAD"))
     return hasPaymentHistory ? "INADIMPLENTE_COM_HISTORICO" : "SEM_CONVERSAO";
   if (value.includes("TRIALING")) {
@@ -405,12 +426,14 @@ export default function RachasCadastradosPage() {
       tenants
         .map((t) => {
           const subscription = t.subscription as any;
+          const access = t.access as TenantAccess | null | undefined;
           const isVitrine = Boolean(t.isVitrine) || (t.slug || "").toLowerCase() === "vitrine";
           const status = isVitrine
             ? "ATIVO"
             : normalizeStatus({
-                raw: subscription?.status ?? t.status,
-                blocked: t.blocked,
+                raw: access?.status ?? t.accessStatus ?? subscription?.status ?? t.status,
+                blocked:
+                  typeof access?.blocked === "boolean" ? access.blocked : (t.blocked ?? false),
                 trialEnd: subscription?.trialEnd ?? t.trialEndsAt ?? null,
                 firstPaymentAt: subscription?.firstPaymentAt ?? null,
               });
@@ -434,7 +457,10 @@ export default function RachasCadastradosPage() {
             plano: planLabel,
             status,
             ativo:
-              status === "ATIVO" || status === "TRIAL" || status === "INADIMPLENTE_COM_HISTORICO",
+              status === "ATIVO" ||
+              status === "ALERTA" ||
+              status === "TRIAL" ||
+              status === "INADIMPLENTE_COM_HISTORICO",
             atletas:
               t.playersCount ??
               t.athletes ??
@@ -453,9 +479,13 @@ export default function RachasCadastradosPage() {
               { acao: "Criado", criadoEm: t.createdAt || "" },
               { acao: "Ultima atualizacao", criadoEm: t.updatedAt || "" },
             ].filter((h) => h.criadoEm),
-            ultimoLogBloqueio: t.blocked
-              ? { detalhes: "Bloqueado no backend", criadoEm: t.updatedAt }
-              : null,
+            ultimoLogBloqueio:
+              status === "BLOQUEADO"
+                ? {
+                    detalhes: access?.reason || t.accessReason || "Bloqueado no backend",
+                    criadoEm: t.updatedAt,
+                  }
+                : null,
           };
         })
         .sort((a, b) => {
@@ -520,6 +550,7 @@ export default function RachasCadastradosPage() {
   }
   function statusLabel(status: string) {
     if (status === "ATIVO") return "Ativo";
+    if (status === "ALERTA") return "Alerta";
     if (status === "TRIAL") return "Trial";
     if (status === "TRIAL_EXPIRADO") return "Trial expirado";
     if (status === "SEM_CONVERSAO") return "Sem conversao";

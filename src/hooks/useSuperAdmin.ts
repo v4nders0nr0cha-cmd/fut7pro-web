@@ -8,13 +8,14 @@ import type { Racha, Metricas, Usuario } from "@/types/superadmin";
 const fetcher = async (url: string) => {
   const response = await fetch(url);
   if (response.status === 401 || response.status === 403) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/superadmin/login?reason=session-expirada";
-    }
-    throw new Error("Sessao expirada");
+    const error = new Error("Sessao expirada") as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   if (!response.ok) {
-    throw new Error("Erro ao buscar dados de SuperAdmin");
+    const error = new Error("Erro ao buscar dados de SuperAdmin") as Error & { status?: number };
+    error.status = response.status;
+    throw error;
   }
   return response.json();
 };
