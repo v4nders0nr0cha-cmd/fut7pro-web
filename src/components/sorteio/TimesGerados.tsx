@@ -43,6 +43,8 @@ export default function TimesGerados({
 
   // Handler drag-and-drop dentro do time
   function handleDragEnd(event: DragEndEvent, timeId: string) {
+    if (!editando) return;
+
     const { active, over } = event;
     if (!over || !active) return;
     if (active.id === over.id) return;
@@ -58,11 +60,11 @@ export default function TimesGerados({
     time.jogadores = arrayMove(time.jogadores, oldIdx, newIdx);
 
     setTimesEdit(timesCopy);
-    onSaveEdit?.(timesCopy);
   }
 
   // Mover jogador para outro time (drag manual)
   function moverJogador(jogador: Participante, timeOrigemId: string, timeDestinoId: string) {
+    if (!editando) return;
     if (timeOrigemId === timeDestinoId) return;
 
     const timesCopy = structuredClone(timesEdit);
@@ -76,7 +78,6 @@ export default function TimesGerados({
     timeDestino.jogadores.push(jogador);
 
     setTimesEdit(timesCopy);
-    onSaveEdit?.(timesCopy);
   }
 
   function salvarEdicao() {
@@ -116,6 +117,7 @@ export default function TimesGerados({
   function SortablePlayer({ jogador, timeId }: { jogador: Participante; timeId: string }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: jogador.id,
+      disabled: !editando,
     });
     const habilidade = jogador.estrelas?.habilidade ?? null;
     const fisico = jogador.estrelas?.fisico ?? null;
@@ -138,9 +140,11 @@ export default function TimesGerados({
           transition,
           opacity: isDragging ? 0.7 : 1,
         }}
-        {...attributes}
-        {...listeners}
-        className="flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 cursor-grab"
+        {...(editando ? attributes : {})}
+        {...(editando ? listeners : {})}
+        className={`flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 ${
+          editando ? "cursor-grab" : "cursor-default"
+        }`}
       >
         <Image
           src={jogador.foto}
