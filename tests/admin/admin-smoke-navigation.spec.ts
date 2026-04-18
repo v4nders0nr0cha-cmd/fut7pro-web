@@ -868,7 +868,7 @@ test.describe("Admin Smoke Navigation", () => {
         },
         {
           testId: "admin-dashboard-card-partidas-resultados",
-          path: "/admin/partidas/historico",
+          path: "/admin/partidas",
         },
         {
           testId: "admin-dashboard-card-sorteio-inteligente",

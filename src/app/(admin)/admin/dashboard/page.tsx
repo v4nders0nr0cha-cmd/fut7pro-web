@@ -146,7 +146,7 @@ export default function AdminDashboard() {
               PÓS-JOGO
             </span>
             <Link
-              href="/admin/partidas/historico"
+              href="/admin/partidas"
               className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-emerald-400 cursor-pointer group min-h-[265px]"
               aria-label="Partidas e Resultados"
               data-testid="admin-dashboard-card-partidas-resultados"
