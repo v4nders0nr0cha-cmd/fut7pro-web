@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { FaCheckCircle, FaExclamationTriangle, FaTrash } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useMe } from "@/hooks/useMe";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
@@ -1134,6 +1135,9 @@ export default function ResultadosDoDiaAdmin({
   onDeleteMatch,
 }: ResultadosDoDiaAdminProps) {
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const { me } = useMe({ context: "admin" });
+  const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
+  const canDeleteMatch = allowDelete && isPresidente;
   const scopedMatches = useMemo(() => {
     if (!matchIds) return matches;
     if (matchIds.length === 0) return [];
@@ -1580,7 +1584,7 @@ export default function ResultadosDoDiaAdmin({
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-xs text-neutral-500">Clique para abrir</span>
                 <div className="flex items-center gap-3">
-                  {allowDelete && (
+                  {canDeleteMatch && (
                     <button
                       type="button"
                       onClick={(event) => {
