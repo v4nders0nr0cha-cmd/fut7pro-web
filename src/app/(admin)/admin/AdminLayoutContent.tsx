@@ -93,6 +93,8 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const [activeCompensationNotification, setActiveCompensationNotification] =
     useState<AdminNotificationItem | null>(null);
   const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
+  const [tenantBootstrapped, setTenantBootstrapped] = useState(false);
+  const [criticalFlowDirty, setCriticalFlowDirty] = useState(false);
   const { data: session, status: sessionStatus, update: updateSession } = useSession();
   const router = useRouter();
   const pathname = usePathname() ?? "";
@@ -128,7 +130,11 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   );
   const isHubRoute = useMemo(() => pathname.startsWith("/admin/selecionar-racha"), [pathname]);
   const isAllowedWhenBlocked = isStatusRoute || isBillingRoute;
+  const hasTenantContext = Boolean(tenantSlug?.trim() && rachaId?.trim());
   const hasResolvedTenant = Boolean(access?.tenant?.slug && access?.tenant?.id);
+  const hasStableTenantContext = hasResolvedTenant || hasTenantContext || tenantBootstrapped;
+  const shouldBlockForPermissionBootstrap =
+    accessLoading && !hasStableTenantContext && !criticalFlowDirty;
   const shouldEnableCompensationModalQuery =
     hasResolvedTenant &&
     !accessLoading &&
@@ -269,6 +275,32 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   }, [mutateAccess, openSessionExpiredModal, sessionStatus, updateSession]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const readDirtyFlag = () => {
+      setCriticalFlowDirty(Boolean((window as any).__FUT7PRO_ADMIN_FLOW_DIRTY__));
+    };
+    readDirtyFlag();
+    const onDirty = (event: Event) => {
+      const detail = (event as CustomEvent<{ dirty?: boolean }>).detail;
+      if (typeof detail?.dirty === "boolean") {
+        setCriticalFlowDirty(detail.dirty);
+        return;
+      }
+      readDirtyFlag();
+    };
+    window.addEventListener("fut7pro:admin-flow-dirty", onDirty as EventListener);
+    return () => {
+      window.removeEventListener("fut7pro:admin-flow-dirty", onDirty as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasResolvedTenant || hasTenantContext) {
+      setTenantBootstrapped(true);
+    }
+  }, [hasResolvedTenant, hasTenantContext]);
+
+  useEffect(() => {
     if (accessLoading || !access?.tenant) return;
     const nextSlug = access.tenant.slug?.trim() || "";
     const nextId = access.tenant.id?.trim() || "";
@@ -284,7 +316,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   }, [accessLoading, access, tenantSlug, rachaId, setTenantSlug, setRachaId]);
 
   useEffect(() => {
-    if (!accessLoading) {
+    if (!shouldBlockForPermissionBootstrap) {
       setLoadingTimeoutReached(false);
       return;
     }
@@ -294,7 +326,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     }, 15000);
 
     return () => window.clearTimeout(timer);
-  }, [accessLoading]);
+  }, [shouldBlockForPermissionBootstrap]);
 
   useEffect(() => {
     if (accessLoading || accessError || access?.blocked || hasResolvedTenant || isHubRoute) {
@@ -481,7 +513,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     );
   }
 
-  if (loadingTimeoutReached && !access) {
+  if (loadingTimeoutReached && !access && !hasStableTenantContext && !criticalFlowDirty) {
     return withSessionModal(
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
         <div className="max-w-md w-full rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
@@ -518,7 +550,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     );
   }
 
-  if (accessLoading) {
+  if (shouldBlockForPermissionBootstrap) {
     return withSessionModal(<AdminLoading />);
   }
 
@@ -561,7 +593,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
     );
   }
 
-  if (!hasResolvedTenant) {
+  if (!hasStableTenantContext && !criticalFlowDirty) {
     return withSessionModal(<AdminLoading />);
   }
 

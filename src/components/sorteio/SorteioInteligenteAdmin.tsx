@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
@@ -16,6 +16,43 @@ import { useTimes } from "@/hooks/useTimes";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
 import { logoPadrao } from "@/config/teamLogoMap";
+
+const SORTEIO_DRAFT_STORAGE_PREFIX = "fut7pro_admin_sorteio_draft_v1";
+
+type SorteioDraftStep = "CONFIG" | "PARTICIPANTES" | "SORTEADO";
+
+type SorteioDraft = {
+  version: 1;
+  updatedAt: string;
+  step: SorteioDraftStep;
+  config: ConfiguracaoRacha | null;
+  participantes: Participante[];
+  timesSelecionados: string[];
+  times: TimeSorteado[];
+  tabelaJogos: JogoConfronto[];
+  configConfirmada: boolean;
+  publicado: boolean;
+  partidasTotaisSorteio: number;
+  sorteioAvisos: string[];
+  sorteioReservas: Participante[];
+};
+
+const buildDraftStorageKey = (scope: string) => `${SORTEIO_DRAFT_STORAGE_PREFIX}:${scope}`;
+
+const parseDraft = (raw: string | null): SorteioDraft | null => {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as SorteioDraft;
+    if (parsed?.version !== 1) return null;
+    if (!Array.isArray(parsed.participantes)) return null;
+    if (!Array.isArray(parsed.timesSelecionados)) return null;
+    if (!Array.isArray(parsed.times)) return null;
+    if (!Array.isArray(parsed.tabelaJogos)) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+};
 
 // SVG Loader animado de bola pulando (não precisa instalar nada)
 function LoaderBolaFutebol() {
@@ -160,10 +197,145 @@ export default function SorteioInteligenteAdmin() {
   const [sorteioAvisos, setSorteioAvisos] = useState<string[]>([]);
   const [sorteioReservas, setSorteioReservas] = useState<Participante[]>([]);
   const [sorteioErro, setSorteioErro] = useState<string | null>(null);
+  const [draftHydrated, setDraftHydrated] = useState(false);
+  const [draftRestoredAtLabel, setDraftRestoredAtLabel] = useState<string | null>(null);
+  const persistDraftTimerRef = useRef<number | null>(null);
+  const lastDraftJsonRef = useRef<string>("");
+  const draftStorageKey = useMemo(
+    () => buildDraftStorageKey(resolvedSlug || rachaId?.trim() || "global"),
+    [resolvedSlug, rachaId]
+  );
   const { ensureFreshSession } = useCriticalSessionRefresh({ minIntervalMs: 10_000 });
 
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
+  const draftStep: SorteioDraftStep =
+    times.length > 0 ? "SORTEADO" : configConfirmada ? "PARTICIPANTES" : "CONFIG";
+  const hasDirtyDraftState = Boolean(
+    configConfirmada ||
+      Boolean(config) ||
+      participantes.length > 0 ||
+      timesSelecionados.length > 0 ||
+      times.length > 0 ||
+      tabelaJogos.length > 0
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    (window as any).__FUT7PRO_ADMIN_FLOW_DIRTY__ = hasDirtyDraftState;
+    window.dispatchEvent(
+      new CustomEvent("fut7pro:admin-flow-dirty", {
+        detail: { dirty: hasDirtyDraftState, source: "sorteio-inteligente" },
+      })
+    );
+    return () => {
+      (window as any).__FUT7PRO_ADMIN_FLOW_DIRTY__ = false;
+      window.dispatchEvent(
+        new CustomEvent("fut7pro:admin-flow-dirty", {
+          detail: { dirty: false, source: "sorteio-inteligente" },
+        })
+      );
+    };
+  }, [hasDirtyDraftState]);
+
+  const clearDraft = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.removeItem(draftStorageKey);
+      lastDraftJsonRef.current = "";
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const draft = parseDraft(window.sessionStorage.getItem(draftStorageKey));
+    if (!draft) {
+      setDraftHydrated(true);
+      setDraftRestoredAtLabel(null);
+      return;
+    }
+
+    setConfig(draft.config ?? null);
+    setParticipantes(draft.participantes ?? []);
+    setTimesSelecionados(draft.timesSelecionados ?? []);
+    setTimes(draft.times ?? []);
+    setTabelaJogos(draft.tabelaJogos ?? []);
+    setConfigConfirmada(Boolean(draft.configConfirmada));
+    setPublicado(Boolean(draft.publicado));
+    setPartidasTotaisSorteio(Number(draft.partidasTotaisSorteio || 0));
+    setSorteioAvisos(draft.sorteioAvisos ?? []);
+    setSorteioReservas(draft.sorteioReservas ?? []);
+    setDraftRestoredAtLabel(
+      draft.updatedAt ? new Date(draft.updatedAt).toLocaleString("pt-BR") : null
+    );
+    setDraftHydrated(true);
+  }, [draftStorageKey]);
+
+  useEffect(() => {
+    if (!draftHydrated || typeof window === "undefined") return;
+
+    if (persistDraftTimerRef.current) {
+      window.clearTimeout(persistDraftTimerRef.current);
+      persistDraftTimerRef.current = null;
+    }
+
+    if (!hasDirtyDraftState) {
+      clearDraft();
+      return;
+    }
+
+    const payload: SorteioDraft = {
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      step: draftStep,
+      config,
+      participantes,
+      timesSelecionados,
+      times,
+      tabelaJogos,
+      configConfirmada,
+      publicado,
+      partidasTotaisSorteio,
+      sorteioAvisos,
+      sorteioReservas,
+    };
+
+    const nextJson = JSON.stringify(payload);
+    if (nextJson === lastDraftJsonRef.current) return;
+
+    persistDraftTimerRef.current = window.setTimeout(() => {
+      try {
+        window.sessionStorage.setItem(draftStorageKey, nextJson);
+        lastDraftJsonRef.current = nextJson;
+      } catch {
+        // ignore quota or storage errors
+      }
+    }, 280);
+
+    return () => {
+      if (persistDraftTimerRef.current) {
+        window.clearTimeout(persistDraftTimerRef.current);
+        persistDraftTimerRef.current = null;
+      }
+    };
+  }, [
+    config,
+    configConfirmada,
+    draftHydrated,
+    draftStep,
+    draftStorageKey,
+    hasDirtyDraftState,
+    participantes,
+    partidasTotaisSorteio,
+    publicado,
+    sorteioAvisos,
+    sorteioReservas,
+    tabelaJogos,
+    times,
+    timesSelecionados,
+  ]);
 
   useEffect(() => {
     if (!timesDisponiveis || timesDisponiveis.length === 0) {
@@ -338,6 +510,7 @@ export default function SorteioInteligenteAdmin() {
 
       setPublicado(true);
       setSorteioErro(null);
+      clearDraft();
     } catch (error) {
       console.error("Falha ao publicar sorteio", error);
       const message =
@@ -367,6 +540,11 @@ export default function SorteioInteligenteAdmin() {
       <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">
         Sorteio Inteligente – Painel do Admin
       </h1>
+      {draftRestoredAtLabel && (
+        <div className="text-center text-xs text-emerald-300 mb-2">
+          Rascunho restaurado automaticamente ({draftRestoredAtLabel}).
+        </div>
+      )}
       <div className="flex flex-col items-center mb-4">
         <button
           className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded transition-all text-sm"
