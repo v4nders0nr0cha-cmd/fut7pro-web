@@ -866,7 +866,10 @@ test.describe("Admin Smoke Navigation", () => {
           testId: "admin-dashboard-card-time-campeao",
           path: "/admin/partidas/time-campeao-do-dia",
         },
-        { testId: "admin-dashboard-card-times-do-dia", path: "/admin/partidas/times-do-dia" },
+        {
+          testId: "admin-dashboard-card-partidas-resultados",
+          path: "/admin/partidas/historico",
+        },
         {
           testId: "admin-dashboard-card-sorteio-inteligente",
           path: "/admin/partidas/sorteio-inteligente",

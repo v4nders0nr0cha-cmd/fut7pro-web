@@ -4,7 +4,13 @@ import { useMemo } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Image from "next/image";
-import { FaRandom, FaUsers, FaMoneyBillWave, FaMedal, FaBirthdayCake } from "react-icons/fa";
+import {
+  FaRandom,
+  FaClipboardList,
+  FaMoneyBillWave,
+  FaMedal,
+  FaBirthdayCake,
+} from "react-icons/fa";
 import BannerNotificacoes from "@/components/admin/BannerNotificacoes";
 import CardTimeCampeaoDoDia from "@/components/admin/CardTimeCampeaoDoDia";
 import CardCicloPlano from "@/components/admin/CardCicloPlano";
@@ -136,22 +142,22 @@ export default function AdminDashboard() {
           </div>
 
           <div className="relative">
-            <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-blue-800 to-blue-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
-              PRÉ-JOGO
+            <span className="absolute top-3 left-3 z-10 bg-gradient-to-r from-emerald-700 to-emerald-400 text-white text-xs font-bold px-3 py-1 rounded-xl shadow">
+              PÓS-JOGO
             </span>
             <Link
-              href="/admin/partidas/times-do-dia"
-              className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-[#00d3d4] cursor-pointer group min-h-[265px]"
-              aria-label="Times do Dia"
-              data-testid="admin-dashboard-card-times-do-dia"
+              href="/admin/partidas/historico"
+              className="bg-[#23272F] rounded-xl shadow flex flex-col items-center p-6 transition hover:scale-[1.025] hover:shadow-lg focus:ring-2 ring-emerald-400 cursor-pointer group min-h-[265px]"
+              aria-label="Partidas e Resultados"
+              data-testid="admin-dashboard-card-partidas-resultados"
             >
-              <FaUsers className="text-[#00d3d4] w-10 h-10 mb-2 group-hover:scale-110 transition" />
-              <span className="text-xl font-bold text-white mb-1">Times do Dia</span>
+              <FaClipboardList className="text-emerald-400 w-10 h-10 mb-2 group-hover:scale-110 transition" />
+              <span className="text-xl font-bold text-white mb-1">Partidas e Resultados</span>
               <span className="text-sm text-gray-400 mb-2 text-center">
-                Veja as escalações e confrontos automáticos do racha de hoje.
+                Acompanhe rodadas, revise confrontos e continue o lançamento dos resultados do dia.
               </span>
-              <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-[#00d3d4] text-xs font-semibold">
-                Ver Escalações
+              <span className="mt-auto px-4 py-1 rounded bg-[#1a1e22] text-emerald-300 text-xs font-semibold">
+                Acessar resultados
               </span>
             </Link>
           </div>
