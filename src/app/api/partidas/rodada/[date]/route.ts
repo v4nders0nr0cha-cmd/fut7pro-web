@@ -10,10 +10,16 @@ import {
 } from "../../../_proxy/helpers";
 
 const BASE_PATH = "/api/partidas/rodada";
+const PRESIDENTE_ROLE = "PRESIDENTE";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+function resolveAdminRole(body: unknown, fallback?: string) {
+  const data = body as { membership?: { role?: unknown }; role?: unknown } | null;
+  return String(data?.membership?.role || data?.role || fallback || "").toUpperCase();
+}
 
 export async function DELETE(req: NextRequest, { params }: { params: { date: string } }) {
   const user = await requireUser({ scope: "admin" });
@@ -26,13 +32,26 @@ export async function DELETE(req: NextRequest, { params }: { params: { date: str
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
+  const headers = buildHeaders(user, tenantSlug, { includeContentType: true });
+  headers["x-auth-context"] = "admin";
+
+  const { response: meResponse, body: meBody } = await proxyBackend(`${getApiBase()}/me`, {
+    method: "GET",
+    cache: "no-store",
+    headers,
+  });
+  if (!meResponse.ok) {
+    return forwardResponse(meResponse.status, meBody);
+  }
+
+  if (resolveAdminRole(meBody, user.role) !== PRESIDENTE_ROLE) {
+    return jsonResponse({ error: "Apenas o Presidente pode excluir rodadas." }, { status: 403 });
+  }
+
   const payload = await req.json().catch(() => null);
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return jsonResponse({ error: "Payload invalido" }, { status: 400 });
   }
-
-  const headers = buildHeaders(user, tenantSlug, { includeContentType: true });
-  headers["x-auth-context"] = "admin";
 
   const { response, body } = await proxyBackend(
     `${getApiBase()}${BASE_PATH}/${encodeURIComponent(params.date)}`,

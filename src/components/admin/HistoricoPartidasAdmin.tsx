@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useMe } from "@/hooks/useMe";
@@ -973,6 +973,7 @@ function DeleteRoundModal({ day, onClose, onDeleted }: DeleteRoundModalProps) {
 }
 
 export default function HistoricoPartidasAdmin() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const { me } = useMe({ context: "admin" });
@@ -1119,6 +1120,15 @@ export default function HistoricoPartidasAdmin() {
     });
     const query = params.toString();
     return query ? `/admin/partidas/historico?${query}` : "/admin/partidas/historico";
+  };
+
+  const handleRoundDeleted = async () => {
+    setDeleteTarget(null);
+    setSelectedMatch(null);
+    if (selectedDayKey) {
+      router.replace(buildHistoricoLink({ dia: null }), { scroll: false });
+    }
+    await mutate();
   };
 
   const renderEmptyState = (message: string) => (
@@ -1344,11 +1354,7 @@ export default function HistoricoPartidasAdmin() {
           <DeleteRoundModal
             day={deleteTarget}
             onClose={() => setDeleteTarget(null)}
-            onDeleted={async () => {
-              setDeleteTarget(null);
-              setSelectedMatch(null);
-              await mutate();
-            }}
+            onDeleted={handleRoundDeleted}
           />
         )}
       </div>
@@ -1579,11 +1585,7 @@ export default function HistoricoPartidasAdmin() {
         <DeleteRoundModal
           day={deleteTarget}
           onClose={() => setDeleteTarget(null)}
-          onDeleted={async () => {
-            setDeleteTarget(null);
-            setSelectedMatch(null);
-            await mutate();
-          }}
+          onDeleted={handleRoundDeleted}
         />
       )}
     </div>
