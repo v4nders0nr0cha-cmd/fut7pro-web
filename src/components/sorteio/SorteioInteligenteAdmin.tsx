@@ -516,9 +516,7 @@ export default function SorteioInteligenteAdmin() {
     } catch (error) {
       console.error("Falha ao publicar sorteio", error);
       const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Falha ao publicar times do dia.";
+        error instanceof Error && error.message ? error.message : "Falha ao publicar times do dia.";
       setSorteioErro(message);
     } finally {
       setPublicando(false);

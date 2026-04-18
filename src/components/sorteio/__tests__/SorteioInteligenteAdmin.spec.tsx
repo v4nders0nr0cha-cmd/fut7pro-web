@@ -128,7 +128,9 @@ jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
       }
       disabled={disabled}
     >
-      {initialConfig?.horaPartida ? `Definir config ${initialConfig.horaPartida}` : "Definir config"}
+      {initialConfig?.horaPartida
+        ? `Definir config ${initialConfig.horaPartida}`
+        : "Definir config"}
     </button>
   ),
 }));
