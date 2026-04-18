@@ -1,27 +1,43 @@
 "use client";
 
 import Head from "next/head";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { usePartidas } from "@/hooks/usePartidas";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
 import BannerUpload from "@/components/admin/BannerUpload";
+import ChampionDayPublishedModal from "@/components/admin/ChampionDayPublishedModal";
+import { useRacha } from "@/context/RachaContext";
 import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
+import { useMe } from "@/hooks/useMe";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import { buildDestaquesDoDia } from "@/utils/destaquesDoDia";
+import { buildPublicHref } from "@/utils/public-links";
 import type { DestaqueDiaResponse } from "@/types/destaques";
 
 export default function TimeCampeaoDoDiaPage() {
+  const router = useRouter();
+  const { tenantSlug: contextTenantSlug } = useRacha();
+  const { me } = useMe({ context: "admin" });
+  const currentTenantSlug = contextTenantSlug || me?.tenant?.tenantSlug || "";
   const { partidas, isLoading, isError, error, mutate } = usePartidas();
   const [destaqueDia, setDestaqueDia] = useState<DestaqueDiaResponse | null>(null);
   const [isFetchingDestaque, setIsFetchingDestaque] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
-  const [publishMessage, setPublishMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishCelebration, setShowPublishCelebration] = useState(false);
+  const [publishedTenantSlug, setPublishedTenantSlug] = useState<string | null>(null);
   const { ensureFreshSession } = useCriticalSessionRefresh({ minIntervalMs: 10_000 });
+
+  const celebrationTenantSlug = publishedTenantSlug || currentTenantSlug;
+  const { racha } = useRachaPublic(celebrationTenantSlug);
+  const rachaName = racha?.nome?.trim() || celebrationTenantSlug || "seu racha";
+  const publicUrl = celebrationTenantSlug ? buildPublicHref("/", celebrationTenantSlug) : null;
 
   const { confrontos, times, dataReferencia } = useMemo(
     () => buildDestaquesDoDia(partidas as any),
@@ -79,8 +95,9 @@ export default function TimeCampeaoDoDiaPage() {
   }, [dataKey]);
 
   useEffect(() => {
-    setPublishMessage(null);
     setPublishError(null);
+    setShowPublishCelebration(false);
+    setPublishedTenantSlug(null);
   }, [dataKey]);
 
   const parseBody = (text: string) => {
@@ -194,7 +211,7 @@ export default function TimeCampeaoDoDiaPage() {
     if (!dataKey) return;
     setIsPublishing(true);
     setPublishError(null);
-    setPublishMessage(null);
+    setShowPublishCelebration(false);
     try {
       await ensureFreshSession();
       const response = await fetch("/api/admin/destaques-do-dia/publicar", {
@@ -204,7 +221,12 @@ export default function TimeCampeaoDoDiaPage() {
       if (!response.ok) {
         throw new Error(resolveErrorMessage(bodyText, "Falha ao publicar no site."));
       }
-      setPublishMessage("Destaques publicados no site público com sucesso.");
+      const body = parseBody(bodyText);
+      const nextTenantSlug = typeof body?.slug === "string" ? body.slug.trim() : "";
+      if (nextTenantSlug) {
+        setPublishedTenantSlug(nextTenantSlug);
+      }
+      setShowPublishCelebration(true);
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
     } finally {
@@ -225,6 +247,17 @@ export default function TimeCampeaoDoDiaPage() {
           content="racha, fut7, time campeão do dia, destaques, painel admin, futebol entre amigos"
         />
       </Head>
+
+      <ChampionDayPublishedModal
+        open={showPublishCelebration}
+        rachaName={rachaName}
+        publicUrl={publicUrl}
+        onClose={() => setShowPublishCelebration(false)}
+        onGoDashboard={() => {
+          setShowPublishCelebration(false);
+          router.push("/admin/dashboard");
+        }}
+      />
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 text-center drop-shadow">
@@ -317,9 +350,6 @@ export default function TimeCampeaoDoDiaPage() {
                 >
                   {isPublishing ? "Publicando no site..." : "Salvar e Publicar no Site"}
                 </button>
-                {publishMessage && (
-                  <div className="text-sm text-green-300 text-center">{publishMessage}</div>
-                )}
                 {publishError && (
                   <div className="text-sm text-red-200 text-center">{publishError}</div>
                 )}
