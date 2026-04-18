@@ -105,9 +105,15 @@ jest.mock("@/hooks/useSorteioHistorico", () => ({
   }),
 }));
 
+jest.mock("@/hooks/useCriticalSessionRefresh", () => ({
+  useCriticalSessionRefresh: () => ({
+    ensureFreshSession: jest.fn().mockResolvedValue(undefined),
+  }),
+}));
+
 jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
   __esModule: true,
-  default: ({ onSubmit, disabled }: any) => (
+  default: ({ onSubmit, disabled, initialConfig }: any) => (
     <button
       type="button"
       onClick={() =>
@@ -122,7 +128,7 @@ jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
       }
       disabled={disabled}
     >
-      Definir config
+      {initialConfig?.horaPartida ? `Definir config ${initialConfig.horaPartida}` : "Definir config"}
     </button>
   ),
 }));
@@ -159,6 +165,11 @@ global.fetch = jest.fn(() =>
 ) as any;
 
 describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+    window.localStorage.clear();
+  });
+
   afterEach(() => {
     jest.useRealTimers();
     (global.fetch as jest.Mock).mockClear();
@@ -168,7 +179,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     jest.useFakeTimers();
     render(<SorteioInteligenteAdmin />);
 
-    fireEvent.click(screen.getByText(/Definir config/i));
+    fireEvent.click(await screen.findByText(/Definir config/i));
     fireEvent.click(screen.getByText(/Carregar participantes/i));
 
     await act(async () => {
@@ -182,5 +193,32 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     const publicar = await screen.findByRole("button", { name: /Publicar Times do Dia/i });
     fireEvent.click(publicar);
     expect(await screen.findByText(/Times Publicados!/i)).toBeInTheDocument();
+  });
+
+  it("restaura o rascunho gerado apos remontagem da tela", async () => {
+    jest.useFakeTimers();
+    const { unmount } = render(<SorteioInteligenteAdmin />);
+
+    fireEvent.click(await screen.findByText(/Definir config/i));
+    fireEvent.click(screen.getByText(/Carregar participantes/i));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
+      jest.runAllTimers();
+    });
+
+    expect(await screen.findByTestId("times-gerados")).toHaveTextContent(/times gerados/);
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(/jogos criados/);
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+
+    unmount();
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByTestId("times-gerados")).toHaveTextContent(/times gerados/);
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(/jogos criados/);
+    expect(await screen.findByText(/Definir config 19:30/i)).toBeInTheDocument();
   });
 });

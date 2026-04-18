@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
@@ -238,7 +238,7 @@ export default function SorteioInteligenteAdmin() {
     };
   }, [hasDirtyDraftState]);
 
-  const clearDraft = () => {
+  const clearDraft = useCallback(() => {
     if (typeof window === "undefined") return;
     try {
       window.sessionStorage.removeItem(draftStorageKey);
@@ -246,7 +246,7 @@ export default function SorteioInteligenteAdmin() {
     } catch {
       // ignore
     }
-  };
+  }, [draftStorageKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -323,6 +323,7 @@ export default function SorteioInteligenteAdmin() {
   }, [
     config,
     configConfirmada,
+    clearDraft,
     draftHydrated,
     draftStep,
     draftStorageKey,
@@ -338,6 +339,7 @@ export default function SorteioInteligenteAdmin() {
   ]);
 
   useEffect(() => {
+    if (loadingTimes) return;
     if (!timesDisponiveis || timesDisponiveis.length === 0) {
       if (timesSelecionados.length) {
         setTimesSelecionados([]);
@@ -366,7 +368,7 @@ export default function SorteioInteligenteAdmin() {
     if (mudou) {
       setTimesSelecionados(proximos);
     }
-  }, [timesDisponiveis, maxTimes, timesSelecionados]);
+  }, [loadingTimes, timesDisponiveis, maxTimes, timesSelecionados]);
 
   function handleConfirmarConfig() {
     const limiteConfirmacao = Math.min(maxTimes, timesDisponiveis.length || maxTimes);
@@ -619,7 +621,11 @@ export default function SorteioInteligenteAdmin() {
             : "transition-all duration-300"
         }
       >
-        <ConfiguracoesRacha onSubmit={setConfig} disabled={configConfirmada} />
+        <ConfiguracoesRacha
+          onSubmit={setConfig}
+          disabled={configConfirmada}
+          initialConfig={config}
+        />
       </div>
 
       {/* Card Selecionar Times do Dia - Fade ao confirmar */}
@@ -725,6 +731,7 @@ export default function SorteioInteligenteAdmin() {
         <>
           <TimesGerados
             times={times}
+            onSaveEdit={setTimes}
             jogadoresPorTime={config?.jogadoresPorTime}
             coeficienteContext={{
               partidasTotais: partidasTotaisSorteio,

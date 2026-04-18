@@ -4,7 +4,7 @@ import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
 import { getCoeficiente, type CoeficienteContext } from "@/utils/sorteioUtils";
 import { formatNivel } from "@/utils/nivel-atleta";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
@@ -32,6 +32,12 @@ export default function TimesGerados({
   const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(structuredClone(times));
   const [editando, setEditando] = useState(false);
 
+  useEffect(() => {
+    if (!editando) {
+      setTimesEdit(structuredClone(times));
+    }
+  }, [editando, times]);
+
   // DnD Kit
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -52,6 +58,7 @@ export default function TimesGerados({
     time.jogadores = arrayMove(time.jogadores, oldIdx, newIdx);
 
     setTimesEdit(timesCopy);
+    onSaveEdit?.(timesCopy);
   }
 
   // Mover jogador para outro time (drag manual)
@@ -69,6 +76,7 @@ export default function TimesGerados({
     timeDestino.jogadores.push(jogador);
 
     setTimesEdit(timesCopy);
+    onSaveEdit?.(timesCopy);
   }
 
   function salvarEdicao() {
