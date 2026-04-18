@@ -159,7 +159,7 @@ describe("AdminLayoutContent", () => {
     expect(hasOpenMobileSidebar).toBe(true);
   });
 
-  it("mostra fallback quando o loading do acesso passa do timeout", () => {
+  it("mantem o layout montado durante revalidacao de acesso com tenant resolvido", () => {
     jest.useFakeTimers();
     const retryAccess = jest.fn();
 
@@ -172,19 +172,18 @@ describe("AdminLayoutContent", () => {
 
     render(<AdminLayoutContent>child</AdminLayoutContent>);
 
-    expect(screen.getByText("Carregando painel...")).toBeInTheDocument();
+    expect(screen.getByText("child")).toBeInTheDocument();
+    expect(screen.queryByText("Carregando painel...")).not.toBeInTheDocument();
 
     act(() => {
       jest.advanceTimersByTime(15000);
     });
 
-    expect(screen.getByText("Painel demorou para responder")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    expect(retryAccess).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Painel demorou para responder")).not.toBeInTheDocument();
+    expect(retryAccess).not.toHaveBeenCalled();
   });
 
-  it("tenta recuperar sessao silenciosamente e abre modal quando continua sem sessao", async () => {
+  it("tenta recuperar sessao silenciosamente e mostra aviso nao bloqueante quando continua sem sessao", async () => {
     jest.useFakeTimers();
     const updateSessionMock = jest.fn().mockResolvedValue(null);
     mockUseSession.mockReturnValue({
@@ -204,7 +203,7 @@ describe("AdminLayoutContent", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Sua sessão expirou por segurança.")).toBeInTheDocument();
+      expect(screen.getByText("Reconectando sua sessão em segundo plano")).toBeInTheDocument();
     });
     expect(replaceMock).not.toHaveBeenCalled();
   });

@@ -64,7 +64,9 @@ function SessionRecoveryNotice({
   return (
     <div className="fixed bottom-4 right-4 z-[80] w-full max-w-sm px-3 sm:px-0">
       <div className="rounded-xl border border-yellow-500/45 bg-[#171717]/95 px-4 py-3 text-white shadow-[0_16px_56px_-28px_rgba(251,191,36,0.45)]">
-        <h2 className="text-sm font-bold text-yellow-300">Reconectando sua sessão em segundo plano</h2>
+        <h2 className="text-sm font-bold text-yellow-300">
+          Reconectando sua sessão em segundo plano
+        </h2>
         <p className="mt-1 text-xs text-zinc-200">
           O painel continua aberto. Se necessário, entre novamente sem perder sua edição atual.
         </p>
@@ -136,10 +138,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
   const shouldBlockForPermissionBootstrap =
     accessLoading && !hasStableTenantContext && !criticalFlowDirty;
   const shouldEnableCompensationModalQuery =
-    hasResolvedTenant &&
-    !accessLoading &&
-    !access?.blocked &&
-    sessionStatus === "authenticated";
+    hasResolvedTenant && !accessLoading && !access?.blocked && sessionStatus === "authenticated";
 
   const {
     notifications: compensationNotifications,

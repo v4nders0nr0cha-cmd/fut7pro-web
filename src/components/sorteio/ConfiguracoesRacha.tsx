@@ -7,6 +7,7 @@ import { rachaConfig } from "@/config/racha.config";
 interface Props {
   onSubmit: (config: ConfiguracaoRacha) => void;
   disabled?: boolean;
+  initialConfig?: ConfiguracaoRacha | null;
 }
 
 const DURACOES_RACHA = [60, 90, 120, 150];
@@ -33,42 +34,70 @@ function getLocalTimeValue(date = new Date()) {
   return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-export default function ConfiguracoesRacha({ onSubmit, disabled = false }: Props) {
-  const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(DURACOES_RACHA[0]);
-  const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(DURACOES_PARTIDA[0]);
-  const [numTimes, setNumTimes] = useState<number>(NUM_TIMES[0]);
-  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(DEFAULT_JOGADORES_POR_TIME);
-  const [dataPartida, setDataPartida] = useState<string>(getLocalDateValue());
-  const [horaPartida, setHoraPartida] = useState<string>(getLocalTimeValue());
+function getStoredConfig(): Partial<ConfiguracaoRacha> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const cfg = window.localStorage.getItem(rachaConfig.storage.configKey);
+    if (!cfg) return null;
+    const obj = JSON.parse(cfg);
+    return typeof obj === "object" && obj ? obj : null;
+  } catch {
+    return null;
+  }
+}
 
-  // Carrega do localStorage só quando monta
+function resolveInitialConfig(initialConfig?: ConfiguracaoRacha | null) {
+  return initialConfig ?? getStoredConfig();
+}
+
+export default function ConfiguracoesRacha({
+  onSubmit,
+  disabled = false,
+  initialConfig = null,
+}: Props) {
+  const [initialValues] = useState(() => resolveInitialConfig(initialConfig));
+  const [duracaoRachaMin, setDuracaoRachaMin] = useState<number>(() =>
+    ensureNumber(initialValues?.duracaoRachaMin, DURACOES_RACHA, DURACOES_RACHA[0])
+  );
+  const [duracaoPartidaMin, setDuracaoPartidaMin] = useState<number>(() =>
+    ensureNumber(initialValues?.duracaoPartidaMin, DURACOES_PARTIDA, DURACOES_PARTIDA[0])
+  );
+  const [numTimes, setNumTimes] = useState<number>(() =>
+    ensureNumber(initialValues?.numTimes, NUM_TIMES, NUM_TIMES[0])
+  );
+  const [jogadoresPorTime, setJogadoresPorTime] = useState<number>(() =>
+    ensureNumber(initialValues?.jogadoresPorTime, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
+  );
+  const [dataPartida, setDataPartida] = useState<string>(() =>
+    typeof initialValues?.dataPartida === "string" && initialValues.dataPartida.trim()
+      ? initialValues.dataPartida
+      : getLocalDateValue()
+  );
+  const [horaPartida, setHoraPartida] = useState<string>(() =>
+    typeof initialValues?.horaPartida === "string" && initialValues.horaPartida.trim()
+      ? initialValues.horaPartida
+      : getLocalTimeValue()
+  );
+
   useEffect(() => {
-    try {
-      const cfg = localStorage.getItem(rachaConfig.storage.configKey);
-      if (cfg) {
-        const obj = JSON.parse(cfg);
-        if (typeof obj === "object" && obj) {
-          setDuracaoRachaMin(ensureNumber(obj.duracaoRachaMin, DURACOES_RACHA, DURACOES_RACHA[0]));
-          setDuracaoPartidaMin(
-            ensureNumber(obj.duracaoPartidaMin, DURACOES_PARTIDA, DURACOES_PARTIDA[0])
-          );
-          setNumTimes(ensureNumber(obj.numTimes, NUM_TIMES, NUM_TIMES[0]));
-          setJogadoresPorTime(
-            ensureNumber(obj.jogadoresPorTime, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
-          );
-          if (typeof obj.dataPartida === "string" && obj.dataPartida.trim()) {
-            setDataPartida(obj.dataPartida);
-          }
-          if (typeof obj.horaPartida === "string" && obj.horaPartida.trim()) {
-            setHoraPartida(obj.horaPartida);
-          }
-        }
-      }
-    } catch {
-      /* ignore */
+    if (!initialConfig) return;
+    setDuracaoRachaMin(
+      ensureNumber(initialConfig.duracaoRachaMin, DURACOES_RACHA, DURACOES_RACHA[0])
+    );
+    setDuracaoPartidaMin(
+      ensureNumber(initialConfig.duracaoPartidaMin, DURACOES_PARTIDA, DURACOES_PARTIDA[0])
+    );
+    setNumTimes(ensureNumber(initialConfig.numTimes, NUM_TIMES, NUM_TIMES[0]));
+    setJogadoresPorTime(
+      ensureNumber(initialConfig.jogadoresPorTime, JOGADORES_POR_TIME, DEFAULT_JOGADORES_POR_TIME)
+    );
+    if (typeof initialConfig.dataPartida === "string" && initialConfig.dataPartida.trim()) {
+      setDataPartida(initialConfig.dataPartida);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (typeof initialConfig.horaPartida === "string" && initialConfig.horaPartida.trim()) {
+      setHoraPartida(initialConfig.horaPartida);
+    }
+  }, [initialConfig]);
 
   // Salva no localStorage e executa onSubmit a cada alteração
   useEffect(() => {

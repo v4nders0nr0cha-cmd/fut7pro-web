@@ -4,7 +4,7 @@ import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
 import { getCoeficiente, type CoeficienteContext } from "@/utils/sorteioUtils";
 import { formatNivel } from "@/utils/nivel-atleta";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
@@ -32,11 +32,19 @@ export default function TimesGerados({
   const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(structuredClone(times));
   const [editando, setEditando] = useState(false);
 
+  useEffect(() => {
+    if (!editando) {
+      setTimesEdit(structuredClone(times));
+    }
+  }, [editando, times]);
+
   // DnD Kit
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Handler drag-and-drop dentro do time
   function handleDragEnd(event: DragEndEvent, timeId: string) {
+    if (!editando) return;
+
     const { active, over } = event;
     if (!over || !active) return;
     if (active.id === over.id) return;
@@ -56,6 +64,7 @@ export default function TimesGerados({
 
   // Mover jogador para outro time (drag manual)
   function moverJogador(jogador: Participante, timeOrigemId: string, timeDestinoId: string) {
+    if (!editando) return;
     if (timeOrigemId === timeDestinoId) return;
 
     const timesCopy = structuredClone(timesEdit);
@@ -108,6 +117,7 @@ export default function TimesGerados({
   function SortablePlayer({ jogador, timeId }: { jogador: Participante; timeId: string }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
       id: jogador.id,
+      disabled: !editando,
     });
     const habilidade = jogador.estrelas?.habilidade ?? null;
     const fisico = jogador.estrelas?.fisico ?? null;
@@ -130,9 +140,11 @@ export default function TimesGerados({
           transition,
           opacity: isDragging ? 0.7 : 1,
         }}
-        {...attributes}
-        {...listeners}
-        className="flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 cursor-grab"
+        {...(editando ? attributes : {})}
+        {...(editando ? listeners : {})}
+        className={`flex items-center gap-1 bg-zinc-900 rounded px-2 py-1 ${
+          editando ? "cursor-grab" : "cursor-default"
+        }`}
       >
         <Image
           src={jogador.foto}

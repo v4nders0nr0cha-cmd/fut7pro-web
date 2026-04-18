@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
   if (!response.ok) {
     const backendMessage =
       typeof body === "object" && body
-        ? String((body as { message?: string; error?: string }).message || (body as { error?: string }).error || "")
+        ? String(
+            (body as { message?: string; error?: string }).message ||
+              (body as { error?: string }).error ||
+              ""
+          )
         : typeof body === "string"
           ? body
           : "";

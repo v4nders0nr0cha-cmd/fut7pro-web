@@ -195,9 +195,12 @@ export function useSessionRefreshScheduler(params: UseSessionRefreshSchedulerPar
     }
     scheduleNext(session);
     clearHeartbeat();
-    heartbeatRef.current = window.setInterval(() => {
-      void runRefreshRef.current();
-    }, Math.max(MIN_REFRESH_DELAY_MS, heartbeatIntervalMs));
+    heartbeatRef.current = window.setInterval(
+      () => {
+        void runRefreshRef.current();
+      },
+      Math.max(MIN_REFRESH_DELAY_MS, heartbeatIntervalMs)
+    );
 
     return () => {
       clearTimer();
