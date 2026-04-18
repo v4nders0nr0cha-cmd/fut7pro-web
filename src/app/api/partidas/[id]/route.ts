@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 async function forwardToBackend(req: NextRequest, init: RequestInit, matchId: string) {
-  const user = await requireUser();
+  const user = await requireUser({ scope: "admin" });
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
@@ -27,7 +27,10 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, matchId: st
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
-  const headers = buildHeaders(user, tenantSlug);
+  const headers = buildHeaders(user, tenantSlug, {
+    includeContentType: Boolean(init.body),
+  });
+  headers["x-auth-context"] = "admin";
   const targetUrl = new URL(`${getApiBase()}${BASE_PATH}/${matchId}`);
   req.nextUrl.searchParams.forEach((value, key) => {
     if (TENANT_QUERY_KEYS.has(key)) return;
@@ -43,11 +46,13 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, matchId: st
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const payload = await req.json().catch(() => null);
   return forwardToBackend(
     req,
     {
       method: "DELETE",
       cache: "no-store",
+      ...(payload ? { body: JSON.stringify(payload) } : {}),
     },
     params.id
   );
