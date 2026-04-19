@@ -1,7 +1,7 @@
 "use client";
 
-import { Toaster } from "react-hot-toast";
+import { Fut7ToastProvider } from "@/components/ui/feedback";
 
 export default function ToasterProvider() {
-  return <Toaster position="top-right" />;
+  return <Fut7ToastProvider />;
 }

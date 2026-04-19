@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Crown, Shield, Trophy, DollarSign, UserPlus, RefreshCw, Trash2, Info } from "lucide-react";
+import {
+  Fut7ConfirmDialog,
+  Fut7DestructiveDialog,
+  Fut7InlineFeedback,
+} from "@/components/ui/feedback";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import { useAdminRoleAthletes } from "@/hooks/useAdminRoleAthletes";
 import { useAdminLogs } from "@/hooks/useAdminLogs";
@@ -98,6 +103,11 @@ export default function AdministradoresClient() {
   const [selectedAthlete, setSelectedAthlete] = useState<AdminRoleAthlete | null>(null);
   const [modalError, setModalError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [pendingAssign, setPendingAssign] = useState<{
+    role: AdminRoleKey;
+    athlete: AdminRoleAthlete;
+  } | null>(null);
+  const [pendingRemoveRole, setPendingRemoveRole] = useState<AdminRoleKey | null>(null);
 
   const slotMap = useMemo(() => {
     return slots.reduce<Record<string, AdminRoleSlot>>((acc, slot) => {
@@ -134,29 +144,39 @@ export default function AdministradoresClient() {
     setModalError(null);
   };
 
-  const handleConfirm = async () => {
+  const requestAssignConfirmation = () => {
     if (!modalRole || !selectedAthlete) return;
-    const roleLabel = ROLE_CONFIG[modalRole].label;
-    const confirmed = window.confirm(
-      `Você está definindo ${selectedAthlete.nome} como ${roleLabel}. Deseja continuar?`
-    );
-    if (!confirmed) return;
+    setPendingAssign({ role: modalRole, athlete: selectedAthlete });
+  };
+
+  const confirmAssignRole = async () => {
+    if (!pendingAssign) return;
+    const roleLabel = ROLE_CONFIG[pendingAssign.role].label;
     try {
-      await assignRole(modalRole, selectedAthlete.id);
+      await assignRole(pendingAssign.role, pendingAssign.athlete.id);
+      setFeedback(`${pendingAssign.athlete.nome} agora está definido como ${roleLabel}.`);
+      setPendingAssign(null);
       closeModal();
     } catch (err) {
       setModalError(err instanceof Error ? err.message : "Erro ao salvar administrador.");
+      setPendingAssign(null);
     }
   };
 
-  const handleRemove = async (role: AdminRoleKey) => {
-    const roleLabel = ROLE_CONFIG[role].label;
-    const confirmed = window.confirm(`Remover o administrador do cargo ${roleLabel}?`);
-    if (!confirmed) return;
+  const requestRemoveConfirmation = (role: AdminRoleKey) => {
+    setPendingRemoveRole(role);
+  };
+
+  const confirmRemoveRole = async () => {
+    if (!pendingRemoveRole) return;
+    const roleLabel = ROLE_CONFIG[pendingRemoveRole].label;
     try {
-      await removeRole(role);
+      await removeRole(pendingRemoveRole);
+      setFeedback(`O cargo ${roleLabel} foi liberado para uma nova indicação.`);
     } catch (err) {
       setFeedback(err instanceof Error ? err.message : "Erro ao remover administrador.");
+    } finally {
+      setPendingRemoveRole(null);
     }
   };
 
@@ -230,9 +250,12 @@ export default function AdministradoresClient() {
       </div>
 
       {feedback && (
-        <div className="mb-5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
-          {feedback}
-        </div>
+        <Fut7InlineFeedback
+          tone="info"
+          className="mb-5"
+          message={feedback}
+          onDismiss={() => setFeedback(null)}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -318,7 +341,7 @@ export default function AdministradoresClient() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleRemove(role)}
+                        onClick={() => requestRemoveConfirmation(role)}
                         className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 text-red-300 px-3 py-1 text-xs hover:bg-red-500/10"
                         disabled={isSaving}
                       >
@@ -515,7 +538,15 @@ export default function AdministradoresClient() {
               )}
             </div>
 
-            {modalError && <div className="px-5 pb-2 text-sm text-red-400">{modalError}</div>}
+            {modalError && (
+              <div className="px-5 pb-2">
+                <Fut7InlineFeedback
+                  tone="error"
+                  message={modalError}
+                  onDismiss={() => setModalError(null)}
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 border-t border-[#2a2d34] px-5 py-4">
               <button
@@ -527,7 +558,7 @@ export default function AdministradoresClient() {
               </button>
               <button
                 type="button"
-                onClick={handleConfirm}
+                onClick={requestAssignConfirmation}
                 disabled={!selectedAthlete || isSaving}
                 className="px-4 py-2 rounded-lg bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-300 disabled:opacity-60"
               >
@@ -537,6 +568,63 @@ export default function AdministradoresClient() {
           </div>
         </div>
       )}
+
+      <Fut7ConfirmDialog
+        open={Boolean(pendingAssign)}
+        title={
+          pendingAssign
+            ? `Definir ${pendingAssign.athlete.nome} como ${ROLE_CONFIG[pendingAssign.role].label}?`
+            : "Confirmar cargo administrativo"
+        }
+        eyebrow="Cargo administrativo"
+        description={
+          pendingAssign ? (
+            <>
+              Você está concedendo a este atleta acesso administrativo como{" "}
+              <strong className="text-yellow-200">{ROLE_CONFIG[pendingAssign.role].label}</strong>.
+              Confirme apenas se ele deve assumir essa responsabilidade no painel do racha.
+            </>
+          ) : null
+        }
+        confirmLabel="Definir cargo"
+        cancelLabel="Voltar"
+        loading={isSaving}
+        impactItems={[
+          "O atleta passará a acessar as áreas permitidas para este cargo.",
+          "A ação será registrada no histórico administrativo do racha.",
+          "Você poderá remover ou substituir esse cargo depois, se necessário.",
+        ]}
+        onClose={() => setPendingAssign(null)}
+        onConfirm={confirmAssignRole}
+      />
+
+      <Fut7DestructiveDialog
+        open={Boolean(pendingRemoveRole)}
+        title={
+          pendingRemoveRole
+            ? `Remover ${ROLE_CONFIG[pendingRemoveRole].label}?`
+            : "Remover cargo administrativo"
+        }
+        description={
+          pendingRemoveRole ? (
+            <>
+              Esta ação remove o acesso administrativo vinculado ao cargo{" "}
+              <strong className="text-red-100">{ROLE_CONFIG[pendingRemoveRole].label}</strong>. O
+              atleta continua cadastrado no racha, mas deixa de atuar nessa função.
+            </>
+          ) : null
+        }
+        confirmLabel="Remover cargo"
+        cancelLabel="Manter cargo"
+        loading={isSaving}
+        impactItems={[
+          "O cargo ficará vago para uma nova indicação.",
+          "As permissões administrativas desse cargo serão removidas.",
+          "A ação será registrada para auditoria.",
+        ]}
+        onClose={() => setPendingRemoveRole(null)}
+        onConfirm={confirmRemoveRole}
+      />
     </div>
   );
 }
