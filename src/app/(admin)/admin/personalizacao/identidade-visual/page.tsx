@@ -12,6 +12,7 @@ import { rachaConfig } from "@/config/racha.config";
 import type { AboutData } from "@/types/about";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import RestrictAccess from "@/components/admin/RestrictAccess";
+import { Fut7ConfirmDialog } from "@/components/ui/feedback";
 import { slugify } from "@/utils/slugify";
 
 const LOGO_PADRAO = rachaConfig.logo || "/images/logos/logo_fut7pro.png";
@@ -57,6 +58,7 @@ export default function LogoDoRachaPage() {
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
   const [slugHint, setSlugHint] = useState<string | null>(null);
+  const [slugConfirmOpen, setSlugConfirmOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -143,7 +145,7 @@ export default function LogoDoRachaPage() {
     setNomeRacha(e.target.value.slice(0, 18));
   }
 
-  async function handleSalvarIdentidade() {
+  async function handleSalvarIdentidade(slugChangeConfirmed = false) {
     if (!tenantSlug) {
       toast.error("Selecione um racha ativo no Hub antes de salvar.");
       return;
@@ -155,13 +157,9 @@ export default function LogoDoRachaPage() {
       toast.error("Escolha um nome com link disponível antes de salvar.");
       return;
     }
-    if (slugChanged && nextLink) {
-      const confirmed = window.confirm(
-        `O link público do racha será alterado para:\n${nextLink}\n\nDeseja continuar?`
-      );
-      if (!confirmed) {
-        return;
-      }
+    if (slugChanged && nextLink && !slugChangeConfirmed) {
+      setSlugConfirmOpen(true);
+      return;
     }
     setSaving(true);
     try {
@@ -385,7 +383,7 @@ export default function LogoDoRachaPage() {
             </span>
             <button
               className="mt-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-2 rounded-lg shadow transition disabled:opacity-70"
-              onClick={handleSalvarIdentidade}
+              onClick={() => void handleSalvarIdentidade()}
               disabled={disableSave || missingTenantScope}
             >
               {saving ? "Salvando..." : "Salvar identidade"}
@@ -404,6 +402,30 @@ export default function LogoDoRachaPage() {
           onApply={(cropped) => {
             setLogo({ url: cropped, nome: "Logo ajustada" });
             setCropImage(null);
+          }}
+        />
+        <Fut7ConfirmDialog
+          open={slugConfirmOpen}
+          title="Alterar link público do racha?"
+          eyebrow="Identidade pública"
+          description={
+            <>
+              O site público passará a usar o link{" "}
+              <span className="font-semibold text-yellow-200">{nextLink}</span>.
+            </>
+          }
+          confirmLabel="Alterar link"
+          cancelLabel="Cancelar"
+          loading={saving}
+          impactItems={[
+            "Links antigos divulgados podem deixar de funcionar dependendo da configuração atual.",
+            "O novo endereço será usado no site público e nas páginas compartilhadas.",
+            "Confirme apenas se o novo slug já foi revisado.",
+          ]}
+          onClose={() => setSlugConfirmOpen(false)}
+          onConfirm={() => {
+            setSlugConfirmOpen(false);
+            void handleSalvarIdentidade(true);
           }}
         />
       </div>

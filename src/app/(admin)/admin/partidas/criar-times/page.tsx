@@ -7,6 +7,7 @@ import { FaPlus, FaTrash, FaEdit, FaLightbulb } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTimes } from "@/hooks/useTimes";
 import { useRacha } from "@/context/RachaContext";
+import { Fut7DestructiveDialog, Fut7InlineFeedback } from "@/components/ui/feedback";
 
 export default function CriarTimesPage() {
   const { tenantSlug } = useRacha();
@@ -20,6 +21,8 @@ export default function CriarTimesPage() {
   const [logoError, setLogoError] = useState("");
   const [editandoTime, setEditandoTime] = useState<string | null>(null);
   const [dicasOpen, setDicasOpen] = useState(false);
+  const [formFeedback, setFormFeedback] = useState<string | null>(null);
+  const [timeToDelete, setTimeToDelete] = useState<{ id: string; nome: string } | null>(null);
 
   const handleLogoUpload = async (file: File) => {
     if (!currentSlug) {
@@ -58,10 +61,15 @@ export default function CriarTimesPage() {
 
   const handleAdicionarTime = async () => {
     if (!currentSlug) {
-      alert("Selecione um racha no Hub para criar times.");
+      setFormFeedback("Selecione um racha no Hub para criar ou editar times.");
       return;
     }
-    if (!nome.trim()) return alert("Digite o nome do time!");
+    if (!nome.trim()) {
+      setFormFeedback("Digite o nome do time antes de salvar.");
+      return;
+    }
+
+    setFormFeedback(null);
 
     if (editandoTime) {
       const timeExistente = times.find((t) => t.id === editandoTime);
@@ -101,9 +109,14 @@ export default function CriarTimesPage() {
 
   const handleExcluir = async (id: string) => {
     if (!currentSlug) return;
-    if (confirm("Tem certeza que deseja excluir este time?")) {
-      await deleteTime(id);
-    }
+    const time = times.find((item) => item.id === id);
+    setTimeToDelete({ id, nome: time?.nome || "este time" });
+  };
+
+  const confirmExcluirTime = async () => {
+    if (!timeToDelete) return;
+    await deleteTime(timeToDelete.id);
+    setTimeToDelete(null);
   };
 
   return (
@@ -139,6 +152,16 @@ export default function CriarTimesPage() {
           <div className="mb-6 rounded-lg border border-yellow-700 bg-yellow-900/30 p-4 text-sm text-yellow-200">
             Selecione um racha no Hub (`/admin/selecionar-racha`) para cadastrar e editar os times.
           </div>
+        )}
+        {formFeedback && (
+          <Fut7InlineFeedback
+            tone="warning"
+            title="Ajuste necessário"
+            className="mb-6"
+            onDismiss={() => setFormFeedback(null)}
+          >
+            {formFeedback}
+          </Fut7InlineFeedback>
         )}
 
         <div className="bg-[#1a1a1a] p-4 rounded-lg shadow mb-6">
@@ -297,6 +320,21 @@ export default function CriarTimesPage() {
           </Dialog.Panel>
         </div>
       </Dialog>
+
+      <Fut7DestructiveDialog
+        open={Boolean(timeToDelete)}
+        title={`Excluir ${timeToDelete?.nome || "time"}?`}
+        description="Esta ação remove o time cadastrado do racha. Use somente quando o cadastro estiver incorreto ou duplicado."
+        confirmLabel="Excluir time"
+        cancelLabel="Manter time"
+        impactItems={[
+          "O time deixa de aparecer nos cadastros e seleções do painel.",
+          "Fluxos que dependem desse cadastro devem usar outro time válido.",
+          "Para ajustes simples, prefira editar nome, cor ou logo.",
+        ]}
+        onClose={() => setTimeToDelete(null)}
+        onConfirm={confirmExcluirTime}
+      />
     </>
   );
 }

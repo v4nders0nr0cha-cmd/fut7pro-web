@@ -5,6 +5,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import { FaTrash, FaInfoCircle, FaTimes } from "react-icons/fa";
 import { useBranding } from "@/hooks/useBranding";
+import { showFut7Toast } from "@/components/ui/feedback";
 
 // 1. TIPAGEM DOS CAMPOS
 type CampoIntegracao = { name: string; label: string; type: string; placeholder: string };
@@ -586,15 +587,25 @@ export default function IntegracoesSuperAdminPage() {
         body: JSON.stringify(campos),
       });
       if (!res.ok) {
-        alert("Falha ao salvar integração");
+        showFut7Toast({
+          tone: "error",
+          title: "Falha ao salvar integração",
+          message: "Tente novamente ou revise os campos informados.",
+        });
         return;
       }
-      alert(`Configuração salva para ${brandText(modal?.nome || "")}.`);
+      showFut7Toast({
+        tone: "success",
+        title: "Integração salva",
+        message: `Configuração salva para ${brandText(modal?.nome || "")}.`,
+      });
     } else {
       window.localStorage.setItem(`integracao_${modal?.id}`, JSON.stringify(campos));
-      alert(
-        `Configuração salva para ${brandText(modal?.nome || "")}:\n${JSON.stringify(campos, null, 2)}`
-      );
+      showFut7Toast({
+        tone: "success",
+        title: "Integração salva localmente",
+        message: `Configuração salva para ${brandText(modal?.nome || "")}.`,
+      });
     }
     handleFecharModal();
   }
@@ -660,7 +671,14 @@ export default function IntegracoesSuperAdminPage() {
                         <button
                           className="p-2 rounded-xl border border-zinc-600 text-zinc-400 hover:bg-red-700/20 transition"
                           title="Remover integração"
-                          onClick={() => alert("Remover integração futura!")}
+                          onClick={() =>
+                            showFut7Toast({
+                              tone: "info",
+                              title: "Remoção em preparação",
+                              message:
+                                "A remoção de integrações será tratada em um fluxo dedicado.",
+                            })
+                          }
                         >
                           <FaTrash />
                         </button>

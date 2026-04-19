@@ -8,10 +8,12 @@ import ModalCadastroTorneio from "@/components/admin/ModalCadastroTorneio";
 import type { DadosTorneio, Torneio } from "@/types/torneio";
 import { useTorneios } from "@/hooks/useTorneios";
 import { useRacha } from "@/context/RachaContext";
+import { Fut7DestructiveDialog } from "@/components/ui/feedback";
 
 export default function GrandesTorneiosAdminPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [torneioSelecionado, setTorneioSelecionado] = useState<Torneio | null>(null);
+  const [torneioParaExcluir, setTorneioParaExcluir] = useState<Torneio | null>(null);
   const { rachaId, tenantSlug } = useRacha();
   const slug = tenantSlug || "";
   const missingTenantScope = !slug || !rachaId;
@@ -44,6 +46,12 @@ export default function GrandesTorneiosAdminPage() {
     () => [...torneios].sort((a, b) => (b.ano || 0) - (a.ano || 0)),
     [torneios]
   );
+
+  async function confirmarExclusaoTorneio() {
+    if (!torneioParaExcluir?.id) return;
+    await deleteTorneio(torneioParaExcluir.id);
+    setTorneioParaExcluir(null);
+  }
 
   return (
     <>
@@ -148,13 +156,7 @@ export default function GrandesTorneiosAdminPage() {
                         <button
                           type="button"
                           className="inline-flex items-center gap-1 text-red-400 hover:text-red-600 font-semibold"
-                          onClick={async () => {
-                            const ok = confirm(
-                              "Tem certeza que deseja excluir este torneio? Esta ação não pode ser desfeita."
-                            );
-                            if (!ok) return;
-                            await deleteTorneio(torneio.id);
-                          }}
+                          onClick={() => setTorneioParaExcluir(torneio)}
                         >
                           <FaTrash /> Excluir
                         </button>
@@ -167,6 +169,21 @@ export default function GrandesTorneiosAdminPage() {
           </div>
         </div>
       </main>
+
+      <Fut7DestructiveDialog
+        open={Boolean(torneioParaExcluir)}
+        title={`Excluir ${torneioParaExcluir?.nome || "torneio"}?`}
+        description="Esta ação remove o torneio especial do histórico exibido no painel e no site público do racha."
+        confirmLabel="Excluir torneio"
+        cancelLabel="Manter torneio"
+        impactItems={[
+          "Os campeões vinculados deixam de receber esse destaque especial.",
+          "O banner e os detalhes do torneio saem da experiência pública.",
+          "A exclusão deve ser usada apenas para cadastro duplicado ou incorreto.",
+        ]}
+        onClose={() => setTorneioParaExcluir(null)}
+        onConfirm={confirmarExclusaoTorneio}
+      />
     </>
   );
 }

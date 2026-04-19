@@ -83,7 +83,7 @@ function readBaseline() {
 function writeBaseline(findings) {
   const payload = {
     generatedAt: new Date().toISOString(),
-    note: "Baseline temporario dos usos legados de alert/confirm/prompt. Novos usos devem falhar no lint.",
+    note: "Baseline de excecoes para alert/confirm/prompt. Deve permanecer vazio no produto final.",
     allowed: findings
       .map((finding) => ({
         file: finding.file,

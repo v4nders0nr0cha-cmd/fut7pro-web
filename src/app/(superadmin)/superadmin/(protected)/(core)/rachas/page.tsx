@@ -15,6 +15,7 @@ import {
 import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
 import { useBranding } from "@/hooks/useBranding";
+import { Fut7DestructiveDialog, showFut7Toast } from "@/components/ui/feedback";
 type TenantMembership = {
   status?: string | null;
   role?: string | null;
@@ -404,6 +405,7 @@ export default function RachasCadastradosPage() {
   const [modalRacha, setModalRacha] = useState<any>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [deleteIds, setDeleteIds] = useState<string[]>([]);
 
   const { data, isLoading, error, mutate } = useSWR<TenantsResponse | Tenant[]>(
     "/api/superadmin/tenants",
@@ -537,6 +539,14 @@ export default function RachasCadastradosPage() {
     () => rachasFiltrados.filter((r) => !r.isVitrine),
     [rachasFiltrados]
   );
+  const deleteTargets = useMemo(
+    () => deleteIds.map((id) => rachaPorId.get(id)).filter(Boolean),
+    [deleteIds, rachaPorId]
+  );
+  const deleteLabel =
+    deleteTargets.length === 1
+      ? deleteTargets[0]?.nome || "este racha"
+      : `${deleteTargets.length} rachas`;
 
   function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
     setSelectedIds(e.target.checked ? rachasEditaveis.map((r) => r.id) : []);
@@ -561,7 +571,11 @@ export default function RachasCadastradosPage() {
     if (!selected.length) return;
     const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
     if (editable.length !== selected.length) {
-      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+      showFut7Toast({
+        tone: "warning",
+        title: "Racha vitrine protegido",
+        message: "Rachas vitrine não podem ser alterados pelo SuperAdmin.",
+      });
     }
     if (!editable.length) return;
     const reason = "Bloqueio manual pelo superadmin";
@@ -576,7 +590,13 @@ export default function RachasCadastradosPage() {
       )
     )
       .then(() => mutate())
-      .catch(() => alert("Falha ao bloquear racha(s)."))
+      .catch(() =>
+        showFut7Toast({
+          tone: "error",
+          title: "Falha ao bloquear racha(s)",
+          message: "Tente novamente ou verifique os logs da operação.",
+        })
+      )
       .finally(() => setPendingAction(null));
   }
 
@@ -584,7 +604,11 @@ export default function RachasCadastradosPage() {
     if (!selected.length) return;
     const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
     if (editable.length !== selected.length) {
-      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+      showFut7Toast({
+        tone: "warning",
+        title: "Racha vitrine protegido",
+        message: "Rachas vitrine não podem ser alterados pelo SuperAdmin.",
+      });
     }
     if (!editable.length) return;
     setPendingAction("Aviso");
@@ -601,26 +625,36 @@ export default function RachasCadastradosPage() {
       )
     )
       .then(() => mutate())
-      .catch(() => alert("Falha ao enviar aviso."))
+      .catch(() =>
+        showFut7Toast({
+          tone: "error",
+          title: "Falha ao enviar aviso",
+          message: "Tente novamente ou verifique os logs da operação.",
+        })
+      )
       .finally(() => setPendingAction(null));
   }
 
-  async function handleDelete(selected: string[]) {
+  function handleDelete(selected: string[]) {
     if (!selected.length) return;
     const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
     if (editable.length !== selected.length) {
-      alert("Racha vitrine nao pode ser alterado pelo superadmin.");
+      showFut7Toast({
+        tone: "warning",
+        title: "Racha vitrine protegido",
+        message: "Rachas vitrine não podem ser alterados pelo SuperAdmin.",
+      });
     }
     if (!editable.length) return;
-    const label = editable.length === 1 ? "este racha" : `${editable.length} rachas`;
-    const confirmed = window.confirm(
-      `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha. As contas globais dos usuarios nao serao apagadas.`
-    );
-    if (!confirmed) return;
+    setDeleteIds(editable);
+  }
+
+  async function confirmDelete() {
+    if (!deleteIds.length) return;
     setPendingAction("Excluir");
     try {
       await Promise.all(
-        editable.map(async (id) => {
+        deleteIds.map(async (id) => {
           const resp = await fetch(`/api/superadmin/tenants/${id}`, { method: "DELETE" });
           const data = await resp.json().catch(() => ({}));
           if (!resp.ok) {
@@ -629,10 +663,15 @@ export default function RachasCadastradosPage() {
         })
       );
       setSelectedIds([]);
+      setDeleteIds([]);
       mutate();
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Falha ao excluir racha(s).";
-      alert(msg);
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao excluir racha(s)",
+        message: msg,
+      });
     } finally {
       setPendingAction(null);
     }
@@ -666,7 +705,11 @@ export default function RachasCadastradosPage() {
     } catch (error) {
       if (popup) popup.close();
       const msg = error instanceof Error ? error.message : String(error);
-      alert(`Não foi possível acessar como admin: ${msg}`);
+      showFut7Toast({
+        tone: "error",
+        title: "Não foi possível acessar como admin",
+        message: msg,
+      });
     } finally {
       setPendingAction(null);
     }
@@ -948,6 +991,23 @@ export default function RachasCadastradosPage() {
             onRefresh={() => mutate()}
           />
         )}
+        <Fut7DestructiveDialog
+          open={deleteIds.length > 0}
+          title={`Excluir ${deleteLabel}?`}
+          description="Esta ação remove dados do racha selecionado. As contas globais dos usuários não serão apagadas, mas o tenant deixa de existir na operação normal."
+          confirmLabel="Excluir racha"
+          cancelLabel="Cancelar"
+          confirmationText="EXCLUIR RACHA"
+          confirmationLabel="Digite a frase abaixo para confirmar"
+          loading={pendingAction === "Excluir"}
+          impactItems={[
+            "Dados do racha selecionado serão removidos pelo backend.",
+            "Contas globais dos usuários não serão apagadas.",
+            "Rachas vitrine continuam protegidos e não entram nesta ação.",
+          ]}
+          onClose={() => setDeleteIds([])}
+          onConfirm={() => void confirmDelete()}
+        />
       </div>
     </>
   );

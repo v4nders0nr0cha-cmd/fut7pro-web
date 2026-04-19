@@ -27,6 +27,7 @@ import {
   Legend,
 } from "recharts";
 import { useAdminAnalytics } from "@/hooks/useAdminAnalytics";
+import { showFut7Toast } from "@/components/ui/feedback";
 import type { AnalyticsPeriod } from "@/types/analytics";
 
 const PERIODOS: { label: string; value: AnalyticsPeriod }[] = [
@@ -86,7 +87,11 @@ export default function RelatoriosPage() {
         })
         .catch(() => {});
     } else {
-      alert("Seu navegador não suporta compartilhamento direto.");
+      showFut7Toast({
+        tone: "warning",
+        title: "Compartilhamento indisponível",
+        message: "Seu navegador não suporta compartilhamento direto nesta tela.",
+      });
     }
   }
 

@@ -9,6 +9,7 @@ import { FaCheckCircle, FaExclamationTriangle, FaTrash } from "react-icons/fa";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useMe } from "@/hooks/useMe";
 import { useTimesDoDiaPublicado } from "@/hooks/useTimesDoDiaPublicado";
+import { Fut7ConfirmDialog, Fut7DestructiveDialog } from "@/components/ui/feedback";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
@@ -598,6 +599,8 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   const [locked, setLocked] = useState(status === "finished");
   const [scoreMode, setScoreMode] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [unlockConfirmOpen, setUnlockConfirmOpen] = useState(false);
   const lastSavedKey = useRef<string | null>(null);
   const didMount = useRef(false);
 
@@ -801,12 +804,15 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 
   const handleReset = () => {
     if (locked) return;
-    const confirmed = window.confirm("Deseja zerar o placar e remover todos os gols?");
-    if (!confirmed) return;
+    setResetConfirmOpen(true);
+  };
+
+  const confirmReset = () => {
     setEvents([]);
     onStatusChange(match.id, "not_started");
     setLocalStatus("not_started");
     setLocked(false);
+    setResetConfirmOpen(false);
   };
 
   const handleStatusChange = (nextStatus: MatchStatus) => {
@@ -839,11 +845,14 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
   };
 
   const handleUnlock = () => {
-    const confirmed = window.confirm("Desbloquear para correção?");
-    if (!confirmed) return;
+    setUnlockConfirmOpen(true);
+  };
+
+  const confirmUnlock = () => {
     onStatusChange(match.id, "in_progress");
     setLocalStatus("in_progress");
     setLocked(false);
+    setUnlockConfirmOpen(false);
   };
 
   const renderGoalList = (teamId: string) => {
@@ -1113,6 +1122,36 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
           </div>
         </div>
       )}
+
+      <Fut7DestructiveDialog
+        open={resetConfirmOpen}
+        title="Zerar placar desta partida?"
+        description="Essa ação remove todos os gols lançados localmente nesta partida e volta o status para não realizado."
+        confirmLabel="Zerar placar"
+        cancelLabel="Manter resultado"
+        impactItems={[
+          "Todos os gols e assistências lançados nesta partida serão removidos da tela.",
+          "O placar volta para 0 x 0 e o status retorna para não realizado.",
+          "Use apenas para corrigir lançamento feito na partida errada.",
+        ]}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={confirmReset}
+      />
+
+      <Fut7ConfirmDialog
+        open={unlockConfirmOpen}
+        title="Desbloquear partida para correção?"
+        eyebrow="Correção operacional"
+        description="A partida voltará para edição para que o resultado seja ajustado com segurança."
+        confirmLabel="Desbloquear"
+        cancelLabel="Manter bloqueada"
+        impactItems={[
+          "O resultado poderá ser alterado novamente.",
+          "Após corrigir, finalize a partida para recalcular o histórico.",
+        ]}
+        onClose={() => setUnlockConfirmOpen(false)}
+        onConfirm={confirmUnlock}
+      />
 
       <GoalModal
         open={goalModalTeam !== null}

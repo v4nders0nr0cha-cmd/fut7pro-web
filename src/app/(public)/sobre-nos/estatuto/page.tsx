@@ -26,6 +26,7 @@ export default function EstatutoPage() {
   const slug = publicSlug.trim() || tenantSlug.trim() || "";
   const { estatuto, isLoading, isError } = useEstatutoPublic(slug);
   const [aberto, setAberto] = useState<number | null>(0);
+  const [pdfFeedback, setPdfFeedback] = useState<string | null>(null);
 
   const topicos = useMemo(
     () => normalizeEstatutoTopicos(estatuto?.topicos, ESTATUTO_TOPICOS_PADRAO),
@@ -41,7 +42,7 @@ export default function EstatutoPage() {
       window.open(estatuto.pdfUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    alert("O PDF do estatuto ainda não está disponível para este racha.");
+    setPdfFeedback("O PDF do estatuto ainda não está disponível para este racha.");
   };
 
   return (
@@ -73,6 +74,21 @@ export default function EstatutoPage() {
           >
             <FaDownload /> Baixar PDF do Estatuto
           </button>
+          {pdfFeedback && (
+            <div className="mb-4 rounded-2xl border border-yellow-400/35 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
+              <div className="flex items-start justify-between gap-3">
+                <span>{pdfFeedback}</span>
+                <button
+                  type="button"
+                  onClick={() => setPdfFeedback(null)}
+                  className="rounded-full px-2 text-yellow-100/70 hover:bg-white/10 hover:text-yellow-50"
+                  aria-label="Fechar aviso"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+          )}
           {isLoading && (
             <div className="text-sm text-neutral-400">Carregando estatuto do racha...</div>
           )}

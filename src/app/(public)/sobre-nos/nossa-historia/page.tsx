@@ -437,6 +437,11 @@ export default function NossaHistoriaPage() {
   const [curiosidadesCurtidasLocalStorage, setCuriosidadesCurtidasLocalStorage] = useState<
     Record<string, boolean>
   >({});
+  const [shareFeedback, setShareFeedback] = useState<{
+    tone: "success" | "warning" | "error";
+    message: string;
+    copyUrl?: string;
+  } | null>(null);
   const [videosAbertos, setVideosAbertos] = useState<Record<number, boolean>>({});
 
   const curiosidades = useMemo(() => {
@@ -737,12 +742,22 @@ export default function NossaHistoriaPage() {
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
-        alert("Link copiado!");
+        setShareFeedback({
+          tone: "success",
+          message: "Link copiado para a área de transferência.",
+        });
         return;
       }
-      window.prompt("Copie o link:", url);
+      setShareFeedback({
+        tone: "warning",
+        message: "Copie o link abaixo para compartilhar a história do racha.",
+        copyUrl: url,
+      });
     } catch {
-      alert("Nao foi possivel compartilhar agora.");
+      setShareFeedback({
+        tone: "error",
+        message: "Não foi possível compartilhar agora. Tente novamente em instantes.",
+      });
     }
   };
 
@@ -795,6 +810,38 @@ export default function NossaHistoriaPage() {
           >
             <FaShareAlt /> Compartilhar História
           </button>
+          {shareFeedback && (
+            <div
+              className={`w-full rounded-2xl border px-4 py-3 text-sm ${
+                shareFeedback.tone === "success"
+                  ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-100"
+                  : shareFeedback.tone === "warning"
+                    ? "border-yellow-400/40 bg-yellow-500/10 text-yellow-100"
+                    : "border-red-400/40 bg-red-500/10 text-red-100"
+              }`}
+              role={shareFeedback.tone === "error" ? "alert" : "status"}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <span>{shareFeedback.message}</span>
+                <button
+                  type="button"
+                  onClick={() => setShareFeedback(null)}
+                  className="rounded-full px-2 text-current/70 hover:bg-white/10 hover:text-current"
+                  aria-label="Fechar aviso"
+                >
+                  ×
+                </button>
+              </div>
+              {shareFeedback.copyUrl ? (
+                <input
+                  readOnly
+                  value={shareFeedback.copyUrl}
+                  className="mt-3 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-xs text-white"
+                  onFocus={(event) => event.currentTarget.select()}
+                />
+              ) : null}
+            </div>
+          )}
         </section>
 
         {marcos.length > 0 && (

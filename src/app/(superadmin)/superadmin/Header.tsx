@@ -11,6 +11,7 @@ import {
   FaUserCircle,
 } from "react-icons/fa";
 import { signOut, useSession } from "next-auth/react";
+import { Fut7ConfirmDialog } from "@/components/ui/feedback";
 
 type HeaderNotificationItem = {
   id: string;
@@ -80,6 +81,7 @@ export default function Header() {
   const [notificationsBadge, setNotificationsBadge] = useState(0);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const notificationsRef = useRef<HTMLDivElement | null>(null);
 
@@ -208,8 +210,11 @@ export default function Header() {
   }, [loadNotifications, notificationsOpen]);
 
   async function handleLogout() {
-    const confirmed = window.confirm("Deseja encerrar a sessao do SuperAdmin?");
-    if (!confirmed) return;
+    setLogoutConfirmOpen(true);
+  }
+
+  async function confirmLogout() {
+    setLogoutConfirmOpen(false);
     setMenuOpen(false);
     try {
       await fetch("/api/superadmin/logout", {
@@ -398,6 +403,16 @@ export default function Header() {
           )}
         </div>
       </div>
+      <Fut7ConfirmDialog
+        open={logoutConfirmOpen}
+        title="Encerrar sessão do SuperAdmin?"
+        eyebrow="Sessão administrativa"
+        description="Você sairá do painel SuperAdmin neste navegador e precisará autenticar novamente para voltar."
+        confirmLabel="Encerrar sessão"
+        cancelLabel="Continuar no painel"
+        onClose={() => setLogoutConfirmOpen(false)}
+        onConfirm={() => void confirmLogout()}
+      />
     </header>
   );
 }

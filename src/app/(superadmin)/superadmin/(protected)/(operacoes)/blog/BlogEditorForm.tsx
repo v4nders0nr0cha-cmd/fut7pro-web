@@ -23,6 +23,7 @@ import {
   updateBlogPost,
   uploadBlogAsset,
 } from "@/lib/superadmin-blog";
+import { Fut7PromptDialog } from "@/components/ui/feedback";
 
 type BlogEditorFormProps = {
   postId?: string;
@@ -381,6 +382,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingOg, setUploadingOg] = useState(false);
   const [uploadingInline, setUploadingInline] = useState(false);
+  const [pendingInlineFile, setPendingInlineFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -866,7 +868,12 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
   async function uploadImageAsset(
     file: File | null,
     mode: "cover" | "og" | "inline",
-    options?: { width?: number; height?: number; event?: ChangeEvent<HTMLInputElement> }
+    options?: {
+      width?: number;
+      height?: number;
+      event?: ChangeEvent<HTMLInputElement>;
+      alt?: string;
+    }
   ) {
     if (!file) return;
     setError(null);
@@ -877,10 +884,7 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       if (mode === "og") setUploadingOg(true);
       if (mode === "inline") setUploadingInline(true);
 
-      const alt =
-        mode === "inline"
-          ? window.prompt("Alt da imagem (obrigatório):", "Imagem do artigo")
-          : coverImageAlt;
+      const alt = mode === "inline" ? options?.alt || "Imagem do artigo" : coverImageAlt;
       const asset = await uploadBlogAsset({
         file,
         alt: alt || undefined,
@@ -964,7 +968,17 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
       return;
     }
 
-    await uploadImageAsset(file, mode, { event });
+    if (event) {
+      event.target.value = "";
+    }
+    setPendingInlineFile(file);
+  }
+
+  async function confirmInlineImageAlt(alt: string) {
+    if (!pendingInlineFile) return;
+    const file = pendingInlineFile;
+    setPendingInlineFile(null);
+    await uploadImageAsset(file, "inline", { alt: alt.trim() || "Imagem do artigo" });
   }
 
   if (loading) {
@@ -1593,6 +1607,21 @@ export default function BlogEditorForm({ postId }: BlogEditorFormProps) {
           </button>
         </div>
       </section>
+      <Fut7PromptDialog
+        open={Boolean(pendingInlineFile)}
+        title="Descrever imagem do artigo"
+        eyebrow="Acessibilidade e SEO"
+        description="Informe um texto alternativo claro para a imagem que será inserida no conteúdo em Markdown."
+        label="Alt da imagem"
+        placeholder="Ex.: Jogadores comemorando o título do racha"
+        initialValue="Imagem do artigo"
+        required
+        confirmLabel="Inserir imagem"
+        cancelLabel="Cancelar"
+        loading={uploadingInline}
+        onClose={() => setPendingInlineFile(null)}
+        onConfirm={(alt) => void confirmInlineImageAlt(alt)}
+      />
     </div>
   );
 }

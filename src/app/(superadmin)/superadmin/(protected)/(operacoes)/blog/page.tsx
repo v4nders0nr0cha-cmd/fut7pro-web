@@ -13,6 +13,7 @@ import {
   type BlogStatus,
   unpublishBlogPost,
 } from "@/lib/superadmin-blog";
+import { Fut7ConfirmDialog } from "@/components/ui/feedback";
 
 const STATUS_LABEL: Record<BlogStatus, string> = {
   DRAFT: "Rascunho",
@@ -39,6 +40,7 @@ export default function SuperAdminBlogPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<BlogStatus | "">("");
   const [category, setCategory] = useState("");
+  const [postToArchive, setPostToArchive] = useState<BlogPostSummary | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,8 +97,6 @@ export default function SuperAdminBlogPage() {
   }
 
   async function handleArchive(id: string) {
-    const confirmed = window.confirm("Deseja arquivar este artigo?");
-    if (!confirmed) return;
     setBusyId(id);
     try {
       await archiveBlogPost(id);
@@ -289,7 +289,7 @@ export default function SuperAdminBlogPage() {
 
                     <button
                       type="button"
-                      onClick={() => void handleArchive(post.id)}
+                      onClick={() => setPostToArchive(post)}
                       disabled={busyId === post.id || post.status === "ARCHIVED"}
                       className="rounded-md border border-red-500/60 px-2 py-1 text-xs font-semibold text-red-200 hover:border-red-400 disabled:opacity-40"
                     >
@@ -324,6 +324,25 @@ export default function SuperAdminBlogPage() {
           Próxima página
         </button>
       </footer>
+      <Fut7ConfirmDialog
+        open={Boolean(postToArchive)}
+        title="Arquivar artigo?"
+        eyebrow="Conteúdo institucional"
+        description={`O artigo "${postToArchive?.title || "selecionado"}" será removido da publicação normal e ficará arquivado no SuperAdmin.`}
+        confirmLabel="Arquivar"
+        cancelLabel="Cancelar"
+        loading={busyId === postToArchive?.id}
+        impactItems={[
+          "O artigo deixa de aparecer nas listagens públicas.",
+          "O conteúdo permanece acessível para administração e auditoria.",
+          "Você poderá revisar o status depois, se necessário.",
+        ]}
+        onClose={() => setPostToArchive(null)}
+        onConfirm={() => {
+          if (!postToArchive) return;
+          void handleArchive(postToArchive.id).then(() => setPostToArchive(null));
+        }}
+      />
     </div>
   );
 }
