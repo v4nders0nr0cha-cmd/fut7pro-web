@@ -4,7 +4,7 @@ import Head from "next/head";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { FaSave, FaSpinner } from "react-icons/fa";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { useBranding } from "@/hooks/useBranding";
 import type { Plan, PlanCatalog } from "@/lib/api/billing";
 
@@ -178,7 +178,6 @@ export default function PlanosSuperAdminPage() {
           )}
         />
       </Head>
-      <Toaster />
       <main className="max-w-6xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <div className="flex flex-col gap-2 mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400">Planos & Preços</h1>

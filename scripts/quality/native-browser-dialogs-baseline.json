@@ -1,206 +1,246 @@
 {
-  "generatedAt": "2026-04-19T00:09:35.833Z",
+  "generatedAt": "2026-04-19T01:18:02.029Z",
   "note": "Baseline temporario dos usos legados de alert/confirm/prompt. Novos usos devem falhar no lint.",
   "allowed": [
     {
       "file": "src/app/(admin)/admin/conquistas/grandes-torneios/page.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "const ok = confirm( \"Tem certeza que deseja excluir este torneio? Esta ação não pode ser desfeita.\" ); if (!ok) return; await deleteTorneio(torneio.id);"
     },
     {
       "file": "src/app/(admin)/admin/partidas/criar-times/page.tsx",
       "type": "alert",
+      "occurrence": 1,
       "context": "alert(\"Selecione um racha no Hub para criar times.\"); return; } if (!nome.trim()) return alert(\"Digite o nome do time!\");"
     },
     {
       "file": "src/app/(admin)/admin/partidas/criar-times/page.tsx",
       "type": "alert",
+      "occurrence": 2,
       "context": "if (!nome.trim()) return alert(\"Digite o nome do time!\"); if (editandoTime) { const timeExistente = times.find((t) => t.id === editandoTime); if (timeExistente) {"
     },
     {
       "file": "src/app/(admin)/admin/partidas/criar-times/page.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "if (confirm(\"Tem certeza que deseja excluir este time?\")) { await deleteTime(id); } };"
     },
     {
       "file": "src/app/(admin)/admin/personalizacao/identidade-visual/page.tsx",
       "type": "confirm",
-      "context": "const confirmed = window.confirm( \"O link público do racha será alterado para:\\n${nextLink}\\n\\nDeseja continuar?\" ); if (!confirmed) { return;"
+      "occurrence": 1,
+      "context": "const confirmed = window.confirm( `O link público do racha será alterado para:\\n${nextLink}\\n\\nDeseja continuar?` ); if (!confirmed) { return;"
     },
     {
       "file": "src/app/(admin)/admin/relatorios/page.tsx",
       "type": "alert",
+      "occurrence": 1,
       "context": "alert(\"Seu navegador não suporta compartilhamento direto.\"); } } return ("
     },
     {
       "file": "src/app/(public)/sobre-nos/estatuto/page.tsx",
       "type": "alert",
+      "occurrence": 1,
       "context": "alert(\"O PDF do estatuto ainda não está disponível para este racha.\"); }; return ( <>"
     },
     {
       "file": "src/app/(public)/sobre-nos/nossa-historia/page.tsx",
       "type": "alert",
+      "occurrence": 1,
       "context": "alert(\"Link copiado!\"); return; } window.prompt(\"Copie o link:\", url); } catch {"
     },
     {
       "file": "src/app/(public)/sobre-nos/nossa-historia/page.tsx",
       "type": "alert",
+      "occurrence": 2,
       "context": "alert(\"Nao foi possivel compartilhar agora.\"); } }; const handleCurtirCuriosidade = async (id: string, current: number) => {"
     },
     {
       "file": "src/app/(public)/sobre-nos/nossa-historia/page.tsx",
       "type": "prompt",
+      "occurrence": 1,
       "context": "window.prompt(\"Copie o link:\", url); } catch { alert(\"Nao foi possivel compartilhar agora.\"); } };"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/admins/page.tsx",
       "type": "confirm",
-      "context": "if (!window.confirm(\"Resetar senha de ${admin.email}?\")) return; setPendingId(admin.userId); setActionError(null); setActionSuccess(null);"
+      "occurrence": 1,
+      "context": "if (!window.confirm(`Resetar senha de ${admin.email}?`)) return; setPendingId(admin.userId); setActionError(null); setActionSuccess(null);"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/admins/page.tsx",
       "type": "confirm",
+      "occurrence": 2,
       "context": "if (!window.confirm(confirmText)) return; setPendingId(admin.id); setActionError(null); setActionSuccess(null);"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/contas/[id]/page.tsx",
       "type": "prompt",
-      "context": "const confirmation = window.prompt( \"Exclusao permanente.\\nDigite o e-mail da conta para confirmar:\\n${email}\" ); if (!confirmation) return; if (confirmation.trim().toLowerCase() !== email) {"
+      "occurrence": 1,
+      "context": "const reason = window.prompt( \"Motivo do bloqueio (opcional). Esta conta global sera desativada:\" ); setPendingAction(\"disable\"); setActionError(null);"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/contas/[id]/page.tsx",
       "type": "prompt",
-      "context": "const reason = window.prompt( \"Motivo do bloqueio (opcional). Esta conta global sera desativada:\" ); setPendingAction(\"disable\"); setActionError(null);"
+      "occurrence": 2,
+      "context": "const confirmation = window.prompt( `Exclusao permanente.\\nDigite o e-mail da conta para confirmar:\\n${email}` ); if (!confirmation) return; if (confirmation.trim().toLowerCase() !== email) {"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/contas/page.tsx",
       "type": "prompt",
-      "context": "const confirmation = window.prompt( \"Exclusao permanente.\\nDigite o e-mail da conta para confirmar:\\n${email}\" ); if (!confirmation) return; if (confirmation.trim().toLowerCase() !== email) {"
-    },
-    {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/contas/page.tsx",
-      "type": "prompt",
+      "occurrence": 1,
       "context": "const reason = window.prompt( \"Motivo do bloqueio (opcional). Esta conta global sera desativada:\" ); setPendingId(user.id);"
     },
     {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
-      "type": "alert",
-      "context": ".catch(() => alert(\"Falha ao bloquear racha(s).\")) .finally(() => setPendingAction(null)); } function handleAviso(selected: string[]) {"
+      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/contas/page.tsx",
+      "type": "prompt",
+      "occurrence": 2,
+      "context": "const confirmation = window.prompt( `Exclusao permanente.\\nDigite o e-mail da conta para confirmar:\\n${email}` ); if (!confirmation) return; if (confirmation.trim().toLowerCase() !== email) {"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
       "type": "alert",
-      "context": ".catch(() => alert(\"Falha ao enviar aviso.\")) .finally(() => setPendingAction(null)); } async function handleDelete(selected: string[]) {"
-    },
-    {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
-      "type": "alert",
-      "context": "alert(\"Não foi possível acessar como admin: ${msg}\"); } finally { setPendingAction(null); } }"
-    },
-    {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
-      "type": "alert",
-      "context": "alert(\"Racha vitrine nao pode ser alterado pelo superadmin.\"); } if (!editable.length) return; const label = editable.length === 1 ? \"este racha\" : \"${editable.length} rachas\"; const confirmed = window.confirm("
-    },
-    {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
-      "type": "alert",
+      "occurrence": 1,
       "context": "alert(\"Racha vitrine nao pode ser alterado pelo superadmin.\"); } if (!editable.length) return; const reason = \"Bloqueio manual pelo superadmin\"; setPendingAction(\"Bloquear\");"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
       "type": "alert",
+      "occurrence": 2,
+      "context": ".catch(() => alert(\"Falha ao bloquear racha(s).\")) .finally(() => setPendingAction(null)); } function handleAviso(selected: string[]) {"
+    },
+    {
+      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
+      "type": "alert",
+      "occurrence": 3,
       "context": "alert(\"Racha vitrine nao pode ser alterado pelo superadmin.\"); } if (!editable.length) return; setPendingAction(\"Aviso\"); Promise.all("
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
       "type": "alert",
+      "occurrence": 4,
+      "context": ".catch(() => alert(\"Falha ao enviar aviso.\")) .finally(() => setPendingAction(null)); } async function handleDelete(selected: string[]) {"
+    },
+    {
+      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
+      "type": "alert",
+      "occurrence": 5,
+      "context": "alert(\"Racha vitrine nao pode ser alterado pelo superadmin.\"); } if (!editable.length) return; const label = editable.length === 1 ? \"este racha\" : `${editable.length} rachas`; const confirmed = window.confirm("
+    },
+    {
+      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
+      "type": "alert",
+      "occurrence": 6,
       "context": "alert(msg); } finally { setPendingAction(null); } }"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
+      "type": "alert",
+      "occurrence": 7,
+      "context": "alert(`Não foi possível acessar como admin: ${msg}`); } finally { setPendingAction(null); } }"
+    },
+    {
+      "file": "src/app/(superadmin)/superadmin/(protected)/(core)/rachas/page.tsx",
       "type": "confirm",
-      "context": "const confirmed = window.confirm( \"Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha. As contas globais dos usuarios nao serao apagadas.\" ); if (!confirmed) return; setPendingAction(\"Excluir\");"
+      "occurrence": 1,
+      "context": "const confirmed = window.confirm( `Tem certeza que deseja excluir ${label}? Esta acao remove todos os dados do racha. As contas globais dos usuarios nao serao apagadas.` ); if (!confirmed) return; setPendingAction(\"Excluir\");"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(financeiro)/compensacoes-acesso/page.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "const notify = window.confirm(\"Notificar o cliente sobre a reversão?\"); await revertCompensation(item.id, { reasonDescription: reason.trim(), notifyCustomer: notify, });"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(financeiro)/compensacoes-acesso/page.tsx",
       "type": "prompt",
+      "occurrence": 1,
       "context": "const reason = window.prompt(\"Motivo da reversão:\"); if (!reason || !reason.trim()) return; const notify = window.confirm(\"Notificar o cliente sobre a reversão?\"); await revertCompensation(item.id, { reasonDescription: reason.trim(),"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(legacy)/integracoes/page.tsx",
       "type": "alert",
-      "context": "alert( \"Configuração salva para ${brandText(modal?.nome || \"\")}:\\n${JSON.stringify(campos, null, 2)}\" ); } handleFecharModal();"
+      "occurrence": 1,
+      "context": "alert(\"Falha ao salvar integração\"); return; } alert(`Configuração salva para ${brandText(modal?.nome || \"\")}.`); } else {"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(legacy)/integracoes/page.tsx",
       "type": "alert",
-      "context": "alert(\"Configuração salva para ${brandText(modal?.nome || \"\")}.\"); } else { window.localStorage.setItem(\"integracao_${modal?.id}\", JSON.stringify(campos)); alert( \"Configuração salva para ${brandText(modal?.nome || \"\")}:\\n${JSON.stringify(campos, null, 2)}\""
+      "occurrence": 2,
+      "context": "alert(`Configuração salva para ${brandText(modal?.nome || \"\")}.`); } else { window.localStorage.setItem(`integracao_${modal?.id}`, JSON.stringify(campos)); alert( `Configuração salva para ${brandText(modal?.nome || \"\")}:\\n${JSON.stringify(campos, null, 2)}`"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(legacy)/integracoes/page.tsx",
       "type": "alert",
-      "context": "alert(\"Falha ao salvar integração\"); return; } alert(\"Configuração salva para ${brandText(modal?.nome || \"\")}.\"); } else {"
+      "occurrence": 3,
+      "context": "alert( `Configuração salva para ${brandText(modal?.nome || \"\")}:\\n${JSON.stringify(campos, null, 2)}` ); } handleFecharModal();"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(legacy)/integracoes/page.tsx",
       "type": "alert",
+      "occurrence": 4,
       "context": "onClick={() => alert(\"Remover integração futura!\")} > <FaTrash /> </button> </div>"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/blog/BlogEditorForm.tsx",
       "type": "prompt",
+      "occurrence": 1,
       "context": "? window.prompt(\"Alt da imagem (obrigatório):\", \"Imagem do artigo\") : coverImageAlt; const asset = await uploadBlogAsset({ file, alt: alt || undefined,"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/blog/page.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "const confirmed = window.confirm(\"Deseja arquivar este artigo?\"); if (!confirmed) return; setBusyId(id); try { await archiveBlogPost(id);"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/tenant-lifecycle/page.tsx",
       "type": "alert",
-      "context": "alert(actionError instanceof Error ? actionError.message : \"Falha ao aplicar acao\"); } finally { setIsMutating(false); } }"
-    },
-    {
-      "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/tenant-lifecycle/page.tsx",
-      "type": "alert",
+      "occurrence": 1,
       "context": "alert(actionError instanceof Error ? actionError.message : \"Falha ao reconciliar lifecycle\"); } finally { setIsMutating(false); } }"
     },
     {
       "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/tenant-lifecycle/page.tsx",
+      "type": "alert",
+      "occurrence": 2,
+      "context": "alert(actionError instanceof Error ? actionError.message : \"Falha ao aplicar acao\"); } finally { setIsMutating(false); } }"
+    },
+    {
+      "file": "src/app/(superadmin)/superadmin/(protected)/(operacoes)/tenant-lifecycle/page.tsx",
       "type": "confirm",
-      "context": "const ok = window.confirm( \"Excluir definitivamente o racha ${row.tenantName}? Esta acao remove todos os dados.\" ); if (ok) { void applyAction(row.tenantId, \"EXCLUIR_AGORA\", \"Exclusao manual imediata\");"
+      "occurrence": 1,
+      "context": "const ok = window.confirm( `Excluir definitivamente o racha ${row.tenantName}? Esta acao remove todos os dados.` ); if (ok) { void applyAction(row.tenantId, \"EXCLUIR_AGORA\", \"Exclusao manual imediata\");"
     },
     {
       "file": "src/app/(superadmin)/superadmin/Header.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "const confirmed = window.confirm(\"Deseja encerrar a sessao do SuperAdmin?\"); if (!confirmed) return; setMenuOpen(false); try { await fetch(\"/api/superadmin/logout\", {"
     },
     {
       "file": "src/components/admin/ModalCadastroTorneio.tsx",
       "type": "confirm",
+      "occurrence": 1,
       "context": "const ok = confirm(\"Deseja excluir este torneio de forma definitiva?\"); if (!ok) return; await onDelete(torneio.id); onClose(); }}"
     },
     {
       "file": "src/components/admin/ResultadosDoDiaAdmin.tsx",
       "type": "confirm",
-      "context": "const confirmed = window.confirm(\"Desbloquear para correção?\"); if (!confirmed) return; onStatusChange(match.id, \"in_progress\"); setLocalStatus(\"in_progress\"); setLocked(false);"
+      "occurrence": 1,
+      "context": "const confirmed = window.confirm(\"Deseja zerar o placar e remover todos os gols?\"); if (!confirmed) return; setEvents([]); onStatusChange(match.id, \"not_started\"); setLocalStatus(\"not_started\");"
     },
     {
       "file": "src/components/admin/ResultadosDoDiaAdmin.tsx",
       "type": "confirm",
-      "context": "const confirmed = window.confirm(\"Deseja zerar o placar e remover todos os gols?\"); if (!confirmed) return; setEvents([]); onStatusChange(match.id, \"not_started\"); setLocalStatus(\"not_started\");"
+      "occurrence": 2,
+      "context": "const confirmed = window.confirm(\"Desbloquear para correção?\"); if (!confirmed) return; onStatusChange(match.id, \"in_progress\"); setLocalStatus(\"in_progress\"); setLocked(false);"
     },
     {
       "file": "src/components/superadmin/ModalDetalhesRacha.tsx",
       "type": "alert",
-      "context": "alert(\"Falha ao desbloquear. Detalhe: ${message}\"); } finally { setIsUnblocking(false); } }"
+      "occurrence": 1,
+      "context": "alert(`Falha ao desbloquear. Detalhe: ${message}`); } finally { setIsUnblocking(false); } }"
     }
   ]
 }

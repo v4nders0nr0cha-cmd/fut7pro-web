@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Fut7ConfirmDialog, { type Fut7ConfirmDialogProps } from "./Fut7ConfirmDialog";
 
 type Fut7DestructiveDialogProps = Omit<Fut7ConfirmDialogProps, "tone" | "confirmLabel"> & {
@@ -27,6 +27,16 @@ export default function Fut7DestructiveDialog({
   );
 
   const description = useMemo(() => props.description, [props.description]);
+
+  useEffect(() => {
+    if (!open) {
+      setValue("");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    setValue("");
+  }, [confirmationText]);
 
   const handleClose = () => {
     setValue("");

@@ -13,10 +13,6 @@ function normalizePath(filePath) {
   return path.relative(ROOT, filePath).replace(/\\/g, "/");
 }
 
-function normalizeContext(value) {
-  return value.replace(/\s+/g, " ").replace(/["'`]/g, '"').trim();
-}
-
 function collectFiles(dir) {
   if (!fs.existsSync(dir)) return [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -46,6 +42,7 @@ function scanFile(filePath) {
   const source = fs.readFileSync(filePath, "utf8");
   const lines = source.split(/\r?\n/);
   const findings = [];
+  const occurrenceByType = new Map();
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
@@ -53,11 +50,15 @@ function scanFile(filePath) {
     let match;
     while ((match = DIALOG_PATTERN.exec(line))) {
       const context = lines.slice(index, Math.min(index + 5, lines.length)).join(" ");
+      const type = match[1];
+      const occurrence = (occurrenceByType.get(type) || 0) + 1;
+      occurrenceByType.set(type, occurrence);
       findings.push({
         file: normalizePath(filePath),
         line: index + 1,
-        type: match[1],
-        context: normalizeContext(context),
+        type,
+        occurrence,
+        context: context.replace(/\s+/g, " ").trim(),
       });
     }
   }
@@ -66,7 +67,7 @@ function scanFile(filePath) {
 }
 
 function fingerprint(finding) {
-  return `${finding.file}::${finding.type}::${finding.context}`;
+  return `${finding.file}::${finding.type}::${finding.occurrence}`;
 }
 
 function scanSource() {
@@ -87,9 +88,12 @@ function writeBaseline(findings) {
       .map((finding) => ({
         file: finding.file,
         type: finding.type,
+        occurrence: finding.occurrence,
         context: finding.context,
       }))
-      .sort((a, b) => `${a.file}:${a.context}`.localeCompare(`${b.file}:${b.context}`)),
+      .sort((a, b) =>
+        `${a.file}:${a.type}:${a.occurrence}`.localeCompare(`${b.file}:${b.type}:${b.occurrence}`)
+      ),
   };
 
   fs.writeFileSync(BASELINE_PATH, `${JSON.stringify(payload, null, 2)}\n`);
