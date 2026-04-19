@@ -51,6 +51,14 @@ function summarizeRoles(memberships?: UsuarioMembership[]) {
     .join(", ");
 }
 
+function getAccountDeletionConfirmation(user?: Usuario | null) {
+  const email = String(user?.email || "")
+    .trim()
+    .toLowerCase();
+  if (email) return email;
+  return `ID:${user?.id || "CONTA-SEM-EMAIL"}`;
+}
+
 export default function SuperAdminContasPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -483,10 +491,8 @@ export default function SuperAdminContasPage() {
           description="Esta é uma exclusão permanente da conta global. Use somente quando houver certeza operacional e respaldo administrativo."
           confirmLabel="Excluir conta"
           cancelLabel="Cancelar"
-          confirmationText={String(pendingDeleteUser?.email || "")
-            .trim()
-            .toLowerCase()}
-          confirmationLabel="Digite o e-mail da conta para confirmar"
+          confirmationText={getAccountDeletionConfirmation(pendingDeleteUser)}
+          confirmationLabel="Digite o identificador abaixo para confirmar"
           loading={pendingId === pendingDeleteUser?.id}
           impactItems={[
             "A conta global será removida definitivamente.",
