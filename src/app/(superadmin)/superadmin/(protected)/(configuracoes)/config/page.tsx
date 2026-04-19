@@ -23,7 +23,7 @@ import {
   FaUsers,
 } from "react-icons/fa";
 import { z } from "zod";
-import toast, { Toaster } from "react-hot-toast";
+import toast from "react-hot-toast";
 import { useBranding } from "@/hooks/useBranding";
 import type { PlanCatalog } from "@/lib/api/billing";
 
@@ -562,8 +562,6 @@ export default function ConfigPage() {
           content={`Gerencie identidade, segurança, integrações e governança operacional da plataforma ${brand}.`}
         />
       </Head>
-      <Toaster />
-
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pb-20 pt-20 md:px-8 md:pt-6">
         <section className="rounded-2xl border border-[#2a3042] bg-[#171b28] p-6 shadow-xl">
           <div className="flex flex-col gap-3">
