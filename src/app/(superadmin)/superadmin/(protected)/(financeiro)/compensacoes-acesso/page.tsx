@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { FaDownload, FaHistory, FaPlayCircle, FaRedoAlt, FaShieldAlt } from "react-icons/fa";
 import { useSuperAdminAccessCompensations } from "@/hooks/useSuperAdminAccessCompensations";
+import { Fut7ConfirmDialog } from "@/components/ui/feedback";
 import type {
   AccessCompensationApplyResponse,
   AccessCompensationFilters,
@@ -162,6 +163,12 @@ export default function SuperAdminAccessCompensationsPage() {
   const [historyStatus, setHistoryStatus] = useState("");
   const [historyReasonCategory, setHistoryReasonCategory] = useState("");
   const [historyPage, setHistoryPage] = useState(1);
+  const [revertDialogItem, setRevertDialogItem] = useState<AccessCompensationHistoryItem | null>(
+    null
+  );
+  const [revertReason, setRevertReason] = useState("");
+  const [revertNotifyCustomer, setRevertNotifyCustomer] = useState(true);
+  const [isReverting, setIsReverting] = useState(false);
 
   const { data: tenantsData, isLoading: loadingTenants } = useSWR<
     TenantListResponse | TenantListItem[]
@@ -330,13 +337,25 @@ export default function SuperAdminAccessCompensationsPage() {
   };
 
   const handleRevert = async (item: AccessCompensationHistoryItem) => {
-    const reason = window.prompt("Motivo da reversão:");
-    if (!reason || !reason.trim()) return;
-    const notify = window.confirm("Notificar o cliente sobre a reversão?");
-    await revertCompensation(item.id, {
-      reasonDescription: reason.trim(),
-      notifyCustomer: notify,
-    });
+    setRevertDialogItem(item);
+    setRevertReason("");
+    setRevertNotifyCustomer(true);
+  };
+
+  const confirmRevert = async () => {
+    if (!revertDialogItem || !revertReason.trim()) return;
+    setIsReverting(true);
+    try {
+      await revertCompensation(revertDialogItem.id, {
+        reasonDescription: revertReason.trim(),
+        notifyCustomer: revertNotifyCustomer,
+      });
+      setRevertDialogItem(null);
+      setRevertReason("");
+      setRevertNotifyCustomer(true);
+    } finally {
+      setIsReverting(false);
+    }
   };
 
   const exportHistoryCsv = () => {
@@ -911,6 +930,47 @@ export default function SuperAdminAccessCompensationsPage() {
           </div>
         </section>
       </div>
+      <Fut7ConfirmDialog
+        open={Boolean(revertDialogItem)}
+        title={`Reverter compensação de ${revertDialogItem?.tenantName || "racha"}?`}
+        eyebrow="Financeiro e acesso"
+        description="A compensação ativa será revertida com motivo registrado. Revise o impacto antes de confirmar."
+        confirmLabel="Reverter compensação"
+        cancelLabel="Cancelar"
+        loading={isReverting}
+        disabled={!revertReason.trim()}
+        impactItems={[
+          "O acesso compensado deixa de ser considerado na regra de acesso do tenant.",
+          "O histórico financeiro mantém o registro da reversão.",
+          "A notificação ao cliente depende da opção marcada abaixo.",
+        ]}
+        onClose={() => {
+          setRevertDialogItem(null);
+          setRevertReason("");
+          setRevertNotifyCustomer(true);
+        }}
+        onConfirm={() => void confirmRevert()}
+      >
+        <label className="block text-sm font-semibold text-zinc-100">
+          Motivo da reversão
+          <textarea
+            value={revertReason}
+            onChange={(event) => setRevertReason(event.target.value)}
+            placeholder="Explique por que esta compensação está sendo revertida."
+            rows={4}
+            className="mt-2 w-full resize-none rounded-2xl border border-yellow-300/20 bg-black/25 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-yellow-200 focus:ring-2 focus:ring-yellow-300/30"
+          />
+        </label>
+        <label className="mt-3 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-zinc-200">
+          <input
+            type="checkbox"
+            checked={revertNotifyCustomer}
+            onChange={(event) => setRevertNotifyCustomer(event.target.checked)}
+            className="h-4 w-4 accent-yellow-400"
+          />
+          Notificar o cliente sobre a reversão
+        </label>
+      </Fut7ConfirmDialog>
     </>
   );
 }

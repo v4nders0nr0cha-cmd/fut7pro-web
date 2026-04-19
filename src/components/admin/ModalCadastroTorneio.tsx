@@ -11,6 +11,7 @@ type JogadorSelecionavel = Pick<Jogador, "id" | "nome" | "avatar" | "posicao" | 
   Partial<Jogador>;
 import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
+import { Fut7DestructiveDialog } from "@/components/ui/feedback";
 
 const slugify = (text: string) =>
   text
@@ -59,6 +60,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   const [salvando, setSalvando] = useState(false);
   const [premioTotal, setPremioTotal] = useState<number | null>(null);
   const [premioMvp, setPremioMvp] = useState<string>("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const [cropping, setCropping] = useState(false);
   const [cropSrc, setCropSrc] = useState("");
@@ -588,12 +590,7 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             <button
               type="button"
               className="bg-red-600 text-white px-4 py-2 rounded font-semibold hover:bg-red-500"
-              onClick={async () => {
-                const ok = confirm("Deseja excluir este torneio de forma definitiva?");
-                if (!ok) return;
-                await onDelete(torneio.id);
-                onClose();
-              }}
+              onClick={() => setDeleteConfirmOpen(true)}
             >
               <FaTrash className="inline mr-1" /> Excluir
             </button>
@@ -711,6 +708,25 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
             </div>
           </div>
         )}
+        <Fut7DestructiveDialog
+          open={deleteConfirmOpen}
+          title={`Excluir ${torneio?.nome || titulo || "torneio"}?`}
+          description="Esta exclusão remove o torneio especial e os destaques vinculados a ele. Confirme apenas se o cadastro estiver incorreto."
+          confirmLabel="Excluir torneio"
+          cancelLabel="Manter torneio"
+          impactItems={[
+            "O torneio deixa de aparecer no painel e no site público.",
+            "Os campeões deixam de exibir esse título especial.",
+            "A ação deve ser reservada para erro de cadastro ou duplicidade.",
+          ]}
+          onClose={() => setDeleteConfirmOpen(false)}
+          onConfirm={async () => {
+            if (!torneio?.id || !onDelete) return;
+            await onDelete(torneio.id);
+            setDeleteConfirmOpen(false);
+            onClose();
+          }}
+        />
       </form>
     </div>
   );

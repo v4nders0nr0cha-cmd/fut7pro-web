@@ -7,6 +7,7 @@ import useSWR from "swr";
 import { useState } from "react";
 import { FaArrowLeft, FaBan, FaCheck, FaTrash, FaUserShield } from "react-icons/fa";
 import { useBranding } from "@/hooks/useBranding";
+import { Fut7DestructiveDialog, Fut7PromptDialog } from "@/components/ui/feedback";
 import type { Usuario, UsuarioMembership } from "@/types/superadmin";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -60,6 +61,14 @@ function summarizeRoles(memberships?: UsuarioMembership[]) {
     .join(", ");
 }
 
+function getAccountDeletionConfirmation(user?: Usuario | null) {
+  const email = String(user?.email || "")
+    .trim()
+    .toLowerCase();
+  if (email) return email;
+  return `ID:${user?.id || "CONTA-SEM-EMAIL"}`;
+}
+
 export default function SuperAdminContaDetalhePage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -72,6 +81,8 @@ export default function SuperAdminContaDetalhePage() {
     null
   );
   const [actionError, setActionError] = useState<string | null>(null);
+  const [disableDialogOpen, setDisableDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const {
     data: user,
@@ -82,11 +93,14 @@ export default function SuperAdminContaDetalhePage() {
 
   async function handleDisable() {
     if (!user?.id) return;
-    const reason = window.prompt(
-      "Motivo do bloqueio (opcional). Esta conta global sera desativada:"
-    );
+    setDisableDialogOpen(true);
+  }
+
+  async function confirmDisable(reason: string) {
+    if (!user?.id) return;
     setPendingAction("disable");
     setActionError(null);
+    setDisableDialogOpen(false);
     try {
       const response = await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
         method: "POST",
@@ -129,20 +143,15 @@ export default function SuperAdminContaDetalhePage() {
 
   async function handleDelete() {
     if (!user?.id) return;
-    const email = String(user.email || "")
-      .trim()
-      .toLowerCase();
-    const confirmation = window.prompt(
-      `Exclusao permanente.\nDigite o e-mail da conta para confirmar:\n${email}`
-    );
-    if (!confirmation) return;
-    if (confirmation.trim().toLowerCase() !== email) {
-      setActionError("Confirmacao invalida. Exclusao cancelada.");
-      return;
-    }
+    setDeleteDialogOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!user?.id) return;
 
     setPendingAction("delete");
     setActionError(null);
+    setDeleteDialogOpen(false);
     try {
       const response = await fetch(`/api/superadmin/usuarios/${user.id}`, { method: "DELETE" });
       if (!response.ok) {
@@ -313,6 +322,37 @@ export default function SuperAdminContaDetalhePage() {
             </div>
           </div>
         )}
+        <Fut7PromptDialog
+          open={disableDialogOpen}
+          title={`Desativar ${user?.email || "conta global"}?`}
+          eyebrow="Controle de acesso"
+          description="A conta global será bloqueada para novos acessos. Informe um motivo para facilitar auditoria e suporte."
+          label="Motivo do bloqueio"
+          placeholder="Ex.: solicitação do cliente, conta duplicada, suspeita de acesso indevido..."
+          multiline
+          confirmLabel="Desativar conta"
+          cancelLabel="Cancelar"
+          loading={pendingAction === "disable"}
+          onClose={() => setDisableDialogOpen(false)}
+          onConfirm={(reason) => void confirmDisable(reason)}
+        />
+        <Fut7DestructiveDialog
+          open={deleteDialogOpen}
+          title={`Excluir ${user?.email || "conta global"}?`}
+          description="Esta é uma exclusão permanente da conta global. Use somente quando houver certeza operacional e respaldo administrativo."
+          confirmLabel="Excluir conta"
+          cancelLabel="Cancelar"
+          confirmationText={getAccountDeletionConfirmation(user)}
+          confirmationLabel="Digite o identificador abaixo para confirmar"
+          loading={pendingAction === "delete"}
+          impactItems={[
+            "A conta global será removida definitivamente.",
+            "Vínculos administrativos e de atleta associados podem ser impactados.",
+            "Essa ação não deve substituir bloqueio temporário de acesso.",
+          ]}
+          onClose={() => setDeleteDialogOpen(false)}
+          onConfirm={() => void confirmDelete()}
+        />
       </div>
     </>
   );

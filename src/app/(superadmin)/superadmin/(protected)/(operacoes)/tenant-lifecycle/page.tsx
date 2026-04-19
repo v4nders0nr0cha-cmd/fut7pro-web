@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { format } from "date-fns";
+import { Fut7DestructiveDialog, showFut7Toast } from "@/components/ui/feedback";
 
 type LifecycleSummary = {
   total: number;
@@ -126,6 +127,7 @@ export default function TenantLifecyclePage() {
   const [conversionStatus, setConversionStatus] = useState("");
   const [page, setPage] = useState(1);
   const [isMutating, setIsMutating] = useState(false);
+  const [tenantToDelete, setTenantToDelete] = useState<LifecycleRow | null>(null);
 
   const PAGE_SIZE = 200;
 
@@ -162,7 +164,12 @@ export default function TenantLifecyclePage() {
       }
       await mutate();
     } catch (actionError) {
-      alert(actionError instanceof Error ? actionError.message : "Falha ao reconciliar lifecycle");
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao reconciliar lifecycle",
+        message:
+          actionError instanceof Error ? actionError.message : "Tente novamente em instantes.",
+      });
     } finally {
       setIsMutating(false);
     }
@@ -182,10 +189,22 @@ export default function TenantLifecyclePage() {
       }
       await mutate();
     } catch (actionError) {
-      alert(actionError instanceof Error ? actionError.message : "Falha ao aplicar acao");
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao aplicar ação",
+        message:
+          actionError instanceof Error ? actionError.message : "Tente novamente em instantes.",
+      });
     } finally {
       setIsMutating(false);
     }
+  }
+
+  async function confirmDeleteTenant() {
+    if (!tenantToDelete) return;
+    const target = tenantToDelete;
+    setTenantToDelete(null);
+    await applyAction(target.tenantId, "EXCLUIR_AGORA", "Exclusao manual imediata");
   }
 
   const totalPages = Math.max(data?.pagination.totalPages ?? 1, 1);
@@ -345,15 +364,6 @@ export default function TenantLifecyclePage() {
             ) : null}
 
             {(data?.rows ?? []).map((row) => {
-              const confirmDelete = () => {
-                const ok = window.confirm(
-                  `Excluir definitivamente o racha ${row.tenantName}? Esta acao remove todos os dados.`
-                );
-                if (ok) {
-                  void applyAction(row.tenantId, "EXCLUIR_AGORA", "Exclusao manual imediata");
-                }
-              };
-
               return (
                 <tr key={row.tenantId} className="border-t border-zinc-800/80 align-top">
                   <td className="px-3 py-3">
@@ -467,7 +477,7 @@ export default function TenantLifecyclePage() {
                       <button
                         className="rounded bg-rose-800 px-2 py-1 text-[11px] font-semibold text-rose-100 hover:bg-rose-700 disabled:opacity-60"
                         disabled={isMutating}
-                        onClick={confirmDelete}
+                        onClick={() => setTenantToDelete(row)}
                       >
                         Excluir agora
                       </button>
@@ -504,6 +514,23 @@ export default function TenantLifecyclePage() {
           </button>
         </div>
       </div>
+      <Fut7DestructiveDialog
+        open={Boolean(tenantToDelete)}
+        title={`Excluir definitivamente ${tenantToDelete?.tenantName || "racha"}?`}
+        description="Esta ação remove o tenant imediatamente pelo fluxo de lifecycle. Use apenas quando o racha já foi validado para exclusão manual."
+        confirmLabel="Excluir agora"
+        cancelLabel="Cancelar"
+        confirmationText="EXCLUIR AGORA"
+        confirmationLabel="Digite a frase abaixo para confirmar"
+        loading={isMutating}
+        impactItems={[
+          "Todos os dados operacionais do racha serão removidos pelo backend.",
+          "A exclusão ignora a fila de espera do lifecycle.",
+          "A ação deve ter respaldo administrativo e auditoria externa.",
+        ]}
+        onClose={() => setTenantToDelete(null)}
+        onConfirm={() => void confirmDeleteTenant()}
+      />
     </section>
   );
 }

@@ -14,6 +14,7 @@ import ModalDetalhesAdmin, { type AdminDetalhes } from "@/components/superadmin/
 import ModalSenhaResetada from "@/components/superadmin/ModalSenhaResetada";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 import { Role, Permission } from "@/common/enums";
+import { Fut7ConfirmDialog, Fut7DestructiveDialog } from "@/components/ui/feedback";
 import type { Usuario } from "@/types/superadmin";
 
 const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
@@ -110,6 +111,8 @@ export default function SuperAdminAdminsPage() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [pendingResetAdmin, setPendingResetAdmin] = useState<AdminRow | null>(null);
+  const [pendingDeleteAdmin, setPendingDeleteAdmin] = useState<AdminRow | null>(null);
 
   const usuarioPorId = useMemo(() => {
     return new Map((usuarios || []).map((usuario) => [usuario.id, usuario]));
@@ -271,11 +274,17 @@ export default function SuperAdminAdminsPage() {
 
   async function handleResetPassword(admin: AdminRow) {
     if (!admin.userId) return;
-    if (!window.confirm(`Resetar senha de ${admin.email}?`)) return;
+    setPendingResetAdmin(admin);
+  }
+
+  async function confirmResetPassword() {
+    const admin = pendingResetAdmin;
+    if (!admin?.userId) return;
 
     setPendingId(admin.userId);
     setActionError(null);
     setActionSuccess(null);
+    setPendingResetAdmin(null);
 
     const response = await fetch(`/api/superadmin/usuarios/${admin.userId}/reset-password`, {
       method: "POST",
@@ -311,13 +320,17 @@ export default function SuperAdminAdminsPage() {
       setActionError("Nao foi possivel identificar o racha deste admin.");
       return;
     }
-    const label = admin.tenantNome || admin.tenantSlug || "racha";
-    const confirmText = `Remover ${admin.email} do racha ${label}?\\n\\nIsso remove apenas o vinculo/permissao administrativa deste racha. A conta global nao sera apagada.`;
-    if (!window.confirm(confirmText)) return;
+    setPendingDeleteAdmin(admin);
+  }
+
+  async function confirmDeleteAdmin() {
+    const admin = pendingDeleteAdmin;
+    if (!admin?.userId || !admin.tenantId) return;
 
     setPendingId(admin.id);
     setActionError(null);
     setActionSuccess(null);
+    setPendingDeleteAdmin(null);
 
     const response = await fetch(
       `/api/superadmin/tenants/${admin.tenantId}/admins/${admin.userId}`,
@@ -433,6 +446,39 @@ export default function SuperAdminAdminsPage() {
           email={resetPayload?.email}
           temporaryPassword={resetPayload?.password}
           onClose={() => setResetOpen(false)}
+        />
+        <Fut7ConfirmDialog
+          open={Boolean(pendingResetAdmin)}
+          title={`Resetar senha de ${pendingResetAdmin?.email || "administrador"}?`}
+          eyebrow="Segurança administrativa"
+          description="Uma nova senha temporária será gerada para este administrador. Compartilhe apenas por um canal seguro."
+          confirmLabel="Resetar senha"
+          cancelLabel="Cancelar"
+          loading={pendingId === pendingResetAdmin?.userId}
+          impactItems={[
+            "A senha anterior deixa de funcionar.",
+            "A nova senha temporária será exibida após a conclusão.",
+            "A ação deve ser registrada e comunicada com cuidado.",
+          ]}
+          onClose={() => setPendingResetAdmin(null)}
+          onConfirm={confirmResetPassword}
+        />
+        <Fut7DestructiveDialog
+          open={Boolean(pendingDeleteAdmin)}
+          title={`Remover ${pendingDeleteAdmin?.email || "admin"} do racha?`}
+          description={`Esta ação remove apenas o vínculo administrativo com ${
+            pendingDeleteAdmin?.tenantNome || pendingDeleteAdmin?.tenantSlug || "este racha"
+          }. A conta global do usuário não será apagada.`}
+          confirmLabel="Remover vínculo"
+          cancelLabel="Manter admin"
+          loading={pendingId === pendingDeleteAdmin?.id}
+          impactItems={[
+            "O usuário perde o acesso administrativo a este racha.",
+            "A conta global permanece ativa para outros vínculos.",
+            "Permissões desse tenant deixam de valer imediatamente.",
+          ]}
+          onClose={() => setPendingDeleteAdmin(null)}
+          onConfirm={confirmDeleteAdmin}
         />
       </div>
     </>

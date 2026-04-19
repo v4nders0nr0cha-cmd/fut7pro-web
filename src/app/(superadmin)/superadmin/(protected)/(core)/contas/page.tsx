@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { FaBan, FaCheck, FaEye, FaSearch, FaTrash, FaUsers, FaUserShield } from "react-icons/fa";
 import { useBranding } from "@/hooks/useBranding";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { Fut7DestructiveDialog, Fut7PromptDialog } from "@/components/ui/feedback";
 import type { Usuario, UsuarioMembership } from "@/types/superadmin";
 
 const ROLE_LABELS: Record<string, string> = {
@@ -50,6 +51,14 @@ function summarizeRoles(memberships?: UsuarioMembership[]) {
     .join(", ");
 }
 
+function getAccountDeletionConfirmation(user?: Usuario | null) {
+  const email = String(user?.email || "")
+    .trim()
+    .toLowerCase();
+  if (email) return email;
+  return `ID:${user?.id || "CONTA-SEM-EMAIL"}`;
+}
+
 export default function SuperAdminContasPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
@@ -61,6 +70,8 @@ export default function SuperAdminContasPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
+  const [pendingDisableUser, setPendingDisableUser] = useState<Usuario | null>(null);
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<Usuario | null>(null);
 
   const usuariosVisiveis = useMemo(
     () => (usuarios || []).filter((user) => !user.superadmin),
@@ -85,13 +96,16 @@ export default function SuperAdminContasPage() {
 
   async function handleDisable(user: Usuario) {
     if (!user?.id) return;
-    const reason = window.prompt(
-      "Motivo do bloqueio (opcional). Esta conta global sera desativada:"
-    );
+    setPendingDisableUser(user);
+  }
+
+  async function confirmDisable(user: Usuario, reason: string) {
+    if (!user?.id) return;
 
     setPendingId(user.id);
     setActionError(null);
     setActionSuccess(null);
+    setPendingDisableUser(null);
 
     const response = await fetch(`/api/superadmin/usuarios/${user.id}/revoke`, {
       method: "POST",
@@ -151,22 +165,16 @@ export default function SuperAdminContasPage() {
 
   async function handleDelete(user: Usuario) {
     if (!user?.id) return;
+    setPendingDeleteUser(user);
+  }
 
-    const email = String(user.email || "")
-      .trim()
-      .toLowerCase();
-    const confirmation = window.prompt(
-      `Exclusao permanente.\nDigite o e-mail da conta para confirmar:\n${email}`
-    );
-    if (!confirmation) return;
-    if (confirmation.trim().toLowerCase() !== email) {
-      setActionError("Confirmacao invalida. Exclusao cancelada.");
-      return;
-    }
+  async function confirmDelete(user: Usuario) {
+    if (!user?.id) return;
 
     setPendingId(user.id);
     setActionError(null);
     setActionSuccess(null);
+    setPendingDeleteUser(null);
 
     try {
       const response = await fetch(`/api/superadmin/usuarios/${user.id}`, {
@@ -461,6 +469,41 @@ export default function SuperAdminContasPage() {
             </div>
           </div>
         )}
+        <Fut7PromptDialog
+          open={Boolean(pendingDisableUser)}
+          title={`Desativar ${pendingDisableUser?.email || "conta global"}?`}
+          eyebrow="Controle de acesso"
+          description="A conta global será bloqueada para novos acessos. Informe um motivo para facilitar auditoria e suporte."
+          label="Motivo do bloqueio"
+          placeholder="Ex.: solicitação do cliente, suspeita de acesso indevido, conta duplicada..."
+          multiline
+          confirmLabel="Desativar conta"
+          cancelLabel="Cancelar"
+          loading={pendingId === pendingDisableUser?.id}
+          onClose={() => setPendingDisableUser(null)}
+          onConfirm={(reason) => {
+            if (pendingDisableUser) void confirmDisable(pendingDisableUser, reason);
+          }}
+        />
+        <Fut7DestructiveDialog
+          open={Boolean(pendingDeleteUser)}
+          title={`Excluir ${pendingDeleteUser?.email || "conta global"}?`}
+          description="Esta é uma exclusão permanente da conta global. Use somente quando houver certeza operacional e respaldo administrativo."
+          confirmLabel="Excluir conta"
+          cancelLabel="Cancelar"
+          confirmationText={getAccountDeletionConfirmation(pendingDeleteUser)}
+          confirmationLabel="Digite o identificador abaixo para confirmar"
+          loading={pendingId === pendingDeleteUser?.id}
+          impactItems={[
+            "A conta global será removida definitivamente.",
+            "Vínculos administrativos e de atleta associados podem ser impactados.",
+            "Essa ação não deve substituir bloqueio temporário de acesso.",
+          ]}
+          onClose={() => setPendingDeleteUser(null)}
+          onConfirm={() => {
+            if (pendingDeleteUser) void confirmDelete(pendingDeleteUser);
+          }}
+        />
       </div>
     </>
   );

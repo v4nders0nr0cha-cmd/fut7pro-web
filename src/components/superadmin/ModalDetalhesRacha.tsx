@@ -4,6 +4,7 @@ import { useState } from "react";
 import { FaInfoCircle, FaLock, FaHistory } from "react-icons/fa";
 import { format } from "date-fns";
 import { getRachaTheme } from "@/config/rachaThemes";
+import { showFut7Toast } from "@/components/ui/feedback";
 
 interface RachaDetalhes {
   id: string;
@@ -73,7 +74,11 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
     } catch (err) {
       console.error(err);
       const message = err instanceof Error ? err.message : "Falha ao desbloquear.";
-      alert(`Falha ao desbloquear. Detalhe: ${message}`);
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao desbloquear racha",
+        message,
+      });
     } finally {
       setIsUnblocking(false);
     }
