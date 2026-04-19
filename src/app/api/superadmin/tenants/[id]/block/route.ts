@@ -19,7 +19,16 @@ export async function POST(req: NextRequest, { params }: { params: { id?: string
   const id = params?.id;
   if (!id) return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
 
-  const body = await req.text();
+  const payload = await req.json().catch(() => null);
+  const reason = typeof payload?.reason === "string" ? payload.reason.trim() : "";
+  if (payload?.confirmed !== true || !reason) {
+    return jsonResponse(
+      { error: "Confirmacao explicita e motivo sao obrigatorios para bloquear racha." },
+      { status: 400 }
+    );
+  }
+
+  const body = JSON.stringify({ reason });
   const targetUrl = `${getApiBase()}/superadmin/tenants/${encodeURIComponent(id)}/block`;
 
   const { response, body: backendBody } = await proxyBackend(targetUrl, {
