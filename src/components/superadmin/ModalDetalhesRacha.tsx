@@ -63,7 +63,10 @@ export default function ModalDetalhesRacha({ racha, onClose, onRefresh }: ModalD
       const resp = await fetch(`/api/superadmin/tenants/${racha.id}/unblock`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason: "Desbloqueio manual pelo superadmin" }),
+        body: JSON.stringify({
+          reason: "Desbloqueio manual pelo superadmin",
+          confirmed: true,
+        }),
       });
       if (!resp.ok) {
         const text = await resp.text();

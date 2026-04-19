@@ -7,15 +7,15 @@ import {
   FaSearch,
   FaDownload,
   FaLock,
+  FaUnlock,
   FaInfoCircle,
-  FaHistory,
   FaUserShield,
   FaTrash,
 } from "react-icons/fa";
 import { format } from "date-fns";
 import ModalDetalhesRacha from "@/components/superadmin/ModalDetalhesRacha";
 import { useBranding } from "@/hooks/useBranding";
-import { Fut7DestructiveDialog, showFut7Toast } from "@/components/ui/feedback";
+import { Fut7ConfirmDialog, Fut7DestructiveDialog, showFut7Toast } from "@/components/ui/feedback";
 type TenantMembership = {
   status?: string | null;
   role?: string | null;
@@ -100,6 +100,7 @@ type Tenant = {
 };
 
 type TenantsResponse = { results?: Tenant[] };
+type AccessAction = "block" | "unblock";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, { cache: "no-store" });
@@ -333,6 +334,10 @@ function resolveTenantOwner(tenant: Tenant) {
   return { name: null, email: null };
 }
 
+function isBlockedRacha(racha?: { status?: string | null; bloqueado?: boolean | null } | null) {
+  return Boolean(racha?.bloqueado) || racha?.status === "BLOQUEADO";
+}
+
 async function signInAdminWithTokens(payload: {
   accessToken?: string | null;
   refreshToken?: string | null;
@@ -406,6 +411,9 @@ export default function RachasCadastradosPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [deleteIds, setDeleteIds] = useState<string[]>([]);
+  const [accessDialog, setAccessDialog] = useState<{ action: AccessAction; ids: string[] } | null>(
+    null
+  );
 
   const { data, isLoading, error, mutate } = useSWR<TenantsResponse | Tenant[]>(
     "/api/superadmin/tenants",
@@ -539,6 +547,12 @@ export default function RachasCadastradosPage() {
     () => rachasFiltrados.filter((r) => !r.isVitrine),
     [rachasFiltrados]
   );
+  const selectedRachas = useMemo(
+    () => selectedIds.map((id) => rachaPorId.get(id)).filter(Boolean),
+    [selectedIds, rachaPorId]
+  );
+  const selectedBlockedCount = selectedRachas.filter((r) => isBlockedRacha(r)).length;
+  const selectedUnblockedCount = selectedRachas.filter((r) => !isBlockedRacha(r)).length;
   const deleteTargets = useMemo(
     () => deleteIds.map((id) => rachaPorId.get(id)).filter(Boolean),
     [deleteIds, rachaPorId]
@@ -547,6 +561,14 @@ export default function RachasCadastradosPage() {
     deleteTargets.length === 1
       ? deleteTargets[0]?.nome || "este racha"
       : `${deleteTargets.length} rachas`;
+  const accessTargets = useMemo(
+    () => (accessDialog?.ids ?? []).map((id) => rachaPorId.get(id)).filter(Boolean),
+    [accessDialog?.ids, rachaPorId]
+  );
+  const accessLabel =
+    accessTargets.length === 1
+      ? accessTargets[0]?.nome || "este racha"
+      : `${accessTargets.length} rachas`;
 
   function handleSelecionarTodos(e: React.ChangeEvent<HTMLInputElement>) {
     setSelectedIds(e.target.checked ? rachasEditaveis.map((r) => r.id) : []);
@@ -567,7 +589,7 @@ export default function RachasCadastradosPage() {
     return status;
   }
 
-  function handleBlock(selected: string[]) {
+  function openAccessDialog(action: AccessAction, selected: string[]) {
     if (!selected.length) return;
     const editable = selected.filter((id) => !rachaPorId.get(id)?.isVitrine);
     if (editable.length !== selected.length) {
@@ -578,26 +600,86 @@ export default function RachasCadastradosPage() {
       });
     }
     if (!editable.length) return;
-    const reason = "Bloqueio manual pelo superadmin";
-    setPendingAction("Bloquear");
-    Promise.all(
-      editable.map((id) =>
-        fetch(`/api/superadmin/tenants/${id}/block`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason }),
+    const targets = editable.filter((id) => {
+      const racha = rachaPorId.get(id);
+      return action === "block" ? !isBlockedRacha(racha) : isBlockedRacha(racha);
+    });
+
+    if (!targets.length) {
+      showFut7Toast({
+        tone: "info",
+        title:
+          action === "block"
+            ? "Nenhum racha liberado selecionado"
+            : "Nenhum racha bloqueado selecionado",
+        message:
+          action === "block"
+            ? "Selecione rachas liberados para aplicar bloqueio manual."
+            : "Selecione rachas bloqueados para remover o bloqueio manual.",
+      });
+      return;
+    }
+
+    setAccessDialog({ action, ids: targets });
+  }
+
+  async function confirmAccessChange() {
+    if (!accessDialog?.ids.length) return;
+
+    const action = accessDialog.action;
+    const ids = accessDialog.ids;
+    const isBlock = action === "block";
+    const actionLabel = isBlock ? "Bloquear" : "Desbloquear";
+    const reason = isBlock
+      ? "Bloqueio manual confirmado pelo SuperAdmin"
+      : "Desbloqueio manual confirmado pelo SuperAdmin";
+
+    setPendingAction(actionLabel);
+    try {
+      await Promise.all(
+        ids.map(async (id) => {
+          const resp = await fetch(
+            `/api/superadmin/tenants/${id}/${isBlock ? "block" : "unblock"}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ reason, confirmed: true }),
+            }
+          );
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            throw new Error(
+              (data as any)?.error ||
+                (data as any)?.message ||
+                `Falha ao ${isBlock ? "bloquear" : "desbloquear"} racha.`
+            );
+          }
         })
-      )
-    )
-      .then(() => mutate())
-      .catch(() =>
-        showFut7Toast({
-          tone: "error",
-          title: "Falha ao bloquear racha(s)",
-          message: "Tente novamente ou verifique os logs da operação.",
-        })
-      )
-      .finally(() => setPendingAction(null));
+      );
+      setAccessDialog(null);
+      setSelectedIds((prev) => prev.filter((id) => !ids.includes(id)));
+      await mutate();
+      showFut7Toast({
+        tone: "success",
+        title: isBlock ? "Racha bloqueado" : "Racha desbloqueado",
+        message:
+          ids.length === 1
+            ? `A operação em ${accessLabel} foi concluída.`
+            : `${ids.length} rachas foram atualizados com sucesso.`,
+      });
+    } catch (error) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : `Falha ao ${isBlock ? "bloquear" : "desbloquear"} racha(s).`;
+      showFut7Toast({
+        tone: "error",
+        title: isBlock ? "Falha ao bloquear racha(s)" : "Falha ao desbloquear racha(s)",
+        message: msg,
+      });
+    } finally {
+      setPendingAction(null);
+    }
   }
 
   function handleAviso(selected: string[]) {
@@ -814,10 +896,17 @@ export default function RachasCadastradosPage() {
           </button>
           <button
             className="bg-red-900 text-zinc-100 px-3 py-1 rounded shadow hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={selectedIds.length === 0 || Boolean(pendingAction)}
-            onClick={() => selectedIds.length && handleBlock(selectedIds)}
+            disabled={selectedUnblockedCount === 0 || Boolean(pendingAction)}
+            onClick={() => selectedIds.length && openAccessDialog("block", selectedIds)}
           >
             Bloquear
+          </button>
+          <button
+            className="bg-emerald-800 text-zinc-100 px-3 py-1 rounded shadow hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={selectedBlockedCount === 0 || Boolean(pendingAction)}
+            onClick={() => selectedIds.length && openAccessDialog("unblock", selectedIds)}
+          >
+            Desbloquear
           </button>
           <button
             className="bg-zinc-600 text-zinc-100 px-3 py-1 rounded shadow hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -836,11 +925,23 @@ export default function RachasCadastradosPage() {
         </div>
 
         {/* TABELA */}
-        <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900 shadow-sm">
-          <table className="min-w-[980px] w-full text-sm text-zinc-100">
+        <div className="overflow-visible rounded-xl border border-zinc-800 bg-zinc-900 shadow-sm">
+          <table className="w-full table-fixed text-xs text-zinc-100 xl:text-sm">
+            <colgroup>
+              <col className="w-[4%]" />
+              <col className="w-[16%]" />
+              <col className="w-[14%]" />
+              <col className="w-[12%]" />
+              <col className="w-[11%]" />
+              <col className="w-[7%]" />
+              <col className="w-[9%]" />
+              <col className="w-[12%]" />
+              <col className="w-[10%]" />
+              <col className="w-[5%]" />
+            </colgroup>
             <thead className="bg-zinc-950/60">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   <input
                     type="checkbox"
                     checked={
@@ -849,31 +950,31 @@ export default function RachasCadastradosPage() {
                     onChange={handleSelecionarTodos}
                   />
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Nome
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Presidente
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Plano
                 </th>
-                <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Status
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Atletas
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Criado em
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Ultima atividade
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Acoes
                 </th>
-                <th className="px-3 py-2 text-center text-xs font-semibold uppercase tracking-wider text-zinc-300 sm:px-4 sm:py-3">
+                <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-zinc-300 xl:px-3">
                   Bloqueio
                 </th>
               </tr>
@@ -889,7 +990,7 @@ export default function RachasCadastradosPage() {
               {!isLoading &&
                 rachasFiltrados.map((r) => (
                   <tr key={r.id} className="hover:bg-zinc-800 duration-100">
-                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                    <td className="px-2 py-2 xl:px-3">
                       <input
                         type="checkbox"
                         checked={selectedIds.includes(r.id)}
@@ -898,10 +999,10 @@ export default function RachasCadastradosPage() {
                         title={r.isVitrine ? "Racha vitrine nao pode ser alterado." : undefined}
                       />
                     </td>
-                    <td className="px-3 py-2 font-semibold sm:px-4 sm:py-3">{r.nome}</td>
-                    <td className="px-3 py-2 sm:px-4 sm:py-3">{r.presidente}</td>
-                    <td className="px-3 py-2 sm:px-4 sm:py-3">{r.plano}</td>
-                    <td className="px-3 py-2 sm:px-4 sm:py-3">
+                    <td className="break-words px-2 py-2 font-semibold xl:px-3">{r.nome}</td>
+                    <td className="break-words px-2 py-2 text-zinc-300 xl:px-3">{r.presidente}</td>
+                    <td className="break-words px-2 py-2 text-zinc-300 xl:px-3">{r.plano}</td>
+                    <td className="px-2 py-2 xl:px-3">
                       <span
                         className={`px-2 py-1 rounded-full text-xs font-bold cursor-default ${STATUS_BADGES[r.status as keyof typeof STATUS_BADGES] || "bg-gray-700 text-zinc-300"}`}
                         title={STATUS_LABELS[r.status as keyof typeof STATUS_LABELS] || r.status}
@@ -909,11 +1010,11 @@ export default function RachasCadastradosPage() {
                         {statusLabel(r.status)}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">{r.atletas ?? 0}</td>
-                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
+                    <td className="px-2 py-2 text-center xl:px-3">{r.atletas ?? 0}</td>
+                    <td className="px-2 py-2 text-center xl:px-3">
                       {r.criadoEm ? formatDate(r.criadoEm) : "--"}
                     </td>
-                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
+                    <td className="px-2 py-2 text-center xl:px-3">
                       {r.ultimaAtividade ? formatDate(r.ultimaAtividade) : "--"}
                       {typeof r.diasInativo === "number" ? (
                         <span className="block text-xs text-zinc-400">
@@ -922,35 +1023,51 @@ export default function RachasCadastradosPage() {
                         </span>
                       ) : null}
                     </td>
-                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
-                      <div className="flex flex-wrap items-center justify-center gap-2">
+                    <td className="px-2 py-2 text-center xl:px-3">
+                      <div className="flex flex-col items-stretch justify-center gap-1">
                         <button
-                          className="flex items-center gap-1 rounded bg-blue-700 px-3 py-1 text-[11px] font-bold hover:bg-blue-900 sm:text-xs"
+                          className="flex items-center justify-center gap-1 rounded bg-blue-700 px-2 py-1 text-[11px] font-bold hover:bg-blue-900"
                           onClick={() => setModalRacha(r)}
                           title="Detalhes e Acoes"
                         >
                           <FaInfoCircle /> Detalhes
                         </button>
                         <button
-                          className="flex items-center gap-1 rounded bg-green-800 px-3 py-1 text-[11px] font-bold hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                          className="flex items-center justify-center gap-1 rounded bg-green-800 px-2 py-1 text-[11px] font-bold hover:bg-green-900 disabled:cursor-not-allowed disabled:opacity-50"
                           onClick={() => handleImpersonate(r)}
                           title="Acessar Painel Admin como Presidente"
                           disabled={Boolean(pendingAction)}
                         >
-                          <FaUserShield /> Login como Admin
+                          <FaUserShield /> Admin
                         </button>
+                        {(() => {
+                          const blocked = isBlockedRacha(r);
+                          return (
+                            <button
+                              className={`flex items-center justify-center gap-1 rounded px-2 py-1 text-[11px] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${
+                                blocked
+                                  ? "bg-emerald-800 hover:bg-emerald-700"
+                                  : "bg-red-700 hover:bg-red-900"
+                              }`}
+                              title={
+                                r.isVitrine
+                                  ? "Racha vitrine nao pode ser alterado."
+                                  : blocked
+                                    ? "Desbloquear Racha"
+                                    : "Bloquear Racha"
+                              }
+                              disabled={Boolean(pendingAction) || Boolean(r.isVitrine)}
+                              onClick={() =>
+                                openAccessDialog(blocked ? "unblock" : "block", [r.id])
+                              }
+                            >
+                              {blocked ? <FaUnlock /> : <FaLock />}
+                              {blocked ? "Desbloquear" : "Bloquear"}
+                            </button>
+                          );
+                        })()}
                         <button
-                          className="flex items-center gap-1 rounded bg-red-700 px-3 py-1 text-[11px] font-bold hover:bg-red-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
-                          title={
-                            r.isVitrine ? "Racha vitrine nao pode ser alterado." : "Bloquear Racha"
-                          }
-                          disabled={Boolean(pendingAction) || Boolean(r.isVitrine)}
-                          onClick={() => handleBlock([r.id])}
-                        >
-                          <FaLock /> Bloquear
-                        </button>
-                        <button
-                          className="flex items-center gap-1 rounded bg-rose-800 px-3 py-1 text-[11px] font-bold hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs"
+                          className="flex items-center justify-center gap-1 rounded bg-rose-800 px-2 py-1 text-[11px] font-bold hover:bg-rose-900 disabled:cursor-not-allowed disabled:opacity-50"
                           title={
                             r.isVitrine ? "Racha vitrine nao pode ser alterado." : "Excluir Racha"
                           }
@@ -961,13 +1078,13 @@ export default function RachasCadastradosPage() {
                         </button>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-center sm:px-4 sm:py-3">
-                      {r.status === "BLOQUEADO" || r.bloqueado ? (
-                        <span className="flex items-center gap-1 text-red-400 font-bold">
-                          <FaLock /> Bloqueado
+                    <td className="px-2 py-2 text-center xl:px-3">
+                      {isBlockedRacha(r) ? (
+                        <span className="flex flex-col items-center gap-1 text-red-400 font-bold">
+                          <FaLock /> Sim
                         </span>
                       ) : (
-                        <span className="text-green-400 font-bold">Liberado</span>
+                        <span className="text-green-400 font-bold">Nao</span>
                       )}
                     </td>
                   </tr>
@@ -991,6 +1108,41 @@ export default function RachasCadastradosPage() {
             onRefresh={() => mutate()}
           />
         )}
+        <Fut7ConfirmDialog
+          open={Boolean(accessDialog)}
+          title={
+            accessDialog?.action === "unblock"
+              ? `Desbloquear ${accessLabel}?`
+              : `Bloquear ${accessLabel}?`
+          }
+          eyebrow="Controle operacional"
+          tone={accessDialog?.action === "unblock" ? "default" : "warning"}
+          description={
+            accessDialog?.action === "unblock"
+              ? "O racha voltará a acessar o painel e os recursos administrativos conforme a regra atual de assinatura, compensação e lifecycle."
+              : "O racha ficará sem acesso operacional ao painel Admin até que o bloqueio manual seja removido pelo SuperAdmin."
+          }
+          confirmLabel={accessDialog?.action === "unblock" ? "Desbloquear racha" : "Bloquear racha"}
+          cancelLabel="Cancelar"
+          loading={
+            pendingAction === (accessDialog?.action === "unblock" ? "Desbloquear" : "Bloquear")
+          }
+          impactItems={
+            accessDialog?.action === "unblock"
+              ? [
+                  "O bloqueio manual será removido do histórico de acesso.",
+                  "A UI será revalidada para refletir o estado liberado ou a regra de assinatura vigente.",
+                  "A ação ficará registrada nos logs do SuperAdmin.",
+                ]
+              : [
+                  "O Admin do racha perderá acesso ao painel operacional.",
+                  "O bloqueio manual tem prioridade sobre assinatura e compensação ativa.",
+                  "A ação ficará registrada nos logs do SuperAdmin.",
+                ]
+          }
+          onClose={() => setAccessDialog(null)}
+          onConfirm={() => void confirmAccessChange()}
+        />
         <Fut7DestructiveDialog
           open={deleteIds.length > 0}
           title={`Excluir ${deleteLabel}?`}

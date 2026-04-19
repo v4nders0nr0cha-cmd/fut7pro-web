@@ -26,6 +26,7 @@ type DashboardResponse = {
   userCount: number;
   adminCount?: number;
   tenantCount: number;
+  activeTenantCount?: number;
   matchCount: number;
   lastUpdated?: string;
 };
@@ -138,7 +139,7 @@ export default function DashboardSuperAdminPage() {
   const kpis = [
     {
       title: "Rachas Ativos",
-      value: financeiro?.resumo?.ativos ?? 0,
+      value: financeiro?.resumo?.ativos ?? dashboardData?.activeTenantCount ?? 0,
       icon: <MdOutlineSportsSoccer size={34} />,
       desc: "Tenants ativos",
       color: "from-yellow-400 to-yellow-600",
