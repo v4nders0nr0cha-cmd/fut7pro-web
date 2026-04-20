@@ -13,10 +13,104 @@ import ModalEditarAdmin, { type EditAdminPayload } from "@/components/superadmin
 import ModalDetalhesAdmin, { type AdminDetalhes } from "@/components/superadmin/ModalDetalhesAdmin";
 import ModalSenhaResetada from "@/components/superadmin/ModalSenhaResetada";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
-import { Role } from "@/common/enums";
+import { Permission, Role } from "@/common/enums";
 import { Fut7ConfirmDialog, Fut7DestructiveDialog } from "@/components/ui/feedback";
 import { getEffectiveAdminRolePermissions } from "@/lib/admin-role-permissions";
 import type { Usuario } from "@/types/superadmin";
+
+const LEGACY_PERMISSION_LABELS: Record<Permission, string> = {
+  RACHA_CREATE: "Criar Racha",
+  RACHA_READ: "Ver Racha",
+  RACHA_UPDATE: "Editar Racha",
+  RACHA_DELETE: "Deletar Racha",
+  RACHA_MANAGE_ADMINS: "Gerenciar Admins",
+  USER_CREATE: "Criar Usuário",
+  USER_READ: "Ver Usuário",
+  USER_UPDATE: "Editar Usuário",
+  USER_DELETE: "Deletar Usuário",
+  USER_MANAGE_ROLES: "Gerenciar Cargos",
+  FINANCE_READ: "Ver Financeiro",
+  FINANCE_CREATE: "Criar Financeiro",
+  FINANCE_UPDATE: "Editar Financeiro",
+  FINANCE_DELETE: "Deletar Financeiro",
+  FINANCE_APPROVE: "Aprovar Financeiro",
+  CONFIG_READ: "Ver Configurações",
+  CONFIG_UPDATE: "Editar Configurações",
+  CONFIG_SYSTEM: "Configurar Sistema",
+  ANALYTICS_READ: "Ver Analytics",
+  REPORTS_GENERATE: "Gerar Relatórios",
+  SUPERADMIN_CREATE: "Criar SuperAdmin",
+  SUPERADMIN_UPDATE: "Editar SuperAdmin",
+  SUPERADMIN_DELETE: "Deletar SuperAdmin",
+  AUDIT_READ: "Ver Auditoria",
+  AUDIT_CREATE: "Criar Auditoria",
+  AUDIT_EXPORT: "Exportar Auditoria",
+  SUPPORT_READ: "Ver Suporte",
+  SUPPORT_CREATE: "Criar Suporte",
+  SUPPORT_UPDATE: "Editar Suporte",
+  SUPPORT_DELETE: "Deletar Suporte",
+};
+
+const LEGACY_ROLE_PERMISSIONS: Record<Role, Permission[]> = {
+  ATLETA: [Permission.USER_READ, Permission.RACHA_READ, Permission.ANALYTICS_READ],
+  ADMIN: [
+    Permission.USER_READ,
+    Permission.USER_CREATE,
+    Permission.USER_UPDATE,
+    Permission.RACHA_READ,
+    Permission.RACHA_UPDATE,
+    Permission.RACHA_MANAGE_ADMINS,
+    Permission.FINANCE_READ,
+    Permission.FINANCE_CREATE,
+    Permission.FINANCE_UPDATE,
+    Permission.CONFIG_READ,
+    Permission.CONFIG_UPDATE,
+    Permission.ANALYTICS_READ,
+    Permission.REPORTS_GENERATE,
+    Permission.SUPPORT_READ,
+    Permission.SUPPORT_CREATE,
+    Permission.SUPPORT_UPDATE,
+  ],
+  SUPERADMIN: Object.values(Permission),
+  GERENTE: [
+    Permission.USER_READ,
+    Permission.USER_CREATE,
+    Permission.USER_UPDATE,
+    Permission.RACHA_READ,
+    Permission.RACHA_UPDATE,
+    Permission.RACHA_MANAGE_ADMINS,
+    Permission.FINANCE_READ,
+    Permission.FINANCE_CREATE,
+    Permission.FINANCE_UPDATE,
+    Permission.CONFIG_READ,
+    Permission.CONFIG_UPDATE,
+    Permission.ANALYTICS_READ,
+    Permission.REPORTS_GENERATE,
+  ],
+  SUPORTE: [
+    Permission.USER_READ,
+    Permission.RACHA_READ,
+    Permission.CONFIG_READ,
+    Permission.SUPPORT_READ,
+    Permission.SUPPORT_CREATE,
+    Permission.SUPPORT_UPDATE,
+  ],
+  AUDITORIA: [
+    Permission.ANALYTICS_READ,
+    Permission.REPORTS_GENERATE,
+    Permission.AUDIT_READ,
+    Permission.AUDIT_CREATE,
+    Permission.AUDIT_EXPORT,
+  ],
+  FINANCEIRO: [
+    Permission.FINANCE_READ,
+    Permission.FINANCE_CREATE,
+    Permission.FINANCE_UPDATE,
+    Permission.FINANCE_APPROVE,
+    Permission.ANALYTICS_READ,
+  ],
+  MARKETING: [Permission.ANALYTICS_READ, Permission.REPORTS_GENERATE, Permission.CONFIG_READ],
+};
 
 function resolveRole(raw?: string | null): Role {
   const value = (raw || "").toUpperCase();
@@ -32,6 +126,18 @@ function resolveRole(raw?: string | null): Role {
     return Role.ADMIN;
   }
   return Role.ADMIN;
+}
+
+function resolvePermissionsForAdminTable(raw?: string | null) {
+  const officialPermissions = getEffectiveAdminRolePermissions(raw);
+  if (officialPermissions.length > 0) {
+    return officialPermissions;
+  }
+
+  const legacyRole = resolveRole(raw);
+  return (LEGACY_ROLE_PERMISSIONS[legacyRole] || []).map(
+    (permission) => LEGACY_PERMISSION_LABELS[permission] || permission
+  );
 }
 
 export default function SuperAdminAdminsPage() {
@@ -127,7 +233,7 @@ export default function SuperAdminAdminsPage() {
             status: membership.status,
             createdAt: membership.createdAt || usuario.criadoEm || new Date(),
             updatedAt: usuario.atualizadoEm || usuario.criadoEm || new Date(),
-            permissions: getEffectiveAdminRolePermissions(roleRaw),
+            permissions: resolvePermissionsForAdminTable(roleRaw),
             tenantId: membership.tenantId,
             tenantNome: membership.tenantNome,
             tenantSlug: membership.tenantSlug,
