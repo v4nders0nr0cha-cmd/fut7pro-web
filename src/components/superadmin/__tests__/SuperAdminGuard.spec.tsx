@@ -100,4 +100,37 @@ describe("SuperAdminGuard", () => {
     expect(screen.queryByText("Conteudo protegido")).not.toBeInTheDocument();
     expect(screen.getByText("Carregando...")).toBeInTheDocument();
   });
+
+  it("bloqueia conteudo apos falha fatal de token mesmo depois de sessao valida", () => {
+    const { rerender } = render(
+      <SuperAdminGuard>
+        <div>Operacao SuperAdmin sensivel</div>
+      </SuperAdminGuard>
+    );
+
+    expect(screen.getByText("Operacao SuperAdmin sensivel")).toBeInTheDocument();
+
+    mockUseSession.mockReturnValue({
+      status: "authenticated",
+      data: {
+        user: {
+          role: "SUPERADMIN",
+          accessToken: "access-token",
+          tokenError: "RefreshAccessTokenError",
+        },
+      },
+      update: jest.fn(),
+    });
+
+    rerender(
+      <SuperAdminGuard>
+        <div>Operacao SuperAdmin sensivel</div>
+      </SuperAdminGuard>
+    );
+
+    expect(screen.queryByText("Operacao SuperAdmin sensivel")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Acesso restrito ao SuperAdmin. Redirecionando...")
+    ).toBeInTheDocument();
+  });
 });

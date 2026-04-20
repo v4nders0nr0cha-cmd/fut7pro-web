@@ -219,7 +219,22 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status !== "authenticated" || !isSuperAdmin || hasFatalTokenError) {
+  if (status === "authenticated" && (!isSuperAdmin || hasFatalTokenError)) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center text-zinc-200 px-4 text-center">
+          Acesso restrito ao SuperAdmin. Redirecionando...
+        </div>
+        <SuperAdminSessionRecoveryNotice
+          open={sessionRecoveryNoticeOpen}
+          errorMessage={sessionRecoveryError}
+          onSignInAgain={handleSignInAgain}
+        />
+      </>
+    );
+  }
+
+  if (status !== "authenticated") {
     if (canKeepMountedDuringRecovery) {
       return renderWithRecoveryNotice(true);
     }
