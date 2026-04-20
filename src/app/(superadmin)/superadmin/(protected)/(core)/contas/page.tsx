@@ -39,16 +39,33 @@ function resolveProvider(provider?: string) {
   return provider;
 }
 
-function summarizeRoles(memberships?: UsuarioMembership[]) {
-  if (!memberships || memberships.length === 0) return "--";
+function summarizeRoleCounts(memberships?: UsuarioMembership[]) {
+  if (!memberships || memberships.length === 0) return [];
   const counter = new Map<string, number>();
   memberships.forEach((membership) => {
     const key = String(membership.role || "ATLETA").toUpperCase();
     counter.set(key, (counter.get(key) || 0) + 1);
   });
-  return Array.from(counter.entries())
-    .map(([role, count]) => `${ROLE_LABELS[role] || role} (${count})`)
-    .join(", ");
+  return Array.from(counter.entries()).map(([role, count]) => ({
+    role,
+    label: ROLE_LABELS[role] || role,
+    count,
+  }));
+}
+
+function summarizeTenants(memberships?: UsuarioMembership[]) {
+  if (!memberships || memberships.length === 0) return "--";
+  const names = Array.from(
+    new Set(
+      memberships
+        .map((membership) => membership.tenantNome || membership.tenantSlug || membership.tenantId)
+        .filter(Boolean)
+    )
+  ) as string[];
+  if (names.length === 0) return "--";
+  const visible = names.slice(0, 2).join(", ");
+  const remaining = names.length - 2;
+  return remaining > 0 ? `${visible} +${remaining}` : visible;
 }
 
 function getAccountDeletionConfirmation(user?: Usuario | null) {
@@ -270,141 +287,177 @@ export default function SuperAdminContasPage() {
           </div>
         )}
 
-        <div className="rounded-xl border border-gray-800 bg-gray-900 shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-sm text-left">
-              <thead className="bg-gray-800 text-xs uppercase text-gray-300">
-                <tr>
-                  <th className="px-4 py-3 sm:px-6">Conta</th>
-                  <th className="px-4 py-3 sm:px-6">Provider</th>
-                  <th className="px-4 py-3 sm:px-6">Verificacao</th>
-                  <th className="px-4 py-3 sm:px-6">Status</th>
-                  <th className="px-4 py-3 sm:px-6">Rachas</th>
-                  <th className="px-4 py-3 sm:px-6">Funcoes</th>
-                  <th className="px-4 py-3 sm:px-6">Ultimo login</th>
-                  <th className="px-4 py-3 text-right sm:px-6">Acoes</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-6 text-center text-gray-400">
-                      Carregando contas...
-                    </td>
-                  </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-6 py-6 text-center text-gray-400">
-                      Nenhuma conta encontrada.
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((user) => {
-                    const displayName = user.nome || user.name || "Usuario";
-                    const nickname = user.nickname ? `(${user.nickname})` : "";
-                    const memberships = user.memberships || [];
-                    const membershipsCount = memberships.length;
-                    const rolesSummary = user.superadmin
-                      ? "SuperAdmin"
-                      : summarizeRoles(memberships);
-                    const statusLabel = user.disabledAt ? "Desativada" : "Ativa";
-                    const isBusy = pendingId === user.id;
-                    const lastLogin = user.lastLoginAt || user.atualizadoEm || user.criadoEm;
-                    const canManage = !user.superadmin;
-
-                    return (
-                      <tr key={user.id} className="hover:bg-gray-800 transition-colors">
-                        <td className="px-4 py-3 sm:px-6">
-                          <div className="flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-yellow-400 flex items-center justify-center">
-                              <FaUserShield className="h-4 w-4 text-gray-900" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-semibold text-white">
-                                {displayName} {nickname}
-                              </div>
-                              <div className="text-xs text-gray-400">{user.email}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-gray-300 sm:px-6">
-                          {resolveProvider(user.authProvider)}
-                        </td>
-                        <td className="px-4 py-3 text-gray-300 sm:px-6">
-                          {user.emailVerifiedAt ? "Verificado" : "Nao verificado"}
-                        </td>
-                        <td className="px-4 py-3 sm:px-6">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              user.disabledAt
-                                ? "bg-red-100 text-red-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {statusLabel}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-300 sm:px-6">{membershipsCount}</td>
-                        <td className="px-4 py-3 text-gray-300 sm:px-6">
-                          <span className="line-clamp-2 max-w-[280px]">{rolesSummary}</span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-300 sm:px-6">{formatDate(lastLogin)}</td>
-                        <td className="px-4 py-3 text-right sm:px-6">
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <button
-                              onClick={() => setSelectedUser(user)}
-                              className="text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Ver vinculos"
-                              disabled={isBusy}
-                            >
-                              <FaEye className="h-4 w-4" />
-                            </button>
-                            <Link
-                              href={`/superadmin/contas/${user.id}`}
-                              className="text-yellow-400 hover:text-yellow-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Detalhes da conta"
-                            >
-                              Detalhes
-                            </Link>
-                            {canManage &&
-                              (user.disabledAt ? (
-                                <button
-                                  onClick={() => handleActivate(user)}
-                                  className="text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Ativar conta"
-                                  disabled={isBusy}
-                                >
-                                  <FaCheck className="h-4 w-4" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleDisable(user)}
-                                  className="text-red-400 hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Desativar conta"
-                                  disabled={isBusy}
-                                >
-                                  <FaBan className="h-4 w-4" />
-                                </button>
-                              ))}
-                            {canManage && (
-                              <button
-                                onClick={() => handleDelete(user)}
-                                className="text-rose-400 hover:text-rose-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                                title="Excluir conta"
-                                disabled={isBusy}
-                              >
-                                <FaTrash className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+        <div className="space-y-2 rounded-lg border border-gray-800 bg-gray-900 p-3 shadow-lg">
+          <div className="hidden grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.85fr)_minmax(0,1.05fr)_minmax(145px,0.6fr)_minmax(190px,0.75fr)] gap-3 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400 xl:grid">
+            <span>Conta</span>
+            <span>Acesso</span>
+            <span>Rachas</span>
+            <span>Funções</span>
+            <span>Último login</span>
+            <span className="text-right">Ações</span>
           </div>
+
+          {isLoading ? (
+            <div className="px-4 py-8 text-center text-sm text-gray-400">Carregando contas...</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-gray-400">
+              Nenhuma conta encontrada.
+            </div>
+          ) : (
+            filtered.map((user) => {
+              const displayName = user.nome || user.name || "Usuario";
+              const nickname = user.nickname ? `(${user.nickname})` : "";
+              const memberships = user.memberships || [];
+              const membershipsCount = memberships.length;
+              const roleCounts = user.superadmin
+                ? [{ role: "SUPERADMIN", label: "SuperAdmin", count: 1 }]
+                : summarizeRoleCounts(memberships);
+              const tenantsSummary = summarizeTenants(memberships);
+              const statusLabel = user.disabledAt ? "Desativada" : "Ativa";
+              const isBusy = pendingId === user.id;
+              const lastLogin = user.lastLoginAt || user.atualizadoEm || user.criadoEm;
+              const canManage = !user.superadmin;
+              const emailVerified = Boolean(user.emailVerifiedAt || user.emailVerified);
+
+              return (
+                <article
+                  key={user.id}
+                  className="rounded-lg border border-gray-800 bg-gray-950/45 px-3 py-3 transition-colors hover:border-yellow-400/30 hover:bg-gray-900"
+                >
+                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1.35fr)_minmax(0,0.75fr)_minmax(0,0.85fr)_minmax(0,1.05fr)_minmax(145px,0.6fr)_minmax(190px,0.75fr)] xl:items-center">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-yellow-400">
+                        <FaUserShield className="h-4 w-4 text-gray-900" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold text-white">
+                          {displayName} {nickname}
+                        </div>
+                        <div className="break-all text-xs text-gray-400">{user.email}</div>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 text-sm text-gray-300">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 xl:hidden">
+                        Acesso
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="rounded-md bg-gray-800 px-2 py-1 text-xs text-gray-200">
+                          {resolveProvider(user.authProvider)}
+                        </span>
+                        <span
+                          className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                            emailVerified
+                              ? "bg-emerald-500/15 text-emerald-200"
+                              : "bg-yellow-500/15 text-yellow-200"
+                          }`}
+                        >
+                          {emailVerified ? "Verificado" : "Não verificado"}
+                        </span>
+                        <span
+                          className={`rounded-md px-2 py-1 text-xs font-semibold ${
+                            user.disabledAt
+                              ? "bg-red-500/15 text-red-200"
+                              : "bg-green-500/15 text-green-200"
+                          }`}
+                        >
+                          {statusLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="min-w-0 text-sm text-gray-300">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 xl:hidden">
+                        Rachas
+                      </p>
+                      <div className="font-semibold text-white">{membershipsCount}</div>
+                      <div className="truncate text-xs text-gray-400">{tenantsSummary}</div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 xl:hidden">
+                        Funções
+                      </p>
+                      <div className="flex max-h-16 flex-wrap gap-1.5 overflow-hidden">
+                        {roleCounts.length > 0 ? (
+                          roleCounts.map((item) => (
+                            <span
+                              key={item.role}
+                              className="rounded-md border border-yellow-400/20 bg-yellow-500/10 px-2 py-1 text-xs font-semibold text-yellow-200"
+                            >
+                              {item.label}
+                              {item.count > 1 ? ` (${item.count})` : ""}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400">Sem vínculo</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-300">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 xl:hidden">
+                        Último login
+                      </p>
+                      {formatDate(lastLogin)}
+                    </div>
+
+                    <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
+                      <button
+                        onClick={() => setSelectedUser(user)}
+                        className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-blue-400/20 bg-blue-500/10 px-2.5 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        title="Ver vinculos"
+                        disabled={isBusy}
+                        type="button"
+                      >
+                        <FaEye className="h-3.5 w-3.5" /> Vínculos
+                      </button>
+                      <Link
+                        href={`/superadmin/contas/${user.id}`}
+                        className="inline-flex min-h-[32px] items-center rounded-md border border-yellow-400/20 bg-yellow-500/10 px-2.5 py-1.5 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/20"
+                        title="Detalhes da conta"
+                      >
+                        Detalhes
+                      </Link>
+                      {canManage &&
+                        (user.disabledAt ? (
+                          <button
+                            onClick={() => handleActivate(user)}
+                            className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-green-400/20 bg-green-500/10 px-2.5 py-1.5 text-xs font-semibold text-green-300 hover:bg-green-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Ativar conta"
+                            disabled={isBusy}
+                            type="button"
+                          >
+                            <FaCheck className="h-3.5 w-3.5" /> Ativar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleDisable(user)}
+                            className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-red-400/20 bg-red-500/10 px-2.5 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="Desativar conta"
+                            disabled={isBusy}
+                            type="button"
+                          >
+                            <FaBan className="h-3.5 w-3.5" /> Bloquear
+                          </button>
+                        ))}
+                      {canManage && (
+                        <button
+                          onClick={() => handleDelete(user)}
+                          className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-rose-400/20 bg-rose-500/10 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Excluir conta"
+                          disabled={isBusy}
+                          type="button"
+                        >
+                          <FaTrash className="h-3.5 w-3.5" /> Excluir
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
 
         {selectedUser && (
