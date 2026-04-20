@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaEye, FaKey, FaUserShield } from "react-icons/fa";
-import { Role, Permission } from "@/common/enums";
+import { Role } from "@/common/enums";
 
 export interface Admin {
   id: string;
@@ -15,7 +15,7 @@ export interface Admin {
   status?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
-  permissions: Permission[];
+  permissions: string[];
   tenantId?: string;
   tenantNome?: string;
   tenantSlug?: string;
@@ -44,39 +44,6 @@ const roleLabels: Record<string, string> = {
   AUDITORIA: "Auditoria",
   FINANCEIRO: "Financeiro",
   MARKETING: "Marketing",
-};
-
-const permissionLabels: Record<Permission, string> = {
-  RACHA_CREATE: "Criar Racha",
-  RACHA_READ: "Ver Racha",
-  RACHA_UPDATE: "Editar Racha",
-  RACHA_DELETE: "Deletar Racha",
-  RACHA_MANAGE_ADMINS: "Gerenciar Admins",
-  USER_CREATE: "Criar Usuario",
-  USER_READ: "Ver Usuario",
-  USER_UPDATE: "Editar Usuario",
-  USER_DELETE: "Deletar Usuario",
-  USER_MANAGE_ROLES: "Gerenciar Roles",
-  FINANCE_READ: "Ver Financeiro",
-  FINANCE_CREATE: "Criar Financeiro",
-  FINANCE_UPDATE: "Editar Financeiro",
-  FINANCE_DELETE: "Deletar Financeiro",
-  FINANCE_APPROVE: "Aprovar Financeiro",
-  CONFIG_READ: "Ver Config",
-  CONFIG_UPDATE: "Editar Config",
-  CONFIG_SYSTEM: "Config Sistema",
-  ANALYTICS_READ: "Ver Analytics",
-  REPORTS_GENERATE: "Gerar Relatorios",
-  SUPERADMIN_CREATE: "Criar SuperAdmin",
-  SUPERADMIN_UPDATE: "Editar SuperAdmin",
-  SUPERADMIN_DELETE: "Deletar SuperAdmin",
-  AUDIT_READ: "Ver Auditoria",
-  AUDIT_CREATE: "Criar Auditoria",
-  AUDIT_EXPORT: "Exportar Auditoria",
-  SUPPORT_READ: "Ver Suporte",
-  SUPPORT_CREATE: "Criar Suporte",
-  SUPPORT_UPDATE: "Editar Suporte",
-  SUPPORT_DELETE: "Deletar Suporte",
 };
 
 export default function AdminsTable({
@@ -273,11 +240,17 @@ export default function AdminsTable({
                   Permissões de {admin.name}
                 </div>
                 <div className="grid max-h-52 gap-2 overflow-y-auto text-xs text-gray-300 sm:grid-cols-2 xl:grid-cols-3">
-                  {admin.permissions.map((permission) => (
-                    <div key={permission} className="rounded-lg bg-gray-950/60 px-3 py-2">
-                      {permissionLabels[permission]}
+                  {admin.permissions.length ? (
+                    admin.permissions.map((permission) => (
+                      <div key={permission} className="rounded-lg bg-gray-950/60 px-3 py-2">
+                        {permission}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="rounded-lg bg-gray-950/60 px-3 py-2 text-gray-400">
+                      Sem matriz oficial para este cargo.
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}

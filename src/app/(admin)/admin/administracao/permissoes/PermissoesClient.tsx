@@ -3,121 +3,14 @@
 import { useMemo } from "react";
 import { BadgeCargo } from "@/components/admin/BadgeCargo";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
+import { ADMIN_ROLE_PERMISSION_ROWS } from "@/lib/admin-role-permissions";
 import type { AdminRoleKey, AdminRoleSlot } from "@/types/admin-roles";
-import type { CargoAdmin } from "@/types/admin";
-
-type PermissionRow = {
-  role: AdminRoleKey;
-  cargo: CargoAdmin;
-  titulo: string;
-  podeAcessar: string[];
-  podeEditar: string[];
-  podeExcluir: string[];
-  prazoExclusaoDias: number | null;
-};
 
 type StatusLabel = AdminRoleSlot["status"] | "LOADING";
 
 type ChipTone = "access" | "edit" | "delete";
 
-const PERMISSION_ROWS: PermissionRow[] = [
-  {
-    role: "PRESIDENTE",
-    cargo: "Presidente",
-    titulo: "Presidente",
-    podeAcessar: [
-      "Administração",
-      "Configurações/Extras",
-      "Partidas",
-      "Times do Dia",
-      "Jogadores",
-      "Conquistas",
-      "Rankings & Estatísticas",
-      "Financeiro",
-      "Patrocinadores",
-      "Comunicação",
-      "Personalização",
-    ],
-    podeEditar: [
-      "Administradores",
-      "Permissões",
-      "Logs/Admin",
-      "Transferir Propriedade",
-      "Configurações críticas",
-      "Partidas",
-      "Jogadores",
-      "Conquistas",
-      "Rankings & Estatísticas",
-      "Financeiro",
-      "Patrocinadores",
-      "Comunicação",
-      "Personalização",
-    ],
-    podeExcluir: [
-      "Partidas",
-      "Rankings",
-      "Campeões",
-      "Atletas",
-      "Lançamentos financeiros",
-      "Patrocinadores",
-    ],
-    prazoExclusaoDias: null,
-  },
-  {
-    role: "VICE_PRESIDENTE",
-    cargo: "Vice",
-    titulo: "Vice-Presidente",
-    podeAcessar: [
-      "Partidas",
-      "Times do Dia",
-      "Jogadores",
-      "Conquistas",
-      "Rankings & Estatísticas",
-      "Financeiro",
-      "Patrocinadores",
-      "Comunicação",
-      "Personalização",
-    ],
-    podeEditar: [
-      "Partidas",
-      "Times do Dia",
-      "Jogadores",
-      "Conquistas",
-      "Rankings & Estatísticas",
-      "Financeiro (lançamentos)",
-      "Patrocinadores",
-      "Comunicação",
-      "Personalização",
-    ],
-    podeExcluir: ["Partidas", "Rankings", "Campeões"],
-    prazoExclusaoDias: 15,
-  },
-  {
-    role: "DIRETOR_FUTEBOL",
-    cargo: "Diretor de Futebol",
-    titulo: "Diretor de Futebol",
-    podeAcessar: ["Partidas", "Times do Dia", "Jogadores", "Conquistas", "Rankings & Estatísticas"],
-    podeEditar: ["Partidas", "Times do Dia", "Conquistas (desempenho)", "Rankings & Estatísticas"],
-    podeExcluir: ["Partidas", "Rankings", "Campeões"],
-    prazoExclusaoDias: 15,
-  },
-  {
-    role: "DIRETOR_FINANCEIRO",
-    cargo: "Diretor Financeiro",
-    titulo: "Diretor Financeiro",
-    podeAcessar: [
-      "Financeiro",
-      "Prestação de contas",
-      "Mensalidades",
-      "Patrocinadores",
-      "Relatórios financeiros",
-      "Partidas (leitura)",
-    ],
-    podeEditar: ["Financeiro", "Prestação de contas", "Mensalidades", "Patrocinadores"],
-    podeExcluir: [],
-    prazoExclusaoDias: 15,
-  },
-];
+const PERMISSION_ROWS = ADMIN_ROLE_PERMISSION_ROWS;
 
 const STATUS_STYLES: Record<StatusLabel, { label: string; className: string }> = {
   ACTIVE: {

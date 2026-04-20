@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { randomUUID } from "crypto";
 import { getApiBase } from "@/lib/get-api-base";
 import {
   buildHeaders,
@@ -41,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id?: string
   return forwardResponse(response.status, body);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id?: string } }) {
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
@@ -53,11 +54,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id?: str
   }
 
   const targetUrl = `${getApiBase()}/superadmin/tenants/${encodeURIComponent(id)}`;
+  const requestId =
+    req.headers.get("x-request-id") || req.headers.get("x-correlation-id") || randomUUID();
+  const headers = buildHeaders(user);
+  headers["x-request-id"] = requestId;
+  headers["x-correlation-id"] = requestId;
 
   const { response, body } = await proxyBackend(targetUrl, {
     method: "DELETE",
-    headers: buildHeaders(user),
+    headers,
   });
 
-  return forwardResponse(response.status, body);
+  const forwarded = forwardResponse(response.status, body);
+  forwarded.headers.set("x-request-id", requestId);
+  return forwarded;
 }
