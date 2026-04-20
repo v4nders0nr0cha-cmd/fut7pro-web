@@ -46,6 +46,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const unauthenticatedRecoveryInFlightRef = useRef(false);
   const unauthenticatedRecoveryAttemptCountRef = useRef(0);
   const unauthenticatedRecoveryTimerRef = useRef<number | null>(null);
+  const hasRenderedValidSessionRef = useRef(false);
   const [sessionRecoveryNoticeOpen, setSessionRecoveryNoticeOpen] = useState(false);
   const [sessionRecoveryError, setSessionRecoveryError] = useState<string | null>(null);
 
@@ -54,6 +55,12 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   const tokenError = String((data?.user as any)?.tokenError || "").trim();
   const hasFatalTokenError = tokenError.length > 0 && tokenError !== "RefreshAccessTokenRetry";
   const isSuperAdmin = (role === "SUPERADMIN" || role === "superadmin") && Boolean(accessToken);
+  const hasValidSuperAdminSession =
+    status === "authenticated" && isSuperAdmin && !hasFatalTokenError;
+  if (hasValidSuperAdminSession) {
+    hasRenderedValidSessionRef.current = true;
+  }
+  const canKeepMountedDuringRecovery = hasRenderedValidSessionRef.current;
   const signOutSuper = useCallback(
     (params?: any) => (signOut as any)({ basePath: "/api/superadmin-auth", ...params }),
     []
@@ -76,7 +83,7 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     status: status as "loading" | "authenticated" | "unauthenticated",
     session: data as any,
     refreshSession: updateSession as any,
-    enabled: status === "authenticated" && isSuperAdmin && !hasFatalTokenError,
+    enabled: status === "authenticated" && isSuperAdmin,
     maxRetries: 8,
     refreshLeadMs: 180_000,
     fallbackIntervalMs: 60_000,
@@ -189,7 +196,22 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     }
   }, [handleSignInAgain, isSuperAdmin, status]);
 
+  const renderWithRecoveryNotice = (noticeOpen = sessionRecoveryNoticeOpen) => (
+    <>
+      {children}
+      <SuperAdminSessionRecoveryNotice
+        open={noticeOpen}
+        errorMessage={sessionRecoveryError}
+        onSignInAgain={handleSignInAgain}
+      />
+    </>
+  );
+
   if (status === "loading") {
+    if (canKeepMountedDuringRecovery) {
+      return renderWithRecoveryNotice();
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center text-zinc-200">
         Carregando...
@@ -197,7 +219,26 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (status !== "authenticated" || !isSuperAdmin || hasFatalTokenError) {
+  if (status === "authenticated" && (!isSuperAdmin || hasFatalTokenError)) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center text-zinc-200 px-4 text-center">
+          Acesso restrito ao SuperAdmin. Redirecionando...
+        </div>
+        <SuperAdminSessionRecoveryNotice
+          open={sessionRecoveryNoticeOpen}
+          errorMessage={sessionRecoveryError}
+          onSignInAgain={handleSignInAgain}
+        />
+      </>
+    );
+  }
+
+  if (status !== "authenticated") {
+    if (canKeepMountedDuringRecovery) {
+      return renderWithRecoveryNotice(true);
+    }
+
     return (
       <>
         <div className="min-h-screen flex items-center justify-center text-zinc-200 px-4 text-center">
@@ -212,14 +253,5 @@ export function SuperAdminGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return (
-    <>
-      {children}
-      <SuperAdminSessionRecoveryNotice
-        open={sessionRecoveryNoticeOpen}
-        errorMessage={sessionRecoveryError}
-        onSignInAgain={handleSignInAgain}
-      />
-    </>
-  );
+  return renderWithRecoveryNotice();
 }
