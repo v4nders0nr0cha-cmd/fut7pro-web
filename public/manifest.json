@@ -24,56 +24,24 @@
     }
   ],
   "categories": ["sports", "lifestyle", "utilities"],
-  "screenshots": [
-    {
-      "src": "/images/screenshots/home.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/images/screenshots/mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "shortcuts": [
     {
       "name": "Estatísticas",
       "short_name": "Stats",
       "description": "Ver estatísticas do racha",
-      "url": "/estatisticas",
-      "icons": [
-        {
-          "src": "/images/icons/stats.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/estatisticas"
     },
     {
       "name": "Partidas",
       "short_name": "Games",
       "description": "Ver partidas",
-      "url": "/partidas",
-      "icons": [
-        {
-          "src": "/images/icons/games.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/partidas"
     },
     {
       "name": "Atletas",
       "short_name": "Players",
       "description": "Ver atletas",
-      "url": "/atletas",
-      "icons": [
-        {
-          "src": "/images/icons/players.png",
-          "sizes": "96x96"
-        }
-      ]
+      "url": "/atletas"
     }
   ]
 }

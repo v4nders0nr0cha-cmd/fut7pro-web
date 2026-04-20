@@ -13,70 +13,10 @@ import ModalEditarAdmin, { type EditAdminPayload } from "@/components/superadmin
 import ModalDetalhesAdmin, { type AdminDetalhes } from "@/components/superadmin/ModalDetalhesAdmin";
 import ModalSenhaResetada from "@/components/superadmin/ModalSenhaResetada";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
-import { Role, Permission } from "@/common/enums";
+import { Role } from "@/common/enums";
 import { Fut7ConfirmDialog, Fut7DestructiveDialog } from "@/components/ui/feedback";
+import { getEffectiveAdminRolePermissions } from "@/lib/admin-role-permissions";
 import type { Usuario } from "@/types/superadmin";
-
-const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  ATLETA: [Permission.USER_READ, Permission.RACHA_READ, Permission.ANALYTICS_READ],
-  ADMIN: [
-    Permission.USER_READ,
-    Permission.USER_CREATE,
-    Permission.USER_UPDATE,
-    Permission.RACHA_READ,
-    Permission.RACHA_UPDATE,
-    Permission.RACHA_MANAGE_ADMINS,
-    Permission.FINANCE_READ,
-    Permission.FINANCE_CREATE,
-    Permission.FINANCE_UPDATE,
-    Permission.CONFIG_READ,
-    Permission.CONFIG_UPDATE,
-    Permission.ANALYTICS_READ,
-    Permission.REPORTS_GENERATE,
-    Permission.SUPPORT_READ,
-    Permission.SUPPORT_CREATE,
-    Permission.SUPPORT_UPDATE,
-  ],
-  SUPERADMIN: Object.values(Permission),
-  GERENTE: [
-    Permission.USER_READ,
-    Permission.USER_CREATE,
-    Permission.USER_UPDATE,
-    Permission.RACHA_READ,
-    Permission.RACHA_UPDATE,
-    Permission.RACHA_MANAGE_ADMINS,
-    Permission.FINANCE_READ,
-    Permission.FINANCE_CREATE,
-    Permission.FINANCE_UPDATE,
-    Permission.CONFIG_READ,
-    Permission.CONFIG_UPDATE,
-    Permission.ANALYTICS_READ,
-    Permission.REPORTS_GENERATE,
-  ],
-  SUPORTE: [
-    Permission.USER_READ,
-    Permission.RACHA_READ,
-    Permission.CONFIG_READ,
-    Permission.SUPPORT_READ,
-    Permission.SUPPORT_CREATE,
-    Permission.SUPPORT_UPDATE,
-  ],
-  AUDITORIA: [
-    Permission.ANALYTICS_READ,
-    Permission.REPORTS_GENERATE,
-    Permission.AUDIT_READ,
-    Permission.AUDIT_CREATE,
-    Permission.AUDIT_EXPORT,
-  ],
-  FINANCEIRO: [
-    Permission.FINANCE_READ,
-    Permission.FINANCE_CREATE,
-    Permission.FINANCE_UPDATE,
-    Permission.FINANCE_APPROVE,
-    Permission.ANALYTICS_READ,
-  ],
-  MARKETING: [Permission.ANALYTICS_READ, Permission.REPORTS_GENERATE, Permission.CONFIG_READ],
-};
 
 function resolveRole(raw?: string | null): Role {
   const value = (raw || "").toUpperCase();
@@ -174,7 +114,6 @@ export default function SuperAdminAdminsPage() {
         )
         .map((membership) => {
           const roleRaw = String(membership.role || usuario.role || "ADMIN").toUpperCase();
-          const permissionRole = resolveRole(roleRaw);
           const isApproved = String(membership.status || "").toUpperCase() === "APROVADO";
 
           return {
@@ -188,7 +127,7 @@ export default function SuperAdminAdminsPage() {
             status: membership.status,
             createdAt: membership.createdAt || usuario.criadoEm || new Date(),
             updatedAt: usuario.atualizadoEm || usuario.criadoEm || new Date(),
-            permissions: ROLE_PERMISSIONS[permissionRole] || [],
+            permissions: getEffectiveAdminRolePermissions(roleRaw),
             tenantId: membership.tenantId,
             tenantNome: membership.tenantNome,
             tenantSlug: membership.tenantSlug,

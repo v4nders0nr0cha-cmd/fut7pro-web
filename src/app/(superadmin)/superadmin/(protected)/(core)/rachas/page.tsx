@@ -740,7 +740,12 @@ export default function RachasCadastradosPage() {
           const resp = await fetch(`/api/superadmin/tenants/${id}`, { method: "DELETE" });
           const data = await resp.json().catch(() => ({}));
           if (!resp.ok) {
-            throw new Error((data as any)?.error || (data as any)?.message || "Falha ao excluir.");
+            const requestId = resp.headers.get("x-request-id") || (data as any)?.requestId;
+            const message =
+              (data as any)?.error ||
+              (data as any)?.message ||
+              "Falha ao excluir racha. A operação foi registrada para auditoria.";
+            throw new Error(requestId ? `${message} RequestId: ${requestId}` : message);
           }
         })
       );
