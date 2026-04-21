@@ -56,6 +56,9 @@ export interface Usuario {
   image?: string;
   phone?: string;
   memberships?: UsuarioMembership[];
+  linkedTenants?: UsuarioTenantLink[];
+  relationshipSummary?: UsuarioRelationshipSummary;
+  deletion?: UsuarioDeletionSummary;
 }
 
 export interface UsuarioMembership {
@@ -66,4 +69,45 @@ export interface UsuarioMembership {
   tenantId?: string;
   tenantSlug?: string;
   tenantNome?: string;
+}
+
+export interface UsuarioDeletionReason {
+  code?: string;
+  message?: string;
+  count?: number;
+}
+
+export interface UsuarioDeletionSummary {
+  eligible?: boolean;
+  reasons?: UsuarioDeletionReason[];
+}
+
+export interface UsuarioRelationshipSummary {
+  tenantCount?: number;
+  directTenantCount?: number;
+  membershipCount?: number;
+  athleteCount?: number;
+  adminCount?: number;
+  blockingRelationshipCount?: number;
+}
+
+export interface UsuarioTenantLink {
+  tenantId?: string;
+  tenantSlug?: string;
+  tenantNome?: string;
+}
+
+export interface UsuarioRelationship {
+  id: string;
+  type: "DIRECT_TENANT_LINK" | "MEMBERSHIP" | "ATHLETE" | "ADMIN" | string;
+  label?: string;
+  role?: string;
+  status?: string;
+  tenantId?: string;
+  tenantSlug?: string;
+  tenantNome?: string;
+  blocksDeletion?: boolean;
+  unlinkable?: boolean;
+  unlinkRequiresTransfer?: boolean;
+  unlinkBlockedReason?: string;
 }

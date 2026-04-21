@@ -38,6 +38,27 @@ type BackendUser = {
     createdAt?: string | null;
     tenant?: { id?: string | null; name?: string | null; slug?: string | null } | null;
   }> | null;
+  linkedTenants?: Array<{
+    tenantId?: string | null;
+    tenantName?: string | null;
+    tenantSlug?: string | null;
+  }> | null;
+  relationshipSummary?: {
+    tenantCount?: number | null;
+    directTenantCount?: number | null;
+    membershipCount?: number | null;
+    athleteCount?: number | null;
+    adminCount?: number | null;
+    blockingRelationshipCount?: number | null;
+  } | null;
+  deletion?: {
+    eligible?: boolean | null;
+    reasons?: Array<{
+      code?: string | null;
+      message?: string | null;
+      count?: number | null;
+    }> | null;
+  } | null;
 };
 
 function mapUser(user: BackendUser) {
@@ -77,6 +98,36 @@ function mapUser(user: BackendUser) {
     atualizadoEm: user.updatedAt ?? user.createdAt ?? undefined,
     ativo: !user.disabledAt,
     memberships,
+    linkedTenants: Array.isArray(user.linkedTenants)
+      ? user.linkedTenants.map((tenant) => ({
+          tenantId: tenant?.tenantId ?? undefined,
+          tenantSlug: tenant?.tenantSlug ?? undefined,
+          tenantNome: tenant?.tenantName ?? undefined,
+        }))
+      : [],
+    relationshipSummary: user.relationshipSummary
+      ? {
+          tenantCount: user.relationshipSummary.tenantCount ?? undefined,
+          directTenantCount: user.relationshipSummary.directTenantCount ?? undefined,
+          membershipCount: user.relationshipSummary.membershipCount ?? undefined,
+          athleteCount: user.relationshipSummary.athleteCount ?? undefined,
+          adminCount: user.relationshipSummary.adminCount ?? undefined,
+          blockingRelationshipCount:
+            user.relationshipSummary.blockingRelationshipCount ?? undefined,
+        }
+      : undefined,
+    deletion: user.deletion
+      ? {
+          eligible: user.deletion.eligible ?? undefined,
+          reasons: Array.isArray(user.deletion.reasons)
+            ? user.deletion.reasons.map((reason) => ({
+                code: reason?.code ?? undefined,
+                message: reason?.message ?? undefined,
+                count: reason?.count ?? undefined,
+              }))
+            : [],
+        }
+      : undefined,
   };
 }
 
