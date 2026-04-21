@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FaBan,
   FaCheck,
@@ -35,7 +35,13 @@ import {
   writeAccountFiltersToSearchParams,
   type AccountFilters,
 } from "@/lib/superadmin-account-filters";
-import type { Usuario, UsuarioMembership } from "@/types/superadmin";
+import type {
+  Usuario,
+  UsuarioDeletionReason,
+  UsuarioMembership,
+  UsuarioRelationship,
+  UsuarioRelationshipSummary,
+} from "@/types/superadmin";
 
 type SuccessFeedback = {
   title: string;
@@ -59,6 +65,33 @@ type BulkDeleteResult = {
     name?: string | null;
     reasons?: BulkDeleteBlockedReason[];
   }>;
+};
+
+type BulkDeletePreview = {
+  selectedCount?: number;
+  eligibleCount?: number;
+  blockedCount?: number;
+  eligible?: Array<{ id: string; email?: string | null; name?: string | null }>;
+  blocked?: Array<{
+    id: string;
+    email?: string | null;
+    name?: string | null;
+    reasons?: BulkDeleteBlockedReason[];
+  }>;
+};
+
+type UserRelationshipsResponse = {
+  user?: { id?: string; email?: string | null; name?: string | null } | null;
+  eligibleForDeletion?: boolean;
+  reasons?: UsuarioDeletionReason[];
+  summary?: UsuarioRelationshipSummary | null;
+  relationships?: UsuarioRelationship[];
+};
+
+type PendingUnlink = {
+  user: Usuario;
+  tenantId: string;
+  tenantNome: string;
 };
 
 const QUICK_FILTERS: Array<{
@@ -95,13 +128,27 @@ function resolveProvider(provider?: string) {
   return provider;
 }
 
-function summarizeRoleCounts(memberships?: UsuarioMembership[]) {
-  if (!memberships || memberships.length === 0) return [];
+function summarizeRoleCounts(user: Usuario) {
+  const memberships = user.memberships;
   const counter = new Map<string, number>();
-  memberships.forEach((membership) => {
+  (memberships || []).forEach((membership) => {
     const key = String(membership.role || "ATLETA").toUpperCase();
     counter.set(key, (counter.get(key) || 0) + 1);
   });
+
+  if (counter.size === 0) {
+    const athleteCount = user.relationshipSummary?.athleteCount || 0;
+    const adminCount = user.relationshipSummary?.adminCount || 0;
+
+    if (athleteCount > 0) {
+      counter.set("ATLETA", athleteCount);
+    }
+
+    if (adminCount > 0) {
+      counter.set("ADMIN", adminCount);
+    }
+  }
+
   return Array.from(counter.entries()).map(([role, count]) => ({
     role,
     label: ACCOUNT_ROLE_LABELS[role] || role,
@@ -109,13 +156,28 @@ function summarizeRoleCounts(memberships?: UsuarioMembership[]) {
   }));
 }
 
-function summarizeTenants(memberships?: UsuarioMembership[]) {
-  if (!memberships || memberships.length === 0) return "--";
+function summarizeTenants(user: Usuario) {
+  const linkedTenants =
+    Array.isArray(user.linkedTenants) && user.linkedTenants.length > 0
+      ? user.linkedTenants.map(
+          (tenant) => tenant.tenantNome || tenant.tenantSlug || tenant.tenantId
+        )
+      : null;
+  const memberships = user.memberships;
+  if (
+    (!memberships || memberships.length === 0) &&
+    (!linkedTenants || linkedTenants.length === 0)
+  ) {
+    return "--";
+  }
   const names = Array.from(
     new Set(
-      memberships
-        .map((membership) => membership.tenantNome || membership.tenantSlug || membership.tenantId)
-        .filter(Boolean)
+      (
+        linkedTenants ||
+        memberships.map(
+          (membership) => membership.tenantNome || membership.tenantSlug || membership.tenantId
+        )
+      ).filter(Boolean)
     )
   ) as string[];
   if (names.length === 0) return "--";
@@ -192,12 +254,70 @@ function buildBulkDeleteDescription(result: BulkDeleteResult) {
   );
 }
 
+function resolveRelationshipTypeLabel(relationship: UsuarioRelationship) {
+  switch (relationship.type) {
+    case "DIRECT_TENANT_LINK":
+      return "Conta principal";
+    case "MEMBERSHIP":
+      return "Membership";
+    case "ATHLETE":
+      return "Atleta";
+    case "ADMIN":
+      return "Admin legado";
+    default:
+      return relationship.label || relationship.type || "Vinculo";
+  }
+}
+
+function resolveRelationshipRoleLabel(relationship: UsuarioRelationship) {
+  const roleKey = String(relationship.role || "").toUpperCase();
+  if (roleKey && ACCOUNT_ROLE_LABELS[roleKey]) {
+    return ACCOUNT_ROLE_LABELS[roleKey];
+  }
+  return relationship.label || "--";
+}
+
+function groupRelationshipsByTenant(relationships: UsuarioRelationship[]) {
+  const groups = new Map<
+    string,
+    {
+      key: string;
+      tenantId?: string;
+      tenantNome: string;
+      relationships: UsuarioRelationship[];
+    }
+  >();
+
+  relationships.forEach((relationship) => {
+    const key =
+      relationship.tenantId ||
+      relationship.tenantSlug ||
+      relationship.tenantNome ||
+      relationship.id;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.relationships.push(relationship);
+      return;
+    }
+    groups.set(key, {
+      key,
+      tenantId: relationship.tenantId,
+      tenantNome: relationship.tenantNome || relationship.tenantSlug || "Racha sem identificacao",
+      relationships: [relationship],
+    });
+  });
+
+  return Array.from(groups.values()).sort((left, right) =>
+    left.tenantNome.localeCompare(right.tenantNome, "pt-BR")
+  );
+}
+
 export default function SuperAdminContasPage() {
   const { nome: brandingName } = useBranding({ scope: "superadmin" });
   const brand = brandingName || "Fut7Pro";
   const brandText = (text: string) => text.replace(/fut7pro/gi, () => brand);
 
-  const { usuarios, isLoading, refreshAll } = useSuperAdmin();
+  const { usuarios, isLoading, mutateUsuarios } = useSuperAdmin();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<AccountFilters>(DEFAULT_ACCOUNT_FILTERS);
   const [filtersHydrated, setFiltersHydrated] = useState(false);
@@ -207,10 +327,18 @@ export default function SuperAdminContasPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [successFeedback, setSuccessFeedback] = useState<SuccessFeedback | null>(null);
   const [selectedUser, setSelectedUser] = useState<Usuario | null>(null);
+  const [relationshipsState, setRelationshipsState] = useState<UserRelationshipsResponse | null>(
+    null
+  );
+  const [relationshipsLoading, setRelationshipsLoading] = useState(false);
+  const relationshipsRequestRef = useRef(0);
+  const [pendingUnlink, setPendingUnlink] = useState<PendingUnlink | null>(null);
   const [pendingDisableUser, setPendingDisableUser] = useState<Usuario | null>(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<Usuario | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkPreview, setBulkPreview] = useState<BulkDeletePreview | null>(null);
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -251,10 +379,12 @@ export default function SuperAdminContasPage() {
   const selectableVisibleIds = useMemo(() => filtered.map((user) => user.id), [filtered]);
   const allVisibleSelected =
     selectableVisibleIds.length > 0 && selectableVisibleIds.every((id) => selectedIds.includes(id));
-  const selectedBlockedPreview = selectedUsers.filter(
+  const fallbackBlockedPreview = selectedUsers.filter(
     (user) => getAccountDeletionBlockers(user).length > 0
   );
-  const selectedEligiblePreview = selectedUsers.length - selectedBlockedPreview.length;
+  const selectedBlockedPreviewCount = bulkPreview?.blockedCount ?? fallbackBlockedPreview.length;
+  const selectedEligiblePreview =
+    bulkPreview?.eligibleCount ?? selectedUsers.length - fallbackBlockedPreview.length;
 
   useEffect(() => {
     setSelectedIds((previous) => {
@@ -262,6 +392,57 @@ export default function SuperAdminContasPage() {
       return next.length === previous.length ? previous : next;
     });
   }, [userById]);
+
+  useEffect(() => {
+    if (!selectedIds.length) {
+      setBulkPreview(null);
+      setBulkPreviewLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setBulkPreviewLoading(true);
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/superadmin/usuarios/bulk-delete/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: selectedIds }),
+          signal: controller.signal,
+        });
+
+        const body = parseResponseBody(await response.text()) as BulkDeletePreview & {
+          message?: string;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(getErrorMessage(body, "Erro ao pre-validar exclusao em massa."));
+        }
+
+        if (!controller.signal.aborted) {
+          setBulkPreview(body);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const message =
+          error instanceof Error ? error.message : "Erro ao pre-validar exclusao em massa.";
+        setBulkPreview(null);
+        showFut7Toast({
+          tone: "error",
+          title: "Falha na pre-validacao",
+          message,
+        });
+      } finally {
+        if (!controller.signal.aborted) {
+          setBulkPreviewLoading(false);
+        }
+      }
+    })();
+
+    return () => controller.abort();
+  }, [selectedIds]);
 
   const activeChips = useMemo(() => getAccountFilterChips(search, filters), [filters, search]);
 
@@ -315,6 +496,106 @@ export default function SuperAdminContasPage() {
     );
   }
 
+  function closeRelationshipsModal() {
+    relationshipsRequestRef.current += 1;
+    setSelectedUser(null);
+    setRelationshipsState(null);
+    setRelationshipsLoading(false);
+  }
+
+  async function loadRelationships(user: Usuario) {
+    const requestId = relationshipsRequestRef.current + 1;
+    relationshipsRequestRef.current = requestId;
+    setSelectedUser(user);
+    setRelationshipsLoading(true);
+    setActionError(null);
+    setRelationshipsState(null);
+
+    try {
+      const response = await fetch(`/api/superadmin/usuarios/${user.id}/relationships`, {
+        cache: "no-store",
+      });
+      const body = parseResponseBody(await response.text()) as UserRelationshipsResponse & {
+        message?: string;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(getErrorMessage(body, "Erro ao carregar vinculos da conta."));
+      }
+
+      if (relationshipsRequestRef.current !== requestId) {
+        return;
+      }
+
+      setRelationshipsState({
+        user: body.user ?? null,
+        eligibleForDeletion: body.eligibleForDeletion ?? false,
+        reasons: Array.isArray(body.reasons) ? body.reasons : [],
+        summary: body.summary ?? null,
+        relationships: Array.isArray(body.relationships) ? body.relationships : [],
+      });
+    } catch (error) {
+      if (relationshipsRequestRef.current !== requestId) {
+        return;
+      }
+      const message = error instanceof Error ? error.message : "Erro ao carregar vinculos.";
+      setRelationshipsState(null);
+      setActionError(message);
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao carregar vinculos",
+        message,
+      });
+    } finally {
+      if (relationshipsRequestRef.current === requestId) {
+        setRelationshipsLoading(false);
+      }
+    }
+  }
+
+  async function confirmUnlink() {
+    if (!pendingUnlink) return;
+
+    setPendingId(pendingUnlink.user.id);
+    setActionError(null);
+
+    try {
+      const response = await fetch(
+        `/api/superadmin/usuarios/${pendingUnlink.user.id}/unlink-tenant`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tenantId: pendingUnlink.tenantId }),
+        }
+      );
+
+      const body = parseResponseBody(await response.text()) as { message?: string; error?: string };
+      if (!response.ok) {
+        throw new Error(getErrorMessage(body, "Erro ao desvincular conta do racha."));
+      }
+
+      await mutateUsuarios();
+      setSuccessFeedback({
+        title: "Conta desvinculada com sucesso",
+        description: `${pendingUnlink.user.email} perdeu o acesso ao racha ${pendingUnlink.tenantNome}.`,
+      });
+      const currentUser = pendingUnlink.user;
+      setPendingUnlink(null);
+      await loadRelationships(currentUser);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao desvincular conta.";
+      setActionError(message);
+      showFut7Toast({
+        tone: "error",
+        title: "Falha ao desvincular conta",
+        message,
+      });
+    } finally {
+      setPendingId(null);
+    }
+  }
+
   async function confirmDisable(user: Usuario, reason: string) {
     if (!user?.id) return;
 
@@ -334,7 +615,7 @@ export default function SuperAdminContasPage() {
         throw new Error(getErrorMessage(body, "Erro ao desativar conta."));
       }
 
-      await refreshAll();
+      await mutateUsuarios();
       setSuccessFeedback({
         title: "Conta bloqueada com sucesso",
         description: `${user.email} nao conseguira acessar ate ser reativada.`,
@@ -363,7 +644,7 @@ export default function SuperAdminContasPage() {
         throw new Error(getErrorMessage(body, "Erro ao ativar conta."));
       }
 
-      await refreshAll();
+      await mutateUsuarios();
       setSuccessFeedback({
         title: "Conta reativada com sucesso",
         description: `${user.email} voltou a ficar apta para acesso.`,
@@ -394,8 +675,11 @@ export default function SuperAdminContasPage() {
         throw new Error(getErrorMessage(body, "Erro ao excluir conta."));
       }
 
-      await refreshAll();
+      await mutateUsuarios();
       setSelectedIds((previous) => previous.filter((id) => id !== user.id));
+      if (selectedUser?.id === user.id) {
+        closeRelationshipsModal();
+      }
       setSuccessFeedback({
         title: "Conta excluida com sucesso",
         description: `${user.email} foi removida da base global.`,
@@ -431,7 +715,7 @@ export default function SuperAdminContasPage() {
         throw new Error(getErrorMessage(body, "Erro ao excluir contas em massa."));
       }
 
-      await refreshAll();
+      await mutateUsuarios();
       const deletedIds = new Set((body.deleted || []).map((item) => item.id));
       setSelectedIds((previous) => previous.filter((id) => !deletedIds.has(id)));
       setBulkDeleteOpen(false);
@@ -708,9 +992,13 @@ export default function SuperAdminContasPage() {
                   {selectedIds.length === 1 ? "" : "s"}
                 </p>
                 <p className="text-xs text-gray-400">
-                  Pre-validacao: {selectedEligiblePreview} elegivel
-                  {selectedEligiblePreview === 1 ? "" : "s"} para exclusao,{" "}
-                  {selectedBlockedPreview.length} com bloqueio provavel por vinculo.
+                  {bulkPreviewLoading
+                    ? "Pre-validacao server-side em andamento..."
+                    : `Pre-validacao: ${selectedEligiblePreview} elegivel${
+                        selectedEligiblePreview === 1 ? "" : "s"
+                      } para exclusao, ${selectedBlockedPreviewCount} bloqueada${
+                        selectedBlockedPreviewCount === 1 ? "" : "s"
+                      } por vinculo real.`}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -781,8 +1069,8 @@ export default function SuperAdminContasPage() {
               const membershipsCount = getAccountTenantCount(user);
               const roleCounts = user.superadmin
                 ? [{ role: "SUPERADMIN", label: "SuperAdmin", count: 1 }]
-                : summarizeRoleCounts(memberships);
-              const tenantsSummary = summarizeTenants(memberships);
+                : summarizeRoleCounts(user);
+              const tenantsSummary = summarizeTenants(user);
               const statusLabel = user.disabledAt ? "Desativada" : "Ativa";
               const isBusy = pendingId === user.id;
               const canManage = !user.superadmin;
@@ -894,7 +1182,7 @@ export default function SuperAdminContasPage() {
 
                     <div className="flex flex-wrap justify-start gap-2 xl:justify-end">
                       <button
-                        onClick={() => setSelectedUser(user)}
+                        onClick={() => void loadRelationships(user)}
                         className="inline-flex min-h-[32px] items-center gap-1 rounded-md border border-blue-400/20 bg-blue-500/10 px-2.5 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Ver vinculos"
                         disabled={isBusy}
@@ -953,13 +1241,13 @@ export default function SuperAdminContasPage() {
         {selectedUser ? (
           <div
             className="fixed inset-0 z-30 flex items-center justify-center bg-black/60"
-            onClick={() => setSelectedUser(null)}
+            onClick={closeRelationshipsModal}
           >
             <div
-              className="w-full max-w-2xl bg-zinc-900 rounded-xl shadow-xl p-6"
+              className="w-full max-w-4xl rounded-xl bg-zinc-900 p-6 shadow-xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="text-lg font-bold text-white">Vinculos do usuario</h3>
                   <p className="text-sm text-gray-400">
@@ -968,43 +1256,153 @@ export default function SuperAdminContasPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => setSelectedUser(null)}
+                  onClick={closeRelationshipsModal}
                   className="text-gray-400 hover:text-white"
                 >
                   Fechar
                 </button>
               </div>
-              <div className="space-y-3 max-h-[380px] overflow-y-auto">
-                {(selectedUser.memberships || []).length === 0 ? (
+
+              <div className="mb-4 grid gap-3 md:grid-cols-4">
+                <ResumoPill
+                  label="Rachas"
+                  value={
+                    relationshipsState?.summary?.tenantCount ?? getAccountTenantCount(selectedUser)
+                  }
+                />
+                <ResumoPill
+                  label="Memberships"
+                  value={
+                    relationshipsState?.summary?.membershipCount ??
+                    (selectedUser.memberships || []).length
+                  }
+                />
+                <ResumoPill
+                  label="Atletas"
+                  value={relationshipsState?.summary?.athleteCount ?? 0}
+                />
+                <ResumoPill label="Admins" value={relationshipsState?.summary?.adminCount ?? 0} />
+              </div>
+
+              {relationshipsState?.reasons && relationshipsState.reasons.length > 0 ? (
+                <div className="mb-4 rounded-lg border border-amber-400/20 bg-amber-500/10 p-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-amber-200/80">
+                    Bloqueios para exclusao global
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-amber-50">
+                    {relationshipsState.reasons.map((reason, index) => (
+                      <li key={`${reason.code || "reason"}-${index}`}>• {reason.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              <div className="max-h-[420px] space-y-3 overflow-y-auto">
+                {relationshipsLoading ? (
+                  <div className="text-sm text-gray-400">Carregando vinculos reais...</div>
+                ) : !relationshipsState || (relationshipsState.relationships || []).length === 0 ? (
                   <div className="text-sm text-gray-400">Nenhum vinculo encontrado.</div>
                 ) : (
-                  (selectedUser.memberships || []).map((membership) => (
-                    <div
-                      key={membership.id || `${membership.tenantId}-${membership.role}`}
-                      className="flex items-center justify-between border border-gray-700 rounded-lg px-4 py-3"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold text-white">
-                          {membership.tenantNome || membership.tenantSlug || "Racha"}
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          {ACCOUNT_ROLE_LABELS[String(membership.role || "ATLETA").toUpperCase()] ||
-                            membership.role ||
-                            "Atleta"}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Status: {membership.status || "--"}
-                      </div>
-                    </div>
-                  ))
+                  groupRelationshipsByTenant(relationshipsState.relationships || []).map(
+                    (group) => {
+                      const groupBlockReason = group.relationships.find(
+                        (relationship) => relationship.unlinkBlockedReason
+                      )?.unlinkBlockedReason;
+                      const canUnlink = group.relationships.some(
+                        (relationship) => relationship.unlinkable
+                      );
+
+                      return (
+                        <section
+                          key={group.key}
+                          className="rounded-lg border border-gray-700 bg-zinc-950/60 p-4"
+                        >
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                              <h4 className="text-sm font-semibold text-white">
+                                {group.tenantNome}
+                              </h4>
+                              <p className="text-xs text-gray-400">
+                                {group.relationships.length} vinculo
+                                {group.relationships.length === 1 ? "" : "s"} encontrado
+                                {group.relationships.length === 1 ? "" : "s"}.
+                              </p>
+                            </div>
+                            <div className="flex flex-col items-start gap-2 lg:items-end">
+                              {canUnlink && group.tenantId ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingUnlink({
+                                      user: selectedUser,
+                                      tenantId: group.tenantId || "",
+                                      tenantNome: group.tenantNome,
+                                    })
+                                  }
+                                  disabled={pendingId === selectedUser.id}
+                                  className="inline-flex min-h-[32px] items-center gap-2 rounded-md border border-rose-400/25 bg-rose-500/12 px-3 py-2 text-xs font-bold text-rose-200 hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  <FaTrash className="h-3.5 w-3.5" />
+                                  Desvincular deste racha
+                                </button>
+                              ) : groupBlockReason ? (
+                                <p className="max-w-md text-right text-xs text-amber-200/80">
+                                  {groupBlockReason}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="mt-3 space-y-2">
+                            {group.relationships.map((relationship) => (
+                              <div
+                                key={relationship.id}
+                                className="rounded-lg border border-gray-800 bg-zinc-900/80 px-3 py-3"
+                              >
+                                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                                  <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <span className="rounded-md border border-blue-400/20 bg-blue-500/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-blue-200">
+                                        {resolveRelationshipTypeLabel(relationship)}
+                                      </span>
+                                      {relationship.blocksDeletion ? (
+                                        <span className="rounded-md border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-amber-200">
+                                          Bloqueia exclusao global
+                                        </span>
+                                      ) : null}
+                                      {relationship.unlinkRequiresTransfer ? (
+                                        <span className="rounded-md border border-violet-400/20 bg-violet-500/10 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-violet-200">
+                                          Exige governanca ativa
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                    <p className="mt-2 text-sm font-semibold text-white">
+                                      {resolveRelationshipRoleLabel(relationship)}
+                                    </p>
+                                    <p className="mt-1 text-xs text-gray-400">
+                                      Status: {relationship.status || "--"}
+                                    </p>
+                                  </div>
+                                  {relationship.unlinkBlockedReason ? (
+                                    <p className="max-w-sm text-xs text-amber-200/80">
+                                      {relationship.unlinkBlockedReason}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      );
+                    }
+                  )
                 )}
               </div>
               <div className="mt-5 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setSelectedUser(null)}
-                  className="px-4 py-2 bg-zinc-700 text-white rounded-lg hover:bg-zinc-800 transition"
+                  onClick={closeRelationshipsModal}
+                  className="rounded-lg bg-zinc-700 px-4 py-2 text-white transition hover:bg-zinc-800"
                 >
                   Fechar
                 </button>
@@ -1059,12 +1457,33 @@ export default function SuperAdminContasPage() {
           loading={pendingBulkDelete}
           impactItems={[
             `${selectedIds.length} conta(s) selecionada(s).`,
-            `${selectedEligiblePreview} conta(s) parecem elegiveis pela pre-validacao da tela.`,
-            `${selectedBlockedPreview.length} conta(s) tem vinculo provavel e devem ser impedidas.`,
+            bulkPreviewLoading
+              ? "Pre-validacao server-side em andamento."
+              : `${selectedEligiblePreview} conta(s) elegivel(is) pela mesma regra do backend.`,
+            bulkPreviewLoading
+              ? "A lista final sera atualizada assim que a analise terminar."
+              : `${selectedBlockedPreviewCount} conta(s) bloqueada(s) por vinculo real antes da exclusao.`,
             "A validacao definitiva acontece no backend antes de qualquer exclusao.",
           ]}
           onClose={() => setBulkDeleteOpen(false)}
           onConfirm={() => void confirmBulkDelete()}
+        />
+        <Fut7DestructiveDialog
+          open={Boolean(pendingUnlink)}
+          title={`Desvincular ${pendingUnlink?.user.email || "conta global"} de ${pendingUnlink?.tenantNome || "racha"}?`}
+          description="A conta global continuara existindo no Fut7Pro, mas perdera o acesso ao racha, aos papeis administrativos e ao vinculo de atleta desse contexto."
+          confirmLabel="Desvincular conta"
+          cancelLabel="Cancelar"
+          confirmationText="DESVINCULAR CONTA DO RACHA"
+          confirmationLabel="Digite a frase abaixo para confirmar"
+          loading={pendingId === pendingUnlink?.user.id}
+          impactItems={[
+            "A conta perde o acesso ao painel admin e ao contexto publico desse racha.",
+            "Todos os vinculos daquele racha sao removidos da conta global selecionada.",
+            "Rachas reais nao podem ficar sem governanca ativa depois da operacao.",
+          ]}
+          onClose={() => setPendingUnlink(null)}
+          onConfirm={() => void confirmUnlink()}
         />
         <Fut7SuccessDialog
           open={Boolean(successFeedback)}

@@ -160,6 +160,9 @@ export function getAccountMemberships(user: Usuario): UsuarioMembership[] {
 }
 
 export function getAccountTenantCount(user: Usuario) {
+  if (typeof user.relationshipSummary?.tenantCount === "number") {
+    return user.relationshipSummary.tenantCount;
+  }
   const tenantIds = new Set<string>();
   getAccountMemberships(user).forEach((membership) => {
     const key = membership.tenantId || membership.tenantSlug || membership.tenantNome;
@@ -176,6 +179,13 @@ export function getAccountTenantTerms(user: Usuario) {
     user.tenantId,
     user.tenantSlug,
     user.tenantNome,
+    ...(Array.isArray(user.linkedTenants)
+      ? user.linkedTenants.flatMap((tenant) => [
+          tenant.tenantId,
+          tenant.tenantSlug,
+          tenant.tenantNome,
+        ])
+      : []),
     ...getAccountMemberships(user).flatMap((membership) => [
       membership.tenantId,
       membership.tenantSlug,
@@ -196,6 +206,11 @@ export function getAccountRoleTerms(user: Usuario) {
 }
 
 export function getAccountDeletionBlockers(user: Usuario) {
+  if (Array.isArray(user.deletion?.reasons) && user.deletion.reasons.length > 0) {
+    return user.deletion.reasons
+      .map((reason) => String(reason.message || "").trim())
+      .filter(Boolean);
+  }
   const blockers: string[] = [];
   const tenantCount = getAccountTenantCount(user);
   if (user.superadmin) blockers.push("conta SuperAdmin");
