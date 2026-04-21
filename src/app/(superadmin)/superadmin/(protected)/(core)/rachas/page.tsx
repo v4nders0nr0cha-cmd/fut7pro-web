@@ -1,6 +1,7 @@
 "use client";
 
 import Head from "next/head";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import {
@@ -71,6 +72,7 @@ type Tenant = {
   plan?: string | null;
   playersCount?: number | null;
   athletes?: number | null;
+  athleteCount?: number | null;
   adminsCount?: number | null;
   admins?: TenantAdmin[];
   memberships?: TenantMembership[] | null;
@@ -459,6 +461,7 @@ export default function RachasCadastradosPage() {
 
           return {
             id: t.id,
+            slug: t.slug || "",
             nome: t.name || t.slug || "Racha sem nome",
             presidente: admin || "--",
             plano: planLabel,
@@ -469,9 +472,9 @@ export default function RachasCadastradosPage() {
               status === "TRIAL" ||
               status === "INADIMPLENTE_COM_HISTORICO",
             atletas:
+              t.athleteCount ??
               t.playersCount ??
               t.athletes ??
-              t.adminsCount ??
               (t as any)?._count?.athletes ??
               (t as any)?._count?.players ??
               (t as any)?._count?.users ??
@@ -1015,7 +1018,15 @@ export default function RachasCadastradosPage() {
                         {statusLabel(r.status)}
                       </span>
                     </td>
-                    <td className="px-2 py-2 text-center xl:px-3">{r.atletas ?? 0}</td>
+                    <td className="px-2 py-2 text-center xl:px-3">
+                      <Link
+                        href={`/superadmin/contas?racha=${encodeURIComponent(r.slug || r.nome)}`}
+                        className="inline-flex min-h-[30px] min-w-[36px] items-center justify-center rounded-md border border-blue-400/20 bg-blue-500/10 px-2 text-sm font-bold text-blue-100 transition hover:bg-blue-500/20"
+                        title={`Ver contas vinculadas ao racha ${r.nome}`}
+                      >
+                        {r.atletas ?? 0}
+                      </Link>
+                    </td>
                     <td className="px-2 py-2 text-center xl:px-3">
                       {r.criadoEm ? formatDate(r.criadoEm) : "--"}
                     </td>
