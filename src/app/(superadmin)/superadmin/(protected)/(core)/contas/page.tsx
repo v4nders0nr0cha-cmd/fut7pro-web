@@ -2,7 +2,7 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FaBan,
   FaCheck,
@@ -136,12 +136,17 @@ function summarizeRoleCounts(user: Usuario) {
     counter.set(key, (counter.get(key) || 0) + 1);
   });
 
-  if (counter.size === 0 && (user.relationshipSummary?.athleteCount || 0) > 0) {
-    counter.set("ATLETA", user.relationshipSummary?.athleteCount || 0);
-  }
+  if (counter.size === 0) {
+    const athleteCount = user.relationshipSummary?.athleteCount || 0;
+    const adminCount = user.relationshipSummary?.adminCount || 0;
 
-  if (counter.size === 0 && (user.relationshipSummary?.adminCount || 0) > 0) {
-    counter.set("ADMIN", user.relationshipSummary?.adminCount || 0);
+    if (athleteCount > 0) {
+      counter.set("ATLETA", athleteCount);
+    }
+
+    if (adminCount > 0) {
+      counter.set("ADMIN", adminCount);
+    }
   }
 
   return Array.from(counter.entries()).map(([role, count]) => ({
@@ -326,6 +331,7 @@ export default function SuperAdminContasPage() {
     null
   );
   const [relationshipsLoading, setRelationshipsLoading] = useState(false);
+  const relationshipsRequestRef = useRef(0);
   const [pendingUnlink, setPendingUnlink] = useState<PendingUnlink | null>(null);
   const [pendingDisableUser, setPendingDisableUser] = useState<Usuario | null>(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState<Usuario | null>(null);
@@ -490,10 +496,20 @@ export default function SuperAdminContasPage() {
     );
   }
 
+  function closeRelationshipsModal() {
+    relationshipsRequestRef.current += 1;
+    setSelectedUser(null);
+    setRelationshipsState(null);
+    setRelationshipsLoading(false);
+  }
+
   async function loadRelationships(user: Usuario) {
+    const requestId = relationshipsRequestRef.current + 1;
+    relationshipsRequestRef.current = requestId;
     setSelectedUser(user);
     setRelationshipsLoading(true);
     setActionError(null);
+    setRelationshipsState(null);
 
     try {
       const response = await fetch(`/api/superadmin/usuarios/${user.id}/relationships`, {
@@ -508,6 +524,10 @@ export default function SuperAdminContasPage() {
         throw new Error(getErrorMessage(body, "Erro ao carregar vinculos da conta."));
       }
 
+      if (relationshipsRequestRef.current !== requestId) {
+        return;
+      }
+
       setRelationshipsState({
         user: body.user ?? null,
         eligibleForDeletion: body.eligibleForDeletion ?? false,
@@ -516,6 +536,9 @@ export default function SuperAdminContasPage() {
         relationships: Array.isArray(body.relationships) ? body.relationships : [],
       });
     } catch (error) {
+      if (relationshipsRequestRef.current !== requestId) {
+        return;
+      }
       const message = error instanceof Error ? error.message : "Erro ao carregar vinculos.";
       setRelationshipsState(null);
       setActionError(message);
@@ -525,7 +548,9 @@ export default function SuperAdminContasPage() {
         message,
       });
     } finally {
-      setRelationshipsLoading(false);
+      if (relationshipsRequestRef.current === requestId) {
+        setRelationshipsLoading(false);
+      }
     }
   }
 
@@ -653,8 +678,7 @@ export default function SuperAdminContasPage() {
       await mutateUsuarios();
       setSelectedIds((previous) => previous.filter((id) => id !== user.id));
       if (selectedUser?.id === user.id) {
-        setSelectedUser(null);
-        setRelationshipsState(null);
+        closeRelationshipsModal();
       }
       setSuccessFeedback({
         title: "Conta excluida com sucesso",
@@ -1217,10 +1241,7 @@ export default function SuperAdminContasPage() {
         {selectedUser ? (
           <div
             className="fixed inset-0 z-30 flex items-center justify-center bg-black/60"
-            onClick={() => {
-              setSelectedUser(null);
-              setRelationshipsState(null);
-            }}
+            onClick={closeRelationshipsModal}
           >
             <div
               className="w-full max-w-4xl rounded-xl bg-zinc-900 p-6 shadow-xl"
@@ -1235,10 +1256,7 @@ export default function SuperAdminContasPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setRelationshipsState(null);
-                  }}
+                  onClick={closeRelationshipsModal}
                   className="text-gray-400 hover:text-white"
                 >
                   Fechar
@@ -1383,10 +1401,7 @@ export default function SuperAdminContasPage() {
               <div className="mt-5 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedUser(null);
-                    setRelationshipsState(null);
-                  }}
+                  onClick={closeRelationshipsModal}
                   className="rounded-lg bg-zinc-700 px-4 py-2 text-white transition hover:bg-zinc-800"
                 >
                   Fechar
