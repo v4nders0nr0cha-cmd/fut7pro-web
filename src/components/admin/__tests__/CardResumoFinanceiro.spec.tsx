@@ -9,7 +9,7 @@ describe("CardResumoFinanceiro (dashboard)", () => {
 
   it("mostra estado vazio quando não há resumo", () => {
     render(<CardResumoFinanceiro />);
-    expect(screen.getByText(/Sem lancamentos/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sem lançamentos/i)).toBeInTheDocument();
   });
 
   it("exibe valores formatados quando há dados", () => {

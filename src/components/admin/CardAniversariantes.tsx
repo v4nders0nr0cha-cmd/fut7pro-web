@@ -33,10 +33,10 @@ export default function CardAniversariantes() {
             </div>
           ))
         ) : (
-          <span className="text-xs text-gray-400">Nenhum aniversario proximo.</span>
+          <span className="text-xs text-gray-400">Nenhum aniversário próximo.</span>
         )}
       </div>
-      <span className="text-xs text-gray-400 mt-2">Deseje parabens!</span>
+      <span className="text-xs text-gray-400 mt-2">Deseje parabéns!</span>
     </div>
   );
 }

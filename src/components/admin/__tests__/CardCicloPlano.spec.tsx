@@ -30,4 +30,30 @@ describe("CardCicloPlano", () => {
 
     expect(screen.getByText(/pagamento pendente/i)).toBeInTheDocument();
   });
+
+  it("prioriza acesso liberado por compensação", () => {
+    render(
+      <CardCicloPlano
+        subscription={{ ...subscriptionBase, status: "past_due" }}
+        status={{
+          preapproval: "pending",
+          upfront: "pending",
+          active: false,
+          access: {
+            status: "ATIVO",
+            accessStatus: "LIBERADO_POR_COMPENSACAO",
+            blocked: false,
+            canAccess: true,
+            source: "COMPENSATION",
+            daysRemaining: 21,
+            effectiveAccessUntil: "2026-05-11T00:00:00.000Z",
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByText(/Acesso liberado/i)).toBeInTheDocument();
+    expect(screen.getByText("21")).toBeInTheDocument();
+    expect(screen.getByText(/compensação de acesso temporária/i)).toBeInTheDocument();
+  });
 });

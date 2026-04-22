@@ -27,9 +27,9 @@ function mapTipoPlano(subscription?: Subscription | null, fallback?: PlanoTipo):
 function labelPlano(tipo: PlanoTipo) {
   switch (tipo) {
     case "gratuito":
-      return "Gratis";
+      return "Grátis";
     case "trial":
-      return "Teste gratis";
+      return "Teste grátis";
     case "mensal":
       return "Mensal Essencial";
     case "mensal-marketing":
@@ -75,30 +75,48 @@ export default function CardPlanoAtual({
 
   const tipo = mapTipoPlano(subscription, tipoPlano ?? "trial");
   const label = labelPlano(tipo);
+  const access = status?.access ?? subscription?.access ?? null;
+  const financial =
+    status?.financialStatus ??
+    status?.financial ??
+    subscription?.financialStatus ??
+    subscription?.financial ??
+    null;
+  const isCompensated = access?.accessStatus === "LIBERADO_POR_COMPENSACAO";
   const isTrial = subscription?.status === "trialing" || tipo === "trial";
-  const isAtivo = status?.active || subscription?.status === "active";
+  const isAtivo =
+    isCompensated || access?.canAccess || status?.active || subscription?.status === "active";
   const isPendente =
     subscription?.status === "past_due" ||
+    financial?.code === "PENDENTE" ||
+    financial?.code === "VENCIDO" ||
+    financial?.code === "EM_APROVACAO" ||
     status?.preapproval === "pending" ||
     status?.upfront === "pending";
 
   const dataFim =
+    access?.effectiveAccessUntil ??
     (isTrial ? subscription?.trialEnd : subscription?.currentPeriodEnd || subscription?.trialEnd) ??
     null;
   const dataFormatada = formatDate(dataFim);
 
   let mensagem = "";
-  if (isTrial) {
+  if (isCompensated) {
+    const untilLabel = dataFormatada ? ` até ${dataFormatada}` : "";
+    const financialIssue = financial?.label?.toLowerCase();
+    mensagem = financialIssue
+      ? `Seu plano está com status financeiro ${financialIssue}, mas o acesso ao painel foi liberado temporariamente por compensação${untilLabel}.`
+      : `Acesso liberado por compensação${untilLabel}. Você pode usar o painel normalmente durante esse período.`;
+  } else if (isTrial) {
     mensagem = dataFormatada
-      ? `Teste valido ate ${dataFormatada}. Converta seu trial para nao perder o acesso.`
-      : "Ative seu plano para liberar financeiro, billing e publicacao automatica.";
+      ? `Teste válido até ${dataFormatada}. Converta seu teste para não perder o acesso.`
+      : "Ative seu plano para liberar financeiro, cobrança e publicação automática.";
   } else if (isPendente) {
-    mensagem =
-      "Pagamento pendente ou boleto em aprovacao. Regularize para manter o painel desbloqueado e revalidate ativo.";
+    mensagem = "Pagamento pendente ou em aprovação. Regularize para manter o painel ativo.";
   } else if (isAtivo) {
     mensagem = dataFormatada
-      ? `Plano ativo. Proximo ciclo ate ${dataFormatada}.`
-      : "Plano ativo e cobrancas recorrentes habilitadas.";
+      ? `Plano ativo. Próximo ciclo até ${dataFormatada}.`
+      : "Plano ativo e cobranças recorrentes habilitadas.";
   } else {
     mensagem = "Nenhum plano ativo. Clique para escolher um plano e destravar os recursos premium.";
   }
@@ -108,7 +126,15 @@ export default function CardPlanoAtual({
     : "/admin/financeiro/planos-limites";
   const ctaLabel = isAtivo ? "Ver faturas" : isTrial ? "Ativar plano" : "Gerenciar plano";
 
-  const statusBadge = isPendente ? "PENDENTE" : isTrial ? "TRIAL" : isAtivo ? "ATIVO" : "SEM PLANO";
+  const statusBadge = isCompensated
+    ? "ACESSO LIBERADO"
+    : isPendente
+      ? financial?.label?.toUpperCase() || "PENDENTE"
+      : isTrial
+        ? "TESTE"
+        : isAtivo
+          ? "ATIVO"
+          : "SEM PLANO";
 
   return (
     <div className="bg-[#23272F] rounded-xl p-6 flex flex-col h-full min-h-[160px] shadow gap-3 justify-between">

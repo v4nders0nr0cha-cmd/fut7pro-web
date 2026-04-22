@@ -20,6 +20,15 @@ function calcDiasRestantes(date?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function resolveDiasRestantes(
+  backendDays?: number | null,
+  effectiveAccessUntil?: string | null,
+  fallbackDate?: string | null
+) {
+  if (typeof backendDays === "number") return Math.max(0, backendDays);
+  return calcDiasRestantes(effectiveAccessUntil || fallbackDate);
+}
+
 export default function CardCicloPlano({
   subscription,
   status,
@@ -27,31 +36,40 @@ export default function CardCicloPlano({
   tipoPlano,
   diasRestantes: diasRestantesProp,
 }: CardCicloPlanoProps) {
+  const access = status?.access ?? subscription?.access ?? null;
+  const isCompensated = access?.accessStatus === "LIBERADO_POR_COMPENSACAO";
   const alvo = subscription?.trialEnd || subscription?.currentPeriodEnd || null;
-  const diasRestantes = diasRestantesProp ?? calcDiasRestantes(alvo);
+  const diasRestantes =
+    diasRestantesProp ??
+    resolveDiasRestantes(access?.daysRemaining, access?.effectiveAccessUntil, alvo);
   const isTrial = subscription?.status === "trialing" || tipoPlano === "trial";
-  const isAtivo = status?.active || subscription?.status === "active";
+  const isAtivo =
+    isCompensated || access?.canAccess || status?.active || subscription?.status === "active";
   const isPendente =
-    subscription?.status === "past_due" ||
-    status?.preapproval === "pending" ||
-    status?.upfront === "pending";
+    !isCompensated &&
+    (subscription?.status === "past_due" ||
+      status?.preapproval === "pending" ||
+      status?.upfront === "pending");
 
   const mensagem = useMemo(() => {
+    if (isCompensated) {
+      return "Seu racha recebeu uma compensação de acesso temporária. Aproveite esse período extra para continuar usando o painel normalmente.";
+    }
     if (isTrial) {
       if (diasRestantes > 7) {
-        return "O jogo esta rolando, mas a partida tem hora para acabar. Garanta seu plano e siga no comando.";
+        return "O jogo está rolando, mas a partida tem hora para acabar. Garanta seu plano e siga no comando.";
       }
       if (diasRestantes > 2) {
-        return "Esta no segundo tempo! Falta pouco para o apito final. Ative seu plano.";
+        return "Está no segundo tempo! Falta pouco para o apito final. Ative seu plano.";
       }
       if (diasRestantes === 2) {
-        return "Ja estamos nos acrescimos! Nao deixe o time na mao. Garanta o plano agora.";
+        return "Já estamos nos acréscimos! Não deixe o time na mão. Garanta o plano agora.";
       }
       if (diasRestantes === 1) {
         return "Ultimos minutos de jogo! Corra para ativar seu plano.";
       }
       if (diasRestantes <= 0) {
-        return "Tempo esgotado! Trial encerrado. Ative um plano para manter o acesso.";
+        return "Tempo esgotado! Teste encerrado. Ative um plano para manter o acesso.";
       }
     }
     if (isPendente) {
@@ -61,7 +79,7 @@ export default function CardCicloPlano({
       return "Sem ciclo ativo. Ative ou renove um plano para manter os recursos premium.";
     }
     return null;
-  }, [diasRestantes, isTrial, isAtivo, isPendente]);
+  }, [diasRestantes, isTrial, isAtivo, isPendente, isCompensated]);
 
   if (loading) {
     return (
@@ -87,7 +105,9 @@ export default function CardCicloPlano({
           <FaCalendarAlt className="text-[#00d3d4] w-8 h-8" />
         </div>
         <div>
-          <div className="text-gray-300 text-sm font-medium">Ciclo do plano</div>
+          <div className="text-gray-300 text-sm font-medium">
+            {isCompensated ? "Acesso liberado" : "Ciclo do plano"}
+          </div>
           <div className="flex items-end gap-1">
             <span className="text-white font-extrabold text-3xl">
               {diasRestantes > 0 ? diasRestantes : 0}
@@ -95,7 +115,11 @@ export default function CardCicloPlano({
             <span className="text-[#00d3d4] font-semibold text-lg">dias</span>
           </div>
           <span className="text-xs text-gray-400">
-            {isTrial ? "para acabar o teste" : "para finalizar o ciclo"}
+            {isCompensated
+              ? "restantes de acesso"
+              : isTrial
+                ? "para acabar o teste"
+                : "para finalizar o ciclo"}
           </span>
         </div>
       </div>

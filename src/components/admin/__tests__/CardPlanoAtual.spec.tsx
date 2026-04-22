@@ -31,8 +31,8 @@ describe("CardPlanoAtual", () => {
     render(<CardPlanoAtual subscription={baseSubscription} status={pendingStatus} />);
 
     expect(screen.getByText(/Plano atual/i)).toBeInTheDocument();
-    expect(screen.getByText(/Teste gratis/i)).toBeInTheDocument();
-    expect(screen.getByText(/Teste valido ate/i)).toBeInTheDocument();
+    expect(screen.getByText(/Teste grátis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Teste válido até/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ativar plano/i })).toHaveAttribute(
       "href",
       "/admin/financeiro/planos-limites"
@@ -52,5 +52,33 @@ describe("CardPlanoAtual", () => {
       "href",
       "/admin/financeiro/planos-limites?faturas=1"
     );
+  });
+
+  it("mostra acesso liberado quando existe compensação ativa com pagamento pendente", () => {
+    render(
+      <CardPlanoAtual
+        subscription={{ ...baseSubscription, status: "past_due" }}
+        status={{
+          ...pendingStatus,
+          access: {
+            status: "ATIVO",
+            accessStatus: "LIBERADO_POR_COMPENSACAO",
+            blocked: false,
+            canAccess: true,
+            source: "COMPENSATION",
+            daysRemaining: 21,
+            effectiveAccessUntil: "2026-05-11T00:00:00.000Z",
+          },
+          financialStatus: {
+            code: "PENDENTE",
+            label: "Pagamento pendente",
+            message: "Existe pagamento pendente.",
+          },
+        }}
+      />
+    );
+
+    expect(screen.getByText(/ACESSO LIBERADO/i)).toBeInTheDocument();
+    expect(screen.getByText(/liberado temporariamente por compensação/i)).toBeInTheDocument();
   });
 });

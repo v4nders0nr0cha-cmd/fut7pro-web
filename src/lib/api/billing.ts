@@ -74,6 +74,70 @@ export interface ChargePricing {
   totalCents: number;
 }
 
+export type FinancialStatusCode =
+  | "EM_DIA"
+  | "PENDENTE"
+  | "VENCIDO"
+  | "EM_APROVACAO"
+  | "CANCELADO"
+  | "TESTE"
+  | "INDEFINIDO";
+
+export interface FinancialStatus {
+  code: FinancialStatusCode;
+  label: string;
+  message: string;
+  statusRaw?: string | null;
+  providerStatus?: {
+    preapproval?: string | null;
+    upfront?: string | null;
+    recurring?: string | null;
+  };
+}
+
+export type EffectiveAccessStatus = "ATIVO" | "LIBERADO_POR_COMPENSACAO" | "EXPIRADO";
+export type SubscriptionAccessStatus = "ATIVO" | "ALERTA" | "BLOQUEADO";
+export type SubscriptionAccessSource =
+  | "SUBSCRIPTION"
+  | "TRIAL"
+  | "COMPENSATION"
+  | "MANUAL_BLOCK"
+  | "LIFECYCLE_ARCHIVED"
+  | "MISSING_SUBSCRIPTION"
+  | "VITRINE";
+
+export interface ActiveCompensation {
+  id?: string | null;
+  daysGranted?: number | null;
+  newAccessUntil: string;
+  appliedAt?: string | null;
+  reasonCategory?: string | null;
+  reasonDescription?: string | null;
+  incidentCode?: string | null;
+  batchOperationId?: string | null;
+}
+
+export interface SubscriptionAccess {
+  status: SubscriptionAccessStatus;
+  accessStatus: EffectiveAccessStatus;
+  blocked: boolean;
+  canAccess: boolean;
+  reason?: string;
+  statusRaw?: string | null;
+  trialEnd?: string | null;
+  currentPeriodEnd?: string | null;
+  compensatedUntil?: string | null;
+  effectiveAccessUntil?: string | null;
+  planKey?: string | null;
+  daysRemaining?: number | null;
+  source: SubscriptionAccessSource;
+  accessSource?: SubscriptionAccessSource;
+  manualBlocked?: boolean;
+  lifecycleBlocked?: boolean;
+  compensationActive?: boolean;
+  activeCompensation?: ActiveCompensation | null;
+}
+
 export interface Subscription {
   id: string;
   tenantId: string;
@@ -96,12 +160,26 @@ export interface Subscription {
   extraTrialDays?: number;
   pricingPreview?: ChargePricing;
   invoices?: Invoice[];
+  access?: SubscriptionAccess;
+  financialStatus?: FinancialStatus;
+  financial?: FinancialStatus;
 }
 
 export interface SubscriptionStatus {
   preapproval: "authorized" | "pending" | "cancelled";
   upfront: "paid" | "pending" | "expired";
+  recurring?: "paid" | "pending" | "expired";
   active: boolean;
+  access?: SubscriptionAccess;
+  financialStatus?: FinancialStatus;
+  financial?: FinancialStatus;
+  subscription?: {
+    id: string;
+    status: Subscription["status"];
+    planKey: string;
+    trialEnd?: string | null;
+    currentPeriodEnd?: string | null;
+  };
 }
 
 export interface PixChargeResponse {
