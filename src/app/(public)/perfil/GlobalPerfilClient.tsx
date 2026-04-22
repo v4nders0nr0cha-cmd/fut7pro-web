@@ -139,6 +139,7 @@ export default function GlobalPerfilClient() {
     birthDay: "",
     birthMonth: "",
     birthYear: "",
+    birthPublic: true,
   });
   const [avatarPreview, setAvatarPreview] = useState(DEFAULT_AVATAR);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -181,6 +182,10 @@ export default function GlobalPerfilClient() {
       birthDay: resolvedBirthDay ? String(resolvedBirthDay) : "",
       birthMonth: resolvedBirthMonth ? String(resolvedBirthMonth) : "",
       birthYear: resolvedBirthYear ? String(resolvedBirthYear) : "",
+      birthPublic:
+        typeof profile.user.birthPublic === "boolean"
+          ? profile.user.birthPublic
+          : me?.athlete?.birthPublic !== false,
     });
     setAvatarPreview(profile.user.avatarUrl || fallbackAthlete?.avatarUrl || DEFAULT_AVATAR);
     setAvatarFile(null);
@@ -358,6 +363,7 @@ export default function GlobalPerfilClient() {
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
+        birthPublic: form.birthPublic,
       });
       setSuccess(true);
       setHasEditedForm(false);
@@ -673,6 +679,20 @@ export default function GlobalPerfilClient() {
                   />
                 </label>
               </div>
+              <label className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-white/10 bg-zinc-800/70 px-3 py-3 text-sm text-zinc-200">
+                <input
+                  type="checkbox"
+                  checked={form.birthPublic}
+                  onChange={(event) => updateFormField("birthPublic", event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-brand"
+                />
+                <span>
+                  Mostrar meu aniversario nos rachas que participo
+                  <span className="block text-xs text-zinc-400">
+                    Quando desmarcado, seu nome nao aparece nos cards e listas de aniversariantes.
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
 
