@@ -1,7 +1,21 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Crown, Shield, Trophy, DollarSign, UserPlus, RefreshCw, Trash2, Info } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  Crown,
+  DollarSign,
+  Info,
+  RefreshCw,
+  Shield,
+  Trash2,
+  Trophy,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import {
   Fut7ConfirmDialog,
   Fut7DestructiveDialog,
@@ -9,7 +23,6 @@ import {
 } from "@/components/ui/feedback";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import { useAdminRoleAthletes } from "@/hooks/useAdminRoleAthletes";
-import { useAdminLogs } from "@/hooks/useAdminLogs";
 import type { AdminRoleAthlete, AdminRoleKey, AdminRoleSlot } from "@/types/admin-roles";
 
 const ROLE_ORDER: AdminRoleKey[] = [
@@ -81,22 +94,9 @@ const ROLE_CONFIG: Record<
   },
 };
 
-function formatLogDate(value?: string | null) {
-  if (!value) return "--";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "--";
-  return parsed.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function AdministradoresClient() {
   const { slots, isLoading, isError, error, assignRole, removeRole, mutate, isSaving } =
     useAdminRoles();
-  const { logs: auditLogs, isLoading: loadingAuditLogs } = useAdminLogs({ limit: 5 });
   const [modalRole, setModalRole] = useState<AdminRoleKey | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -117,6 +117,12 @@ export default function AdministradoresClient() {
   }, [slots]);
 
   const filledCount = slots.filter((slot) => slot.status !== "EMPTY").length;
+  const pendingCount = slots.filter((slot) => slot.status === "PENDING").length;
+  const availableCount = ROLE_ORDER.filter((role) => {
+    const slot = slotMap[role] ?? { role, status: "EMPTY" };
+    return slot.status === "EMPTY";
+  }).length;
+  const supportingRoles = ROLE_ORDER.filter((role) => role !== "PRESIDENTE");
 
   const {
     athletes,
@@ -193,6 +199,202 @@ export default function AdministradoresClient() {
       });
   };
 
+  const renderRoleCard = (role: AdminRoleKey, featured = false) => {
+    const slot = slotMap[role] ?? { role, status: "EMPTY" };
+    const config = ROLE_CONFIG[role];
+    const isEmpty = slot.status === "EMPTY";
+    const isPending = slot.status === "PENDING";
+    const statusLabel =
+      role === "PRESIDENTE"
+        ? "Dono do racha"
+        : isEmpty
+          ? "Vaga disponível"
+          : isPending
+            ? "Convite pendente"
+            : "Ativo";
+    const statusClass =
+      role === "PRESIDENTE"
+        ? "border-yellow-500/40 bg-yellow-500/15 text-yellow-200"
+        : isEmpty
+          ? "border-zinc-600 bg-zinc-800/70 text-zinc-300"
+          : isPending
+            ? "border-orange-500/40 bg-orange-500/15 text-orange-200"
+            : "border-emerald-500/40 bg-emerald-500/15 text-emerald-200";
+
+    const identityBlock = isEmpty ? (
+      <div className="rounded-xl border border-dashed border-[#363a44] bg-[#171a20] px-4 py-5 text-center">
+        <div className="text-sm font-semibold text-zinc-200">Cargo ainda sem responsável</div>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          Indique um atleta confiável para assumir esta função quando a rotina do racha exigir.
+        </p>
+        {config.editable && (
+          <button
+            type="button"
+            onClick={() => openModal(role)}
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-yellow-400 px-3 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
+          >
+            <UserPlus size={16} />
+            Selecionar atleta
+          </button>
+        )}
+      </div>
+    ) : (
+      <div className="flex min-w-0 items-start gap-3">
+        <img
+          src={slot.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg"}
+          alt={slot.name || "Administrador"}
+          className="h-14 w-14 shrink-0 rounded-full border border-[#333] object-cover"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="break-words text-base font-semibold text-white">
+            {slot.name || "Administrador"}
+          </div>
+          <div className="mt-0.5 break-words text-sm text-zinc-400">
+            {slot.nickname || slot.email || "Sem apelido informado"}
+          </div>
+          <div className="mt-1 inline-flex max-w-full items-center rounded-full border border-[#343843] bg-[#171a20] px-2.5 py-1 text-xs text-zinc-300">
+            <span className="truncate">{slot.position || "Posição não informada"}</span>
+          </div>
+        </div>
+      </div>
+    );
+
+    const actionBlock =
+      !isEmpty && config.editable ? (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => openModal(role)}
+            className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/50 px-3 py-1.5 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10"
+            disabled={isSaving}
+          >
+            <RefreshCw size={14} />
+            Substituir
+          </button>
+          <button
+            type="button"
+            onClick={() => requestRemoveConfirmation(role)}
+            className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/10"
+            disabled={isSaving}
+          >
+            <Trash2 size={14} />
+            Remover
+          </button>
+          <Link
+            href="/admin/administracao/permissoes"
+            className="inline-flex items-center gap-2 rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700/40"
+          >
+            <Info size={14} />
+            Ver permissões
+          </Link>
+        </div>
+      ) : null;
+
+    const inviteBlock = slot.pendingInvite ? (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => handleCopyInvite(slot)}
+          className="inline-flex items-center gap-2 rounded-lg border border-blue-500/40 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/10"
+        >
+          Copiar convite
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (slot.email) {
+              const subject = encodeURIComponent("Reenvio de convite para administração do racha");
+              const body = encodeURIComponent(
+                "Olá! Reenviamos seu convite para assumir um cargo administrativo no Fut7Pro."
+              );
+              window.location.href = `mailto:${slot.email}?subject=${subject}&body=${body}`;
+              return;
+            }
+            setFeedback("Este administrador ainda não possui e-mail cadastrado.");
+          }}
+          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10"
+        >
+          Reenviar convite
+        </button>
+      </div>
+    ) : null;
+
+    const permissionBlock = (
+      <div className={featured ? "lg:border-l lg:border-[#2a2d34] lg:pl-6" : ""}>
+        <div className="mb-2 text-sm font-semibold text-zinc-100">Responsabilidades do cargo</div>
+        <ul className="space-y-1.5 text-sm leading-relaxed text-zinc-400">
+          {config.bullets.map((bullet) => (
+            <li key={bullet} className="flex gap-2">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-yellow-400/80" />
+              <span>{bullet}</span>
+            </li>
+          ))}
+        </ul>
+        {role === "PRESIDENTE" && (
+          <Link
+            href="/admin/administracao/transferir-propriedade"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-yellow-500/40 px-3 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-500/10"
+          >
+            Transferir Propriedade
+            <ArrowRight size={15} />
+          </Link>
+        )}
+      </div>
+    );
+
+    if (featured) {
+      return (
+        <article className="rounded-2xl border border-yellow-500/30 bg-[#1c1f26] p-5 shadow-[0_0_0_1px_rgba(250,204,21,0.04)] md:p-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+            <div className="flex min-w-0 flex-col gap-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="rounded-full bg-yellow-500/15 p-3">{config.icon}</span>
+                  <div className="min-w-0">
+                    <div className="text-sm text-yellow-200">{config.subtitle}</div>
+                    <div className="text-xl font-semibold text-white">{config.label}</div>
+                  </div>
+                </div>
+                <span
+                  className={`inline-flex w-fit items-center rounded-full border px-3 py-1 text-xs font-semibold ${statusClass}`}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+              {identityBlock}
+            </div>
+            {permissionBlock}
+          </div>
+        </article>
+      );
+    }
+
+    return (
+      <article className="flex h-full min-h-[430px] flex-col gap-4 rounded-2xl border border-[#2a2d34] bg-[#1c1f26] p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="rounded-full bg-[#2a2d34] p-2.5">{config.icon}</span>
+            <div className="min-w-0">
+              <div className="text-sm text-zinc-400">{config.subtitle}</div>
+              <div className="break-words text-base font-semibold text-white">{config.label}</div>
+            </div>
+          </div>
+          <span
+            className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${statusClass}`}
+          >
+            {statusLabel}
+          </span>
+        </div>
+
+        {identityBlock}
+        {actionBlock}
+        {inviteBlock}
+
+        <div className="mt-auto border-t border-[#2a2d34] pt-4">{permissionBlock}</div>
+      </article>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="w-full max-w-6xl mx-auto pb-10">
@@ -231,7 +433,7 @@ export default function AdministradoresClient() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto pb-10">
+    <div className="w-full max-w-7xl mx-auto pb-10">
       <div className="flex flex-col gap-2 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Administradores do Racha</h1>
         <p className="text-zinc-300">
@@ -239,13 +441,29 @@ export default function AdministradoresClient() {
         </p>
       </div>
 
-      <div className="bg-[#1c1f26] border border-[#2a2d34] rounded-2xl p-4 md:p-5 mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="text-sm text-zinc-200">
-          <span className="font-semibold text-yellow-300">Vagas de administração:</span>{" "}
-          {filledCount}/4
-        </div>
-        <div className="text-sm text-zinc-400">
-          Somente o Presidente pode alterar administradores.
+      <div className="mb-6 rounded-2xl border border-[#2a2d34] bg-[#1c1f26] p-4 md:p-5">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+          <div>
+            <div className="text-sm font-semibold text-yellow-300">Resumo da administração</div>
+            <p className="mt-1 text-sm text-zinc-400">
+              Somente o Presidente pode alterar cargos. Convites pendentes continuam ocupando a vaga
+              até serem concluídos ou removidos.
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center text-sm">
+            <div className="min-w-[88px] rounded-xl border border-[#333743] bg-[#171a20] px-3 py-2">
+              <div className="text-lg font-bold text-white">{filledCount}/4</div>
+              <div className="text-[11px] text-zinc-500">preenchidas</div>
+            </div>
+            <div className="min-w-[88px] rounded-xl border border-[#333743] bg-[#171a20] px-3 py-2">
+              <div className="text-lg font-bold text-orange-200">{pendingCount}</div>
+              <div className="text-[11px] text-zinc-500">pendentes</div>
+            </div>
+            <div className="min-w-[88px] rounded-xl border border-[#333743] bg-[#171a20] px-3 py-2">
+              <div className="text-lg font-bold text-zinc-100">{availableCount}</div>
+              <div className="text-[11px] text-zinc-500">vagas</div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -258,193 +476,47 @@ export default function AdministradoresClient() {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-        {ROLE_ORDER.map((role) => {
-          const slot = slotMap[role] ?? { role, status: "EMPTY" };
-          const config = ROLE_CONFIG[role];
-          const isEmpty = slot.status === "EMPTY";
-          const isPending = slot.status === "PENDING";
-          return (
-            <div
-              key={role}
-              className="bg-[#1c1f26] rounded-2xl p-5 border border-[#2a2d34] flex flex-col gap-4"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full bg-[#2a2d34] p-2">{config.icon}</span>
-                  <div>
-                    <div className="text-sm text-zinc-400">{config.subtitle}</div>
-                    <div className="text-base font-semibold text-white">{config.label}</div>
-                  </div>
-                </div>
-                {role === "PRESIDENTE" && (
-                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300">
-                    Dono do racha
-                  </span>
-                )}
-                {config.editable && !isEmpty && (
-                  <span
-                    className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                      isPending
-                        ? "bg-orange-500/20 text-orange-300"
-                        : "bg-emerald-500/20 text-emerald-300"
-                    }`}
-                  >
-                    {isPending ? "Pendente" : "Ativo"}
-                  </span>
-                )}
-              </div>
-
-              {isEmpty ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 text-zinc-400">
-                  <div className="text-sm">Nenhum definido</div>
-                  {config.editable && (
-                    <button
-                      type="button"
-                      onClick={() => openModal(role)}
-                      className="inline-flex items-center gap-2 rounded-lg bg-yellow-400 text-black font-semibold px-3 py-2 hover:bg-yellow-300"
-                    >
-                      <UserPlus size={16} />
-                      Selecionar atleta
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={slot.avatarUrl || "/images/jogadores/jogador_padrao_01.jpg"}
-                      alt={slot.name || "Administrador"}
-                      className="w-12 h-12 rounded-full border border-[#333] object-cover"
-                    />
-                    <div className="flex-1">
-                      <div className="text-sm font-semibold text-white">
-                        {slot.name || "Administrador"}
-                      </div>
-                      <div className="text-xs text-zinc-400">{slot.nickname || slot.email}</div>
-                      <div className="text-xs text-zinc-500">
-                        {slot.position || "Posição não informada"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {config.editable && (
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openModal(role)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/50 text-yellow-300 px-3 py-1 text-xs hover:bg-yellow-500/10"
-                        disabled={isSaving}
-                      >
-                        <RefreshCw size={14} />
-                        Substituir
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => requestRemoveConfirmation(role)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 text-red-300 px-3 py-1 text-xs hover:bg-red-500/10"
-                        disabled={isSaving}
-                      >
-                        <Trash2 size={14} />
-                        Remover
-                      </button>
-                      <a
-                        href="/admin/administracao/permissoes"
-                        className="inline-flex items-center gap-2 rounded-lg border border-zinc-600 text-zinc-300 px-3 py-1 text-xs hover:bg-zinc-700/40"
-                      >
-                        <Info size={14} />
-                        Ver permissões
-                      </a>
-                    </div>
-                  )}
-
-                  {slot.pendingInvite && (
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleCopyInvite(slot)}
-                        className="inline-flex items-center gap-2 rounded-lg border border-blue-500/40 text-blue-300 px-3 py-1 text-xs hover:bg-blue-500/10"
-                      >
-                        Copiar convite
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (slot.email) {
-                            const subject = encodeURIComponent(
-                              "Reenvio de convite para administração do racha"
-                            );
-                            const body = encodeURIComponent(
-                              "Olá! Reenviamos seu convite para assumir um cargo administrativo no Fut7Pro."
-                            );
-                            window.location.href = `mailto:${slot.email}?subject=${subject}&body=${body}`;
-                            return;
-                          }
-                          setFeedback("Este administrador ainda não possui e-mail cadastrado.");
-                        }}
-                        className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 text-emerald-300 px-3 py-1 text-xs hover:bg-emerald-500/10"
-                      >
-                        Reenviar convite
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="border-t border-[#2a2d34] pt-3 text-xs text-zinc-400">
-                    <div className="font-semibold text-zinc-200 mb-2">
-                      O que esse cargo pode fazer
-                    </div>
-                    <ul className="space-y-1 list-disc list-inside">
-                      {config.bullets.map((bullet) => (
-                        <li key={bullet}>{bullet}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              )}
-
-              {role === "PRESIDENTE" && (
-                <a
-                  href="/admin/administracao/transferir-propriedade"
-                  className="text-xs text-yellow-300 underline"
-                >
-                  Transferir Propriedade
-                </a>
-              )}
-            </div>
-          );
-        })}
+      <div className="space-y-5">
+        {renderRoleCard("PRESIDENTE", true)}
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {supportingRoles.map((role) => (
+            <div key={role}>{renderRoleCard(role)}</div>
+          ))}
+        </div>
       </div>
 
-      <div className="mt-10 bg-[#1c1f26] border border-[#2a2d34] rounded-2xl p-5">
-        <div className="text-lg font-semibold text-yellow-300 mb-3">
-          Últimas ações de administração
+      <div className="mt-8 rounded-2xl border border-[#2a2d34] bg-[#1c1f26] p-5">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <div className="flex items-center gap-2 text-lg font-semibold text-yellow-300">
+              <Users size={18} />
+              Gestão de cargos separada da auditoria
+            </div>
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-400">
+              Use esta página para definir responsáveis e revisar permissões. O histórico completo
+              de alterações, remoções, convites e outras ações administrativas fica concentrado na
+              página oficial de logs.
+            </p>
+          </div>
+          <Link
+            href="/admin/administracao/logs"
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-yellow-500/40 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-500/10"
+          >
+            Ver logs administrativos
+            <ArrowRight size={16} />
+          </Link>
         </div>
-        <ul className="space-y-2 text-sm text-zinc-300">
-          {loadingAuditLogs ? (
-            <li className="text-zinc-400">Carregando histórico...</li>
-          ) : auditLogs.length === 0 ? (
-            <li className="text-zinc-400">Nenhuma ação de administração registrada.</li>
-          ) : (
-            auditLogs.map((log) => {
-              const action = log.action || log.acao || "Ação";
-              const admin = log.adminName || log.adminNome || "Sistema";
-              const details = log.details || log.detalhes || "Sem detalhes";
-              const timestamp = (log.timestamp as string) || log.criadoEm || log.data;
-              return (
-                <li key={log.id} className="flex items-start gap-2">
-                  <span className="mt-1 h-2 w-2 rounded-full bg-yellow-400" />
-                  <span>
-                    {admin} • {action} • {details} ({formatLogDate(timestamp)})
-                  </span>
-                </li>
-              );
-            })
-          )}
-        </ul>
-        <div className="mt-4">
-          <a href="/admin/administracao/logs" className="text-xs text-yellow-300 underline">
-            Ver tudo em Logs/Admin
-          </a>
+        <div className="mt-4 grid gap-3 text-sm text-zinc-400 sm:grid-cols-2">
+          <div className="flex gap-2 rounded-xl border border-[#333743] bg-[#171a20] px-3 py-3">
+            <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={16} />
+            <span>
+              Antes de substituir alguém, confirme se o novo responsável já tem acesso ativo.
+            </span>
+          </div>
+          <div className="flex gap-2 rounded-xl border border-[#333743] bg-[#171a20] px-3 py-3">
+            <Clock3 className="mt-0.5 shrink-0 text-orange-300" size={16} />
+            <span>Convites pendentes podem ser reenviados ou removidos para liberar a vaga.</span>
+          </div>
         </div>
       </div>
 

@@ -31,21 +31,24 @@ export interface Admin {
 
 export interface LogAdmin {
   id: string;
-  adminId: string;
-  usuarioId: string;
-  acao: string;
-  data: string;
+  adminId?: string | null;
+  usuarioId?: string | null;
+  acao?: string;
+  data?: string;
   detalhes?: string;
   ip?: string;
   recurso?: string;
   criadoEm?: string;
+  createdAt?: string;
   adminNome?: string;
   adminEmail?: string;
   action?: string;
   details?: string;
+  message?: string;
   adminName?: string;
   timestamp?: string;
   resource?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export type AdminLog = LogAdmin;

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Download, Search, RefreshCw } from "lucide-react";
 import { useAdminLogs } from "@/hooks/useAdminLogs";
+import { humanizeAdminLog, type HumanizedAdminLog } from "@/lib/admin-log-humanizer";
 import type { AdminLog } from "@/types/admin";
 
 type AdminOption = {
@@ -11,7 +12,6 @@ type AdminOption = {
 };
 
 const LIMIT_OPTIONS = [50, 100, 200];
-const MAX_DETAILS_LENGTH = 280;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -27,47 +27,20 @@ function normalizeText(value?: string | null) {
   return (value || "").toString().toLowerCase();
 }
 
-function maskIpv4(value: string) {
-  const parts = value.split(".");
-  if (parts.length !== 4) return "[ip-redigido]";
-  return `${parts[0]}.${parts[1]}.***.***`;
-}
-
-function sanitizeLogText(value?: string | null) {
-  if (!value) return "—";
-  let sanitized = value;
-
-  sanitized = sanitized.replace(/Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, "Bearer [redigido]");
-  sanitized = sanitized.replace(
-    /(\"?(?:token|accessToken|refreshToken|authorization|cookie|set-cookie|senha|password|secret|apiKey|apikey|hash)\"?\s*[:=]\s*\")([^\"]+)(\")/gi,
-    "$1[redigido]$3"
-  );
-  sanitized = sanitized.replace(
-    /\b([A-Za-z0-9_-]{20,})\.([A-Za-z0-9_-]{20,})\.([A-Za-z0-9_-]{20,})\b/g,
-    "[jwt-redigido]"
-  );
-  sanitized = sanitized.replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, (ip) => maskIpv4(ip));
-
-  if (sanitized.length > MAX_DETAILS_LENGTH) {
-    return `${sanitized.slice(0, MAX_DETAILS_LENGTH).trimEnd()}...`;
-  }
-  return sanitized;
-}
-
 function escapeCsvValue(value: string) {
   const escaped = value.replace(/"/g, '""');
   return `"${escaped}"`;
 }
 
-function buildCsv(logs: AdminLog[]) {
-  const header = ["Data", "Ação", "Administrador", "E-mail", "Detalhes", "Recurso"];
+function buildCsv(logs: HumanizedAdminLog[]) {
+  const header = ["Data", "Ação", "Responsável", "E-mail", "Resumo", "Contexto"];
   const rows = logs.map((log) => [
-    formatDate((log.timestamp as string) || log.criadoEm || log.data),
-    log.action || log.acao || "",
-    log.adminName || log.adminNome || "",
-    log.adminEmail || "",
-    sanitizeLogText(log.details || log.detalhes || ""),
-    log.resource || "",
+    formatDate(log.occurredAt),
+    log.actionLabel,
+    log.actorLabel,
+    log.actorEmail || "",
+    log.summary,
+    log.contextLabel,
   ]);
 
   return [header, ...rows]
@@ -75,7 +48,7 @@ function buildCsv(logs: AdminLog[]) {
     .join("\n");
 }
 
-function downloadCsv(logs: AdminLog[]) {
+function downloadCsv(logs: HumanizedAdminLog[]) {
   const csv = buildCsv(logs);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -86,6 +59,30 @@ function downloadCsv(logs: AdminLog[]) {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+function LogSummary({
+  summary,
+  technicalDetails,
+}: {
+  summary: string;
+  technicalDetails: string | null;
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="leading-relaxed text-zinc-300">{summary}</p>
+      {technicalDetails && (
+        <details className="group">
+          <summary className="cursor-pointer text-xs font-semibold text-yellow-300 hover:text-yellow-200">
+            Ver detalhes técnicos
+          </summary>
+          <pre className="mt-2 max-h-56 overflow-auto rounded-xl border border-[#333743] bg-[#14161a] p-3 text-xs leading-relaxed text-zinc-400">
+            {technicalDetails}
+          </pre>
+        </details>
+      )}
+    </div>
+  );
 }
 
 export default function LogsAdminClient() {
@@ -114,19 +111,19 @@ export default function LogsAdminClient() {
   }, [selectedAction, selectedAdmin, startDate, endDate, limit]);
 
   const { logs, isLoading, isError, error, mutate } = useAdminLogs(filters);
+  const humanizedLogs = useMemo(() => logs.map((log) => humanizeAdminLog(log)), [logs]);
 
   const uniqueActions = useMemo(() => {
-    const seen = new Set<string>();
-    const actions: string[] = [];
-    logs.forEach((log) => {
-      const action = log.action || log.acao || "";
-      if (action && !seen.has(action)) {
-        seen.add(action);
-        actions.push(action);
+    const map = new Map<string, string>();
+    humanizedLogs.forEach((log) => {
+      if (log.rawAction && !map.has(log.rawAction)) {
+        map.set(log.rawAction, log.actionLabel);
       }
     });
-    return actions;
-  }, [logs]);
+    return Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
+  }, [humanizedLogs]);
 
   const adminOptions = useMemo<AdminOption[]>(() => {
     const map = new Map<string, AdminOption>();
@@ -142,24 +139,17 @@ export default function LogsAdminClient() {
 
   const filteredLogs = useMemo(() => {
     const search = normalizeText(searchTerm);
-    return logs.filter((log) => {
-      const action = normalizeText(log.action || log.acao);
-      const details = normalizeText(log.details || log.detalhes);
-      const adminName = normalizeText(log.adminName || log.adminNome || log.adminEmail);
-      const matchesSearch =
-        !search ||
-        action.includes(search) ||
-        details.includes(search) ||
-        adminName.includes(search);
+    return humanizedLogs.filter((log) => {
+      const matchesSearch = !search || log.searchText.includes(search);
 
-      const matchesAction = !selectedAction || action === normalizeText(selectedAction);
+      const matchesAction = !selectedAction || log.rawAction === selectedAction;
       const matchesAdmin =
         !selectedAdmin ||
-        (selectedAdmin === "__system__" ? !log.adminId : log.adminId === selectedAdmin);
+        (selectedAdmin === "__system__" ? !log.actorId : log.actorId === selectedAdmin);
 
       return matchesSearch && matchesAction && matchesAdmin;
     });
-  }, [logs, searchTerm, selectedAction, selectedAdmin]);
+  }, [humanizedLogs, searchTerm, selectedAction, selectedAdmin]);
 
   const hasLogs = filteredLogs.length > 0;
 
@@ -168,8 +158,8 @@ export default function LogsAdminClient() {
       <div className="flex flex-col gap-2 mb-6">
         <h1 className="text-2xl md:text-3xl font-bold text-yellow-400">Logs de Administração</h1>
         <p className="text-zinc-300">
-          Auditoria completa das ações realizadas no painel. Os dados são carregados em tempo real
-          do backend do racha.
+          Histórico das ações importantes do painel, com linguagem clara para acompanhar o que
+          aconteceu, quem fez e qual foi o impacto.
         </p>
       </div>
 
@@ -203,7 +193,7 @@ export default function LogsAdminClient() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
           <input
             type="text"
-            placeholder="Buscar por ação, detalhes ou admin"
+            placeholder="Buscar por ação, responsável ou resumo"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-3 py-2 bg-[#232323] rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -217,8 +207,8 @@ export default function LogsAdminClient() {
         >
           <option value="">Todas as ações</option>
           {uniqueActions.map((action) => (
-            <option key={action} value={action}>
-              {action}
+            <option key={action.value} value={action.value}>
+              {action.label}
             </option>
           ))}
         </select>
@@ -306,23 +296,23 @@ export default function LogsAdminClient() {
                     className="border-b border-[#242429] hover:bg-[#242529] transition"
                   >
                     <td className="py-3 px-4 text-sm text-zinc-300">
-                      {formatDate((log.timestamp as string) || log.criadoEm || log.data)}
+                      {formatDate(log.occurredAt)}
                     </td>
                     <td className="py-3 px-4 text-sm font-semibold text-yellow-300">
-                      {log.action || log.acao || "Ação"}
+                      {log.actionLabel}
                     </td>
                     <td className="py-3 px-4 text-sm text-zinc-200">
-                      <div>{log.adminName || log.adminNome || "Sistema"}</div>
-                      {log.adminEmail && (
-                        <div className="text-xs text-zinc-500">{log.adminEmail}</div>
+                      <div>{log.actorLabel}</div>
+                      {log.actorEmail && (
+                        <div className="text-xs text-zinc-500">{log.actorEmail}</div>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-sm text-zinc-300">
-                      {sanitizeLogText(log.details || log.detalhes || "—")}
+                    <td className="max-w-xl py-3 px-4 text-sm text-zinc-300">
+                      <LogSummary summary={log.summary} technicalDetails={log.technicalDetails} />
                     </td>
                     <td className="py-3 px-4 text-xs">
                       <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-200 border border-zinc-700">
-                        {log.resource || "Registro"}
+                        {log.contextLabel}
                       </span>
                     </td>
                   </tr>
@@ -335,22 +325,16 @@ export default function LogsAdminClient() {
             {filteredLogs.map((log) => (
               <div key={log.id} className="bg-[#1c1f26] border border-[#2a2d34] rounded-2xl p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-zinc-400">
-                    {formatDate((log.timestamp as string) || log.criadoEm || log.data)}
-                  </span>
+                  <span className="text-xs text-zinc-400">{formatDate(log.occurredAt)}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-200 border border-zinc-700">
-                    {log.resource || "Registro"}
+                    {log.contextLabel}
                   </span>
                 </div>
-                <div className="mt-2 text-sm font-semibold text-yellow-300">
-                  {log.action || log.acao || "Ação"}
-                </div>
-                <div className="mt-1 text-xs text-zinc-400">
-                  {log.adminName || log.adminNome || "Sistema"}
-                </div>
-                {log.adminEmail && <div className="text-xs text-zinc-600">{log.adminEmail}</div>}
+                <div className="mt-2 text-sm font-semibold text-yellow-300">{log.actionLabel}</div>
+                <div className="mt-1 text-xs text-zinc-400">{log.actorLabel}</div>
+                {log.actorEmail && <div className="text-xs text-zinc-600">{log.actorEmail}</div>}
                 <div className="mt-2 text-sm text-zinc-300">
-                  {sanitizeLogText(log.details || log.detalhes || "—")}
+                  <LogSummary summary={log.summary} technicalDetails={log.technicalDetails} />
                 </div>
               </div>
             ))}
