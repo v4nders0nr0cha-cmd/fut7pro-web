@@ -21,22 +21,9 @@ const meses = [
   "Dezembro",
 ];
 
-function calcularIdade(day: number, month: number, year: number) {
-  const hoje = new Date();
-  let idade = hoje.getFullYear() - year;
-  const mesAtual = hoje.getMonth() + 1;
-  if (mesAtual < month || (mesAtual === month && hoje.getDate() < day)) {
-    idade -= 1;
-  }
-  return idade;
-}
-
-function formatarData(day: number, month: number, year?: number | null) {
+function formatarData(day: number, month: number) {
   const dia = String(day).padStart(2, "0");
   const mes = String(month).padStart(2, "0");
-  if (year) {
-    return `${dia}/${mes}/${year}`;
-  }
   return `${dia}/${mes}`;
 }
 
@@ -127,10 +114,6 @@ export default function AniversariantesPage() {
             {!isLoading &&
               aniversariantesDoMes.map((aniv) => {
                 const ehHoje = isAniversarioHoje(aniv.birthDay, aniv.birthMonth);
-                const idade =
-                  typeof aniv.birthYear === "number"
-                    ? calcularIdade(aniv.birthDay, aniv.birthMonth, aniv.birthYear)
-                    : null;
 
                 return (
                   <div
@@ -158,8 +141,7 @@ export default function AniversariantesPage() {
                         {aniv.nickname || aniv.name}
                       </span>
                       <span className="text-gray-300 text-sm">
-                        {formatarData(aniv.birthDay, aniv.birthMonth, aniv.birthYear)}
-                        {idade !== null ? ` - ${idade} anos` : ""}
+                        {formatarData(aniv.birthDay, aniv.birthMonth)}
                       </span>
                     </div>
                     {ehHoje && (
