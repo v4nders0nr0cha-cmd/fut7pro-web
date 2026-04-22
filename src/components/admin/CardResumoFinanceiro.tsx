@@ -29,7 +29,7 @@ export default function CardResumoFinanceiro({ resumo, isLoading }: Props) {
   if (!resumo) {
     return (
       <div className="bg-[#23272F] rounded-xl p-6 shadow flex flex-col items-center justify-center h-full min-h-[140px] text-center">
-        <span className="text-sm text-gray-300 font-semibold">Sem lancamentos no periodo</span>
+        <span className="text-sm text-gray-300 font-semibold">Sem lançamentos no período</span>
         <span className="text-xs text-gray-500 mt-1">
           Adicione receitas ou despesas para ver o saldo.
         </span>
@@ -42,11 +42,11 @@ export default function CardResumoFinanceiro({ resumo, isLoading }: Props) {
   return (
     <div className="bg-[#23272F] rounded-xl p-6 shadow flex flex-col items-center justify-center h-full min-h-[140px]">
       <span className="text-[#8de97c] font-bold text-lg">
-        {periodoLabel ? `Saldo (${periodoLabel})` : "Saldo do periodo"}
+        {periodoLabel ? `Saldo (${periodoLabel})` : "Saldo do período"}
       </span>
       <span className="text-2xl font-extrabold text-white mt-2">{formatCurrency(saldo)}</span>
       <span className="text-xs text-gray-400 mt-1">
-        Entradas: {formatCurrency(receitas)} | Saidas: {formatCurrency(Math.abs(despesas))}
+        Entradas: {formatCurrency(receitas)} | Saídas: {formatCurrency(Math.abs(despesas))}
       </span>
     </div>
   );

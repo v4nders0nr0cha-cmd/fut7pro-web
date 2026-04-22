@@ -57,9 +57,42 @@ function resolveStatusMeta(status?: string | null) {
     return { label: "Cancelada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
   }
   if (normalized === "expired") {
-    return { label: "Expirada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
+    return { label: "Acesso expirado", className: "bg-red-500/15 text-red-200 border-red-500/30" };
   }
   return { label: "Indefinido", className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30" };
+}
+
+function resolveAccessMeta(accessStatus?: string | null) {
+  if (accessStatus === "LIBERADO_POR_COMPENSACAO") {
+    return {
+      label: "Acesso liberado",
+      className: "bg-green-500/15 text-green-200 border-green-500/30",
+    };
+  }
+  if (accessStatus === "ATIVO") {
+    return { label: "Ativo", className: "bg-green-500/15 text-green-200 border-green-500/30" };
+  }
+  if (accessStatus === "EXPIRADO") {
+    return {
+      label: "Acesso expirado",
+      className: "bg-red-500/15 text-red-200 border-red-500/30",
+    };
+  }
+  return null;
+}
+
+function formatDaysLabel(days?: number | null) {
+  if (typeof days !== "number") return "dias extras";
+  return days === 1 ? "1 dia extra" : `${days} dias extras`;
+}
+
+function resolveFinancialSentence(label?: string | null) {
+  const normalized = (label || "").trim().toLowerCase();
+  if (!normalized) return "Seu status financeiro continua em acompanhamento";
+  if (normalized.includes("pendente")) return "Seu pagamento continua pendente";
+  if (normalized.includes("vencido")) return "Seu pagamento está vencido";
+  if (normalized.includes("aprovação")) return "Seu pagamento está em aprovação";
+  return `Seu status financeiro é ${normalized}`;
 }
 
 function calcDaysRemaining(target?: string | null) {
@@ -216,7 +249,7 @@ export default function PlanosLimitesPage() {
   );
 
   const annualNoteLabel =
-    planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses gratis";
+    planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses grátis";
 
   useEffect(() => {
     if (subscription?.planKey) {
@@ -234,6 +267,15 @@ export default function PlanosLimitesPage() {
     }
   }, []);
 
+  const effectiveAccess = subscriptionStatus?.access ?? subscription?.access ?? null;
+  const financialStatus =
+    subscriptionStatus?.financialStatus ??
+    subscriptionStatus?.financial ??
+    subscription?.financialStatus ??
+    subscription?.financial ??
+    null;
+  const isCompensated = effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO";
+
   const statusMeta = useMemo(() => {
     if (!subscription && loading) {
       return {
@@ -247,11 +289,16 @@ export default function PlanosLimitesPage() {
         className: "bg-indigo-500/15 text-indigo-200 border-indigo-500/30",
       };
     }
+    const accessMeta = resolveAccessMeta(effectiveAccess?.accessStatus);
+    if (accessMeta) return accessMeta;
     return resolveStatusMeta(subscription?.status);
-  }, [subscription, loading, error]);
+  }, [subscription, loading, error, effectiveAccess?.accessStatus]);
   const isTrial = subscription?.status === "trialing";
   const pendingPayment =
     subscription?.status === "past_due" ||
+    financialStatus?.code === "PENDENTE" ||
+    financialStatus?.code === "VENCIDO" ||
+    financialStatus?.code === "EM_APROVACAO" ||
     subscriptionStatus?.preapproval === "pending" ||
     subscriptionStatus?.upfront === "pending";
   const now = new Date();
@@ -263,10 +310,12 @@ export default function PlanosLimitesPage() {
       : false;
   const billingBlocked =
     Boolean(subscription) &&
-    (trialExpired ||
-      periodExpired ||
-      subscription?.status === "past_due" ||
-      subscription?.status === "expired");
+    (effectiveAccess
+      ? effectiveAccess.blocked
+      : trialExpired ||
+        periodExpired ||
+        subscription?.status === "past_due" ||
+        subscription?.status === "expired");
   const canSwitchPlan = subscription?.status === "trialing";
 
   const planLabel = planoAtual?.label || subscription?.planKey || "Sincronizando assinatura";
@@ -274,14 +323,21 @@ export default function PlanosLimitesPage() {
   const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 
   const periodStart = isTrial ? subscription?.trialStart : subscription?.currentPeriodStart;
-  const periodEnd = isTrial
-    ? subscription?.trialEnd
-    : subscription?.currentPeriodEnd || subscription?.trialEnd;
+  const periodEnd =
+    effectiveAccess?.effectiveAccessUntil ??
+    (isTrial ? subscription?.trialEnd : subscription?.currentPeriodEnd || subscription?.trialEnd);
   const periodLabel =
     periodStart && periodEnd ? `${formatDate(periodStart)} - ${formatDate(periodEnd)}` : "N/D";
 
-  const cycleEnd = subscription?.currentPeriodEnd || subscription?.trialEnd || null;
-  const daysRemaining = calcDaysRemaining(cycleEnd);
+  const cycleEnd =
+    effectiveAccess?.effectiveAccessUntil ??
+    subscription?.currentPeriodEnd ??
+    subscription?.trialEnd ??
+    null;
+  const daysRemaining =
+    typeof effectiveAccess?.daysRemaining === "number"
+      ? Math.max(0, effectiveAccess.daysRemaining)
+      : calcDaysRemaining(cycleEnd);
   const cycleLabel = daysRemaining !== null ? `${daysRemaining}` : "--";
 
   const invoices = subscription?.invoices ?? [];
@@ -392,7 +448,7 @@ export default function PlanosLimitesPage() {
     }
 
     if (!canSwitchPlan) {
-      setActionError("Troca automatica disponivel apenas durante o periodo de teste.");
+      setActionError("Troca automática disponível apenas durante o período de teste.");
       return;
     }
 
@@ -451,6 +507,23 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
+        {isCompensated && (
+          <div className="mb-6 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-4 text-green-50">
+            <p className="text-base font-semibold">Acesso liberado por compensação</p>
+            <p className="mt-1 text-sm text-green-50/90">
+              Seu racha recebeu uma compensação de acesso de{" "}
+              {formatDaysLabel(effectiveAccess?.activeCompensation?.daysGranted)}. O painel
+              permanece liberado até {formatDate(effectiveAccess?.effectiveAccessUntil)}.
+            </p>
+            {pendingPayment && (
+              <p className="mt-1 text-sm text-green-50/80">
+                {resolveFinancialSentence(financialStatus?.label)}, mas você pode usar o sistema
+                normalmente durante esse período.
+              </p>
+            )}
+          </div>
+        )}
+
         {billingBlocked && (
           <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 px-4 py-4 text-yellow-100 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
@@ -474,9 +547,9 @@ export default function PlanosLimitesPage() {
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
+                  <h2 className="text-lg font-bold text-white mb-1">Plano e acesso</h2>
                   <p className="text-sm text-gray-400">
-                    O plano escolhido define o valor após o teste e mantem o painel ativo.
+                    Status financeiro e liberação do painel são tratados separadamente.
                   </p>
                 </div>
                 <span
@@ -494,20 +567,24 @@ export default function PlanosLimitesPage() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Periodo</span>
+                  <span className="text-xs text-gray-500">Período</span>
                   <p className="text-base font-semibold text-white">{periodLabel}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Valor de referencia</span>
+                  <span className="text-xs text-gray-500">Valor de referência</span>
                   <p className="text-base font-semibold text-white">
                     {formatCurrencyFromCents(subscription?.amount)}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Status do pagamento</span>
+                  <span className="text-xs text-gray-500">Status financeiro</span>
                   <p className="text-base font-semibold text-white">
-                    {pendingPayment ? "Pendente" : "Em dia"}
+                    {financialStatus?.label ?? (pendingPayment ? "Pendente" : "Em dia")}
                   </p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Status de acesso</span>
+                  <p className="text-base font-semibold text-white">{statusMeta.label}</p>
                 </div>
               </div>
 
@@ -533,9 +610,15 @@ export default function PlanosLimitesPage() {
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
+                  <h2 className="text-lg font-bold text-white mb-1">
+                    {isCompensated ? "Acesso liberado" : "Ciclo do plano"}
+                  </h2>
                   <p className="text-sm text-gray-400">
-                    {isTrial ? "Periodo de teste ativo" : "Ciclo atual de assinatura"}
+                    {isCompensated
+                      ? "Compensação temporária vigente"
+                      : isTrial
+                        ? "Período de teste ativo"
+                        : "Ciclo atual de assinatura"}
                   </p>
                 </div>
                 <span className="text-2xl font-extrabold text-yellow-300">{cycleLabel} dias</span>
@@ -543,17 +626,21 @@ export default function PlanosLimitesPage() {
 
               <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
                 <div>
-                  <span className="text-xs text-gray-500">Proximo vencimento</span>
+                  <span className="text-xs text-gray-500">
+                    {isCompensated ? "Acesso válido até" : "Próximo vencimento"}
+                  </span>
                   <p className="text-base font-semibold text-white">{formatDate(cycleEnd)}</p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500">Mensagem</span>
                   <p className="text-base font-semibold text-white">
                     {isTrial
-                      ? "Pagando agora, voce nao perde o teste, o tempo comprado é acumulado."
-                      : pendingPayment
-                        ? "Pagamento pendente, regularize para manter o painel desbloqueado."
-                        : "Ciclo em andamento. Tudo certo por aqui."}
+                      ? "Pagando agora, você não perde o teste; o tempo comprado é acumulado."
+                      : isCompensated
+                        ? "Seu acesso está liberado por compensação. Continue usando o painel normalmente."
+                        : pendingPayment
+                          ? "Pagamento pendente. Regularize para evitar bloqueio quando o acesso vigente terminar."
+                          : "Ciclo em andamento. Tudo certo por aqui."}
                   </p>
                 </div>
               </div>
@@ -574,7 +661,7 @@ export default function PlanosLimitesPage() {
             <p className="mt-1 text-sm text-red-50">{error}</p>
             {errorStatus === 403 && (
               <p className="mt-2 text-xs text-red-100/80">
-                Verifique se o racha selecionado no painel corresponde ao racha que voce deseja
+                Verifique se o racha selecionado no painel corresponde ao racha que você deseja
                 administrar.
               </p>
             )}
@@ -599,7 +686,7 @@ export default function PlanosLimitesPage() {
             <p className="text-base font-semibold">Assinatura em sincronização</p>
             <p className="mt-1 text-sm text-blue-100/90">
               Recebemos o plano do seu racha e estamos finalizando a sincronização dos dados de
-              cobranca.
+              cobrança.
             </p>
           </div>
         )}
@@ -780,7 +867,7 @@ export default function PlanosLimitesPage() {
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
                 <h4 className="text-sm font-bold text-white mb-1">Cartao ou boleto (recorrente)</h4>
                 <p className="text-xs text-gray-400 mb-3">
-                  O pagamento sera recorrente no Mercado Pago. Voce autoriza a cobranca automatica
+                  O pagamento será recorrente no Mercado Pago. Você autoriza a cobrança automática
                   conforme o plano escolhido.
                 </p>
                 <label className="flex items-start gap-2 text-xs text-gray-300 mb-3">
@@ -790,7 +877,7 @@ export default function PlanosLimitesPage() {
                     onChange={(e) => setRecurringAccepted(e.target.checked)}
                     className="mt-0.5 accent-yellow-400"
                   />
-                  <span>Li e concordo com a politica de cobranca recorrente.</span>
+                  <span>Li e concordo com a política de cobrança recorrente.</span>
                 </label>
                 <button
                   type="button"
@@ -977,12 +1064,12 @@ export default function PlanosLimitesPage() {
             <div className="text-sm text-gray-300 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b]">
               {subscription?.status === "trialing" ? (
                 <span>
-                  A troca e imediata e nao altera a data final do teste. Seu teste termina em{" "}
+                  A troca é imediata e não altera a data final do teste. Seu teste termina em{" "}
                   <b>{formatDate(subscription?.trialEnd)}</b>.
                 </span>
               ) : (
                 <span>
-                  Troca automatica disponivel apenas durante o periodo de teste. Fale com o suporte
+                  Troca automática disponível apenas durante o período de teste. Fale com o suporte
                   para ajustar o plano.
                 </span>
               )}

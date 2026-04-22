@@ -18,6 +18,14 @@ export default function SubscriptionStatusCard({
   planLabel,
 }: SubscriptionStatusCardProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const access = status?.access ?? subscription.access ?? null;
+  const financial =
+    status?.financialStatus ??
+    status?.financial ??
+    subscription.financialStatus ??
+    subscription.financial ??
+    null;
+  const isCompensated = access?.accessStatus === "LIBERADO_POR_COMPENSACAO";
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -26,6 +34,7 @@ export default function SubscriptionStatusCard({
   };
 
   const getStatusIcon = () => {
+    if (isCompensated) return <FaCheckCircle className="text-green-500" />;
     if (subscription.status === "active") return <FaCheckCircle className="text-green-500" />;
     if (subscription.status === "trialing") return <FaClock className="text-blue-500" />;
     if (subscription.status === "past_due")
@@ -37,16 +46,18 @@ export default function SubscriptionStatusCard({
   };
 
   const getStatusText = () => {
+    if (isCompensated) return "Acesso liberado por compensação";
     if (subscription.status === "active") return "Ativa";
     if (subscription.status === "trialing") return "Período de Teste";
     if (subscription.status === "past_due") return "Pagamento Atrasado";
     if (subscription.status === "paused") return "Pausada";
     if (subscription.status === "canceled") return "Cancelada";
-    if (subscription.status === "expired") return "Expirada";
+    if (subscription.status === "expired") return "Acesso expirado";
     return "Desconhecido";
   };
 
   const getStatusColor = () => {
+    if (isCompensated) return "bg-green-100 text-green-800 border-green-200";
     if (subscription.status === "active") return "bg-green-100 text-green-800 border-green-200";
     if (subscription.status === "trialing") return "bg-blue-100 text-blue-800 border-blue-200";
     if (subscription.status === "past_due")
@@ -95,7 +106,22 @@ export default function SubscriptionStatusCard({
           <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor()}`}>
             {getStatusText()}
           </span>
+          {financial?.label && (
+            <span className="px-3 py-1 rounded-full text-sm font-medium border bg-gray-100 text-gray-800 border-gray-200">
+              {financial.label}
+            </span>
+          )}
         </div>
+
+        {isCompensated && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-sm text-green-900">
+            Seu plano pode estar com cobrança pendente, mas o acesso ao painel foi liberado
+            temporariamente por compensação
+            {access?.effectiveAccessUntil
+              ? ` até ${formatDate(access.effectiveAccessUntil)}.`
+              : "."}
+          </div>
+        )}
 
         {/* Informações do Plano */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

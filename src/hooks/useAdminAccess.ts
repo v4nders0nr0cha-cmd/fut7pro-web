@@ -1,17 +1,31 @@
 "use client";
 
 import useSWR from "swr";
+import type {
+  ActiveCompensation,
+  EffectiveAccessStatus,
+  SubscriptionAccessSource,
+} from "@/lib/api/billing";
 
 export type AdminAccessResponse = {
   allowed: boolean;
   blocked: boolean;
   status?: string;
+  accessStatus?: EffectiveAccessStatus;
   statusRaw?: string | null;
   reason?: string | null;
   trialEnd?: string | null;
   currentPeriodEnd?: string | null;
   planKey?: string | null;
   daysRemaining?: number | null;
+  effectiveAccessUntil?: string | null;
+  source?: SubscriptionAccessSource;
+  accessSource?: SubscriptionAccessSource;
+  canAccess?: boolean;
+  manualBlocked?: boolean;
+  lifecycleBlocked?: boolean;
+  compensationActive?: boolean;
+  activeCompensation?: ActiveCompensation | null;
   tenant?: {
     id: string;
     slug: string;

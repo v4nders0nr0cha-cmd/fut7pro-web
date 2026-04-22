@@ -196,7 +196,7 @@ export default function AccessCompensationGrantedModal({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.25 }}
               >
-                O Fut7Pro concedeu uma compensação administrativa para sua assinatura.
+                O Fut7Pro liberou um período extra de acesso para o seu racha.
               </motion.p>
 
               <motion.div
@@ -222,7 +222,9 @@ export default function AccessCompensationGrantedModal({
                 ) : null}
               </div>
 
-              <p className="mt-4 text-sm text-zinc-300">Obrigado por continuar com o Fut7Pro.</p>
+              <p className="mt-4 text-sm text-zinc-300">
+                Você pode continuar usando o painel normalmente durante esse período.
+              </p>
             </div>
 
             <div className="relative z-10 mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
