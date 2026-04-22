@@ -17,6 +17,7 @@ export type GlobalProfileUser = {
   birthDay?: number | null;
   birthMonth?: number | null;
   birthYear?: number | null;
+  birthPublic?: boolean | null;
   position?: string | null;
   positionSecondary?: string | null;
   hasPassword?: boolean;

@@ -6,6 +6,7 @@ import { FaInfoCircle } from "react-icons/fa";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { buildAttendanceRanking, type AttendancePeriod } from "@/lib/attendance";
 
 const PERIODOS = [
   { label: "Este mês", value: "mes" },
@@ -16,71 +17,25 @@ const PERIODOS = [
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
-const getQuarter = (date: Date) => Math.floor(date.getMonth() / 4) + 1;
-
 export default function RankingAssiduidade() {
-  const [periodo, setPeriodo] = useState("mes");
+  const [periodo, setPeriodo] = useState<AttendancePeriod>("mes");
   const { rachaId } = useRacha();
   const resolvedRachaId = rachaId || "";
   const missingTenantScope = !resolvedRachaId;
   const { jogadores, isLoading, isError, error } = useJogadores(resolvedRachaId);
 
   const jogadoresFiltrados = useMemo(() => {
-    const now = new Date();
-    const currentQuarter = getQuarter(now);
-    const currentYear = now.getFullYear();
-
-    return jogadores
-      .map((jogador: any) => {
-        const presences = Array.isArray(jogador.presences) ? jogador.presences : [];
-        const fallbackJogos =
-          typeof jogador.presencas === "number"
-            ? jogador.presencas
-            : typeof jogador.partidas === "number"
-              ? jogador.partidas
-              : 0;
-
-        const jogos = presences.length
-          ? presences.filter((presence: any) => {
-              const status = String(presence?.status || "").toUpperCase();
-              if (status === "AUSENTE") return false;
-              if (periodo === "todos") return true;
-              const rawDate = presence?.match?.date || presence?.match?.data || null;
-              if (!rawDate) return false;
-              const parsed = new Date(rawDate);
-              if (Number.isNaN(parsed.getTime())) return false;
-              if (periodo === "mes") {
-                return parsed.getMonth() === now.getMonth() && parsed.getFullYear() === currentYear;
-              }
-              if (periodo === "ano") {
-                return parsed.getFullYear() === currentYear;
-              }
-              if (periodo === "quadrimestre") {
-                return (
-                  parsed.getFullYear() === currentYear && getQuarter(parsed) === currentQuarter
-                );
-              }
-              return false;
-            }).length
-          : periodo === "todos"
-            ? fallbackJogos
-            : 0;
-
-        return {
-          id: jogador.id,
-          nome: jogador.nome,
-          apelido: jogador.apelido,
-          avatar:
-            jogador.avatarUrl ||
-            jogador.avatar ||
-            jogador.foto ||
-            jogador.photoUrl ||
-            DEFAULT_AVATAR,
-          jogos,
-          mensalista: Boolean(jogador.mensalista),
-        };
-      })
-      .sort((a, b) => b.jogos - a.jogos);
+    return buildAttendanceRanking(jogadores, periodo).map(({ player: jogador, jogos }) => {
+      return {
+        id: jogador.id,
+        nome: jogador.nome,
+        apelido: jogador.apelido,
+        avatar:
+          jogador.avatarUrl || jogador.avatar || jogador.foto || jogador.photoUrl || DEFAULT_AVATAR,
+        jogos,
+        mensalista: Boolean(jogador.mensalista),
+      };
+    });
   }, [jogadores, periodo]);
 
   return (
@@ -110,7 +65,7 @@ export default function RankingAssiduidade() {
           <select
             className="rounded-xl px-4 py-2 bg-[#23272f] text-white border border-gray-600 focus:border-cyan-500"
             value={periodo}
-            onChange={(e) => setPeriodo(e.target.value)}
+            onChange={(e) => setPeriodo(e.target.value as AttendancePeriod)}
           >
             {PERIODOS.map((p) => (
               <option key={p.value} value={p.value}>

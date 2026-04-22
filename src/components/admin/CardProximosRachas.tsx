@@ -24,9 +24,7 @@ export default function CardProximosRachas({
     <div className="bg-[#21252B] rounded-2xl shadow-lg px-6 py-6 flex flex-col min-h-[220px] justify-between w-full">
       <div className="flex items-center gap-2 mb-4">
         <FaCalendarAlt className="text-cyan-400 w-6 h-6" />
-        <span className="text-lg font-bold text-cyan-300 tracking-wide">
-          Dias e Hor{"\u00e1"}rios
-        </span>
+        <span className="text-lg font-bold text-cyan-300">Dias e Hor{"\u00e1"}rios</span>
       </div>
 
       {isLoading ? (
@@ -41,7 +39,6 @@ export default function CardProximosRachas({
             <div
               key={racha.id}
               className="flex flex-col sm:flex-row sm:items-center text-base text-white font-medium"
-              style={{ letterSpacing: 0.5 }}
             >
               <span>{racha.dataStr}</span>
               {racha.detalhe ? (

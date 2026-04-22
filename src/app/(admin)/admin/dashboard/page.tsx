@@ -21,30 +21,51 @@ import CardAcoesRapidas from "@/components/admin/CardAcoesRapidas";
 import CardRelatoriosEngajamento from "@/components/admin/CardRelatoriosEngajamento";
 import { useRacha } from "@/context/RachaContext";
 import { useFinanceiro } from "@/hooks/useFinanceiro";
-import { usePublicMatches } from "@/hooks/usePublicMatches";
+import { useRachaAgenda } from "@/hooks/useRachaAgenda";
 import { useJogadores } from "@/hooks/useJogadores";
 import { useAdminBirthdays } from "@/hooks/useAdminBirthdays";
 import useSubscription from "@/hooks/useSubscription";
 import FinanceiroChart from "@/components/admin/FinanceiroChart";
-import type { PublicMatch } from "@/types/partida";
 import { useMe } from "@/hooks/useMe";
+import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
+import { buildAttendanceRanking, formatAttendanceCount } from "@/lib/attendance";
+import type { RachaAgendaItem } from "@/types/agenda";
 
-const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terca-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sabado",
+];
+const WEEKDAYS_SHORT = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
-function formatMatchLabel(match: PublicMatch) {
-  const parsed = new Date(match.date);
-  if (Number.isNaN(parsed.getTime())) {
-    return { label: "Data indefinida", detalhe: match.location || "" };
-  }
-  const dia = String(parsed.getDate()).padStart(2, "0");
-  const mes = String(parsed.getMonth() + 1).padStart(2, "0");
-  const hora = String(parsed.getHours()).padStart(2, "0");
-  const minuto = String(parsed.getMinutes()).padStart(2, "0");
-  const weekday = WEEKDAYS[parsed.getDay()];
+function formatNextAgendaDate(value?: string | null) {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+  if ([year, month, day].some((part) => Number.isNaN(part))) return null;
+  const date = new Date(year, month - 1, day);
+  const weekday = WEEKDAYS_SHORT[date.getDay()] ?? "";
+  const formattedDay = String(date.getDate()).padStart(2, "0");
+  const formattedMonth = String(date.getMonth() + 1).padStart(2, "0");
+  return `${weekday} ${formattedDay}/${formattedMonth}`;
+}
+
+function formatAgendaLabel(item: RachaAgendaItem) {
+  const weekday = DIAS_SEMANA[item.weekday] ?? "Dia cadastrado";
+  const nextDate = formatNextAgendaDate(item.nextDate);
+  const details = [
+    nextDate ? `Proximo: ${nextDate}` : null,
+    item.holiday ? `Feriado: ${item.holidayName || "data marcada"}` : null,
+  ].filter(Boolean);
+
   return {
-    label: `${weekday} ${dia}/${mes} - ${hora}:${minuto}`,
-    detalhe:
-      match.location || `${match.teamA?.name ?? "Time A"} x ${match.teamB?.name ?? "Time B"}`,
+    id: item.id,
+    dataStr: `${weekday} - ${item.time}`,
+    detalhe: details.join(" | "),
   };
 }
 
@@ -59,13 +80,10 @@ export default function AdminDashboard() {
   const slug = contextTenantSlug || me?.tenant?.tenantSlug || "";
 
   const { lancamentos, isLoading: loadingFinanceiro } = useFinanceiro();
-  const { matches: upcomingMatches, isLoading: loadingUpcoming } = usePublicMatches({
-    slug,
-    scope: "upcoming",
-    limit: 5,
-    enabled: Boolean(slug),
+  const { items: agendaItems, isLoading: loadingAgenda } = useRachaAgenda({
+    enabled: Boolean(tenantId || slug),
   });
-  const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId);
+  const { jogadores, isLoading: loadingJogadores } = useJogadores(tenantId);
   const { birthdays: aniversariantes, isLoading: loadingAniversariantes } = useAdminBirthdays({
     rangeDays: 30,
     limit: 3,
@@ -100,19 +118,20 @@ export default function AdminDashboard() {
     };
   }, [lancamentos]);
 
-  const proximosRachas = useMemo(
-    () =>
-      upcomingMatches.map((m) => {
-        const formatted = formatMatchLabel(m);
-        return { id: m.id, dataStr: formatted.label, detalhe: formatted.detalhe };
-      }),
-    [upcomingMatches]
-  );
+  const proximosRachas = useMemo(() => {
+    return [...agendaItems]
+      .sort((a, b) => {
+        if (a.weekday !== b.weekday) return a.weekday - b.weekday;
+        return a.time.localeCompare(b.time);
+      })
+      .slice(0, 5)
+      .map(formatAgendaLabel);
+  }, [agendaItems]);
 
   const assiduos = useMemo(() => {
     if (!jogadores?.length) return [];
-    return [...jogadores]
-      .sort((a, b) => (b.presencas ?? b.partidas ?? 0) - (a.presencas ?? a.partidas ?? 0))
+    return buildAttendanceRanking(jogadores, "todos")
+      .filter((item) => item.jogos > 0)
       .slice(0, 3);
   }, [jogadores]);
 
@@ -230,7 +249,7 @@ export default function AdminDashboard() {
         </div>
 
         <section className="w-full grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3">
-          <CardProximosRachas proximos={proximosRachas} isLoading={loadingUpcoming} />
+          <CardProximosRachas proximos={proximosRachas} isLoading={loadingAgenda} />
 
           <div className="block hover:scale-[1.025] transition">
             <div className="bg-[#23272F] rounded-xl shadow p-5 flex flex-col h-full">
@@ -246,23 +265,27 @@ export default function AdminDashboard() {
                 </div>
               ) : assiduos.length ? (
                 <div className="flex flex-col gap-2 mb-1">
-                  {assiduos.map((j) => (
-                    <div key={j.id} className="flex items-center gap-3">
-                      <Image
-                        src={
-                          j.avatar ||
-                          j.foto ||
-                          j.photoUrl ||
-                          "/images/jogadores/jogador_padrao_01.jpg"
-                        }
-                        alt={`Jogador assíduo ${j.nome}`}
+                  {assiduos.map(({ player: j, jogos }, index) => (
+                    <div
+                      key={j.id}
+                      className="flex items-center gap-3 rounded-lg bg-[#1b1f25] px-3 py-2"
+                    >
+                      <span className="w-6 shrink-0 text-sm font-bold text-yellow-300">
+                        #{index + 1}
+                      </span>
+                      <AvatarFut7Pro
+                        src={j.avatar || j.foto || j.photoUrl || DEFAULT_AVATAR}
+                        alt={`Jogador assiduo ${j.nome}`}
                         width={32}
                         height={32}
-                        className="rounded-full border border-gray-500"
+                        fallbackSrc={DEFAULT_AVATAR}
+                        className="rounded-full border border-gray-500 object-cover"
                       />
-                      <span className="text-gray-100 font-semibold truncate">{j.nome}</span>
-                      <span className="ml-auto text-green-400 font-bold">
-                        {j.presencas ?? j.partidas ?? 0}j
+                      <span className="min-w-0 flex-1 truncate text-gray-100 font-semibold">
+                        {j.apelido || j.nome}
+                      </span>
+                      <span className="ml-auto whitespace-nowrap rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-semibold text-emerald-300">
+                        {formatAttendanceCount(jogos)}
                       </span>
                     </div>
                   ))}
@@ -270,7 +293,9 @@ export default function AdminDashboard() {
               ) : (
                 <span className="text-sm text-gray-400">Nenhum dado de presença encontrado.</span>
               )}
-              <span className="text-xs text-gray-400 mt-2">Ranking por presença</span>
+              <span className="text-xs text-gray-400 mt-2">
+                Presenças válidas: titular ou substituto
+              </span>
             </div>
           </div>
 
