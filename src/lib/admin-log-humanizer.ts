@@ -399,7 +399,11 @@ function summarizeLog(params: {
   }
 
   if (params.parsedDetails) {
-    return summarizeGenericPayload(params.parsedDetails) ?? params.definition?.defaultSummary;
+    return (
+      summarizeGenericPayload(params.parsedDetails) ??
+      params.definition?.defaultSummary ??
+      "Evento registrado com informações adicionais. Os detalhes técnicos ficam disponíveis para auditoria."
+    );
   }
 
   const plainText = humanizePlainText(params.rawDetails);

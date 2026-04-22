@@ -96,4 +96,24 @@ describe("humanizeAdminLog", () => {
     expect(humanized.summary).toContain("notificação sobre ajuste de acesso");
     expect(humanized.summary).not.toContain("superadmin");
   });
+
+  it("keeps a non-empty summary for unknown JSON payloads", () => {
+    const log: AdminLog = {
+      id: "log-5",
+      action: "EVENTO_NOVO_INTERNO",
+      details: JSON.stringify({
+        actorUserId: "user-1",
+        tenantSlug: "racha",
+        internalKey: "value",
+      }),
+    };
+
+    const humanized = humanizeAdminLog(log);
+
+    expect(humanized.actionLabel).toBe("Evento novo interno");
+    expect(humanized.summary).toBe(
+      "Evento registrado com informações adicionais. Os detalhes técnicos ficam disponíveis para auditoria."
+    );
+    expect(humanized.technicalDetails).toContain('"actorUserId"');
+  });
 });
