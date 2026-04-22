@@ -61,8 +61,7 @@ export function countValidAttendance(
     }
 
     return (
-      matchDate.getFullYear() === currentYear &&
-      getQuadrimester(matchDate) === currentQuadrimester
+      matchDate.getFullYear() === currentYear && getQuadrimester(matchDate) === currentQuadrimester
     );
   }).length;
 }
