@@ -2,15 +2,17 @@
 
 ## Variáveis obrigatórias (prod)
 
-| Nome                         | Valor exemplo                          | Observação                            |
-| ---------------------------- | -------------------------------------- | ------------------------------------- |
-| `BACKEND_URL`                | `https://api.fut7pro.com.br`           | Host oficial (SNI/SSL correto)        |
-| `NEXT_PUBLIC_API_URL`        | `https://api.fut7pro.com.br`           | Mesma origem do backend               |
-| `NEXT_PUBLIC_APP_URL`        | `https://app.fut7pro.com.br`           | Canonical usado nas rotas server-side |
-| `APP_URL`                    | `https://app.fut7pro.com.br`           | Base para helper de revalidate        |
-| `PUBLIC_REVALIDATE_TOKEN`    | `defina-um-token-forte`                | Protege `/api/revalidate/public`      |
-| `RAILWAY_BACKEND_URL`        | `https://fut7pro-backend.onrender.com` | Fallback de infraestrutura (Render)   |
-| `NEXT_PUBLIC_USE_JOGOS_MOCK` | `removido`                             | Flag descontinuada; não usar          |
+| Nome                             | Valor exemplo                           | Observação                                                                                               |
+| -------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `BACKEND_URL`                    | `https://api.fut7pro.com.br`            | Host oficial (SNI/SSL correto)                                                                           |
+| `NEXT_PUBLIC_API_URL`            | `https://api.fut7pro.com.br`            | Mesma origem do backend                                                                                  |
+| `NEXT_PUBLIC_APP_URL`            | `https://app.fut7pro.com.br`            | Canonical usado nas rotas server-side                                                                    |
+| `APP_URL`                        | `https://app.fut7pro.com.br`            | Base para helper de revalidate                                                                           |
+| `PUBLIC_REVALIDATE_TOKEN`        | `defina-um-token-forte`                 | Protege `/api/revalidate/public`                                                                         |
+| `RAILWAY_BACKEND_URL`            | `https://fut7pro-backend.onrender.com`  | Fallback de infraestrutura (Render)                                                                      |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | `site key do widget app.fut7pro.com.br` | Chave publica do Turnstile do app; deve corresponder a secret `TURNSTILE_AUTH_APP_SECRET_KEY` do backend |
+| `NEXT_PUBLIC_TURNSTILE_ENABLED`  | `true`                                  | Ativa o Turnstile nos fluxos sensiveis do app                                                            |
+| `NEXT_PUBLIC_USE_JOGOS_MOCK`     | `removido`                              | Flag descontinuada; não usar                                                                             |
 
 > Fallback de mock foi removido. Todas as páginas usam os endpoints reais multi-tenant.
 
