@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
+import PublicAuthSuccessDialog from "@/components/layout/PublicAuthSuccessDialog";
 import ComunicadosLoginGate from "@/components/comunicacao/ComunicadosLoginGate";
 import ToasterProvider from "@/components/ToasterProvider";
 import { useRacha } from "@/context/RachaContext";
@@ -45,6 +46,7 @@ export default function LayoutClient({
   return (
     <>
       <ToasterProvider />
+      <PublicAuthSuccessDialog />
       {/* HEADER FIXO NO TOPO */}
       <Header onOpenSidebar={() => setSidebarOpen(true)} />
       <ComunicadosLoginGate />

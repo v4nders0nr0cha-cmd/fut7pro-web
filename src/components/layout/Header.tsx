@@ -35,18 +35,18 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const showUserMenu = status === "authenticated" && Boolean(session?.user);
+  const shouldCheckMe = showUserMenu && Boolean(tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
-  const showUserMenu = status === "authenticated" && Boolean(session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const profileUser = globalProfile?.user;
-  const fallbackEmail = profileUser?.email || session?.user?.email || "";
+  const fallbackEmail = session?.user?.email || profileUser?.email || "";
   const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
   const displayName =
     profileUser?.nickname?.trim() ||
@@ -56,7 +56,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     emailLabel ||
     "Usuario";
   const profileImage = getAvatarSrc(
-    me?.athlete?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
+    me?.athlete?.avatarUrl || me?.user?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
     DEFAULT_ATHLETE_AVATAR
   );
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({

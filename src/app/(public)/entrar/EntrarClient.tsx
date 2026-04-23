@@ -9,7 +9,7 @@ import { useTema } from "@/hooks/useTema";
 import { clearPublicAuthContext, persistPublicAuthContext } from "@/utils/public-auth-flow";
 import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
-  showPublicAuthSuccessToast,
+  queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
@@ -107,6 +107,19 @@ export default function EntrarClient() {
 
   const navigateWithRefresh = useCallback(
     (href: string) => {
+      router.replace(href);
+      router.refresh();
+    },
+    [router]
+  );
+
+  const navigateWithDocumentRedirect = useCallback(
+    (href: string) => {
+      if (typeof window !== "undefined") {
+        window.location.replace(href);
+        return;
+      }
+
       router.replace(href);
       router.refresh();
     },
@@ -338,8 +351,8 @@ export default function EntrarClient() {
           } catch {
             // Mantem o redirecionamento mesmo se a revalidacao falhar.
           }
-          showPublicAuthSuccessToast(PUBLIC_AUTH_SUCCESS_MESSAGE);
-          navigateWithRefresh(destinationHref);
+          queuePublicAuthSuccessFeedback(PUBLIC_AUTH_SUCCESS_MESSAGE);
+          navigateWithDocumentRedirect(destinationHref);
           return;
         }
 
@@ -360,6 +373,7 @@ export default function EntrarClient() {
     publicSlug,
     publicHref,
     requestJoin,
+    navigateWithDocumentRedirect,
     navigateWithRefresh,
     sessionStatus,
     sessionUser?.email,
