@@ -10,6 +10,14 @@ import type { PlanCatalog } from "@/lib/api/billing";
 import { slugify } from "@/utils/slugify";
 import { UF_LIST } from "@/data/br/ufs";
 import { loadCitiesByUf, type CityOption } from "@/data/br/cidades";
+import TurnstileWidget, {
+  AUTH_APP_TURNSTILE_ENABLED,
+  AUTH_APP_TURNSTILE_SITE_KEY,
+  TURNSTILE_REQUIRED_MESSAGE,
+  TURNSTILE_UNAVAILABLE_MESSAGE,
+  isTurnstileErrorCode,
+  resolveTurnstileErrorMessage,
+} from "@/components/security/TurnstileWidget";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const POSITION_LABEL_BY_VALUE: Record<string, (typeof POSICOES)[number]> = {
@@ -240,6 +248,10 @@ function CadastroRachaPageContent() {
   const [showExistingSenha, setShowExistingSenha] = useState(false);
   const [existingGlobalAuthMode, setExistingGlobalAuthMode] =
     useState<ExistingGlobalAuthMode>("none");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
+  const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
 
   const [adminNome, setAdminNome] = useState("");
   const [adminNomeTouched, setAdminNomeTouched] = useState(false);
@@ -286,6 +298,24 @@ function CadastroRachaPageContent() {
   const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState("");
   const [cidadeLoading, setCidadeLoading] = useState(false);
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    setTurnstileResetSignal((value) => value + 1);
+  };
+
+  const requireTurnstile = (setMessage: (message: string) => void) => {
+    if (!turnstileEnabled) return true;
+    if (!turnstileSiteKey) {
+      setMessage(TURNSTILE_UNAVAILABLE_MESSAGE);
+      return false;
+    }
+    if (!turnstileToken) {
+      setMessage(TURNSTILE_REQUIRED_MESSAGE);
+      return false;
+    }
+    return true;
+  };
 
   const hydrateAdminIdentityFromGlobalProfile = useCallback(async () => {
     try {
@@ -877,6 +907,17 @@ function CadastroRachaPageContent() {
       }
       return false;
     }
+    if (
+      !requireTurnstile((message) => {
+        if (reportToLookup) {
+          setLookupError(message);
+        } else {
+          setExistingLoginError(message);
+        }
+      })
+    ) {
+      return false;
+    }
     if (isResend && existingCodeCooldown > 0) {
       return false;
     }
@@ -895,11 +936,24 @@ function CadastroRachaPageContent() {
       const response = await fetch("/api/auth/passwordless/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+        }),
       });
       const body = await response.json().catch(() => null);
 
       if (!response.ok) {
+        if (isTurnstileErrorCode(body?.code)) {
+          const message = resolveTurnstileErrorMessage(body);
+          if (reportToLookup) {
+            setLookupError(message);
+          } else {
+            setExistingLoginError(message);
+          }
+          resetTurnstile();
+          return false;
+        }
         const message =
           body?.message || body?.error || "Não foi possível enviar o código de acesso agora.";
         if (reportToLookup) {
@@ -924,6 +978,9 @@ function CadastroRachaPageContent() {
       }
       return false;
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setExistingLoginLoading(false);
     }
   }
@@ -940,6 +997,9 @@ function CadastroRachaPageContent() {
       setExistingLoginError("Informe o código de acesso com 6 dígitos.");
       return;
     }
+    if (!requireTurnstile(setExistingLoginError)) {
+      return;
+    }
 
     setExistingLoginLoading(true);
     setExistingLoginError("");
@@ -950,7 +1010,11 @@ function CadastroRachaPageContent() {
       const response = await fetch("/api/auth/passwordless/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code: normalizedCode }),
+        body: JSON.stringify({
+          email,
+          code: normalizedCode,
+          turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+        }),
       });
       const body = await response.json().catch(() => null);
 
@@ -958,6 +1022,11 @@ function CadastroRachaPageContent() {
         const code = String(body?.code || "")
           .trim()
           .toUpperCase();
+        if (isTurnstileErrorCode(code)) {
+          setExistingLoginError(resolveTurnstileErrorMessage(body));
+          resetTurnstile();
+          return;
+        }
         if (response.status === 429 || code === "PASSWORDLESS_TOO_MANY_ATTEMPTS") {
           trackCadastroFunnelEvent("code_verified_fail", {
             reason: "too_many_attempts",
@@ -1035,6 +1104,9 @@ function CadastroRachaPageContent() {
       });
       setExistingLoginError("Não foi possível validar o código agora. Tente novamente.");
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setExistingLoginLoading(false);
     }
   }
@@ -1045,6 +1117,9 @@ function CadastroRachaPageContent() {
 
     if (!email || !password) {
       setExistingLoginError("Informe e-mail e senha da conta global.");
+      return;
+    }
+    if (!requireTurnstile(setExistingLoginError)) {
       return;
     }
 
@@ -1058,6 +1133,7 @@ function CadastroRachaPageContent() {
         redirect: false,
         email,
         password,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
       });
 
       if (!result?.ok || result.error) {
@@ -1087,6 +1163,9 @@ function CadastroRachaPageContent() {
     } catch {
       setExistingLoginError("Não foi possível entrar agora. Tente novamente.");
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setExistingLoginLoading(false);
     }
   }
@@ -1193,6 +1272,7 @@ function CadastroRachaPageContent() {
         planKey: selectedPlanKey,
         couponCode: couponStatus === "valid" ? couponCode.trim().toUpperCase() : undefined,
         useExistingGlobalAccount,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
       };
 
       const res = await fetch(endpoint, {
@@ -1204,6 +1284,17 @@ function CadastroRachaPageContent() {
       const body = await res.json().catch(() => null);
       if (!res.ok) {
         const msg = body?.message || "Erro ao cadastrar. Tente novamente.";
+        const code =
+          typeof body?.code === "string"
+            ? body.code
+            : typeof body?.error?.code === "string"
+              ? body.error.code
+              : null;
+        if (isTurnstileErrorCode(code)) {
+          setFormError(resolveTurnstileErrorMessage(body));
+          resetTurnstile();
+          return;
+        }
         setFormError(msg);
         return;
       }
@@ -1266,6 +1357,9 @@ function CadastroRachaPageContent() {
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro inesperado. Tente novamente.");
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setIsLoading(false);
     }
   }
@@ -1349,6 +1443,10 @@ function CadastroRachaPageContent() {
       return;
     }
 
+    if (!requireTurnstile(setFormError)) {
+      return;
+    }
+
     setErrors({});
     await handleRegister();
   }
@@ -1390,15 +1488,20 @@ function CadastroRachaPageContent() {
             : "Começar teste grátis"
           : "Continuar";
 
+  const requiresTurnstileForCurrentAction =
+    turnstileEnabled &&
+    (accessFlow === "identify" || accessFlow === "existing-password" || step === 3);
+
   const isPrimaryDisabled =
-    accessFlow === "identify"
+    (accessFlow === "identify"
       ? lookupLoading
       : accessFlow === "existing-password"
         ? existingAuthMethod === "password"
           ? existingLoginLoading || !adminSenha.trim()
           : existingLoginLoading ||
             (existingCodeSent && existingCode.replace(/\D+/g, "").length !== 6)
-        : isLoading;
+        : isLoading) ||
+    (requiresTurnstileForCurrentAction && !turnstileToken);
 
   const showWizardBackButton = accessFlow === "wizard" && step > 1;
   const showInlineExistingActions = accessFlow === "existing-password";
@@ -2292,6 +2395,15 @@ function CadastroRachaPageContent() {
                   )}
                 </div>
               </>
+            )}
+
+            {requiresTurnstileForCurrentAction && (
+              <TurnstileWidget
+                enabled={turnstileEnabled}
+                siteKey={turnstileSiteKey}
+                onTokenChange={setTurnstileToken}
+                resetSignal={turnstileResetSignal}
+              />
             )}
 
             {formError && !showInlineExistingActions && (

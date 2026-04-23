@@ -4,15 +4,24 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Script from "next/script";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
 import { persistPublicAuthContext } from "@/utils/public-auth-flow";
+import TurnstileWidget, {
+  AUTH_APP_TURNSTILE_ENABLED,
+  AUTH_APP_TURNSTILE_SITE_KEY,
+  TURNSTILE_REQUIRED_MESSAGE,
+  TURNSTILE_UNAVAILABLE_MESSAGE,
+  isTurnstileErrorCode,
+  resolveTurnstileErrorMessage,
+} from "@/components/security/TurnstileWidget";
 
 type LookupResponse = {
   ok: true;
   message: string;
   requiresCaptcha?: boolean;
+  nextAction?: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
+  membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
 };
 
 type SessionUser = {
@@ -49,16 +58,6 @@ function resolveRedirect(target: string | null, fallback: string) {
   return fallback;
 }
 
-declare global {
-  interface Window {
-    turnstile?: {
-      render: (container: string, options: Record<string, unknown>) => string | number;
-      reset: (widgetId?: string | number) => void;
-      remove: (widgetId?: string | number) => void;
-    };
-  }
-}
-
 export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
@@ -74,11 +73,12 @@ export default function EntrarClient() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<LookupResponse | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [turnstileReady, setTurnstileReady] = useState(false);
-  const turnstileWidgetId = useRef<string | number | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const processedGoogleKey = useRef<string | null>(null);
-  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+  const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
+  const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
   const needsCaptcha = Boolean(result?.requiresCaptcha);
+  const needsSecurityCheck = turnstileEnabled || needsCaptcha;
   const emailFieldInvalid = error === "Informe um e-mail válido.";
   const callbackParam = searchParams.get("callbackUrl");
   const googleIntent = searchParams.get("google") === "1";
@@ -97,6 +97,11 @@ export default function EntrarClient() {
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [callbackParam, publicHref]);
 
+  const resetTurnstile = useCallback(() => {
+    setCaptchaToken(null);
+    setTurnstileResetSignal((value) => value + 1);
+  }, []);
+
   const runLookup = useCallback(
     async (normalizedEmail: string, providedCaptcha?: string | null) => {
       setLoading(true);
@@ -107,21 +112,28 @@ export default function EntrarClient() {
           body: JSON.stringify({
             email: normalizedEmail,
             rachaSlug: publicSlug,
-            captchaToken: providedCaptcha || undefined,
+            captchaToken: !turnstileEnabled ? providedCaptcha || undefined : undefined,
+            turnstileToken: turnstileEnabled ? providedCaptcha || undefined : undefined,
           }),
         });
 
         const body = await response.json().catch(() => null);
         if (!response.ok) {
-          if (body?.code === "CAPTCHA_REQUIRED" || body?.code === "CAPTCHA_INVALID") {
+          if (
+            body?.code === "CAPTCHA_REQUIRED" ||
+            body?.code === "CAPTCHA_INVALID" ||
+            isTurnstileErrorCode(body?.code)
+          ) {
             setResult({ ok: true, message: LOOKUP_UNIFORM_MESSAGE, requiresCaptcha: true });
             setCaptchaToken(null);
             setError(
-              body?.code === "CAPTCHA_INVALID"
-                ? CAPTCHA_INVALID_MESSAGE
-                : turnstileSiteKey
-                  ? CAPTCHA_REQUIRED_MESSAGE
-                  : CAPTCHA_UNAVAILABLE_MESSAGE
+              isTurnstileErrorCode(body?.code)
+                ? resolveTurnstileErrorMessage(body)
+                : body?.code === "CAPTCHA_INVALID"
+                  ? CAPTCHA_INVALID_MESSAGE
+                  : turnstileSiteKey
+                    ? CAPTCHA_REQUIRED_MESSAGE
+                    : CAPTCHA_UNAVAILABLE_MESSAGE
             );
             return null;
           }
@@ -137,22 +149,43 @@ export default function EntrarClient() {
         setLoading(false);
       }
     },
-    [publicSlug, turnstileSiteKey]
+    [publicSlug, turnstileEnabled, turnstileSiteKey]
   );
 
-  const redirectToLogin = useCallback(
-    (normalizedEmail: string, message?: string) => {
+  const redirectFromLookup = useCallback(
+    (normalizedEmail: string, lookup: LookupResponse) => {
+      const nextAction = String(lookup?.nextAction || "").toUpperCase();
+      const lookupMessage = lookup?.message || LOOKUP_UNIFORM_MESSAGE;
+
       persistPublicAuthContext({
         email: normalizedEmail,
         slug: publicSlug,
       });
       setResult(null);
       setError("");
-      setRedirectingMessage(message || LOOKUP_UNIFORM_MESSAGE);
+      setRedirectingMessage(lookupMessage);
       setAutoFlowLoading(true);
-      const params = new URLSearchParams();
-      params.set("callbackUrl", destinationHref);
-      router.replace(`${publicHref("/login")}?${params.toString()}`);
+
+      if (nextAction === "WAIT_APPROVAL") {
+        router.replace(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+
+      if (nextAction === "REGISTER") {
+        const registerParams = new URLSearchParams();
+        registerParams.set("callbackUrl", destinationHref);
+        router.replace(`${publicHref("/register")}?${registerParams.toString()}`);
+        return;
+      }
+
+      const loginParams = new URLSearchParams();
+      loginParams.set("callbackUrl", destinationHref);
+
+      if (nextAction === "REQUEST_JOIN") {
+        loginParams.set("intent", "request-join");
+      }
+
+      router.replace(`${publicHref("/login")}?${loginParams.toString()}`);
     },
     [destinationHref, publicHref, publicSlug, router]
   );
@@ -166,13 +199,13 @@ export default function EntrarClient() {
       return;
     }
 
-    if (needsCaptcha) {
+    if (needsSecurityCheck) {
       if (!turnstileSiteKey) {
-        setError(CAPTCHA_UNAVAILABLE_MESSAGE);
+        setError(TURNSTILE_UNAVAILABLE_MESSAGE);
         return;
       }
       if (!captchaToken) {
-        setError(CAPTCHA_REQUIRED_MESSAGE);
+        setError(turnstileEnabled ? TURNSTILE_REQUIRED_MESSAGE : CAPTCHA_REQUIRED_MESSAGE);
         return;
       }
     }
@@ -183,10 +216,16 @@ export default function EntrarClient() {
       return;
     }
 
-    const lookup = await runLookup(normalized, captchaToken);
-    if (lookup) {
-      setResult(lookup);
-      redirectToLogin(normalized, lookup.message);
+    try {
+      const lookup = await runLookup(normalized, captchaToken);
+      if (lookup) {
+        setResult(lookup);
+        redirectFromLookup(normalized, lookup);
+      }
+    } finally {
+      if (needsSecurityCheck) {
+        resetTurnstile();
+      }
     }
   };
 
@@ -294,27 +333,6 @@ export default function EntrarClient() {
   ]);
 
   useEffect(() => {
-    if (!needsCaptcha || !turnstileSiteKey || !turnstileReady) return;
-    if (!window.turnstile) return;
-    if (turnstileWidgetId.current) return;
-
-    const widgetId = window.turnstile.render("#turnstile-container", {
-      sitekey: turnstileSiteKey,
-      callback: (token: string) => setCaptchaToken(token),
-      "expired-callback": () => setCaptchaToken(null),
-      "error-callback": () => setCaptchaToken(null),
-    });
-    turnstileWidgetId.current = widgetId;
-  }, [needsCaptcha, turnstileSiteKey, turnstileReady]);
-
-  useEffect(() => {
-    if (!needsCaptcha && turnstileWidgetId.current && window.turnstile) {
-      window.turnstile.remove(turnstileWidgetId.current);
-      turnstileWidgetId.current = null;
-    }
-  }, [needsCaptcha]);
-
-  useEffect(() => {
     setCaptchaToken(null);
     setResult(null);
     setRedirectingMessage("");
@@ -387,14 +405,6 @@ export default function EntrarClient() {
 
   return (
     <section className="w-full px-4">
-      {needsCaptcha && turnstileSiteKey && (
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          async
-          defer
-          onLoad={() => setTurnstileReady(true)}
-        />
-      )}
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-5 flex flex-col items-center gap-2 text-center">
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
@@ -435,21 +445,17 @@ export default function EntrarClient() {
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
           />
 
-          {needsCaptcha && (
+          {needsSecurityCheck && (
             <div className="space-y-2">
               <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-                Confirme no captcha abaixo que você não é um robô. Essa etapa é de segurança e não
-                de verificação de e-mail.
+                Confirme a verificação de segurança para continuar.
               </div>
-              {turnstileSiteKey ? (
-                <div className="flex items-center justify-start">
-                  <div id="turnstile-container" />
-                </div>
-              ) : (
-                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                  {CAPTCHA_UNAVAILABLE_MESSAGE}
-                </div>
-              )}
+              <TurnstileWidget
+                enabled={needsSecurityCheck}
+                siteKey={turnstileSiteKey}
+                onTokenChange={setCaptchaToken}
+                resetSignal={turnstileResetSignal}
+              />
             </div>
           )}
 
@@ -462,7 +468,7 @@ export default function EntrarClient() {
           <button
             type="button"
             onClick={handleLookup}
-            disabled={loading || autoFlowLoading || (needsCaptcha && !captchaToken)}
+            disabled={loading || autoFlowLoading || (needsSecurityCheck && !captchaToken)}
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading || autoFlowLoading ? "Processando..." : "Continuar"}

@@ -25,6 +25,14 @@ import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
 } from "@/lib/forms/native-ptbr-validation";
+import TurnstileWidget, {
+  AUTH_APP_TURNSTILE_ENABLED,
+  AUTH_APP_TURNSTILE_SITE_KEY,
+  TURNSTILE_REQUIRED_MESSAGE,
+  TURNSTILE_UNAVAILABLE_MESSAGE,
+  isTurnstileErrorCode,
+  resolveTurnstileErrorMessage,
+} from "@/components/security/TurnstileWidget";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 const DIAS = Array.from({ length: 31 }, (_, index) => String(index + 1));
@@ -144,6 +152,10 @@ export default function RegisterClient() {
   const [accountModalMessage, setAccountModalMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prefilledFromEntrar, setPrefilledFromEntrar] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
+  const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
 
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
   const isPendingMembership = membershipStatus === "PENDENTE";
@@ -156,6 +168,24 @@ export default function RegisterClient() {
       me?.athlete?.birthMonth
   );
   const shouldUseCompleteEndpoint = isAuthenticated;
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    setTurnstileResetSignal((value) => value + 1);
+  };
+
+  const requireTurnstile = () => {
+    if (!turnstileEnabled) return true;
+    if (!turnstileSiteKey) {
+      setErro(TURNSTILE_UNAVAILABLE_MESSAGE);
+      return false;
+    }
+    if (!turnstileToken) {
+      setErro(TURNSTILE_REQUIRED_MESSAGE);
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     if (!isAuthenticated || !hasPublicSlug) return;
@@ -374,6 +404,10 @@ export default function RegisterClient() {
       return;
     }
 
+    if (!requireTurnstile()) {
+      return;
+    }
+
     const trimmedNome = nomeCompleto.trim();
     const trimmedApelido = apelido.trim();
 
@@ -409,6 +443,10 @@ export default function RegisterClient() {
           email: email.trim().toLowerCase(),
           password: senha,
         };
+    const payloadWithSecurity = {
+      ...payload,
+      turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+    };
 
     const endpoint = shouldUseCompleteEndpoint
       ? `/api/public/${publicSlug}/auth/complete`
@@ -419,7 +457,7 @@ export default function RegisterClient() {
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payloadWithSecurity),
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
@@ -432,6 +470,11 @@ export default function RegisterClient() {
             : typeof body?.error?.code === "string"
               ? body.error.code
               : null;
+        if (isTurnstileErrorCode(errorCode)) {
+          setErro(resolveTurnstileErrorMessage(body));
+          resetTurnstile();
+          return;
+        }
         if (errorCode === "REQUEST_PENDING") {
           clearPublicAuthContext();
           router.replace(publicHref("/aguardando-aprovacao"));
@@ -465,7 +508,9 @@ export default function RegisterClient() {
           ? body?.requiresEmailVerification !== false
           : false;
       const registrationEmail = (
-        shouldUseCompleteEndpoint ? sessionUser?.email || "" : body?.email || payload.email || email
+        shouldUseCompleteEndpoint
+          ? sessionUser?.email || ""
+          : body?.email || (payloadWithSecurity as Record<string, unknown>).email || email
       )
         .toString()
         .trim()
@@ -531,6 +576,9 @@ export default function RegisterClient() {
       setErro(message);
       setAccountModalOpen(false);
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setIsSubmitting(false);
     }
   };
@@ -882,9 +930,18 @@ export default function RegisterClient() {
             </div>
           </div>
 
+          <TurnstileWidget
+            enabled={turnstileEnabled}
+            siteKey={turnstileSiteKey}
+            onTokenChange={setTurnstileToken}
+            resetSignal={turnstileResetSignal}
+          />
+
           <button
             type="submit"
-            disabled={isSubmitting || isRegistrationBlocked}
+            disabled={
+              isSubmitting || isRegistrationBlocked || (turnstileEnabled && !turnstileToken)
+            }
             className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting

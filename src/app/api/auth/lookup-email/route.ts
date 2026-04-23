@@ -17,10 +17,21 @@ function json(body: unknown, init?: ResponseInit) {
 
 function normalizeLookupSuccess(payload: unknown) {
   const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  const nextAction =
+    typeof body.nextAction === "string" && body.nextAction.trim()
+      ? body.nextAction.trim().toUpperCase()
+      : null;
+  const membershipStatus =
+    typeof body.membershipStatus === "string" && body.membershipStatus.trim()
+      ? body.membershipStatus.trim().toUpperCase()
+      : null;
+
   return {
     ok: true,
     message: LOOKUP_UNIFORM_MESSAGE,
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+    ...(nextAction ? { nextAction } : {}),
+    ...(membershipStatus ? { membershipStatus } : {}),
   };
 }
 
@@ -39,6 +50,8 @@ export async function POST(req: NextRequest) {
   const email = typeof payload?.email === "string" ? payload.email.trim() : "";
   const rachaSlug = typeof payload?.rachaSlug === "string" ? payload.rachaSlug.trim() : "";
   const captchaToken = typeof payload?.captchaToken === "string" ? payload.captchaToken.trim() : "";
+  const turnstileToken =
+    typeof payload?.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
 
   if (!email) {
     return json({ error: "E-mail obrigatorio" }, { status: 400 });
@@ -65,6 +78,7 @@ export async function POST(req: NextRequest) {
         email,
         rachaSlug: rachaSlug || undefined,
         captchaToken: captchaToken || undefined,
+        turnstileToken: turnstileToken || undefined,
       }),
     });
 
@@ -74,7 +88,13 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const code = typeof parsedRecord?.code === "string" ? parsedRecord.code : "";
-      if (code === "CAPTCHA_REQUIRED" || code === "CAPTCHA_INVALID") {
+      if (
+        code === "CAPTCHA_REQUIRED" ||
+        code === "CAPTCHA_INVALID" ||
+        code === "TURNSTILE_REQUIRED" ||
+        code === "TURNSTILE_INVALID" ||
+        code === "TURNSTILE_UNAVAILABLE"
+      ) {
         return json(
           {
             code,
