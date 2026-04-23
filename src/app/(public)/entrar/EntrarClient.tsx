@@ -6,8 +6,12 @@ import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
-import { persistPublicAuthContext } from "@/utils/public-auth-flow";
-import { isAthleteSession } from "@/lib/auth/realm";
+import { clearPublicAuthContext, persistPublicAuthContext } from "@/utils/public-auth-flow";
+import {
+  PUBLIC_AUTH_SUCCESS_MESSAGE,
+  showPublicAuthSuccessToast,
+} from "@/utils/public-auth-feedback";
+import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
   AUTH_APP_TURNSTILE_SITE_KEY,
@@ -63,8 +67,7 @@ export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status: sessionStatus } = useSession();
-  const isAthleteRealmSession = isAthleteSession(session as any);
+  const { data: session, status: sessionStatus, update } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
@@ -98,6 +101,14 @@ export default function EntrarClient() {
     }
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [callbackParam, publicHref]);
+
+  const navigateWithRefresh = useCallback(
+    (href: string) => {
+      router.replace(href);
+      router.refresh();
+    },
+    [router]
+  );
 
   const resetTurnstile = useCallback(() => {
     setCaptchaToken(null);
@@ -169,14 +180,14 @@ export default function EntrarClient() {
       setAutoFlowLoading(true);
 
       if (nextAction === "WAIT_APPROVAL") {
-        router.replace(publicHref("/aguardando-aprovacao"));
+        navigateWithRefresh(publicHref("/aguardando-aprovacao"));
         return;
       }
 
       if (nextAction === "REGISTER") {
         const registerParams = new URLSearchParams();
         registerParams.set("callbackUrl", destinationHref);
-        router.replace(`${publicHref("/register")}?${registerParams.toString()}`);
+        navigateWithRefresh(`${publicHref("/register")}?${registerParams.toString()}`);
         return;
       }
 
@@ -187,9 +198,9 @@ export default function EntrarClient() {
         loginParams.set("intent", "request-join");
       }
 
-      router.replace(`${publicHref("/login")}?${loginParams.toString()}`);
+      navigateWithRefresh(`${publicHref("/login")}?${loginParams.toString()}`);
     },
-    [destinationHref, publicHref, publicSlug, router]
+    [destinationHref, navigateWithRefresh, publicHref, publicSlug]
   );
 
   const handleLookup = async () => {
@@ -275,12 +286,7 @@ export default function EntrarClient() {
   }, [publicSlug]);
 
   useEffect(() => {
-    if (!googleIntent) return;
-    if (sessionStatus === "authenticated" && !isAthleteRealmSession) {
-      setError("Sessao administrativa detectada. Faça login como atleta para continuar.");
-      return;
-    }
-    if (sessionStatus !== "authenticated" || !isAthleteRealmSession) return;
+    if (!googleIntent || sessionStatus !== "authenticated") return;
     if (isVitrineSlug) {
       setError(VITRINE_AUTH_BLOCKED_MESSAGE);
       return;
@@ -314,11 +320,21 @@ export default function EntrarClient() {
         const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
 
         if (isActive) {
-          router.replace(destinationHref);
+          clearPublicAuthContext();
+          try {
+            await syncPublicAuthState({
+              publicSlug,
+              refreshSession: update,
+            });
+          } catch {
+            // Mantem o redirecionamento mesmo se a revalidacao falhar.
+          }
+          showPublicAuthSuccessToast(PUBLIC_AUTH_SUCCESS_MESSAGE);
+          navigateWithRefresh(destinationHref);
           return;
         }
 
-        router.replace(publicHref("/aguardando-aprovacao"));
+        navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       } catch (joinError) {
         const message =
           joinError instanceof Error
@@ -334,15 +350,14 @@ export default function EntrarClient() {
     publicSlug,
     publicHref,
     requestJoin,
-    router,
+    navigateWithRefresh,
     sessionStatus,
-    isAthleteRealmSession,
     sessionUser?.email,
+    update,
   ]);
 
   useEffect(() => {
     setCaptchaToken(null);
-    setTurnstileResetSignal((value) => value + 1);
     setResult(null);
     setRedirectingMessage("");
   }, [email]);

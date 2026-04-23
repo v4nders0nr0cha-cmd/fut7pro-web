@@ -2,11 +2,9 @@
 import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useComunicacao } from "@/hooks/useComunicacao";
-import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -19,19 +17,12 @@ const menu = [
 export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { data: session } = useSession();
-  const isAthleteRealmSession = isAthleteRealm(session as any);
+  const { data: session, status } = useSession();
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
-  const shouldCheckMe = Boolean(isAthleteRealmSession && session?.user && tenantSlug);
-  const { me } = useMe({
-    enabled: shouldCheckMe,
-    tenantSlug,
-    context: "athlete",
-  });
-  const isLoggedIn = Boolean(me?.athlete?.id);
+  const isLoggedIn = status === "authenticated" && Boolean(session?.user);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
 
   if (!tenantSlug) {

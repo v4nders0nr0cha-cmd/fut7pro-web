@@ -16,9 +16,11 @@ jest.mock("next/script", () => ({
 }));
 
 const replaceMock = jest.fn();
+const refreshMock = jest.fn();
+const updateSessionMock = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: replaceMock }),
+  useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
   useSearchParams: () => new URLSearchParams(),
 }));
 
@@ -41,7 +43,11 @@ const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 
 describe("EntrarClient", () => {
   beforeEach(() => {
-    mockedUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    mockedUseSession.mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+      update: updateSessionMock,
+    });
     mockedUseTema.mockReturnValue({ nome: "Casa do Gamer" });
     mockedUsePublicLinks.mockReturnValue({
       publicSlug: "casa-do-gamer",
@@ -52,6 +58,8 @@ describe("EntrarClient", () => {
     }
     (global.fetch as jest.Mock).mockReset();
     replaceMock.mockReset();
+    refreshMock.mockReset();
+    updateSessionMock.mockReset();
     sessionStorage.clear();
   });
 

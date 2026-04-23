@@ -21,10 +21,6 @@ jest.mock("@/hooks/useComunicacao", () => ({
   })),
 }));
 
-jest.mock("@/hooks/useMe", () => ({
-  useMe: jest.fn(() => ({ me: null })),
-}));
-
 describe("Sidebar", () => {
   it("renderiza nome do racha", () => {
     render(<Sidebar />);
@@ -36,12 +32,10 @@ describe("BottomMenu", () => {
   const useSession = require("next-auth/react").useSession as jest.Mock;
   const useComunicacao = require("@/hooks/useComunicacao").useComunicacao as jest.Mock;
   const usePathname = require("next/navigation").usePathname as jest.Mock;
-  const useMe = require("@/hooks/useMe").useMe as jest.Mock;
 
   it("mostra CTA de login quando não autenticado", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
     usePathname.mockReturnValue("/ruimdebola");
-    useMe.mockReturnValue({ me: null });
     const { rerender } = render(<BottomMenu />);
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
     rerender(<BottomMenu />);
@@ -50,7 +44,6 @@ describe("BottomMenu", () => {
   it("no vitrine mantém apenas CTA de Entrar", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
     usePathname.mockReturnValue("/vitrine");
-    useMe.mockReturnValue({ me: null });
 
     render(<BottomMenu />);
 
@@ -69,9 +62,6 @@ describe("BottomMenu", () => {
       badgeMensagem: 1,
       badgeSugestoes: 0,
     });
-    useMe.mockReturnValue({
-      me: { athlete: { id: "athlete-1" } },
-    });
 
     render(<BottomMenu />);
 
@@ -79,5 +69,18 @@ describe("BottomMenu", () => {
     expect(screen.getByLabelText("Comunicação")).toBeInTheDocument();
     expect(screen.getByLabelText("Mensagens")).toBeInTheDocument();
     expect(screen.getAllByText("2").length).toBeGreaterThan(0);
+  });
+
+  it("troca o CTA por menu completo assim que a sessao autentica existe", () => {
+    useSession.mockReturnValue({
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      status: "authenticated",
+    });
+    usePathname.mockReturnValue("/ruimdebola");
+
+    render(<BottomMenu />);
+
+    expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Perfil")).toBeInTheDocument();
   });
 });
