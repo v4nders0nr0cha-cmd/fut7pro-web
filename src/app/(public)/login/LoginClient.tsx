@@ -11,6 +11,14 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
+import TurnstileWidget, {
+  AUTH_APP_TURNSTILE_ENABLED,
+  AUTH_APP_TURNSTILE_SITE_KEY,
+  TURNSTILE_REQUIRED_MESSAGE,
+  TURNSTILE_UNAVAILABLE_MESSAGE,
+  isTurnstileErrorCode,
+  resolveTurnstileErrorMessage,
+} from "@/components/security/TurnstileWidget";
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
@@ -64,6 +72,12 @@ export default function LoginClient() {
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
   const [requestJoinLoading, setRequestJoinLoading] = useState(false);
   const [notMemberMessage, setNotMemberMessage] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const [joinTurnstileToken, setJoinTurnstileToken] = useState<string | null>(null);
+  const [joinTurnstileResetSignal, setJoinTurnstileResetSignal] = useState(0);
+  const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
+  const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
 
   const redirectTo = useMemo(
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/")),
@@ -81,6 +95,29 @@ export default function LoginClient() {
     tenantSlug: publicSlug,
     context: "athlete",
   });
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    setTurnstileResetSignal((value) => value + 1);
+  };
+
+  const resetJoinTurnstile = () => {
+    setJoinTurnstileToken(null);
+    setJoinTurnstileResetSignal((value) => value + 1);
+  };
+
+  const requireTurnstile = (token: string | null, setMessage: (message: string) => void) => {
+    if (!turnstileEnabled) return true;
+    if (!turnstileSiteKey) {
+      setMessage(TURNSTILE_UNAVAILABLE_MESSAGE);
+      return false;
+    }
+    if (!token) {
+      setMessage(TURNSTILE_REQUIRED_MESSAGE);
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     if (prefillAppliedRef.current) return;
@@ -185,10 +222,16 @@ export default function LoginClient() {
     setRequestJoinInProgress(true);
 
     try {
+      if (!requireTurnstile(joinTurnstileToken, setNotMemberMessage)) {
+        setRequestJoinInProgress(false);
+        return;
+      }
+
       const signInResult = await signIn("credentials", {
         redirect: false,
         email: normalizedEmail,
         password: senha,
+        turnstileToken: turnstileEnabled ? joinTurnstileToken || undefined : undefined,
       });
 
       if (signInResult?.error) {
@@ -235,6 +278,9 @@ export default function LoginClient() {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
       setRequestJoinInProgress(false);
     } finally {
+      if (turnstileEnabled) {
+        resetJoinTurnstile();
+      }
       setRequestJoinLoading(false);
     }
   };
@@ -258,6 +304,12 @@ export default function LoginClient() {
       code === "EMAIL_NOT_VERIFIED" ||
       message.toLowerCase().includes("confirme seu e-mail") ||
       message.toLowerCase().includes("verifique seu e-mail");
+
+    if (isTurnstileErrorCode(code)) {
+      setErro(resolveTurnstileErrorMessage(body));
+      resetTurnstile();
+      return true;
+    }
 
     if (code === "REQUEST_PENDING") {
       setPendingModalOpen(true);
@@ -320,7 +372,11 @@ export default function LoginClient() {
     const response = await fetch(`/api/public/${publicSlug}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password: senha }),
+      body: JSON.stringify({
+        email,
+        password: senha,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      }),
     });
 
     const body = await response.json().catch(() => null);
@@ -342,11 +398,19 @@ export default function LoginClient() {
     const response = await fetch(`/api/public/${publicSlug}/auth/passwordless/request`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail }),
+      body: JSON.stringify({
+        email: normalizedEmail,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      }),
     });
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
+      if (isTurnstileErrorCode(body?.code)) {
+        setErro(resolveTurnstileErrorMessage(body));
+        resetTurnstile();
+        return;
+      }
       setErro(body?.message || body?.error || "Não foi possível enviar o código.");
       return;
     }
@@ -370,7 +434,11 @@ export default function LoginClient() {
     const response = await fetch(`/api/public/${publicSlug}/auth/passwordless/verify`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail, code: normalizedCode }),
+      body: JSON.stringify({
+        email: normalizedEmail,
+        code: normalizedCode,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      }),
     });
     const body = await response.json().catch(() => null);
 
@@ -389,7 +457,6 @@ export default function LoginClient() {
     setRequestJoinInProgress(false);
     setPendingModalOpen(false);
     setNotMemberModalOpen(false);
-    setIsSubmitting(true);
 
     try {
       if (isVitrineSlug) {
@@ -401,6 +468,12 @@ export default function LoginClient() {
         setErro("Slug do racha não encontrado.");
         return;
       }
+
+      if (!requireTurnstile(turnstileToken, setErro)) {
+        return;
+      }
+
+      setIsSubmitting(true);
 
       if (usarSenhaLegado) {
         await loginWithPassword();
@@ -414,6 +487,9 @@ export default function LoginClient() {
 
       await loginWithPasswordlessCode();
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setIsSubmitting(false);
     }
   };
@@ -577,9 +653,15 @@ export default function LoginClient() {
               {infoMessage}
             </div>
           )}
+          <TurnstileWidget
+            enabled={turnstileEnabled}
+            siteKey={turnstileSiteKey}
+            onTokenChange={setTurnstileToken}
+            resetSignal={turnstileResetSignal}
+          />
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (turnstileEnabled && !turnstileToken)}
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting
@@ -718,6 +800,14 @@ export default function LoginClient() {
                     {notMemberMessage}
                   </div>
                 ) : null}
+                <div className="mt-4">
+                  <TurnstileWidget
+                    enabled={turnstileEnabled}
+                    siteKey={turnstileSiteKey}
+                    onTokenChange={setJoinTurnstileToken}
+                    resetSignal={joinTurnstileResetSignal}
+                  />
+                </div>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
@@ -729,7 +819,7 @@ export default function LoginClient() {
                   <button
                     type="button"
                     onClick={handleRequestJoin}
-                    disabled={requestJoinLoading}
+                    disabled={requestJoinLoading || (turnstileEnabled && !joinTurnstileToken)}
                     className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {requestJoinLoading ? "Solicitando..." : "Solicitar entrada neste racha"}

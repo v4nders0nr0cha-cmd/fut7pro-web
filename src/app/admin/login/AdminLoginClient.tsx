@@ -5,6 +5,14 @@ import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
+import TurnstileWidget, {
+  AUTH_APP_TURNSTILE_ENABLED,
+  AUTH_APP_TURNSTILE_SITE_KEY,
+  TURNSTILE_REQUIRED_MESSAGE,
+  TURNSTILE_UNAVAILABLE_MESSAGE,
+  isTurnstileErrorCode,
+  resolveTurnstileErrorMessage,
+} from "@/components/security/TurnstileWidget";
 
 const HIGHLIGHTS = [
   {
@@ -39,6 +47,8 @@ export default function AdminLoginClient() {
   const [notVerified, setNotVerified] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,9 +56,29 @@ export default function AdminLoginClient() {
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
   const contactEmail = "social@fut7pro.com.br";
+  const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
+  const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
 
   const redirectAfterLogin = () => {
     router.replace("/admin/selecionar-racha");
+  };
+
+  const resetTurnstile = () => {
+    setTurnstileToken(null);
+    setTurnstileResetSignal((value) => value + 1);
+  };
+
+  const requireTurnstile = () => {
+    if (!turnstileEnabled) return true;
+    if (!turnstileSiteKey) {
+      setErro(TURNSTILE_UNAVAILABLE_MESSAGE);
+      return false;
+    }
+    if (!turnstileToken) {
+      setErro(TURNSTILE_REQUIRED_MESSAGE);
+      return false;
+    }
+    return true;
   };
 
   useEffect(() => {
@@ -75,6 +105,11 @@ export default function AdminLoginClient() {
   const handleAuthError = (body: any) => {
     const message = String(body?.message || body?.error || "").trim();
     const errorCode = String(body?.code || body?.error?.code || "").trim();
+    if (isTurnstileErrorCode(errorCode)) {
+      setErro(resolveTurnstileErrorMessage(body));
+      resetTurnstile();
+      return true;
+    }
     const isEmailNotVerified =
       errorCode === "EMAIL_NOT_VERIFIED" ||
       message.toLowerCase().includes("confirme") ||
@@ -95,22 +130,15 @@ export default function AdminLoginClient() {
   };
 
   const loginWithPassword = async () => {
-    const res = await signIn("credentials", {
-      redirect: false,
-      email,
-      password: senha,
-    });
-
-    if (res?.ok) {
-      redirectAfterLogin();
-      return;
-    }
-
     try {
       const resp = await fetch(`${apiBase}${loginPath}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: senha }),
+        body: JSON.stringify({
+          email,
+          password: senha,
+          turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+        }),
       });
 
       const body = await resp.json().catch(() => ({}) as any);
@@ -150,11 +178,19 @@ export default function AdminLoginClient() {
     const response = await fetch("/api/auth/passwordless/request", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail }),
+      body: JSON.stringify({
+        email: normalizedEmail,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      }),
     });
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
+      if (isTurnstileErrorCode(body?.code)) {
+        setErro(resolveTurnstileErrorMessage(body));
+        resetTurnstile();
+        return;
+      }
       const message = body?.message || body?.error || "Não foi possível enviar o código.";
       setErro(message);
       return;
@@ -179,7 +215,11 @@ export default function AdminLoginClient() {
     const response = await fetch("/api/auth/passwordless/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: normalizedEmail, code: normalizedCode }),
+      body: JSON.stringify({
+        email: normalizedEmail,
+        code: normalizedCode,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      }),
     });
     const body = await response.json().catch(() => null);
 
@@ -219,6 +259,11 @@ export default function AdminLoginClient() {
     setVerifiedMessage("");
     setBlocked(false);
     setNotVerified(false);
+
+    if (!requireTurnstile()) {
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -234,6 +279,9 @@ export default function AdminLoginClient() {
 
       await verifyPasswordlessCode();
     } finally {
+      if (turnstileEnabled) {
+        resetTurnstile();
+      }
       setIsSubmitting(false);
     }
   };
@@ -407,9 +455,16 @@ export default function AdminLoginClient() {
                 </div>
               )}
 
+              <TurnstileWidget
+                enabled={turnstileEnabled}
+                siteKey={turnstileSiteKey}
+                onTokenChange={setTurnstileToken}
+                resetSignal={turnstileResetSignal}
+              />
+
               <button
                 type="submit"
-                disabled={!isHydrated || isSubmitting}
+                disabled={!isHydrated || isSubmitting || (turnstileEnabled && !turnstileToken)}
                 data-testid="admin-login-submit"
                 className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
               >

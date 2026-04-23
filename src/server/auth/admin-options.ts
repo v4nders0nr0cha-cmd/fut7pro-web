@@ -155,6 +155,7 @@ export const authOptions: NextAuthOptionsLike = {
         role: { label: "Role", type: "text" },
         name: { label: "Name", type: "text" },
         authProvider: { label: "Auth Provider", type: "text" },
+        turnstileToken: { label: "Turnstile Token", type: "text" },
       },
       async authorize(credentials) {
         if (credentials?.accessToken) {
@@ -225,6 +226,10 @@ export const authOptions: NextAuthOptionsLike = {
           };
           if (rachaSlug) {
             loginPayload.rachaSlug = rachaSlug;
+          }
+          const turnstileToken = (credentials as any)?.turnstileToken;
+          if (turnstileToken) {
+            loginPayload.turnstileToken = turnstileToken;
           }
           const response = await fetch(`${API_BASE_URL}${LOGIN_PATH}`, {
             method: "POST",

@@ -45,6 +45,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
 
   const email = typeof payload?.email === "string" ? payload.email.trim() : "";
+  const turnstileToken =
+    typeof payload?.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
   if (!email) {
     return json({ error: "E-mail obrigatorio" }, { status: 400 });
   }
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       body: JSON.stringify({
         email,
         rachaSlug: slug,
+        turnstileToken: turnstileToken || undefined,
       }),
     });
     const parsed = await response.json().catch(() => null);
@@ -64,7 +67,13 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     if (!response.ok) {
       const code = typeof parsedRecord?.code === "string" ? parsedRecord.code : "";
-      if (code === "CAPTCHA_REQUIRED" || code === "CAPTCHA_INVALID") {
+      if (
+        code === "CAPTCHA_REQUIRED" ||
+        code === "CAPTCHA_INVALID" ||
+        code === "TURNSTILE_REQUIRED" ||
+        code === "TURNSTILE_INVALID" ||
+        code === "TURNSTILE_UNAVAILABLE"
+      ) {
         return json(
           {
             code,

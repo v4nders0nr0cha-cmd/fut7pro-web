@@ -17,6 +17,7 @@ type RegisterGooglePayload = {
   adminAvatarBase64?: string;
   planKey?: string;
   couponCode?: string;
+  turnstileToken?: string;
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,30}$/;
@@ -195,6 +196,7 @@ export async function POST(req: NextRequest) {
       adminPosicao: payload.adminPosicao,
       adminSenha: payload.adminSenha?.trim() || undefined,
       adminAvatarUrl: resolveAvatarUrl(payload.adminAvatarBase64),
+      turnstileToken: payload.turnstileToken?.trim() || undefined,
     }),
   });
 
