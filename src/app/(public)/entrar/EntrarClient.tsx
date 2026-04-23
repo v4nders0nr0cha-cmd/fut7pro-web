@@ -33,6 +33,7 @@ type SessionUser = {
   email?: string | null;
   authProvider?: string | null;
   name?: string | null;
+  role?: string | null;
 };
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
@@ -69,6 +70,8 @@ export default function EntrarClient() {
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus, update } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
+  const sessionRole = String(sessionUser?.role || "").toUpperCase();
+  const isAthleteSession = sessionRole === "ATLETA";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const [email, setEmail] = useState("");
@@ -287,6 +290,12 @@ export default function EntrarClient() {
 
   useEffect(() => {
     if (!googleIntent || sessionStatus !== "authenticated") return;
+    if (!isAthleteSession) {
+      setAutoFlowLoading(false);
+      setRedirectingMessage("");
+      setError("A conta autenticada atual nao e de atleta. Saia e tente novamente com um atleta.");
+      return;
+    }
     if (isVitrineSlug) {
       setError(VITRINE_AUTH_BLOCKED_MESSAGE);
       return;
@@ -346,6 +355,7 @@ export default function EntrarClient() {
   }, [
     destinationHref,
     googleIntent,
+    isAthleteSession,
     isVitrineSlug,
     publicSlug,
     publicHref,
@@ -357,10 +367,10 @@ export default function EntrarClient() {
   ]);
 
   useEffect(() => {
-    setCaptchaToken(null);
+    resetTurnstile();
     setResult(null);
     setRedirectingMessage("");
-  }, [email]);
+  }, [email, resetTurnstile]);
 
   if (isVitrineSlug) {
     return (
