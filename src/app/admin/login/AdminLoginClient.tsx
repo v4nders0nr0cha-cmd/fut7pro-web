@@ -52,9 +52,6 @@ export default function AdminLoginClient() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const apiBase =
-    process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
-  const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
   const contactEmail = "social@fut7pro.com.br";
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
@@ -131,7 +128,7 @@ export default function AdminLoginClient() {
 
   const loginWithPassword = async () => {
     try {
-      const resp = await fetch(`${apiBase}${loginPath}`, {
+      const resp = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
