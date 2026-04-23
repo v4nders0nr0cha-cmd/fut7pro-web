@@ -35,6 +35,9 @@ type TurnstileWidgetProps = {
   size?: "normal" | "compact" | "flexible";
 };
 
+const TURNSTILE_SCRIPT_SRC =
+  "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+
 export const AUTH_APP_TURNSTILE_ENABLED = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED === "true";
 
 export const AUTH_APP_TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || "";
@@ -134,7 +137,7 @@ export default function TurnstileWidget({
     <div className={className}>
       <Script
         id="cloudflare-turnstile"
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+        src={TURNSTILE_SCRIPT_SRC}
         async
         defer
         strategy="afterInteractive"

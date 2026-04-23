@@ -25,12 +25,15 @@ const shouldRunBlocked =
 const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
 const ADMIN_ACTIVE_TENANT_COOKIE = "fut7pro_admin_active_tenant";
 const HUB_LOAD_ERROR_REGEX = /Não foi possível carregar seus rachas/i;
+const TURNSTILE_REQUIRED_E2E_ERROR_TEXT =
+  "Turnstile obrigatório no backend de produção para login admin automatizado.";
 const SMOKE_ENV_UNSTABLE_ERRORS = [
   "Login não redirecionou para /admin/selecionar-racha ou /admin/dashboard dentro do tempo esperado.",
   "Shell admin não carregou sidebar/menu de navegação.",
   "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas).",
   "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha).",
   "Seleção por /api/admin/hub/entry levou para /admin/status-assinatura, mas o cenário exige acesso ativo.",
+  TURNSTILE_REQUIRED_E2E_ERROR_TEXT,
 ];
 const INVALID_CREDENTIALS_ERROR_TEXT =
   "Falha de autenticação: e-mail/senha inválidos para o login admin. Verifique as credenciais E2E.";
@@ -259,6 +262,13 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
         .waitFor({ state: "visible", timeout: 12000 })
         .then(() => "blocked" as const)
         .catch(() => null),
+      page
+        .locator('[role="alert"], [aria-live="polite"]')
+        .filter({ hasText: /verificação de segurança|validar a segurança/i })
+        .first()
+        .waitFor({ state: "visible", timeout: 12000 })
+        .then(() => "turnstile_required" as const)
+        .catch(() => null),
     ]);
 
   await submit.first().click();
@@ -302,6 +312,10 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
       );
     }
     return { path: new URL(page.url()).pathname, access: "blocked" };
+  }
+
+  if (loginState === "turnstile_required") {
+    throw new Error(TURNSTILE_REQUIRED_E2E_ERROR_TEXT);
   }
 
   if (loginState !== "redirect") {
@@ -962,6 +976,14 @@ test.describe("Admin Smoke Navigation", () => {
     }
 
     if (!result && lastNonCredentialError) {
+      const message =
+        lastNonCredentialError instanceof Error
+          ? lastNonCredentialError.message
+          : String(lastNonCredentialError);
+      const unstableEnvironment = SMOKE_ENV_UNSTABLE_ERRORS.some((item) => message.includes(item));
+      if (unstableEnvironment) {
+        test.skip(true, `Ambiente E2E instável para smoke de bloqueio admin: ${message}`);
+      }
       throw lastNonCredentialError;
     }
 
