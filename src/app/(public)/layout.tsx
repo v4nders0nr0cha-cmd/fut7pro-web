@@ -1,12 +1,14 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Providers } from "../providers";
+import { getServerSession } from "next-auth/next";
+import { Providers, type AppSession } from "../providers";
 import { ThemeProvider } from "@/context/ThemeContext";
 import LayoutClient from "@/components/layout/LayoutClient";
 import JsonLd from "@/components/seo/JsonLd";
 import { getApiBase } from "@/lib/get-api-base";
 import { getRachaTheme } from "@/config/rachaThemes";
+import { authOptions } from "@/server/auth/admin-options";
 import { cookies, headers } from "next/headers";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 
@@ -135,13 +137,15 @@ export default async function PublicLayout({
   const slugFromCookie = resolveSlugFromCookie();
   const resolvedSlug = params?.slug ?? slugFromHeaders ?? slugFromCookie ?? null;
   const themeKey = await resolvePublicThemeKey(resolvedSlug);
+  const session = (await getServerSession(authOptions as any)) as AppSession;
+
   return (
     <div
       data-theme={themeKey}
       className={`${inter.className} bg-fundo text-white break-words min-h-screen`}
     >
       <ThemeProvider>
-        <Providers initialTenantSlug={resolvedSlug}>
+        <Providers initialTenantSlug={resolvedSlug} session={session}>
           <LayoutClient initialTenantSlug={resolvedSlug}>{children}</LayoutClient>
         </Providers>
       </ThemeProvider>

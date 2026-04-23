@@ -29,27 +29,27 @@ type SidebarMobileProps = {
 };
 
 const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { logo, nome } = useTema();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
+  const showUserMenu = status === "authenticated" && Boolean(session?.user);
+  const shouldCheckMe = showUserMenu && Boolean(tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
-  const showUserMenu = Boolean(session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileUser = globalProfile?.user;
-  const fallbackEmail = profileUser?.email || session?.user?.email || "";
+  const fallbackEmail = session?.user?.email || profileUser?.email || "";
   const emailLabel = fallbackEmail ? fallbackEmail.split("@")[0] : "";
   const profileImage = getAvatarSrc(
-    me?.athlete?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
+    me?.athlete?.avatarUrl || me?.user?.avatarUrl || profileUser?.avatarUrl || session?.user?.image,
     DEFAULT_ATHLETE_AVATAR
   );
   const userName =

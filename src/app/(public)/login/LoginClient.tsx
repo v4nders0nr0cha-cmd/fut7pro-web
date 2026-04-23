@@ -12,7 +12,7 @@ import { useMe } from "@/hooks/useMe";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
-  showPublicAuthSuccessToast,
+  queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
@@ -117,6 +117,19 @@ export default function LoginClient() {
     [router]
   );
 
+  const navigateWithDocumentRedirect = useCallback(
+    (href: string) => {
+      if (typeof window !== "undefined") {
+        window.location.replace(href);
+        return;
+      }
+
+      router.replace(href);
+      router.refresh();
+    },
+    [router]
+  );
+
   const finalizeSuccessfulLogin = useCallback(
     async (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
       if (completedNavigationRef.current) return;
@@ -132,10 +145,10 @@ export default function LoginClient() {
       }
 
       clearPublicAuthContext();
-      showPublicAuthSuccessToast(successMessage);
-      navigateWithRefresh(targetHref);
+      queuePublicAuthSuccessFeedback(successMessage);
+      navigateWithDocumentRedirect(targetHref);
     },
-    [navigateWithRefresh, publicSlug, update]
+    [navigateWithDocumentRedirect, publicSlug, update]
   );
 
   const resetTurnstile = () => {
