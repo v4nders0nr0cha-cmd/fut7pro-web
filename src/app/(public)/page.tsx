@@ -17,8 +17,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { buildDestaquesDoDia, getTimeCampeao } from "@/utils/destaquesDoDia";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
-import type { PublicMatch } from "@/types/partida";
+import type { PublicDestaquesDoDiaResponse } from "@/types/destaques";
+import type { PublicMatch, PublicMatchesResponse } from "@/types/partida";
 
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
 const DEFAULT_TEAM_IMAGE = "/images/torneios/torneio-matador.jpg";
@@ -260,22 +260,34 @@ function buildBotHighlight(
   };
 }
 
-export default function Home() {
+type HomeProps = {
+  initialSlug?: string | null;
+  initialMatchesData?: PublicMatchesResponse;
+  initialDestaqueData?: PublicDestaquesDoDiaResponse;
+};
+
+function normalizeImageUrl(value?: string | null) {
+  const trimmed = value?.trim() || "";
+  return trimmed || null;
+}
+
+export default function Home({
+  initialSlug = null,
+  initialMatchesData,
+  initialDestaqueData,
+}: HomeProps = {}) {
   const { tenantSlug } = useRacha();
   const { publicHref, publicSlug } = usePublicLinks();
-  const slug = publicSlug.trim() || tenantSlug.trim();
+  const slug = publicSlug.trim() || tenantSlug.trim() || initialSlug?.trim() || "";
   const { hasPermission } = useAuth();
   const pathname = usePathname() ?? "";
   const { data: session } = useSession();
-  const isAthleteRealmSession = isAthleteRealm(session as any);
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const sessionSlug =
     typeof (session?.user as any)?.tenantSlug === "string"
       ? (session?.user as any).tenantSlug.trim().toLowerCase()
       : "";
-  const isTenantSession = Boolean(
-    isAthleteRealmSession && slugFromPath && sessionSlug && slugFromPath === sessionSlug
-  );
+  const isTenantSession = Boolean(slugFromPath && sessionSlug && slugFromPath === sessionSlug);
   const isAdmin = isTenantSession && hasPermission("RACHA_UPDATE");
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -296,8 +308,12 @@ export default function Home() {
     slug,
     scope: "recent",
     limit: 20,
+    fallbackData: initialMatchesData,
   });
-  const { destaque: destaqueDia } = usePublicDestaquesDoDia({ slug });
+  const { destaque: destaqueDia, isLoading: isLoadingDestaque } = usePublicDestaquesDoDia({
+    slug,
+    fallbackData: initialDestaqueData,
+  });
 
   const { confrontos, times, dataReferencia } = useMemo(
     () => buildDestaquesDoDia(matches),
@@ -418,7 +434,16 @@ export default function Home() {
 
   const championPlayers =
     campeaoInfo?.time?.jogadores?.map((player) => player.nome).filter(Boolean) ?? [];
-  const bannerImage = destaqueDia?.bannerUrl || campeaoInfo?.time?.logoUrl || DEFAULT_TEAM_IMAGE;
+  const championBanner = useMemo(() => {
+    const realBannerImage = normalizeImageUrl(destaqueDia?.bannerUrl);
+    const fallbackTeamImage = normalizeImageUrl(campeaoInfo?.time?.logoUrl);
+    const isImageLoading = !realBannerImage && !fallbackTeamImage && isLoadingDestaque;
+
+    return {
+      image: realBannerImage || fallbackTeamImage || (!isImageLoading ? DEFAULT_TEAM_IMAGE : null),
+      isImageLoading,
+    };
+  }, [campeaoInfo?.time?.logoUrl, destaqueDia?.bannerUrl, isLoadingDestaque]);
 
   const highlightCards = [
     destaqueFaltou?.atacante
@@ -583,10 +608,11 @@ export default function Home() {
           <h1 className="sr-only">Fut7Pro: Sistema para Racha, Fut7 e Futebol Amador</h1>
 
           <ChampionBanner
-            image={bannerImage}
+            image={championBanner.image}
             date={championDate}
             players={championPlayers.slice(0, 7)}
             href={publicHref("/partidas/times-do-dia")}
+            isImageLoading={championBanner.isImageLoading}
           />
 
           {/* GRID DESTAQUES DO DIA - Desktop: Sempre visivel; Mobile: sumir e usar modal */}

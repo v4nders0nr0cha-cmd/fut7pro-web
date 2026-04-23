@@ -5,6 +5,7 @@ type Options = {
   slug?: string;
   date?: string;
   enabled?: boolean;
+  fallbackData?: PublicDestaquesDoDiaResponse;
 };
 
 const fetcher = async (url: string): Promise<PublicDestaquesDoDiaResponse> => {
@@ -35,6 +36,7 @@ export function usePublicDestaquesDoDia(options: Options = {}) {
     enabled
       ? {
           revalidateOnFocus: false,
+          fallbackData: options.fallbackData,
         }
       : {
           revalidateOnFocus: false,

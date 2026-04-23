@@ -11,6 +11,7 @@ type PublicMatchesOptions = {
   from?: string;
   to?: string;
   enabled?: boolean;
+  fallbackData?: PublicMatchesResponse;
 };
 
 const fetcher = async (url: string): Promise<PublicMatchesResponse> => {
@@ -55,6 +56,7 @@ export function usePublicMatches(options: PublicMatchesOptions = {}) {
     enabled
       ? {
           revalidateOnFocus: false,
+          fallbackData: options.fallbackData,
         }
       : {
           revalidateOnFocus: false,

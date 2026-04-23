@@ -16,15 +16,31 @@ jest.mock("next/script", () => ({
 }));
 
 const replaceMock = jest.fn();
+const refreshMock = jest.fn();
+const updateSessionMock = jest.fn();
+let mockedSearchParams = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: replaceMock }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
+  useSearchParams: () => mockedSearchParams,
 }));
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: jest.fn(),
+}));
+
+jest.mock("@/components/security/TurnstileWidget", () => ({
+  __esModule: true,
+  default: ({ resetSignal }: { resetSignal?: number }) => (
+    <div data-testid="turnstile-widget" data-reset-signal={String(resetSignal ?? 0)} />
+  ),
+  AUTH_APP_TURNSTILE_ENABLED: false,
+  AUTH_APP_TURNSTILE_SITE_KEY: "site-key",
+  TURNSTILE_REQUIRED_MESSAGE: "Confirme a verificação de segurança para continuar.",
+  TURNSTILE_UNAVAILABLE_MESSAGE: "A verificação de segurança está indisponível.",
+  isTurnstileErrorCode: () => false,
+  resolveTurnstileErrorMessage: () => "Não foi possível validar a segurança.",
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -41,7 +57,12 @@ const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 
 describe("EntrarClient", () => {
   beforeEach(() => {
-    mockedUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    mockedSearchParams = new URLSearchParams();
+    mockedUseSession.mockReturnValue({
+      data: null,
+      status: "unauthenticated",
+      update: updateSessionMock,
+    });
     mockedUseTema.mockReturnValue({ nome: "Casa do Gamer" });
     mockedUsePublicLinks.mockReturnValue({
       publicSlug: "casa-do-gamer",
@@ -52,6 +73,8 @@ describe("EntrarClient", () => {
     }
     (global.fetch as jest.Mock).mockReset();
     replaceMock.mockReset();
+    refreshMock.mockReset();
+    updateSessionMock.mockReset();
     sessionStorage.clear();
   });
 
@@ -83,6 +106,56 @@ describe("EntrarClient", () => {
 
     expect(sessionStorage.getItem("fut7pro_auth_email")).toBe("atleta@teste.com");
     expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
+  });
+
+  it("não executa request-join automático quando a sessão autenticada não é de atleta", async () => {
+    mockedSearchParams = new URLSearchParams("google=1");
+    mockedUseSession.mockReturnValue({
+      data: { user: { email: "admin@teste.com", role: "ADMIN" } },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+
+    render(<EntrarClient />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/A conta autenticada atual nao e de atleta/i)).toBeInTheDocument();
+    });
+
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalled();
+  });
+
+  it("reseta o Turnstile quando o e-mail muda após captcha obrigatório", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        code: "CAPTCHA_REQUIRED",
+        message: "Captcha obrigatório",
+      }),
+    }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "primeiro@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    const firstWidget = await screen.findByTestId("turnstile-widget");
+    const resetBefore = firstWidget.getAttribute("data-reset-signal");
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "segundo@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("turnstile-widget")).toHaveAttribute(
+        "data-reset-signal",
+        String(Number(resetBefore) + 1)
+      );
+    });
   });
 
   it("redireciona para cadastro quando lookup sinaliza REGISTER", async () => {

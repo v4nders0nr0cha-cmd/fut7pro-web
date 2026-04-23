@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,7 +10,11 @@ import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
+import {
+  PUBLIC_AUTH_SUCCESS_MESSAGE,
+  showPublicAuthSuccessToast,
+} from "@/utils/public-auth-feedback";
+import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
   AUTH_APP_TURNSTILE_SITE_KEY,
@@ -47,7 +51,7 @@ export default function LoginClient() {
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
 
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const sessionUser = session?.user as {
     authProvider?: string | null;
     tenantSlug?: string | null;
@@ -55,8 +59,10 @@ export default function LoginClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestJoinIntent = searchParams.get("intent") === "request-join";
+  const returningFromGoogleLogin = searchParams.get("oauth") === "google";
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
+  const completedNavigationRef = useRef(false);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -83,9 +89,16 @@ export default function LoginClient() {
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/")),
     [searchParams, publicHref]
   );
+  const googleCallbackHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("callbackUrl", redirectTo);
+    params.set("oauth", "google");
+    return `${publicHref("/login")}?${params.toString()}`;
+  }, [publicHref, redirectTo]);
 
-  const isAthleteRealmSession = isAthleteRealm(session as any);
-  const shouldLoadMe = status === "authenticated" && isAthleteRealmSession && Boolean(publicSlug);
+  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
+  const isAthleteSession = sessionRole === "ATLETA";
+  const shouldLoadMe = status === "authenticated" && isAthleteSession && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
@@ -95,6 +108,35 @@ export default function LoginClient() {
     tenantSlug: publicSlug,
     context: "athlete",
   });
+
+  const navigateWithRefresh = useCallback(
+    (href: string) => {
+      router.replace(href);
+      router.refresh();
+    },
+    [router]
+  );
+
+  const finalizeSuccessfulLogin = useCallback(
+    async (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
+      if (completedNavigationRef.current) return;
+      completedNavigationRef.current = true;
+
+      try {
+        await syncPublicAuthState({
+          publicSlug,
+          refreshSession: update,
+        });
+      } catch {
+        // Mantem a navegacao mesmo se a revalidacao falhar.
+      }
+
+      clearPublicAuthContext();
+      showPublicAuthSuccessToast(successMessage);
+      navigateWithRefresh(targetHref);
+    },
+    [navigateWithRefresh, publicSlug, update]
+  );
 
   const resetTurnstile = () => {
     setTurnstileToken(null);
@@ -143,12 +185,13 @@ export default function LoginClient() {
   }, [requestJoinIntent]);
 
   useEffect(() => {
-    if (status !== "authenticated" || !isAthleteRealmSession) return;
+    if (status !== "authenticated" || !isAthleteSession) return;
     if (requestJoinInProgress) return;
+    if (completedNavigationRef.current) return;
 
     if (sessionUser?.authProvider === "google") {
       if (!publicSlug) {
-        router.replace(publicHref("/register"));
+        navigateWithRefresh(publicHref("/register"));
         return;
       }
 
@@ -158,7 +201,7 @@ export default function LoginClient() {
         me?.athlete?.birthDay && me?.athlete?.birthMonth && me?.athlete?.position
       );
       if (shouldLoadMe && (isErrorMe || !profileComplete)) {
-        router.replace(publicHref("/register"));
+        navigateWithRefresh(publicHref("/register"));
         return;
       }
     }
@@ -167,22 +210,26 @@ export default function LoginClient() {
 
     const membershipStatus = String(me?.membership?.status || "").toUpperCase();
     if (membershipStatus === "PENDENTE") {
-      router.replace(publicHref("/aguardando-aprovacao"));
+      navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
 
     if (isErrorMe) {
-      router.replace(publicHref("/register"));
+      navigateWithRefresh(publicHref("/register"));
       return;
     }
 
-    router.replace(redirectTo);
+    if (returningFromGoogleLogin) {
+      void finalizeSuccessfulLogin(redirectTo);
+      return;
+    }
+
+    navigateWithRefresh(redirectTo);
   }, [
     status,
-    isAthleteRealmSession,
+    isAthleteSession,
     sessionUser,
     redirectTo,
-    router,
     publicHref,
     publicSlug,
     shouldLoadMe,
@@ -190,6 +237,9 @@ export default function LoginClient() {
     isErrorMe,
     me,
     requestJoinInProgress,
+    returningFromGoogleLogin,
+    finalizeSuccessfulLogin,
+    navigateWithRefresh,
   ]);
 
   const handleRequestJoin = async () => {
@@ -267,13 +317,12 @@ export default function LoginClient() {
 
       setNotMemberModalOpen(false);
       if (isActive) {
-        clearPublicAuthContext();
-        router.replace(redirectTo);
+        await finalizeSuccessfulLogin(redirectTo);
         return;
       }
 
       clearPublicAuthContext();
-      router.replace(publicHref("/aguardando-aprovacao"));
+      navigateWithRefresh(publicHref("/aguardando-aprovacao"));
     } catch {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
       setRequestJoinInProgress(false);
@@ -364,8 +413,7 @@ export default function LoginClient() {
       return;
     }
 
-    clearPublicAuthContext();
-    router.replace(redirectTo);
+    await finalizeSuccessfulLogin(redirectTo);
   };
 
   const loginWithPassword = async () => {
@@ -566,7 +614,7 @@ export default function LoginClient() {
         <div className="mt-5 space-y-3">
           <button
             type="button"
-            onClick={() => signIn("google", { callbackUrl: redirectTo })}
+            onClick={() => signIn("google", { callbackUrl: googleCallbackHref })}
             aria-label="Continuar com Google"
             className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
           >

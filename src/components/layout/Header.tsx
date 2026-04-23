@@ -15,7 +15,6 @@ import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -29,22 +28,20 @@ const quickMenu = [
 
 const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const { logo, nome } = useTema();
-  const { data: session } = useSession();
-  const isAthleteRealmSession = isAthleteRealm(session as any);
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const shouldCheckMe = Boolean(isAthleteRealmSession && session?.user && tenantSlug);
+  const shouldCheckMe = Boolean(session?.user && tenantSlug);
   const { me } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
-  const isAthleteLoggedIn = Boolean(me?.athlete?.id);
-  const showUserMenu = Boolean(isAthleteRealmSession && session?.user);
+  const showUserMenu = status === "authenticated" && Boolean(session?.user);
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -63,7 +60,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     DEFAULT_ATHLETE_AVATAR
   );
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
-    enabled: isAthleteLoggedIn,
+    enabled: showUserMenu,
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
@@ -113,7 +110,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
             // Se não logado, permite navegação mas direciona para fluxo de entrada do racha.
             const handleClick = (e: React.MouseEvent) => {
-              if (!isAthleteLoggedIn) {
+              if (!showUserMenu) {
                 e.preventDefault();
                 router.push(loginHref);
               }
@@ -203,7 +200,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                   <div className="my-1 h-px bg-white/10" />
                   <button
                     type="button"
-                    onClick={() => signOut()}
+                    onClick={() => signOut({ callbackUrl: homeHref })}
                     className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5"
                   >
                     Sair da conta
