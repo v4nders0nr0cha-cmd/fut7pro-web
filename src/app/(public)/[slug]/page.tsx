@@ -18,11 +18,7 @@ async function fetchPublicJson<T>(url: string) {
   }
 }
 
-export default async function RachaPublicPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export default async function RachaPublicPage({ params }: { params: { slug: string } }) {
   const slug = params?.slug?.trim().toLowerCase() || "";
   const base = getApiBase().replace(/\/+$/, "");
 

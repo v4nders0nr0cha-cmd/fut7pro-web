@@ -13,7 +13,13 @@ type ChampionBannerProps = {
 
 const FALLBACK_BANNER_IMAGE = "/images/torneios/torneio-matador.jpg";
 
-const ChampionBanner = ({ image, date, players, href, isImageLoading = false }: ChampionBannerProps) => {
+const ChampionBanner = ({
+  image,
+  date,
+  players,
+  href,
+  isImageLoading = false,
+}: ChampionBannerProps) => {
   const bannerImage = image?.trim() || null;
 
   const altText = `Imagem do Time Campeão do Dia - ${date}`;
