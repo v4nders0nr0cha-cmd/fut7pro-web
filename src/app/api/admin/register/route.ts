@@ -23,12 +23,14 @@ type RegisterPayload = {
   skipTenantCreate?: boolean;
   autoPassword?: boolean;
   useExistingGlobalAccount?: boolean;
+  turnstileToken?: string;
 };
 
 type TenantInfo = {
   id?: string;
   name?: string;
   slug?: string;
+  turnstileProof?: string;
 };
 
 const SLUG_REGEX = /^[a-z0-9-]{3,50}$/;
@@ -84,6 +86,7 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
       cidadeIbgeCode: data.cidadeIbgeCode?.trim() || undefined,
       autoJoinEnabled: true,
       autoApproveAthletes: false,
+      turnstileToken: data.turnstileToken?.trim() || undefined,
     }),
   });
 }
@@ -123,18 +126,32 @@ async function resolveExistingTenant(
   return fetchTenantBySlug(baseUrl, slug.trim(), accessToken);
 }
 
-async function createAdmin(baseUrl: string, data: RegisterPayload) {
+async function createAdmin(
+  baseUrl: string,
+  data: RegisterPayload,
+  tenantInfo?: TenantInfo | null,
+  turnstileProof?: string,
+  accessToken?: string
+) {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
   return fetch(resolvePath(baseUrl, "/auth/register-admin"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({
       name: data.adminNome.trim(),
       email: data.adminEmail.trim().toLowerCase(),
       password: data.adminSenha,
+      rachaId: tenantInfo?.id || undefined,
       rachaSlug: data.rachaSlug?.trim(),
       apelido: data.adminApelido?.trim() || undefined,
       posicao: data.adminPosicao,
       avatarUrl: resolveAvatarUrl(data.adminAvatarBase64),
+      turnstileToken: data.turnstileToken?.trim() || undefined,
+      turnstileProof: turnstileProof?.trim() || undefined,
     }),
   });
 }
@@ -296,7 +313,13 @@ export async function POST(req: NextRequest) {
   }
 
   // 2) Cria o admin vinculado ao tenant
-  const adminRes = await createAdmin(baseUrl, payload);
+  const adminRes = await createAdmin(
+    baseUrl,
+    payload,
+    tenantInfo,
+    tenantInfo?.turnstileProof,
+    superAdminUser?.accessToken
+  );
   const adminBodyText = await adminRes.text();
   const adminJson: any = adminBodyText ? safeJsonParse(adminBodyText) : null;
   if (!adminRes.ok) {
