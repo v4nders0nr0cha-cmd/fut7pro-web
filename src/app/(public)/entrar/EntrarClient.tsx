@@ -342,6 +342,7 @@ export default function EntrarClient() {
 
   useEffect(() => {
     setCaptchaToken(null);
+    setTurnstileResetSignal((value) => value + 1);
     setResult(null);
     setRedirectingMessage("");
   }, [email]);
