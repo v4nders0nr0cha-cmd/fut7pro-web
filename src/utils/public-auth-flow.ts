@@ -1,9 +1,13 @@
 const AUTH_EMAIL_STORAGE_KEY = "fut7pro_auth_email";
 const AUTH_SLUG_STORAGE_KEY = "fut7pro_auth_slug";
+const AUTH_TURNSTILE_PROOF_STORAGE_KEY = "fut7pro_auth_turnstile_proof";
+const AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY = "fut7pro_auth_turnstile_proof_expires_at";
 
 type PublicAuthContext = {
   email: string;
   slug: string;
+  turnstileProof?: string;
+  turnstileProofExpiresAt?: number;
 };
 
 function getStorage() {
@@ -21,6 +25,22 @@ export function persistPublicAuthContext(context: PublicAuthContext) {
 
   storage.setItem(AUTH_EMAIL_STORAGE_KEY, normalizedEmail);
   storage.setItem(AUTH_SLUG_STORAGE_KEY, normalizedSlug);
+
+  const normalizedProof = context.turnstileProof?.trim() || "";
+  const normalizedProofExpiresAt =
+    typeof context.turnstileProofExpiresAt === "number" &&
+    Number.isFinite(context.turnstileProofExpiresAt)
+      ? context.turnstileProofExpiresAt
+      : null;
+
+  if (normalizedProof && normalizedProofExpiresAt && normalizedProofExpiresAt > Date.now()) {
+    storage.setItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY, normalizedProof);
+    storage.setItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY, String(normalizedProofExpiresAt));
+    return;
+  }
+
+  storage.removeItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY);
+  storage.removeItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY);
 }
 
 export function readPublicAuthContext(currentSlug?: string | null): PublicAuthContext | null {
@@ -36,7 +56,24 @@ export function readPublicAuthContext(currentSlug?: string | null): PublicAuthCo
     return null;
   }
 
-  return { email, slug };
+  const turnstileProof = storage.getItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY)?.trim() || "";
+  const parsedExpiresAt = Number.parseInt(
+    storage.getItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY) || "",
+    10
+  );
+  const hasValidProof =
+    turnstileProof && Number.isFinite(parsedExpiresAt) && parsedExpiresAt > Date.now();
+
+  if (!hasValidProof) {
+    storage.removeItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY);
+    storage.removeItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY);
+  }
+
+  return {
+    email,
+    slug,
+    ...(hasValidProof ? { turnstileProof, turnstileProofExpiresAt: parsedExpiresAt } : {}),
+  };
 }
 
 export function clearPublicAuthContext() {
@@ -45,4 +82,6 @@ export function clearPublicAuthContext() {
 
   storage.removeItem(AUTH_EMAIL_STORAGE_KEY);
   storage.removeItem(AUTH_SLUG_STORAGE_KEY);
+  storage.removeItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY);
+  storage.removeItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY);
 }

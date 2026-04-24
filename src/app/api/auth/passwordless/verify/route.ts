@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
   const rachaSlug = typeof payload?.rachaSlug === "string" ? payload.rachaSlug.trim() : "";
   const turnstileToken =
     typeof payload?.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
+  const turnstileProof =
+    typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email || !code) {
     return json({ error: "E-mail e codigo obrigatorios." }, { status: 400 });
   }
@@ -44,6 +46,7 @@ export async function POST(req: NextRequest) {
         code,
         rachaSlug: rachaSlug || undefined,
         turnstileToken: turnstileToken || undefined,
+        turnstileProof: turnstileProof || undefined,
       }),
     });
 

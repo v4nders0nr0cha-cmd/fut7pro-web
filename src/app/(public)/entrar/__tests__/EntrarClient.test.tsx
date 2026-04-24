@@ -126,7 +126,7 @@ describe("EntrarClient", () => {
     expect(replaceMock).not.toHaveBeenCalled();
   });
 
-  it("reseta o Turnstile quando o e-mail muda após captcha obrigatório", async () => {
+  it("não dispara nova verificação de segurança só porque o usuário digitou", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: false,
       json: async () => ({
@@ -148,14 +148,10 @@ describe("EntrarClient", () => {
     fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
       target: { value: "segundo@teste.com" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
-    await waitFor(() => {
-      expect(screen.getByTestId("turnstile-widget")).toHaveAttribute(
-        "data-reset-signal",
-        String(Number(resetBefore) + 1)
-      );
-    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("turnstile-widget")).not.toBeInTheDocument();
+    expect(firstWidget.getAttribute("data-reset-signal")).toBe(resetBefore);
   });
 
   it("redireciona para cadastro quando lookup sinaliza REGISTER", async () => {

@@ -27,6 +27,8 @@ type LookupResponse = {
   requiresCaptcha?: boolean;
   nextAction?: "REGISTER" | "LOGIN" | "REQUEST_JOIN" | "WAIT_APPROVAL" | "BLOCKED_MESSAGE";
   membershipStatus?: "NONE" | "PENDING" | "ACTIVE" | "REJECTED" | "BLOCKED";
+  turnstileProof?: string;
+  turnstileProofExpiresAt?: number;
 };
 
 type SessionUser = {
@@ -154,7 +156,7 @@ export default function EntrarClient() {
             isTurnstileErrorCode(body?.code)
           ) {
             setResult({ ok: true, message: LOOKUP_UNIFORM_MESSAGE, requiresCaptcha: true });
-            setCaptchaToken(null);
+            resetTurnstile();
             setError(
               isTurnstileErrorCode(body?.code)
                 ? resolveTurnstileErrorMessage(body)
@@ -178,7 +180,7 @@ export default function EntrarClient() {
         setLoading(false);
       }
     },
-    [publicSlug, turnstileEnabled, turnstileSiteKey]
+    [publicSlug, resetTurnstile, turnstileEnabled, turnstileSiteKey]
   );
 
   const redirectFromLookup = useCallback(
@@ -189,6 +191,8 @@ export default function EntrarClient() {
       persistPublicAuthContext({
         email: normalizedEmail,
         slug: publicSlug,
+        turnstileProof: lookup.turnstileProof,
+        turnstileProofExpiresAt: lookup.turnstileProofExpiresAt,
       });
       setResult(null);
       setError("");
@@ -245,16 +249,10 @@ export default function EntrarClient() {
       return;
     }
 
-    try {
-      const lookup = await runLookup(normalized, captchaToken);
-      if (lookup) {
-        setResult(lookup);
-        redirectFromLookup(normalized, lookup);
-      }
-    } finally {
-      if (needsSecurityCheck) {
-        resetTurnstile();
-      }
+    const lookup = await runLookup(normalized, captchaToken);
+    if (lookup) {
+      setResult(lookup);
+      redirectFromLookup(normalized, lookup);
     }
   };
 
@@ -380,12 +378,6 @@ export default function EntrarClient() {
     update,
   ]);
 
-  useEffect(() => {
-    resetTurnstile();
-    setResult(null);
-    setRedirectingMessage("");
-  }, [email, resetTurnstile]);
-
   if (isVitrineSlug) {
     return (
       <section className="w-full px-4">
@@ -487,7 +479,12 @@ export default function EntrarClient() {
           <input
             type="email"
             value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              setError("");
+              setResult(null);
+              setRedirectingMessage("");
+            }}
             placeholder="ex: seuemail@dominio.com"
             aria-invalid={emailFieldInvalid}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
