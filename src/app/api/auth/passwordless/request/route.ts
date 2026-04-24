@@ -17,10 +17,21 @@ function json(body: unknown, init?: ResponseInit) {
 
 function normalizePasswordlessStartResponse(payload: unknown) {
   const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  const turnstileProof =
+    typeof body.turnstileProof === "string" && body.turnstileProof.trim()
+      ? body.turnstileProof.trim()
+      : null;
+  const turnstileProofExpiresAt =
+    typeof body.turnstileProofExpiresAt === "number" &&
+    Number.isFinite(body.turnstileProofExpiresAt)
+      ? body.turnstileProofExpiresAt
+      : null;
   return {
     ok: true,
     message: UNIFORM_AUTH_MESSAGE,
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+    ...(turnstileProof ? { turnstileProof } : {}),
+    ...(turnstileProofExpiresAt ? { turnstileProofExpiresAt } : {}),
   };
 }
 
@@ -40,6 +51,8 @@ export async function POST(req: NextRequest) {
   const rachaSlug = typeof payload?.rachaSlug === "string" ? payload.rachaSlug.trim() : "";
   const turnstileToken =
     typeof payload?.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
+  const turnstileProof =
+    typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email) {
     return json({ error: "E-mail obrigatorio" }, { status: 400 });
   }
@@ -52,6 +65,7 @@ export async function POST(req: NextRequest) {
         email,
         rachaSlug: rachaSlug || undefined,
         turnstileToken: turnstileToken || undefined,
+        turnstileProof: turnstileProof || undefined,
       }),
     });
     const parsed = await response.json().catch(() => null);

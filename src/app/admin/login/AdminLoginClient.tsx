@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,12 +49,25 @@ export default function AdminLoginClient() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
+  const [turnstileProofExpiresAt, setTurnstileProofExpiresAt] = useState<number | null>(null);
+  const [turnstileProofEmail, setTurnstileProofEmail] = useState<string | null>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const contactEmail = "social@fut7pro.com.br";
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
+  const normalizedEmail = email.trim().toLowerCase();
+  const hasTurnstileProof =
+    turnstileEnabled &&
+    Boolean(
+      turnstileProof &&
+        turnstileProofExpiresAt &&
+        turnstileProofExpiresAt > Date.now() &&
+        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+    );
+  const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
   const redirectAfterLogin = () => {
     router.replace("/admin/selecionar-racha");
@@ -65,8 +78,43 @@ export default function AdminLoginClient() {
     setTurnstileResetSignal((value) => value + 1);
   };
 
+  const clearJourneyProof = useCallback(
+    (nextEmail?: string | null) => {
+      const emailForProof = String(nextEmail || normalizedEmail || turnstileProofEmail || "")
+        .trim()
+        .toLowerCase();
+      setTurnstileProof(null);
+      setTurnstileProofExpiresAt(null);
+      setTurnstileProofEmail(emailForProof || null);
+    },
+    [normalizedEmail, turnstileProofEmail]
+  );
+
+  const applyJourneyProof = useCallback(
+    (proofValue: unknown, proofExpiresAtValue: unknown) => {
+      const nextProof = typeof proofValue === "string" ? proofValue.trim() : "";
+      const nextProofExpiresAt =
+        typeof proofExpiresAtValue === "number" && Number.isFinite(proofExpiresAtValue)
+          ? proofExpiresAtValue
+          : null;
+
+      if (!nextProof || !nextProofExpiresAt || nextProofExpiresAt <= Date.now()) {
+        clearJourneyProof();
+        return false;
+      }
+
+      setTurnstileProof(nextProof);
+      setTurnstileProofExpiresAt(nextProofExpiresAt);
+      setTurnstileProofEmail(normalizedEmail || null);
+      setTurnstileToken(null);
+      return true;
+    },
+    [clearJourneyProof, normalizedEmail]
+  );
+
   const requireTurnstile = () => {
     if (!turnstileEnabled) return true;
+    if (hasTurnstileProof) return true;
     if (!turnstileSiteKey) {
       setErro(TURNSTILE_UNAVAILABLE_MESSAGE);
       return false;
@@ -99,11 +147,34 @@ export default function AdminLoginClient() {
     setInfoMessage("");
   }, [email]);
 
+  useEffect(() => {
+    if (!turnstileProof || !turnstileProofExpiresAt) return;
+
+    const msUntilExpiration = turnstileProofExpiresAt - Date.now();
+    if (msUntilExpiration <= 0) {
+      clearJourneyProof();
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      clearJourneyProof();
+    }, msUntilExpiration + 100);
+
+    return () => window.clearTimeout(timer);
+  }, [clearJourneyProof, turnstileProof, turnstileProofExpiresAt]);
+
+  useEffect(() => {
+    if (!turnstileProof || !turnstileProofEmail) return;
+    if (!normalizedEmail || normalizedEmail === turnstileProofEmail) return;
+    clearJourneyProof(normalizedEmail);
+  }, [clearJourneyProof, normalizedEmail, turnstileProof, turnstileProofEmail]);
+
   const handleAuthError = (body: any) => {
     const message = String(body?.message || body?.error || "").trim();
     const errorCode = String(body?.code || body?.error?.code || "").trim();
     if (isTurnstileErrorCode(errorCode)) {
       setErro(resolveTurnstileErrorMessage(body));
+      clearJourneyProof();
       resetTurnstile();
       return true;
     }
@@ -135,6 +206,7 @@ export default function AdminLoginClient() {
           email,
           password: senha,
           turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+          turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
         }),
       });
 
@@ -162,6 +234,8 @@ export default function AdminLoginClient() {
       // ignore
     }
 
+    clearJourneyProof(normalizedEmail);
+    resetTurnstile();
     setErro("E-mail ou senha inválidos.");
   };
 
@@ -178,6 +252,7 @@ export default function AdminLoginClient() {
       body: JSON.stringify({
         email: normalizedEmail,
         turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -185,14 +260,21 @@ export default function AdminLoginClient() {
     if (!response.ok) {
       if (isTurnstileErrorCode(body?.code)) {
         setErro(resolveTurnstileErrorMessage(body));
+        clearJourneyProof(normalizedEmail);
         resetTurnstile();
         return;
       }
+      clearJourneyProof(normalizedEmail);
+      resetTurnstile();
       const message = body?.message || body?.error || "Não foi possível enviar o código.";
       setErro(message);
       return;
     }
 
+    const proofApplied = applyJourneyProof(body?.turnstileProof, body?.turnstileProofExpiresAt);
+    if (turnstileEnabled && !proofApplied) {
+      resetTurnstile();
+    }
     setCodigoEnviado(true);
     setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
   };
@@ -216,6 +298,7 @@ export default function AdminLoginClient() {
         email: normalizedEmail,
         code: normalizedCode,
         turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -224,6 +307,8 @@ export default function AdminLoginClient() {
       if (handleAuthError(body)) {
         return;
       }
+      clearJourneyProof(normalizedEmail);
+      resetTurnstile();
       const message = body?.message || body?.error || "Código inválido ou expirado.";
       setErro(message);
       return;
@@ -276,9 +361,6 @@ export default function AdminLoginClient() {
 
       await verifyPasswordlessCode();
     } finally {
-      if (turnstileEnabled) {
-        resetTurnstile();
-      }
       setIsSubmitting(false);
     }
   };
@@ -453,7 +535,7 @@ export default function AdminLoginClient() {
               )}
 
               <TurnstileWidget
-                enabled={turnstileEnabled}
+                enabled={turnstileEnabled && !hasTurnstileProof}
                 siteKey={turnstileSiteKey}
                 onTokenChange={setTurnstileToken}
                 resetSignal={turnstileResetSignal}
@@ -461,7 +543,7 @@ export default function AdminLoginClient() {
 
               <button
                 type="submit"
-                disabled={!isHydrated || isSubmitting || (turnstileEnabled && !turnstileToken)}
+                disabled={!isHydrated || isSubmitting || (turnstileEnabled && !hasSecurityCheck)}
                 data-testid="admin-login-submit"
                 className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
               >

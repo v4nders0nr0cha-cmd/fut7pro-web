@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
   const password = typeof payload.password === "string" ? payload.password : "";
   const turnstileToken =
     typeof payload.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
+  const turnstileProof =
+    typeof payload.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
 
   if (!email || !password) {
     return json({ message: "Informe e-mail e senha." }, { status: 400 });
@@ -61,6 +63,7 @@ export async function POST(req: NextRequest) {
         email,
         password,
         turnstileToken: turnstileToken || undefined,
+        turnstileProof: turnstileProof || undefined,
       }),
     });
 

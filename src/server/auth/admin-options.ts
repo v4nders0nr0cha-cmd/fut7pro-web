@@ -156,6 +156,7 @@ export const authOptions: NextAuthOptionsLike = {
         name: { label: "Name", type: "text" },
         authProvider: { label: "Auth Provider", type: "text" },
         turnstileToken: { label: "Turnstile Token", type: "text" },
+        turnstileProof: { label: "Turnstile Proof", type: "text" },
       },
       async authorize(credentials) {
         if (credentials?.accessToken) {
@@ -230,6 +231,10 @@ export const authOptions: NextAuthOptionsLike = {
           const turnstileToken = (credentials as any)?.turnstileToken;
           if (turnstileToken) {
             loginPayload.turnstileToken = turnstileToken;
+          }
+          const turnstileProof = (credentials as any)?.turnstileProof;
+          if (turnstileProof) {
+            loginPayload.turnstileProof = turnstileProof;
           }
           const response = await fetch(`${API_BASE_URL}${LOGIN_PATH}`, {
             method: "POST",

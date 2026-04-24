@@ -20,7 +20,11 @@ import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
-import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
+import {
+  clearPublicAuthContext,
+  persistPublicAuthContext,
+  readPublicAuthContext,
+} from "@/utils/public-auth-flow";
 import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
@@ -155,8 +159,21 @@ export default function RegisterClient() {
   const [prefilledFromEntrar, setPrefilledFromEntrar] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
+  const [turnstileProofExpiresAt, setTurnstileProofExpiresAt] = useState<number | null>(null);
+  const [turnstileProofEmail, setTurnstileProofEmail] = useState<string | null>(null);
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
+  const normalizedEmail = email.trim().toLowerCase();
+  const hasTurnstileProof =
+    turnstileEnabled &&
+    Boolean(
+      turnstileProof &&
+        turnstileProofExpiresAt &&
+        turnstileProofExpiresAt > Date.now() &&
+        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+    );
+  const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
   const isPendingMembership = membershipStatus === "PENDENTE";
@@ -175,8 +192,72 @@ export default function RegisterClient() {
     setTurnstileResetSignal((value) => value + 1);
   };
 
+  const persistJourneyContext = useCallback(
+    (nextEmail: string, proof?: string | null, proofExpiresAt?: number | null) => {
+      if (!publicSlug) return;
+      const sanitizedEmail = nextEmail.trim().toLowerCase();
+      if (!sanitizedEmail) return;
+
+      persistPublicAuthContext({
+        email: sanitizedEmail,
+        slug: publicSlug,
+        ...(proof && proofExpiresAt
+          ? {
+              turnstileProof: proof,
+              turnstileProofExpiresAt: proofExpiresAt,
+            }
+          : {}),
+      });
+    },
+    [publicSlug]
+  );
+
+  const clearJourneyProof = useCallback(
+    (nextEmail?: string | null) => {
+      const emailForContext = String(nextEmail || normalizedEmail || turnstileProofEmail || "")
+        .trim()
+        .toLowerCase();
+      setTurnstileProof(null);
+      setTurnstileProofExpiresAt(null);
+      setTurnstileProofEmail(null);
+      if (emailForContext) {
+        persistJourneyContext(emailForContext);
+      }
+    },
+    [normalizedEmail, persistJourneyContext, turnstileProofEmail]
+  );
+
+  const applyJourneyProof = useCallback(
+    (proofValue: unknown, proofExpiresAtValue: unknown, nextEmail?: string | null) => {
+      const nextProof = typeof proofValue === "string" ? proofValue.trim() : "";
+      const nextProofExpiresAt =
+        typeof proofExpiresAtValue === "number" && Number.isFinite(proofExpiresAtValue)
+          ? proofExpiresAtValue
+          : null;
+      const emailForContext = String(nextEmail || normalizedEmail || "")
+        .trim()
+        .toLowerCase();
+
+      if (!nextProof || !nextProofExpiresAt || nextProofExpiresAt <= Date.now()) {
+        clearJourneyProof(emailForContext);
+        return false;
+      }
+
+      setTurnstileProof(nextProof);
+      setTurnstileProofExpiresAt(nextProofExpiresAt);
+      setTurnstileProofEmail(emailForContext || null);
+      setTurnstileToken(null);
+      if (emailForContext) {
+        persistJourneyContext(emailForContext, nextProof, nextProofExpiresAt);
+      }
+      return true;
+    },
+    [clearJourneyProof, normalizedEmail, persistJourneyContext]
+  );
+
   const requireTurnstile = () => {
     if (!turnstileEnabled) return true;
+    if (hasTurnstileProof) return true;
     if (!turnstileSiteKey) {
       setErro(TURNSTILE_UNAVAILABLE_MESSAGE);
       return false;
@@ -230,8 +311,33 @@ export default function RegisterClient() {
       return;
     }
     setEmail((previous) => previous || context.email);
+    if (context.turnstileProof && context.turnstileProofExpiresAt) {
+      applyJourneyProof(context.turnstileProof, context.turnstileProofExpiresAt, context.email);
+    }
     setPrefilledFromEntrar(true);
-  }, [isAthleteAuthenticated, publicSlug]);
+  }, [applyJourneyProof, isAthleteAuthenticated, publicSlug]);
+
+  useEffect(() => {
+    if (!turnstileProof || !turnstileProofExpiresAt) return;
+
+    const msUntilExpiration = turnstileProofExpiresAt - Date.now();
+    if (msUntilExpiration <= 0) {
+      clearJourneyProof();
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      clearJourneyProof();
+    }, msUntilExpiration + 100);
+
+    return () => window.clearTimeout(timer);
+  }, [clearJourneyProof, turnstileProof, turnstileProofExpiresAt]);
+
+  useEffect(() => {
+    if (!turnstileProof || !turnstileProofEmail) return;
+    if (!normalizedEmail || normalizedEmail === turnstileProofEmail) return;
+    clearJourneyProof(normalizedEmail);
+  }, [clearJourneyProof, normalizedEmail, turnstileProof, turnstileProofEmail]);
 
   useEffect(() => {
     if (!shouldPrefill) return;
@@ -447,6 +553,7 @@ export default function RegisterClient() {
     const payloadWithSecurity = {
       ...payload,
       turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+      turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
     };
 
     const endpoint = shouldUseCompleteEndpoint
@@ -473,6 +580,7 @@ export default function RegisterClient() {
               : null;
         if (isTurnstileErrorCode(errorCode)) {
           setErro(resolveTurnstileErrorMessage(body));
+          clearJourneyProof(normalizedEmail);
           resetTurnstile();
           return;
         }
@@ -577,7 +685,7 @@ export default function RegisterClient() {
       setErro(message);
       setAccountModalOpen(false);
     } finally {
-      if (turnstileEnabled) {
+      if (turnstileEnabled && !hasTurnstileProof) {
         resetTurnstile();
       }
       setIsSubmitting(false);
@@ -932,7 +1040,7 @@ export default function RegisterClient() {
           </div>
 
           <TurnstileWidget
-            enabled={turnstileEnabled}
+            enabled={turnstileEnabled && !hasTurnstileProof}
             siteKey={turnstileSiteKey}
             onTokenChange={setTurnstileToken}
             resetSignal={turnstileResetSignal}
@@ -941,7 +1049,7 @@ export default function RegisterClient() {
           <button
             type="submit"
             disabled={
-              isSubmitting || isRegistrationBlocked || (turnstileEnabled && !turnstileToken)
+              isSubmitting || isRegistrationBlocked || (turnstileEnabled && !hasSecurityCheck)
             }
             className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
           >

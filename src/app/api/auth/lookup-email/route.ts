@@ -25,6 +25,15 @@ function normalizeLookupSuccess(payload: unknown) {
     typeof body.membershipStatus === "string" && body.membershipStatus.trim()
       ? body.membershipStatus.trim().toUpperCase()
       : null;
+  const turnstileProof =
+    typeof body.turnstileProof === "string" && body.turnstileProof.trim()
+      ? body.turnstileProof.trim()
+      : null;
+  const turnstileProofExpiresAt =
+    typeof body.turnstileProofExpiresAt === "number" &&
+    Number.isFinite(body.turnstileProofExpiresAt)
+      ? body.turnstileProofExpiresAt
+      : null;
 
   return {
     ok: true,
@@ -32,6 +41,8 @@ function normalizeLookupSuccess(payload: unknown) {
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
     ...(nextAction ? { nextAction } : {}),
     ...(membershipStatus ? { membershipStatus } : {}),
+    ...(turnstileProof ? { turnstileProof } : {}),
+    ...(turnstileProofExpiresAt ? { turnstileProofExpiresAt } : {}),
   };
 }
 
@@ -52,6 +63,8 @@ export async function POST(req: NextRequest) {
   const captchaToken = typeof payload?.captchaToken === "string" ? payload.captchaToken.trim() : "";
   const turnstileToken =
     typeof payload?.turnstileToken === "string" ? payload.turnstileToken.trim() : "";
+  const turnstileProof =
+    typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
 
   if (!email) {
     return json({ error: "E-mail obrigatorio" }, { status: 400 });
@@ -79,6 +92,7 @@ export async function POST(req: NextRequest) {
         rachaSlug: rachaSlug || undefined,
         captchaToken: captchaToken || undefined,
         turnstileToken: turnstileToken || undefined,
+        turnstileProof: turnstileProof || undefined,
       }),
     });
 
