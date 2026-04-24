@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import ResponsiveTeamRanking from "@/components/estatisticas/ResponsiveTeamRanking";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -58,10 +59,28 @@ export default function ClassificacaoTimesPage() {
           7 no Fut7Pro
         </h1>
 
-        <div className="mb-4 mt-8 flex flex-col items-center gap-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-brand text-center">
-            Classificação dos Times
-          </h2>
+        <div className="mb-4 mt-8 flex flex-col items-center gap-3">
+          <PageHelp
+            title="Classificação dos Times"
+            summary="Tabela de pontos, jogos e aproveitamento dos times por período."
+            detailsTitle="Como funciona a Classificação dos Times"
+            details={
+              <>
+                <p>
+                  A classificação consolida o desempenho dos times com base nas partidas registradas
+                  e publicadas no painel administrativo.
+                </p>
+                <p>
+                  Você pode comparar 1º, 2º e 3º Quadrimestre, Temporada Atual ou Todas as
+                  Temporadas para entender a evolução dos times no racha.
+                </p>
+                <p>
+                  Pontos, jogos, vitórias, empates e derrotas são recalculados automaticamente
+                  conforme novos resultados entram no sistema.
+                </p>
+              </>
+            }
+          />
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
@@ -75,12 +94,6 @@ export default function ClassificacaoTimesPage() {
             ))}
           </select>
         </div>
-
-        <p className="text-center text-sm text-gray-400 mb-6 max-w-2xl mx-auto">
-          Veja a <b>classificacao dos times</b> baseada nas partidas registradas no painel admin.
-          Selecione 1o, 2o, 3o Quadrimestre, Temporada Atual ou Todas as Temporadas para comparar o
-          desempenho dos times no seu racha.
-        </p>
 
         <section className="w-full px-2 pb-8 sm:px-4">
           {isLoading && (

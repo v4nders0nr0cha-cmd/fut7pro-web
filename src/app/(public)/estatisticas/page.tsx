@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Head from "next/head";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const estatisticasLinks = [
   {
@@ -55,19 +56,26 @@ export default function EstatisticasPage() {
         />
       </Head>
 
-      {/* TÍTULO PRINCIPAL PADRÃO */}
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
-        Estatísticas
-      </h1>
-      {/* DESCRIÇÃO PADRÃO — MAIS HORIZONTAL NO DESKTOP */}
-      <p
-        className="mb-8 text-base md:text-lg text-gray-300 text-center 
-        max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto
-        leading-relaxed font-medium"
-      >
-        Explore as métricas oficiais do seu racha com visão completa por atleta, time, posição e
-        período. Tudo é alimentado automaticamente pelos jogos registrados no painel administrativo.
-      </p>
+      <PageHelp
+        title="Estatísticas"
+        headingLevel="h1"
+        variant="main-page"
+        className="mt-10"
+        summary="Explore métricas oficiais do racha por atleta, time, posição e período."
+        detailsTitle="O que você encontra em Estatísticas"
+        details={
+          <>
+            <p>
+              A área de Estatísticas reúne os rankings e comparadores oficiais do racha, sempre com
+              dados alimentados pelas partidas publicadas no painel administrativo.
+            </p>
+            <p>
+              Você pode acompanhar classificação dos times, ranking geral, artilheiros,
+              assistências, melhores por posição e o Tira Teima entre atletas.
+            </p>
+          </>
+        }
+      />
 
       <div
         className="w-full overflow-x-auto"

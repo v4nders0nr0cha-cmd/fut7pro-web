@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -68,15 +69,24 @@ export default function RankingArtilheirosPage() {
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand mb-2 text-center">
-              Ranking dos Artilheiros
-            </h2>
-            <p className="text-sm text-gray-400 max-w-xl mb-3 text-center">
-              Confira quem balançou mais as redes e compare o desempenho por quadrimestre, na
-              temporada atual ou em todas as temporadas do Racha.
-              <br className="hidden sm:inline" />
-              Selecione o período abaixo para filtrar o ranking.
-            </p>
+            <PageHelp
+              title="Ranking dos Artilheiros"
+              summary="Gols por atleta com filtros por quadrimestre, temporada e histórico completo."
+              detailsTitle="Como funciona o Ranking dos Artilheiros"
+              details={
+                <>
+                  <p>Esta página destaca quem mais fez gols nas partidas publicadas do racha.</p>
+                  <p>
+                    Compare o desempenho por quadrimestre, temporada atual ou todas as temporadas. O
+                    filtro de busca ajuda a encontrar rapidamente um atleta específico.
+                  </p>
+                  <p>
+                    Em rankings anuais ou quadrimestrais, os números refletem apenas o período
+                    selecionado.
+                  </p>
+                </>
+              }
+            />
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}

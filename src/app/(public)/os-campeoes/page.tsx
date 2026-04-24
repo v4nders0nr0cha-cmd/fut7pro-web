@@ -3,10 +3,10 @@
 import Head from "next/head";
 import Image from "next/image";
 import Link from "next/link";
-import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import QuadrimestreGrid from "@/components/cards/QuadrimestreGrid";
+import PageHelp from "@/components/public/PageHelp";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
@@ -65,7 +65,6 @@ const positionMeta = [
 export default function CampeoesPage() {
   const { publicHref, publicSlug } = usePublicLinks();
   const [anoSelecionado, setAnoSelecionado] = useState<number | undefined>(undefined);
-  const [saibaMaisOpen, setSaibaMaisOpen] = useState(false);
   const anoBase = anoSelecionado ?? CURRENT_YEAR;
   const tenantKey = publicSlug ? `/api/public/${publicSlug}/tenant` : null;
   const { data: tenantData } = useSWR<TenantInfo>(tenantKey, tenantFetcher, {
@@ -273,22 +272,44 @@ export default function CampeoesPage() {
           Os Campeões do Racha - Melhores do Ano, Rankings e Campeões por Quadrimestre
         </h1>
 
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-brand mb-2">Os Campeões</h2>
-          <p className="text-textoSuave">
-            O Hall da Fama oficial do racha reúne os títulos anuais e quadrimestrais gerados a
-            partir dos dados reais das partidas publicadas.
-          </p>
-          <div className="flex justify-center mt-3">
-            <button
-              type="button"
-              onClick={() => setSaibaMaisOpen(true)}
-              className="text-brand-soft hover:text-brand-soft font-semibold text-sm underline underline-offset-4"
-            >
-              Saiba mais
-            </button>
-          </div>
-        </div>
+        <PageHelp
+          title="Os Campeões"
+          summary="Hall da Fama oficial com títulos anuais e quadrimestrais do racha."
+          className="mb-8"
+          detailsTitle="Como funciona a página Os Campeões"
+          details={
+            <>
+              <p>
+                A página Os Campeões consolida os títulos oficiais do racha por ano e por
+                quadrimestre, com vencedores calculados a partir das partidas publicadas.
+              </p>
+
+              <div>
+                <h4 className="text-brand-soft font-semibold mb-2">Campeões do Ano</h4>
+                <p>
+                  A temporada destaca Melhor do Ano, Artilheiro do Ano, Maestro do Ano e Campeão do
+                  Ano. Cada card abre o ranking correspondente já filtrado para o ano selecionado.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-brand-soft font-semibold mb-2">Melhores por Posição</h4>
+                <p>
+                  Atacante, meia, zagueiro e goleiro do ano são definidos pela maior pontuação entre
+                  atletas da mesma função.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-brand-soft font-semibold mb-2">Campeões por Quadrimestre</h4>
+                <p>
+                  O ano é dividido em três períodos: janeiro a abril, maio a agosto e setembro a
+                  dezembro. Cada quadrimestre possui seus próprios campeões.
+                </p>
+              </div>
+            </>
+          }
+        />
 
         <div className="flex flex-col items-center gap-4 mb-10">
           <label htmlFor="ano-campeoes" className="text-brand font-semibold">
@@ -339,151 +360,6 @@ export default function CampeoesPage() {
           />
         </section>
       </main>
-
-      <Transition.Root show={saibaMaisOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setSaibaMaisOpen(false)}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-200"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-150"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/80 transition-opacity" aria-hidden="true" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 flex items-center justify-center px-4 py-6 overflow-y-auto">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-200"
-              enterFrom="opacity-0 translate-y-6"
-              enterTo="opacity-100 translate-y-0"
-              leave="ease-in duration-150"
-              leaveFrom="opacity-100 translate-y-0"
-              leaveTo="opacity-0 translate-y-6"
-            >
-              <Dialog.Panel className="relative w-full max-w-3xl mx-auto bg-[#191919] rounded-2xl shadow-xl px-6 pb-6 pt-8 border border-brand/10 max-h-[85vh] overflow-y-auto">
-                <button
-                  onClick={() => setSaibaMaisOpen(false)}
-                  className="absolute right-4 top-4 bg-black/70 rounded-full px-3 py-1 text-white text-sm"
-                  aria-label="Fechar"
-                >
-                  X
-                </button>
-
-                <Dialog.Title className="text-2xl font-bold text-brand mb-4 text-center">
-                  Como funciona a página Os Campeões
-                </Dialog.Title>
-
-                <div className="space-y-5 text-sm text-gray-200 leading-relaxed">
-                  <p>
-                    A página Os Campeões consolida os títulos oficiais do racha por ano e por
-                    quadrimestre. Os vencedores são calculados automaticamente com base nas partidas
-                    registradas e publicadas no sistema.
-                  </p>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">Escolha do Ano</h4>
-                    <p>
-                      Você pode selecionar o ano desejado para visualizar os campeões daquele
-                      período. Os anos disponíveis começam a partir do ano de criação do racha e
-                      seguem de forma cronológica.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">Campeões do Ano</h4>
-                    <p className="mb-2">
-                      Nesta seção são exibidos os principais destaques da temporada:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Melhor do Ano: atleta com maior pontuação total no ano.</li>
-                      <li>Artilheiro do Ano: atleta com maior número de gols no ano.</li>
-                      <li>Maestro do Ano: atleta com maior número de assistências no ano.</li>
-                      <li>Campeão do Ano: time com maior pontuação acumulada no ano.</li>
-                    </ul>
-                    <p className="mt-2">
-                      Ao clicar em cada card, você abre o ranking correspondente já filtrado para o
-                      ano selecionado. Enquanto a temporada está em andamento, os resultados são
-                      exibidos como provisórios.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">
-                      Melhores por Posição no Ano
-                    </h4>
-                    <p className="mb-2">
-                      Abaixo dos campeões principais estão os vencedores por posição, considerando
-                      apenas atletas da mesma função:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Atacante do Ano</li>
-                      <li>Meia do Ano</li>
-                      <li>Zagueiro do Ano</li>
-                      <li>Goleiro do Ano</li>
-                    </ul>
-                    <p className="mt-2">
-                      O critério é a maior pontuação entre atletas da mesma posição no ano
-                      selecionado. Cada card direciona para o ranking específico da função.
-                    </p>
-                  </div>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">
-                      Campeões por Quadrimestre
-                    </h4>
-                    <p className="mb-2">O ano é dividido em três quadrimestres:</p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>1º Quadrimestre: janeiro a abril</li>
-                      <li>2º Quadrimestre: maio a agosto</li>
-                      <li>3º Quadrimestre: setembro a dezembro</li>
-                    </ul>
-                    <p className="mt-2">
-                      Cada quadrimestre possui seus próprios campeões, definidos apenas pelo
-                      desempenho dentro daquele período. Ao final de cada quadrimestre:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Os rankings do período são finalizados.</li>
-                      <li>Os campeões recebem o selo de Campeão do Quadrimestre.</li>
-                      <li>O próximo quadrimestre começa com nova disputa dentro do seu período.</li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">
-                      Conquistas e Ícones no Perfil
-                    </h4>
-                    <p className="mb-2">
-                      Sempre que um atleta ou time conquista um título (anual ou quadrimestral), ele
-                      recebe um ícone de premiação virtual. Esses ícones:
-                    </p>
-                    <ul className="list-disc pl-5 space-y-1">
-                      <li>Ficam visíveis no perfil do atleta.</li>
-                      <li>Ficam registrados no histórico de conquistas.</li>
-                      <li>
-                        São organizados por importância, dando mais destaque aos títulos mais raros
-                        e difíceis de conquistar.
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div>
-                    <h4 className="text-brand-soft font-semibold mb-2">Observação Importante</h4>
-                    <p>
-                      Se um racha for criado no meio do ano, apenas os quadrimestres a partir da
-                      data de criação passam a ser considerados. Quadrimestres já encerrados antes
-                      da criação do racha não terão campeões.
-                    </p>
-                  </div>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </Dialog>
-      </Transition.Root>
     </>
   );
 }

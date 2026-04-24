@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaHistory, FaUsers, FaRandom } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 export default function PartidasPage() {
   const { hasPermission } = useAuth();
@@ -27,14 +28,26 @@ export default function PartidasPage() {
         />
       </Head>
 
-      {/* TÍTULO PRINCIPAL PADRÃO */}
-      <h1 className="mt-10 mb-3 text-3xl md:text-4xl font-extrabold text-brand text-center leading-tight drop-shadow-sm">
-        Partidas
-      </h1>
-      {/* DESCRIÇÃO PADRÃO */}
-      <p className="mb-8 text-base md:text-lg text-gray-300 text-center max-w-2xl mx-auto leading-relaxed font-medium">
-        Escolha o que deseja visualizar: histórico, detalhes ou times do dia.
-      </p>
+      <PageHelp
+        title="Partidas"
+        headingLevel="h1"
+        variant="main-page"
+        className="mt-10"
+        summary="Acesse histórico, times do dia e recursos operacionais das partidas."
+        detailsTitle="O que você encontra em Partidas"
+        details={
+          <>
+            <p>
+              A página Partidas organiza os principais pontos de consulta do jogo: histórico,
+              detalhes de partidas e escalações do dia.
+            </p>
+            <p>
+              Administradores também podem acessar o sorteio inteligente para gerar times
+              equilibrados usando os dados do racha.
+            </p>
+          </>
+        }
+      />
 
       <div className="flex justify-center w-full">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 w-full max-w-4xl">

@@ -4,6 +4,7 @@ import Head from "next/head";
 import Link from "next/link";
 import { FaFutbol, FaHandsHelping, FaShieldAlt } from "react-icons/fa";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const cards = [
   {
@@ -49,17 +50,24 @@ export default function MelhoresPorPosicaoPage() {
         />
       </Head>
       <main className="min-h-screen bg-fundo text-white pb-16 pt-6 w-full">
-        <h1 className="text-2xl md:text-3xl font-bold text-brand text-center mb-6">
-          Melhores por Posição
-        </h1>
-
-        <p className="text-center text-sm text-gray-400 mb-8 max-w-2xl mx-auto">
-          Escolha abaixo a posição que você deseja acompanhar. Este ranking especial mostra a
-          disputa entre jogadores que atuam na mesma posição:{" "}
-          <b>Atacantes, Meias, Zagueiros e Goleiros</b>.<br />O destaque vai para quem soma mais
-          pontos em cada função, valorizando o desempenho de cada atleta na sua especialidade.
-          Torne-se referência e acompanhe quem são os grandes nomes em cada setor do campo!
-        </p>
+        <PageHelp
+          title="Melhores por Posição"
+          headingLevel="h1"
+          summary="Rankings separados por função para comparar atletas da mesma posição."
+          className="mb-8"
+          detailsTitle="Como funciona o ranking por posição"
+          details={
+            <>
+              <p>
+                Este ranking separa a disputa por posição: atacantes, meias, zagueiros e goleiros.
+              </p>
+              <p>
+                Cada lista valoriza a pontuação dos atletas dentro da própria função, facilitando a
+                comparação entre jogadores com papéis semelhantes no campo.
+              </p>
+            </>
+          }
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full max-w-5xl mx-auto">
           {cards.map((card) => (

@@ -6,6 +6,7 @@ import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import ResponsiveAthleteRanking from "@/components/estatisticas/ResponsiveAthleteRanking";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -60,10 +61,29 @@ export default function RankingGeralPage() {
           Temporadas, Temporada Atual
         </h1>
 
-        <div className="flex flex-col items-center gap-4 mt-8 md:mt-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-brand text-center">
-            Ranking Geral de Pontos
-          </h2>
+        <div className="flex flex-col items-center gap-3 mt-8 md:mt-10">
+          <PageHelp
+            title="Ranking Geral de Pontos"
+            summary="Pontuação consolidada dos atletas por quadrimestre, temporada ou histórico completo."
+            detailsTitle="Como funciona o Ranking Geral"
+            details={
+              <>
+                <p>
+                  O Ranking Geral mostra a pontuação dos atletas calculada a partir das partidas
+                  publicadas no Fut7Pro.
+                </p>
+                <p>
+                  Use o seletor de período para alternar entre 1º, 2º, 3º Quadrimestre, Temporada
+                  Atual ou Todas as Temporadas. A tabela é atualizada conforme os resultados são
+                  registrados pelo painel administrativo.
+                </p>
+                <p>
+                  Busque seu nome para acompanhar sua evolução e comparar sua posição com os demais
+                  atletas do racha.
+                </p>
+              </>
+            }
+          />
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
@@ -77,20 +97,6 @@ export default function RankingGeralPage() {
             ))}
           </select>
         </div>
-
-        <p className="text-center text-sm text-gray-400 mb-6 max-w-2xl mx-auto mt-4">
-          Confira abaixo o{" "}
-          <b>
-            Ranking Geral de <span className="text-brand">PONTOS</span>
-          </b>{" "}
-          atualizado a cada partida.
-          <br />
-          Acima, você pode alternar entre <b>1º, 2º, 3º Quadrimestre</b>, <b>Temporada Atual</b> ou{" "}
-          <b>Todas as Temporadas</b> para ver quem são os maiores pontuadores em cada período ou no
-          histórico completo do seu racha.
-          <br />
-          Busque seu nome, acompanhe sua evolução e desafie-se a subir no ranking do Fut7Pro.
-        </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-4 max-w-3xl mx-auto">
           <input

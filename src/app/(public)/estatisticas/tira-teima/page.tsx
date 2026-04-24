@@ -8,6 +8,7 @@ import type { ConquistasAtleta, TituloAtleta } from "@/types/estatisticas";
 import { usePublicAthlete } from "@/hooks/usePublicAthlete";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const PERIODOS = [
   { label: "Temporada atual", value: "current" },
@@ -448,10 +449,29 @@ export default function TiraTeimaPage() {
         />
       </Head>
       <main className="max-w-5xl mx-auto px-2 py-10">
-        <h1 className="text-3xl font-bold text-brand mb-2 text-center">Tira Teima</h1>
-        <p className="text-center text-gray-300 mb-6">
-          Selecione dois atletas para comparar estatísticas oficiais do seu racha.
-        </p>
+        <PageHelp
+          title="Tira Teima"
+          headingLevel="h1"
+          summary="Compare dois atletas lado a lado com estatísticas, período e conquistas."
+          detailsTitle="Como funciona o Tira Teima"
+          details={
+            <>
+              <p>
+                O Tira Teima compara dois atletas usando os dados oficiais do racha: jogos, gols,
+                assistências, pontos, aproveitamento e conquistas.
+              </p>
+              <p>
+                Escolha Atleta A e Atleta B, selecione o período e veja os números lado a lado. A
+                comparação ajuda a entender desempenho, regularidade e histórico de títulos sem
+                precisar navegar por várias páginas.
+              </p>
+              <p>
+                Quando os atletas estiverem selecionados, você também pode gerar uma imagem do
+                comparativo para compartilhar.
+              </p>
+            </>
+          }
+        />
 
         {isLoading && <div className="text-center text-gray-300">Carregando atletas...</div>}
         {isError && (

@@ -6,6 +6,7 @@ import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import ResponsiveAthleteRanking from "@/components/estatisticas/ResponsiveAthleteRanking";
+import PageHelp from "@/components/public/PageHelp";
 
 const quadrimestres = [
   { value: 1, label: "Q1 (Jan-Abr)" },
@@ -64,13 +65,24 @@ export default function RankingQuadrimestralPage() {
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand mb-2">
-              Ranking Quadrimestral de Pontos
-            </h2>
-            <p className="text-sm text-gray-400 max-w-xl mx-auto md:mx-0">
-              Veja o desempenho dos atletas em cada quadrimestre, filtre pelo seu nome e acompanhe
-              sua posição. Use o seletor ao lado para mudar o ano e o quadrimestre da tabela.
-            </p>
+            <PageHelp
+              title="Ranking Quadrimestral de Pontos"
+              summary="Pontuação dos atletas por quadrimestre, ano e busca individual."
+              align="left"
+              detailsTitle="Como funciona o Ranking Quadrimestral"
+              details={
+                <>
+                  <p>
+                    O ano é dividido em três quadrimestres: janeiro a abril, maio a agosto e
+                    setembro a dezembro.
+                  </p>
+                  <p>
+                    Selecione o ano e o quadrimestre para ver a disputa daquele recorte. A busca
+                    ajuda a localizar rapidamente qualquer atleta na tabela.
+                  </p>
+                </>
+              }
+            />
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <select

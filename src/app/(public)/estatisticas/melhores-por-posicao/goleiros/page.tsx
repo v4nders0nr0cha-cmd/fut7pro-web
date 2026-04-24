@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -72,15 +73,23 @@ export default function RankingGoleirosPage() {
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand text-center mb-2">
-              Melhores Goleiros
-            </h2>
-            <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
-              Confira o <b>Ranking dos Goleiros</b> com os maiores destaques por quadrimestre, na
-              temporada atual ou no histórico completo do seu racha.
-              <br />
-              Selecione o período para filtrar os goleiros mais pontuados!
-            </p>
+            <PageHelp
+              title="Melhores Goleiros"
+              summary="Goleiros mais pontuados por período, temporada ou histórico completo."
+              detailsTitle="Como funciona o ranking de goleiros"
+              details={
+                <>
+                  <p>
+                    Esta lista compara apenas atletas cadastrados como goleiros, mantendo a disputa
+                    justa por função.
+                  </p>
+                  <p>
+                    O seletor muda o período analisado e a busca ajuda a localizar um goleiro pelo
+                    nome sem percorrer a tabela inteira.
+                  </p>
+                </>
+              }
+            />
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}
