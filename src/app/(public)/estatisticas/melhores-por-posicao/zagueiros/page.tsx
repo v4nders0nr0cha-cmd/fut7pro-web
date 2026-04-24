@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -72,14 +73,23 @@ export default function RankingZagueirosPage() {
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand text-center mb-2">
-              Melhores Zagueiros
-            </h2>
-            <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
-              Confira o <b>Ranking dos Zagueiros</b> com os maiores destaques por quadrimestre, na
-              temporada atual ou no histórico completo do seu racha. Selecione o período para
-              filtrar os defensores mais pontuados na posição!
-            </p>
+            <PageHelp
+              title="Melhores Zagueiros"
+              summary="Zagueiros mais pontuados por período, temporada ou histórico completo."
+              detailsTitle="Como funciona o ranking de zagueiros"
+              details={
+                <>
+                  <p>
+                    Esta página mostra a disputa entre defensores, comparando atletas cadastrados
+                    como zagueiros.
+                  </p>
+                  <p>
+                    Selecione o período desejado para ver a pontuação no recorte certo e use a busca
+                    para encontrar rapidamente um zagueiro.
+                  </p>
+                </>
+              }
+            />
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}

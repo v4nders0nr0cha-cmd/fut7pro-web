@@ -7,6 +7,7 @@ import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import ResponsiveAthleteRanking from "@/components/estatisticas/ResponsiveAthleteRanking";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -57,13 +58,21 @@ export default function RankingAnualPage() {
 
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-4">
           <div className="flex-1 text-center md:text-left">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand mb-2">
-              Ranking Anual de Pontos
-            </h2>
-            <p className="text-sm text-gray-400 max-w-xl mx-auto md:mx-0">
-              Veja o desempenho dos atletas no ano, filtre pelo seu nome e acompanhe sua posição.
-              Use o seletor ao lado para mudar o ano da tabela.
-            </p>
+            <PageHelp
+              title="Ranking Anual de Pontos"
+              summary="Desempenho dos atletas no ano selecionado, com busca por nome."
+              align="left"
+              detailsTitle="Como funciona o Ranking Anual"
+              details={
+                <>
+                  <p>O Ranking Anual consolida a pontuação dos atletas dentro de um único ano.</p>
+                  <p>
+                    Use o seletor para mudar o ano da tabela e a busca para encontrar um atleta
+                    rapidamente. Os dados vêm das partidas publicadas no período selecionado.
+                  </p>
+                </>
+              }
+            />
           </div>
           <select
             value={anoSelecionado}

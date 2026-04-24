@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import type { RankingAtleta } from "@/types/estatisticas";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
+import PageHelp from "@/components/public/PageHelp";
 
 const anoAtual = new Date().getFullYear();
 
@@ -66,15 +67,27 @@ export default function RankingAssistenciasPage() {
 
         <div className="w-full flex flex-col items-center justify-center">
           <div className="w-full max-w-3xl flex flex-col items-center">
-            <h2 className="text-2xl md:text-3xl font-bold text-brand text-center mb-2">
-              Ranking de Assistências
-            </h2>
-            <p className="text-center text-sm text-gray-400 mb-3 max-w-xl">
-              Veja quem mais colaborou com seus companheiros no <b>Ranking de Assistências</b>.
-              Compare o desempenho por quadrimestre, na temporada atual ou no histórico completo de
-              todas as temporadas do seu racha. Selecione o período abaixo para visualizar os
-              destaques.
-            </p>
+            <PageHelp
+              title="Ranking de Assistências"
+              summary="Passes para gol por atleta, organizados por período e histórico do racha."
+              detailsTitle="Como funciona o Ranking de Assistências"
+              details={
+                <>
+                  <p>
+                    O ranking mostra os atletas que mais participaram dos gols com assistências nas
+                    partidas publicadas.
+                  </p>
+                  <p>
+                    Selecione quadrimestre, temporada atual ou histórico completo para entender quem
+                    mais criou jogadas decisivas em cada recorte.
+                  </p>
+                  <p>
+                    Use a busca para encontrar um atleta e comparar rapidamente sua posição na
+                    tabela.
+                  </p>
+                </>
+              }
+            />
             <div className="flex flex-col md:flex-row items-center gap-2 mb-4">
               <select
                 value={periodo}
