@@ -49,6 +49,16 @@ function resolveRedirect(target: string | null, fallback: string) {
   return fallback;
 }
 
+function resolveAuthErrorCode(body: any) {
+  return typeof body?.code === "string"
+    ? body.code
+    : typeof body?.error?.code === "string"
+      ? body.error.code
+      : typeof body?.message?.code === "string"
+        ? body.message.code
+        : null;
+}
+
 export default function LoginClient() {
   const { nome } = useTema();
   const nomeDoRacha = nome || "Fut7Pro";
@@ -462,14 +472,7 @@ export default function LoginClient() {
   };
 
   const handleAuthFailure = (body: any) => {
-    const code =
-      typeof body?.code === "string"
-        ? body.code
-        : typeof body?.error?.code === "string"
-          ? body.error.code
-          : typeof body?.message?.code === "string"
-            ? body.message.code
-            : null;
+    const code = resolveAuthErrorCode(body);
     const message =
       typeof body?.message === "string"
         ? body.message
@@ -559,7 +562,8 @@ export default function LoginClient() {
     const body = await response.json().catch(() => null);
     if (!response.ok) {
       const handled = handleAuthFailure(body);
-      if (!handled || !["NOT_MEMBER", "REQUEST_PENDING"].includes(String(body?.code || ""))) {
+      const errorCode = resolveAuthErrorCode(body);
+      if (!handled || !["NOT_MEMBER", "REQUEST_PENDING"].includes(String(errorCode || ""))) {
         clearJourneyProof(normalizedEmail);
         resetTurnstile();
       }
