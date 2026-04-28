@@ -18,12 +18,28 @@ type RegisterPayload = {
   adminAvatarBase64?: string;
   planKey?: string;
   couponCode?: string;
+  ambassadorRef?: string;
+  attribution?: AmbassadorAttribution;
   existingTenantId?: string;
   existingRachaSlug?: string;
   skipTenantCreate?: boolean;
   autoPassword?: boolean;
   useExistingGlobalAccount?: boolean;
   turnstileToken?: string;
+};
+
+type AmbassadorAttribution = {
+  cupom?: string;
+  ref?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+};
+
+type PayloadWithAmbassadorAttribution = {
+  couponCode?: string;
+  ambassadorRef?: string;
+  attribution?: AmbassadorAttribution;
 };
 
 type TenantInfo = {
@@ -59,6 +75,22 @@ function resolveAvatarUrl(value?: string) {
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > MAX_INLINE_IMAGE_LENGTH) return undefined;
   return trimmed;
+}
+
+function resolveAmbassadorAttribution(data: PayloadWithAmbassadorAttribution) {
+  const attribution = {
+    cupom: data.attribution?.cupom?.trim() || data.couponCode?.trim() || undefined,
+    ref: data.attribution?.ref?.trim() || data.ambassadorRef?.trim() || undefined,
+    utm_source: data.attribution?.utm_source?.trim() || undefined,
+    utm_medium: data.attribution?.utm_medium?.trim() || undefined,
+    utm_campaign: data.attribution?.utm_campaign?.trim() || undefined,
+  };
+  const hasAttribution = Object.values(attribution).some(Boolean);
+
+  return {
+    ambassadorRef: attribution.ref || undefined,
+    attribution: hasAttribution ? attribution : undefined,
+  };
 }
 
 function shouldUseExisting(payload: RegisterPayload) {
@@ -202,6 +234,7 @@ async function createSubscription(
   const planKey = data.planKey?.trim();
   if (!planKey) return null;
   const tenantSlug = data.rachaSlug?.trim();
+  const ambassadorAttribution = resolveAmbassadorAttribution(data);
 
   return fetch(resolvePath(baseUrl, "/billing/subscription"), {
     method: "POST",
@@ -215,6 +248,8 @@ async function createSubscription(
       planKey,
       payerEmail: data.adminEmail.trim().toLowerCase(),
       couponCode: data.couponCode?.trim() || undefined,
+      ambassadorRef: ambassadorAttribution.ambassadorRef,
+      attribution: ambassadorAttribution.attribution,
     }),
   });
 }

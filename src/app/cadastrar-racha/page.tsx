@@ -188,6 +188,17 @@ const PASSWORDLESS_RESEND_COOLDOWN_SECONDS = 60;
 const SLUG_CHECK_DEBOUNCE_MS = 700;
 const COUPON_CODE_MIN_LENGTH = 6;
 const COUPON_CODE_REGEX = /^[A-Z0-9]+$/;
+const AMBASSADOR_ATTRIBUTION_STORAGE_KEY = "fut7pro:ambassador-attribution";
+const AMBASSADOR_ATTRIBUTION_PARAMS = [
+  "cupom",
+  "ref",
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+] as const;
+type AmbassadorAttribution = Partial<
+  Record<(typeof AMBASSADOR_ATTRIBUTION_PARAMS)[number], string>
+>;
 const normalizeCouponInput = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 function trackCadastroFunnelEvent(eventName: FunnelEventName, payload: FunnelEventPayload = {}) {
@@ -226,6 +237,8 @@ function CadastroRachaPageContent() {
   const lookupEmailInputRef = useRef<HTMLInputElement | null>(null);
   const existingCodeInputRef = useRef<HTMLInputElement | null>(null);
   const slugAvailabilityCacheRef = useRef<Record<string, boolean>>({});
+  const couponEditedManuallyRef = useRef(false);
+  const couponAttributionValidatedRef = useRef(false);
 
   const [step, setStep] = useState<Step>(1);
   const [accessFlow, setAccessFlow] = useState<AccessFlow>("identify");
@@ -670,6 +683,62 @@ function CadastroRachaPageContent() {
   });
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    const urlAttribution = AMBASSADOR_ATTRIBUTION_PARAMS.reduce<AmbassadorAttribution>(
+      (acc, key) => {
+        const value = params.get(key)?.trim();
+        if (value) acc[key] = value;
+        return acc;
+      },
+      {}
+    );
+
+    const storedAttribution = (() => {
+      try {
+        return JSON.parse(
+          window.localStorage.getItem(AMBASSADOR_ATTRIBUTION_STORAGE_KEY) || "{}"
+        ) as AmbassadorAttribution;
+      } catch {
+        return {};
+      }
+    })();
+
+    const hasUrlAttribution = Object.keys(urlAttribution).length > 0;
+    const attribution = hasUrlAttribution
+      ? { ...storedAttribution, ...urlAttribution }
+      : storedAttribution;
+
+    if (hasUrlAttribution) {
+      window.localStorage.setItem(
+        AMBASSADOR_ATTRIBUTION_STORAGE_KEY,
+        JSON.stringify({
+          ...attribution,
+          capturedAt: new Date().toISOString(),
+        })
+      );
+    }
+
+    const attributedCoupon = normalizeCouponInput(attribution.cupom || "");
+    if (
+      !attributedCoupon ||
+      !selectedPlanKey ||
+      couponEditedManuallyRef.current ||
+      couponAttributionValidatedRef.current ||
+      couponStatus === "valid" ||
+      couponStatus === "loading"
+    ) {
+      return;
+    }
+
+    couponAttributionValidatedRef.current = true;
+    setCouponCode(attributedCoupon);
+    setCouponInputHint("Cupom do link de embaixador preenchido automaticamente.");
+    void validateCoupon(attributedCoupon, "auto");
+  }, [searchParams, selectedPlanKey, couponStatus]);
+
+  useEffect(() => {
     if (!availablePlans.length) return;
     if (availablePlans.some((plan) => plan.key === selectedPlanKey)) return;
     const preferred = availablePlans.find((plan) => plan.highlight) ?? availablePlans[0];
@@ -704,16 +773,16 @@ function CadastroRachaPageContent() {
     }
   }
 
-  async function handleApplyCoupon() {
-    const code = normalizeCouponInput(couponCode.trim());
+  async function validateCoupon(rawCode: string, source: "manual" | "auto" = "manual") {
+    const code = normalizeCouponInput(rawCode.trim());
     setCouponCode(code);
-    trackCadastroFunnelEvent("coupon_apply_click", { codeLength: code.length });
+    trackCadastroFunnelEvent("coupon_apply_click", { codeLength: code.length, source });
 
     if (!code || code.length < COUPON_CODE_MIN_LENGTH || !COUPON_CODE_REGEX.test(code)) {
       setCouponStatus("invalid");
       setCouponBenefits(null);
       setCouponErrorMessage("Use apenas letras e números, sem espaços.");
-      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "input_invalid" });
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "input_invalid", source });
       return;
     }
 
@@ -756,6 +825,7 @@ function CadastroRachaPageContent() {
               : null,
           extraTrialDays: Number(data.extraTrialDays || 0),
           discountPct: Number(data.firstPaymentDiscountPercent || data.discountPct || 0),
+          source,
         });
         return;
       }
@@ -767,53 +837,59 @@ function CadastroRachaPageContent() {
         setCouponStatus("invalid");
         setCouponBenefits(null);
         setCouponErrorMessage("Este cupom não está ativo no momento.");
-        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "inactive" });
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "inactive", source });
         return;
       }
       if (reason === "rate_limited") {
         setCouponStatus("rate_limited");
         setCouponBenefits(null);
         setCouponErrorMessage("Aguarde alguns segundos e tente novamente.");
-        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "rate_limited" });
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "rate_limited", source });
         return;
       }
       if (reason === "timeout") {
         setCouponStatus("timeout");
         setCouponBenefits(null);
         setCouponErrorMessage("A validação demorou mais do que o esperado. Tente novamente.");
-        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout" });
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout", source });
         return;
       }
       if (reason === "plan_not_allowed") {
         setCouponStatus("invalid");
         setCouponBenefits(null);
         setCouponErrorMessage("Este cupom não é válido para o plano selecionado.");
-        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "plan_not_allowed" });
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "plan_not_allowed", source });
         return;
       }
 
       setCouponStatus("invalid");
       setCouponBenefits(null);
       setCouponErrorMessage("Não encontramos esse cupom. Confira o código e tente novamente.");
-      trackCadastroFunnelEvent("coupon_apply_fail", { reason: reason || "invalid" });
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: reason || "invalid", source });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         setCouponStatus("timeout");
         setCouponBenefits(null);
         setCouponErrorMessage("A validação demorou mais do que o esperado. Tente novamente.");
-        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout" });
+        trackCadastroFunnelEvent("coupon_apply_fail", { reason: "timeout", source });
         return;
       }
       setCouponStatus("error");
       setCouponBenefits(null);
       setCouponErrorMessage("Não foi possível validar o cupom agora. Tente novamente.");
-      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "request_error" });
+      trackCadastroFunnelEvent("coupon_apply_fail", { reason: "request_error", source });
     } finally {
       clearTimeout(timeout);
     }
   }
 
+  async function handleApplyCoupon() {
+    couponEditedManuallyRef.current = true;
+    await validateCoupon(couponCode, "manual");
+  }
+
   function handleRemoveCoupon() {
+    couponEditedManuallyRef.current = true;
     setCouponCode("");
     setCouponStatus("idle");
     setCouponBenefits(null);
@@ -1252,6 +1328,18 @@ function CadastroRachaPageContent() {
       const endpoint = useExistingGlobalAccount
         ? "/api/admin/register-session"
         : "/api/admin/register";
+      const ambassadorAttribution =
+        typeof window !== "undefined"
+          ? (() => {
+              try {
+                return JSON.parse(
+                  window.localStorage.getItem(AMBASSADOR_ATTRIBUTION_STORAGE_KEY) || "{}"
+                ) as AmbassadorAttribution;
+              } catch {
+                return {};
+              }
+            })()
+          : {};
       const payload = {
         rachaNome: rachaNome.trim(),
         rachaSlug: rachaSlug.trim(),
@@ -1271,6 +1359,13 @@ function CadastroRachaPageContent() {
         adminAvatarBase64: adminAvatar,
         planKey: selectedPlanKey,
         couponCode: couponStatus === "valid" ? couponCode.trim().toUpperCase() : undefined,
+        ambassadorRef: ambassadorAttribution.ref || undefined,
+        attribution: {
+          utm_source: ambassadorAttribution.utm_source || undefined,
+          utm_medium: ambassadorAttribution.utm_medium || undefined,
+          utm_campaign: ambassadorAttribution.utm_campaign || undefined,
+          ref: ambassadorAttribution.ref || undefined,
+        },
         useExistingGlobalAccount,
         turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
       };
@@ -2304,6 +2399,7 @@ function CadastroRachaPageContent() {
                       type="text"
                       value={couponCode}
                       onChange={(e) => {
+                        couponEditedManuallyRef.current = true;
                         const rawValue = e.target.value;
                         const normalizedValue = normalizeCouponInput(rawValue);
                         setCouponCode(normalizedValue);
