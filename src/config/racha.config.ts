@@ -1,4 +1,9 @@
 // src/config/racha.config.ts
+import {
+  FUT7PRO_OFFICIAL_SUPPORT_EMAIL,
+  FUT7PRO_OFFICIAL_WHATSAPP_URL,
+} from "./fut7pro-contact";
+
 export const rachaConfig = {
   nome: "Fut7Pro",
   slug: "fut7pro",
@@ -15,7 +20,8 @@ export const rachaConfig = {
   urls: {
     site: "https://fut7pro.com",
     api: "https://api.fut7pro.com",
-    suporte: "suporte@fut7pro.com",
+    suporte: FUT7PRO_OFFICIAL_SUPPORT_EMAIL,
+    whatsapp: FUT7PRO_OFFICIAL_WHATSAPP_URL,
   },
   seo: {
     title: "Fut7Pro - Sistema para Racha, Fut7 e Futebol Amador",

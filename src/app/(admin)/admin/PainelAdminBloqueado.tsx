@@ -2,8 +2,16 @@
 
 import { FaLock } from "react-icons/fa";
 import Link from "next/link";
+import {
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 export default function PainelAdminBloqueado({ motivo = "" }) {
+  const supportHref = buildFut7ProOfficialWhatsAppUrl(
+    `Olá! Preciso regularizar o acesso ao painel Fut7Pro.${motivo ? ` Motivo exibido: ${motivo}` : ""}`
+  );
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950">
       <div className="bg-red-900 bg-opacity-90 p-8 rounded-2xl shadow-lg text-center max-w-lg">
@@ -23,10 +31,12 @@ export default function PainelAdminBloqueado({ motivo = "" }) {
           Ir para pagamento e regularizar acesso
         </Link>
         <a
-          href="mailto:social@fut7pro.com.br?subject=Regulariza%C3%A7%C3%A3o%20de%20assinatura%20-%20Fut7Pro"
+          href={supportHref}
+          target="_blank"
+          rel="noopener noreferrer"
           className="text-zinc-200 text-sm underline hover:text-white"
         >
-          Precisa de ajuda? Fale com o suporte.
+          Precisa de ajuda? Fale com o suporte no WhatsApp {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}.
         </a>
       </div>
     </div>

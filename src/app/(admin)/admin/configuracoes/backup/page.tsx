@@ -15,6 +15,10 @@ import {
   FaQuestionCircle,
 } from "react-icons/fa";
 import { useRacha } from "@/context/RachaContext";
+import {
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 type FeedbackTone = "success" | "error";
 type DiagnosticsStatusTone = "success" | "warning" | "danger" | "neutral";
@@ -291,6 +295,10 @@ function getHistoryErrorText(error: FetchError | undefined): string {
   return getReadableError(error, "Falha ao carregar o histórico.");
 }
 
+const recoveryWhatsAppUrl = buildFut7ProOfficialWhatsAppUrl(
+  "Olá! Preciso de suporte para recuperação de dados no Fut7Pro."
+);
+
 export default function BackupPage() {
   const { tenantSlug } = useRacha();
   const [isRunning, setIsRunning] = useState(false);
@@ -548,10 +556,12 @@ export default function BackupPage() {
               Abrir chamado de recuperação
             </Link>
             <a
-              href="mailto:suporte@fut7pro.com.br?subject=Recupera%C3%A7%C3%A3o%20de%20dados%20-%20Fut7Pro"
+              href={recoveryWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="bg-[#1d1d1d] hover:bg-[#2a2a2a] text-yellow-300 font-bold px-4 py-2 rounded transition border border-yellow-700"
             >
-              suporte@fut7pro.com.br
+              WhatsApp {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
             </a>
           </div>
         </div>

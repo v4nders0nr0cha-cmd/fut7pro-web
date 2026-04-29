@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import useSWR from "swr";
 import { FaSearch, FaLock, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
 import { useSessionRefreshScheduler } from "@/hooks/useSessionRefreshScheduler";
+import { buildFut7ProOfficialWhatsAppUrl } from "@/config/fut7pro-contact";
 
 type HubRacha = {
   tenantId: string;
@@ -550,7 +551,9 @@ export default function AdminHubClient() {
               <button
                 onClick={() => {
                   if (typeof window !== "undefined") {
-                    window.location.href = "mailto:social@fut7pro.com.br";
+                    window.location.href = buildFut7ProOfficialWhatsAppUrl(
+                      "Olá! Preciso de suporte para acessar meus rachas no painel Fut7Pro."
+                    );
                   }
                 }}
                 className="rounded-full border border-white/10 px-4 py-2 text-sm text-gray-200"

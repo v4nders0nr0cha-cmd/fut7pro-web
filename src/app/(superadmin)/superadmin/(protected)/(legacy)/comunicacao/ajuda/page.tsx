@@ -251,7 +251,7 @@ export default function SuperAdminAjudaPage() {
                     onChange={(event) =>
                       setConfig((prev) => ({ ...prev, youtubeChannelUrl: event.target.value }))
                     }
-                    placeholder="https://www.youtube.com/@Fut7Pro_app"
+                    placeholder={OFFICIAL_YOUTUBE_CHANNEL_URL}
                     className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
                   />
                 </div>

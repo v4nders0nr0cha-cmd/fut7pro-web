@@ -270,7 +270,7 @@ Atualizacao 19/12/2025 - auth SuperAdmin isolada + redes sociais oficiais
 - Instancia dedicada do NextAuth para SuperAdmin (`/api/superadmin-auth/[...nextauth]`) com cookies/basePath proprios; layout do SuperAdmin envolve as paginas com `SuperAdminProviders` + `SuperAdminGuard`, garantindo apenas SUPERADMIN e signOut separado sem interferir no painel admin.
 - Fluxo de login do SuperAdmin passou a usar `signIn`/`SessionProvider` do basePath novo; `requireUser` agora tenta authOptions do painel admin e do SuperAdmin, evitando 401/loops em `/api/superadmin/tenants` e `/api/admin/about`.
 - Sessao do SuperAdmin nao se mistura mais com admins de racha (cookies e signOut segregados), eliminando o problema de "sair" do painel SuperAdmin ao logar/deslogar no painel admin.
-- Links sociais corrigidos para os perfis oficiais: Instagram `https://www.instagram.com/fut7pro_app` e Facebook `https://www.facebook.com/profile.php?id=61581917656941` (SEO sameAs, rodape publico, pagina de contatos e personalizacao do rodape admin).
+- Links sociais corrigidos para os perfis oficiais: Instagram `https://www.instagram.com/fut7pro_app/`, Threads `https://www.threads.net/@fut7pro_app`, Facebook `https://www.facebook.com/Fut7Pro` e YouTube `https://www.youtube.com/@fut7pro_app` (SEO sameAs, rodape publico, pagina de contatos e personalizacao do rodape admin).
 
 Atualizacao 19/12/2025 - comunicacao publica dinamica + notificacoes alinhadas
 

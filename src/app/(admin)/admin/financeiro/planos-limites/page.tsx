@@ -11,6 +11,11 @@ import BillingAPI, {
 } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
 import { useRacha } from "@/context/RachaContext";
+import {
+  FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 function formatDate(value?: string | null) {
   if (!value) return "N/D";
@@ -236,6 +241,10 @@ export default function PlanosLimitesPage() {
   const [checkoutPricing, setCheckoutPricing] = useState<ChargePricing | null>(null);
   const [recurringAccepted, setRecurringAccepted] = useState(false);
   const [pixCopied, setPixCopied] = useState(false);
+  const selectedPlanContactEmail = selectedPlan?.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL;
+  const enterpriseWhatsAppUrl = buildFut7ProOfficialWhatsAppUrl(
+    `Olá! Quero conversar sobre o plano ${selectedPlan?.label || "Enterprise"} do Fut7Pro para ${payerName || "meu racha"}.`
+  );
 
   const planosDisponiveis = useMemo(() => {
     return [...plans]
@@ -1104,22 +1113,33 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Solicitar Enterprise</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Esse plano e liberado mediante contato com nosso time. Envie um e-mail para iniciar a
-              conversa.
+              Esse plano e liberado mediante contato com nosso time. Fale pelo WhatsApp ou envie um
+              e-mail para iniciar a conversa.
             </p>
             <div className="text-sm text-gray-200 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b] mb-4">
               <div>
                 <span className="text-gray-400">Plano:</span> {selectedPlan.label}
               </div>
               <div>
+                <span className="text-gray-400">WhatsApp:</span>{" "}
+                <a
+                  className="text-yellow-300 underline"
+                  href={enterpriseWhatsAppUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
+                </a>
+              </div>
+              <div>
                 <span className="text-gray-400">E-mail:</span>{" "}
                 <a
                   className="text-yellow-300 underline"
-                  href={`mailto:${selectedPlan.contactEmail || "social@fut7pro.com.br"}?subject=${encodeURIComponent(
+                  href={`mailto:${selectedPlanContactEmail}?subject=${encodeURIComponent(
                     `Solicitar ${selectedPlan.label} - ${payerName || "Fut7Pro"}`
                   )}`}
                 >
-                  {selectedPlan.contactEmail || "social@fut7pro.com.br"}
+                  {selectedPlanContactEmail}
                 </a>
               </div>
             </div>

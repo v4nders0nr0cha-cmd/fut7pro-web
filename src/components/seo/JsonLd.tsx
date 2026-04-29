@@ -1,6 +1,7 @@
 "use client";
 
 import Script from "next/script";
+import { FUT7PRO_SOCIAL_SAME_AS } from "@/config/fut7pro-socials";
 
 type Props = {
   siteName: string;
@@ -16,11 +17,7 @@ export default function JsonLd({ siteName, siteUrl, logoUrl, searchUrl }: Props)
     name: siteName,
     url: siteUrl,
     ...(logoUrl ? { logo: new URL(logoUrl, siteUrl).toString() } : {}),
-    sameAs: [
-      "https://www.instagram.com/fut7pro_app",
-      "https://www.facebook.com/profile.php?id=61581917656941",
-      "https://www.linkedin.com/company/fut7pro",
-    ],
+    sameAs: FUT7PRO_SOCIAL_SAME_AS,
   };
 
   const webSite = {

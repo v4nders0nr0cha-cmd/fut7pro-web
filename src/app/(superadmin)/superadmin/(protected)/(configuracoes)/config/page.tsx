@@ -26,8 +26,9 @@ import { z } from "zod";
 import toast from "react-hot-toast";
 import { useBranding } from "@/hooks/useBranding";
 import type { PlanCatalog } from "@/lib/api/billing";
+import { FUT7PRO_SOCIALS } from "@/config/fut7pro-socials";
 
-const OFFICIAL_YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@Fut7Pro_app";
+const OFFICIAL_YOUTUBE_CHANNEL_URL = FUT7PRO_SOCIALS.youtube.url;
 const DOMAIN_REGEX = /^(?!https?:\/\/)([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$/;
 
 type SuperAdminConfigLog = {
