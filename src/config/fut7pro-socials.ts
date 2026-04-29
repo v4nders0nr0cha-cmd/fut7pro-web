@@ -11,8 +11,8 @@ export const FUT7PRO_SOCIALS = {
   },
   facebook: {
     label: "Facebook",
-    handle: "@Fut7Pro",
-    url: "https://www.facebook.com/Fut7Pro",
+    handle: "@fut7proapp",
+    url: "https://www.facebook.com/fut7proapp",
   },
   youtube: {
     label: "YouTube",
