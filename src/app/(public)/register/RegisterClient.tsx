@@ -25,6 +25,7 @@ import {
   persistPublicAuthContext,
   readPublicAuthContext,
 } from "@/utils/public-auth-flow";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
@@ -103,7 +104,7 @@ function toNumberOrNull(value: string) {
 
 export default function RegisterClient() {
   const { nome } = useTema();
-  const nomeDoRacha = nome || "Fut7Pro";
+  const nomeDoRacha = nome?.trim() || "este racha";
   const { publicHref, publicSlug } = usePublicLinks();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -169,9 +170,9 @@ export default function RegisterClient() {
     turnstileEnabled &&
     Boolean(
       turnstileProof &&
-        turnstileProofExpiresAt &&
-        turnstileProofExpiresAt > Date.now() &&
-        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+      turnstileProofExpiresAt &&
+      turnstileProofExpiresAt > Date.now() &&
+      (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
@@ -181,9 +182,9 @@ export default function RegisterClient() {
 
   const profileComplete = Boolean(
     me?.athlete?.firstName &&
-      me?.athlete?.position &&
-      me?.athlete?.birthDay &&
-      me?.athlete?.birthMonth
+    me?.athlete?.position &&
+    me?.athlete?.birthDay &&
+    me?.athlete?.birthMonth
   );
   const shouldUseCompleteEndpoint = isAthleteAuthenticated;
 
@@ -416,13 +417,13 @@ export default function RegisterClient() {
       return "Selecione a posicao principal.";
     }
     if (posicaoSecundaria && posicaoSecundaria === posicao) {
-      return "Posicao secundaria nao pode ser igual a principal.";
+      return "A posição secundária não pode ser igual à principal.";
     }
     if (!dia || !mes) {
       return "Informe o dia e o mes de nascimento.";
     }
     if (!isYearValid(ano)) {
-      return "Ano de nascimento invalido.";
+      return "Informe um ano de nascimento válido.";
     }
 
     return null;
@@ -466,7 +467,7 @@ export default function RegisterClient() {
 
   const requestJoinAfterRegister = useCallback(async () => {
     if (!publicSlug) {
-      throw new Error("Slug do racha não encontrado.");
+      throw new Error("Não encontramos este racha. Confira o link e tente novamente.");
     }
 
     const triggerJoin = async () =>
@@ -523,8 +524,8 @@ export default function RegisterClient() {
         setErro("Informe o e-mail.");
         return;
       }
-      if (!senha || senha.length < 6) {
-        setErro("Senha com ao menos 6 caracteres.");
+      if (!senha || senha.length < 8) {
+        setErro("A senha precisa ter pelo menos 8 caracteres.");
         return;
       }
     }
@@ -608,7 +609,7 @@ export default function RegisterClient() {
           setAccountModalOpen(true);
           return;
         }
-        setErro(message);
+        setErro(getHumanAuthErrorMessage(message, "Não foi possível concluir o cadastro."));
         return;
       }
 
@@ -654,7 +655,7 @@ export default function RegisterClient() {
         });
 
         if (signInResult?.error) {
-          setErro("Nao foi possivel finalizar o acesso. Tente novamente.");
+          setErro("Não foi possível finalizar o acesso. Tente novamente.");
           return;
         }
       }
@@ -678,11 +679,12 @@ export default function RegisterClient() {
       }
 
       clearPublicAuthContext();
-      setSucesso("Cadastro concluido com sucesso.");
+      setSucesso(
+        `Cadastro criado com sucesso. Agora envie sua solicitação de entrada no racha ${nomeDoRacha} e aguarde a aprovação do administrador.`
+      );
       router.replace(redirectTo);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao concluir cadastro.";
-      setErro(message);
+      setErro(getHumanAuthErrorMessage(error, "Erro ao concluir cadastro."));
       setAccountModalOpen(false);
     } finally {
       if (turnstileEnabled && !hasTurnstileProof) {
@@ -731,13 +733,13 @@ export default function RegisterClient() {
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-yellow-400/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
-            Solicitacao de entrada
+            Solicitação de entrada
           </p>
           <p className="text-sm text-gray-200">
             Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Seu acesso pode depender da aprovacao do admin.
+            Seu acesso pode depender da aprovação do administrador.
           </p>
         </div>
         {isRegistrationBlocked ? (
@@ -754,17 +756,18 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        <h1 className="text-xl font-bold text-white text-center">Solicitar entrada no racha</h1>
+        <h1 className="text-xl font-bold text-white text-center">Criar Conta Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Sua solicitacao sera enviada ao administrador para aprovacao.
+          Para participar do racha {nomeDoRacha}, envie sua solicitação e aguarde a aprovação do
+          administrador.
         </p>
 
         {!isAthleteAuthenticated && prefilledFromEntrar ? (
           <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
             <p className="font-semibold text-emerald-200">Primeiro acesso no Fut7Pro</p>
             <p className="mt-1">
-              Crie sua conta para pedir entrada no racha {nomeDoRacha}. Depois da aprovação do
-              admin, você já começa a pontuar.
+              Crie sua conta para solicitar entrada no racha {nomeDoRacha}. Depois da aprovação do
+              administrador, você já começa a pontuar.
             </p>
           </div>
         ) : null}
@@ -1028,7 +1031,7 @@ export default function RegisterClient() {
                   Aparecer na lista de aniversariantes do racha
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Se desligar, seu nome nao aparece na pagina publica de aniversariantes do racha.
+                  Se desligar, seu nome não aparece na página pública de aniversariantes do racha.
                 </p>
               </div>
               <Switch
@@ -1059,7 +1062,7 @@ export default function RegisterClient() {
                 ? isGoogleSession
                   ? "Concluir cadastro"
                   : "Solicitar entrada"
-                : "Cadastrar atleta"}
+                : "Criar conta e continuar"}
           </button>
         </form>
 

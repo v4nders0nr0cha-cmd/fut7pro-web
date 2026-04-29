@@ -69,9 +69,9 @@ export default function AdminLoginClient() {
     turnstileEnabled &&
     Boolean(
       turnstileProof &&
-        turnstileProofExpiresAt &&
-        turnstileProofExpiresAt > Date.now() &&
-        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+      turnstileProofExpiresAt &&
+      turnstileProofExpiresAt > Date.now() &&
+      (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
@@ -509,7 +509,7 @@ export default function AdminLoginClient() {
 
               {usarSenhaLegado && (
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                  Senha (legado)
+                  Senha
                   <div className="relative mt-2">
                     <input
                       type={senhaVisivel ? "text" : "password"}

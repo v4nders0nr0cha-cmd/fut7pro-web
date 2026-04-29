@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
-const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
+const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviaremos seu código.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
@@ -37,19 +37,25 @@ function normalizePasswordlessStartResponse(payload: unknown) {
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   if (!backendBase) {
-    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
+    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }
 
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await req.json()) as Record<string, unknown>;
   } catch {
-    return json({ error: "Payload invalido" }, { status: 400 });
+    return json(
+      { error: "Não foi possível concluir a solicitação. Confira os dados e tente novamente." },
+      { status: 400 }
+    );
   }
 
   const slug = params.slug?.trim().toLowerCase();
   if (!slug) {
-    return json({ error: "Slug do racha obrigatorio" }, { status: 400 });
+    return json(
+      { error: "Não encontramos este racha. Confira o link e tente novamente." },
+      { status: 400 }
+    );
   }
   if (slug === "vitrine") {
     return json({ error: "Login de atletas desabilitado no racha vitrine." }, { status: 403 });
@@ -61,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   const turnstileProof =
     typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email) {
-    return json({ error: "E-mail obrigatorio" }, { status: 400 });
+    return json({ error: "Informe um e-mail válido para continuar." }, { status: 400 });
   }
 
   try {
@@ -94,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
             message:
               typeof parsedRecord?.message === "string"
                 ? parsedRecord.message
-                : "Nao foi possivel validar o captcha.",
+                : "Não foi possível validar a verificação de segurança.",
             requiresCaptcha: true,
           },
           { status: response.status || 429 }
@@ -102,7 +108,10 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       }
 
       if (response.status >= 500) {
-        return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
+        return json(
+          { error: "Não foi possível enviar o código agora. Tente novamente em instantes." },
+          { status: 502 }
+        );
       }
 
       return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
@@ -110,6 +119,11 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
   } catch {
-    return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
+    return json(
+      {
+        error: "Não foi possível enviar o código agora. Verifique sua internet e tente novamente.",
+      },
+      { status: 502 }
+    );
   }
 }

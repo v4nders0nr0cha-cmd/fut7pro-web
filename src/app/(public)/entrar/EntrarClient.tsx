@@ -11,6 +11,7 @@ import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
   queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
@@ -66,15 +67,49 @@ function resolveRedirect(target: string | null, fallback: string) {
   return fallback;
 }
 
+function resolveLookupMessage(lookup: LookupResponse, rachaName: string) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  const membershipStatus = String(lookup?.membershipStatus || "").toUpperCase();
+  const targetRacha = rachaName || "este racha";
+
+  if (nextAction === "REGISTER") {
+    return `Você ainda não possui uma Conta Fut7Pro. Crie seu cadastro para solicitar entrada no racha ${targetRacha}.`;
+  }
+
+  if (nextAction === "WAIT_APPROVAL" || membershipStatus === "PENDING") {
+    return `Sua solicitação para entrar no racha ${targetRacha} já foi enviada. Aguarde a aprovação do administrador.`;
+  }
+
+  if (membershipStatus === "ACTIVE") {
+    return `Você já faz parte do racha ${targetRacha}. Entre para acompanhar partidas, estatísticas e informações do seu perfil.`;
+  }
+
+  if (nextAction === "REQUEST_JOIN") {
+    return `Encontramos sua Conta Fut7Pro. Entre com código enviado por e-mail ou com sua senha para solicitar entrada no racha ${targetRacha}.`;
+  }
+
+  return `Encontramos sua Conta Fut7Pro. Entre com código enviado por e-mail ou com sua senha para continuar no racha ${targetRacha}.`;
+}
+
+function resolveLookupButtonLabel(lookup: LookupResponse) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  const membershipStatus = String(lookup?.membershipStatus || "").toUpperCase();
+
+  if (nextAction === "REGISTER") return "Criar cadastro";
+  if (nextAction === "WAIT_APPROVAL" || membershipStatus === "PENDING") return "Entendi";
+  if (membershipStatus === "ACTIVE") return "Entrar no racha";
+  if (nextAction === "REQUEST_JOIN") return "Entrar e solicitar entrada";
+  return "Continuar";
+}
+
 export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus, update } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
-  const sessionRole = String(sessionUser?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA";
   const { publicHref, publicSlug } = usePublicLinks();
+  const nomeDoRacha = nome?.trim() || "este racha";
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -168,13 +203,13 @@ export default function EntrarClient() {
             );
             return null;
           }
-          setError(body?.message || body?.error || "Não foi possível verificar o e-mail.");
+          setError(getHumanAuthErrorMessage(body, "Não foi possível verificar o e-mail."));
           return null;
         }
 
         return body as LookupResponse;
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Falha ao verificar o e-mail.");
+        setError(getHumanAuthErrorMessage(err, "Falha ao verificar o e-mail."));
         return null;
       } finally {
         setLoading(false);
@@ -183,10 +218,9 @@ export default function EntrarClient() {
     [publicSlug, resetTurnstile, turnstileEnabled, turnstileSiteKey]
   );
 
-  const redirectFromLookup = useCallback(
+  const continueFromLookup = useCallback(
     (normalizedEmail: string, lookup: LookupResponse) => {
       const nextAction = String(lookup?.nextAction || "").toUpperCase();
-      const lookupMessage = lookup?.message || LOOKUP_UNIFORM_MESSAGE;
 
       persistPublicAuthContext({
         email: normalizedEmail,
@@ -194,9 +228,7 @@ export default function EntrarClient() {
         turnstileProof: lookup.turnstileProof,
         turnstileProofExpiresAt: lookup.turnstileProofExpiresAt,
       });
-      setResult(null);
       setError("");
-      setRedirectingMessage(lookupMessage);
       setAutoFlowLoading(true);
 
       if (nextAction === "WAIT_APPROVAL") {
@@ -249,10 +281,16 @@ export default function EntrarClient() {
       return;
     }
 
-    const lookup = await runLookup(normalized, captchaToken);
-    if (lookup) {
-      setResult(lookup);
-      redirectFromLookup(normalized, lookup);
+    try {
+      const lookup = await runLookup(normalized, captchaToken);
+      if (lookup) {
+        setResult(lookup);
+        setRedirectingMessage(resolveLookupMessage(lookup, nomeDoRacha));
+      }
+    } finally {
+      if (needsSecurityCheck) {
+        resetTurnstile();
+      }
     }
   };
 
@@ -270,7 +308,7 @@ export default function EntrarClient() {
 
   const requestJoin = useCallback(async () => {
     if (!publicSlug) {
-      throw new Error("Slug do racha não encontrado.");
+      throw new Error("Não encontramos este racha. Confira o link e tente novamente.");
     }
 
     const performJoin = () =>
@@ -301,12 +339,6 @@ export default function EntrarClient() {
 
   useEffect(() => {
     if (!googleIntent || sessionStatus !== "authenticated") return;
-    if (!isAthleteSession) {
-      setAutoFlowLoading(false);
-      setRedirectingMessage("");
-      setError("A conta autenticada atual nao e de atleta. Saia e tente novamente com um atleta.");
-      return;
-    }
     if (isVitrineSlug) {
       setError(VITRINE_AUTH_BLOCKED_MESSAGE);
       return;
@@ -366,7 +398,6 @@ export default function EntrarClient() {
   }, [
     destinationHref,
     googleIntent,
-    isAthleteSession,
     isVitrineSlug,
     publicSlug,
     publicHref,
@@ -512,11 +543,23 @@ export default function EntrarClient() {
 
           <button
             type="button"
-            onClick={handleLookup}
-            disabled={loading || autoFlowLoading || (needsSecurityCheck && !captchaToken)}
+            onClick={() => {
+              if (result && !loading) {
+                continueFromLookup(email.trim().toLowerCase(), result);
+                return;
+              }
+              void handleLookup();
+            }}
+            disabled={
+              loading || autoFlowLoading || (needsSecurityCheck && !captchaToken && !result)
+            }
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading || autoFlowLoading ? "Processando..." : "Continuar"}
+            {loading || autoFlowLoading
+              ? "Processando..."
+              : result
+                ? resolveLookupButtonLabel(result)
+                : "Continuar"}
           </button>
 
           <div className="mt-3 min-h-[120px]">

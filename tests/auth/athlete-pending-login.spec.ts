@@ -23,7 +23,7 @@ test.describe("athlete pending login", () => {
     const pendingPasswordInput = page.getByLabel(/Senha/i).first();
     const pendingPasswordVisible = await pendingPasswordInput.isVisible().catch(() => false);
     if (!pendingPasswordVisible) {
-      await page.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await page.getByRole("button", { name: /Entrar com senha/i }).click();
       await expect(pendingPasswordInput).toBeVisible({ timeout: 10000 });
     }
     await pendingPasswordInput.fill(pendingPassword || "");
@@ -40,7 +40,7 @@ test.describe("athlete pending login", () => {
     const adminPasswordInput = page.getByLabel(/Senha/i).first();
     const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
     if (!adminPasswordVisible) {
-      await page.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await page.getByRole("button", { name: /Entrar com senha/i }).click();
       await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
     }
     await adminPasswordInput.fill(adminPassword || "");

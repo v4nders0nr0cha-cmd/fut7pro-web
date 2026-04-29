@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
+
 type VerifyStatus = "loading" | "success" | "error";
 
 export default function VerificarEmailClient() {
@@ -24,7 +26,7 @@ export default function VerificarEmailClient() {
     const verify = async () => {
       if (!token) {
         setStatus("error");
-        setMessage("Token invalido ou ausente.");
+        setMessage("Este link não é mais válido. Solicite um novo link para continuar.");
         return;
       }
 
@@ -38,7 +40,12 @@ export default function VerificarEmailClient() {
         if (!active) return;
         if (!res.ok || !data?.ok) {
           setStatus("error");
-          setMessage(data?.message || "Token expirado ou invalido.");
+          setMessage(
+            getHumanAuthErrorMessage(
+              data?.message,
+              "Este link expirou. Solicite um novo link para continuar."
+            )
+          );
           return;
         }
 
@@ -61,7 +68,7 @@ export default function VerificarEmailClient() {
       } catch {
         if (!active) return;
         setStatus("error");
-        setMessage("Nao foi possivel validar o token.");
+        setMessage("Não foi possível confirmar seu e-mail agora. Tente novamente em instantes.");
       }
     };
 
@@ -92,14 +99,21 @@ export default function VerificarEmailClient() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) {
-        setMessage(data?.message || "Nao foi possivel reenviar.");
+        setMessage(
+          getHumanAuthErrorMessage(
+            data?.message,
+            "Não foi possível reenviar o e-mail agora. Tente novamente em instantes."
+          )
+        );
         setStatus("error");
         return;
       }
 
       router.push(`/cadastrar-racha/confirmar-email?email=${encodeURIComponent(email)}`);
     } catch {
-      setMessage("Falha ao reenviar o e-mail.");
+      setMessage(
+        "Não foi possível reenviar o e-mail agora. Verifique sua internet e tente novamente."
+      );
       setStatus("error");
     } finally {
       setResendStatus("idle");

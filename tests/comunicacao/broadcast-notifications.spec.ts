@@ -28,7 +28,7 @@ test.describe("broadcast notifications", () => {
     const adminPasswordInput = adminPage.getByLabel(/Senha/i).first();
     const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
     if (!adminPasswordVisible) {
-      await adminPage.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
+      await adminPage.getByRole("button", { name: /Entrar com senha/i }).click();
       await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
     }
     await adminPasswordInput.fill(adminPassword || "");
@@ -58,7 +58,7 @@ test.describe("broadcast notifications", () => {
     const athletePasswordInput = athletePage.getByLabel(/Senha/i).first();
     const athletePasswordVisible = await athletePasswordInput.isVisible().catch(() => false);
     if (!athletePasswordVisible) {
-      await athletePage.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
+      await athletePage.getByRole("button", { name: /Entrar com senha/i }).click();
       await expect(athletePasswordInput).toBeVisible({ timeout: 10000 });
     }
     await athletePasswordInput.fill(athletePassword || "");

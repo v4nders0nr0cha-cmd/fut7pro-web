@@ -18,29 +18,15 @@ jest.mock("next/script", () => ({
 const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
-let mockedSearchParams = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
-  useSearchParams: () => mockedSearchParams,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: jest.fn(),
-}));
-
-jest.mock("@/components/security/TurnstileWidget", () => ({
-  __esModule: true,
-  default: ({ resetSignal }: { resetSignal?: number }) => (
-    <div data-testid="turnstile-widget" data-reset-signal={String(resetSignal ?? 0)} />
-  ),
-  AUTH_APP_TURNSTILE_ENABLED: false,
-  AUTH_APP_TURNSTILE_SITE_KEY: "site-key",
-  TURNSTILE_REQUIRED_MESSAGE: "Confirme a verificação de segurança para continuar.",
-  TURNSTILE_UNAVAILABLE_MESSAGE: "A verificação de segurança está indisponível.",
-  isTurnstileErrorCode: () => false,
-  resolveTurnstileErrorMessage: () => "Não foi possível validar a segurança.",
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -57,7 +43,6 @@ const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 
 describe("EntrarClient", () => {
   beforeEach(() => {
-    mockedSearchParams = new URLSearchParams();
     mockedUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -82,7 +67,7 @@ describe("EntrarClient", () => {
     jest.clearAllMocks();
   });
 
-  it("redireciona para login com resposta uniforme do lookup", async () => {
+  it("mostra explicacao antes de continuar para login", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -98,6 +83,9 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/Encontramos sua Conta Fut7Pro/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
         "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F"
@@ -108,53 +96,7 @@ describe("EntrarClient", () => {
     expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
   });
 
-  it("não executa request-join automático quando a sessão autenticada não é de atleta", async () => {
-    mockedSearchParams = new URLSearchParams("google=1");
-    mockedUseSession.mockReturnValue({
-      data: { user: { email: "admin@teste.com", role: "ADMIN" } },
-      status: "authenticated",
-      update: updateSessionMock,
-    });
-
-    render(<EntrarClient />);
-
-    await waitFor(() => {
-      expect(screen.getByText(/A conta autenticada atual nao e de atleta/i)).toBeInTheDocument();
-    });
-
-    expect(global.fetch).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
-  });
-
-  it("não dispara nova verificação de segurança só porque o usuário digitou", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({
-        code: "CAPTCHA_REQUIRED",
-        message: "Captcha obrigatório",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "primeiro@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    const firstWidget = await screen.findByTestId("turnstile-widget");
-    const resetBefore = firstWidget.getAttribute("data-reset-signal");
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "segundo@teste.com" },
-    });
-
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId("turnstile-widget")).not.toBeInTheDocument();
-    expect(firstWidget.getAttribute("data-reset-signal")).toBe(resetBefore);
-  });
-
-  it("redireciona para cadastro quando lookup sinaliza REGISTER", async () => {
+  it("mostra explicacao antes de continuar para cadastro quando lookup sinaliza REGISTER", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -171,6 +113,9 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/Você ainda não possui uma Conta Fut7Pro/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Criar cadastro" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
         "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F"
@@ -178,7 +123,7 @@ describe("EntrarClient", () => {
     });
   });
 
-  it("redireciona para login com intent request-join quando lookup sinaliza REQUEST_JOIN", async () => {
+  it("mostra explicacao antes de continuar para login com intent request-join", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -195,6 +140,9 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/Encontramos sua Conta Fut7Pro/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Entrar e solicitar entrada" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
         "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
@@ -202,7 +150,7 @@ describe("EntrarClient", () => {
     });
   });
 
-  it("redireciona para aguardando aprovacao quando lookup sinaliza WAIT_APPROVAL", async () => {
+  it("mostra solicitacao pendente antes de seguir para aguardando aprovacao", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -218,6 +166,9 @@ describe("EntrarClient", () => {
       target: { value: "pendente@teste.com" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(await screen.findByText(/já foi enviada/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");

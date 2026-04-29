@@ -3,10 +3,21 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 
 type Status = "idle" | "loading" | "success" | "error";
 
-export default function ResetarSenhaClient() {
+type ResetarSenhaClientProps = {
+  description?: string;
+  loginHref?: string;
+  forgotHref?: string;
+};
+
+export default function ResetarSenhaClient({
+  description = "Crie uma nova senha para acessar sua conta Fut7Pro.",
+  loginHref = "/admin/login",
+  forgotHref = "/admin/esqueci-senha",
+}: ResetarSenhaClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = useMemo(() => (searchParams.get("token") || "").trim(), [searchParams]);
@@ -24,19 +35,19 @@ export default function ResetarSenhaClient() {
 
     if (!token) {
       setStatus("error");
-      setMessage("Link invalido. Solicite um novo e-mail.");
+      setMessage("Este link não é mais válido. Solicite um novo link para continuar.");
       return;
     }
 
-    if (!password || password.length < 6) {
+    if (!password || password.length < 8) {
       setStatus("error");
-      setMessage("A senha deve ter ao menos 6 caracteres.");
+      setMessage("A senha precisa ter pelo menos 8 caracteres e combinar nos dois campos.");
       return;
     }
 
     if (password !== confirmPassword) {
       setStatus("error");
-      setMessage("As senhas nao conferem.");
+      setMessage("A senha precisa ter pelo menos 8 caracteres e combinar nos dois campos.");
       return;
     }
 
@@ -52,15 +63,27 @@ export default function ResetarSenhaClient() {
 
       if (!res.ok || !data?.ok) {
         setStatus("error");
-        setMessage(data?.message || "Nao foi possivel redefinir a senha.");
+        setMessage(
+          getHumanAuthErrorMessage(
+            data,
+            "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link."
+          )
+        );
         return;
       }
 
       setStatus("success");
-      setMessage("Senha atualizada com sucesso. Voce ja pode entrar no painel.");
-    } catch {
+      setMessage(
+        "Senha redefinida com sucesso. Agora você já pode entrar no Fut7Pro com sua nova senha."
+      );
+    } catch (error) {
       setStatus("error");
-      setMessage("Falha ao redefinir a senha. Tente novamente.");
+      setMessage(
+        getHumanAuthErrorMessage(
+          error,
+          "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link."
+        )
+      );
     }
   };
 
@@ -73,9 +96,7 @@ export default function ResetarSenhaClient() {
               Nova senha
             </div>
             <h1 className="text-2xl font-bold text-white">Redefinir senha</h1>
-            <p className="text-sm text-gray-300">
-              Crie uma nova senha para acessar o painel do seu racha.
-            </p>
+            <p className="text-sm text-gray-300">{description}</p>
           </div>
 
           {message && (
@@ -102,7 +123,7 @@ export default function ResetarSenhaClient() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="new-password"
-                  placeholder="Minimo 6 caracteres"
+                  placeholder="Mínimo 8 caracteres"
                   className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 pr-10 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
                 />
                 <button
@@ -152,7 +173,7 @@ export default function ResetarSenhaClient() {
           <div className="mt-5 text-center text-xs text-gray-400">
             <button
               type="button"
-              onClick={() => router.push("/admin/login")}
+              onClick={() => router.push(loginHref)}
               className="text-yellow-300 underline hover:text-yellow-200"
             >
               Voltar para o login
@@ -161,7 +182,7 @@ export default function ResetarSenhaClient() {
               <div className="mt-2">
                 <button
                   type="button"
-                  onClick={() => router.push("/admin/esqueci-senha")}
+                  onClick={() => router.push(forgotHref)}
                   className="text-yellow-300 underline hover:text-yellow-200"
                 >
                   Solicitar novo link

@@ -4,12 +4,13 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 
 type Status = "idle" | "loading" | "sent" | "error";
 
 export default function EsqueciSenhaAtletaClient() {
   const router = useRouter();
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
   const { nome } = useTema();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -24,13 +25,16 @@ export default function EsqueciSenhaAtletaClient() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email,
+          resetPath: publicSlug ? publicHref("/resetar-senha") : undefined,
+        }),
       });
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.ok) {
         setStatus("error");
-        setMessage(data?.message || "Não foi possível enviar o e-mail agora.");
+        setMessage(getHumanAuthErrorMessage(data, "Não foi possível enviar o e-mail agora."));
         return;
       }
 
@@ -38,9 +42,9 @@ export default function EsqueciSenhaAtletaClient() {
       setMessage(
         "Se o e-mail estiver cadastrado, enviaremos um link para redefinir a senha. Verifique sua caixa de entrada e spam."
       );
-    } catch {
+    } catch (error) {
       setStatus("error");
-      setMessage("Falha ao solicitar o link. Tente novamente.");
+      setMessage(getHumanAuthErrorMessage(error, "Falha ao solicitar o link. Tente novamente."));
     }
   };
 

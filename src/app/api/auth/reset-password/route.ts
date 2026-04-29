@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,13 +13,22 @@ export async function POST(req: NextRequest) {
   try {
     payload = (await req.json()) as { token?: string; password?: string };
   } catch {
-    return Response.json({ ok: false, message: "Token invalido." }, { status: 400 });
+    return Response.json(
+      {
+        ok: false,
+        message: "Não foi possível concluir a solicitação. Confira os dados e tente novamente.",
+      },
+      { status: 400 }
+    );
   }
 
   const token = String(payload?.token || "").trim();
   const password = String(payload?.password || "");
   if (!token || !password) {
-    return Response.json({ ok: false, message: "Dados invalidos." }, { status: 400 });
+    return Response.json(
+      { ok: false, message: "Este link não é mais válido. Solicite um novo link para continuar." },
+      { status: 400 }
+    );
   }
 
   const baseUrl = normalizeBase(getApiBase());
@@ -32,14 +42,28 @@ export async function POST(req: NextRequest) {
 
     const data = await res.json().catch(() => null);
     if (!res.ok) {
+      const rawMessage = data?.message || data?.error || "";
       return Response.json(
-        { ok: false, message: data?.message || "Nao foi possivel redefinir a senha." },
+        {
+          ok: false,
+          message: getHumanAuthErrorMessage(
+            rawMessage,
+            "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link."
+          ),
+        },
         { status: res.status || 400 }
       );
     }
 
     return Response.json(data || { ok: true });
   } catch {
-    return Response.json({ ok: false, message: "Falha ao redefinir a senha." }, { status: 500 });
+    return Response.json(
+      {
+        ok: false,
+        message:
+          "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link.",
+      },
+      { status: 500 }
+    );
   }
 }
