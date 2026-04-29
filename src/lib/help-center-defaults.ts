@@ -1,6 +1,7 @@
 import type { HelpCenterConfig, HelpCenterTopic } from "@/types/help-center";
+import { FUT7PRO_SOCIALS } from "@/config/fut7pro-socials";
 
-export const OFFICIAL_YOUTUBE_CHANNEL_URL = "https://www.youtube.com/@Fut7Pro_app";
+export const OFFICIAL_YOUTUBE_CHANNEL_URL = FUT7PRO_SOCIALS.youtube.url;
 
 export const DEFAULT_HELP_CENTER_TOPICS: HelpCenterTopic[] = [
   {

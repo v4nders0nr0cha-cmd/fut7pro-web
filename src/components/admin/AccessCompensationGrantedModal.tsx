@@ -95,9 +95,9 @@ export default function AccessCompensationGrantedModal({
     let active = true;
     const burst = async () => {
       try {
-        const module = await import("canvas-confetti");
+        const confettiModule = await import("canvas-confetti");
         if (!active) return;
-        module.default({
+        confettiModule.default({
           particleCount: 80,
           spread: 65,
           startVelocity: 35,
@@ -157,11 +157,17 @@ export default function AccessCompensationGrantedModal({
               >
                 <motion.div
                   className="absolute inset-0 rounded-2xl border border-amber-300/55 bg-gradient-to-br from-amber-300/35 via-amber-500/25 to-amber-700/30 shadow-[0_0_40px_rgba(251,191,36,0.35)]"
-                  animate={reduceMotion ? undefined : { boxShadow: [
-                    "0 0 20px rgba(251,191,36,0.25)",
-                    "0 0 45px rgba(251,191,36,0.45)",
-                    "0 0 20px rgba(251,191,36,0.25)",
-                  ] }}
+                  animate={
+                    reduceMotion
+                      ? undefined
+                      : {
+                          boxShadow: [
+                            "0 0 20px rgba(251,191,36,0.25)",
+                            "0 0 45px rgba(251,191,36,0.45)",
+                            "0 0 20px rgba(251,191,36,0.25)",
+                          ],
+                        }
+                  }
                   transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
                 />
                 <motion.div
@@ -190,7 +196,7 @@ export default function AccessCompensationGrantedModal({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.25 }}
               >
-                O Fut7Pro concedeu uma compensação administrativa para sua assinatura.
+                O Fut7Pro liberou um período extra de acesso para o seu racha.
               </motion.p>
 
               <motion.div
@@ -204,7 +210,8 @@ export default function AccessCompensationGrantedModal({
 
               <div className="mt-5 w-full rounded-2xl border border-zinc-700/80 bg-zinc-900/70 px-4 py-3 text-left">
                 <p className="text-sm text-zinc-100">
-                  Novo acesso válido até <strong className="text-amber-200">{formatDate(data.newAccessUntil)}</strong>
+                  Novo acesso válido até{" "}
+                  <strong className="text-amber-200">{formatDate(data.newAccessUntil)}</strong>
                 </p>
                 <p className="mt-1 text-sm text-zinc-300">Motivo: {data.reasonLabel}</p>
                 {data.reasonDetail ? (
@@ -215,7 +222,9 @@ export default function AccessCompensationGrantedModal({
                 ) : null}
               </div>
 
-              <p className="mt-4 text-sm text-zinc-300">Obrigado por continuar com o Fut7Pro.</p>
+              <p className="mt-4 text-sm text-zinc-300">
+                Você pode continuar usando o painel normalmente durante esse período.
+              </p>
             </div>
 
             <div className="relative z-10 mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

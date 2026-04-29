@@ -13,6 +13,11 @@ import TurnstileWidget, {
   isTurnstileErrorCode,
   resolveTurnstileErrorMessage,
 } from "@/components/security/TurnstileWidget";
+import {
+  FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 const HIGHLIGHTS = [
   {
@@ -55,7 +60,10 @@ export default function AdminLoginClient() {
   const apiBase =
     process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "https://api.fut7pro.com.br";
   const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
-  const contactEmail = "social@fut7pro.com.br";
+  const contactEmail = FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL;
+  const contactWhatsappUrl = buildFut7ProOfficialWhatsAppUrl(
+    "Olá! Preciso de ajuda para acessar o painel admin Fut7Pro."
+  );
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
 
@@ -507,10 +515,12 @@ export default function AdminLoginClient() {
                 </a>
               </div>
               <a
-                href={`mailto:${contactEmail}`}
+                href={contactWhatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-yellow-300 underline hover:text-yellow-200"
               >
-                Precisa de ajuda? Fale conosco
+                Precisa de ajuda? Fale no WhatsApp
               </a>
             </div>
           </div>
@@ -550,8 +560,13 @@ export default function AdminLoginClient() {
               </ul>
               <div className="border-t border-white/10 pt-3">
                 Precisa de ajuda?{" "}
-                <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
-                  {contactEmail}
+                <a
+                  href={contactWhatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-yellow-300 underline"
+                >
+                  {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
                 </a>
               </div>
             </div>
@@ -572,7 +587,16 @@ export default function AdminLoginClient() {
           <div className="hidden rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-gray-300 backdrop-blur sm:block">
             <div className="font-semibold text-white">Suporte direto</div>
             <p className="mt-1 text-xs text-gray-300">
-              Precisa de ajuda para entrar? Fale com a equipe pelo e-mail{" "}
+              Precisa de ajuda para entrar? Fale com a equipe pelo WhatsApp{" "}
+              <a
+                href={contactWhatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-300 underline"
+              >
+                {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
+              </a>{" "}
+              ou pelo e-mail{" "}
               <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
                 {contactEmail}
               </a>
@@ -591,7 +615,16 @@ export default function AdminLoginClient() {
               acessar o painel administrativo.
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
-              Para solicitar o desbloqueio, entre em contato pelo e-mail{" "}
+              Para solicitar o desbloqueio, entre em contato pelo WhatsApp{" "}
+              <a
+                href={contactWhatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-300 underline"
+              >
+                {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
+              </a>{" "}
+              ou pelo e-mail{" "}
               <a href={`mailto:${contactEmail}`} className="text-yellow-300 underline">
                 {contactEmail}
               </a>

@@ -3,6 +3,10 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { Shield, ArrowLeft, Home } from "lucide-react";
+import {
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 export default function UnauthorizedPage() {
   const { user, logout } = useAuth();
@@ -68,8 +72,15 @@ export default function UnauthorizedPage() {
           <div className="mt-6 text-center">
             <p className="text-textoSuave text-sm">
               Precisa de ajuda?{" "}
-              <a href="/suporte" className="text-yellow-400 hover:text-yellow-300">
-                Entre em contato
+              <a
+                href={buildFut7ProOfficialWhatsAppUrl(
+                  "Olá! Preciso de suporte por acesso negado no Fut7Pro."
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:text-yellow-300"
+              >
+                {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
               </a>
             </p>
           </div>

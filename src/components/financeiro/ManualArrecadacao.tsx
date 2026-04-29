@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FaLightbulb, FaChevronDown, FaCalculator } from "react-icons/fa";
 import { rachaConfig } from "@/config/racha.config";
+import { buildFut7ProOfficialWhatsAppUrl } from "@/config/fut7pro-contact";
 
 export default function ManualArrecadacao() {
   const [mostrar, setMostrar] = useState(false);
@@ -97,7 +98,14 @@ export default function ManualArrecadacao() {
           <div className="mt-3 text-[11px] text-gray-500">
             Dica: use esses números para definir metas e negociar com patrocinadores! Se precisar de
             ajuda para aumentar a arrecadação,{" "}
-            <a href={`mailto:${rachaConfig.urls.suporte}`} className="text-yellow-400 underline">
+            <a
+              href={buildFut7ProOfficialWhatsAppUrl(
+                "Olá! Quero ajuda para aumentar a arrecadação do meu racha no Fut7Pro."
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-yellow-400 underline"
+            >
               fale conosco
             </a>
             .

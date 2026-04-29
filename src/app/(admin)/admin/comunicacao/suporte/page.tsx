@@ -10,6 +10,7 @@ import {
   FaPlus,
   FaSearch,
   FaTimesCircle,
+  FaWhatsapp,
 } from "react-icons/fa";
 import type {
   SupportTicketCategory,
@@ -22,6 +23,10 @@ import {
   supportTicketStatusClasses,
   supportTicketStatusLabels,
 } from "@/types/support-ticket";
+import {
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 type ApiListPayload = {
   results?: SupportTicketItem[];
@@ -317,6 +322,17 @@ export default function SuportePage() {
             Abra chamados para relatar problemas, tirar dúvidas ou enviar sugestões sobre a
             plataforma. Todo o histórico fica registrado com status, mensagens e rastreabilidade.
           </p>
+          <a
+            href={buildFut7ProOfficialWhatsAppUrl(
+              "Olá! Preciso de suporte no painel admin Fut7Pro."
+            )}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex items-center gap-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 font-semibold text-emerald-200 hover:bg-emerald-500/15"
+          >
+            <FaWhatsapp />
+            WhatsApp oficial: {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
+          </a>
         </div>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

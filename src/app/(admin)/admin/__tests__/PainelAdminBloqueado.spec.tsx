@@ -12,11 +12,9 @@ describe("PainelAdminBloqueado", () => {
       screen.getByRole("link", { name: /Ir para pagamento e regularizar acesso/i })
     ).toHaveAttribute("href", "/admin/financeiro/planos-limites");
 
-    expect(
-      screen.getByRole("link", { name: /Precisa de ajuda\? Fale com o suporte\./i })
-    ).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /\+55 88 99243-1113/i })).toHaveAttribute(
       "href",
-      "mailto:social@fut7pro.com.br?subject=Regulariza%C3%A7%C3%A3o%20de%20assinatura%20-%20Fut7Pro"
+      expect.stringContaining("https://wa.me/5588992431113?text=")
     );
   });
 });

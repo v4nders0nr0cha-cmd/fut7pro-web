@@ -6,11 +6,18 @@ import { useSession } from "next-auth/react";
 import { FaCheckCircle, FaSpinner } from "react-icons/fa";
 import BillingAPI, {
   type ChargePricing,
+  type FinancialStatus,
   type Plan,
   type PixChargeResponse,
+  type SubscriptionAccess,
 } from "@/lib/api/billing";
 import useSubscription from "@/hooks/useSubscription";
 import { useRacha } from "@/context/RachaContext";
+import {
+  FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
+  FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
+  buildFut7ProOfficialWhatsAppUrl,
+} from "@/config/fut7pro-contact";
 
 function formatDate(value?: string | null) {
   if (!value) return "N/D";
@@ -36,7 +43,7 @@ function resolveIntervalLabel(planKey?: string | null, interval?: string | null)
   return "Mensal";
 }
 
-function resolveStatusMeta(status?: string | null) {
+function resolveRawStatusMeta(status?: string | null) {
   const normalized = (status || "").toLowerCase();
   if (normalized === "trialing") {
     return { label: "Teste ativo", className: "bg-blue-500/15 text-blue-200 border-blue-500/30" };
@@ -57,9 +64,75 @@ function resolveStatusMeta(status?: string | null) {
     return { label: "Cancelada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
   }
   if (normalized === "expired") {
-    return { label: "Expirada", className: "bg-red-500/15 text-red-200 border-red-500/30" };
+    return {
+      label: "Acesso expirado",
+      className: "bg-red-500/15 text-red-200 border-red-500/30",
+    };
   }
   return { label: "Indefinido", className: "bg-zinc-500/20 text-zinc-200 border-zinc-500/30" };
+}
+
+function resolveAccessStatusMeta(access?: SubscriptionAccess | null, rawStatus?: string | null) {
+  if (access?.accessStatus === "LIBERADO_POR_COMPENSACAO") {
+    return {
+      label: "Acesso liberado",
+      className: "bg-emerald-500/15 text-emerald-200 border-emerald-500/30",
+    };
+  }
+
+  if (access?.blocked) {
+    return {
+      label: "Acesso expirado",
+      className: "bg-red-500/15 text-red-200 border-red-500/30",
+    };
+  }
+
+  if (access?.status === "ALERTA") {
+    return {
+      label: "Expira em breve",
+      className: "bg-yellow-500/15 text-yellow-200 border-yellow-500/30",
+    };
+  }
+
+  if (access?.status === "ATIVO") {
+    return {
+      label: "Acesso ativo",
+      className: "bg-green-500/15 text-green-200 border-green-500/30",
+    };
+  }
+
+  return resolveRawStatusMeta(rawStatus);
+}
+
+function resolveEffectiveAccess(
+  subscriptionAccess?: SubscriptionAccess | null,
+  statusAccess?: SubscriptionAccess | null
+) {
+  return statusAccess ?? subscriptionAccess ?? null;
+}
+
+function resolveFinancialLabel(financialStatus?: FinancialStatus | null, fallbackPending = false) {
+  if (financialStatus?.label) return financialStatus.label;
+  return fallbackPending ? "Pendente" : "Em dia";
+}
+
+function isPendingFinancialStatus(financialStatus?: FinancialStatus | null) {
+  return (
+    financialStatus?.code === "PENDENTE" ||
+    financialStatus?.code === "VENCIDO" ||
+    financialStatus?.code === "EM_APROVACAO"
+  );
+}
+
+function formatCompensationDays(days?: number | null) {
+  if (!days || days <= 0) return "dias extras";
+  return `${days} ${days === 1 ? "dia extra" : "dias extras"}`;
+}
+
+function resolveFinancialIssueSentence(financialStatus?: FinancialStatus | null) {
+  if (financialStatus?.code === "VENCIDO") return "Seu pagamento está vencido";
+  if (financialStatus?.code === "EM_APROVACAO") return "Seu pagamento está em aprovação";
+  return "Seu pagamento continua pendente";
 }
 
 function calcDaysRemaining(target?: string | null) {
@@ -85,7 +158,7 @@ function extractApiError(error: unknown, fallback: string) {
       return parsed.error;
     }
   } catch {
-    // message ja esta em texto simples
+    // mensagem ja esta em texto simples
   }
 
   return raw || fallback;
@@ -216,7 +289,7 @@ export default function PlanosLimitesPage() {
   );
 
   const annualNoteLabel =
-    planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses gratis";
+    planMeta && planMeta.annualNote !== undefined ? planMeta.annualNote : "2 meses grátis";
 
   useEffect(() => {
     if (subscription?.planKey) {
@@ -234,6 +307,27 @@ export default function PlanosLimitesPage() {
     }
   }, []);
 
+  const effectiveAccess = useMemo(
+    () => resolveEffectiveAccess(subscription?.access, subscriptionStatus?.access),
+    [subscription?.access, subscriptionStatus?.access]
+  );
+  const financialStatus = useMemo(
+    () =>
+      subscriptionStatus?.financialStatus ??
+      subscriptionStatus?.financial ??
+      subscription?.financialStatus ??
+      subscription?.financial ??
+      null,
+    [
+      subscription?.financial,
+      subscription?.financialStatus,
+      subscriptionStatus?.financial,
+      subscriptionStatus?.financialStatus,
+    ]
+  );
+  const isCompensated =
+    effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO" ||
+    effectiveAccess?.accessSource === "COMPENSATION";
   const statusMeta = useMemo(() => {
     if (!subscription && loading) {
       return {
@@ -247,10 +341,11 @@ export default function PlanosLimitesPage() {
         className: "bg-indigo-500/15 text-indigo-200 border-indigo-500/30",
       };
     }
-    return resolveStatusMeta(subscription?.status);
-  }, [subscription, loading, error]);
+    return resolveAccessStatusMeta(effectiveAccess, subscription?.status);
+  }, [effectiveAccess, subscription, loading, error]);
   const isTrial = subscription?.status === "trialing";
   const pendingPayment =
+    isPendingFinancialStatus(financialStatus) ||
     subscription?.status === "past_due" ||
     subscriptionStatus?.preapproval === "pending" ||
     subscriptionStatus?.upfront === "pending";
@@ -261,12 +356,15 @@ export default function PlanosLimitesPage() {
     !isTrial && subscription?.currentPeriodEnd
       ? new Date(subscription.currentPeriodEnd) < now
       : false;
-  const billingBlocked =
+  const derivedAccessBlocked =
     Boolean(subscription) &&
     (trialExpired ||
       periodExpired ||
       subscription?.status === "past_due" ||
       subscription?.status === "expired");
+  const accessBlocked =
+    typeof effectiveAccess?.blocked === "boolean" ? effectiveAccess.blocked : derivedAccessBlocked;
+  const billingBlocked = Boolean(subscription) && accessBlocked;
   const canSwitchPlan = subscription?.status === "trialing";
 
   const planLabel = planoAtual?.label || subscription?.planKey || "Sincronizando assinatura";
@@ -274,15 +372,30 @@ export default function PlanosLimitesPage() {
   const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 
   const periodStart = isTrial ? subscription?.trialStart : subscription?.currentPeriodStart;
-  const periodEnd = isTrial
-    ? subscription?.trialEnd
-    : subscription?.currentPeriodEnd || subscription?.trialEnd;
+  const periodEnd =
+    effectiveAccess?.effectiveAccessUntil ||
+    (isTrial ? subscription?.trialEnd : subscription?.currentPeriodEnd || subscription?.trialEnd);
   const periodLabel =
     periodStart && periodEnd ? `${formatDate(periodStart)} - ${formatDate(periodEnd)}` : "N/D";
 
-  const cycleEnd = subscription?.currentPeriodEnd || subscription?.trialEnd || null;
-  const daysRemaining = calcDaysRemaining(cycleEnd);
+  const cycleEnd =
+    effectiveAccess?.effectiveAccessUntil ||
+    subscription?.currentPeriodEnd ||
+    subscription?.trialEnd ||
+    null;
+  const daysRemaining =
+    typeof effectiveAccess?.daysRemaining === "number"
+      ? Math.max(0, effectiveAccess.daysRemaining)
+      : calcDaysRemaining(cycleEnd);
   const cycleLabel = daysRemaining !== null ? `${daysRemaining}` : "--";
+  const accessUntilLabel = formatDate(cycleEnd);
+  const compensationDays =
+    effectiveAccess?.activeCompensation?.daysGranted ??
+    effectiveAccess?.activeCompensation?.days ??
+    null;
+  const compensationDaysLabel = formatCompensationDays(compensationDays);
+  const financialLabel = resolveFinancialLabel(financialStatus, pendingPayment);
+  const financialIssueSentence = resolveFinancialIssueSentence(financialStatus);
 
   const invoices = subscription?.invoices ?? [];
   const paymentPricing =
@@ -392,7 +505,7 @@ export default function PlanosLimitesPage() {
     }
 
     if (!canSwitchPlan) {
-      setActionError("Troca automatica disponivel apenas durante o periodo de teste.");
+      setActionError("Troca automática disponível apenas durante o período de teste.");
       return;
     }
 
@@ -434,8 +547,8 @@ export default function PlanosLimitesPage() {
       <main className="max-w-7xl mx-auto px-4 pt-20 pb-24 md:pt-6 md:pb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3">Planos & Limites</h1>
         <p className="text-base text-neutral-300 mb-6 max-w-2xl">
-          Central de assinatura do seu racha. Confira o plano atual, ciclo, pagamentos e troque
-          quando quiser.
+          Central de assinatura do seu racha. Confira plano, cobrança e acesso ao painel com estados
+          separados.
         </p>
 
         {!hasActiveTenant && (
@@ -469,14 +582,33 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
+        {isCompensated && (
+          <div
+            data-testid="billing-access-compensation-banner"
+            className="mb-6 rounded-2xl border border-emerald-500/35 bg-emerald-500/10 px-5 py-4 text-emerald-50"
+          >
+            <p className="text-base font-semibold">Acesso liberado por compensação</p>
+            <p className="mt-1 text-sm text-emerald-50/90">
+              Seu racha recebeu uma compensação de acesso de {compensationDaysLabel}. O painel
+              permanece liberado até {accessUntilLabel}.
+            </p>
+            {pendingPayment && (
+              <p className="mt-2 text-sm text-emerald-50/85">
+                {financialIssueSentence}, mas você pode usar o sistema normalmente durante esse
+                período.
+              </p>
+            )}
+          </div>
+        )}
+
         {!showSkeleton && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-white mb-1">Status da Assinatura</h2>
+                  <h2 className="text-lg font-bold text-white mb-1">Plano e acesso</h2>
                   <p className="text-sm text-gray-400">
-                    O plano escolhido define o valor após o teste e mantem o painel ativo.
+                    Status financeiro e liberação do painel são tratados separadamente.
                   </p>
                 </div>
                 <span
@@ -494,20 +626,22 @@ export default function PlanosLimitesPage() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Periodo</span>
+                  <span className="text-xs text-gray-500">Período</span>
                   <p className="text-base font-semibold text-white">{periodLabel}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Valor de referencia</span>
+                  <span className="text-xs text-gray-500">Valor de referência</span>
                   <p className="text-base font-semibold text-white">
                     {formatCurrencyFromCents(subscription?.amount)}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Status do pagamento</span>
-                  <p className="text-base font-semibold text-white">
-                    {pendingPayment ? "Pendente" : "Em dia"}
-                  </p>
+                  <span className="text-xs text-gray-500">Status financeiro</span>
+                  <p className="text-base font-semibold text-white">{financialLabel}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-gray-500">Status de acesso</span>
+                  <p className="text-base font-semibold text-white">{statusMeta.label}</p>
                 </div>
               </div>
 
@@ -533,9 +667,15 @@ export default function PlanosLimitesPage() {
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-white mb-1">Ciclo do plano</h2>
+                  <h2 className="text-lg font-bold text-white mb-1">
+                    {isCompensated ? "Acesso liberado" : "Ciclo do plano"}
+                  </h2>
                   <p className="text-sm text-gray-400">
-                    {isTrial ? "Periodo de teste ativo" : "Ciclo atual de assinatura"}
+                    {isCompensated
+                      ? "Compensação temporária vigente"
+                      : isTrial
+                        ? "Período de teste ativo"
+                        : "Ciclo atual de assinatura"}
                   </p>
                 </div>
                 <span className="text-2xl font-extrabold text-yellow-300">{cycleLabel} dias</span>
@@ -543,17 +683,21 @@ export default function PlanosLimitesPage() {
 
               <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
                 <div>
-                  <span className="text-xs text-gray-500">Proximo vencimento</span>
+                  <span className="text-xs text-gray-500">
+                    {isCompensated ? "Acesso válido até" : "Próximo vencimento"}
+                  </span>
                   <p className="text-base font-semibold text-white">{formatDate(cycleEnd)}</p>
                 </div>
                 <div>
                   <span className="text-xs text-gray-500">Mensagem</span>
                   <p className="text-base font-semibold text-white">
-                    {isTrial
-                      ? "Pagando agora, voce nao perde o teste, o tempo comprado é acumulado."
-                      : pendingPayment
-                        ? "Pagamento pendente, regularize para manter o painel desbloqueado."
-                        : "Ciclo em andamento. Tudo certo por aqui."}
+                    {isCompensated
+                      ? `Você recebeu ${compensationDaysLabel}. O painel permanece liberado até ${accessUntilLabel}.`
+                      : isTrial
+                        ? "Pagando agora, você não perde o teste: o tempo comprado é acumulado."
+                        : pendingPayment
+                          ? "Pagamento pendente. Regularize para evitar bloqueio quando o acesso vigente terminar."
+                          : "Ciclo em andamento. Tudo certo por aqui."}
                   </p>
                 </div>
               </div>
@@ -574,7 +718,7 @@ export default function PlanosLimitesPage() {
             <p className="mt-1 text-sm text-red-50">{error}</p>
             {errorStatus === 403 && (
               <p className="mt-2 text-xs text-red-100/80">
-                Verifique se o racha selecionado no painel corresponde ao racha que voce deseja
+                Verifique se o racha selecionado no painel corresponde ao racha que você deseja
                 administrar.
               </p>
             )}
@@ -599,7 +743,7 @@ export default function PlanosLimitesPage() {
             <p className="text-base font-semibold">Assinatura em sincronização</p>
             <p className="mt-1 text-sm text-blue-100/90">
               Recebemos o plano do seu racha e estamos finalizando a sincronização dos dados de
-              cobranca.
+              cobrança.
             </p>
           </div>
         )}
@@ -778,9 +922,9 @@ export default function PlanosLimitesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
-                <h4 className="text-sm font-bold text-white mb-1">Cartao ou boleto (recorrente)</h4>
+                <h4 className="text-sm font-bold text-white mb-1">Cartão ou boleto (recorrente)</h4>
                 <p className="text-xs text-gray-400 mb-3">
-                  O pagamento sera recorrente no Mercado Pago. Voce autoriza a cobranca automatica
+                  O pagamento será recorrente no Mercado Pago. Você autoriza a cobrança automática
                   conforme o plano escolhido.
                 </p>
                 <label className="flex items-start gap-2 text-xs text-gray-300 mb-3">
@@ -790,7 +934,7 @@ export default function PlanosLimitesPage() {
                     onChange={(e) => setRecurringAccepted(e.target.checked)}
                     className="mt-0.5 accent-yellow-400"
                   />
-                  <span>Li e concordo com a politica de cobranca recorrente.</span>
+                  <span>Li e concordo com a política de cobrança recorrente.</span>
                 </label>
                 <button
                   type="button"
@@ -820,7 +964,7 @@ export default function PlanosLimitesPage() {
                 </button>
                 {!canUsePix && (
                   <p className="mt-2 text-[11px] text-gray-500">
-                    PIX indisponivel para este plano no momento.
+                    PIX indisponível para este plano no momento.
                   </p>
                 )}
               </div>
@@ -869,7 +1013,7 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Pagamento via PIX</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Escaneie o QR Code ou copie o codigo. A liberacao do painel ocorre apos a confirmacao
+              Escaneie o QR Code ou copie o código. A liberação do painel ocorre após a confirmação
               do pagamento.
             </p>
 
@@ -881,11 +1025,11 @@ export default function PlanosLimitesPage() {
                   className="w-52 h-52 rounded-lg bg-white p-2"
                 />
               ) : (
-                <div className="text-xs text-gray-400">QR Code indisponivel.</div>
+                <div className="text-xs text-gray-400">QR Code indisponível.</div>
               )}
               {pixCharge.pix.qrCode && (
                 <div className="w-full">
-                  <div className="text-[11px] text-gray-400 mb-1">Codigo PIX</div>
+                  <div className="text-[11px] text-gray-400 mb-1">Código PIX</div>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -916,7 +1060,7 @@ export default function PlanosLimitesPage() {
             </div>
 
             <div className="mt-4 text-xs text-gray-400">
-              Periodo:{" "}
+              Período:{" "}
               <b className="text-gray-200">
                 {formatDate(pixCharge.invoice.periodStart)} -{" "}
                 {formatDate(pixCharge.invoice.periodEnd)}
@@ -952,7 +1096,7 @@ export default function PlanosLimitesPage() {
             )}
             {pixCharge.pix.expiresAt && (
               <div className="mt-2 text-xs text-gray-400">
-                Valido ate: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
+                Válido até: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
               </div>
             )}
 
@@ -972,17 +1116,17 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Confirmar troca de plano</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Voce esta trocando de <b>{planLabel}</b> para <b>{selectedPlan.label}</b>.
+              Você está trocando de <b>{planLabel}</b> para <b>{selectedPlan.label}</b>.
             </p>
             <div className="text-sm text-gray-300 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b]">
               {subscription?.status === "trialing" ? (
                 <span>
-                  A troca e imediata e nao altera a data final do teste. Seu teste termina em{" "}
+                  A troca é imediata e não altera a data final do teste. Seu teste termina em{" "}
                   <b>{formatDate(subscription?.trialEnd)}</b>.
                 </span>
               ) : (
                 <span>
-                  Troca automatica disponivel apenas durante o periodo de teste. Fale com o suporte
+                  Troca automática disponível apenas durante o período de teste. Fale com o suporte
                   para ajustar o plano.
                 </span>
               )}
@@ -1005,7 +1149,7 @@ export default function PlanosLimitesPage() {
                   ? "Trocando..."
                   : canSwitchPlan
                     ? "Confirmar troca"
-                    : "Troca indisponivel"}
+                    : "Troca indisponível"}
               </button>
             </div>
           </div>
@@ -1017,8 +1161,8 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Solicitar Enterprise</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Esse plano e liberado mediante contato com nosso time. Envie um e-mail para iniciar a
-              conversa.
+              Esse plano e liberado mediante contato com nosso time. Chame no WhatsApp ou envie um
+              e-mail para iniciar a conversa.
             </p>
             <div className="text-sm text-gray-200 bg-[#111418] rounded-lg p-3 border border-[#2b2b2b] mb-4">
               <div>
@@ -1028,11 +1172,24 @@ export default function PlanosLimitesPage() {
                 <span className="text-gray-400">E-mail:</span>{" "}
                 <a
                   className="text-yellow-300 underline"
-                  href={`mailto:${selectedPlan.contactEmail || "social@fut7pro.com.br"}?subject=${encodeURIComponent(
+                  href={`mailto:${selectedPlan.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL}?subject=${encodeURIComponent(
                     `Solicitar ${selectedPlan.label} - ${payerName || "Fut7Pro"}`
                   )}`}
                 >
-                  {selectedPlan.contactEmail || "social@fut7pro.com.br"}
+                  {selectedPlan.contactEmail || FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL}
+                </a>
+              </div>
+              <div>
+                <span className="text-gray-400">WhatsApp:</span>{" "}
+                <a
+                  className="text-yellow-300 underline"
+                  href={buildFut7ProOfficialWhatsAppUrl(
+                    `Olá! Quero solicitar o plano ${selectedPlan.label} para ${payerName || "Fut7Pro"}.`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY}
                 </a>
               </div>
             </div>
@@ -1057,7 +1214,7 @@ export default function PlanosLimitesPage() {
             <div className="space-y-3 max-h-[360px] overflow-y-auto pr-1">
               {invoices.length === 0 && (
                 <div className="text-sm text-gray-400">
-                  Nenhuma fatura encontrada ate o momento.
+                  Nenhuma fatura encontrada até o momento.
                 </div>
               )}
               {invoices.map((invoice) => (
