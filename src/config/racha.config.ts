@@ -1,5 +1,8 @@
 // src/config/racha.config.ts
-import { FUT7PRO_OFFICIAL_SUPPORT_EMAIL, FUT7PRO_OFFICIAL_WHATSAPP_URL } from "./fut7pro-contact";
+import {
+  FUT7PRO_OFFICIAL_SUPPORT_EMAIL,
+  FUT7PRO_OFFICIAL_WHATSAPP_URL,
+} from "./fut7pro-contact";
 
 export const rachaConfig = {
   nome: "Fut7Pro",

@@ -30,7 +30,9 @@ export default function ContatoPage() {
         </li>
         <li>
           Suporte técnico:{" "}
-          <a href={`mailto:${FUT7PRO_OFFICIAL_SUPPORT_EMAIL}`}>{FUT7PRO_OFFICIAL_SUPPORT_EMAIL}</a>
+          <a href={`mailto:${FUT7PRO_OFFICIAL_SUPPORT_EMAIL}`}>
+            {FUT7PRO_OFFICIAL_SUPPORT_EMAIL}
+          </a>
         </li>
         <li>
           Comercial e parcerias:{" "}

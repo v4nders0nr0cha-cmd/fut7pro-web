@@ -31,7 +31,7 @@ async function loginAdmin(page: any, email: string, password: string) {
   const adminPassword = page.getByLabel(/Senha/i).first();
   const adminPasswordVisible = await adminPassword.isVisible().catch(() => false);
   if (!adminPasswordVisible) {
-    await page.getByRole("button", { name: /Entrar com senha/i }).click();
+    await page.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
     await expect(adminPassword).toBeVisible({ timeout: 10000 });
   }
   await adminPassword.fill(password);
@@ -52,7 +52,7 @@ async function loginAthlete(page: any, slugValue: string, email: string, passwor
   const athletePassword = page.getByLabel(/Senha/i).first();
   const athletePasswordVisible = await athletePassword.isVisible().catch(() => false);
   if (!athletePasswordVisible) {
-    await page.getByRole("button", { name: /Entrar com senha/i }).click();
+    await page.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
     await expect(athletePassword).toBeVisible({ timeout: 10000 });
   }
   await athletePassword.fill(password);

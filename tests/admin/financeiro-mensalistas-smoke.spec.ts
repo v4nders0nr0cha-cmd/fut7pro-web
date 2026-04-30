@@ -37,10 +37,12 @@ async function loginAdmin(page: Page) {
     .isVisible({ timeout: 2000 })
     .catch(() => false);
   if (!passwordInputVisible) {
-    const legacyToggle = page.getByRole("button", { name: /Entrar com senha/i }).first();
+    const legacyToggle = page
+      .getByRole("button", { name: /Usar senha \(legado\)|Entrar com senha/i })
+      .first();
     const toggleVisible = await legacyToggle.isVisible({ timeout: 5000 }).catch(() => false);
     if (!toggleVisible) {
-      throw new Error("Login admin não exibiu campo de senha nem botão de entrar com senha.");
+      throw new Error("Login admin não exibiu campo de senha nem botão de modo legado.");
     }
     await legacyToggle.click();
   }

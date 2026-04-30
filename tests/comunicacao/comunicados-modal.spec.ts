@@ -42,7 +42,7 @@ test.describe("comunicados modal", () => {
     const adminPasswordInput = adminPage.getByLabel(/Senha/i).first();
     const adminPasswordVisible = await adminPasswordInput.isVisible().catch(() => false);
     if (!adminPasswordVisible) {
-      await adminPage.getByRole("button", { name: /Entrar com senha/i }).click();
+      await adminPage.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
       await expect(adminPasswordInput).toBeVisible({ timeout: 10000 });
     }
     await adminPasswordInput.fill(adminPassword || "");
@@ -76,7 +76,7 @@ test.describe("comunicados modal", () => {
     const athletePasswordInput = athletePage.getByLabel(/Senha/i).first();
     const athletePasswordVisible = await athletePasswordInput.isVisible().catch(() => false);
     if (!athletePasswordVisible) {
-      await athletePage.getByRole("button", { name: /Entrar com senha/i }).click();
+      await athletePage.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
       await expect(athletePasswordInput).toBeVisible({ timeout: 10000 });
     }
     await athletePasswordInput.fill(athletePassword || "");
@@ -94,7 +94,7 @@ test.describe("comunicados modal", () => {
     const athletePasswordInput2 = athletePage2.getByLabel(/Senha/i).first();
     const athletePasswordVisible2 = await athletePasswordInput2.isVisible().catch(() => false);
     if (!athletePasswordVisible2) {
-      await athletePage2.getByRole("button", { name: /Entrar com senha/i }).click();
+      await athletePage2.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
       await expect(athletePasswordInput2).toBeVisible({ timeout: 10000 });
     }
     await athletePasswordInput2.fill(athletePassword || "");
@@ -110,7 +110,7 @@ test.describe("comunicados modal", () => {
     const adminPasswordInput2 = adminPage2.getByLabel(/Senha/i).first();
     const adminPasswordVisible2 = await adminPasswordInput2.isVisible().catch(() => false);
     if (!adminPasswordVisible2) {
-      await adminPage2.getByRole("button", { name: /Entrar com senha/i }).click();
+      await adminPage2.getByRole("button", { name: /Usar senha \(legado\)/i }).click();
       await expect(adminPasswordInput2).toBeVisible({ timeout: 10000 });
     }
     await adminPasswordInput2.fill(adminPassword || "");
@@ -137,7 +137,7 @@ test.describe("comunicados modal", () => {
     const athletePasswordInput3 = athletePage3.getByLabel(/Senha/i).first();
     const athletePasswordVisible3 = await athletePasswordInput3.isVisible().catch(() => false);
     if (!athletePasswordVisible3) {
-      await athletePage3.getByRole("button", { name: /Entrar com senha/i }).click();
+      await athletePage3.getByRole("button", { name: /Entrar com senha \(legado\)/i }).click();
       await expect(athletePasswordInput3).toBeVisible({ timeout: 10000 });
     }
     await athletePasswordInput3.fill(athletePassword || "");

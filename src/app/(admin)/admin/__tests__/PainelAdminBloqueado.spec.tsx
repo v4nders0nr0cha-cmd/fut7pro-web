@@ -12,9 +12,8 @@ describe("PainelAdminBloqueado", () => {
       screen.getByRole("link", { name: /Ir para pagamento e regularizar acesso/i })
     ).toHaveAttribute("href", "/admin/financeiro/planos-limites");
 
-    expect(screen.getByRole("link", { name: /\+55 88 99243-1113/i })).toHaveAttribute(
-      "href",
-      expect.stringContaining("https://wa.me/5588992431113?text=")
-    );
+    expect(
+      screen.getByRole("link", { name: /\+55 88 99243-1113/i })
+    ).toHaveAttribute("href", expect.stringContaining("https://wa.me/5588992431113?text="));
   });
 });
