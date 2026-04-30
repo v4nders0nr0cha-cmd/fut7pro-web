@@ -6,19 +6,53 @@ export const dynamic = "force-dynamic";
 
 const normalizeBase = (url: string) => url.replace(/\/+$/, "");
 
+function humanResetError(message?: string | null) {
+  const raw = String(message || "").trim();
+  const normalized = raw.toLowerCase();
+
+  if (
+    normalized.includes("token") &&
+    (normalized.includes("expirado") || normalized.includes("invalido"))
+  ) {
+    return "Este link de redefinição expirou. Solicite um novo link para criar uma nova senha.";
+  }
+  if (
+    normalized.includes("bad request") ||
+    normalized.includes("senha") ||
+    normalized.includes("password")
+  ) {
+    return "A senha precisa ter entre 10 e 72 caracteres, com letra maiúscula, letra minúscula, número e caractere especial.";
+  }
+  return "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link.";
+}
+
 export async function POST(req: NextRequest) {
   let payload: { token?: string; password?: string };
 
   try {
     payload = (await req.json()) as { token?: string; password?: string };
   } catch {
-    return Response.json({ ok: false, message: "Token invalido." }, { status: 400 });
+    return Response.json(
+      {
+        ok: false,
+        message:
+          "Este link de redefinição expirou. Solicite um novo link para criar uma nova senha.",
+      },
+      { status: 400 }
+    );
   }
 
   const token = String(payload?.token || "").trim();
   const password = String(payload?.password || "");
   if (!token || !password) {
-    return Response.json({ ok: false, message: "Dados invalidos." }, { status: 400 });
+    return Response.json(
+      {
+        ok: false,
+        message:
+          "Este link de redefinição expirou. Solicite um novo link para criar uma nova senha.",
+      },
+      { status: 400 }
+    );
   }
 
   const baseUrl = normalizeBase(getApiBase());
@@ -33,13 +67,20 @@ export async function POST(req: NextRequest) {
     const data = await res.json().catch(() => null);
     if (!res.ok) {
       return Response.json(
-        { ok: false, message: data?.message || "Nao foi possivel redefinir a senha." },
+        { ok: false, message: humanResetError(data?.message || data?.error) },
         { status: res.status || 400 }
       );
     }
 
     return Response.json(data || { ok: true });
   } catch {
-    return Response.json({ ok: false, message: "Falha ao redefinir a senha." }, { status: 500 });
+    return Response.json(
+      {
+        ok: false,
+        message:
+          "Não foi possível redefinir sua senha agora. Tente novamente em alguns instantes ou solicite um novo link.",
+      },
+      { status: 500 }
+    );
   }
 }

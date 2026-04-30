@@ -14,8 +14,7 @@ export async function GET(request: Request) {
   const contextParam = searchParams.get("context")?.trim().toLowerCase() || null;
   const authContext =
     contextParam === "athlete" ? "athlete" : contextParam === "admin" ? "admin" : null;
-  const requiredScope =
-    authContext === "athlete" ? "athlete" : authContext === "admin" ? "adminOrSuperadmin" : "any";
+  const requiredScope = authContext === "admin" ? "adminOrSuperadmin" : "any";
   const user = await requireUser({ scope: requiredScope });
 
   if (!user) {

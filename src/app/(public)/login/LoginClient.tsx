@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Dialog, Transition } from "@headlessui/react";
@@ -82,7 +82,7 @@ export default function LoginClient() {
   const [senha, setSenha] = useState("");
   const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
-  const [usarSenhaLegado, setUsarSenhaLegado] = useState(false);
+  const [usarSenha, setUsarSenha] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
@@ -178,6 +178,72 @@ export default function LoginClient() {
       navigateWithDocumentRedirect(targetHref);
     },
     [navigateWithDocumentRedirect, publicSlug, update]
+  );
+
+  const signInWithScopedTokens = useCallback(
+    async (body: any, authProvider: "credentials" | "passwordless" | "google") => {
+      const accessToken = body?.accessToken;
+      const refreshToken = body?.refreshToken;
+      if (!accessToken || !refreshToken) {
+        return false;
+      }
+
+      const signInResult = await signIn("credentials", {
+        redirect: false,
+        accessToken,
+        refreshToken,
+        authProvider,
+        role: body?.role || "ATLETA",
+        tenantSlug: body?.tenantSlug || publicSlug,
+        tenantId: body?.tenantId,
+      });
+
+      return !signInResult?.error;
+    },
+    [publicSlug]
+  );
+
+  const requestJoinForAuthenticatedUser = useCallback(
+    async (authProvider: "credentials" | "passwordless" | "google" = "credentials") => {
+      if (!publicSlug) {
+        throw new Error("Slug do racha não encontrado.");
+      }
+
+      const requestJoin = async () =>
+        fetch(`/api/public/${publicSlug}/auth/request-join`, {
+          method: "POST",
+        });
+
+      let response = await requestJoin();
+      if (response.status === 401) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        response = await requestJoin();
+      }
+
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const message = Array.isArray(body?.message)
+          ? body.message.join(" ")
+          : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
+        throw new Error(message);
+      }
+
+      const joinStatus = String(body?.status || "").toUpperCase();
+      const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
+      const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+      if (isActive && (!body?.accessToken || !body?.refreshToken)) {
+        throw new Error("Não foi possível finalizar o acesso neste racha.");
+      }
+      if (isActive) {
+        const scoped = await signInWithScopedTokens(body, authProvider);
+        if (!scoped) {
+          throw new Error("Não foi possível finalizar o acesso neste racha.");
+        }
+      }
+
+      return { isActive };
+    },
+    [publicSlug, signInWithScopedTokens]
   );
 
   const resetTurnstile = () => {
@@ -316,31 +382,47 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (requestJoinIntent) {
-      setUsarSenhaLegado(true);
+      setUsarSenha(true);
     }
   }, [requestJoinIntent]);
 
   useEffect(() => {
-    if (status !== "authenticated" || !isAthleteSession) return;
+    if (status !== "authenticated") return;
     if (requestJoinInProgress) return;
     if (completedNavigationRef.current) return;
 
-    if (sessionUser?.authProvider === "google") {
+    if (returningFromGoogleLogin) {
       if (!publicSlug) {
         navigateWithRefresh(publicHref("/register"));
         return;
       }
 
-      if (shouldLoadMe && isLoadingMe) return;
+      setRequestJoinInProgress(true);
+      void (async () => {
+        try {
+          const outcome = await requestJoinForAuthenticatedUser("google");
+          if (outcome.isActive) {
+            await finalizeSuccessfulLogin(redirectTo);
+            return;
+          }
 
-      const profileComplete = Boolean(
-        me?.athlete?.birthDay && me?.athlete?.birthMonth && me?.athlete?.position
-      );
-      if (shouldLoadMe && (isErrorMe || !profileComplete)) {
-        navigateWithRefresh(publicHref("/register"));
-        return;
-      }
+          clearPublicAuthContext();
+          await signOut({ redirect: false });
+          navigateWithRefresh(publicHref("/aguardando-aprovacao"));
+        } catch (error) {
+          setErro(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível continuar com Google neste racha."
+          );
+        } finally {
+          setRequestJoinInProgress(false);
+        }
+      })();
+      return;
     }
+
+    if (!isAthleteSession) return;
 
     if (shouldLoadMe && isLoadingMe) return;
 
@@ -352,11 +434,6 @@ export default function LoginClient() {
 
     if (isErrorMe) {
       navigateWithRefresh(publicHref("/register"));
-      return;
-    }
-
-    if (returningFromGoogleLogin) {
-      void finalizeSuccessfulLogin(redirectTo);
       return;
     }
 
@@ -376,6 +453,7 @@ export default function LoginClient() {
     returningFromGoogleLogin,
     finalizeSuccessfulLogin,
     navigateWithRefresh,
+    requestJoinForAuthenticatedUser,
   ]);
 
   const handleRequestJoin = async () => {
@@ -397,10 +475,9 @@ export default function LoginClient() {
       setNotMemberMessage("Informe e-mail para solicitar entrada.");
       return;
     }
-    if (!senha.trim()) {
-      setNotMemberMessage(
-        "Para solicitar entrada com conta existente, use o modo 'Entrar com senha (legado)'."
-      );
+    const hasAuthenticatedAccount = status === "authenticated" && Boolean(session?.user);
+    if (!hasAuthenticatedAccount && !senha.trim()) {
+      setNotMemberMessage("Entre com sua senha do Fut7Pro para solicitar entrada neste racha.");
       return;
     }
 
@@ -413,52 +490,31 @@ export default function LoginClient() {
         return;
       }
 
-      const signInResult = await signIn("credentials", {
-        redirect: false,
-        email: normalizedEmail,
-        password: senha,
-        turnstileToken: turnstileEnabled ? joinTurnstileToken || undefined : undefined,
-        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
-      });
-
-      if (signInResult?.error) {
-        setNotMemberMessage("Não foi possível validar sua conta. Tente novamente.");
-        setRequestJoinInProgress(false);
-        return;
-      }
-
-      const requestJoin = async () =>
-        fetch(`/api/public/${publicSlug}/auth/request-join`, {
-          method: "POST",
+      if (!hasAuthenticatedAccount) {
+        const signInResult = await signIn("credentials", {
+          redirect: false,
+          email: normalizedEmail,
+          password: senha,
+          turnstileToken: turnstileEnabled ? joinTurnstileToken || undefined : undefined,
+          turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
         });
 
-      let response = await requestJoin();
-      if (response.status === 401) {
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        response = await requestJoin();
+        if (signInResult?.error) {
+          setNotMemberMessage("Não foi possível validar sua conta. Tente novamente.");
+          setRequestJoinInProgress(false);
+          return;
+        }
       }
 
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        const message = Array.isArray(body?.message)
-          ? body.message.join(" ")
-          : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
-        setNotMemberMessage(message);
-        setRequestJoinInProgress(false);
-        return;
-      }
-
-      const joinStatus = String(body?.status || "").toUpperCase();
-      const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
-      const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
-
+      const outcome = await requestJoinForAuthenticatedUser();
       setNotMemberModalOpen(false);
-      if (isActive) {
+      if (outcome.isActive) {
         await finalizeSuccessfulLogin(redirectTo);
         return;
       }
 
       clearPublicAuthContext();
+      await signOut({ redirect: false });
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
     } catch {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
@@ -525,21 +581,8 @@ export default function LoginClient() {
   };
 
   const loginWithTokens = async (body: any, authProvider: "credentials" | "passwordless") => {
-    const accessToken = body?.accessToken;
-    const refreshToken = body?.refreshToken;
-    if (!accessToken || !refreshToken) {
-      setErro("Não foi possível concluir o login.");
-      return;
-    }
-
-    const signInResult = await signIn("credentials", {
-      redirect: false,
-      accessToken,
-      refreshToken,
-      authProvider,
-    });
-
-    if (signInResult?.error) {
+    const signedIn = await signInWithScopedTokens(body, authProvider);
+    if (!signedIn) {
       setErro("Não foi possível concluir o login.");
       return;
     }
@@ -636,6 +679,7 @@ export default function LoginClient() {
         code: normalizedCode,
         turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
         turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+        intent: requestJoinIntent ? "request-join" : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -644,6 +688,19 @@ export default function LoginClient() {
       handleAuthFailure(body);
       clearJourneyProof(normalizedEmail);
       resetTurnstile();
+      return;
+    }
+
+    const nextAction = String(body?.nextAction || "").toUpperCase();
+    const membershipStatus = String(body?.membershipStatus || body?.status || "").toUpperCase();
+    if (
+      nextAction === "WAIT_APPROVAL" ||
+      membershipStatus === "PENDING" ||
+      membershipStatus === "PENDENTE"
+    ) {
+      clearPublicAuthContext();
+      await signOut({ redirect: false });
+      navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
 
@@ -675,7 +732,7 @@ export default function LoginClient() {
 
       setIsSubmitting(true);
 
-      if (usarSenhaLegado) {
+      if (usarSenha) {
         await loginWithPassword();
         return;
       }
@@ -794,7 +851,7 @@ export default function LoginClient() {
             />
           </label>
 
-          {!usarSenhaLegado && (
+          {!usarSenha && (
             <>
               {codigoEnviado ? (
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -813,15 +870,15 @@ export default function LoginClient() {
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  Use código por e-mail como método principal. Senha permanece como fallback legado.
+                  Use sua senha cadastrada no Fut7Pro para acessar sua conta.
                 </div>
               )}
             </>
           )}
 
-          {usarSenhaLegado && (
+          {usarSenha && (
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-              Senha (legado)
+              Senha
               <div className="relative">
                 <input
                   type={senhaVisivel ? "text" : "password"}
@@ -845,7 +902,7 @@ export default function LoginClient() {
             </label>
           )}
 
-          {!usarSenhaLegado && infoMessage && (
+          {!usarSenha && infoMessage && (
             <div className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
               {infoMessage}
             </div>
@@ -863,7 +920,7 @@ export default function LoginClient() {
           >
             {isSubmitting
               ? "Processando..."
-              : usarSenhaLegado
+              : usarSenha
                 ? "Entrar com senha"
                 : codigoEnviado
                   ? "Entrar com código"
@@ -872,12 +929,12 @@ export default function LoginClient() {
           <button
             type="button"
             onClick={() => {
-              setUsarSenhaLegado((prev) => !prev);
+              setUsarSenha((prev) => !prev);
               setErro("");
             }}
             className="w-full rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
           >
-            {usarSenhaLegado ? "Voltar para código por e-mail" : "Entrar com senha (legado)"}
+            {usarSenha ? "Voltar para código por e-mail" : "Entrar com senha"}
           </button>
         </form>
 

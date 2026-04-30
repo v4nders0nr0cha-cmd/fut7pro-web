@@ -393,7 +393,10 @@ export default function RegisterClient() {
       setErro("Cadastro de atletas desabilitado no racha vitrine.");
       return;
     }
-    await signIn("google", { callbackUrl: publicHref("/register") });
+    const params = new URLSearchParams();
+    params.set("google", "1");
+    params.set("callbackUrl", redirectTo);
+    await signIn("google", { callbackUrl: `${publicHref("/entrar")}?${params.toString()}` });
   };
 
   const validateBaseFields = () => {

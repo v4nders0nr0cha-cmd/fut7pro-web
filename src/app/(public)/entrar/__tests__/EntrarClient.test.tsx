@@ -28,6 +28,7 @@ jest.mock("next/navigation", () => ({
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: jest.fn(),
+  signOut: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock("@/components/security/TurnstileWidget", () => ({
@@ -108,22 +109,29 @@ describe("EntrarClient", () => {
     expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
   });
 
-  it("não executa request-join automático quando a sessão autenticada não é de atleta", async () => {
+  it("permite Google com conta global solicitar entrada no racha atual", async () => {
     mockedSearchParams = new URLSearchParams("google=1");
     mockedUseSession.mockReturnValue({
       data: { user: { email: "admin@teste.com", role: "ADMIN" } },
       status: "authenticated",
       update: updateSessionMock,
     });
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        status: "PENDENTE",
+        membershipStatus: "PENDING",
+      }),
+    }) as any;
 
     render(<EntrarClient />);
 
     await waitFor(() => {
-      expect(screen.getByText(/A conta autenticada atual nao e de atleta/i)).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledWith("/api/public/casa-do-gamer/auth/request-join", {
+        method: "POST",
+      });
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
-
-    expect(global.fetch).not.toHaveBeenCalled();
-    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("não dispara nova verificação de segurança só porque o usuário digitou", async () => {
