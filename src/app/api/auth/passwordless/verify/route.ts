@@ -16,14 +16,17 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function POST(req: NextRequest) {
   if (!backendBase) {
-    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
+    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }
 
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await req.json()) as Record<string, unknown>;
   } catch {
-    return json({ error: "Payload invalido" }, { status: 400 });
+    return json(
+      { error: "Não foi possível concluir a solicitação. Confira os dados e tente novamente." },
+      { status: 400 }
+    );
   }
 
   const email = typeof payload?.email === "string" ? payload.email.trim() : "";
@@ -34,7 +37,7 @@ export async function POST(req: NextRequest) {
   const turnstileProof =
     typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email || !code) {
-    return json({ error: "E-mail e codigo obrigatorios." }, { status: 400 });
+    return json({ error: "Informe o e-mail e o código recebido para continuar." }, { status: 400 });
   }
 
   try {
@@ -55,13 +58,21 @@ export async function POST(req: NextRequest) {
       return json(
         typeof parsed === "object" && parsed
           ? parsed
-          : { error: "Nao foi possivel validar o codigo." },
+          : {
+              error:
+                "O código informado não está correto ou expirou. Confira o e-mail e tente novamente.",
+            },
         { status: response.status || 400 }
       );
     }
 
     return json(parsed, { status: response.status || 200 });
   } catch {
-    return json({ error: "Falha ao validar codigo de acesso." }, { status: 502 });
+    return json(
+      {
+        error: "Não foi possível validar o código agora. Verifique sua internet e tente novamente.",
+      },
+      { status: 502 }
+    );
   }
 }

@@ -18,6 +18,7 @@ import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
   queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
@@ -33,7 +34,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
+  "Racha vitrine é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -61,7 +62,7 @@ function resolveAuthErrorCode(body: any) {
 
 export default function LoginClient() {
   const { nome } = useTema();
-  const nomeDoRacha = nome || "Fut7Pro";
+  const nomeDoRacha = nome?.trim() || "este racha";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
 
@@ -82,7 +83,7 @@ export default function LoginClient() {
   const [senha, setSenha] = useState("");
   const [codigo, setCodigo] = useState("");
   const [codigoEnviado, setCodigoEnviado] = useState(false);
-  const [usarSenhaLegado, setUsarSenhaLegado] = useState(false);
+  const [usarSenha, setUsarSenha] = useState(false);
   const [infoMessage, setInfoMessage] = useState("");
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
@@ -92,6 +93,7 @@ export default function LoginClient() {
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
   const [requestJoinLoading, setRequestJoinLoading] = useState(false);
   const [notMemberMessage, setNotMemberMessage] = useState("");
+  const [canRequestJoin, setCanRequestJoin] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
@@ -290,6 +292,7 @@ export default function LoginClient() {
     setCodigo("");
     setCodigoEnviado(false);
     setInfoMessage("");
+    setCanRequestJoin(false);
   }, [email]);
 
   useEffect(() => {
@@ -313,12 +316,6 @@ export default function LoginClient() {
     if (!normalizedEmail || normalizedEmail === turnstileProofEmail) return;
     clearJourneyProof(normalizedEmail);
   }, [clearJourneyProof, normalizedEmail, turnstileProof, turnstileProofEmail]);
-
-  useEffect(() => {
-    if (requestJoinIntent) {
-      setUsarSenhaLegado(true);
-    }
-  }, [requestJoinIntent]);
 
   useEffect(() => {
     if (status !== "authenticated" || !isAthleteSession) return;
@@ -345,6 +342,20 @@ export default function LoginClient() {
     if (shouldLoadMe && isLoadingMe) return;
 
     const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+    if (requestJoinIntent) {
+      if (membershipStatus === "APROVADO") {
+        void finalizeSuccessfulLogin(redirectTo);
+        return;
+      }
+      if (membershipStatus === "PENDENTE") {
+        navigateWithRefresh(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+      setCanRequestJoin(true);
+      setNotMemberModalOpen(true);
+      return;
+    }
+
     if (membershipStatus === "PENDENTE") {
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
@@ -372,6 +383,7 @@ export default function LoginClient() {
     isLoadingMe,
     isErrorMe,
     me,
+    requestJoinIntent,
     requestJoinInProgress,
     returningFromGoogleLogin,
     finalizeSuccessfulLogin,
@@ -388,18 +400,13 @@ export default function LoginClient() {
     }
 
     if (!publicSlug) {
-      setNotMemberMessage("Slug do racha não encontrado.");
+      setNotMemberMessage("Não encontramos este racha. Confira o link e tente novamente.");
       return;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setNotMemberMessage("Informe e-mail para solicitar entrada.");
-      return;
-    }
-    if (!senha.trim()) {
+    if (status !== "authenticated" && !canRequestJoin) {
       setNotMemberMessage(
-        "Para solicitar entrada com conta existente, use o modo 'Entrar com senha (legado)'."
+        `Entre com código enviado por e-mail ou com sua senha para solicitar entrada no racha ${nomeDoRacha}.`
       );
       return;
     }
@@ -409,20 +416,6 @@ export default function LoginClient() {
 
     try {
       if (!requireTurnstile(joinTurnstileToken, setNotMemberMessage, turnstileProof)) {
-        setRequestJoinInProgress(false);
-        return;
-      }
-
-      const signInResult = await signIn("credentials", {
-        redirect: false,
-        email: normalizedEmail,
-        password: senha,
-        turnstileToken: turnstileEnabled ? joinTurnstileToken || undefined : undefined,
-        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
-      });
-
-      if (signInResult?.error) {
-        setNotMemberMessage("Não foi possível validar sua conta. Tente novamente.");
         setRequestJoinInProgress(false);
         return;
       }
@@ -443,7 +436,7 @@ export default function LoginClient() {
         const message = Array.isArray(body?.message)
           ? body.message.join(" ")
           : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
-        setNotMemberMessage(message);
+        setNotMemberMessage(getHumanAuthErrorMessage(message));
         setRequestJoinInProgress(false);
         return;
       }
@@ -460,8 +453,10 @@ export default function LoginClient() {
 
       clearPublicAuthContext();
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
-    } catch {
-      setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
+    } catch (error) {
+      setNotMemberMessage(
+        getHumanAuthErrorMessage(error, "Falha ao solicitar entrada. Tente novamente.")
+      );
       setRequestJoinInProgress(false);
     } finally {
       if (turnstileEnabled && !hasTurnstileProof) {
@@ -497,6 +492,7 @@ export default function LoginClient() {
     }
 
     if (code === "NOT_MEMBER") {
+      setCanRequestJoin(true);
       setNotMemberModalOpen(true);
       return true;
     }
@@ -520,7 +516,7 @@ export default function LoginClient() {
       return true;
     }
 
-    setErro(message);
+    setErro(getHumanAuthErrorMessage(message, "Não foi possível autenticar."));
     return true;
   };
 
@@ -541,6 +537,17 @@ export default function LoginClient() {
 
     if (signInResult?.error) {
       setErro("Não foi possível concluir o login.");
+      return;
+    }
+
+    const nextAction = String(body?.nextAction || "").toUpperCase();
+    const membershipStatus = String(
+      body?.membershipStatus || body?.membership?.status || ""
+    ).toUpperCase();
+    if (nextAction === "REQUEST_JOIN" || membershipStatus === "NONE") {
+      setCanRequestJoin(true);
+      setNotMemberModalOpen(true);
+      setNotMemberMessage("");
       return;
     }
 
@@ -600,7 +607,7 @@ export default function LoginClient() {
       }
       clearJourneyProof(normalizedEmail);
       resetTurnstile();
-      setErro(body?.message || body?.error || "Não foi possível enviar o código.");
+      setErro(getHumanAuthErrorMessage(body, "Não foi possível enviar o código."));
       return;
     }
 
@@ -613,7 +620,7 @@ export default function LoginClient() {
       resetTurnstile();
     }
     setCodigoEnviado(true);
-    setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
+    setInfoMessage("Enviamos um código para seu e-mail. Digite o código recebido para continuar.");
   };
 
   const loginWithPasswordlessCode = async () => {
@@ -665,7 +672,7 @@ export default function LoginClient() {
       }
 
       if (!publicSlug) {
-        setErro("Slug do racha não encontrado.");
+        setErro("Não encontramos este racha. Confira o link e tente novamente.");
         return;
       }
 
@@ -675,7 +682,7 @@ export default function LoginClient() {
 
       setIsSubmitting(true);
 
-      if (usarSenhaLegado) {
+      if (usarSenha) {
         await loginWithPassword();
         return;
       }
@@ -735,17 +742,22 @@ export default function LoginClient() {
           <p className="mt-1 text-xs text-gray-400">Visitantes podem navegar pelo site.</p>
         </div>
 
-        <h1 className="text-xl font-bold text-white text-center">Login do Atleta</h1>
+        <h1 className="text-xl font-bold text-white text-center">
+          {usarSenha ? "Entrar com senha" : "Entrar com código"}
+        </h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Entre para editar seu perfil e acompanhar as novidades do racha.
+          {usarSenha
+            ? "Use sua senha cadastrada no Fut7Pro para acessar sua conta."
+            : "Enviaremos um código para seu e-mail para confirmar seu acesso com segurança."}
         </p>
 
         {requestJoinIntent ? (
           <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
             <p className="font-semibold text-amber-200">Você ainda não joga neste racha</p>
             <p className="mt-1">
-              Entre com sua senha para solicitar entrada. Assim que o admin aprovar, você entra nos
-              rankings, estatísticas e comunicação do time.
+              Entre com código enviado por e-mail ou com sua senha para solicitar entrada no racha{" "}
+              {nomeDoRacha}. Assim que o administrador aprovar, você entra nos rankings,
+              estatísticas e comunicação do grupo.
             </p>
           </div>
         ) : null}
@@ -794,7 +806,7 @@ export default function LoginClient() {
             />
           </label>
 
-          {!usarSenhaLegado && (
+          {!usarSenha && (
             <>
               {codigoEnviado ? (
                 <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -813,15 +825,15 @@ export default function LoginClient() {
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  Use código por e-mail como método principal. Senha permanece como fallback legado.
+                  Enviaremos um código para seu e-mail para confirmar seu acesso com segurança.
                 </div>
               )}
             </>
           )}
 
-          {usarSenhaLegado && (
+          {usarSenha && (
             <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-              Senha (legado)
+              Senha
               <div className="relative">
                 <input
                   type={senhaVisivel ? "text" : "password"}
@@ -845,7 +857,7 @@ export default function LoginClient() {
             </label>
           )}
 
-          {!usarSenhaLegado && infoMessage && (
+          {!usarSenha && infoMessage && (
             <div className="rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-100">
               {infoMessage}
             </div>
@@ -863,21 +875,21 @@ export default function LoginClient() {
           >
             {isSubmitting
               ? "Processando..."
-              : usarSenhaLegado
+              : usarSenha
                 ? "Entrar com senha"
                 : codigoEnviado
                   ? "Entrar com código"
-                  : "Enviar código de acesso"}
+                  : "Enviar código"}
           </button>
           <button
             type="button"
             onClick={() => {
-              setUsarSenhaLegado((prev) => !prev);
+              setUsarSenha((prev) => !prev);
               setErro("");
             }}
             className="w-full rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
           >
-            {usarSenhaLegado ? "Voltar para código por e-mail" : "Entrar com senha (legado)"}
+            {usarSenha ? "Voltar para código por e-mail" : "Entrar com senha"}
           </button>
         </form>
 
@@ -930,7 +942,7 @@ export default function LoginClient() {
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
                   Seu cadastro no racha{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span> ainda esta
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span> ainda está
                   pendente. Assim que os administradores aprovarem sua entrada, você poderá fazer
                   login normalmente.
                 </p>
@@ -988,9 +1000,9 @@ export default function LoginClient() {
                   Solicite entrada no racha
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Você ainda não possui solicitação para o racha{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span>. Para entrar,
-                  envie sua solicitação de entrada e aguarde a aprovação.
+                  Para participar do racha{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span>, envie sua
+                  solicitação de entrada e aguarde a aprovação do administrador.
                 </p>
                 {notMemberMessage ? (
                   <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
