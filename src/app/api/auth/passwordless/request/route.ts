@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
-const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviaremos seu código.";
+const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
@@ -37,17 +37,14 @@ function normalizePasswordlessStartResponse(payload: unknown) {
 
 export async function POST(req: NextRequest) {
   if (!backendBase) {
-    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
+    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
 
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await req.json()) as Record<string, unknown>;
   } catch {
-    return json(
-      { error: "Não foi possível concluir a solicitação. Confira os dados e tente novamente." },
-      { status: 400 }
-    );
+    return json({ error: "Payload invalido" }, { status: 400 });
   }
 
   const email = typeof payload?.email === "string" ? payload.email.trim() : "";
@@ -57,7 +54,7 @@ export async function POST(req: NextRequest) {
   const turnstileProof =
     typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email) {
-    return json({ error: "Informe um e-mail válido para continuar." }, { status: 400 });
+    return json({ error: "E-mail obrigatorio" }, { status: 400 });
   }
 
   try {
@@ -90,7 +87,7 @@ export async function POST(req: NextRequest) {
             message:
               typeof parsedRecord?.message === "string"
                 ? parsedRecord.message
-                : "Não foi possível validar a verificação de segurança.",
+                : "Nao foi possivel validar o captcha.",
             requiresCaptcha: true,
           },
           { status: response.status || 429 }
@@ -98,10 +95,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (response.status >= 500) {
-        return json(
-          { error: "Não foi possível enviar o código agora. Tente novamente em instantes." },
-          { status: 502 }
-        );
+        return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
       }
 
       return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
@@ -109,11 +103,6 @@ export async function POST(req: NextRequest) {
 
     return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
   } catch {
-    return json(
-      {
-        error: "Não foi possível enviar o código agora. Verifique sua internet e tente novamente.",
-      },
-      { status: 502 }
-    );
+    return json({ error: "Falha ao solicitar codigo de acesso." }, { status: 502 });
   }
 }

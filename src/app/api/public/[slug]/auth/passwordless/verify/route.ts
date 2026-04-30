@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
-import { sanitizePublicAuthErrorPayload } from "../../route-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,25 +16,19 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   if (!backendBase) {
-    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
+    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
 
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await req.json()) as Record<string, unknown>;
   } catch {
-    return json(
-      { error: "Não foi possível concluir a solicitação. Confira os dados e tente novamente." },
-      { status: 400 }
-    );
+    return json({ error: "Payload invalido" }, { status: 400 });
   }
 
   const slug = params.slug?.trim().toLowerCase();
   if (!slug) {
-    return json(
-      { error: "Não encontramos este racha. Confira o link e tente novamente." },
-      { status: 400 }
-    );
+    return json({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
   if (slug === "vitrine") {
     return json({ error: "Login de atletas desabilitado no racha vitrine." }, { status: 403 });
@@ -48,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   const turnstileProof =
     typeof payload?.turnstileProof === "string" ? payload.turnstileProof.trim() : "";
   if (!email || !code) {
-    return json({ error: "Informe o e-mail e o código recebido para continuar." }, { status: 400 });
+    return json({ error: "E-mail e codigo obrigatorios." }, { status: 400 });
   }
 
   try {
@@ -68,25 +61,14 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     if (!response.ok) {
       return json(
         typeof parsed === "object" && parsed
-          ? sanitizePublicAuthErrorPayload(
-              parsed,
-              "O código informado não está correto ou expirou. Confira o e-mail e tente novamente."
-            )
-          : {
-              error:
-                "O código informado não está correto ou expirou. Confira o e-mail e tente novamente.",
-            },
+          ? parsed
+          : { error: "Nao foi possivel validar o codigo." },
         { status: response.status || 400 }
       );
     }
 
     return json(parsed, { status: response.status || 200 });
   } catch {
-    return json(
-      {
-        error: "Não foi possível validar o código agora. Verifique sua internet e tente novamente.",
-      },
-      { status: 502 }
-    );
+    return json({ error: "Falha ao validar codigo de acesso." }, { status: 502 });
   }
 }

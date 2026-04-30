@@ -79,7 +79,7 @@ describe("RegisterClient", () => {
       target: { value: "super@teste.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
-      target: { value: "Senha123!" },
+      target: { value: "123456" },
     });
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
@@ -87,7 +87,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "5" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Criar conta e continuar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe("RegisterClient", () => {
       target: { value: "novo@teste.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
-      target: { value: "Senha123!" },
+      target: { value: "123456" },
     });
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
@@ -131,7 +131,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Criar conta e continuar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(

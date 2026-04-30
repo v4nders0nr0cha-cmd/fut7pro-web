@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
-import { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,14 +12,14 @@ export async function POST(req: NextRequest) {
   try {
     payload = (await req.json()) as { email?: string };
   } catch {
-    return Response.json({ ok: false, message: "Informe um e-mail válido." }, { status: 400 });
+    return Response.json({ ok: false, message: "E-mail invalido." }, { status: 400 });
   }
 
   const email = String(payload?.email || "")
     .trim()
     .toLowerCase();
   if (!email) {
-    return Response.json({ ok: false, message: "Informe um e-mail válido." }, { status: 400 });
+    return Response.json({ ok: false, message: "E-mail invalido." }, { status: 400 });
   }
 
   const baseUrl = normalizeBase(getApiBase());
@@ -35,26 +34,13 @@ export async function POST(req: NextRequest) {
     const data = await res.json().catch(() => null);
     if (!res.ok || !data) {
       return Response.json(
-        {
-          ok: false,
-          message: getHumanAuthErrorMessage(
-            data,
-            "Não foi possível reenviar o e-mail agora. Tente novamente em instantes."
-          ),
-        },
+        { ok: false, message: data?.message || "Nao foi possivel reenviar." },
         { status: res.status || 400 }
       );
     }
 
     return Response.json(data);
   } catch {
-    return Response.json(
-      {
-        ok: false,
-        message:
-          "Não foi possível reenviar o e-mail agora. Verifique sua internet e tente novamente.",
-      },
-      { status: 500 }
-    );
+    return Response.json({ ok: false, message: "Falha ao reenviar o e-mail." }, { status: 500 });
   }
 }

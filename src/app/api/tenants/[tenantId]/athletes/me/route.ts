@@ -12,10 +12,7 @@ export const dynamic = "force-dynamic";
 export async function PATCH(req: NextRequest, { params }: { params: { tenantId: string } }) {
   const user = await requireUser({ scope: "athlete" });
   if (!user) {
-    return new Response(
-      JSON.stringify({ message: "Sua sessão expirou. Entre novamente para continuar." }),
-      { status: 401 }
-    );
+    return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });
   }
 
   const payload = await req.json();
@@ -33,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { tenantId: 
   });
 
   if (!scopeProbe.response.ok) {
-    return new Response(JSON.stringify({ error: "Não foi possível validar o racha ativo." }), {
+    return new Response(JSON.stringify({ error: "Nao foi possivel validar o tenant ativo" }), {
       status: scopeProbe.response.status,
       headers: { "Content-Type": "application/json" },
     });
@@ -48,14 +45,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { tenantId: 
         : "";
 
   if (!scopedTenantId) {
-    return new Response(JSON.stringify({ error: "Racha ativo não identificado." }), {
+    return new Response(JSON.stringify({ error: "Tenant ativo nao identificado" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
   if (params.tenantId !== scopedTenantId) {
-    return new Response(JSON.stringify({ error: "Este racha não corresponde à sessão atual." }), {
+    return new Response(JSON.stringify({ error: "TenantId invalido para o escopo ativo" }), {
       status: 403,
       headers: { "Content-Type": "application/json" },
     });

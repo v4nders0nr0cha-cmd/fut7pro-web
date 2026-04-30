@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
 import { requireUser } from "@/app/api/_proxy/helpers";
-import { sanitizePublicAuthErrorPayload } from "../route-errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,30 +17,24 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   if (!backendBase) {
-    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
+    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
 
   const user = await requireUser({ scope: "athlete" });
   if (!user?.accessToken) {
-    return json({ error: "Sua sessão expirou. Entre novamente para continuar." }, { status: 401 });
+    return json({ error: "Nao autenticado" }, { status: 401 });
   }
 
   let payload: Record<string, unknown> | null = null;
   try {
     payload = (await req.json()) as Record<string, unknown>;
   } catch {
-    return json(
-      { error: "Não foi possível concluir a solicitação. Confira os dados e tente novamente." },
-      { status: 400 }
-    );
+    return json({ error: "Payload invalido" }, { status: 400 });
   }
 
   const slug = params.slug?.trim().toLowerCase();
   if (!slug) {
-    return json(
-      { error: "Não encontramos este racha. Confira o link e tente novamente." },
-      { status: 400 }
-    );
+    return json({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
   if (slug === "vitrine") {
     return json({ error: "Cadastro de atletas desabilitado no racha vitrine." }, { status: 403 });
@@ -67,10 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     if (!res.ok) {
       return json(
-        sanitizePublicAuthErrorPayload(
-          parsed,
-          "Não foi possível concluir seu cadastro agora. Confira os dados e tente novamente."
-        ),
+        typeof parsed === "object" && parsed ? parsed : { error: text || "Erro ao completar" },
         { status: res.status }
       );
     }
@@ -82,13 +72,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         "Cache-Control": "no-store, max-age=0, must-revalidate",
       },
     });
-  } catch {
-    return json(
-      {
-        error:
-          "Não foi possível concluir seu cadastro agora. Verifique sua internet e tente novamente.",
-      },
-      { status: 500 }
-    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    return json({ error: "Falha ao completar cadastro", details: message }, { status: 500 });
   }
 }
