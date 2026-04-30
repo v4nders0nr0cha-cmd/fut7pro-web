@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 import BottomMenu from "../BottomMenu";
 
+const mockRouterPush = jest.fn();
+
 jest.mock("next/navigation", () => ({
   usePathname: jest.fn(() => "/"),
-  useRouter: jest.fn(() => ({ push: jest.fn() })),
+  useRouter: jest.fn(() => ({ push: mockRouterPush })),
   useSearchParams: jest.fn(() => ({ get: () => null })),
   redirect: jest.fn(),
 }));
@@ -47,6 +49,7 @@ describe("BottomMenu", () => {
       badgeSugestoes: 0,
     });
     usePathname.mockReturnValue("/ruimdebola");
+    mockRouterPush.mockClear();
   });
 
   it("mostra CTA de login quando não autenticado", () => {
@@ -123,5 +126,25 @@ describe("BottomMenu", () => {
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Perfil")).toBeInTheDocument();
+  });
+
+  it("direciona atleta pendente para aguardando aprovacao ao usar o menu", () => {
+    useSession.mockReturnValue({
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      status: "authenticated",
+    });
+    useMe.mockReturnValue({
+      me: {
+        membership: { status: "PENDENTE" },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<BottomMenu />);
+
+    fireEvent.click(screen.getByLabelText("Início"));
+
+    expect(mockRouterPush).toHaveBeenCalledWith("/ruimdebola/aguardando-aprovacao");
   });
 });

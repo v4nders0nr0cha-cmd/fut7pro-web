@@ -63,6 +63,8 @@ export default function BottomMenu() {
       router.push(query ? `${publicHref("/login")}?${query}` : publicHref("/entrar"));
     } else if (label === "Perfil") {
       router.push(publicHref("/perfil"));
+    } else if (isPendingAthlete) {
+      router.push(publicHref("/aguardando-aprovacao"));
     } else if (!isLoggedIn) {
       router.push(publicHref("/entrar"));
     } else {
