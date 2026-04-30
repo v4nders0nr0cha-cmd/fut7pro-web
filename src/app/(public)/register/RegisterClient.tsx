@@ -170,9 +170,9 @@ export default function RegisterClient() {
     turnstileEnabled &&
     Boolean(
       turnstileProof &&
-      turnstileProofExpiresAt &&
-      turnstileProofExpiresAt > Date.now() &&
-      (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+        turnstileProofExpiresAt &&
+        turnstileProofExpiresAt > Date.now() &&
+        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
@@ -182,9 +182,9 @@ export default function RegisterClient() {
 
   const profileComplete = Boolean(
     me?.athlete?.firstName &&
-    me?.athlete?.position &&
-    me?.athlete?.birthDay &&
-    me?.athlete?.birthMonth
+      me?.athlete?.position &&
+      me?.athlete?.birthDay &&
+      me?.athlete?.birthMonth
   );
   const shouldUseCompleteEndpoint = isAthleteAuthenticated;
 

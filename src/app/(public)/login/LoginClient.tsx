@@ -108,9 +108,9 @@ export default function LoginClient() {
     turnstileEnabled &&
     Boolean(
       turnstileProof &&
-      turnstileProofExpiresAt &&
-      turnstileProofExpiresAt > Date.now() &&
-      (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+        turnstileProofExpiresAt &&
+        turnstileProofExpiresAt > Date.now() &&
+        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasMainSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
   const hasJoinSecurityCheck =

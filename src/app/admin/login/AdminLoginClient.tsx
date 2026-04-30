@@ -69,9 +69,9 @@ export default function AdminLoginClient() {
     turnstileEnabled &&
     Boolean(
       turnstileProof &&
-      turnstileProofExpiresAt &&
-      turnstileProofExpiresAt > Date.now() &&
-      (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
+        turnstileProofExpiresAt &&
+        turnstileProofExpiresAt > Date.now() &&
+        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
