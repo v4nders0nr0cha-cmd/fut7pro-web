@@ -124,6 +124,8 @@ export default function EntrarClient() {
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
   const needsCaptcha = Boolean(result?.requiresCaptcha);
   const needsSecurityCheck = turnstileEnabled || needsCaptcha;
+  const canContinueFromLookup = Boolean(result && !result.requiresCaptcha);
+  const needsSecurityToken = needsSecurityCheck && (!result || result.requiresCaptcha);
   const emailFieldInvalid = error === "Informe um e-mail válido.";
   const callbackParam = searchParams.get("callbackUrl");
   const googleIntent = searchParams.get("google") === "1";
@@ -544,22 +546,22 @@ export default function EntrarClient() {
           <button
             type="button"
             onClick={() => {
-              if (result && !loading) {
+              if (canContinueFromLookup && result && !loading) {
                 continueFromLookup(email.trim().toLowerCase(), result);
                 return;
               }
               void handleLookup();
             }}
-            disabled={
-              loading || autoFlowLoading || (needsSecurityCheck && !captchaToken && !result)
-            }
+            disabled={loading || autoFlowLoading || (needsSecurityToken && !captchaToken)}
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading || autoFlowLoading
               ? "Processando..."
-              : result
-                ? resolveLookupButtonLabel(result)
-                : "Continuar"}
+              : result?.requiresCaptcha
+                ? "Verificar e continuar"
+                : result
+                  ? resolveLookupButtonLabel(result)
+                  : "Continuar"}
           </button>
 
           <div className="mt-3 min-h-[120px]">

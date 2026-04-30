@@ -15,6 +15,32 @@ jest.mock("next/script", () => ({
   default: () => null,
 }));
 
+jest.mock("@/components/security/TurnstileWidget", () => ({
+  __esModule: true,
+  default: ({
+    enabled,
+    onTokenChange,
+  }: {
+    enabled: boolean;
+    onTokenChange: (token: string) => void;
+  }) =>
+    enabled ? (
+      <button type="button" onClick={() => onTokenChange("captcha-token")}>
+        Resolver verificação
+      </button>
+    ) : null,
+  AUTH_APP_TURNSTILE_ENABLED: false,
+  AUTH_APP_TURNSTILE_SITE_KEY: "test-site-key",
+  TURNSTILE_REQUIRED_MESSAGE: "Confirme a verificação de segurança para continuar.",
+  TURNSTILE_UNAVAILABLE_MESSAGE:
+    "A verificação de segurança está indisponível. Tente novamente em instantes.",
+  isTurnstileErrorCode: (code: unknown) =>
+    code === "TURNSTILE_REQUIRED" ||
+    code === "TURNSTILE_INVALID" ||
+    code === "TURNSTILE_UNAVAILABLE",
+  resolveTurnstileErrorMessage: () => "Confirme a verificação de segurança para continuar.",
+}));
+
 const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
@@ -173,6 +199,45 @@ describe("EntrarClient", () => {
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
+  });
+
+  it("refaz o lookup depois de resolver captcha obrigatorio", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({
+          code: "CAPTCHA_REQUIRED",
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          message: "Se estiver tudo certo, enviamos seu código.",
+          nextAction: "REGISTER",
+        }),
+      }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "novo@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(await screen.findByText(/Confirme a verificação de segurança/i)).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+
+    const verifyButton = await screen.findByRole("button", { name: "Verificar e continuar" });
+    expect(verifyButton).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Resolver verificação" }));
+    fireEvent.click(screen.getByRole("button", { name: "Verificar e continuar" }));
+
+    expect(await screen.findByText(/Você ainda não possui uma Conta Fut7Pro/i)).toBeInTheDocument();
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("no vitrine mostra fluxo educativo sem abrir login/cadastro", () => {
