@@ -9,7 +9,7 @@ type Status = "idle" | "loading" | "sent" | "error";
 
 export default function EsqueciSenhaAtletaClient() {
   const router = useRouter();
-  const { publicHref } = usePublicLinks();
+  const { publicHref, publicSlug } = usePublicLinks();
   const { nome } = useTema();
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -24,7 +24,7 @@ export default function EsqueciSenhaAtletaClient() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, rachaSlug: publicSlug || undefined }),
       });
       const data = await res.json().catch(() => null);
 

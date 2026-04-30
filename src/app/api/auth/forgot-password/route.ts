@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 const normalizeBase = (url: string) => url.replace(/\/+$/, "");
 
 export async function POST(req: NextRequest) {
-  let payload: { email?: string };
+  let payload: { email?: string; rachaSlug?: string };
 
   try {
     payload = (await req.json()) as { email?: string };
@@ -16,6 +16,9 @@ export async function POST(req: NextRequest) {
   }
 
   const email = String(payload?.email || "").trim();
+  const rachaSlug = String(payload?.rachaSlug || "")
+    .trim()
+    .toLowerCase();
   if (!email) {
     return Response.json({ ok: false, message: "E-mail invalido." }, { status: 400 });
   }
@@ -26,7 +29,7 @@ export async function POST(req: NextRequest) {
     const res = await fetch(`${baseUrl}/auth/forgot-password`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, rachaSlug: rachaSlug || undefined }),
     });
 
     const data = await res.json().catch(() => null);

@@ -35,13 +35,17 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const showUserMenu = status === "authenticated" && Boolean(session?.user);
-  const shouldCheckMe = showUserMenu && Boolean(tenantSlug);
-  const { me } = useMe({
+  const hasGlobalSession = status === "authenticated" && Boolean(session?.user);
+  const shouldCheckMe = hasGlobalSession && Boolean(tenantSlug);
+  const { me, isError: isMeError } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
     context: "athlete",
   });
+  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const showUserMenu = Boolean(
+    hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
+  );
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);

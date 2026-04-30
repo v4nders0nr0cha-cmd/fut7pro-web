@@ -167,18 +167,8 @@ export const authOptions: NextAuthOptionsLike = {
               headers: { Authorization: `Bearer ${accessToken}` },
             });
             let userData: any = null;
-            if (meResponse.ok) {
-              userData = await meResponse.json();
-            } else {
-              userData = {
-                id: (credentials as any).id || "impersonated",
-                email: credentials.email,
-                name: credentials.name,
-                role: (credentials as any).role ?? "ADMIN",
-                tenantId: credentials.tenantId || null,
-                tenantSlug: credentials.tenantSlug || null,
-              };
-            }
+            if (!meResponse.ok) return null;
+            userData = await meResponse.json();
 
             const resolvedTenantSlug =
               userData?.tenantSlug ||

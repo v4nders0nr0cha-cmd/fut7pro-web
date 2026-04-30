@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useTema } from "@/hooks/useTema";
@@ -72,8 +72,6 @@ export default function EntrarClient() {
   const searchParams = useSearchParams();
   const { data: session, status: sessionStatus, update } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
-  const sessionRole = String(sessionUser?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const [email, setEmail] = useState("");
@@ -296,17 +294,16 @@ export default function EntrarClient() {
     return body as {
       status?: string;
       membershipStatus?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      role?: string;
+      tenantSlug?: string;
+      tenantId?: string;
     };
   }, [publicSlug]);
 
   useEffect(() => {
     if (!googleIntent || sessionStatus !== "authenticated") return;
-    if (!isAthleteSession) {
-      setAutoFlowLoading(false);
-      setRedirectingMessage("");
-      setError("A conta autenticada atual nao e de atleta. Saia e tente novamente com um atleta.");
-      return;
-    }
     if (isVitrineSlug) {
       setError(VITRINE_AUTH_BLOCKED_MESSAGE);
       return;
@@ -340,6 +337,22 @@ export default function EntrarClient() {
         const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
 
         if (isActive) {
+          if (!join?.accessToken || !join?.refreshToken) {
+            throw new Error("Não foi possível finalizar seu acesso neste racha.");
+          }
+          const signInResult = await signIn("credentials", {
+            redirect: false,
+            accessToken: join.accessToken,
+            refreshToken: join.refreshToken,
+            authProvider: "google",
+            role: join.role || "ATLETA",
+            tenantSlug: join.tenantSlug || publicSlug,
+            tenantId: join.tenantId,
+          });
+
+          if (signInResult?.error) {
+            throw new Error("Não foi possível finalizar seu acesso neste racha.");
+          }
           clearPublicAuthContext();
           try {
             await syncPublicAuthState({
@@ -354,6 +367,7 @@ export default function EntrarClient() {
           return;
         }
 
+        await signOut({ redirect: false });
         navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       } catch (joinError) {
         const message =
@@ -366,7 +380,6 @@ export default function EntrarClient() {
   }, [
     destinationHref,
     googleIntent,
-    isAthleteSession,
     isVitrineSlug,
     publicSlug,
     publicHref,
