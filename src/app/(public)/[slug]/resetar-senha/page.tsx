@@ -16,7 +16,7 @@ export function generateMetadata({ params }: ResetarSenhaPageProps): Metadata {
   return {
     title: `Redefinir senha | ${slug} | Fut7Pro`,
     description: "Crie uma nova senha para sua conta de atleta no Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/resetar-senha`,
     },

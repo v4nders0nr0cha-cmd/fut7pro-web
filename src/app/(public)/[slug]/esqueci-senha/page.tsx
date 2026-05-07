@@ -15,7 +15,7 @@ export function generateMetadata({ params }: EsqueciSenhaPageProps): Metadata {
   return {
     title: `Esqueci minha senha | ${slug} | Fut7Pro`,
     description: "Recupere a senha da sua conta de atleta no Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/esqueci-senha`,
     },

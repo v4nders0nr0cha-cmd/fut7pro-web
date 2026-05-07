@@ -16,7 +16,7 @@ export function generateMetadata({ params }: RegisterPageProps): Metadata {
   return {
     title: `Cadastro do Atleta | ${slug} | Fut7Pro`,
     description: "Crie sua conta de atleta para acessar o Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/register`,
     },
