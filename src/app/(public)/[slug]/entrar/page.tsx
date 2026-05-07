@@ -16,7 +16,7 @@ export function generateMetadata({ params }: EntrarPageProps): Metadata {
   return {
     title: `Entrar no Fut7Pro | ${slug}`,
     description: "Acesso do atleta com conta global Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/entrar`,
     },

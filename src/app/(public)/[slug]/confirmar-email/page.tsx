@@ -16,7 +16,7 @@ export function generateMetadata({ params }: ConfirmarEmailSlugPageProps): Metad
   return {
     title: `Confirmação de e-mail | ${slug} | Fut7Pro`,
     description: "Confirme seu e-mail para liberar o acesso da sua conta no Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/confirmar-email`,
     },

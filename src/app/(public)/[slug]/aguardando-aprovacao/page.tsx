@@ -16,7 +16,7 @@ export function generateMetadata({ params }: AguardandoPageProps): Metadata {
   return {
     title: `Aguardando aprovação | ${slug} | Fut7Pro`,
     description: "Acompanhe o status da sua solicitação de cadastro no Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/aguardando-aprovacao`,
     },

@@ -16,7 +16,7 @@ export function generateMetadata({ params }: LoginPageProps): Metadata {
   return {
     title: `Login do Atleta | ${slug} | Fut7Pro`,
     description: "Acesse sua conta de atleta no Fut7Pro.",
-    robots: { index: false, follow: false },
+    robots: { index: false, follow: true },
     alternates: {
       canonical: `${APP_URL}/${slug}/login`,
     },
