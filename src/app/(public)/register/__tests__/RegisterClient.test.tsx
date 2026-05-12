@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterClient from "../RegisterClient";
 
 const replaceMock = jest.fn();
+let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -19,7 +20,7 @@ jest.mock("next-auth/react", () => ({
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParamsMock,
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -46,6 +47,7 @@ const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
 
 describe("RegisterClient", () => {
   beforeEach(() => {
+    searchParamsMock = new URLSearchParams();
     replaceMock.mockReset();
     mockedUseSession.mockReturnValue({ data: null, status: "unauthenticated" });
     mockedUseTema.mockReturnValue({ nome: "Racha Teste" });
@@ -79,7 +81,7 @@ describe("RegisterClient", () => {
       target: { value: "super@teste.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
-      target: { value: "123456" },
+      target: { value: "Senha123!" },
     });
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
@@ -87,7 +89,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "5" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Global Fut7Pro/i }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
@@ -123,7 +125,7 @@ describe("RegisterClient", () => {
       target: { value: "novo@teste.com" },
     });
     fireEvent.change(screen.getByPlaceholderText("Crie uma senha"), {
-      target: { value: "123456" },
+      target: { value: "Senha123!" },
     });
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
@@ -131,12 +133,26 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Cadastrar atleta/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Global Fut7Pro/i }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
         "/ruimdebola/confirmar-email?email=novo%40teste.com"
       );
     });
+  });
+
+  it("preenche e-mail pela query e usa copy de Conta Global", () => {
+    searchParamsMock = new URLSearchParams("email=novo%40teste.com");
+
+    render(<RegisterClient />);
+
+    expect(
+      screen.getByRole("heading", { name: "Crie sua Conta Global Fut7Pro" })
+    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("email@exemplo.com")).toHaveValue("novo@teste.com");
+    expect(
+      screen.queryByRole("heading", { name: "Solicitar entrada no racha" })
+    ).not.toBeInTheDocument();
   });
 });

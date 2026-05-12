@@ -83,12 +83,13 @@ describe("EntrarClient", () => {
     jest.clearAllMocks();
   });
 
-  it("redireciona para login com resposta uniforme do lookup", async () => {
+  it("mostra explicacao antes de continuar para login", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         ok: true,
         message: "Se estiver tudo certo, enviamos seu código.",
+        nextAction: "LOGIN",
       }),
     }) as any;
 
@@ -99,9 +100,12 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/Conta Global Fut7Pro encontrada/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Continuar para login" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F"
+        "/casa-do-gamer/login?email=atleta%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F"
       );
     });
 
@@ -162,7 +166,7 @@ describe("EntrarClient", () => {
     expect(firstWidget.getAttribute("data-reset-signal")).toBe(resetBefore);
   });
 
-  it("redireciona para cadastro quando lookup sinaliza REGISTER", async () => {
+  it("mostra explicacao antes de continuar para cadastro quando lookup sinaliza REGISTER", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -179,14 +183,19 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(
+      await screen.findByText(/Você ainda não possui Conta Global Fut7Pro/i)
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Criar Conta Global" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F"
+        "/casa-do-gamer/register?email=novo%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F"
       );
     });
   });
 
-  it("redireciona para login com intent request-join quando lookup sinaliza REQUEST_JOIN", async () => {
+  it("mostra explicacao antes de continuar para login com intent request-join", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -203,14 +212,17 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/Conta Global Fut7Pro encontrada/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Entrar e solicitar entrada" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/login?callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
+        "/casa-do-gamer/login?email=atleta%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
       );
     });
   });
 
-  it("redireciona para aguardando aprovacao quando lookup sinaliza WAIT_APPROVAL", async () => {
+  it("mostra solicitacao pendente antes de seguir para aguardando aprovacao", async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -227,9 +239,34 @@ describe("EntrarClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
+    expect(await screen.findByText(/já foi enviada/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
+  });
+
+  it("nao cai no login quando nextAction vem ausente", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ok: true,
+        message: "Resposta sem proxima acao",
+      }),
+    }) as any;
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+      target: { value: "novo@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(
+      await screen.findByText(/Não foi possível identificar o próximo passo/i)
+    ).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
   });
 
   it("no vitrine mostra fluxo educativo sem abrir login/cadastro", () => {

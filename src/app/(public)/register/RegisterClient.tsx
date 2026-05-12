@@ -103,7 +103,7 @@ function toNumberOrNull(value: string) {
 
 export default function RegisterClient() {
   const { nome } = useTema();
-  const nomeDoRacha = nome || "Fut7Pro";
+  const nomeDoRacha = nome?.trim() || "este racha";
   const { publicHref, publicSlug } = usePublicLinks();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,6 +114,7 @@ export default function RegisterClient() {
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/perfil")),
     [searchParams, publicHref]
   );
+  const emailFromQuery = searchParams.get("email")?.trim().toLowerCase() || "";
   const loginHref = useMemo(() => {
     const params = new URLSearchParams();
     params.set("callbackUrl", redirectTo);
@@ -305,6 +306,11 @@ export default function RegisterClient() {
       setPrefilledFromEntrar(false);
       return;
     }
+    if (emailFromQuery) {
+      setEmail((previous) => previous || emailFromQuery);
+      setPrefilledFromEntrar(true);
+      return;
+    }
     const context = readPublicAuthContext(publicSlug);
     if (!context?.email) {
       setPrefilledFromEntrar(false);
@@ -315,7 +321,7 @@ export default function RegisterClient() {
       applyJourneyProof(context.turnstileProof, context.turnstileProofExpiresAt, context.email);
     }
     setPrefilledFromEntrar(true);
-  }, [applyJourneyProof, isAthleteAuthenticated, publicSlug]);
+  }, [applyJourneyProof, emailFromQuery, isAthleteAuthenticated, publicSlug]);
 
   useEffect(() => {
     if (!turnstileProof || !turnstileProofExpiresAt) return;
@@ -526,8 +532,8 @@ export default function RegisterClient() {
         setErro("Informe o e-mail.");
         return;
       }
-      if (!senha || senha.length < 6) {
-        setErro("Senha com ao menos 6 caracteres.");
+      if (!senha || senha.length < 8) {
+        setErro("A senha precisa ter pelo menos 8 caracteres.");
         return;
       }
     }
@@ -734,13 +740,13 @@ export default function RegisterClient() {
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-yellow-400/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
-            Solicitacao de entrada
+            Conta Global Fut7Pro
           </p>
           <p className="text-sm text-gray-200">
             Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Seu acesso pode depender da aprovacao do admin.
+            Depois do cadastro, você poderá solicitar entrada neste racha.
           </p>
         </div>
         {isRegistrationBlocked ? (
@@ -757,17 +763,20 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        <h1 className="text-xl font-bold text-white text-center">Solicitar entrada no racha</h1>
+        <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Global Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Sua solicitacao sera enviada ao administrador para aprovacao.
+          Depois do cadastro, você poderá solicitar entrada no racha {nomeDoRacha} e acompanhar seu
+          histórico como atleta.
         </p>
 
         {!isAthleteAuthenticated && prefilledFromEntrar ? (
           <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
-            <p className="font-semibold text-emerald-200">Primeiro acesso no Fut7Pro</p>
+            <p className="font-semibold text-emerald-200">
+              Você ainda não possui Conta Global Fut7Pro
+            </p>
             <p className="mt-1">
-              Crie sua conta para pedir entrada no racha {nomeDoRacha}. Depois da aprovação do
-              admin, você já começa a pontuar.
+              Primeiro criamos sua conta. Depois você solicita entrada neste racha e aguarda a
+              aprovação do administrador, se necessário.
             </p>
           </div>
         ) : null}
@@ -795,8 +804,8 @@ export default function RegisterClient() {
         {isAthleteAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
             {isGoogleSession
-              ? "Complete seu cadastro para liberar o acesso ao racha."
-              : "Preencha seus dados para solicitar entrada no racha."}
+              ? "Complete sua Conta Global Fut7Pro para continuar."
+              : "Preencha os dados mínimos da sua Conta Global Fut7Pro."}
             {sessionUser?.email ? (
               <div className="mt-1 text-xs text-gray-400">Conta: {sessionUser.email}</div>
             ) : null}
@@ -1031,7 +1040,7 @@ export default function RegisterClient() {
                   Aparecer na lista de aniversariantes do racha
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Se desligar, seu nome nao aparece na pagina publica de aniversariantes do racha.
+                  Se desligar, seu nome não aparece na página pública de aniversariantes do racha.
                 </p>
               </div>
               <Switch
@@ -1060,9 +1069,9 @@ export default function RegisterClient() {
               ? "Enviando..."
               : isAthleteAuthenticated
                 ? isGoogleSession
-                  ? "Concluir cadastro"
-                  : "Solicitar entrada"
-                : "Cadastrar atleta"}
+                  ? "Concluir Conta Global Fut7Pro"
+                  : "Atualizar Conta Global Fut7Pro"
+                : "Criar Conta Global Fut7Pro"}
           </button>
         </form>
 

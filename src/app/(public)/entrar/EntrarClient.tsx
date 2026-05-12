@@ -48,7 +48,8 @@ const CAPTCHA_INVALID_MESSAGE =
   'Não foi possível validar o captcha. Marque novamente "Não sou robô".';
 const CAPTCHA_UNAVAILABLE_MESSAGE =
   "A verificação de segurança está indisponível no momento. Tente novamente em instantes ou use Continuar com Google.";
-const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu código.";
+const LOOKUP_UNIFORM_MESSAGE =
+  "Informe seu e-mail para continuar. Vamos verificar se você já possui Conta Global Fut7Pro ou se ainda precisa se cadastrar.";
 const VITRINE_AUTH_BLOCKED_MESSAGE =
   "Racha Vitrine é apenas demonstrativo. Login e cadastro de atletas ficam disponíveis no site do seu racha.";
 
@@ -66,6 +67,46 @@ function resolveRedirect(target: string | null, fallback: string) {
   return fallback;
 }
 
+function resolveLookupMessage(lookup: LookupResponse, rachaName: string) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  const membershipStatus = String(lookup?.membershipStatus || "").toUpperCase();
+  const targetRacha = rachaName || "este racha";
+
+  if (nextAction === "REGISTER") {
+    return "Você ainda não possui Conta Global Fut7Pro. Cadastre-se para solicitar entrada neste racha e acompanhar seu histórico como atleta.";
+  }
+  if (nextAction === "WAIT_APPROVAL" || membershipStatus === "PENDING") {
+    return `Sua solicitação de entrada no racha ${targetRacha} já foi enviada. Aguarde a aprovação do administrador.`;
+  }
+  if (membershipStatus === "ACTIVE") {
+    return `Você já participa do racha ${targetRacha}. Faça login para acessar seu perfil, rankings e comunicação.`;
+  }
+  if (nextAction === "REQUEST_JOIN") {
+    return `Conta Global Fut7Pro encontrada. Faça login para solicitar entrada no racha ${targetRacha}.`;
+  }
+  if (nextAction === "LOGIN") {
+    return `Conta Global Fut7Pro encontrada. Faça login para continuar no racha ${targetRacha}.`;
+  }
+  return "Não foi possível identificar o próximo passo. Tente novamente.";
+}
+
+function resolveLookupButtonLabel(lookup: LookupResponse) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  const membershipStatus = String(lookup?.membershipStatus || "").toUpperCase();
+
+  if (nextAction === "REGISTER") return "Criar Conta Global";
+  if (nextAction === "WAIT_APPROVAL" || membershipStatus === "PENDING") return "Entendi";
+  if (membershipStatus === "ACTIVE") return "Entrar no racha";
+  if (nextAction === "REQUEST_JOIN") return "Entrar e solicitar entrada";
+  if (nextAction === "LOGIN") return "Continuar para login";
+  return "Tentar novamente";
+}
+
+function hasOperationalNextAction(lookup: LookupResponse | null) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  return ["REGISTER", "LOGIN", "REQUEST_JOIN", "WAIT_APPROVAL"].includes(nextAction);
+}
+
 export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
@@ -73,6 +114,7 @@ export default function EntrarClient() {
   const { data: session, status: sessionStatus, update } = useSession();
   const sessionUser = session?.user as SessionUser | undefined;
   const { publicHref, publicSlug } = usePublicLinks();
+  const nomeDoRacha = nome?.trim() || "este racha";
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -181,10 +223,9 @@ export default function EntrarClient() {
     [publicSlug, resetTurnstile, turnstileEnabled, turnstileSiteKey]
   );
 
-  const redirectFromLookup = useCallback(
+  const continueFromLookup = useCallback(
     (normalizedEmail: string, lookup: LookupResponse) => {
       const nextAction = String(lookup?.nextAction || "").toUpperCase();
-      const lookupMessage = lookup?.message || LOOKUP_UNIFORM_MESSAGE;
 
       persistPublicAuthContext({
         email: normalizedEmail,
@@ -192,9 +233,7 @@ export default function EntrarClient() {
         turnstileProof: lookup.turnstileProof,
         turnstileProofExpiresAt: lookup.turnstileProofExpiresAt,
       });
-      setResult(null);
       setError("");
-      setRedirectingMessage(lookupMessage);
       setAutoFlowLoading(true);
 
       if (nextAction === "WAIT_APPROVAL") {
@@ -204,12 +243,20 @@ export default function EntrarClient() {
 
       if (nextAction === "REGISTER") {
         const registerParams = new URLSearchParams();
+        registerParams.set("email", normalizedEmail);
         registerParams.set("callbackUrl", destinationHref);
         navigateWithRefresh(`${publicHref("/register")}?${registerParams.toString()}`);
         return;
       }
 
+      if (nextAction !== "LOGIN" && nextAction !== "REQUEST_JOIN") {
+        setAutoFlowLoading(false);
+        setError("Não foi possível identificar o próximo passo. Tente novamente.");
+        return;
+      }
+
       const loginParams = new URLSearchParams();
+      loginParams.set("email", normalizedEmail);
       loginParams.set("callbackUrl", destinationHref);
 
       if (nextAction === "REQUEST_JOIN") {
@@ -250,7 +297,7 @@ export default function EntrarClient() {
     const lookup = await runLookup(normalized, captchaToken);
     if (lookup) {
       setResult(lookup);
-      redirectFromLookup(normalized, lookup);
+      setRedirectingMessage(resolveLookupMessage(lookup, nomeDoRacha));
     }
   };
 
@@ -463,7 +510,8 @@ export default function EntrarClient() {
           <Image src="/images/logos/logo_fut7pro.png" alt="Fut7Pro" width={52} height={52} />
           <h1 className="text-2xl font-bold text-white md:text-3xl">Entrar no Fut7Pro</h1>
           <p className="text-sm text-gray-300">
-            Você pode continuar com Google ou informar seu e-mail para seguir com segurança.
+            Informe seu e-mail para continuar com segurança. Vamos verificar se você já possui Conta
+            Global Fut7Pro ou se ainda precisa se cadastrar.
           </p>
         </div>
 
@@ -525,11 +573,25 @@ export default function EntrarClient() {
 
           <button
             type="button"
-            onClick={handleLookup}
-            disabled={loading || autoFlowLoading || (needsSecurityCheck && !captchaToken)}
+            onClick={() => {
+              if (result && hasOperationalNextAction(result) && !loading) {
+                continueFromLookup(email.trim().toLowerCase(), result);
+                return;
+              }
+              void handleLookup();
+            }}
+            disabled={
+              loading ||
+              autoFlowLoading ||
+              (needsSecurityCheck && !captchaToken && !hasOperationalNextAction(result))
+            }
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading || autoFlowLoading ? "Processando..." : "Continuar"}
+            {loading || autoFlowLoading
+              ? "Processando..."
+              : result
+                ? resolveLookupButtonLabel(result)
+                : "Continuar"}
           </button>
 
           <div className="mt-3 min-h-[120px]">
@@ -541,8 +603,8 @@ export default function EntrarClient() {
 
             {!loading && !autoFlowLoading && !redirectingMessage && (
               <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                Ao continuar, você segue para o login do racha. Se estiver tudo certo, enviamos seu
-                código.
+                Se você já tiver conta, vamos te levar para o login. Se ainda não tiver, vamos te
+                encaminhar para criar sua Conta Global Fut7Pro.
               </div>
             )}
           </div>
@@ -550,9 +612,9 @@ export default function EntrarClient() {
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
-            <div className="mb-1 font-semibold text-white">O que é uma Conta Fut7Pro?</div>É a sua
-            conta global no Fut7Pro. Nela ficam salvos todos os rachas que você participa, e você
-            consegue alternar entre eles com facilidade, sem criar várias contas diferentes.
+            <div className="mb-1 font-semibold text-white">O que é uma Conta Global Fut7Pro?</div>É
+            a sua conta global no Fut7Pro. Nela ficam salvos todos os rachas que você participa, e
+            você consegue alternar entre eles com facilidade, sem criar várias contas diferentes.
           </div>
           <div className="rounded-xl border border-white/10 bg-[#12141c] p-4 text-sm text-gray-200">
             <div className="mb-1 font-semibold text-white">
