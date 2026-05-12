@@ -102,6 +102,11 @@ function resolveLookupButtonLabel(lookup: LookupResponse) {
   return "Tentar novamente";
 }
 
+function hasOperationalNextAction(lookup: LookupResponse | null) {
+  const nextAction = String(lookup?.nextAction || "").toUpperCase();
+  return ["REGISTER", "LOGIN", "REQUEST_JOIN", "WAIT_APPROVAL"].includes(nextAction);
+}
+
 export default function EntrarClient() {
   const { nome } = useTema();
   const router = useRouter();
@@ -569,14 +574,16 @@ export default function EntrarClient() {
           <button
             type="button"
             onClick={() => {
-              if (result && !loading) {
+              if (result && hasOperationalNextAction(result) && !loading) {
                 continueFromLookup(email.trim().toLowerCase(), result);
                 return;
               }
               void handleLookup();
             }}
             disabled={
-              loading || autoFlowLoading || (needsSecurityCheck && !captchaToken && !result)
+              loading ||
+              autoFlowLoading ||
+              (needsSecurityCheck && !captchaToken && !hasOperationalNextAction(result))
             }
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >

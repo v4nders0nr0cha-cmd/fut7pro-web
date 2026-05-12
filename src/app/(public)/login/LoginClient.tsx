@@ -480,11 +480,29 @@ export default function LoginClient() {
 
     try {
       if (!hasAuthenticatedAccount) {
-        setNotMemberMessage(
-          "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste racha."
-        );
-        setRequestJoinInProgress(false);
-        return;
+        if (!senha.trim()) {
+          setNotMemberMessage(
+            "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste racha."
+          );
+          setRequestJoinInProgress(false);
+          return;
+        }
+
+        const signInResult = await signIn("credentials", {
+          redirect: false,
+          email: normalizedEmail,
+          password: senha,
+          turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
+          turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+        });
+
+        if (signInResult?.error) {
+          setNotMemberMessage(
+            "Não foi possível validar sua Conta Global Fut7Pro. Tente novamente."
+          );
+          setRequestJoinInProgress(false);
+          return;
+        }
       }
 
       const outcome = await requestJoinForAuthenticatedUser();

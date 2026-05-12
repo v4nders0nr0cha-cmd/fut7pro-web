@@ -174,4 +174,50 @@ describe("LoginClient", () => {
     );
     expect(signInMock).not.toHaveBeenCalled();
   });
+
+  it("permite solicitar entrada depois de login com senha retornar NOT_MEMBER", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(
+        mockJsonResponse(
+          {
+            code: "NOT_MEMBER",
+            message: "Sua conta existe, mas você ainda não participa deste racha.",
+          },
+          false,
+          403
+        )
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          status: "PENDENTE",
+          membershipStatus: "PENDING",
+        })
+      );
+
+    render(<LoginClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste racha" }));
+
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith(
+        "credentials",
+        expect.objectContaining({
+          redirect: false,
+          email: "atleta@teste.com",
+          password: "Senha123!",
+        })
+      );
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+  });
 });
