@@ -33,7 +33,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
+  "Racha vitrine é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -61,7 +61,7 @@ function resolveAuthErrorCode(body: any) {
 
 export default function LoginClient() {
   const { nome } = useTema();
-  const nomeDoRacha = nome || "Fut7Pro";
+  const nomeDoRacha = nome?.trim() || "este racha";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
 
@@ -74,6 +74,7 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   const requestJoinIntent = searchParams.get("intent") === "request-join";
   const returningFromGoogleLogin = searchParams.get("oauth") === "google";
+  const emailFromQuery = searchParams.get("email")?.trim().toLowerCase() || "";
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
@@ -92,13 +93,12 @@ export default function LoginClient() {
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
   const [requestJoinLoading, setRequestJoinLoading] = useState(false);
   const [notMemberMessage, setNotMemberMessage] = useState("");
+  const [canRequestJoin, setCanRequestJoin] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
   const [turnstileProofExpiresAt, setTurnstileProofExpiresAt] = useState<number | null>(null);
   const [turnstileProofEmail, setTurnstileProofEmail] = useState<string | null>(null);
-  const [joinTurnstileToken, setJoinTurnstileToken] = useState<string | null>(null);
-  const [joinTurnstileResetSignal, setJoinTurnstileResetSignal] = useState(0);
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
   const normalizedEmail = email.trim().toLowerCase();
@@ -111,9 +111,6 @@ export default function LoginClient() {
         (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
     );
   const hasMainSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
-  const hasJoinSecurityCheck =
-    !turnstileEnabled || hasTurnstileProof || Boolean(joinTurnstileToken);
-
   const redirectTo = useMemo(
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/")),
     [searchParams, publicHref]
@@ -251,11 +248,6 @@ export default function LoginClient() {
     setTurnstileResetSignal((value) => value + 1);
   };
 
-  const resetJoinTurnstile = () => {
-    setJoinTurnstileToken(null);
-    setJoinTurnstileResetSignal((value) => value + 1);
-  };
-
   const persistJourneyContext = useCallback(
     (nextEmail: string, proof?: string | null, proofExpiresAt?: number | null) => {
       if (!publicSlug) return;
@@ -311,7 +303,6 @@ export default function LoginClient() {
       setTurnstileProofExpiresAt(nextProofExpiresAt);
       setTurnstileProofEmail(emailForContext || null);
       setTurnstileToken(null);
-      setJoinTurnstileToken(null);
       if (emailForContext) {
         persistJourneyContext(emailForContext, nextProof, nextProofExpiresAt);
       }
@@ -340,6 +331,12 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (prefillAppliedRef.current) return;
+    if (emailFromQuery) {
+      setEmail(emailFromQuery);
+      prefillAppliedRef.current = true;
+      requestAnimationFrame(() => passwordInputRef.current?.focus());
+      return;
+    }
     if (!publicSlug) return;
     const context = readPublicAuthContext(publicSlug);
     if (!context?.email) return;
@@ -350,12 +347,13 @@ export default function LoginClient() {
     }
     prefillAppliedRef.current = true;
     requestAnimationFrame(() => passwordInputRef.current?.focus());
-  }, [applyJourneyProof, publicSlug]);
+  }, [applyJourneyProof, emailFromQuery, publicSlug]);
 
   useEffect(() => {
     setCodigo("");
     setCodigoEnviado(false);
     setInfoMessage("");
+    setCanRequestJoin(false);
   }, [email]);
 
   useEffect(() => {
@@ -475,35 +473,18 @@ export default function LoginClient() {
       setNotMemberMessage("Informe e-mail para solicitar entrada.");
       return;
     }
-    const hasAuthenticatedAccount = status === "authenticated" && Boolean(session?.user);
-    if (!hasAuthenticatedAccount && !senha.trim()) {
-      setNotMemberMessage("Entre com sua senha do Fut7Pro para solicitar entrada neste racha.");
-      return;
-    }
-
+    const hasAuthenticatedAccount =
+      canRequestJoin || (status === "authenticated" && Boolean(session?.user));
     setRequestJoinLoading(true);
     setRequestJoinInProgress(true);
 
     try {
-      if (!requireTurnstile(joinTurnstileToken, setNotMemberMessage, turnstileProof)) {
+      if (!hasAuthenticatedAccount) {
+        setNotMemberMessage(
+          "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste racha."
+        );
         setRequestJoinInProgress(false);
         return;
-      }
-
-      if (!hasAuthenticatedAccount) {
-        const signInResult = await signIn("credentials", {
-          redirect: false,
-          email: normalizedEmail,
-          password: senha,
-          turnstileToken: turnstileEnabled ? joinTurnstileToken || undefined : undefined,
-          turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
-        });
-
-        if (signInResult?.error) {
-          setNotMemberMessage("Não foi possível validar sua conta. Tente novamente.");
-          setRequestJoinInProgress(false);
-          return;
-        }
       }
 
       const outcome = await requestJoinForAuthenticatedUser();
@@ -520,9 +501,6 @@ export default function LoginClient() {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
       setRequestJoinInProgress(false);
     } finally {
-      if (turnstileEnabled && !hasTurnstileProof) {
-        resetJoinTurnstile();
-      }
       setRequestJoinLoading(false);
     }
   };
@@ -562,6 +540,21 @@ export default function LoginClient() {
       return true;
     }
 
+    if (code === "USER_NOT_FOUND") {
+      setErro(
+        "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste racha."
+      );
+      return true;
+    }
+
+    if (code === "PROFILE_INCOMPLETE") {
+      setErro("Complete sua Conta Global Fut7Pro antes de solicitar entrada neste racha.");
+      router.replace(
+        `${publicHref("/register")}?email=${encodeURIComponent(email.trim().toLowerCase())}`
+      );
+      return true;
+    }
+
     if (isEmailNotVerified) {
       const normalizedEmail = email.trim().toLowerCase();
       const query = new URLSearchParams();
@@ -584,6 +577,17 @@ export default function LoginClient() {
     const signedIn = await signInWithScopedTokens(body, authProvider);
     if (!signedIn) {
       setErro("Não foi possível concluir o login.");
+      return;
+    }
+
+    const nextAction = String(body?.nextAction || "").toUpperCase();
+    const membershipStatus = String(
+      body?.membershipStatus || body?.membership?.status || ""
+    ).toUpperCase();
+    if (nextAction === "REQUEST_JOIN" || membershipStatus === "NONE") {
+      setCanRequestJoin(true);
+      setNotMemberMessage("");
+      setNotMemberModalOpen(true);
       return;
     }
 
@@ -641,6 +645,12 @@ export default function LoginClient() {
         resetTurnstile();
         return;
       }
+      if (body?.code === "USER_NOT_FOUND") {
+        setErro(
+          "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste racha."
+        );
+        return;
+      }
       clearJourneyProof(normalizedEmail);
       resetTurnstile();
       setErro(body?.message || body?.error || "Não foi possível enviar o código.");
@@ -656,7 +666,7 @@ export default function LoginClient() {
       resetTurnstile();
     }
     setCodigoEnviado(true);
-    setInfoMessage(body?.message || "Se estiver tudo certo, enviamos seu codigo.");
+    setInfoMessage("Enviamos o código para a Conta Global Fut7Pro informada.");
   };
 
   const loginWithPasswordlessCode = async () => {
@@ -787,22 +797,26 @@ export default function LoginClient() {
             Acesso exclusivo
           </p>
           <p className="text-sm text-gray-200">
-            Atletas do <span className="font-semibold text-brand">{nomeDoRacha}</span>
+            Login do Atleta no <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
-          <p className="mt-1 text-xs text-gray-400">Visitantes podem navegar pelo site.</p>
+          <p className="mt-1 text-xs text-gray-400">
+            Esta etapa é para atletas que já possuem Conta Global Fut7Pro.
+          </p>
         </div>
 
         <h1 className="text-xl font-bold text-white text-center">Login do Atleta</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Entre para editar seu perfil e acompanhar as novidades do racha.
+          Entre com sua Conta Global Fut7Pro para acessar seu perfil e continuar no racha{" "}
+          {nomeDoRacha}.
         </p>
 
         {requestJoinIntent ? (
           <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
             <p className="font-semibold text-amber-200">Você ainda não joga neste racha</p>
             <p className="mt-1">
-              Entre com sua senha para solicitar entrada. Assim que o admin aprovar, você entra nos
-              rankings, estatísticas e comunicação do time.
+              Entre com código enviado por e-mail ou com sua senha para solicitar entrada no racha{" "}
+              {nomeDoRacha}. Assim que o administrador aprovar, você entra nos rankings,
+              estatísticas e comunicação.
             </p>
           </div>
         ) : null}
@@ -870,7 +884,7 @@ export default function LoginClient() {
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  Use sua senha cadastrada no Fut7Pro para acessar sua conta.
+                  O código só pode ser enviado para uma Conta Global Fut7Pro existente.
                 </div>
               )}
             </>
@@ -950,10 +964,10 @@ export default function LoginClient() {
         <div className="mt-5 text-center text-sm text-gray-300">
           Ainda não tem conta?{" "}
           <a
-            href={publicHref("/register")}
+            href={`${publicHref("/register")}${email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ""}`}
             className="text-brand-soft underline hover:text-brand-soft"
           >
-            Cadastre-se
+            Criar Conta Global
           </a>
         </div>
       </div>
@@ -1042,26 +1056,22 @@ export default function LoginClient() {
             >
               <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
                 <Dialog.Title className="text-lg font-semibold text-white">
-                  Solicite entrada no racha
+                  Solicitar entrada no racha
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Você ainda não possui solicitação para o racha{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span>. Para entrar,
-                  envie sua solicitação de entrada e aguarde a aprovação.
+                  Sua Conta Global Fut7Pro já está pronta. Agora envie sua solicitação para
+                  participar do racha{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span>.
+                </p>
+                <p className="mt-2 text-sm text-gray-300">
+                  Criar sua conta no Fut7Pro não significa entrar automaticamente no racha. O
+                  administrador poderá aprovar seu pedido.
                 </p>
                 {notMemberMessage ? (
                   <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                     {notMemberMessage}
                   </div>
                 ) : null}
-                <div className="mt-4">
-                  <TurnstileWidget
-                    enabled={turnstileEnabled && !hasTurnstileProof}
-                    siteKey={turnstileSiteKey}
-                    onTokenChange={setJoinTurnstileToken}
-                    resetSignal={joinTurnstileResetSignal}
-                  />
-                </div>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
@@ -1073,7 +1083,7 @@ export default function LoginClient() {
                   <button
                     type="button"
                     onClick={handleRequestJoin}
-                    disabled={requestJoinLoading || (turnstileEnabled && !hasJoinSecurityCheck)}
+                    disabled={requestJoinLoading}
                     className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {requestJoinLoading ? "Solicitando..." : "Solicitar entrada neste racha"}
