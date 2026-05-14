@@ -6,6 +6,7 @@ import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/
 
 type AdminMatchesOptions = {
   enabled?: boolean;
+  date?: string;
 };
 
 const fetcher = async (url: string) => {
@@ -103,6 +104,7 @@ function normalizeMatch(raw: any): PublicMatch {
     id: raw?.id ?? `match-${date}`,
     date,
     location: raw?.location ?? raw?.local ?? null,
+    status: raw?.status,
     scoreA: normalizedScoreA,
     scoreB: normalizedScoreB,
     score: {
@@ -117,16 +119,26 @@ function normalizeMatch(raw: any): PublicMatch {
 
 export function useAdminMatches(options: AdminMatchesOptions = {}) {
   const enabled = options.enabled ?? true;
-  const key = enabled ? "/api/partidas" : null;
+  const key = enabled
+    ? options.date
+      ? `/api/partidas/rodada-do-dia?date=${encodeURIComponent(options.date)}`
+      : "/api/partidas"
+    : null;
 
   const { data, error, isLoading, mutate } = useSWR(key, fetcher, {
     revalidateOnFocus: false,
   });
 
-  const matches = useMemo(() => {
+  const matches = useMemo<PublicMatch[]>(() => {
     if (!enabled) return [];
-    if (!Array.isArray(data)) return [];
-    return data.map((item) => normalizeMatch(item));
+    const rawMatches = Array.isArray(data)
+      ? data
+      : Array.isArray(data?.matches)
+        ? data.matches
+        : Array.isArray(data?.results)
+          ? data.results
+          : [];
+    return rawMatches.map((item: unknown) => normalizeMatch(item));
   }, [data, enabled]);
 
   return {
