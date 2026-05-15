@@ -17,7 +17,6 @@ const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const OWN_GOAL_ID = "own-goal";
 const NO_ASSIST_ID = "no-assist";
 const UNKNOWN_GOAL_ID = "unknown-goal";
-const STATUS_STORAGE_KEY = "fut7pro_match_status";
 const AUTO_SAVE_ENABLED = true;
 
 const STATUS_LABELS: Record<MatchStatus, string> = {
@@ -339,6 +338,13 @@ function resolveMatchStatus(
 ): MatchStatus {
   const override = statusMap[match.id];
   if (override) return override;
+  if (
+    match.status === "not_started" ||
+    match.status === "in_progress" ||
+    match.status === "finished"
+  ) {
+    return match.status;
+  }
   if (match.scoreA === null || match.scoreB === null) {
     const teamAId = match.teamA.id ?? "team-a";
     const teamBId = match.teamB.id ?? "team-b";
@@ -348,23 +354,6 @@ function resolveMatchStatus(
     return "not_started";
   }
   return "finished";
-}
-
-function loadStatusMap() {
-  if (typeof window === "undefined") return {} as Record<string, MatchStatus>;
-  const raw = window.localStorage.getItem(STATUS_STORAGE_KEY);
-  if (!raw) return {} as Record<string, MatchStatus>;
-  try {
-    const parsed = JSON.parse(raw) as Record<string, MatchStatus>;
-    return parsed || {};
-  } catch {
-    return {} as Record<string, MatchStatus>;
-  }
-}
-
-function saveStatusMap(statusMap: Record<string, MatchStatus>) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(statusMap));
 }
 
 type GoalModalProps = {
@@ -713,6 +702,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
         const payload = {
           scoreA: statusToPersist === "not_started" ? null : scoreA,
           scoreB: statusToPersist === "not_started" ? null : scoreB,
+          status: statusToPersist,
           presences: presencePayload,
         };
 
@@ -1173,7 +1163,15 @@ export default function ResultadosDoDiaAdmin({
   allowDelete = false,
   onDeleteMatch,
 }: ResultadosDoDiaAdminProps) {
-  const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const searchParams = useSearchParams();
+  const forcedDate = useMemo(() => parseDayParam(searchParams?.get("data")), [searchParams]);
+  const forcedDateKey = useMemo(
+    () => (forcedDate ? format(forcedDate, "yyyy-MM-dd") : undefined),
+    [forcedDate]
+  );
+  const { matches, isLoading, isError, error, mutate } = useAdminMatches({
+    date: matchIds ? undefined : forcedDateKey,
+  });
   const { me } = useMe({ context: "admin" });
   const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
   const canDeleteMatch = allowDelete && isPresidente;
@@ -1184,8 +1182,6 @@ export default function ResultadosDoDiaAdmin({
     return matches.filter((match) => allowed.has(match.id));
   }, [matchIds, matches]);
   const sorteioPublicado = useTimesDoDiaPublicado({ source: "admin" });
-  const searchParams = useSearchParams();
-  const forcedDate = useMemo(() => parseDayParam(searchParams?.get("data")), [searchParams]);
   const [statusFilter, setStatusFilter] = useState<MatchFilter>("all");
   const [statusMap, setStatusMap] = useState<Record<string, MatchStatus>>({});
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
@@ -1194,14 +1190,9 @@ export default function ResultadosDoDiaAdmin({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setStatusMap(loadStatusMap());
-  }, []);
-
   const updateStatus = (matchId: string, status: MatchStatus) => {
     setStatusMap((prev) => {
       const next = { ...prev, [matchId]: status };
-      saveStatusMap(next);
       return next;
     });
   };
@@ -1226,7 +1217,6 @@ export default function ResultadosDoDiaAdmin({
         setStatusMap((prev) => {
           const next = { ...prev };
           delete next[match.id];
-          saveStatusMap(next);
           return next;
         });
         onDeleteMatch?.(match.id);

@@ -106,6 +106,7 @@ export type PublicMatch = {
   id: string;
   date: string;
   location: string | null;
+  status?: "not_started" | "in_progress" | "finished";
   scoreA: number | null;
   scoreB: number | null;
   score: { teamA: number; teamB: number };
@@ -118,4 +119,91 @@ export type PublicMatchesResponse = {
   slug: string;
   total: number;
   results: PublicMatch[];
+};
+
+export type MatchdayStatus = "not_started" | "in_progress" | "finished";
+
+export type LiveAthlete = {
+  id: string;
+  name: string;
+  nickname: string | null;
+  position: string | null;
+  photoUrl: string | null;
+};
+
+export type LiveTeam = PublicMatchTeam;
+
+export type LiveEvent = {
+  id: string;
+  matchId: string;
+  teamId: string | null;
+  teamName: string;
+  type: "GOAL";
+  scorer: LiveAthlete | null;
+  assist: LiveAthlete | null;
+  minute: string | null;
+  occurredAt: string | null;
+  description: string;
+};
+
+export type LiveMatch = {
+  id: string;
+  date: string;
+  location: string | null;
+  status: MatchdayStatus;
+  teamA: LiveTeam;
+  teamB: LiveTeam;
+  scoreA: number;
+  scoreB: number;
+  goals: LiveEvent[];
+};
+
+export type LiveStandingRow = {
+  teamId: string;
+  team: string;
+  logoUrl: string | null;
+  color: string | null;
+  pts: number;
+  j: number;
+  v: number;
+  e: number;
+  d: number;
+  gp: number;
+  gc: number;
+  sg: number;
+};
+
+export type LiveHighlightPick = {
+  status: string;
+  athlete: LiveAthlete | null;
+  value: number;
+};
+
+export type LiveHighlights = {
+  artilheiro: LiveHighlightPick;
+  maestro: LiveHighlightPick;
+  atacante: LiveHighlightPick;
+  meia: LiveHighlightPick;
+  goleiro: LiveHighlightPick;
+  zagueiro: {
+    status: string;
+    candidates: Array<{ athlete: LiveAthlete; value: string }>;
+  };
+  timeCampeao: {
+    status: string;
+    team: string | null;
+    pts: number;
+    sg: number;
+  };
+};
+
+export type MatchdayLiveResponse = {
+  slug: string | null;
+  date: string;
+  status: MatchdayStatus;
+  updatedAt: string | null;
+  matches: LiveMatch[];
+  standings: LiveStandingRow[];
+  highlights: LiveHighlights;
+  timeline: LiveEvent[];
 };

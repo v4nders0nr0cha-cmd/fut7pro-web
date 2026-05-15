@@ -45,7 +45,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id?: string 
   );
 
   if (response.ok) {
-    const paths = [...buildSorteioPaths(tenantSlug), `/${tenantSlug}/partidas/detalhes/${matchId}`];
+    const paths = [
+      ...buildSorteioPaths(tenantSlug),
+      `/${tenantSlug}/partidas/ao-vivo`,
+      `/${tenantSlug}/partidas/detalhes/${matchId}`,
+    ];
     await triggerPublicRevalidate(tenantSlug, paths);
   }
 
