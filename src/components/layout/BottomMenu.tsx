@@ -5,7 +5,6 @@ import { useComunicacao } from "@/hooks/useComunicacao";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
-import { useMe } from "@/hooks/useMe";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -15,6 +14,26 @@ const menu = [
   { label: "Perfil", icon: FaUser, href: "/perfil" },
 ];
 
+const PUBLIC_AUTH_ROUTE_SEGMENTS = [
+  "/login",
+  "/entrar",
+  "/register",
+  "/cadastro",
+  "/recuperar-senha",
+  "/esqueci-senha",
+  "/otp",
+  "/codigo",
+];
+
+function isPublicAuthRoute(pathname: string) {
+  const normalizedPathname = pathname
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return PUBLIC_AUTH_ROUTE_SEGMENTS.some((segment) => normalizedPathname.includes(segment));
+}
+
 export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
@@ -23,49 +42,15 @@ export default function BottomMenu() {
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
-  const hasGlobalSession = status === "authenticated" && Boolean(session?.user);
-  const {
-    me,
-    isLoading: isLoadingMe,
-    isError: isMeError,
-  } = useMe({
-    enabled: hasGlobalSession && Boolean(tenantSlug),
-    tenantSlug,
-    context: "athlete",
-  });
-  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
-  const isApprovedAthlete = Boolean(
-    hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
-  );
-  const isPendingAthlete = Boolean(
-    hasGlobalSession && !isMeError && membershipStatus === "PENDENTE"
-  );
-  const isLoggedIn = isApprovedAthlete;
-  const showFullMenu = isApprovedAthlete || isPendingAthlete;
+  const isLoggedIn = status === "authenticated" && Boolean(session?.user);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
 
-  if (!tenantSlug) {
+  if (!tenantSlug || isPublicAuthRoute(pathname)) {
     return null;
   }
 
   function handleClick(href: string, label: string) {
-    if (label === "Perfil" && isLoadingMe) {
-      return;
-    }
-    if (label === "Perfil" && isPendingAthlete) {
-      router.push(publicHref("/aguardando-aprovacao"));
-    } else if (label === "Perfil" && !isApprovedAthlete) {
-      const params = new URLSearchParams();
-      if (hasGlobalSession) {
-        params.set("intent", "request-join");
-      }
-      const query = params.toString();
-      router.push(query ? `${publicHref("/login")}?${query}` : publicHref("/entrar"));
-    } else if (label === "Perfil") {
-      router.push(publicHref("/perfil"));
-    } else if (isPendingAthlete) {
-      router.push(publicHref("/aguardando-aprovacao"));
-    } else if (!isLoggedIn) {
+    if (label === "Perfil" && !isLoggedIn) {
       router.push(publicHref("/entrar"));
     } else {
       router.push(publicHref(href));
@@ -73,7 +58,7 @@ export default function BottomMenu() {
   }
 
   // SE NÃO LOGADO: CTA de entrada
-  if (!showFullMenu) {
+  if (!isLoggedIn) {
     if (isVitrineSlug) {
       return (
         <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
