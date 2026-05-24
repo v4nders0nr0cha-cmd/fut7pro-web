@@ -2,7 +2,6 @@
 import { usePathname, useRouter } from "next/navigation";
 import { FaHome, FaBell, FaUser, FaCommentDots, FaLightbulb } from "react-icons/fa";
 import { useComunicacao } from "@/hooks/useComunicacao";
-import { useMe } from "@/hooks/useMe";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
@@ -15,24 +14,38 @@ const menu = [
   { label: "Perfil", icon: FaUser, href: "/perfil" },
 ];
 
+const PUBLIC_AUTH_ROUTE_SEGMENTS = [
+  "/login",
+  "/entrar",
+  "/register",
+  "/cadastro",
+  "/recuperar-senha",
+  "/esqueci-senha",
+  "/otp",
+  "/codigo",
+];
+
+function isPublicAuthRoute(pathname: string) {
+  const normalizedPathname = pathname
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return PUBLIC_AUTH_ROUTE_SEGMENTS.some((segment) => normalizedPathname.includes(segment));
+}
+
 export default function BottomMenu() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
-  const shouldCheckMe = Boolean(session?.user && tenantSlug);
-  const { me } = useMe({
-    enabled: shouldCheckMe,
-    tenantSlug,
-    context: "athlete",
-  });
-  const isLoggedIn = Boolean(me?.athlete?.id);
+  const isLoggedIn = status === "authenticated" && Boolean(session?.user);
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
 
-  if (!tenantSlug) {
+  if (!tenantSlug || isPublicAuthRoute(pathname)) {
     return null;
   }
 
@@ -44,32 +57,21 @@ export default function BottomMenu() {
     }
   }
 
-  // SE NÃO LOGADO: CTA de entrada (e onboarding adicional no vitrine)
+  // SE NÃO LOGADO: CTA de entrada
   if (!isLoggedIn) {
     if (isVitrineSlug) {
       return (
-        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center gap-2 px-2 py-2 md:hidden animate-slide-down">
+        <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
-            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-2 font-bold text-[13px] uppercase text-white transition-all hover:border-brand/70 hover:text-brand"
+            className="w-full flex items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-2 font-bold text-[13px] uppercase text-white transition-all hover:border-brand/70 hover:text-brand"
             style={{ letterSpacing: 0.7 }}
             title="Entrar no Racha Vitrine"
             aria-label="Entrar no Racha Vitrine"
           >
             <FaUser size={18} />
             Entrar
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push("/cadastrar-racha")}
-            className="flex-1 flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
-            style={{ letterSpacing: 0.7 }}
-            title="Criar meu racha no Fut7Pro"
-            aria-label="Criar meu racha no Fut7Pro"
-          >
-            <FaUser size={18} />
-            Criar meu racha
           </button>
         </nav>
       );
