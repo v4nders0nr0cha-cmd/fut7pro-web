@@ -249,6 +249,23 @@ Vídeos que mostram a experiência pública e a visão do atleta.
 | 11 | Como o atleta entra no racha pelo celular | C | Atleta | `/:slug/entrar`, `/:slug/register` | Celular | Alta | Não | Não | Não | Não |  | Separar de login admin |
 | 12 | Como o atleta acessa perfil, Times do Dia e rankings | C | Atleta | `/:slug/perfil`, `/:slug/partidas/times-do-dia`, `/:slug/estatisticas` | Celular | Alta | Não | Não | Não | Não |  | Gerar cortes curtos |
 
+## Ordem recomendada de publicação da Fase 1
+
+A ordem de gravação em lote serve para economizar tempo na produção, agrupando telas parecidas, formatos iguais e sessões de desktop ou celular. A ordem de publicação serve para ensinar o usuário na sequência correta. Mesmo que os vídeos sejam gravados fora de ordem, publique seguindo a jornada de aprendizado abaixo.
+
+1. O que é o Fut7Pro e como acessar pelo navegador.
+2. Como acessar o Painel Admin do Fut7Pro.
+3. Visão geral do Painel Admin.
+4. Como fazer a configuração inicial do racha.
+5. Como cadastrar e aprovar atletas.
+6. Como definir nível, estrelas e posição dos atletas.
+7. Como criar partida ou próximo racha.
+8. Como usar o Sorteio Inteligente do Fut7Pro.
+9. Como publicar Times do Dia e registrar resultados.
+10. Como funciona o Site Público do Racha.
+11. Como o atleta entra no racha pelo celular.
+12. Como o atleta acessa perfil, Times do Dia e rankings.
+
 ## Ordem recomendada para gravar em lote
 
 1. Primeiro vídeos de desktop: vídeo 6, vídeo 8 e vídeo 9.
