@@ -1,5 +1,294 @@
 # Plano de Gravacao de Tutoriais Fut7Pro
 
+# Fase 1, vídeos que devem ser gravados primeiro
+
+Esta fase transforma o plano completo em uma primeira agenda prática, com 12 vídeos prioritários para começar a gravar agora. O foco é vender melhor o Fut7Pro, explicar o básico para novos administradores, reduzir dúvidas iniciais, mostrar o uso no desktop e no celular, e gerar conteúdo para YouTube, WhatsApp, Instagram e suporte.
+
+## Bloco A, vídeos obrigatórios para vender e demonstrar
+
+Vídeos que mostram o valor do Fut7Pro rapidamente.
+
+### Vídeo 1, O que é o Fut7Pro e como acessar pelo navegador
+
+- Área: Primeiros passos e demonstração comercial.
+- Rota principal: `/`, `/como-funciona` e exemplo de `/:slug`.
+- Objetivo: Mostrar que o Fut7Pro organiza o racha em uma plataforma online, acessível pelo navegador no desktop e no celular, sem baixar aplicativo.
+- Tela inicial da gravação: Página inicial do Fut7Pro no desktop, com uma aba separada aberta no celular ou em viewport mobile.
+- Fluxo exato que devo seguir: Abrir o site institucional, explicar a proposta em poucos segundos, mostrar que existe Painel Admin, abrir um site público de racha por slug, alternar para visualização mobile e reforçar que atletas acessam pelo link.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: O vídeo precisa vender confiança e provar que a experiência funciona nos dois formatos.
+- Tempo ideal: 4 a 6 minutos.
+- O que falar na introdução: "Neste vídeo eu vou te mostrar como o Fut7Pro funciona direto pelo navegador, tanto para quem administra o racha quanto para quem joga."
+- O que mostrar na tela: Página inicial, menu, site público do racha, atalhos para atletas, partidas, rankings e exemplo mobile.
+- O que evitar: Não entrar em detalhes de configuração, financeiro ou regras avançadas.
+- Melhor tipo de vídeo: Vídeo de venda/demonstração.
+- Playlist recomendada: Primeiros passos Fut7Pro.
+- Pode gerar Short/Reels: Sim, corte "Fut7Pro funciona sem baixar app".
+- Status: A fazer.
+
+### Vídeo 2, Como funciona o Site Público do Racha
+
+- Área: Site Público do Racha.
+- Rota principal: `/:slug`.
+- Objetivo: Mostrar a vitrine pública do racha e como ela ajuda atletas, visitantes e patrocinadores a acompanharem tudo.
+- Tela inicial da gravação: Home pública de um racha demo com dados mockados.
+- Fluxo exato que devo seguir: Abrir a home pública, navegar por atletas, partidas, Times do Dia, estatísticas, campeões, comunicação e páginas sobre o racha; depois repetir os principais pontos no celular.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: O presidente costuma avaliar no desktop, mas atletas e visitantes acessam pelo celular.
+- Tempo ideal: 5 a 7 minutos.
+- O que falar na introdução: "Agora vamos ver o que os atletas e visitantes enxergam quando recebem o link do seu racha."
+- O que mostrar na tela: Home, menu público, lista de atletas, partidas, rankings, campeões, parceiros e páginas institucionais.
+- O que evitar: Não demonstrar edição no admin neste vídeo; deixar isso para personalização.
+- Melhor tipo de vídeo: Vídeo de venda/demonstração.
+- Playlist recomendada: Site Público do Racha.
+- Pode gerar Short/Reels: Sim, corte "o racha ganha um site próprio".
+- Status: A fazer.
+
+### Vídeo 3, Como usar o Sorteio Inteligente do Fut7Pro
+
+- Área: Partidas, resultados e Sorteio Inteligente.
+- Rota principal: `/admin/partidas/sorteio-inteligente`.
+- Objetivo: Demonstrar o principal diferencial do Fut7Pro: formar times mais equilibrados com base em atletas, posições, níveis e estrelas.
+- Tela inicial da gravação: Painel Admin já logado, na página do Sorteio Inteligente.
+- Fluxo exato que devo seguir: Selecionar participantes, conferir posições e estrelas, ajustar configurações do racha se necessário, gerar times, revisar equilíbrio, salvar/publicar e mostrar como isso aparece para os atletas.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: O administrador monta os times com mais conforto no desktop, e os atletas conferem os Times do Dia no celular.
+- Tempo ideal: 8 a 12 minutos.
+- O que falar na introdução: "Este é um dos recursos mais importantes do Fut7Pro: o sorteio que ajuda a montar times equilibrados e reduz discussão no grupo."
+- O que mostrar na tela: Participantes, critérios de balanceamento, times gerados, botão de publicação e visualização pública.
+- O que evitar: Não usar atletas reais; evitar explicar algoritmo em linguagem técnica.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Sorteio Inteligente e Times do Dia.
+- Pode gerar Short/Reels: Sim, corte "antes e depois do sorteio".
+- Status: A fazer.
+
+## Bloco B, vídeos obrigatórios para ensinar o administrador
+
+Vídeos que ensinam o uso básico do Painel Admin.
+
+### Vídeo 4, Como acessar o Painel Admin do Fut7Pro
+
+- Área: Login e entrada do administrador.
+- Rota principal: `/admin/login`.
+- Objetivo: Ensinar o administrador a entrar no painel, recuperar acesso e selecionar o racha ativo quando necessário.
+- Tela inicial da gravação: Página de login do admin.
+- Fluxo exato que devo seguir: Abrir `/admin/login`, preencher login de teste, entrar, mostrar seleção de racha se aparecer, abrir dashboard e apontar onde fica o menu principal.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: Login é uma dúvida inicial comum e precisa funcionar em qualquer navegador.
+- Tempo ideal: 3 a 5 minutos.
+- O que falar na introdução: "Vamos começar pelo acesso ao Painel Admin, que é onde o presidente e os diretores controlam o racha."
+- O que mostrar na tela: Login, botão de entrar, recuperação de senha em menção rápida, seleção de racha e dashboard carregado.
+- O que evitar: Não mostrar senha real, email pessoal ou dados de produção.
+- Melhor tipo de vídeo: Tutorial rápido.
+- Playlist recomendada: Primeiros passos Fut7Pro.
+- Pode gerar Short/Reels: Sim, corte "como entrar no painel em menos de 1 minuto".
+- Status: A fazer.
+
+### Vídeo 5, Visão geral do Painel Admin
+
+- Área: Painel Admin.
+- Rota principal: `/admin/dashboard`.
+- Objetivo: Apresentar a estrutura do painel para que o administrador saiba onde encontrar cada coisa.
+- Tela inicial da gravação: Dashboard do admin com dados mockados.
+- Fluxo exato que devo seguir: Explicar cards principais, próximos jogos, resumo financeiro, alertas, plano atual, menu lateral e atalhos para jogadores, partidas, financeiro, comunicação e configurações.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: A administração completa é melhor no desktop, mas o presidente pode consultar o painel pelo celular.
+- Tempo ideal: 6 a 8 minutos.
+- O que falar na introdução: "Depois de entrar, esta é a tela principal do administrador. Ela resume o que está acontecendo no racha."
+- O que mostrar na tela: Cards, menu, alertas, atalhos e principais áreas do painel.
+- O que evitar: Não aprofundar cada área; este vídeo é de orientação.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Painel Admin Fut7Pro.
+- Pode gerar Short/Reels: Sim, corte "tour rápido pelo Painel Admin".
+- Status: A fazer.
+
+### Vídeo 6, Como fazer a configuração inicial do racha
+
+- Área: Configuração inicial.
+- Rota principal: `/admin/rachas`.
+- Objetivo: Ensinar o administrador a preparar os dados básicos do racha antes de convidar atletas.
+- Tela inicial da gravação: Página de rachas/configuração aberta no Painel Admin.
+- Fluxo exato que devo seguir: Abrir dados do racha, revisar nome, slug/link público, informações principais, agenda ou dados disponíveis, salvar e abrir o site público para conferir.
+- Formato recomendado: Desktop.
+- Justificativa do formato: É uma tarefa administrativa com campos e revisão de dados.
+- Tempo ideal: 5 a 7 minutos.
+- O que falar na introdução: "Antes de cadastrar atletas e gerar partidas, vale configurar a base do seu racha corretamente."
+- O que mostrar na tela: Dados principais, link público, campos de configuração e confirmação no site público.
+- O que evitar: Não alterar dados reais de um racha em produção.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Painel Admin Fut7Pro.
+- Pode gerar Short/Reels: Não é prioridade.
+- Status: A fazer.
+
+### Vídeo 7, Como cadastrar e aprovar atletas
+
+- Área: Gestão de atletas.
+- Rota principal: `/admin/jogadores/listar-cadastrar`.
+- Objetivo: Ensinar o administrador a montar a base de jogadores e controlar quem entra no racha.
+- Tela inicial da gravação: Lista de jogadores no Painel Admin.
+- Fluxo exato que devo seguir: Mostrar lista, cadastrar atleta de teste, editar dados, explicar solicitações de entrada, aprovar/rejeitar uma solicitação e mostrar o status do atleta no site público.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: O admin gerencia no desktop e o atleta acompanha cadastro/aprovação pelo celular.
+- Tempo ideal: 7 a 10 minutos.
+- O que falar na introdução: "Com o racha configurado, o próximo passo é cadastrar atletas e controlar as solicitações de entrada."
+- O que mostrar na tela: Lista, formulário, busca, aprovação, rejeição e tela de aguardando aprovação quando aplicável.
+- O que evitar: Não expor telefone, email ou documento real de atleta.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Gestão de Atletas.
+- Pode gerar Short/Reels: Sim, corte "como aprovar atleta no racha".
+- Status: A fazer.
+
+### Vídeo 8, Como definir nível, estrelas e posição dos atletas
+
+- Área: Gestão de atletas e Sorteio Inteligente.
+- Rota principal: `/admin/jogadores/nivel-dos-atletas`.
+- Objetivo: Preparar os atletas para que o Sorteio Inteligente gere times mais justos.
+- Tela inicial da gravação: Página de nível dos atletas.
+- Fluxo exato que devo seguir: Abrir lista de atletas, explicar posições, níveis e estrelas, ajustar alguns atletas de teste, salvar e explicar como isso impacta o sorteio.
+- Formato recomendado: Desktop.
+- Justificativa do formato: É uma tela de ajuste em lista/tabela, mais clara no desktop.
+- Tempo ideal: 6 a 8 minutos.
+- O que falar na introdução: "O Sorteio Inteligente depende de uma base bem preenchida. Aqui você define posição, nível e estrelas de cada atleta."
+- O que mostrar na tela: Campos de posição, estrelas, filtros/lista e relação com o sorteio.
+- O que evitar: Não transformar o vídeo em debate sobre critérios esportivos; manter foco no uso da tela.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Gestão de Atletas.
+- Pode gerar Short/Reels: Sim, corte "por que preencher posição e estrelas".
+- Status: A fazer.
+
+### Vídeo 9, Como criar partida ou próximo racha
+
+- Área: Partidas.
+- Rota principal: `/admin/partidas/criar`.
+- Objetivo: Ensinar o administrador a criar uma partida ou próximo racha antes do sorteio e dos resultados.
+- Tela inicial da gravação: Central de criação de partidas.
+- Fluxo exato que devo seguir: Abrir `/admin/partidas`, entrar em criar partida, mostrar opções clássica e sorteio inteligente, preencher dados de teste, salvar e voltar para a central de partidas.
+- Formato recomendado: Desktop.
+- Justificativa do formato: O fluxo envolve formulário e dados de agenda.
+- Tempo ideal: 5 a 7 minutos.
+- O que falar na introdução: "Antes de registrar resultados, você precisa organizar a partida ou o próximo racha no sistema."
+- O que mostrar na tela: Opções de criação, campos principais, salvamento e retorno para partidas.
+- O que evitar: Não aprofundar o Sorteio Inteligente aqui, pois ele tem vídeo próprio.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Sorteio Inteligente e Times do Dia.
+- Pode gerar Short/Reels: Não é prioridade.
+- Status: A fazer.
+
+### Vídeo 10, Como publicar Times do Dia e registrar resultados
+
+- Área: Partidas, Times do Dia e resultados.
+- Rota principal: `/admin/partidas/times-do-dia` e `/admin/partidas/resultados-do-dia`.
+- Objetivo: Ensinar o fluxo do dia do racha: publicar os times para os atletas e depois registrar placar, gols e assistências.
+- Tela inicial da gravação: Página de Times do Dia ou resultado do sorteio já gerado.
+- Fluxo exato que devo seguir: Abrir Times do Dia, revisar times, publicar, mostrar visualização pública no celular, voltar ao admin, abrir resultados do dia, lançar placar, gols e assistências, finalizar e conferir reflexo nos rankings.
+- Formato recomendado: Desktop + Celular.
+- Justificativa do formato: O admin publica e registra no painel, enquanto atletas acompanham pelo celular.
+- Tempo ideal: 8 a 10 minutos.
+- O que falar na introdução: "Agora vamos ver o fluxo mais usado no dia do jogo: publicar os times e depois registrar o que aconteceu em campo."
+- O que mostrar na tela: Publicação, link público, Times do Dia no celular, placar, gols, assistências e finalização.
+- O que evitar: Não lançar resultado em racha real; usar dados mockados.
+- Melhor tipo de vídeo: Tutorial completo.
+- Playlist recomendada: Sorteio Inteligente e Times do Dia.
+- Pode gerar Short/Reels: Sim, cortes "publicar Times do Dia" e "registrar placar".
+- Status: A fazer.
+
+## Bloco C, vídeos importantes para atleta e site público
+
+Vídeos que mostram a experiência pública e a visão do atleta.
+
+### Vídeo 11, Como o atleta entra no racha pelo celular
+
+- Área: Perfil do atleta e experiência pública.
+- Rota principal: `/:slug/entrar` e `/:slug/register`.
+- Objetivo: Ensinar o atleta a acessar o link do racha, entrar, criar conta ou solicitar entrada.
+- Tela inicial da gravação: Site público do racha aberto no celular.
+- Fluxo exato que devo seguir: Abrir link do racha, tocar em entrar, mostrar login/cadastro, solicitar entrada, explicar aguardando aprovação e voltar para a home pública.
+- Formato recomendado: Celular.
+- Justificativa do formato: A experiência de atleta é principalmente mobile e vem de link compartilhado no WhatsApp.
+- Tempo ideal: 3 a 5 minutos.
+- O que falar na introdução: "Este vídeo é para o atleta: veja como entrar no racha pelo celular, direto pelo navegador."
+- O que mostrar na tela: Link público, botão de entrada, cadastro/login, solicitação e tela de aguardando aprovação.
+- O que evitar: Não usar dados pessoais reais; não confundir login de atleta com login do admin.
+- Melhor tipo de vídeo: Tutorial rápido.
+- Playlist recomendada: Perfil do Atleta.
+- Pode gerar Short/Reels: Sim, corte "como entrar no racha pelo celular".
+- Status: A fazer.
+
+### Vídeo 12, Como o atleta acessa perfil, Times do Dia e rankings
+
+- Área: Perfil do atleta, Times do Dia e estatísticas.
+- Rota principal: `/:slug/perfil`, `/:slug/partidas/times-do-dia` e `/:slug/estatisticas`.
+- Objetivo: Mostrar a experiência que gera engajamento para o atleta depois que ele já está no racha.
+- Tela inicial da gravação: Perfil do atleta aberto no celular.
+- Fluxo exato que devo seguir: Abrir perfil, mostrar dados principais, navegar para Times do Dia, abrir rankings/estatísticas, mostrar artilheiros ou ranking geral e explicar que tudo funciona pelo navegador.
+- Formato recomendado: Celular.
+- Justificativa do formato: Perfil, Times do Dia e rankings são consumidos principalmente no celular.
+- Tempo ideal: 4 a 6 minutos.
+- O que falar na introdução: "Depois que o atleta entra no racha, ele pode acompanhar perfil, times, resultados e rankings pelo próprio celular."
+- O que mostrar na tela: Perfil, edição rápida se aplicável, Times do Dia, ranking geral, artilheiros e estatísticas.
+- O que evitar: Não explicar configurações administrativas; manter a visão do atleta.
+- Melhor tipo de vídeo: Tutorial rápido.
+- Playlist recomendada: Perfil do Atleta.
+- Pode gerar Short/Reels: Sim, cortes "ver Times do Dia" e "ver ranking geral".
+- Status: A fazer.
+
+## Controle rápido da Fase 1
+
+| Número | Título | Bloco | Área | Rota principal | Formato | Prioridade | Gravado | Editado | Capa criada | Publicado | Link | Observações |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | O que é o Fut7Pro e como acessar pelo navegador | A | Primeiros passos | `/`, `/como-funciona`, `/:slug` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Usar racha demo |
+| 2 | Como funciona o Site Público do Racha | A | Site público | `/:slug` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Mostrar mobile |
+| 3 | Como usar o Sorteio Inteligente do Fut7Pro | A | Sorteio | `/admin/partidas/sorteio-inteligente` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Principal vídeo de valor |
+| 4 | Como acessar o Painel Admin do Fut7Pro | B | Login admin | `/admin/login` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Não expor senha real |
+| 5 | Visão geral do Painel Admin | B | Painel Admin | `/admin/dashboard` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Tour sem aprofundar |
+| 6 | Como fazer a configuração inicial do racha | B | Configuração | `/admin/rachas` | Desktop | Alta | Não | Não | Não | Não |  | Conferir dados mockados |
+| 7 | Como cadastrar e aprovar atletas | B | Atletas | `/admin/jogadores/listar-cadastrar` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Usar atleta teste |
+| 8 | Como definir nível, estrelas e posição dos atletas | B | Atletas | `/admin/jogadores/nivel-dos-atletas` | Desktop | Alta | Não | Não | Não | Não |  | Base do sorteio |
+| 9 | Como criar partida ou próximo racha | B | Partidas | `/admin/partidas/criar` | Desktop | Alta | Não | Não | Não | Não |  | Não aprofundar sorteio |
+| 10 | Como publicar Times do Dia e registrar resultados | B | Resultados | `/admin/partidas/times-do-dia`, `/admin/partidas/resultados-do-dia` | Desktop + Celular | Alta | Não | Não | Não | Não |  | Usar dados fictícios |
+| 11 | Como o atleta entra no racha pelo celular | C | Atleta | `/:slug/entrar`, `/:slug/register` | Celular | Alta | Não | Não | Não | Não |  | Separar de login admin |
+| 12 | Como o atleta acessa perfil, Times do Dia e rankings | C | Atleta | `/:slug/perfil`, `/:slug/partidas/times-do-dia`, `/:slug/estatisticas` | Celular | Alta | Não | Não | Não | Não |  | Gerar cortes curtos |
+
+## Ordem recomendada para gravar em lote
+
+1. Primeiro vídeos de desktop: vídeo 6, vídeo 8 e vídeo 9.
+2. Depois vídeos mobile: vídeo 11 e vídeo 12.
+3. Depois vídeos mistos desktop + celular: vídeo 1, vídeo 2, vídeo 3, vídeo 4, vídeo 5, vídeo 7 e vídeo 10.
+4. Depois cortes para Shorts/Reels: extrair cortes dos vídeos 1, 2, 3, 4, 5, 7, 8, 10, 11 e 12.
+
+## Vídeos da Fase 1 que podem virar Shorts/Reels
+
+| Vídeo | Tema do corte curto |
+|---|---|
+| 1 | Fut7Pro funciona no navegador, sem baixar aplicativo. |
+| 2 | Seu racha ganha um site público próprio. |
+| 3 | Sorteio Inteligente montando times equilibrados. |
+| 4 | Como entrar no Painel Admin em menos de 1 minuto. |
+| 5 | Tour rápido pelo Painel Admin. |
+| 7 | Como aprovar um atleta no racha. |
+| 8 | Por que posição e estrelas melhoram o sorteio. |
+| 10 | Como publicar os Times do Dia. |
+| 10 | Como registrar placar, gols e assistências. |
+| 11 | Como o atleta entra no racha pelo celular. |
+| 12 | Como ver Times do Dia pelo celular. |
+| 12 | Como ver o ranking geral do racha. |
+
+## Vídeos mínimos antes de divulgar o Fut7Pro em massa
+
+Entre os vídeos da Fase 1, os indispensáveis antes de divulgar para muitos administradores são:
+
+| Vídeo | Motivo |
+|---|---|
+| 1 | Explica rapidamente o que é o Fut7Pro e reduz objeções sobre instalação de aplicativo. |
+| 3 | Mostra o principal diferencial comercial: Sorteio Inteligente. |
+| 4 | Reduz dúvidas básicas de acesso ao Painel Admin. |
+| 5 | Ajuda o administrador novo a se localizar. |
+| 6 | Evita rachas começarem com dados básicos incompletos. |
+| 7 | Resolve o primeiro gargalo operacional: cadastrar e aprovar atletas. |
+| 8 | Prepara a base para o sorteio funcionar bem. |
+| 10 | Ensina o fluxo central do dia do racha: publicar times e registrar resultados. |
+| 11 | Reduz dúvidas dos atletas sobre como entrar pelo celular. |
+
 Base analisada em 25/05/2026:
 - App principal: `C:\Projetos\fut7pro-web`
 - Site institucional e embaixadores: `C:\Projetos\fut7pro-site`
