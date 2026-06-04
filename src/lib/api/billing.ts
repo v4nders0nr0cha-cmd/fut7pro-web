@@ -68,7 +68,10 @@ export interface Invoice {
 export interface ChargePricing {
   isFirstPayment: boolean;
   firstPaymentDiscountApplied: boolean;
+  recurringDiscountApplied?: boolean;
+  couponAppliesToRecurring?: boolean;
   baseAmountCents: number;
+  recurringAmountCents?: number | null;
   discountPct: number;
   discountCents: number;
   totalCents: number;

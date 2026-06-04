@@ -352,6 +352,24 @@ export default function PlanosLimitesPage() {
   const invoices = subscription?.invoices ?? [];
   const paymentPricing =
     checkoutPricing || subscription?.pricingPreview || buildFallbackPricing(subscription?.amount);
+  const hasRecurringCoupon =
+    Boolean(subscription?.couponCode) &&
+    Boolean(paymentPricing?.couponAppliesToRecurring || paymentPricing?.recurringDiscountApplied) &&
+    (typeof paymentPricing?.recurringAmountCents === "number" ||
+      typeof paymentPricing?.totalCents === "number") &&
+    typeof paymentPricing?.baseAmountCents === "number" &&
+    (paymentPricing.recurringAmountCents ?? paymentPricing.totalCents) > 0 &&
+    (paymentPricing.recurringAmountCents ?? paymentPricing.totalCents) <
+      paymentPricing.baseAmountCents;
+  const effectiveRecurringAmountCents = hasRecurringCoupon
+    ? (paymentPricing?.recurringAmountCents ?? paymentPricing?.totalCents)
+    : subscription?.amount;
+  const recurringDiscountCents =
+    hasRecurringCoupon &&
+    typeof paymentPricing?.baseAmountCents === "number" &&
+    typeof effectiveRecurringAmountCents === "number"
+      ? Math.max(paymentPricing.baseAmountCents - effectiveRecurringAmountCents, 0)
+      : 0;
   const pixPricing = useMemo(
     () => buildPixPricingFromInvoice(pixCharge, paymentPricing),
     [paymentPricing, pixCharge]
@@ -580,10 +598,17 @@ export default function PlanosLimitesPage() {
                   <p className="text-base font-semibold text-white">{periodLabel}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-gray-500">Valor de referência</span>
+                  <span className="text-xs text-gray-500">
+                    {hasRecurringCoupon ? "Valor recorrente com cupom" : "Valor de referência"}
+                  </span>
                   <p className="text-base font-semibold text-white">
-                    {formatCurrencyFromCents(subscription?.amount)}
+                    {formatCurrencyFromCents(effectiveRecurringAmountCents)}
                   </p>
+                  {hasRecurringCoupon && (
+                    <p className="text-xs text-gray-500 line-through">
+                      {formatCurrencyFromCents(subscription?.amount)}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <span className="text-xs text-gray-500">Status financeiro</span>
@@ -734,6 +759,7 @@ export default function PlanosLimitesPage() {
                   )
                   .map((plan) => {
                     const isCurrentPlan = subscription?.planKey === plan.key;
+                    const showRecurringCouponPrice = isCurrentPlan && hasRecurringCoupon;
                     const features = plan.features?.length ? plan.features : [];
                     const limits = plan.limits?.length
                       ? plan.limits
@@ -765,15 +791,31 @@ export default function PlanosLimitesPage() {
                         )}
                         <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
                         <div className="text-xl font-bold mb-1">
-                          {plan.amount.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                            minimumFractionDigits: 2,
-                          })}
+                          {showRecurringCouponPrice
+                            ? formatCurrencyFromCents(effectiveRecurringAmountCents)
+                            : plan.amount.toLocaleString("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                                minimumFractionDigits: 2,
+                              })}
                           <span className="text-sm text-neutral-400">
                             /{plan.interval === "year" ? "ano" : "mes"}
                           </span>
                         </div>
+                        {showRecurringCouponPrice && (
+                          <p
+                            className={`mb-2 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
+                          >
+                            <span className="line-through">
+                              {plan.amount.toLocaleString("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                                minimumFractionDigits: 2,
+                              })}
+                            </span>{" "}
+                            com cupom aplicado na recorrência
+                          </p>
+                        )}
                         {plan.paymentNote && (
                           <p
                             className={`mb-3 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
@@ -923,8 +965,11 @@ export default function PlanosLimitesPage() {
             </div>
 
             <div className="mt-4 text-xs text-gray-400">
-              Plano atual: <b className="text-gray-200">{planLabel}</b> | Valor:{" "}
-              <b className="text-gray-200">{formatCurrencyFromCents(subscription.amount)}</b>
+              Plano atual: <b className="text-gray-200">{planLabel}</b> |{" "}
+              {hasRecurringCoupon ? "Valor recorrente" : "Valor"}:{" "}
+              <b className="text-gray-200">
+                {formatCurrencyFromCents(effectiveRecurringAmountCents)}
+              </b>
             </div>
             {paymentPricing && (
               <div className="mt-3 rounded-xl border border-[#2b2b2b] bg-[#111418] p-3 text-xs text-gray-300">
@@ -941,13 +986,25 @@ export default function PlanosLimitesPage() {
                     <span>-{formatCurrencyFromCents(paymentPricing.discountCents)}</span>
                   </div>
                 )}
+                {hasRecurringCoupon && (
+                  <div className="mt-1 flex items-center justify-between text-emerald-300">
+                    <span>Desconto recorrente cupom embaixador</span>
+                    <span>-{formatCurrencyFromCents(recurringDiscountCents)}</span>
+                  </div>
+                )}
                 <div className="mt-2 flex items-center justify-between border-t border-[#2b2b2b] pt-2 font-semibold text-white">
                   <span>
-                    {paymentPricing.firstPaymentDiscountApplied
-                      ? "Total do primeiro pagamento"
-                      : "Total desta cobrança"}
+                    {hasRecurringCoupon
+                      ? "Total recorrente"
+                      : paymentPricing.firstPaymentDiscountApplied
+                        ? "Total do primeiro pagamento"
+                        : "Total desta cobrança"}
                   </span>
-                  <span>{formatCurrencyFromCents(paymentPricing.totalCents)}</span>
+                  <span>
+                    {formatCurrencyFromCents(
+                      hasRecurringCoupon ? effectiveRecurringAmountCents : paymentPricing.totalCents
+                    )}
+                  </span>
                 </div>
                 {paymentPricing.firstPaymentDiscountApplied && (
                   <p className="mt-2 text-[11px] text-gray-400">
