@@ -5,6 +5,7 @@ export const FUT7PRO_OFFICIAL_PHONE_TEL = `tel:+${FUT7PRO_OFFICIAL_WHATSAPP_NUMB
 export const FUT7PRO_OFFICIAL_CONTACT_EMAIL = "contato@fut7pro.com.br";
 export const FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL = "social@fut7pro.com.br";
 export const FUT7PRO_OFFICIAL_SUPPORT_EMAIL = "suporte@fut7pro.com.br";
+export const FUT7PRO_OFFICIAL_INSTAGRAM_URL = "https://www.instagram.com/fut7pro";
 
 export function buildFut7ProOfficialWhatsAppUrl(message?: string) {
   if (!message) return FUT7PRO_OFFICIAL_WHATSAPP_URL;
