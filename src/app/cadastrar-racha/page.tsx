@@ -307,6 +307,12 @@ function CadastroRachaPageContent() {
     firstPaymentDiscountPercent: number;
     ambassadorName?: string | null;
     couponType?: string | null;
+    allowedPlans?: string[];
+    publicPriceCents?: number | null;
+    priceWithCouponCents?: number | null;
+    recurringAmountCents?: number | null;
+    couponAppliesToRecurring?: boolean;
+    planKey?: string;
   } | null>(null);
   const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState("");
@@ -677,10 +683,40 @@ function CadastroRachaPageContent() {
   const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
   const hasAppliedCoupon = couponStatus === "valid" && Boolean(couponBenefits);
   const ambassadorDisplayName = (couponBenefits?.ambassadorName || "").trim() || "Fut7Pro";
+  const recurringCouponAmount =
+    hasAppliedCoupon &&
+    couponBenefits?.couponAppliesToRecurring &&
+    typeof couponBenefits.recurringAmountCents === "number"
+      ? couponBenefits.recurringAmountCents / 100
+      : null;
+  const recurringCouponAmountLabel =
+    recurringCouponAmount !== null ? priceFormatter.format(recurringCouponAmount) : null;
+  const selectedPriceSuffix = selectedPlan?.interval === "year" ? "ano" : "mes";
   const discountPercentLabel = discountPercent.toLocaleString("pt-BR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
+
+  useEffect(() => {
+    if (couponStatus !== "valid" || !couponBenefits || !selectedPlanKey) return;
+    const allowedPlans = couponBenefits.allowedPlans ?? [];
+    if (!allowedPlans.length || allowedPlans.includes(selectedPlanKey)) return;
+
+    setCouponStatus("invalid");
+    setCouponBenefits(null);
+    setCouponInputHint("");
+    setCouponErrorMessage("Este cupom não é válido para o plano selecionado.");
+    trackCadastroFunnelEvent("coupon_apply_fail", { reason: "plan_not_allowed", source: "manual" });
+  }, [couponBenefits, couponStatus, selectedPlanKey]);
+
+  useEffect(() => {
+    if (couponStatus !== "valid" || !couponBenefits || !selectedPlanKey) return;
+    const allowedPlans = couponBenefits.allowedPlans ?? [];
+    if (allowedPlans.length && !allowedPlans.includes(selectedPlanKey)) return;
+    if (couponBenefits.planKey === selectedPlanKey) return;
+
+    void validateCoupon(couponCode, "auto");
+  }, [couponBenefits, couponCode, couponStatus, selectedPlanKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -816,6 +852,17 @@ function CadastroRachaPageContent() {
               ? data.ambassadorName.trim()
               : null,
           couponType: typeof data.couponType === "string" ? data.couponType : null,
+          allowedPlans: Array.isArray(data.allowedPlans)
+            ? data.allowedPlans.filter((plan: unknown): plan is string => typeof plan === "string")
+            : [],
+          publicPriceCents:
+            typeof data.publicPriceCents === "number" ? data.publicPriceCents : null,
+          priceWithCouponCents:
+            typeof data.priceWithCouponCents === "number" ? data.priceWithCouponCents : null,
+          recurringAmountCents:
+            typeof data.recurringAmountCents === "number" ? data.recurringAmountCents : null,
+          couponAppliesToRecurring: Boolean(data.couponAppliesToRecurring),
+          planKey: selectedPlanKey || undefined,
         });
         setCouponErrorMessage("");
         trackCadastroFunnelEvent("coupon_apply_success", {
@@ -2313,6 +2360,8 @@ function CadastroRachaPageContent() {
                         bullets: [],
                       };
                       const priceSuffix = plan.interval === "month" ? "mes" : "ano";
+                      const selectedRecurringCouponAmount =
+                        isSelected && recurringCouponAmount !== null ? recurringCouponAmount : null;
 
                       return (
                         <button
@@ -2342,7 +2391,22 @@ function CadastroRachaPageContent() {
                           </div>
 
                           <div className="mt-3 text-[11px] text-gray-400">
-                            Após o teste: {priceFormatter.format(plan.amount)}/{priceSuffix}
+                            Após o teste:{" "}
+                            {selectedRecurringCouponAmount !== null ? (
+                              <>
+                                <span className="text-emerald-200">
+                                  {priceFormatter.format(selectedRecurringCouponAmount)}/
+                                  {priceSuffix}
+                                </span>{" "}
+                                <span className="line-through">
+                                  {priceFormatter.format(plan.amount)}/{priceSuffix}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                {priceFormatter.format(plan.amount)}/{priceSuffix}
+                              </>
+                            )}
                           </div>
 
                           {copy.bullets.length > 0 && (
@@ -2389,8 +2453,8 @@ function CadastroRachaPageContent() {
                       Cupom de embaixador ou influencer (opcional)
                     </p>
                     <p className="text-[11px] text-gray-400">
-                      Se você recebeu um cupom, aplique aqui para ganhar benefícios no teste e no
-                      primeiro pagamento.
+                      Se você recebeu um cupom, aplique aqui para validar benefícios no teste e no
+                      valor da assinatura.
                     </p>
                   </div>
 
@@ -2445,8 +2509,10 @@ function CadastroRachaPageContent() {
                     <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
                       <p>Cupom aplicado com sucesso. Embaixador: {ambassadorDisplayName}.</p>
                       <p className="mt-1">
-                        Agora você tem {totalTrialDays} dias de teste grátis e{" "}
-                        {discountPercentLabel}% de desconto na primeira cobrança.
+                        Agora você tem {totalTrialDays} dias de teste grátis
+                        {recurringCouponAmountLabel
+                          ? ` e assinatura recorrente de ${recurringCouponAmountLabel}/${selectedPriceSuffix}.`
+                          : ` e ${discountPercentLabel}% de desconto na assinatura.`}
                       </p>
                       <button
                         type="button"
@@ -2477,7 +2543,10 @@ function CadastroRachaPageContent() {
                       </p>
                       <p className="text-[11px] text-emerald-100">
                         Você ganhou {bonusTrialDays} dias extras, totalizando {totalTrialDays} dias
-                        de teste grátis, e {discountPercentLabel}% de desconto na primeira cobrança.
+                        de teste grátis
+                        {recurringCouponAmountLabel
+                          ? `, e o valor recorrente fica ${recurringCouponAmountLabel}/${selectedPriceSuffix}.`
+                          : `, e ${discountPercentLabel}% de desconto na assinatura.`}
                       </p>
                     </div>
                   ) : (
@@ -2485,7 +2554,7 @@ function CadastroRachaPageContent() {
                       <p>Seu teste grátis: {baseTrialDays} dias.</p>
                       <p className="text-[11px] text-gray-400">
                         Você pode aplicar um cupom acima para aumentar seu teste e receber desconto
-                        no primeiro pagamento.
+                        na assinatura.
                       </p>
                     </div>
                   )}
