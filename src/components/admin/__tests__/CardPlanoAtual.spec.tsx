@@ -31,7 +31,7 @@ describe("CardPlanoAtual", () => {
     render(<CardPlanoAtual subscription={baseSubscription} status={pendingStatus} />);
 
     expect(screen.getByText(/Plano atual/i)).toBeInTheDocument();
-    expect(screen.getByText(/Teste grátis/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mensal Essencial/i)).toBeInTheDocument();
     expect(screen.getByText(/Teste válido até/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ativar plano/i })).toHaveAttribute(
       "href",
@@ -80,5 +80,34 @@ describe("CardPlanoAtual", () => {
 
     expect(screen.getByText(/ACESSO LIBERADO/i)).toBeInTheDocument();
     expect(screen.getByText(/liberado temporariamente por compensação/i)).toBeInTheDocument();
+  });
+
+  it("mostra valor recorrente com cupom durante o teste", () => {
+    render(
+      <CardPlanoAtual
+        subscription={{
+          ...baseSubscription,
+          planKey: "monthly_essential",
+          amount: 15000,
+          couponCode: "NAYARA10",
+          pricingPreview: {
+            isFirstPayment: true,
+            firstPaymentDiscountApplied: false,
+            recurringDiscountApplied: true,
+            couponAppliesToRecurring: true,
+            baseAmountCents: 15000,
+            recurringAmountCents: 9900,
+            discountPct: 34,
+            discountCents: 5100,
+            totalCents: 9900,
+          },
+        }}
+        status={pendingStatus}
+      />
+    );
+
+    expect(screen.getByText(/Valor recorrente com cupom/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/R\$\s*99,00\/mês/i)).toHaveLength(2);
+    expect(screen.getByText(/Após o teste, o plano fica R\$\s*99,00\/mês/i)).toBeInTheDocument();
   });
 });
