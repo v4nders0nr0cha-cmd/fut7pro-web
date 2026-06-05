@@ -15,12 +15,12 @@ interface CardPlanoAtualProps {
 
 function mapTipoPlano(subscription?: Subscription | null, fallback?: PlanoTipo): PlanoTipo {
   if (!subscription) return fallback ?? "trial";
-  if (subscription.status === "trialing") return "trial";
   const key = subscription.planKey || "";
   if (key.includes("marketing") && key.includes("year")) return "anual-marketing";
   if (key.includes("marketing") && key.includes("month")) return "mensal-marketing";
   if (key.includes("year")) return "anual";
   if (key.includes("free") || key.includes("gratuito")) return "gratuito";
+  if (!key && subscription.status === "trialing") return "trial";
   return "mensal";
 }
 
@@ -50,6 +50,43 @@ function formatDate(date?: string | null) {
   return dt.toLocaleDateString("pt-BR");
 }
 
+function formatCurrencyFromCents(value?: number | null) {
+  if (value === null || value === undefined) return null;
+  return (value / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+function resolveBillingPeriodLabel(subscription?: Subscription | null) {
+  const key = (subscription?.planKey || "").toLowerCase();
+  const isYearly =
+    subscription?.interval === "year" || key.includes("year") || key.includes("anual");
+  return isYearly ? "ano" : "mês";
+}
+
+function resolveRecurringPrice(subscription?: Subscription | null) {
+  const pricing = subscription?.pricingPreview;
+  const recurringAmount =
+    pricing?.couponAppliesToRecurring || pricing?.recurringDiscountApplied
+      ? (pricing.recurringAmountCents ?? pricing.totalCents)
+      : subscription?.amount;
+  const baseAmount = pricing?.baseAmountCents ?? subscription?.amount ?? null;
+  const hasRecurringCoupon =
+    Boolean(subscription?.couponCode) &&
+    typeof recurringAmount === "number" &&
+    typeof baseAmount === "number" &&
+    recurringAmount > 0 &&
+    recurringAmount < baseAmount;
+
+  return {
+    recurringAmount,
+    baseAmount,
+    hasRecurringCoupon,
+  };
+}
+
 export default function CardPlanoAtual({
   subscription,
   status,
@@ -75,6 +112,10 @@ export default function CardPlanoAtual({
 
   const tipo = mapTipoPlano(subscription, tipoPlano ?? "trial");
   const label = labelPlano(tipo);
+  const recurringPrice = resolveRecurringPrice(subscription);
+  const recurringAmountLabel = formatCurrencyFromCents(recurringPrice.recurringAmount);
+  const baseAmountLabel = formatCurrencyFromCents(recurringPrice.baseAmount);
+  const billingPeriodLabel = resolveBillingPeriodLabel(subscription);
   const access = status?.access ?? subscription?.access ?? null;
   const financial =
     status?.financialStatus ??
@@ -109,8 +150,14 @@ export default function CardPlanoAtual({
       : `Acesso liberado por compensação${untilLabel}. Você pode usar o painel normalmente durante esse período.`;
   } else if (isTrial) {
     mensagem = dataFormatada
-      ? `Teste válido até ${dataFormatada}. Converta seu teste para não perder o acesso.`
-      : "Ative seu plano para liberar financeiro, cobrança e publicação automática.";
+      ? `Teste válido até ${dataFormatada}. ${
+          recurringAmountLabel
+            ? `Após o teste, o plano fica ${recurringAmountLabel}/${billingPeriodLabel}.`
+            : "Converta seu teste para não perder o acesso."
+        }`
+      : recurringAmountLabel
+        ? `Após o teste, o plano fica ${recurringAmountLabel}/${billingPeriodLabel}.`
+        : "Ative seu plano para liberar financeiro, cobrança e publicação automática.";
   } else if (isPendente) {
     mensagem = "Pagamento pendente ou em aprovação. Regularize para manter o painel ativo.";
   } else if (isAtivo) {
@@ -152,6 +199,17 @@ export default function CardPlanoAtual({
           <div className="flex items-center gap-2">
             <span className="text-white font-extrabold text-2xl">{label}</span>
           </div>
+          {recurringAmountLabel && (
+            <div className="mt-1 text-sm text-gray-300">
+              {recurringPrice.hasRecurringCoupon ? "Valor recorrente com cupom: " : "Valor: "}
+              <b className="text-white">
+                {recurringAmountLabel}/{billingPeriodLabel}
+              </b>
+              {recurringPrice.hasRecurringCoupon && baseAmountLabel && (
+                <span className="ml-2 text-xs text-gray-500 line-through">{baseAmountLabel}</span>
+              )}
+            </div>
+          )}
         </div>
         <Link
           href={ctaHref}

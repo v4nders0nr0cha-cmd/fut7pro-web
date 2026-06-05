@@ -29,6 +29,51 @@ function resolveDiasRestantes(
   return calcDiasRestantes(effectiveAccessUntil || fallbackDate);
 }
 
+function formatCurrencyFromCents(value?: number | null) {
+  if (value === null || value === undefined) return null;
+  return (value / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+function resolvePlanLabel(planKey?: string | null) {
+  const key = planKey || "";
+  if (key.includes("marketing") && key.includes("year")) return "Anual + Marketing";
+  if (key.includes("marketing")) return "Mensal + Marketing";
+  if (key.includes("year")) return "Anual Essencial";
+  if (key.includes("essential") || key.includes("month")) return "Mensal Essencial";
+  return null;
+}
+
+function resolveBillingPeriodLabel(subscription?: Subscription | null) {
+  const key = (subscription?.planKey || "").toLowerCase();
+  const isYearly =
+    subscription?.interval === "year" || key.includes("year") || key.includes("anual");
+  return isYearly ? "ano" : "mês";
+}
+
+function resolveRecurringPrice(subscription?: Subscription | null) {
+  const pricing = subscription?.pricingPreview;
+  const recurringAmount =
+    pricing?.couponAppliesToRecurring || pricing?.recurringDiscountApplied
+      ? (pricing.recurringAmountCents ?? pricing.totalCents)
+      : subscription?.amount;
+  const baseAmount = pricing?.baseAmountCents ?? subscription?.amount ?? null;
+  const hasRecurringCoupon =
+    Boolean(subscription?.couponCode) &&
+    typeof recurringAmount === "number" &&
+    typeof baseAmount === "number" &&
+    recurringAmount > 0 &&
+    recurringAmount < baseAmount;
+
+  return {
+    recurringAmount,
+    hasRecurringCoupon,
+  };
+}
+
 export default function CardCicloPlano({
   subscription,
   status,
@@ -50,26 +95,36 @@ export default function CardCicloPlano({
     (subscription?.status === "past_due" ||
       status?.preapproval === "pending" ||
       status?.upfront === "pending");
+  const planLabel = resolvePlanLabel(subscription?.planKey);
+  const recurringPrice = resolveRecurringPrice(subscription);
+  const recurringAmountLabel = formatCurrencyFromCents(recurringPrice.recurringAmount);
+  const billingPeriodLabel = resolveBillingPeriodLabel(subscription);
 
   const mensagem = useMemo(() => {
     if (isCompensated) {
       return "Seu racha recebeu uma compensação de acesso temporária. Aproveite esse período extra para continuar usando o painel normalmente.";
     }
     if (isTrial) {
+      const planContext = planLabel ? ` do ${planLabel}` : "";
+      const recurringContext = recurringAmountLabel
+        ? recurringPrice.hasRecurringCoupon
+          ? ` Depois do teste, seu cupom mantém a recorrência em ${recurringAmountLabel}/${billingPeriodLabel}.`
+          : ` Depois do teste, o valor recorrente será ${recurringAmountLabel}/${billingPeriodLabel}.`
+        : "";
       if (diasRestantes > 7) {
-        return "O jogo está rolando, mas a partida tem hora para acabar. Garanta seu plano e siga no comando.";
+        return `Teste${planContext} em andamento.${recurringContext}`;
       }
       if (diasRestantes > 2) {
-        return "Está no segundo tempo! Falta pouco para o apito final. Ative seu plano.";
+        return `Falta pouco para acabar o teste${planContext}.${recurringContext}`;
       }
       if (diasRestantes === 2) {
-        return "Já estamos nos acréscimos! Não deixe o time na mão. Garanta o plano agora.";
+        return `Seu teste${planContext} termina em 2 dias.${recurringContext}`;
       }
       if (diasRestantes === 1) {
-        return "Ultimos minutos de jogo! Corra para ativar seu plano.";
+        return `Seu teste${planContext} termina amanhã.${recurringContext}`;
       }
       if (diasRestantes <= 0) {
-        return "Tempo esgotado! Teste encerrado. Ative um plano para manter o acesso.";
+        return `Teste${planContext} encerrado. Ative o pagamento para manter o acesso.`;
       }
     }
     if (isPendente) {
@@ -79,7 +134,17 @@ export default function CardCicloPlano({
       return "Sem ciclo ativo. Ative ou renove um plano para manter os recursos premium.";
     }
     return null;
-  }, [diasRestantes, isTrial, isAtivo, isPendente, isCompensated]);
+  }, [
+    diasRestantes,
+    isTrial,
+    isAtivo,
+    isPendente,
+    isCompensated,
+    planLabel,
+    recurringAmountLabel,
+    billingPeriodLabel,
+    recurringPrice.hasRecurringCoupon,
+  ]);
 
   if (loading) {
     return (
@@ -118,7 +183,9 @@ export default function CardCicloPlano({
             {isCompensated
               ? "restantes de acesso"
               : isTrial
-                ? "para acabar o teste"
+                ? planLabel
+                  ? `para acabar o teste do ${planLabel}`
+                  : "para acabar o teste"
                 : "para finalizar o ciclo"}
           </span>
         </div>
