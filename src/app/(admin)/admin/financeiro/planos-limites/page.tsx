@@ -914,6 +914,14 @@ export default function PlanosLimitesPage() {
                     const isCurrentPlan = subscription?.planKey === plan.key;
                     const showRecurringCouponPrice = isCurrentPlan && hasRecurringCoupon;
                     const features = plan.features?.length ? plan.features : [];
+                    const displayFeatures =
+                      isCurrentPlan && subscription?.extraTrialDays
+                        ? features.map((item) =>
+                            /teste gr[aá]tis por 20 dias/i.test(item)
+                              ? `Teste grátis por ${20 + subscription.extraTrialDays} dias com cupom embaixador - aproveite o benefício extra antes do primeiro pagamento`
+                              : item
+                          )
+                        : features;
                     const limits = plan.limits?.length
                       ? plan.limits
                       : ["Limites conforme contrato"];
@@ -984,7 +992,7 @@ export default function PlanosLimitesPage() {
                           </p>
                         )}
                         <ul className="mb-4 space-y-1">
-                          {features.map((item, i) => (
+                          {displayFeatures.map((item, i) => (
                             <li key={i} className="flex items-start gap-2 text-base">
                               <span
                                 className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}
