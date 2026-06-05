@@ -158,6 +158,40 @@ function normalizeCouponCode(value: string) {
     .slice(0, 32);
 }
 
+function getCompactPlanDescription(plan: Plan) {
+  const key = plan.key.toLowerCase();
+  const label = plan.label.toLowerCase();
+
+  if (key.includes("enterprise") || label.includes("enterprise")) {
+    return "Solução personalizada para arenas, clubes, ligas e grandes organizações.";
+  }
+
+  if (key.includes("marketing") || label.includes("marketing")) {
+    return "Sistema completo com apoio profissional para fortalecer a presença digital do racha.";
+  }
+
+  return "Gestão completa para organizar e profissionalizar o racha.";
+}
+
+function getCompactPlanFeatures(plan: Plan) {
+  const key = plan.key.toLowerCase();
+  const label = plan.label.toLowerCase();
+
+  if (key.includes("enterprise") || label.includes("enterprise")) {
+    return [
+      "Marca totalmente personalizada",
+      "Limites ampliados",
+      "Suporte e implantação exclusivos",
+    ];
+  }
+
+  if (key.includes("marketing") || label.includes("marketing")) {
+    return ["Tudo do Essencial", "Estruturação do Instagram", "Kit comercial para patrocinadores"];
+  }
+
+  return ["Sistema completo do Fut7Pro", "Até 4 administradores", "Atletas e partidas ilimitados"];
+}
+
 function formatPercent(value?: number | null) {
   if (value === null || value === undefined) return "0%";
   return `${value.toLocaleString("pt-BR", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}%`;
@@ -595,6 +629,13 @@ export default function PlanosLimitesPage() {
     }
   };
 
+  const handleCloseCouponBenefitModal = () => {
+    setCouponBenefitModal(null);
+    if (typeof window !== "undefined") {
+      window.location.reload();
+    }
+  };
+
   const handleRetryLoad = async () => {
     setRetryingLoad(true);
     await Promise.all([refreshPlans(), refreshSubscription()]);
@@ -913,20 +954,11 @@ export default function PlanosLimitesPage() {
                   .map((plan) => {
                     const isCurrentPlan = subscription?.planKey === plan.key;
                     const showRecurringCouponPrice = isCurrentPlan && hasRecurringCoupon;
-                    const features = plan.features?.length ? plan.features : [];
-                    const displayFeatures =
-                      isCurrentPlan && subscription?.extraTrialDays
-                        ? features.map((item) =>
-                            /teste gr[aá]tis por 20 dias/i.test(item)
-                              ? `Teste grátis por ${20 + subscription.extraTrialDays} dias com cupom embaixador - aproveite o benefício extra antes do primeiro pagamento`
-                              : item
-                          )
-                        : features;
-                    const limits = plan.limits?.length
-                      ? plan.limits
-                      : ["Limites conforme contrato"];
                     const isHighlight = Boolean(plan.highlight);
                     const isContact = plan.ctaType === "contact";
+                    const compactFeatures = getCompactPlanFeatures(plan);
+                    const compactDescription = getCompactPlanDescription(plan);
+                    const intervalSuffix = plan.interval === "year" ? "ano" : "mês";
                     const buttonLabel = isCurrentPlan
                       ? "Plano atual"
                       : isContact
@@ -936,7 +968,11 @@ export default function PlanosLimitesPage() {
                     return (
                       <div
                         key={plan.key}
-                        className={`relative rounded-2xl p-8 flex flex-col shadow-xl border-2 transition ${isHighlight ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-800 hover:border-yellow-300"}`}
+                        className={`relative flex min-h-[330px] flex-col rounded-2xl border p-6 shadow-lg transition ${
+                          isHighlight
+                            ? "border-yellow-400 bg-yellow-400 text-black"
+                            : "border-neutral-800 bg-neutral-900 text-white hover:border-yellow-300"
+                        }`}
                       >
                         {plan.badge && (
                           <span
@@ -950,8 +986,8 @@ export default function PlanosLimitesPage() {
                             Plano atual
                           </span>
                         )}
-                        <div className="text-2xl font-extrabold mb-1">{plan.label}</div>
-                        <div className="text-xl font-bold mb-1">
+                        <div className="mt-8 text-xl font-extrabold">{plan.label}</div>
+                        <div className="mt-3 text-2xl font-black">
                           {showRecurringCouponPrice
                             ? formatCurrencyFromCents(effectiveRecurringAmountCents)
                             : plan.amount.toLocaleString("pt-BR", {
@@ -959,41 +995,34 @@ export default function PlanosLimitesPage() {
                                 currency: "BRL",
                                 minimumFractionDigits: 2,
                               })}
-                          <span className="text-sm text-neutral-400">
-                            /{plan.interval === "year" ? "ano" : "mes"}
-                          </span>
+                          <span className="text-sm text-neutral-400">/{intervalSuffix}</span>
                         </div>
                         {showRecurringCouponPrice && (
                           <p
-                            className={`mb-2 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
+                            className={`mt-1 text-sm font-semibold ${isHighlight ? "text-black/75" : "text-emerald-300"}`}
                           >
-                            <span className="line-through">
+                            Com cupom de embaixador:{" "}
+                            <span className="font-black">
+                              {formatCurrencyFromCents(effectiveRecurringAmountCents)}/
+                              {intervalSuffix}
+                            </span>
+                            <span className="ml-2 line-through opacity-70">
                               {plan.amount.toLocaleString("pt-BR", {
                                 style: "currency",
                                 currency: "BRL",
                                 minimumFractionDigits: 2,
                               })}
-                            </span>{" "}
-                            com cupom aplicado na recorrência
+                            </span>
                           </p>
                         )}
-                        {plan.paymentNote && (
-                          <p
-                            className={`mb-3 text-xs ${isHighlight ? "text-black/70" : "text-neutral-400"}`}
-                          >
-                            {plan.paymentNote}
-                          </p>
-                        )}
-                        {plan.description && (
-                          <p
-                            className={`mb-4 text-sm ${isHighlight ? "text-black/80" : "text-neutral-300"}`}
-                          >
-                            {plan.description}
-                          </p>
-                        )}
-                        <ul className="mb-4 space-y-1">
-                          {displayFeatures.map((item, i) => (
-                            <li key={i} className="flex items-start gap-2 text-base">
+                        <p
+                          className={`mt-4 min-h-[44px] text-sm leading-relaxed ${isHighlight ? "text-black/80" : "text-neutral-300"}`}
+                        >
+                          {compactDescription}
+                        </p>
+                        <ul className="mt-5 space-y-2">
+                          {compactFeatures.map((item, i) => (
+                            <li key={i} className="flex items-start gap-2 text-sm">
                               <span
                                 className={`font-bold ${isHighlight ? "text-yellow-900" : "text-yellow-400"}`}
                               >
@@ -1003,16 +1032,6 @@ export default function PlanosLimitesPage() {
                             </li>
                           ))}
                         </ul>
-                        <div className="mb-4 flex flex-wrap gap-2">
-                          {limits.map((limite, i) => (
-                            <span
-                              key={i}
-                              className={`px-3 py-1 rounded-lg text-xs font-semibold ${isHighlight ? "bg-yellow-300 text-black" : "bg-neutral-700 text-yellow-200"}`}
-                            >
-                              {limite}
-                            </span>
-                          ))}
-                        </div>
                         <button
                           type="button"
                           onClick={() => handleOpenPlan(plan)}
@@ -1044,6 +1063,22 @@ export default function PlanosLimitesPage() {
                       </div>
                     );
                   })}
+              </div>
+            )}
+
+            {!loading && !error && planosDisponiveis.length > 0 && (
+              <div className="mt-8 rounded-2xl border border-neutral-800 bg-neutral-950/70 p-5 text-center">
+                <p className="text-sm text-neutral-300">
+                  Quer conhecer todos os recursos e comparar os planos?
+                </p>
+                <a
+                  href="https://www.fut7pro.com.br/precos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center justify-center rounded-xl border border-yellow-400 bg-yellow-400 px-5 py-2 text-sm font-black text-black transition hover:bg-yellow-300"
+                >
+                  Ver detalhes e comparar planos
+                </a>
               </div>
             )}
           </>
@@ -1282,13 +1317,13 @@ export default function PlanosLimitesPage() {
       )}
 
       {couponBenefitModal && (
-        <Modal onClose={() => setCouponBenefitModal(null)}>
+        <Modal onClose={handleCloseCouponBenefitModal}>
           <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-yellow-300/30 bg-[#151922] p-0 shadow-2xl shadow-yellow-500/10">
             <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-yellow-300/20 blur-3xl" />
             <div className="absolute -bottom-20 right-0 h-48 w-48 rounded-full bg-emerald-400/15 blur-3xl" />
             <button
               type="button"
-              onClick={() => setCouponBenefitModal(null)}
+              onClick={handleCloseCouponBenefitModal}
               className="absolute right-4 top-4 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
               aria-label="Fechar"
             >
@@ -1366,7 +1401,7 @@ export default function PlanosLimitesPage() {
 
               <button
                 type="button"
-                onClick={() => setCouponBenefitModal(null)}
+                onClick={handleCloseCouponBenefitModal}
                 className="mt-6 w-full rounded-xl bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-lg shadow-yellow-400/20 transition hover:bg-yellow-300"
               >
                 Entendi, continuar
