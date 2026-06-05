@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Head from "next/head";
 import { useSession } from "next-auth/react";
-import { FaCheckCircle, FaSpinner } from "react-icons/fa";
+import { FaCheckCircle, FaGift, FaSpinner, FaStar, FaTimes } from "react-icons/fa";
 import BillingAPI, {
   type ChargePricing,
   type Plan,
@@ -175,6 +175,16 @@ function buildFallbackPricing(baseAmountCents?: number | null): ChargePricing | 
   };
 }
 
+type CouponBenefitModalState = {
+  couponCode: string;
+  extraTrialDays: number;
+  discountCents: number;
+  recurringAmountCents?: number | null;
+  baseAmountCents?: number | null;
+  trialEnd?: string | null;
+  recurring: boolean;
+};
+
 function buildPixPricingFromInvoice(
   pixCharge: PixChargeResponse | null,
   paymentPricing: ChargePricing | null
@@ -263,6 +273,9 @@ export default function PlanosLimitesPage() {
   >(null);
   const [couponInput, setCouponInput] = useState("");
   const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
+  const [couponBenefitModal, setCouponBenefitModal] = useState<CouponBenefitModalState | null>(
+    null
+  );
   const [retryingLoad, setRetryingLoad] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -431,13 +444,31 @@ export default function PlanosLimitesPage() {
 
     try {
       const updated = await BillingAPI.applyCouponToSubscription(subscription.id, normalizedCoupon);
-      setCheckoutPricing(updated.pricingPreview || null);
+      const pricing = updated.pricingPreview;
+      setCheckoutPricing(pricing || null);
       setCouponInput("");
+      const recurringAmountCents = pricing?.recurringAmountCents ?? pricing?.totalCents ?? null;
+      const baseAmountCents = pricing?.baseAmountCents ?? updated.amount ?? null;
+      const discountCents =
+        typeof baseAmountCents === "number" &&
+        typeof recurringAmountCents === "number" &&
+        recurringAmountCents < baseAmountCents
+          ? baseAmountCents - recurringAmountCents
+          : pricing?.discountCents || 0;
       setCouponSuccess(
-        updated.pricingPreview?.couponAppliesToRecurring
+        pricing?.couponAppliesToRecurring
           ? "Cupom aplicado. O desconto recorrente passa a valer para os próximos pagamentos."
           : "Cupom aplicado com sucesso."
       );
+      setCouponBenefitModal({
+        couponCode: updated.couponCode || normalizedCoupon,
+        extraTrialDays: updated.extraTrialDays || 0,
+        discountCents,
+        recurringAmountCents,
+        baseAmountCents,
+        trialEnd: updated.trialEnd,
+        recurring: Boolean(pricing?.couponAppliesToRecurring || pricing?.recurringDiscountApplied),
+      });
       await refreshSubscription();
     } catch (err) {
       console.error(err);
@@ -1238,6 +1269,101 @@ export default function PlanosLimitesPage() {
             >
               Fechar
             </button>
+          </div>
+        </Modal>
+      )}
+
+      {couponBenefitModal && (
+        <Modal onClose={() => setCouponBenefitModal(null)}>
+          <div className="relative mx-auto w-full max-w-xl overflow-hidden rounded-3xl border border-yellow-300/30 bg-[#151922] p-0 shadow-2xl shadow-yellow-500/10">
+            <div className="absolute -left-16 -top-16 h-40 w-40 rounded-full bg-yellow-300/20 blur-3xl" />
+            <div className="absolute -bottom-20 right-0 h-48 w-48 rounded-full bg-emerald-400/15 blur-3xl" />
+            <button
+              type="button"
+              onClick={() => setCouponBenefitModal(null)}
+              className="absolute right-4 top-4 z-20 rounded-full border border-white/10 bg-white/5 p-2 text-white/70 transition hover:bg-white/10 hover:text-white"
+              aria-label="Fechar"
+            >
+              <FaTimes />
+            </button>
+
+            <div className="relative px-6 pb-7 pt-8 md:px-8">
+              <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full border border-yellow-300/40 bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-black shadow-lg shadow-yellow-400/30">
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-black/10">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/30" />
+                  <FaGift className="relative text-4xl" />
+                </div>
+              </div>
+
+              <div className="text-center">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-emerald-200">
+                  <FaStar className="text-yellow-300" />
+                  Cupom validado
+                </div>
+                <h3 className="text-2xl font-black text-white md:text-3xl">Benefício liberado</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-300">
+                  O cupom <b className="text-yellow-300">{couponBenefitModal.couponCode}</b> foi
+                  aplicado ao seu racha. Seu teste e os próximos pagamentos já foram atualizados.
+                </p>
+              </div>
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                <div className="rounded-2xl border border-yellow-300/20 bg-yellow-300/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-yellow-100/70">
+                    Tempo extra
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-yellow-300">
+                    +{couponBenefitModal.extraTrialDays || 0} dias
+                  </p>
+                  <p className="mt-1 text-xs text-yellow-50/80">
+                    {couponBenefitModal.trialEnd
+                      ? `Teste válido até ${formatDate(couponBenefitModal.trialEnd)}.`
+                      : "Benefício adicionado ao período de teste."}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-100/70">
+                    Economia
+                  </p>
+                  <p className="mt-2 text-3xl font-black text-emerald-300">
+                    {formatCurrencyFromCents(couponBenefitModal.discountCents)}
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-50/80">
+                    {couponBenefitModal.recurring
+                      ? "de desconto recorrente em cada pagamento."
+                      : "de desconto aplicado ao pagamento elegível."}
+                  </p>
+                </div>
+              </div>
+
+              {couponBenefitModal.recurring && (
+                <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-200">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <span>Valor recorrente com cupom</span>
+                    <strong className="text-xl text-white">
+                      {formatCurrencyFromCents(couponBenefitModal.recurringAmountCents)}/mês
+                    </strong>
+                  </div>
+                  {couponBenefitModal.baseAmountCents && (
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Valor original:{" "}
+                      <span className="line-through">
+                        {formatCurrencyFromCents(couponBenefitModal.baseAmountCents)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setCouponBenefitModal(null)}
+                className="mt-6 w-full rounded-xl bg-yellow-400 px-5 py-3 text-sm font-black text-black shadow-lg shadow-yellow-400/20 transition hover:bg-yellow-300"
+              >
+                Entendi, continuar
+              </button>
+            </div>
           </div>
         </Modal>
       )}
