@@ -84,4 +84,21 @@ describe("CardCicloPlano", () => {
     expect(screen.getAllByText(/teste do Mensal Essencial/i)).toHaveLength(2);
     expect(screen.getByText(/recorrência em R\$\s*99,00\/mês/i)).toBeInTheDocument();
   });
+
+  it("usa recorrência anual quando o plano é anual", () => {
+    render(
+      <CardCicloPlano
+        subscription={{
+          ...subscriptionBase,
+          planKey: "yearly_essential",
+          interval: "year",
+          trialEnd: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
+          amount: 150000,
+        }}
+      />
+    );
+
+    expect(screen.getAllByText(/teste do Anual Essencial/i)).toHaveLength(2);
+    expect(screen.getByText(/valor recorrente será R\$\s*1\.500,00\/ano/i)).toBeInTheDocument();
+  });
 });

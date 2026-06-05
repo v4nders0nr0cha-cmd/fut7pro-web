@@ -47,6 +47,13 @@ function resolvePlanLabel(planKey?: string | null) {
   return null;
 }
 
+function resolveBillingPeriodLabel(subscription?: Subscription | null) {
+  const key = (subscription?.planKey || "").toLowerCase();
+  const isYearly =
+    subscription?.interval === "year" || key.includes("year") || key.includes("anual");
+  return isYearly ? "ano" : "mês";
+}
+
 function resolveRecurringPrice(subscription?: Subscription | null) {
   const pricing = subscription?.pricingPreview;
   const recurringAmount =
@@ -91,6 +98,7 @@ export default function CardCicloPlano({
   const planLabel = resolvePlanLabel(subscription?.planKey);
   const recurringPrice = resolveRecurringPrice(subscription);
   const recurringAmountLabel = formatCurrencyFromCents(recurringPrice.recurringAmount);
+  const billingPeriodLabel = resolveBillingPeriodLabel(subscription);
 
   const mensagem = useMemo(() => {
     if (isCompensated) {
@@ -100,8 +108,8 @@ export default function CardCicloPlano({
       const planContext = planLabel ? ` do ${planLabel}` : "";
       const recurringContext = recurringAmountLabel
         ? recurringPrice.hasRecurringCoupon
-          ? ` Depois do teste, seu cupom mantém a recorrência em ${recurringAmountLabel}/mês.`
-          : ` Depois do teste, o valor recorrente será ${recurringAmountLabel}/mês.`
+          ? ` Depois do teste, seu cupom mantém a recorrência em ${recurringAmountLabel}/${billingPeriodLabel}.`
+          : ` Depois do teste, o valor recorrente será ${recurringAmountLabel}/${billingPeriodLabel}.`
         : "";
       if (diasRestantes > 7) {
         return `Teste${planContext} em andamento.${recurringContext}`;
@@ -134,6 +142,7 @@ export default function CardCicloPlano({
     isCompensated,
     planLabel,
     recurringAmountLabel,
+    billingPeriodLabel,
     recurringPrice.hasRecurringCoupon,
   ]);
 

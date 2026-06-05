@@ -110,4 +110,21 @@ describe("CardPlanoAtual", () => {
     expect(screen.getAllByText(/R\$\s*99,00\/mês/i)).toHaveLength(2);
     expect(screen.getByText(/Após o teste, o plano fica R\$\s*99,00\/mês/i)).toBeInTheDocument();
   });
+
+  it("usa recorrência anual quando o plano é anual", () => {
+    render(
+      <CardPlanoAtual
+        subscription={{
+          ...baseSubscription,
+          planKey: "yearly_essential",
+          interval: "year",
+          amount: 150000,
+        }}
+        status={pendingStatus}
+      />
+    );
+
+    expect(screen.getByText(/Anual Essencial/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/R\$\s*1\.500,00\/ano/i)).toHaveLength(2);
+  });
 });

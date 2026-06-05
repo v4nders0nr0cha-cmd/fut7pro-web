@@ -59,6 +59,13 @@ function formatCurrencyFromCents(value?: number | null) {
   });
 }
 
+function resolveBillingPeriodLabel(subscription?: Subscription | null) {
+  const key = (subscription?.planKey || "").toLowerCase();
+  const isYearly =
+    subscription?.interval === "year" || key.includes("year") || key.includes("anual");
+  return isYearly ? "ano" : "mês";
+}
+
 function resolveRecurringPrice(subscription?: Subscription | null) {
   const pricing = subscription?.pricingPreview;
   const recurringAmount =
@@ -108,6 +115,7 @@ export default function CardPlanoAtual({
   const recurringPrice = resolveRecurringPrice(subscription);
   const recurringAmountLabel = formatCurrencyFromCents(recurringPrice.recurringAmount);
   const baseAmountLabel = formatCurrencyFromCents(recurringPrice.baseAmount);
+  const billingPeriodLabel = resolveBillingPeriodLabel(subscription);
   const access = status?.access ?? subscription?.access ?? null;
   const financial =
     status?.financialStatus ??
@@ -142,9 +150,13 @@ export default function CardPlanoAtual({
       : `Acesso liberado por compensação${untilLabel}. Você pode usar o painel normalmente durante esse período.`;
   } else if (isTrial) {
     mensagem = dataFormatada
-      ? `Teste válido até ${dataFormatada}. ${recurringAmountLabel ? `Após o teste, o plano fica ${recurringAmountLabel}/mês.` : "Converta seu teste para não perder o acesso."}`
+      ? `Teste válido até ${dataFormatada}. ${
+          recurringAmountLabel
+            ? `Após o teste, o plano fica ${recurringAmountLabel}/${billingPeriodLabel}.`
+            : "Converta seu teste para não perder o acesso."
+        }`
       : recurringAmountLabel
-        ? `Após o teste, o plano fica ${recurringAmountLabel}/mês.`
+        ? `Após o teste, o plano fica ${recurringAmountLabel}/${billingPeriodLabel}.`
         : "Ative seu plano para liberar financeiro, cobrança e publicação automática.";
   } else if (isPendente) {
     mensagem = "Pagamento pendente ou em aprovação. Regularize para manter o painel ativo.";
@@ -190,7 +202,9 @@ export default function CardPlanoAtual({
           {recurringAmountLabel && (
             <div className="mt-1 text-sm text-gray-300">
               {recurringPrice.hasRecurringCoupon ? "Valor recorrente com cupom: " : "Valor: "}
-              <b className="text-white">{recurringAmountLabel}/mês</b>
+              <b className="text-white">
+                {recurringAmountLabel}/{billingPeriodLabel}
+              </b>
               {recurringPrice.hasRecurringCoupon && baseAmountLabel && (
                 <span className="ml-2 text-xs text-gray-500 line-through">{baseAmountLabel}</span>
               )}
