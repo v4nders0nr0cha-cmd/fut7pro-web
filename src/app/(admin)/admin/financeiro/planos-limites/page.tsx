@@ -13,6 +13,7 @@ import useSubscription from "@/hooks/useSubscription";
 import { useRacha } from "@/context/RachaContext";
 import {
   FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
+  FUT7PRO_OFFICIAL_INSTAGRAM_URL,
   FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
   buildFut7ProOfficialWhatsAppUrl,
 } from "@/config/fut7pro-contact";
@@ -114,19 +115,46 @@ function extractApiError(error: unknown, fallback: string) {
   try {
     const parsed = JSON.parse(raw) as { message?: string | string[]; error?: string };
     if (Array.isArray(parsed.message) && parsed.message.length > 0) {
-      return parsed.message.join(" ");
+      return translateApiMessage(parsed.message.join(" "));
     }
     if (typeof parsed.message === "string" && parsed.message.trim()) {
-      return parsed.message;
+      return translateApiMessage(parsed.message);
     }
     if (typeof parsed.error === "string" && parsed.error.trim()) {
-      return parsed.error;
+      return translateApiMessage(parsed.error);
     }
   } catch {
     // message ja esta em texto simples
   }
 
-  return raw || fallback;
+  return translateApiMessage(raw) || fallback;
+}
+
+function translateApiMessage(message: string) {
+  const normalized = message.trim();
+  const lower = normalized.toLowerCase();
+  if (!normalized) return normalized;
+  if (lower.includes("coupon not valid for this plan")) {
+    return "Este cupom não é válido para o plano selecionado.";
+  }
+  if (lower.includes("invalid or inactive coupon")) {
+    return "Cupom inválido ou inativo.";
+  }
+  if (lower.includes("subscriptionid obrigatorio")) {
+    return "Assinatura obrigatória.";
+  }
+  if (lower.includes("plankey obrigatorio")) {
+    return "Plano obrigatório.";
+  }
+  return normalized;
+}
+
+function normalizeCouponCode(value: string) {
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 32);
 }
 
 function formatPercent(value?: number | null) {
@@ -229,7 +257,11 @@ export default function PlanosLimitesPage() {
 
   const [planoAtivo, setPlanoAtivo] = useState<"mensal" | "anual">("mensal");
   const [actionError, setActionError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState<"switch" | "payment" | "pix" | null>(null);
+  const [actionLoading, setActionLoading] = useState<
+    "switch" | "payment" | "pix" | "coupon" | null
+  >(null);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState<string | null>(null);
   const [retryingLoad, setRetryingLoad] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [showSwitchModal, setShowSwitchModal] = useState(false);
@@ -376,7 +408,42 @@ export default function PlanosLimitesPage() {
   );
   const hasFirstPaymentDiscount = Boolean(paymentPricing?.firstPaymentDiscountApplied);
   const hasCouponBenefits = Boolean(subscription?.couponCode && hasFirstPaymentDiscount);
+  const canApplyCoupon = Boolean(subscription?.id && !subscription?.couponCode);
   const showSkeleton = loading && !subscription && plans.length === 0;
+
+  const handleApplyCoupon = async () => {
+    if (!subscription?.id) {
+      setActionError("Assinatura não encontrada para este racha.");
+      return;
+    }
+
+    const normalizedCoupon = normalizeCouponCode(couponInput);
+    if (!normalizedCoupon) {
+      setActionError("Informe um cupom para aplicar.");
+      return;
+    }
+
+    setActionLoading("coupon");
+    setActionError(null);
+    setCouponSuccess(null);
+
+    try {
+      const updated = await BillingAPI.applyCouponToSubscription(subscription.id, normalizedCoupon);
+      setCheckoutPricing(updated.pricingPreview || null);
+      setCouponInput("");
+      setCouponSuccess(
+        updated.pricingPreview?.couponAppliesToRecurring
+          ? "Cupom aplicado. O desconto recorrente passa a valer para os próximos pagamentos."
+          : "Cupom aplicado com sucesso."
+      );
+      await refreshSubscription();
+    } catch (err) {
+      console.error(err);
+      setActionError(extractApiError(err, "Não foi possível aplicar o cupom. Tente novamente."));
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   const openPaymentModal = () => {
     if (!subscription?.id) {
@@ -534,6 +601,12 @@ export default function PlanosLimitesPage() {
           </div>
         )}
 
+        {couponSuccess && (
+          <div className="mb-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-100">
+            {couponSuccess}
+          </div>
+        )}
+
         {isCompensated && (
           <div className="mb-6 rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-4 text-green-50">
             <p className="text-base font-semibold">Acesso liberado por compensação</p>
@@ -639,6 +712,53 @@ export default function PlanosLimitesPage() {
                   Ver faturas
                 </button>
               </div>
+
+              {canApplyCoupon && (
+                <div className="mt-5 rounded-xl border border-[#384152] bg-[#111418] p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-end">
+                    <div className="flex-1">
+                      <label
+                        htmlFor="billing-coupon"
+                        className="text-xs font-semibold uppercase tracking-wide text-gray-400"
+                      >
+                        Aplicar cupom
+                      </label>
+                      <input
+                        id="billing-coupon"
+                        value={couponInput}
+                        onChange={(event) => {
+                          setCouponInput(normalizeCouponCode(event.target.value));
+                          setCouponSuccess(null);
+                        }}
+                        placeholder="Digite seu cupom"
+                        className="mt-2 w-full rounded-lg border border-[#384152] bg-[#0f1117] px-3 py-2 text-sm font-semibold uppercase text-white outline-none focus:border-yellow-400"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleApplyCoupon}
+                      disabled={
+                        actionLoading !== null || normalizeCouponCode(couponInput).length < 3
+                      }
+                      className="rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {actionLoading === "coupon" ? "Aplicando..." : "Aplicar cupom"}
+                    </button>
+                  </div>
+                  <p className="mt-3 text-xs leading-relaxed text-gray-400">
+                    Ainda não possui cupom? Siga o Fut7Pro no{" "}
+                    <a
+                      href={FUT7PRO_OFFICIAL_INSTAGRAM_URL}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-semibold text-yellow-300 underline-offset-4 hover:underline"
+                    >
+                      Instagram
+                    </a>{" "}
+                    e peça um cupom ao seu embaixador favorito.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="bg-[#23272F] rounded-2xl border border-[#2b2b2b] p-6 shadow-lg">

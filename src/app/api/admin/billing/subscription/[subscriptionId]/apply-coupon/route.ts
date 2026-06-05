@@ -16,17 +16,17 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest, { params }: { params: { subscriptionId?: string } }) {
   const user = await requireUser();
   if (!user) {
-    return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
+    return jsonResponse({ error: "Não autenticado" }, { status: 401 });
   }
 
   const subscriptionId = params?.subscriptionId;
   if (!subscriptionId) {
-    return jsonResponse({ error: "Assinatura obrigatória." }, { status: 400 });
+    return jsonResponse({ error: "subscriptionId obrigatório" }, { status: 400 });
   }
 
   const payload = await req.json().catch(() => null);
-  if (!payload?.planKey) {
-    return jsonResponse({ error: "Plano obrigatório." }, { status: 400 });
+  if (!payload?.couponCode) {
+    return jsonResponse({ error: "Informe um cupom para aplicar." }, { status: 400 });
   }
 
   const scopedSubscription = await ensureScopedSubscription(user, subscriptionId);
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: { subscriptio
   }
 
   const { response, body } = await proxyBackend(
-    `${getApiBase()}/billing/subscription/${subscriptionId}/change-plan`,
+    `${getApiBase()}/billing/subscription/${subscriptionId}/apply-coupon`,
     {
       method: "POST",
       headers: buildHeaders(user, scopedSubscription.tenantSlug, { includeContentType: true }),

@@ -392,6 +392,16 @@ export class BillingAPI {
     });
   }
 
+  static async applyCouponToSubscription(
+    subscriptionId: string,
+    couponCode: string
+  ): Promise<Subscription> {
+    return this.request<Subscription>(`/subscription/${subscriptionId}/apply-coupon`, {
+      method: "POST",
+      body: JSON.stringify({ couponCode }),
+    });
+  }
+
   // Validar cupom
   static async validateCoupon(code: string): Promise<{
     valid: boolean;
