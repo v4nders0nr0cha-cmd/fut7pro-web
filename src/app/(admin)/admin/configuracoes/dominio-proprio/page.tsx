@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaCheckCircle, FaGlobe, FaHeadset } from "react-icons/fa";
 import { useMe } from "@/hooks/useMe";
 import useSubscription from "@/hooks/useSubscription";
+import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 
 export default function DominioProprioPage() {
   const { me } = useMe();
@@ -12,6 +13,7 @@ export default function DominioProprioPage() {
   const { subscription, loading } = useSubscription(tenantId);
   const planKey = (subscription?.planKey || "").toLowerCase();
   const isEnterprise = planKey.includes("enterprise");
+  const planLabel = formatBillingPlanLabel(subscription?.planKey, "não identificado");
 
   return (
     <>
@@ -36,13 +38,13 @@ export default function DominioProprioPage() {
             <p>Carregando dados do plano...</p>
           ) : isEnterprise ? (
             <p>
-              Plano ativo: <b>{subscription?.planKey || "enterprise"}</b>. Seu racha pode solicitar
-              ativação de domínio próprio pelo suporte.
+              Plano ativo: <b>{planLabel}</b>. Seu racha pode solicitar ativação de domínio próprio
+              pelo suporte.
             </p>
           ) : (
             <p>
-              Plano ativo: <b>{subscription?.planKey || "não identificado"}</b>. O recurso de
-              domínio próprio é exclusivo dos planos Enterprise.
+              Plano ativo: <b>{planLabel}</b>. O recurso de domínio próprio é exclusivo dos planos
+              Enterprise.
             </p>
           )}
         </div>
