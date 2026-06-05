@@ -17,6 +17,7 @@ import {
   FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
   buildFut7ProOfficialWhatsAppUrl,
 } from "@/config/fut7pro-contact";
+import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 
 function formatDate(value?: string | null) {
   if (!value) return "N/D";
@@ -359,7 +360,8 @@ export default function PlanosLimitesPage() {
         subscription?.status === "expired");
   const canSwitchPlan = subscription?.status === "trialing";
 
-  const planLabel = planoAtual?.label || subscription?.planKey || "Sincronizando assinatura";
+  const planLabel =
+    planoAtual?.label || formatBillingPlanLabel(subscription?.planKey, "Sincronizando assinatura");
   const intervalLabel = resolveIntervalLabel(subscription?.planKey, subscription?.interval);
   const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 

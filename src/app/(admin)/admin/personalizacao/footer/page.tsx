@@ -9,6 +9,7 @@ import { useMe } from "@/hooks/useMe";
 import useSubscription from "@/hooks/useSubscription";
 import { useSocialLinksAdmin } from "@/hooks/useSocialLinks";
 import { normalizeSocialUrl } from "@/utils/social-links";
+import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 
 const topicosPadrao = [
   { id: "ranking", label: "Sistema de Ranking" },
@@ -48,6 +49,7 @@ export default function FooterPersonalizacaoPage() {
   const { socialLinks } = useSocialLinksAdmin();
   const planKey = (subscription?.planKey || "").toLowerCase();
   const isEnterprise = planKey.includes("enterprise");
+  const planLabel = formatBillingPlanLabel(subscription?.planKey, "não identificado");
 
   const [topicosExtras, setTopicosExtras] = useState<string[]>([]);
   const [topicosOcultos, setTopicosOcultos] = useState<string[]>([]);
@@ -159,13 +161,12 @@ export default function FooterPersonalizacaoPage() {
             <span>Carregando dados do plano...</span>
           ) : isEnterprise ? (
             <span>
-              Plano ativo: <b>{subscription?.planKey || "Enterprise"}</b>. Edição completa do rodapé
-              liberada.
+              Plano ativo: <b>{planLabel}</b>. Edição completa do rodapé liberada.
             </span>
           ) : (
             <span>
-              Plano atual: <b>{subscription?.planKey || "não identificado"}</b>. A legenda
-              institucional personalizada é exclusiva do plano Enterprise.
+              Plano atual: <b>{planLabel}</b>. A legenda institucional personalizada é exclusiva do
+              plano Enterprise.
             </span>
           )}
         </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FaGoogle, FaPuzzlePiece, FaWhatsapp, FaLink, FaHeadset } from "react-icons/fa";
 import { useMe } from "@/hooks/useMe";
 import useSubscription from "@/hooks/useSubscription";
+import { formatBillingPlanLabel } from "@/utils/billing-plan-label";
 
 type IntegrationCardProps = {
   name: string;
@@ -30,6 +31,7 @@ export default function IntegracoesPage() {
   const { subscription, loading } = useSubscription(tenantId);
   const planKey = (subscription?.planKey || "").toLowerCase();
   const isEnterprise = planKey.includes("enterprise");
+  const planLabel = formatBillingPlanLabel(subscription?.planKey, "não identificado");
 
   return (
     <>
@@ -54,13 +56,13 @@ export default function IntegracoesPage() {
             <p>Carregando dados do plano...</p>
           ) : isEnterprise ? (
             <p>
-              Plano ativo: <b>{subscription?.planKey || "enterprise"}</b>. O time Fut7Pro pode
-              habilitar integrações avançadas para este racha.
+              Plano ativo: <b>{planLabel}</b>. O time Fut7Pro pode habilitar integrações avançadas
+              para este racha.
             </p>
           ) : (
             <p>
-              Plano ativo: <b>{subscription?.planKey || "não identificado"}</b>. As integrações
-              avançadas são liberadas para planos Enterprise.
+              Plano ativo: <b>{planLabel}</b>. As integrações avançadas são liberadas para planos
+              Enterprise.
             </p>
           )}
         </div>
