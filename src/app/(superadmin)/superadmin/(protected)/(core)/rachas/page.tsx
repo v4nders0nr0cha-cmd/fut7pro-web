@@ -214,8 +214,8 @@ function resolvePlanLabel(
   if (!key) return "Plano n/d";
   if (key.includes("marketing")) {
     return key.includes("year") || key.includes("anual")
-      ? "Anual + Marketing"
-      : "Mensal + Marketing";
+      ? "Essencial + Marketing anual"
+      : "Essencial + Marketing";
   }
   if (key.includes("enterprise")) {
     return key.includes("year") || key.includes("anual") ? "Anual Enterprise" : "Mensal Enterprise";

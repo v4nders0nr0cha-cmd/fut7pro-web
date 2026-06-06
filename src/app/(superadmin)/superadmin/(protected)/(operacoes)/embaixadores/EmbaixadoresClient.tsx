@@ -734,13 +734,13 @@ export default function EmbaixadoresClient() {
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 2</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.recurringLevel2Cents)} por racha/mes
+              {formatCurrency(settings.recurringLevel2Cents)} por racha/mês
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 3</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.recurringLevel3Cents)} por racha/mes
+              {formatCurrency(settings.recurringLevel3Cents)} por racha/mês
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">

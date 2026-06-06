@@ -33,11 +33,11 @@ function labelPlano(tipo: PlanoTipo) {
     case "mensal":
       return "Mensal Essencial";
     case "mensal-marketing":
-      return "Mensal + Marketing";
+      return "Essencial + Marketing";
     case "anual":
       return "Anual Essencial";
     case "anual-marketing":
-      return "Anual + Marketing";
+      return "Essencial + Marketing anual";
     default:
       return "Plano";
   }

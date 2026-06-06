@@ -35,6 +35,23 @@ function formatCurrencyFromCents(value?: number | null) {
   });
 }
 
+function formatCurrencyFromAmount(value?: number | null) {
+  if (value === null || value === undefined) return "N/D";
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+}
+
+function resolveEssentialAmbassadorCouponPriceCents(plan: Pick<Plan, "key" | "interval">) {
+  const key = plan.key.toLowerCase();
+  if (!key.includes("essential") || key.includes("marketing") || key.includes("enterprise")) {
+    return null;
+  }
+  return plan.interval === "year" ? 99000 : 9900;
+}
+
 function resolveIntervalLabel(planKey?: string | null, interval?: string | null) {
   if (interval === "year") return "Anual";
   if (interval === "month") return "Mensal";
@@ -239,7 +256,10 @@ function buildPixPricingFromInvoice(
   return {
     isFirstPayment: paymentPricing?.isFirstPayment ?? false,
     firstPaymentDiscountApplied: paymentPricing?.firstPaymentDiscountApplied ?? discountCents > 0,
+    recurringDiscountApplied: paymentPricing?.recurringDiscountApplied,
+    couponAppliesToRecurring: paymentPricing?.couponAppliesToRecurring,
     baseAmountCents,
+    recurringAmountCents: paymentPricing?.recurringAmountCents,
     discountPct: paymentPricing?.discountPct ?? discountPct,
     discountCents: paymentPricing?.discountCents ?? discountCents,
     totalCents,
@@ -455,8 +475,22 @@ export default function PlanosLimitesPage() {
     () => buildPixPricingFromInvoice(pixCharge, paymentPricing),
     [paymentPricing, pixCharge]
   );
+  const pixRecurringAmountCents = pixPricing?.recurringAmountCents ?? pixPricing?.totalCents;
+  const pixHasRecurringCoupon =
+    Boolean(subscription?.couponCode) &&
+    Boolean(pixPricing?.couponAppliesToRecurring || pixPricing?.recurringDiscountApplied) &&
+    typeof pixPricing?.baseAmountCents === "number" &&
+    typeof pixRecurringAmountCents === "number" &&
+    pixRecurringAmountCents > 0 &&
+    pixRecurringAmountCents < pixPricing.baseAmountCents;
+  const pixRecurringDiscountCents =
+    pixHasRecurringCoupon && typeof pixPricing?.baseAmountCents === "number"
+      ? Math.max(pixPricing.baseAmountCents - pixRecurringAmountCents, 0)
+      : 0;
   const hasFirstPaymentDiscount = Boolean(paymentPricing?.firstPaymentDiscountApplied);
-  const hasCouponBenefits = Boolean(subscription?.couponCode && hasFirstPaymentDiscount);
+  const hasCouponBenefits = Boolean(
+    subscription?.couponCode && (hasFirstPaymentDiscount || hasRecurringCoupon)
+  );
   const canApplyCoupon = Boolean(subscription?.id && !subscription?.couponCode);
   const showSkeleton = loading && !subscription && plans.length === 0;
 
@@ -929,20 +963,36 @@ export default function PlanosLimitesPage() {
 
         {!showSkeleton && (
           <>
-            <div className="flex justify-center mb-10">
-              <button
-                className={`px-6 py-2 rounded-l-xl font-bold transition border ${planoAtivo === "mensal" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-                onClick={() => setPlanoAtivo("mensal")}
-              >
-                Pagamento Mensal
-              </button>
-              <button
-                className={`px-6 py-2 rounded-r-xl font-bold transition border-t border-b border-r ${planoAtivo === "anual" ? "bg-yellow-400 text-black border-yellow-400" : "bg-neutral-900 text-white border-neutral-700 hover:bg-yellow-400 hover:text-black"}`}
-                onClick={() => setPlanoAtivo("anual")}
-              >
-                Pagamento Anual{" "}
-                {annualNoteLabel ? <span className="ml-1 text-xs">({annualNoteLabel})</span> : null}
-              </button>
+            <div className="mb-8 flex justify-center">
+              <div className="inline-flex rounded-full border border-neutral-700 bg-neutral-950/80 p-1 shadow-inner">
+                <button
+                  type="button"
+                  className={`rounded-full px-5 py-2 text-sm font-bold transition ${
+                    planoAtivo === "mensal"
+                      ? "bg-yellow-400 text-black shadow shadow-yellow-500/20"
+                      : "text-neutral-200 hover:bg-neutral-800"
+                  }`}
+                  onClick={() => setPlanoAtivo("mensal")}
+                >
+                  Mensal
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-full px-5 py-2 text-sm font-bold transition ${
+                    planoAtivo === "anual"
+                      ? "bg-yellow-400 text-black shadow shadow-yellow-500/20"
+                      : "text-neutral-200 hover:bg-neutral-800"
+                  }`}
+                  onClick={() => setPlanoAtivo("anual")}
+                >
+                  Anual
+                  {annualNoteLabel ? (
+                    <span className="ml-2 text-[11px] font-black opacity-80">
+                      {annualNoteLabel}
+                    </span>
+                  ) : null}
+                </button>
+              </div>
             </div>
 
             {!loading && !error && planosDisponiveis.length > 0 && (
@@ -954,11 +1004,17 @@ export default function PlanosLimitesPage() {
                   .map((plan) => {
                     const isCurrentPlan = subscription?.planKey === plan.key;
                     const showRecurringCouponPrice = isCurrentPlan && hasRecurringCoupon;
+                    const essentialCouponPriceCents =
+                      resolveEssentialAmbassadorCouponPriceCents(plan);
+                    const displayCouponPriceCents = showRecurringCouponPrice
+                      ? (effectiveRecurringAmountCents ?? null)
+                      : essentialCouponPriceCents;
                     const isHighlight = Boolean(plan.highlight);
                     const isContact = plan.ctaType === "contact";
                     const compactFeatures = getCompactPlanFeatures(plan);
                     const compactDescription = getCompactPlanDescription(plan);
                     const intervalSuffix = plan.interval === "year" ? "ano" : "mês";
+                    const planDisplayLabel = formatBillingPlanLabel(plan.key, plan.label);
                     const buttonLabel = isCurrentPlan
                       ? "Plano atual"
                       : isContact
@@ -986,33 +1042,43 @@ export default function PlanosLimitesPage() {
                             Plano atual
                           </span>
                         )}
-                        <div className="mt-8 text-xl font-extrabold">{plan.label}</div>
+                        <div className="mt-8 text-xl font-extrabold">{planDisplayLabel}</div>
                         <div className="mt-3 text-2xl font-black">
-                          {showRecurringCouponPrice
-                            ? formatCurrencyFromCents(effectiveRecurringAmountCents)
-                            : plan.amount.toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                                minimumFractionDigits: 2,
-                              })}
+                          {formatCurrencyFromAmount(plan.amount)}
                           <span className="text-sm text-neutral-400">/{intervalSuffix}</span>
                         </div>
-                        {showRecurringCouponPrice && (
+                        {displayCouponPriceCents !== null && (
                           <p
                             className={`mt-1 text-sm font-semibold ${isHighlight ? "text-black/75" : "text-emerald-300"}`}
                           >
-                            Com cupom de embaixador:{" "}
+                            {showRecurringCouponPrice
+                              ? "Cupom aplicado: "
+                              : "Com cupom de embaixador: "}
                             <span className="font-black">
-                              {formatCurrencyFromCents(effectiveRecurringAmountCents)}/
-                              {intervalSuffix}
+                              {formatCurrencyFromCents(displayCouponPriceCents)}/{intervalSuffix}
                             </span>
-                            <span className="ml-2 line-through opacity-70">
-                              {plan.amount.toLocaleString("pt-BR", {
-                                style: "currency",
-                                currency: "BRL",
-                                minimumFractionDigits: 2,
-                              })}
-                            </span>
+                          </p>
+                        )}
+                        {plan.key.includes("marketing") && (
+                          <p
+                            className={`mt-1 text-xs ${isHighlight ? "text-black/65" : "text-neutral-400"}`}
+                          >
+                            Cupom de embaixador é exclusivo do Essencial.
+                          </p>
+                        )}
+                        {plan.requiresUpfront && typeof plan.upfrontAmount === "number" && (
+                          <p
+                            className={`mt-1 text-xs font-semibold ${isHighlight ? "text-black/70" : "text-yellow-200"}`}
+                          >
+                            Entrada de {formatCurrencyFromAmount(plan.upfrontAmount)} para
+                            implantação.
+                          </p>
+                        )}
+                        {plan.paymentNote && (
+                          <p
+                            className={`mt-1 text-xs ${isHighlight ? "text-black/65" : "text-neutral-400"}`}
+                          >
+                            {plan.paymentNote}
                           </p>
                         )}
                         <p
@@ -1102,17 +1168,29 @@ export default function PlanosLimitesPage() {
                 <p className="font-semibold text-emerald-200">
                   Cupom de embaixador aplicado no seu racha.
                 </p>
-                <p className="mt-1">
-                  Você ganhou +10 dias de teste (total de 30 dias) e{" "}
-                  <strong>{formatPercent(paymentPricing.discountPct)}</strong> de desconto nesta
-                  primeira cobrança. Nas próximas cobranças, o valor volta ao preço normal do plano.
-                </p>
+                {hasRecurringCoupon ? (
+                  <p className="mt-1">
+                    Você ganhou +10 dias de teste e a condição recorrente ficou em{" "}
+                    <strong>
+                      {formatCurrencyFromCents(effectiveRecurringAmountCents)}/
+                      {subscription.interval === "year" ? "ano" : "mês"}
+                    </strong>
+                    . Esse valor permanece nos próximos pagamentos enquanto o cupom estiver ativo no
+                    plano Essencial.
+                  </p>
+                ) : (
+                  <p className="mt-1">
+                    Você ganhou +10 dias de teste e{" "}
+                    <strong>{formatPercent(paymentPricing.discountPct)}</strong> de desconto nesta
+                    primeira cobrança.
+                  </p>
+                )}
               </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
-                <h4 className="text-sm font-bold text-white mb-1">Cartao ou boleto (recorrente)</h4>
+                <h4 className="text-sm font-bold text-white mb-1">Cartão ou boleto (recorrente)</h4>
                 <p className="text-xs text-gray-400 mb-3">
                   O pagamento será recorrente no Mercado Pago. Você autoriza a cobrança automática
                   conforme o plano escolhido.
@@ -1154,7 +1232,7 @@ export default function PlanosLimitesPage() {
                 </button>
                 {!canUsePix && (
                   <p className="mt-2 text-[11px] text-gray-500">
-                    PIX indisponivel para este plano no momento.
+                    PIX indisponível para este plano no momento.
                   </p>
                 )}
               </div>
@@ -1218,7 +1296,7 @@ export default function PlanosLimitesPage() {
           <div className="w-full max-w-lg bg-[#1b1f27] rounded-2xl p-6 border border-[#2b2b2b] shadow-xl">
             <h3 className="text-xl font-bold text-white mb-2">Pagamento via PIX</h3>
             <p className="text-sm text-gray-300 mb-4">
-              Escaneie o QR Code ou copie o codigo. A liberacao do painel ocorre apos a confirmacao
+              Escaneie o QR Code ou copie o código. A liberação do painel ocorre após a confirmação
               do pagamento.
             </p>
 
@@ -1230,11 +1308,11 @@ export default function PlanosLimitesPage() {
                   className="w-52 h-52 rounded-lg bg-white p-2"
                 />
               ) : (
-                <div className="text-xs text-gray-400">QR Code indisponivel.</div>
+                <div className="text-xs text-gray-400">QR Code indisponível.</div>
               )}
               {pixCharge.pix.qrCode && (
                 <div className="w-full">
-                  <div className="text-[11px] text-gray-400 mb-1">Codigo PIX</div>
+                  <div className="text-[11px] text-gray-400 mb-1">Código PIX</div>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -1265,7 +1343,7 @@ export default function PlanosLimitesPage() {
             </div>
 
             <div className="mt-4 text-xs text-gray-400">
-              Periodo:{" "}
+              Período:{" "}
               <b className="text-gray-200">
                 {formatDate(pixCharge.invoice.periodStart)} -{" "}
                 {formatDate(pixCharge.invoice.periodEnd)}
@@ -1284,15 +1362,33 @@ export default function PlanosLimitesPage() {
                     <span>-{formatCurrencyFromCents(pixPricing.discountCents)}</span>
                   </div>
                 )}
+                {pixHasRecurringCoupon && (
+                  <div className="mt-1 flex items-center justify-between text-emerald-300">
+                    <span>Desconto recorrente cupom embaixador</span>
+                    <span>-{formatCurrencyFromCents(pixRecurringDiscountCents)}</span>
+                  </div>
+                )}
                 <div className="mt-2 flex items-center justify-between border-t border-[#2b2b2b] pt-2 font-semibold text-white">
                   <span>
-                    {pixPricing.firstPaymentDiscountApplied
-                      ? "Total do primeiro pagamento"
-                      : "Total desta cobrança"}
+                    {pixHasRecurringCoupon
+                      ? "Total com cupom"
+                      : pixPricing.firstPaymentDiscountApplied
+                        ? "Total do primeiro pagamento"
+                        : "Total desta cobrança"}
                   </span>
                   <span>{formatCurrencyFromCents(pixPricing.totalCents)}</span>
                 </div>
-                {pixPricing.firstPaymentDiscountApplied && (
+                {pixHasRecurringCoupon && pixRecurringAmountCents !== pixPricing.totalCents && (
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    Valor recorrente do plano com cupom:{" "}
+                    <strong className="text-gray-200">
+                      {formatCurrencyFromCents(pixRecurringAmountCents)}/
+                      {subscription.interval === "year" ? "ano" : "mês"}
+                    </strong>
+                    .
+                  </p>
+                )}
+                {pixPricing.firstPaymentDiscountApplied && !pixHasRecurringCoupon && (
                   <p className="mt-2 text-[11px] text-gray-400">
                     Desconto válido somente na primeira cobrança.
                   </p>
@@ -1301,7 +1397,7 @@ export default function PlanosLimitesPage() {
             )}
             {pixCharge.pix.expiresAt && (
               <div className="mt-2 text-xs text-gray-400">
-                Valido ate: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
+                Válido até: <b className="text-gray-200">{formatDate(pixCharge.pix.expiresAt)}</b>
               </div>
             )}
 
@@ -1449,7 +1545,7 @@ export default function PlanosLimitesPage() {
                   ? "Trocando..."
                   : canSwitchPlan
                     ? "Confirmar troca"
-                    : "Troca indisponivel"}
+                    : "Troca indisponível"}
               </button>
             </div>
           </div>

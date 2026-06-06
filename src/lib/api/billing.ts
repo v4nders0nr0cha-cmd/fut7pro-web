@@ -403,18 +403,30 @@ export class BillingAPI {
   }
 
   // Validar cupom
-  static async validateCoupon(code: string): Promise<{
+  static async validateCoupon(
+    code: string,
+    planKey?: string
+  ): Promise<{
     valid: boolean;
     discountPct?: number;
     extraTrialDays?: number;
     allowedPlans?: string[];
+    publicPriceCents?: number;
+    priceWithCouponCents?: number | null;
+    recurringAmountCents?: number | null;
+    couponAppliesToRecurring?: boolean;
   }> {
+    const query = planKey ? `?planKey=${encodeURIComponent(planKey)}` : "";
     return this.request<{
       valid: boolean;
       discountPct?: number;
       extraTrialDays?: number;
       allowedPlans?: string[];
-    }>(`/coupon/${code}`);
+      publicPriceCents?: number;
+      priceWithCouponCents?: number | null;
+      recurringAmountCents?: number | null;
+      couponAppliesToRecurring?: boolean;
+    }>(`/coupon/${code}${query}`);
   }
 }
 
