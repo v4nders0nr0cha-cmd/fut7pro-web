@@ -1376,12 +1376,18 @@ export default function PlanosLimitesPage() {
                         ? "Total do primeiro pagamento"
                         : "Total desta cobrança"}
                   </span>
-                  <span>
-                    {formatCurrencyFromCents(
-                      pixHasRecurringCoupon ? pixRecurringAmountCents : pixPricing.totalCents
-                    )}
-                  </span>
+                  <span>{formatCurrencyFromCents(pixPricing.totalCents)}</span>
                 </div>
+                {pixHasRecurringCoupon && pixRecurringAmountCents !== pixPricing.totalCents && (
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    Valor recorrente do plano com cupom:{" "}
+                    <strong className="text-gray-200">
+                      {formatCurrencyFromCents(pixRecurringAmountCents)}/
+                      {subscription.interval === "year" ? "ano" : "mês"}
+                    </strong>
+                    .
+                  </p>
+                )}
                 {pixPricing.firstPaymentDiscountApplied && !pixHasRecurringCoupon && (
                   <p className="mt-2 text-[11px] text-gray-400">
                     Desconto válido somente na primeira cobrança.
