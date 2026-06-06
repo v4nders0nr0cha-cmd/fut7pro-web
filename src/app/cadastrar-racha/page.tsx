@@ -60,7 +60,7 @@ const PLAN_MICRO_COPY: Record<
     ],
   },
   monthly_marketing: {
-    title: "Mensal + Marketing",
+    title: "Essencial + Marketing",
     blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
     bullets: [
       "Tudo do Essencial",
@@ -79,7 +79,7 @@ const PLAN_MICRO_COPY: Record<
     ],
   },
   yearly_marketing: {
-    title: "Anual + Marketing",
+    title: "Essencial + Marketing anual",
     blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
     bullets: [
       "Tudo do Essencial",
@@ -691,7 +691,7 @@ function CadastroRachaPageContent() {
       : null;
   const recurringCouponAmountLabel =
     recurringCouponAmount !== null ? priceFormatter.format(recurringCouponAmount) : null;
-  const selectedPriceSuffix = selectedPlan?.interval === "year" ? "ano" : "mes";
+  const selectedPriceSuffix = selectedPlan?.interval === "year" ? "ano" : "mês";
   const discountPercentLabel = discountPercent.toLocaleString("pt-BR", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
@@ -2359,7 +2359,7 @@ function CadastroRachaPageContent() {
                         blurb: "Plano Fut7Pro para o seu racha.",
                         bullets: [],
                       };
-                      const priceSuffix = plan.interval === "month" ? "mes" : "ano";
+                      const priceSuffix = plan.interval === "month" ? "mês" : "ano";
                       const selectedRecurringCouponAmount =
                         isSelected && recurringCouponAmount !== null ? recurringCouponAmount : null;
 

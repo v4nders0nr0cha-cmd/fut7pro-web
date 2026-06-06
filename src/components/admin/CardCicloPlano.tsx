@@ -40,8 +40,8 @@ function formatCurrencyFromCents(value?: number | null) {
 
 function resolvePlanLabel(planKey?: string | null) {
   const key = planKey || "";
-  if (key.includes("marketing") && key.includes("year")) return "Anual + Marketing";
-  if (key.includes("marketing")) return "Mensal + Marketing";
+  if (key.includes("marketing") && key.includes("year")) return "Essencial + Marketing anual";
+  if (key.includes("marketing")) return "Essencial + Marketing";
   if (key.includes("year")) return "Anual Essencial";
   if (key.includes("essential") || key.includes("month")) return "Mensal Essencial";
   return null;

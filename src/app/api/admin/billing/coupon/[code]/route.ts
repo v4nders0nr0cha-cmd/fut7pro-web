@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { code?: string } }) {
+export async function GET(req: NextRequest, { params }: { params: { code?: string } }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
@@ -25,7 +25,9 @@ export async function GET(_req: NextRequest, { params }: { params: { code?: stri
   }
 
   const tenantSlug = resolveTenantSlug(user);
-  const { response, body } = await proxyBackend(`${getApiBase()}/billing/coupon/${code}`, {
+  const planKey = req.nextUrl.searchParams.get("planKey");
+  const query = planKey ? `?planKey=${encodeURIComponent(planKey)}` : "";
+  const { response, body } = await proxyBackend(`${getApiBase()}/billing/coupon/${code}${query}`, {
     headers: buildHeaders(user, tenantSlug),
     cache: "no-store",
   });

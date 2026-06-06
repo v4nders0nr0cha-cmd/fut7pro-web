@@ -19,16 +19,16 @@ const STATUS_COLORS: Record<StatusPagamento, string> = {
 const GRAFICO_COLORS = ["#32d657", "#ffbe30", "#ff7043", "#4c6fff"];
 const PLAN_LABELS: Record<string, { label: string; interval: "mensal" | "anual" }> = {
   monthly_essential: { label: "Mensal Essencial", interval: "mensal" },
-  monthly_marketing: { label: "Mensal + Marketing", interval: "mensal" },
+  monthly_marketing: { label: "Essencial + Marketing", interval: "mensal" },
   monthly_enterprise: { label: "Mensal Enterprise", interval: "mensal" },
   yearly_essential: { label: "Anual Essencial", interval: "anual" },
-  yearly_marketing: { label: "Anual + Marketing", interval: "anual" },
+  yearly_marketing: { label: "Essencial + Marketing anual", interval: "anual" },
   yearly_enterprise: { label: "Anual Enterprise", interval: "anual" },
   mensal_essencial: { label: "Mensal Essencial", interval: "mensal" },
-  mensal_marketing: { label: "Mensal + Marketing", interval: "mensal" },
+  mensal_marketing: { label: "Essencial + Marketing", interval: "mensal" },
   mensal_enterprise: { label: "Mensal Enterprise", interval: "mensal" },
   anual_essencial: { label: "Anual Essencial", interval: "anual" },
-  anual_marketing: { label: "Anual + Marketing", interval: "anual" },
+  anual_marketing: { label: "Essencial + Marketing anual", interval: "anual" },
   anual_enterprise: { label: "Anual Enterprise", interval: "anual" },
 };
 
