@@ -1190,9 +1190,7 @@ export default function PlanosLimitesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-[#2b2b2b] bg-[#111418] p-4">
-                <h4 className="text-sm font-bold text-white mb-1">
-                  Cartão ou boleto (recorrente)
-                </h4>
+                <h4 className="text-sm font-bold text-white mb-1">Cartão ou boleto (recorrente)</h4>
                 <p className="text-xs text-gray-400 mb-3">
                   O pagamento será recorrente no Mercado Pago. Você autoriza a cobrança automática
                   conforme o plano escolhido.
@@ -1375,8 +1373,8 @@ export default function PlanosLimitesPage() {
                     {pixHasRecurringCoupon
                       ? "Total com cupom"
                       : pixPricing.firstPaymentDiscountApplied
-                      ? "Total do primeiro pagamento"
-                      : "Total desta cobrança"}
+                        ? "Total do primeiro pagamento"
+                        : "Total desta cobrança"}
                   </span>
                   <span>
                     {formatCurrencyFromCents(
