@@ -233,6 +233,7 @@ type CouponBenefitModalState = {
   recurringAmountCents?: number | null;
   baseAmountCents?: number | null;
   trialEnd?: string | null;
+  interval?: "month" | "year" | string | null;
   recurring: boolean;
 };
 
@@ -427,8 +428,9 @@ export default function PlanosLimitesPage() {
         subscription?.status === "expired");
   const canSwitchPlan = subscription?.status === "trialing";
 
-  const planLabel =
-    planoAtual?.label || formatBillingPlanLabel(subscription?.planKey, "Sincronizando assinatura");
+  const planLabel = subscription?.planKey
+    ? formatBillingPlanLabel(subscription.planKey, planoAtual?.label || "Sincronizando assinatura")
+    : planoAtual?.label || "Sincronizando assinatura";
   const intervalLabel = resolveIntervalLabel(subscription?.planKey, subscription?.interval);
   const canUsePix = Boolean(subscription?.id) && !subscription?.requiresUpfront;
 
@@ -535,6 +537,7 @@ export default function PlanosLimitesPage() {
         recurringAmountCents,
         baseAmountCents,
         trialEnd: updated.trialEnd,
+        interval: updated.interval,
         recurring: Boolean(pricing?.couponAppliesToRecurring || pricing?.recurringDiscountApplied),
       });
       await refreshSubscription();
@@ -1470,7 +1473,9 @@ export default function PlanosLimitesPage() {
                   </p>
                   <p className="mt-1 text-xs text-emerald-50/80">
                     {couponBenefitModal.recurring
-                      ? "de desconto recorrente em cada pagamento."
+                      ? couponBenefitModal.interval === "year"
+                        ? "de economia em cada renovação anual."
+                        : "de economia em cada renovação mensal."
                       : "de desconto aplicado ao pagamento elegível."}
                   </p>
                 </div>
@@ -1481,7 +1486,8 @@ export default function PlanosLimitesPage() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <span>Valor recorrente com cupom</span>
                     <strong className="text-xl text-white">
-                      {formatCurrencyFromCents(couponBenefitModal.recurringAmountCents)}/mês
+                      {formatCurrencyFromCents(couponBenefitModal.recurringAmountCents)}/
+                      {couponBenefitModal.interval === "year" ? "ano" : "mês"}
                     </strong>
                   </div>
                   {couponBenefitModal.baseAmountCents && (

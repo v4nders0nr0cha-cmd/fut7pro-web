@@ -12,10 +12,14 @@ export function formatBillingPlanLabel(planKey?: string | null, fallback = "não
     return intervalPrefix ? `${intervalPrefix} Enterprise` : "Enterprise";
   }
   if (key.includes("marketing")) {
-    return intervalPrefix ? `${intervalPrefix} + Marketing` : "Marketing";
+    if (isYearly) return "Essencial + Marketing anual";
+    if (isMonthly) return "Essencial + Marketing";
+    return "Marketing";
   }
   if (key.includes("essential") || key.includes("essencial") || key.includes("pro")) {
-    return intervalPrefix ? `${intervalPrefix} Essencial` : "Essencial";
+    if (isYearly) return "Essencial Anual";
+    if (isMonthly) return "Essencial Mensal";
+    return "Essencial";
   }
 
   return fallback;

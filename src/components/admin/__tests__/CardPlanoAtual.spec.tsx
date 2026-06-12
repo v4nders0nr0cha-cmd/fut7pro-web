@@ -31,7 +31,7 @@ describe("CardPlanoAtual", () => {
     render(<CardPlanoAtual subscription={baseSubscription} status={pendingStatus} />);
 
     expect(screen.getByText(/Plano atual/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mensal Essencial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Essencial Mensal/i)).toBeInTheDocument();
     expect(screen.getByText(/Teste válido até/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ativar plano/i })).toHaveAttribute(
       "href",
@@ -47,7 +47,7 @@ describe("CardPlanoAtual", () => {
       />
     );
 
-    expect(screen.getByText(/Mensal Essencial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Essencial Mensal/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Ver faturas/i })).toHaveAttribute(
       "href",
       "/admin/financeiro/planos-limites?faturas=1"
@@ -124,7 +124,7 @@ describe("CardPlanoAtual", () => {
       />
     );
 
-    expect(screen.getByText(/Anual Essencial/i)).toBeInTheDocument();
+    expect(screen.getByText(/Essencial Anual/i)).toBeInTheDocument();
     expect(screen.getAllByText(/R\$\s*1\.500,00\/ano/i)).toHaveLength(2);
   });
 });

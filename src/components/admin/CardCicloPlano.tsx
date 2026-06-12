@@ -42,8 +42,8 @@ function resolvePlanLabel(planKey?: string | null) {
   const key = planKey || "";
   if (key.includes("marketing") && key.includes("year")) return "Essencial + Marketing anual";
   if (key.includes("marketing")) return "Essencial + Marketing";
-  if (key.includes("year")) return "Anual Essencial";
-  if (key.includes("essential") || key.includes("month")) return "Mensal Essencial";
+  if (key.includes("year")) return "Essencial Anual";
+  if (key.includes("essential") || key.includes("month")) return "Essencial Mensal";
   return null;
 }
 
