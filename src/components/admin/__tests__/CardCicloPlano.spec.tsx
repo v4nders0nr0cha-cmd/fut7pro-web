@@ -81,7 +81,7 @@ describe("CardCicloPlano", () => {
       />
     );
 
-    expect(screen.getAllByText(/teste do Mensal Essencial/i)).toHaveLength(2);
+    expect(screen.getAllByText(/teste do Essencial Mensal/i)).toHaveLength(2);
     expect(screen.getByText(/recorrência em R\$\s*99,00\/mês/i)).toBeInTheDocument();
   });
 
@@ -98,7 +98,7 @@ describe("CardCicloPlano", () => {
       />
     );
 
-    expect(screen.getAllByText(/teste do Anual Essencial/i)).toHaveLength(2);
+    expect(screen.getAllByText(/teste do Essencial Anual/i)).toHaveLength(2);
     expect(screen.getByText(/valor recorrente será R\$\s*1\.500,00\/ano/i)).toBeInTheDocument();
   });
 });
