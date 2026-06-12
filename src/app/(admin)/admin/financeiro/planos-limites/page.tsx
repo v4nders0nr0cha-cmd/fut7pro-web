@@ -60,6 +60,13 @@ function resolveIntervalLabel(planKey?: string | null, interval?: string | null)
   return "Mensal";
 }
 
+function isYearlyBillingCycle(planKey?: string | null, interval?: string | null) {
+  if (interval === "year") return true;
+  if (interval === "month") return false;
+  const key = (planKey || "").toLowerCase();
+  return key.includes("year") || key.includes("anual");
+}
+
 function resolveStatusMeta(status?: string | null) {
   const normalized = (status || "").toLowerCase();
   if (normalized === "trialing") {
@@ -234,6 +241,7 @@ type CouponBenefitModalState = {
   baseAmountCents?: number | null;
   trialEnd?: string | null;
   interval?: "month" | "year" | string | null;
+  planKey?: string | null;
   recurring: boolean;
 };
 
@@ -538,6 +546,7 @@ export default function PlanosLimitesPage() {
         baseAmountCents,
         trialEnd: updated.trialEnd,
         interval: updated.interval,
+        planKey: updated.planKey,
         recurring: Boolean(pricing?.couponAppliesToRecurring || pricing?.recurringDiscountApplied),
       });
       await refreshSubscription();
@@ -1473,7 +1482,10 @@ export default function PlanosLimitesPage() {
                   </p>
                   <p className="mt-1 text-xs text-emerald-50/80">
                     {couponBenefitModal.recurring
-                      ? couponBenefitModal.interval === "year"
+                      ? isYearlyBillingCycle(
+                          couponBenefitModal.planKey,
+                          couponBenefitModal.interval
+                        )
                         ? "de economia em cada renovação anual."
                         : "de economia em cada renovação mensal."
                       : "de desconto aplicado ao pagamento elegível."}
@@ -1487,7 +1499,9 @@ export default function PlanosLimitesPage() {
                     <span>Valor recorrente com cupom</span>
                     <strong className="text-xl text-white">
                       {formatCurrencyFromCents(couponBenefitModal.recurringAmountCents)}/
-                      {couponBenefitModal.interval === "year" ? "ano" : "mês"}
+                      {isYearlyBillingCycle(couponBenefitModal.planKey, couponBenefitModal.interval)
+                        ? "ano"
+                        : "mês"}
                     </strong>
                   </div>
                   {couponBenefitModal.baseAmountCents && (
