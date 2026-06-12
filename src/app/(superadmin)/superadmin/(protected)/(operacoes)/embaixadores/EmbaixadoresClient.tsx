@@ -27,7 +27,7 @@ interface DashboardResponse {
     id: string;
     name: string;
     cpfMasked: string;
-    level: 1 | 2 | 3;
+    level: 1 | 2 | 3 | 4;
     status: AmbassadorStatus;
     sales: number;
     couponCode: string;
@@ -93,8 +93,8 @@ interface DashboardResponse {
   }>;
   settings: {
     oneTimePayoutCents: number;
-    recurringLevel2Cents: number;
     recurringLevel3Cents: number;
+    recurringLevel4Cents: number;
     qualificationWindowDays: number;
     payoutDay: number;
     minimumPayoutCents: number;
@@ -734,13 +734,33 @@ export default function EmbaixadoresClient() {
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 2</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.recurringLevel2Cents)} por racha/mês
+              {formatCurrency(settings.oneTimePayoutCents)} por venda valida + Kit Embaixador
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 3</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
               {formatCurrency(settings.recurringLevel3Cents)} por racha/mês
+            </p>
+          </div>
+          <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
+            <p className="text-xs uppercase text-zinc-500">Comissao nivel 4</p>
+            <p className="mt-1 text-base font-semibold text-yellow-300">
+              {formatCurrency(settings.recurringLevel4Cents)} por racha/mês
+            </p>
+          </div>
+          <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-3">
+            <p className="text-xs uppercase text-amber-200">Ledger recorrente</p>
+            <button
+              type="button"
+              disabled
+              title="Indisponível durante a validação operacional do programa de embaixadores."
+              className="mt-2 w-full cursor-not-allowed rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm font-semibold text-amber-100 opacity-80"
+            >
+              Materializar ledger recorrente
+            </button>
+            <p className="mt-2 text-xs text-amber-100/80">
+              Indisponível durante a validação operacional do programa de embaixadores.
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
