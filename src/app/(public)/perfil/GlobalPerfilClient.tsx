@@ -252,7 +252,7 @@ export default function GlobalPerfilClient() {
   function dataUrlToFile(dataUrl: string) {
     const [header, base64Data] = dataUrl.split(",");
     if (!base64Data) {
-      throw new Error("Imagem invalida.");
+      throw new Error("Imagem inválida.");
     }
     const match = header?.match(/data:(.*);base64/);
     const mime = match?.[1] || "image/jpeg";
@@ -307,11 +307,11 @@ export default function GlobalPerfilClient() {
       return;
     }
     if (trimmedName.length > 10) {
-      setFormError("Nome com maximo de 10 letras.");
+      setFormError("Nome com máximo de 10 letras.");
       return;
     }
     if (form.nickname.trim().length > 10) {
-      setFormError("Apelido com maximo de 10 letras.");
+      setFormError("Apelido com máximo de 10 letras.");
       return;
     }
     const resolvedPosition =
@@ -319,11 +319,11 @@ export default function GlobalPerfilClient() {
       normalizePositionLabel(toOptionalString(user.position)) ||
       normalizePositionLabel(toOptionalString(me?.athlete?.position));
     if (!resolvedPosition) {
-      setFormError("Selecione a posicao principal.");
+      setFormError("Selecione a posição principal.");
       return;
     }
     if (form.positionSecondary && form.positionSecondary === resolvedPosition) {
-      setFormError("Posicao secundaria nao pode ser igual a principal.");
+      setFormError("A posição secundária não pode ser igual à principal.");
       return;
     }
 
@@ -336,7 +336,7 @@ export default function GlobalPerfilClient() {
       if (avatarFile) {
         const uploadSlug = resolvedCurrentSlug || membershipList[0]?.tenantSlug;
         if (!uploadSlug) {
-          throw new Error("Nao foi possivel identificar o racha para enviar a foto.");
+          throw new Error("Não foi possível identificar o racha para enviar a foto.");
         }
         const formData = new FormData();
         formData.set("file", avatarFile);
@@ -437,7 +437,18 @@ export default function GlobalPerfilClient() {
   if (isError || !profile || !user) {
     return (
       <div className="mx-auto w-full max-w-5xl px-6 py-16 text-red-200">
-        Nao foi possivel carregar o perfil global. {error || "Tente novamente mais tarde."}
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-6">
+          <p className="font-semibold">
+            Não foi possível carregar o perfil global. {error || "Tente novamente mais tarde."}
+          </p>
+          <button
+            type="button"
+            onClick={() => mutate()}
+            className="mt-4 rounded-full bg-brand px-5 py-2 text-sm font-semibold text-black"
+          >
+            Tentar novamente
+          </button>
+        </div>
       </div>
     );
   }
@@ -463,7 +474,7 @@ export default function GlobalPerfilClient() {
                 Perfil Global
               </div>
               <h2 className="text-3xl font-bold text-white">{user.name}</h2>
-              <p className="text-sm text-zinc-400">{user.email || "Email nao informado"}</p>
+              <p className="text-sm text-zinc-400">{user.email || "E-mail não informado"}</p>
               {user.nickname ? (
                 <p className="text-sm text-brand-soft mt-1">Apelido: {user.nickname}</p>
               ) : null}
@@ -707,17 +718,17 @@ export default function GlobalPerfilClient() {
           </button>
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 space-y-4">
-          <h2 className="text-lg font-bold text-white">Senha e Seguranca</h2>
+          <h2 className="text-lg font-bold text-white">Senha e Segurança</h2>
           <p className="text-sm text-zinc-400">
-            Gerencie sua senha e metodos de login sem impactar os dados do perfil global.
+            Gerencie sua senha e métodos de login sem impactar os dados do perfil global.
           </p>
           <div className="space-y-2 text-sm text-zinc-300">
             <div>
               <span className="text-zinc-400">Email verificado:</span>{" "}
-              {user.emailVerified ? "Sim" : "Nao"}
+              {user.emailVerified ? "Sim" : "Não"}
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="text-zinc-400">Metodos:</span>
+              <span className="text-zinc-400">Métodos:</span>
               {hasPassword && (
                 <span className="rounded-full bg-white/10 px-2 py-1 text-xs text-white">
                   Email/Senha
@@ -780,12 +791,12 @@ export default function GlobalPerfilClient() {
                   onClick={async () => {
                     setSecurityError("");
                     setSecuritySuccess("");
-                    if (!newPassword || newPassword.length < 6) {
-                      setSecurityError("A senha deve ter ao menos 6 caracteres.");
+                    if (!newPassword || newPassword.length < 8) {
+                      setSecurityError("A senha precisa ter pelo menos 8 caracteres.");
                       return;
                     }
                     if (newPassword !== confirmPassword) {
-                      setSecurityError("A confirmacao da senha nao confere.");
+                      setSecurityError("A confirmação da senha não confere.");
                       return;
                     }
                     if (hasPassword && !currentPassword) {

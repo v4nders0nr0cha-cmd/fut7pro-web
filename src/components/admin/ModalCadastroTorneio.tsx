@@ -13,6 +13,8 @@ import { useJogadores } from "@/hooks/useJogadores";
 import { useRacha } from "@/context/RachaContext";
 import { Fut7DestructiveDialog } from "@/components/ui/feedback";
 
+type UploadState = "idle" | "uploading" | "uploaded" | "failed";
+
 const slugify = (text: string) =>
   text
     .normalize("NFD")
@@ -34,6 +36,17 @@ const toDateInputValue = (value?: string | null) => {
   return date.toISOString().slice(0, 10);
 };
 
+const readApiError = async (res: Response, fallback: string) => {
+  const text = await res.text().catch(() => "");
+  if (!text) return fallback;
+  try {
+    const data = JSON.parse(text);
+    return data?.message || data?.error || fallback;
+  } catch {
+    return text || fallback;
+  }
+};
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -48,12 +61,12 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   const [campeao, setCampeao] = useState("");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
-  const [status, setStatus] = useState<"rascunho" | "publicado">("publicado");
-  const [destacarNoSite, setDestacarNoSite] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
   const [logo, setLogo] = useState<string | null>(null);
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [bannerUploadState, setBannerUploadState] = useState<UploadState>("idle");
+  const [logoUploadState, setLogoUploadState] = useState<UploadState>("idle");
   const [qtdVagas, setQtdVagas] = useState(7);
   const [campeoes, setCampeoes] = useState<(JogadorSelecionavel | null)[]>(Array(7).fill(null));
   const [erro, setErro] = useState("");
@@ -104,9 +117,11 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       method: "POST",
       body: formData,
     });
-    if (!res.ok) throw new Error("Falha no upload");
+    if (!res.ok) throw new Error(await readApiError(res, "Falha no upload"));
     const data = await res.json();
-    return data?.url || data?.path || data?.publicUrl || null;
+    const uploaded = data?.url || data?.path || data?.publicUrl || null;
+    if (!uploaded) throw new Error("Upload concluído, mas nenhuma URL foi retornada.");
+    return uploaded;
   }
 
   function handleQtdVagasChange(v: number) {
@@ -122,7 +137,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   function handleBannerUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setErro("");
     setBannerUrl(null);
+    setBannerUploadState("idle");
     const reader = new FileReader();
     reader.onloadend = () => {
       setCropSrc(reader.result as string);
@@ -153,15 +170,17 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     if (!croppedAreaPixels || !cropSrc) return;
     const croppedImage = await getCroppedImg(cropSrc, croppedAreaPixels);
     setBanner(croppedImage);
+    setBannerUrl(null);
+    setBannerUploadState("uploading");
+    setErro("");
     try {
       const blob = await (await fetch(croppedImage)).blob();
       const uploaded = await uploadArquivo(blob, "banner");
-      if (uploaded) {
-        setBannerUrl(uploaded);
-      }
+      setBannerUrl(uploaded);
+      setBannerUploadState("uploaded");
     } catch (err) {
-      // fallback para base64
-      console.warn("Upload do banner falhou, usando base64", err);
+      setBannerUploadState("failed");
+      setErro(err instanceof Error ? err.message : "Falha ao enviar banner.");
     } finally {
       setCropping(false);
     }
@@ -170,14 +189,22 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setErro("");
     setLogoUrl(null);
+    setLogoUploadState("uploading");
     const reader = new FileReader();
     reader.onloadend = () => setLogo(reader.result as string);
     reader.readAsDataURL(file);
 
     uploadArquivo(file, "logo")
-      .then((uploaded) => uploaded && setLogoUrl(uploaded))
-      .catch((err) => console.warn("Upload da logo falhou, usando base64", err));
+      .then((uploaded) => {
+        setLogoUrl(uploaded);
+        setLogoUploadState("uploaded");
+      })
+      .catch((err) => {
+        setLogoUploadState("failed");
+        setErro(err instanceof Error ? err.message : "Falha ao enviar logo.");
+      });
   }
 
   function handleSelectJogador(vaga: number, jogador: JogadorSelecionavel) {
@@ -201,19 +228,22 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
 
     const resolvedBannerUrl = bannerUrl || torneio?.bannerUrl || "";
     const resolvedLogoUrl = logoUrl || torneio?.logoUrl || "";
+    const pendencias: string[] = [];
 
-    if (
-      !titulo ||
-      !descricao ||
-      !campeao ||
-      !dataInicio ||
-      campeoes.filter(Boolean).length === 0 ||
-      !resolvedBannerUrl ||
-      !resolvedLogoUrl
-    ) {
-      setErro(
-        "Preencha todos os campos obrigatórios, envie o banner e a logo do time campeão e adicione pelo menos um campeão."
-      );
+    if (!titulo.trim()) pendencias.push("Informe o título do campeonato.");
+    if (!descricao.trim()) pendencias.push("Informe a descrição do campeonato.");
+    if (!campeao.trim()) pendencias.push("Informe o nome do time campeão.");
+    if (!dataInicio) pendencias.push("Informe a data de início.");
+    if (campeoes.filter(Boolean).length === 0) {
+      pendencias.push("Adicione pelo menos um campeão.");
+    }
+    if (bannerUploadState === "uploading") pendencias.push("Aguarde o envio do banner terminar.");
+    if (logoUploadState === "uploading") pendencias.push("Aguarde o envio da logo terminar.");
+    if (!resolvedBannerUrl) pendencias.push("Envie o banner do torneio.");
+    if (!resolvedLogoUrl) pendencias.push("Envie a logo do time campeao.");
+
+    if (pendencias.length > 0) {
+      setErro(pendencias.join(" "));
       return;
     }
 
@@ -239,8 +269,8 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       descricao,
       descricaoResumida: descricao.slice(0, 180),
       campeao: campeao.trim(),
-      status,
-      destacarNoSite,
+      status: torneio?.status ?? "publicado",
+      destacarNoSite: false,
       bannerUrl: resolvedBannerUrl || undefined,
       logoUrl: resolvedLogoUrl || undefined,
       dataInicio: dataInicio || undefined,
@@ -260,6 +290,8 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
       setSalvando(true);
       await onSave?.(payload);
       onClose();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Falha ao salvar torneio.");
     } finally {
       setSalvando(false);
     }
@@ -285,8 +317,6 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     setCampeao(torneio.campeao || "");
     setDataInicio(toDateInputValue(torneio.dataInicio));
     setDataFim(toDateInputValue(torneio.dataFim));
-    setStatus(torneio.status === "publicado" ? "publicado" : "rascunho");
-    setDestacarNoSite(Boolean(torneio.destacarNoSite));
     setQtdVagas(torneio.jogadoresCampeoes?.length || 7);
     setPremioTotal(torneio.premioTotal ?? null);
     setPremioMvp(torneio.mvp ?? "");
@@ -303,6 +333,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     setLogo(torneio.logo || torneio.logoUrl || null);
     setBannerUrl(torneio.bannerUrl || torneio.banner || null);
     setLogoUrl(torneio.logoUrl || torneio.logo || null);
+    setBannerUploadState(torneio.bannerUrl || torneio.banner ? "uploaded" : "idle");
+    setLogoUploadState(torneio.logoUrl || torneio.logo ? "uploaded" : "idle");
+    setErro("");
   }, [torneio, open]);
 
   // Reseta campos ao abrir para criar novo
@@ -313,8 +346,6 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     setCampeao("");
     setDataInicio("");
     setDataFim("");
-    setStatus("publicado");
-    setDestacarNoSite(false);
     setQtdVagas(7);
     setPremioTotal(null);
     setPremioMvp("");
@@ -323,6 +354,8 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     setLogo(null);
     setBannerUrl(null);
     setLogoUrl(null);
+    setBannerUploadState("idle");
+    setLogoUploadState("idle");
     setErro("");
   }, [open, torneio]);
 
@@ -415,26 +448,6 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
           />
         </div>
 
-        {/* Publicacao */}
-        <div className="mb-4 flex flex-wrap gap-4">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={status === "publicado"}
-              onChange={(e) => setStatus(e.target.checked ? "publicado" : "rascunho")}
-            />
-            Publicar no site
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={destacarNoSite}
-              onChange={(e) => setDestacarNoSite(e.target.checked)}
-            />
-            Destacar no site
-          </label>
-        </div>
-
         {/* Banner */}
         <div className="mb-3">
           <label className="text-gray-300 font-medium text-sm">
@@ -445,8 +458,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
               type="button"
               className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded shadow text-sm"
               onClick={() => inputBannerRef.current?.click()}
+              disabled={bannerUploadState === "uploading"}
             >
-              <FaUpload /> Selecionar Imagem
+              <FaUpload /> {bannerUploadState === "uploading" ? "Enviando..." : "Selecionar Imagem"}
             </button>
             <input
               ref={inputBannerRef}
@@ -466,6 +480,14 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
               </div>
             )}
           </div>
+          {bannerUploadState === "uploaded" && (
+            <p className="mt-1 text-xs font-semibold text-green-400">Banner enviado.</p>
+          )}
+          {bannerUploadState === "failed" && (
+            <p className="mt-1 text-xs font-semibold text-red-400">
+              Falha ao enviar banner. Selecione a imagem novamente.
+            </p>
+          )}
         </div>
 
         {/* Logo */}
@@ -476,8 +498,9 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
               type="button"
               className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-black font-semibold px-4 py-2 rounded shadow text-sm"
               onClick={() => inputLogoRef.current?.click()}
+              disabled={logoUploadState === "uploading"}
             >
-              <FaUpload /> Selecionar Logo
+              <FaUpload /> {logoUploadState === "uploading" ? "Enviando..." : "Selecionar Logo"}
             </button>
             <input
               ref={inputLogoRef}
@@ -497,6 +520,14 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
               </div>
             )}
           </div>
+          {logoUploadState === "uploaded" && (
+            <p className="mt-1 text-xs font-semibold text-green-400">Logo enviada.</p>
+          )}
+          {logoUploadState === "failed" && (
+            <p className="mt-1 text-xs font-semibold text-red-400">
+              Falha ao enviar logo. Selecione a logo novamente.
+            </p>
+          )}
         </div>
 
         {/* Vagas */}
@@ -605,9 +636,15 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
           <button
             type="submit"
             className="bg-yellow-500 hover:bg-yellow-600 text-black px-5 py-2 rounded font-bold disabled:opacity-60 disabled:pointer-events-none"
-            disabled={salvando}
+            disabled={
+              salvando || bannerUploadState === "uploading" || logoUploadState === "uploading"
+            }
           >
-            {salvando ? "Salvando..." : "Salvar Torneio"}
+            {salvando
+              ? "Salvando..."
+              : bannerUploadState === "uploading" || logoUploadState === "uploading"
+                ? "Aguardando uploads..."
+                : "Salvar Torneio"}
           </button>
         </div>
 

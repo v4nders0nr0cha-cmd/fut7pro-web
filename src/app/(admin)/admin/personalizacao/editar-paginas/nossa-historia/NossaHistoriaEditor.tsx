@@ -886,6 +886,9 @@ export default function NossaHistoriaEditor() {
 
   const handleSave = async () => {
     setSaving(true);
+    setSuccessOpen(false);
+    setErrorOpen(false);
+    setErrorMessage("");
     try {
       const payload = buildPayload();
       const nextData = {
@@ -893,8 +896,10 @@ export default function NossaHistoriaEditor() {
         ...payload,
       } as AboutData;
       await update(nextData);
+      setErrorOpen(false);
       setSuccessOpen(true);
     } catch (err) {
+      setSuccessOpen(false);
       setErrorMessage(err instanceof Error ? err.message : "Erro ao salvar a página.");
       setErrorOpen(true);
     } finally {
@@ -922,8 +927,11 @@ export default function NossaHistoriaEditor() {
   return (
     <div className="pt-20 pb-24 md:pt-6 md:pb-8 w-full max-w-5xl mx-auto px-4">
       <FeedbackModal
-        open={successOpen}
-        onClose={() => setSuccessOpen(false)}
+        open={successOpen && !errorOpen}
+        onClose={() => {
+          setSuccessOpen(false);
+          setErrorOpen(false);
+        }}
         title="Pagina atualizada!"
         subtitle="Nossa História foi atualizada no site público."
         actions={
@@ -931,7 +939,14 @@ export default function NossaHistoriaEditor() {
             <a href={publicUrl} target="_blank" rel="noreferrer" className={buttonSecondary}>
               Ver no site público
             </a>
-            <button type="button" onClick={() => setSuccessOpen(false)} className={buttonPrimary}>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccessOpen(false);
+                setErrorOpen(false);
+              }}
+              className={buttonPrimary}
+            >
               Fechar
             </button>
           </>
@@ -939,13 +954,23 @@ export default function NossaHistoriaEditor() {
       />
       <FeedbackModal
         open={errorOpen}
-        onClose={() => setErrorOpen(false)}
+        onClose={() => {
+          setErrorOpen(false);
+          setSuccessOpen(false);
+        }}
         title="Falha ao salvar"
         subtitle={errorMessage || "Não foi possível salvar. Tente novamente."}
         tone="error"
         actions={
           <>
-            <button type="button" onClick={() => setErrorOpen(false)} className={buttonPrimary}>
+            <button
+              type="button"
+              onClick={() => {
+                setErrorOpen(false);
+                setSuccessOpen(false);
+              }}
+              className={buttonPrimary}
+            >
               Fechar
             </button>
           </>

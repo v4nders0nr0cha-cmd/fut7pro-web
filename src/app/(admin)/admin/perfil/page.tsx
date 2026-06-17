@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import GlobalPerfilClient from "@/app/(public)/perfil/GlobalPerfilClient";
 
-export default function AdminPerfilRedirect() {
-  redirect("/perfil");
+export const dynamic = "force-dynamic";
+
+export default function AdminPerfilPage() {
+  return <GlobalPerfilClient />;
 }
