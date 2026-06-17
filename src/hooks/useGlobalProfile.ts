@@ -3,8 +3,22 @@
 import useSWR from "swr";
 import type { GlobalProfileResponse } from "@/types/global-profile";
 
+const PROFILE_TIMEOUT_MS = 12000;
+
 const fetcher = async (url: string): Promise<GlobalProfileResponse> => {
-  const res = await fetch(url, { cache: "no-store" });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), PROFILE_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store", signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Tempo esgotado ao carregar perfil global.");
+    }
+    throw err;
+  } finally {
+    window.clearTimeout(timeout);
+  }
   if (!res.ok) {
     const body = await res.text();
     const err = new Error(body || "Falha ao carregar perfil global") as Error & { status?: number };

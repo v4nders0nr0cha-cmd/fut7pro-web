@@ -21,6 +21,17 @@ const fetcher = async (url: string): Promise<TorneiosResponse> => {
   return data || { results: [], total: 0, page: 1, limit: 0 };
 };
 
+const readMutationError = async (res: Response, fallback: string) => {
+  const text = await res.text().catch(() => "");
+  if (!text) return fallback;
+  try {
+    const data = JSON.parse(text);
+    return data?.message || data?.error || fallback;
+  } catch {
+    return text || fallback;
+  }
+};
+
 export function useTorneios(slug?: string) {
   const search = slug ? `?slug=${encodeURIComponent(slug)}` : "";
   const key = slug ? `/api/admin/torneios${search}` : null;
@@ -28,29 +39,38 @@ export function useTorneios(slug?: string) {
   const { data, error, mutate } = useSWR<TorneiosResponse>(key, fetcher);
 
   async function addTorneio(torneio: Partial<Torneio>) {
-    await fetch("/api/admin/torneios", {
+    const res = await fetch("/api/admin/torneios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...torneio, slug }),
     });
-    mutate();
+    if (!res.ok) {
+      throw new Error(await readMutationError(res, "Falha ao cadastrar torneio."));
+    }
+    await mutate();
   }
 
   async function updateTorneio(torneio: Partial<Torneio> & { id: string }) {
-    await fetch(`/api/admin/torneios/${torneio.id}`, {
+    const res = await fetch(`/api/admin/torneios/${torneio.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...torneio, slug }),
     });
-    mutate();
+    if (!res.ok) {
+      throw new Error(await readMutationError(res, "Falha ao atualizar torneio."));
+    }
+    await mutate();
   }
 
   async function deleteTorneio(id: string) {
     const query = slug ? `?slug=${encodeURIComponent(slug)}` : "";
-    await fetch(`/api/admin/torneios/${id}${query}`, {
+    const res = await fetch(`/api/admin/torneios/${id}${query}`, {
       method: "DELETE",
     });
-    mutate();
+    if (!res.ok) {
+      throw new Error(await readMutationError(res, "Falha ao excluir torneio."));
+    }
+    await mutate();
   }
 
   return {

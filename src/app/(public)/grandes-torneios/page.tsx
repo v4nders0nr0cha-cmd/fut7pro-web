@@ -57,6 +57,17 @@ const formatDateRange = (start?: string | null, end?: string | null, year?: numb
   return "Data a definir";
 };
 
+type PublicTorneio = NonNullable<PublicTorneiosResponse["results"]>[number];
+
+const getTorneioTime = (torneio: PublicTorneio) => {
+  const parsed = parseDate(torneio.dataInicio);
+  if (parsed) return parsed.getTime();
+  return torneio.ano ? new Date(torneio.ano, 0, 1).getTime() : 0;
+};
+
+const sortByTournamentDateDesc = (a: PublicTorneio, b: PublicTorneio) =>
+  getTorneioTime(b) - getTorneioTime(a);
+
 export default function GrandesTorneiosPage() {
   const { publicHref, publicSlug } = usePublicLinks();
   const { data, error, isLoading } = useSWR<PublicTorneiosResponse>(
@@ -66,7 +77,10 @@ export default function GrandesTorneiosPage() {
       revalidateOnFocus: false,
     }
   );
-  const torneios = useMemo(() => data?.results ?? EMPTY_TORNEIOS, [data?.results]);
+  const torneios = useMemo(
+    () => [...(data?.results ?? EMPTY_TORNEIOS)].sort(sortByTournamentDateDesc),
+    [data?.results]
+  );
   const [selectedYear, setSelectedYear] = useState<number | "all">("all");
   const availableYears = useMemo(() => {
     const years = new Set<number>();
@@ -83,8 +97,11 @@ export default function GrandesTorneiosPage() {
     return Array.from(years).sort((a, b) => b - a);
   }, [torneios]);
   const filteredTorneios = useMemo(() => {
-    if (selectedYear === "all") return torneios;
-    return torneios.filter((torneio) => torneio.ano === selectedYear);
+    const filtered =
+      selectedYear === "all"
+        ? torneios
+        : torneios.filter((torneio) => torneio.ano === selectedYear);
+    return [...filtered].sort(sortByTournamentDateDesc);
   }, [selectedYear, torneios]);
   const isError = Boolean(error);
   const isEmpty = !isLoading && !isError && filteredTorneios.length === 0;

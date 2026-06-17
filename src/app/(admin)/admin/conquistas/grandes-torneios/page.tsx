@@ -1,8 +1,9 @@
 "use client";
 
 import Head from "next/head";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FaPlus, FaTrophy, FaEdit, FaTrash } from "react-icons/fa";
 import ModalCadastroTorneio from "@/components/admin/ModalCadastroTorneio";
 import type { DadosTorneio, Torneio } from "@/types/torneio";
@@ -14,6 +15,8 @@ export default function GrandesTorneiosAdminPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [torneioSelecionado, setTorneioSelecionado] = useState<Torneio | null>(null);
   const [torneioParaExcluir, setTorneioParaExcluir] = useState<Torneio | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { rachaId, tenantSlug } = useRacha();
   const slug = tenantSlug || "";
   const missingTenantScope = !slug || !rachaId;
@@ -52,6 +55,13 @@ export default function GrandesTorneiosAdminPage() {
     await deleteTorneio(torneioParaExcluir.id);
     setTorneioParaExcluir(null);
   }
+
+  useEffect(() => {
+    if (missingTenantScope || searchParams?.get("novo") !== "1") return;
+    setTorneioSelecionado(null);
+    setModalOpen(true);
+    router.replace("/admin/conquistas/grandes-torneios", { scroll: false });
+  }, [missingTenantScope, router, searchParams]);
 
   return (
     <>
