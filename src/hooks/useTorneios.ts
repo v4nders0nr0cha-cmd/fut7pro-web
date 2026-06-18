@@ -26,10 +26,31 @@ const readMutationError = async (res: Response, fallback: string) => {
   if (!text) return fallback;
   try {
     const data = JSON.parse(text);
-    return data?.message || data?.error || fallback;
+    const message = data?.message || data?.error;
+    if (!message || message === "Bad Request") return fallback;
+    return message;
   } catch {
+    if (text.trim() === "Bad Request") return fallback;
     return text || fallback;
   }
+};
+
+const buildTorneioMutationPayload = (
+  torneio: Partial<Torneio> & Record<string, unknown>,
+  slug?: string
+) => {
+  const {
+    id,
+    rachaId,
+    tenantId,
+    tenantSlug,
+    criadoEm,
+    atualizadoEm,
+    premioTotal,
+    premioMvp,
+    ...payload
+  } = torneio;
+  return { ...payload, slug };
 };
 
 export function useTorneios(slug?: string) {
@@ -42,10 +63,15 @@ export function useTorneios(slug?: string) {
     const res = await fetch("/api/admin/torneios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...torneio, slug }),
+      body: JSON.stringify(buildTorneioMutationPayload(torneio, slug)),
     });
     if (!res.ok) {
-      throw new Error(await readMutationError(res, "Falha ao cadastrar torneio."));
+      throw new Error(
+        await readMutationError(
+          res,
+          "Nao foi possivel cadastrar o torneio. Revise os campos e tente novamente."
+        )
+      );
     }
     await mutate();
   }
@@ -54,10 +80,15 @@ export function useTorneios(slug?: string) {
     const res = await fetch(`/api/admin/torneios/${torneio.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...torneio, slug }),
+      body: JSON.stringify(buildTorneioMutationPayload(torneio, slug)),
     });
     if (!res.ok) {
-      throw new Error(await readMutationError(res, "Falha ao atualizar torneio."));
+      throw new Error(
+        await readMutationError(
+          res,
+          "Nao foi possivel atualizar o torneio. Revise os campos e tente novamente."
+        )
+      );
     }
     await mutate();
   }
