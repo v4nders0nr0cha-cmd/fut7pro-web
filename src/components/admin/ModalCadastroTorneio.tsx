@@ -108,14 +108,24 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
     }));
   }, [jogadores]);
 
+  const extensionByMime: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+
   async function uploadArquivo(file: Blob, tipo: "banner" | "logo") {
+    const mimeType = file.type || "image/jpeg";
+    const extension = extensionByMime[mimeType] || "jpg";
     const formData = new FormData();
-    formData.append("file", file, `${tipo}-${Date.now()}.jpg`);
+    formData.append("file", file, `${tipo}-${Date.now()}.${extension}`);
     formData.append("type", tipo);
 
     const res = await fetch("/api/admin/torneios/upload", {
       method: "POST",
       body: formData,
+    }).catch(() => {
+      throw new Error("Nao foi possivel conectar ao servidor de upload.");
     });
     if (!res.ok) throw new Error(await readApiError(res, "Falha no upload"));
     const data = await res.json();
@@ -156,26 +166,42 @@ export default function ModalCadastroTorneio({ open, onClose, onSave, onDelete, 
   ) {
     const img = new window.Image() as HTMLImageElement;
     img.src = src;
-    await new Promise((res) => (img.onload = res));
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Falha ao carregar a imagem do banner."));
+    });
     const canvas = document.createElement("canvas");
     canvas.width = w;
     canvas.height = h;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("Contexto nulo");
     ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, w, h);
-    return canvas.toDataURL("image/jpeg", 0.92);
+    const preview = canvas.toDataURL("image/jpeg", 0.92);
+    return new Promise<{ file: File; preview: string }>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error("Falha ao preparar o banner recortado."));
+            return;
+          }
+          const file = new File([blob], `banner-${Date.now()}.jpg`, { type: "image/jpeg" });
+          resolve({ file, preview });
+        },
+        "image/jpeg",
+        0.92
+      );
+    });
   }
 
   async function handleCropConfirm() {
     if (!croppedAreaPixels || !cropSrc) return;
-    const croppedImage = await getCroppedImg(cropSrc, croppedAreaPixels);
-    setBanner(croppedImage);
     setBannerUrl(null);
     setBannerUploadState("uploading");
     setErro("");
     try {
-      const blob = await (await fetch(croppedImage)).blob();
-      const uploaded = await uploadArquivo(blob, "banner");
+      const croppedImage = await getCroppedImg(cropSrc, croppedAreaPixels);
+      setBanner(croppedImage.preview);
+      const uploaded = await uploadArquivo(croppedImage.file, "banner");
       setBannerUrl(uploaded);
       setBannerUploadState("uploaded");
     } catch (err) {
