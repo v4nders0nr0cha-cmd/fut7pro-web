@@ -5,6 +5,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { FaTrophy } from "react-icons/fa";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type PublicTorneiosResponse = {
@@ -202,7 +203,8 @@ export default function GrandesTorneiosPage() {
                       <div className="absolute inset-0 bg-black/60 flex items-end">
                         <div className="p-4">
                           <h3 className="text-xl sm:text-2xl font-bold text-brand mb-1">
-                            ?? {torneio.nome}
+                            <FaTrophy className="mr-2 inline-block align-[-0.1em]" aria-hidden />
+                            {torneio.nome}
                           </h3>
                           <p className="text-sm text-gray-300 mb-2">
                             {torneio.descricaoResumida ||

@@ -35,10 +35,7 @@ const readMutationError = async (res: Response, fallback: string) => {
   }
 };
 
-const buildTorneioMutationPayload = (
-  torneio: Partial<Torneio> & Record<string, unknown>,
-  slug?: string
-) => {
+const buildTorneioMutationPayload = (torneio: Partial<Torneio> & Record<string, unknown>) => {
   const {
     id,
     rachaId,
@@ -50,7 +47,7 @@ const buildTorneioMutationPayload = (
     premioMvp,
     ...payload
   } = torneio;
-  return { ...payload, slug };
+  return payload;
 };
 
 export function useTorneios(slug?: string) {
@@ -63,7 +60,7 @@ export function useTorneios(slug?: string) {
     const res = await fetch("/api/admin/torneios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildTorneioMutationPayload(torneio, slug)),
+      body: JSON.stringify(buildTorneioMutationPayload(torneio)),
     });
     if (!res.ok) {
       throw new Error(
@@ -80,7 +77,7 @@ export function useTorneios(slug?: string) {
     const res = await fetch(`/api/admin/torneios/${torneio.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildTorneioMutationPayload(torneio, slug)),
+      body: JSON.stringify(buildTorneioMutationPayload(torneio)),
     });
     if (!res.ok) {
       throw new Error(
