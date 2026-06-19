@@ -426,8 +426,7 @@ export default function PlanosLimitesPage() {
         effectiveAccess?.source === "COMPENSATION" ||
         effectiveAccess?.accessSource === "COMPENSATION" ||
         effectiveAccess?.activeCompensation ||
-        effectiveAccess?.compensatedUntil ||
-        (pendingPayment && hasFutureEffectiveAccess)
+        effectiveAccess?.compensatedUntil
     );
 
   const statusMeta = useMemo(() => {
