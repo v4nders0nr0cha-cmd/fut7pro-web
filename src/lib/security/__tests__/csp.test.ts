@@ -27,4 +27,13 @@ describe("buildWebCsp", () => {
     expect(scriptSrc).toContain("'unsafe-eval'");
     expect(scriptSrc).toContain("'unsafe-inline'");
   });
+
+  it("permite endpoints de coleta do Google Analytics em connect-src", () => {
+    const csp = buildWebCsp({ nonce: "nonce-test", isProd: true });
+    const connectSrc = getDirective(csp, "connect-src");
+
+    expect(connectSrc).toContain("https://www.google.com");
+    expect(connectSrc).toContain("https://www.google-analytics.com");
+    expect(connectSrc).toContain("https://region1.google-analytics.com");
+  });
 });

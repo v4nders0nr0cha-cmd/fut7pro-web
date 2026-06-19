@@ -29,7 +29,7 @@ export function buildWebCsp({
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     `script-src ${scriptSrc}`,
     "script-src-attr 'none'",
-    "connect-src 'self' https://api.fut7pro.com.br https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://challenges.cloudflare.com",
+    "connect-src 'self' https://api.fut7pro.com.br https://www.google.com https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://challenges.cloudflare.com",
     "frame-src 'self' https://www.google.com https://maps.google.com https://www.youtube.com https://youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com",
     "worker-src 'self' blob:",
     "upgrade-insecure-requests",
