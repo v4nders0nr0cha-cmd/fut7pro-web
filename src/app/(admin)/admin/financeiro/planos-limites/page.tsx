@@ -132,6 +132,13 @@ function calcDaysRemaining(target?: string | null) {
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }
 
+function isFutureDate(value?: string | null) {
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  return date.getTime() > Date.now();
+}
+
 function extractApiError(error: unknown, fallback: string) {
   if (!(error instanceof Error)) return fallback;
   const raw = error.message?.trim();
@@ -392,7 +399,35 @@ export default function PlanosLimitesPage() {
     subscription?.financialStatus ??
     subscription?.financial ??
     null;
-  const isCompensated = effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO";
+  const pendingPayment =
+    subscription?.status === "past_due" ||
+    financialStatus?.code === "PENDENTE" ||
+    financialStatus?.code === "VENCIDO" ||
+    financialStatus?.code === "EM_APROVACAO" ||
+    subscriptionStatus?.preapproval === "pending" ||
+    subscriptionStatus?.upfront === "pending";
+  const hasHardAccessBlock = Boolean(
+    effectiveAccess?.manualBlocked || effectiveAccess?.lifecycleBlocked
+  );
+  const hasFutureEffectiveAccess = isFutureDate(effectiveAccess?.effectiveAccessUntil);
+  const hasEffectiveAccess =
+    !hasHardAccessBlock &&
+    Boolean(
+      effectiveAccess?.canAccess ||
+        effectiveAccess?.accessStatus === "ATIVO" ||
+        effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO" ||
+        hasFutureEffectiveAccess
+    );
+  const isCompensated =
+    hasEffectiveAccess &&
+    Boolean(
+      effectiveAccess?.accessStatus === "LIBERADO_POR_COMPENSACAO" ||
+        effectiveAccess?.compensationActive ||
+        effectiveAccess?.source === "COMPENSATION" ||
+        effectiveAccess?.accessSource === "COMPENSATION" ||
+        effectiveAccess?.activeCompensation ||
+        effectiveAccess?.compensatedUntil
+    );
 
   const statusMeta = useMemo(() => {
     if (!subscription && loading) {
@@ -407,18 +442,24 @@ export default function PlanosLimitesPage() {
         className: "bg-indigo-500/15 text-indigo-200 border-indigo-500/30",
       };
     }
+    if (isCompensated || hasEffectiveAccess) {
+      return {
+        label: isCompensated ? "Acesso liberado" : "Ativo",
+        className: "bg-green-500/15 text-green-200 border-green-500/30",
+      };
+    }
     const accessMeta = resolveAccessMeta(effectiveAccess?.accessStatus);
     if (accessMeta) return accessMeta;
     return resolveStatusMeta(subscription?.status);
-  }, [subscription, loading, error, effectiveAccess?.accessStatus]);
+  }, [
+    subscription,
+    loading,
+    error,
+    effectiveAccess?.accessStatus,
+    hasEffectiveAccess,
+    isCompensated,
+  ]);
   const isTrial = subscription?.status === "trialing";
-  const pendingPayment =
-    subscription?.status === "past_due" ||
-    financialStatus?.code === "PENDENTE" ||
-    financialStatus?.code === "VENCIDO" ||
-    financialStatus?.code === "EM_APROVACAO" ||
-    subscriptionStatus?.preapproval === "pending" ||
-    subscriptionStatus?.upfront === "pending";
   const now = new Date();
   const trialExpired =
     isTrial && subscription?.trialEnd ? new Date(subscription.trialEnd) < now : false;
@@ -428,6 +469,7 @@ export default function PlanosLimitesPage() {
       : false;
   const billingBlocked =
     Boolean(subscription) &&
+    !hasEffectiveAccess &&
     (effectiveAccess
       ? effectiveAccess.blocked
       : trialExpired ||
