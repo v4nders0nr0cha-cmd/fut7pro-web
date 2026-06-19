@@ -45,6 +45,10 @@ type FetchError = Error & {
   publicState?: PublicFinanceiroState;
 };
 
+type UseFinanceiroPublicOptions = {
+  enabled?: boolean;
+};
+
 function resolveState(
   data: FinanceiroPublicData | undefined,
   error: FetchError | undefined
@@ -112,10 +116,11 @@ async function fetcher(url: string): Promise<FinanceiroPublicData> {
  * Busca dados financeiros publicos de um racha especifico.
  * @param slug string (slug do racha)
  */
-export function useFinanceiroPublic(slug: string) {
+export function useFinanceiroPublic(slug: string, options: UseFinanceiroPublicOptions = {}) {
   const slugValue = slug?.trim();
+  const enabled = options.enabled ?? true;
   const { data, error, mutate, isLoading } = useSWR<FinanceiroPublicData, FetchError>(
-    slugValue ? `/api/public/${encodeURIComponent(slugValue)}/financeiro` : null,
+    enabled && slugValue ? `/api/public/${encodeURIComponent(slugValue)}/financeiro` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -125,7 +130,7 @@ export function useFinanceiroPublic(slug: string) {
       errorRetryInterval: 5000, // 5 segundos
     }
   );
-  const state = resolveState(data, error);
+  const state = !enabled && slugValue ? "MODULE_DISABLED" : resolveState(data, error);
 
   const resumo: ResumoFinanceiro | undefined = data
     ? {
@@ -152,7 +157,7 @@ export function useFinanceiroPublic(slug: string) {
     tenant: data?.tenant ?? null,
     resumo,
     lancamentos,
-    isLoading,
+    isLoading: enabled ? isLoading : false,
     isError: state === "UNAVAILABLE" ? error : null,
     isNotFound: state === "NO_DATA",
     isSlugNotFound: state === "SLUG_NOT_FOUND",
