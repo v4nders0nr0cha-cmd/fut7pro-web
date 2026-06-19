@@ -2,6 +2,7 @@
 import Head from "next/head";
 import { useRacha as useRachaContext } from "@/context/RachaContext";
 import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
+import { useRachaPublic } from "@/hooks/useRachaPublic";
 import ResumoFinanceiro from "@/components/financeiro/ResumoFinanceiro";
 import TabelaLancamentos from "@/components/financeiro/TabelaLancamentos";
 import { rachaConfig } from "@/config/racha.config";
@@ -11,6 +12,9 @@ export default function PrestacaoDeContasPage() {
   const { tenantSlug } = useRachaContext();
   const { publicSlug } = usePublicLinks();
   const slug = publicSlug.trim() || tenantSlug.trim() || "";
+  const { racha, isLoading: isLoadingRacha, isError: isErrorRacha } = useRachaPublic(slug);
+  const shouldFetchFinanceiro =
+    !!slug && !isLoadingRacha && (!!isErrorRacha || !!racha?.financeiroVisivel);
   const {
     resumo,
     lancamentos,
@@ -20,10 +24,10 @@ export default function PrestacaoDeContasPage() {
     isSlugNotFound,
     isModuleDisabled,
     tenant,
-  } = useFinanceiroPublic(slug);
-  const tenantName = tenant?.name || rachaConfig.nome;
+  } = useFinanceiroPublic(slug, { enabled: shouldFetchFinanceiro });
+  const tenantName = tenant?.name || racha?.nome || rachaConfig.nome;
 
-  if (isLoadingFinanceiro) {
+  if (isLoadingRacha || isLoadingFinanceiro) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center py-10 pb-8 bg-fundo">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>

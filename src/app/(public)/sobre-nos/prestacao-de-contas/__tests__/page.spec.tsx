@@ -13,15 +13,25 @@ jest.mock("@/hooks/useFinanceiroPublic", () => ({
   useFinanceiroPublic: jest.fn(),
 }));
 
+jest.mock("@/hooks/useRachaPublic", () => ({
+  useRachaPublic: jest.fn(),
+}));
+
 const mockedUseRacha = require("@/context/RachaContext").useRacha as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseFinanceiroPublic = require("@/hooks/useFinanceiroPublic")
   .useFinanceiroPublic as jest.Mock;
+const mockedUseRachaPublic = require("@/hooks/useRachaPublic").useRachaPublic as jest.Mock;
 
 describe("PrestacaoDeContasPage", () => {
   beforeEach(() => {
     mockedUseRacha.mockReturnValue({ tenantSlug: "vitrine" });
     mockedUsePublicLinks.mockReturnValue({ publicSlug: "vitrine" });
+    mockedUseRachaPublic.mockReturnValue({
+      racha: { nome: "Vitrine", financeiroVisivel: true },
+      isLoading: false,
+      isError: null,
+    });
     mockedUseFinanceiroPublic.mockReturnValue({
       resumo: null,
       lancamentos: [],
@@ -46,9 +56,15 @@ describe("PrestacaoDeContasPage", () => {
     expect(
       screen.queryByText(/Este racha não existe ou não está disponível/i)
     ).not.toBeInTheDocument();
+    expect(mockedUseFinanceiroPublic).toHaveBeenCalledWith("vitrine", { enabled: true });
   });
 
   it("renderiza estado de modulo desativado", () => {
+    mockedUseRachaPublic.mockReturnValue({
+      racha: { nome: "Vitrine", financeiroVisivel: false },
+      isLoading: false,
+      isError: null,
+    });
     mockedUseFinanceiroPublic.mockReturnValue({
       resumo: null,
       lancamentos: [],
@@ -64,6 +80,7 @@ describe("PrestacaoDeContasPage", () => {
     expect(
       screen.getByRole("heading", { name: "Prestação de contas não publicada" })
     ).toBeInTheDocument();
+    expect(mockedUseFinanceiroPublic).toHaveBeenCalledWith("vitrine", { enabled: false });
   });
 
   it("renderiza estado de slug invalido", () => {
