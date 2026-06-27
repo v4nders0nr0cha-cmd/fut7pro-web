@@ -8,6 +8,25 @@ export type DestaqueDiaResponse = {
   bannerUrl: string | null;
   zagueiroId: string | null;
   faltou?: DestaqueDiaFaltou | null;
+  timeCampeaoDoDia?: {
+    id: string;
+    teamId: string;
+    source: "manual" | "calculated";
+    status: "draft" | "published";
+    updatedAt: string;
+    team: {
+      id: string;
+      name: string;
+      color: string | null;
+      logoUrl: string | null;
+    } | null;
+  } | null;
+  publication?: {
+    scope: "historical" | "public_spotlight";
+    shouldUpdatePublicSpotlight: boolean;
+    latestCompletedMatchDate: string | null;
+    message: string;
+  } | null;
   updatedAt?: string | null;
 };
 

@@ -3,10 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
-import { useMe } from "@/hooks/useMe";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 import type { SorteioHistoricoItem } from "@/types/sorteio";
@@ -16,15 +15,6 @@ const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const PAGE_SIZE = 30;
 const HISTORICO_LIMIT = 90;
 const DEFAULT_RANGE_DAYS = 30;
-const DELETE_ROUND_CONFIRMATION = "EXCLUIR RODADA";
-
-const DELETE_REASON_OPTIONS = [
-  { value: "erro_cadastro", label: "Erro de cadastro" },
-  { value: "rodada_duplicada", label: "Rodada duplicada" },
-  { value: "cancelamento_racha", label: "Cancelamento do racha" },
-  { value: "lancamento_incorreto", label: "Lançamento incorreto" },
-  { value: "outro", label: "Outro" },
-];
 
 const DAY_STATUS_LABELS: Record<DayStatus, string> = {
   pending: "Pendente",
@@ -85,6 +75,12 @@ type DaySummary = {
   highlights: DayHighlights;
   lastUpdateLabel: string | null;
   searchLabel: string;
+};
+
+type HistoricalChampionState = {
+  loadingKey: string | null;
+  message: string | null;
+  error: string | null;
 };
 
 type GoalEvent = {
@@ -814,169 +810,9 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
   );
 }
 
-async function readDeleteError(response: Response) {
-  const text = await response.text();
-  if (!text) return "Falha ao excluir rodada.";
-  try {
-    const body = JSON.parse(text) as { message?: string; error?: string };
-    return body.message || body.error || text;
-  } catch {
-    return text;
-  }
-}
-
-type DeleteRoundModalProps = {
-  day: DaySummary;
-  onClose: () => void;
-  onDeleted: () => void | Promise<void>;
-};
-
-function DeleteRoundModal({ day, onClose, onDeleted }: DeleteRoundModalProps) {
-  const [reasonOption, setReasonOption] = useState("");
-  const [reasonDetails, setReasonDetails] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const selectedReason = DELETE_REASON_OPTIONS.find((item) => item.value === reasonOption);
-  const reason = [selectedReason?.label, reasonDetails.trim()].filter(Boolean).join(" - ");
-  const canDelete =
-    !isDeleting &&
-    reasonOption.length > 0 &&
-    reason.length >= 5 &&
-    confirmation.trim().toUpperCase() === DELETE_ROUND_CONFIRMATION;
-
-  const handleDelete = async () => {
-    if (!canDelete) return;
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      const response = await fetch(`/api/partidas/rodada/${encodeURIComponent(day.key)}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          confirmation: DELETE_ROUND_CONFIRMATION,
-          reason,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(await readDeleteError(response));
-      }
-
-      await onDeleted();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao excluir rodada.");
-      setIsDeleting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4 py-6">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-red-500/40 bg-[#151515] p-5 shadow-2xl">
-        <div className="flex flex-col gap-2 border-b border-neutral-800 pb-4">
-          <p className="text-xs uppercase tracking-widest text-red-300">Ação destrutiva</p>
-          <h3 className="text-xl font-bold text-red-200">
-            Excluir rodada de {format(day.date, "dd/MM/yyyy")}
-          </h3>
-          <p className="text-sm text-neutral-300">
-            Essa ação só pode ser feita pelo Presidente e remove a rodada do histórico operacional
-            do racha.
-          </p>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">
-          <p className="font-semibold">Serão removidos ou recalculados automaticamente:</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-red-100/90">
-            <li>{day.total} confronto(s) da rodada</li>
-            <li>Resultados, placares, gols, assistências e presenças vinculadas</li>
-            <li>
-              Pontuação que alimenta rankings, artilharia, assistências e histórico dos atletas
-            </li>
-            <li>Destaques do dia e publicação de Times do Dia vinculada à data, se existirem</li>
-          </ul>
-        </div>
-
-        <div className="mt-5 space-y-4">
-          <label className="block">
-            <span className="text-sm font-semibold text-neutral-200">Motivo da exclusão</span>
-            <select
-              value={reasonOption}
-              onChange={(event) => setReasonOption(event.target.value)}
-              disabled={isDeleting}
-              className="mt-2 w-full rounded-xl border border-neutral-700 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
-            >
-              <option value="">Selecione um motivo</option>
-              {DELETE_REASON_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-neutral-200">Detalhes adicionais</span>
-            <textarea
-              value={reasonDetails}
-              onChange={(event) => setReasonDetails(event.target.value)}
-              disabled={isDeleting}
-              rows={3}
-              maxLength={300}
-              placeholder="Ex.: rodada criada em duplicidade após publicação incorreta."
-              className="mt-2 w-full rounded-xl border border-neutral-700 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
-            />
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-neutral-200">
-              Digite {DELETE_ROUND_CONFIRMATION} para confirmar
-            </span>
-            <input
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-              disabled={isDeleting}
-              className="mt-2 w-full rounded-xl border border-neutral-700 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
-              autoComplete="off"
-            />
-          </label>
-        </div>
-
-        {error && (
-          <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-100">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isDeleting}
-            className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800 disabled:opacity-60"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={!canDelete}
-            className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isDeleting ? "Excluindo rodada..." : "Excluir rodada definitivamente"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function HistoricoPartidasAdmin() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
-  const { me } = useMe({ context: "admin" });
   const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
   const defaultRange = useMemo(() => buildDefaultRange(), []);
   const [search, setSearch] = useState("");
@@ -985,9 +821,12 @@ export default function HistoricoPartidasAdmin() {
   const [rangeStart, setRangeStart] = useState(defaultRange.start);
   const [rangeEnd, setRangeEnd] = useState(defaultRange.end);
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DaySummary | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
+  const [historicalChampion, setHistoricalChampion] = useState<HistoricalChampionState>({
+    loadingKey: null,
+    message: null,
+    error: null,
+  });
 
   useEffect(() => {
     if (!searchParams) return;
@@ -1122,20 +961,77 @@ export default function HistoricoPartidasAdmin() {
     return query ? `/admin/partidas/historico?${query}` : "/admin/partidas/historico";
   };
 
-  const handleRoundDeleted = async () => {
-    setDeleteTarget(null);
-    setSelectedMatch(null);
-    if (selectedDayKey) {
-      router.replace(buildHistoricoLink({ dia: null }), { scroll: false });
-    }
-    await mutate();
-  };
-
   const renderEmptyState = (message: string) => (
     <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
       {message}
     </div>
   );
+
+  const parseJson = (text: string) => {
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  };
+
+  const handlePublishHistoricalChampion = async (day: DaySummary) => {
+    if (day.status !== "complete") return;
+
+    setHistoricalChampion({ loadingKey: day.key, message: null, error: null });
+
+    try {
+      const response = await fetch("/api/admin/destaques-do-dia/time-campeao/publicar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: day.key }),
+      });
+      const bodyText = await response.text().catch(() => "");
+      const body = parseJson(bodyText);
+
+      if (!response.ok) {
+        throw new Error(body?.error || body?.message || bodyText || "Falha ao registrar campeão.");
+      }
+
+      if (!body?.timeCampeaoDoDia || body.timeCampeaoDoDia.status !== "published") {
+        throw new Error("Time Campeão do Dia não foi oficializado no backend.");
+      }
+
+      if (body?.publication?.shouldUpdatePublicSpotlight) {
+        const publishResponse = await fetch("/api/admin/destaques-do-dia/publicar", {
+          method: "POST",
+        });
+        const publishBody = await publishResponse.text().catch(() => "");
+        const parsedPublishBody = parseJson(publishBody);
+        if (!publishResponse.ok) {
+          throw new Error(
+            parsedPublishBody?.error ||
+              parsedPublishBody?.message ||
+              publishBody ||
+              "Falha ao atualizar a vitrine pública."
+          );
+        }
+      }
+
+      setHistoricalChampion({
+        loadingKey: null,
+        message:
+          body?.publication?.message || "Time Campeão do Dia registrado no histórico com sucesso.",
+        error: null,
+      });
+      mutate();
+    } catch (err) {
+      setHistoricalChampion({
+        loadingKey: null,
+        message: null,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Falha ao registrar Time Campeão do Dia no histórico.",
+      });
+    }
+  };
 
   if (isLoading) {
     return renderEmptyState("Carregando histórico...");
@@ -1165,9 +1061,22 @@ export default function HistoricoPartidasAdmin() {
     const statusLabel = DAY_STATUS_LABELS[selectedDay.status];
     const originLabel = ORIGIN_LABELS[selectedDay.origin];
     const statusBadge = DAY_STATUS_BADGES[selectedDay.status];
+    const isPublishingSelectedDay = historicalChampion.loadingKey === selectedDay.key;
 
     return (
       <div className="space-y-6">
+        {(historicalChampion.message || historicalChampion.error) && (
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm ${
+              historicalChampion.error
+                ? "border-red-500/40 bg-red-500/10 text-red-200"
+                : "border-green-500/40 bg-green-500/10 text-green-200"
+            }`}
+          >
+            {historicalChampion.error || historicalChampion.message}
+          </div>
+        )}
+
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -1213,21 +1122,22 @@ export default function HistoricoPartidasAdmin() {
                   Continuar lancando resultados
                 </Link>
               )}
+              {selectedDay.status === "complete" && (
+                <button
+                  type="button"
+                  onClick={() => handlePublishHistoricalChampion(selectedDay)}
+                  disabled={isPublishingSelectedDay}
+                  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isPublishingSelectedDay ? "Registrando campeão..." : "Registrar Campeão do Dia"}
+                </button>
+              )}
               <button
                 type="button"
                 className="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-800"
               >
                 Exportar resumo (em breve)
               </button>
-              {isPresidente && (
-                <button
-                  type="button"
-                  onClick={() => setDeleteTarget(selectedDay)}
-                  className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/20"
-                >
-                  Excluir rodada
-                </button>
-              )}
             </div>
           </div>
         </div>
@@ -1238,6 +1148,12 @@ export default function HistoricoPartidasAdmin() {
             <p className="text-base font-semibold text-yellow-300">
               {selectedDay.highlights.campeao || "Não definido"}
             </p>
+            {selectedDay.status === "complete" && (
+              <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
+                O registro histórico alimenta rankings, perfil premium e Card Lendário. A vitrine
+                pública só muda se este for o dia mais recente finalizado.
+              </p>
+            )}
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
             <p className="text-xs text-neutral-400">Artilheiro do dia</p>
@@ -1350,13 +1266,6 @@ export default function HistoricoPartidasAdmin() {
             }}
           />
         )}
-        {deleteTarget && (
-          <DeleteRoundModal
-            day={deleteTarget}
-            onClose={() => setDeleteTarget(null)}
-            onDeleted={handleRoundDeleted}
-          />
-        )}
       </div>
     );
   }
@@ -1365,6 +1274,18 @@ export default function HistoricoPartidasAdmin() {
 
   return (
     <div className="space-y-6">
+      {(historicalChampion.message || historicalChampion.error) && (
+        <div
+          className={`rounded-2xl border px-4 py-3 text-sm ${
+            historicalChampion.error
+              ? "border-red-500/40 bg-red-500/10 text-red-200"
+              : "border-green-500/40 bg-green-500/10 text-green-200"
+          }`}
+        >
+          {historicalChampion.error || historicalChampion.message}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
           <p className="text-xs text-neutral-400">Total de dias</p>
@@ -1483,6 +1404,7 @@ export default function HistoricoPartidasAdmin() {
             const statusBadge = DAY_STATUS_BADGES[day.status];
             const originLabel = ORIGIN_LABELS[day.origin];
             const originBadge = ORIGIN_BADGES[day.origin];
+            const isPublishingDay = historicalChampion.loadingKey === day.key;
 
             return (
               <div key={day.key} className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
@@ -1554,13 +1476,14 @@ export default function HistoricoPartidasAdmin() {
                       Continuar lancando resultados
                     </Link>
                   )}
-                  {isPresidente && (
+                  {day.status === "complete" && (
                     <button
                       type="button"
-                      onClick={() => setDeleteTarget(day)}
-                      className="rounded-xl border border-red-500/50 bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
+                      onClick={() => handlePublishHistoricalChampion(day)}
+                      disabled={isPublishingDay}
+                      className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Excluir rodada
+                      {isPublishingDay ? "Registrando..." : "Registrar campeão histórico"}
                     </button>
                   )}
                 </div>
@@ -1580,13 +1503,6 @@ export default function HistoricoPartidasAdmin() {
             Carregar mais dias
           </button>
         </div>
-      )}
-      {deleteTarget && (
-        <DeleteRoundModal
-          day={deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onDeleted={handleRoundDeleted}
-        />
       )}
     </div>
   );
