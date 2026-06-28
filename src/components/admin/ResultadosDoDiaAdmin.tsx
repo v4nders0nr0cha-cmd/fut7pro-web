@@ -75,9 +75,26 @@ type MatchCard = {
   date: Date | null;
   order: number;
   status: MatchStatus;
-  scoreA: number;
-  scoreB: number;
+  scoreA: number | null;
+  scoreB: number | null;
+  scoreLabel: string;
 };
+
+type RoundCompletionModalState =
+  | {
+      mode: "historical";
+      title: string;
+      message: string;
+      details: string;
+      redirectTo?: string;
+    }
+  | {
+      mode: "current_publication_required";
+      title: string;
+      message: string;
+      details: string;
+      redirectTo: string;
+    };
 
 function normalizeKey(value?: string | null) {
   return value?.trim().toLowerCase() ?? "";
@@ -159,6 +176,15 @@ function parseDayParam(value?: string | null) {
     return new Date(year, month - 1, day);
   }
   return null;
+}
+
+function parseJsonResponse(text: string) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function isSameLocalDay(left: Date, right: Date) {
@@ -572,7 +598,7 @@ type MatchModalProps = {
   status: MatchStatus;
   onStatusChange: (matchId: string, status: MatchStatus) => void;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (status: MatchStatus) => void;
 };
 
 function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchModalProps) {
@@ -719,7 +745,7 @@ function MatchModal({ match, status, onStatusChange, onClose, onSaved }: MatchMo
 
         lastSavedKey.current = saveKey;
         if (!options?.silent) {
-          onSaved();
+          onSaved(statusToPersist);
         }
         if (options?.closeOnSuccess) {
           onClose();
@@ -1189,6 +1215,9 @@ export default function ResultadosDoDiaAdmin({
   const [deleteTarget, setDeleteTarget] = useState<PublicMatch | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [roundCompletionModal, setRoundCompletionModal] =
+    useState<RoundCompletionModalState | null>(null);
+  const [roundCompletionError, setRoundCompletionError] = useState<string | null>(null);
 
   const updateStatus = (matchId: string, status: MatchStatus) => {
     setStatusMap((prev) => {
@@ -1237,6 +1266,51 @@ export default function ResultadosDoDiaAdmin({
     setDeleteError(null);
   };
 
+  const registerRoundCompletion = useCallback(async (dateKey: string) => {
+    setRoundCompletionError(null);
+
+    try {
+      const response = await fetch("/api/admin/destaques-do-dia/historico/registrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: dateKey }),
+      });
+      const bodyText = await response.text().catch(() => "");
+      const body = parseJsonResponse(bodyText);
+
+      if (!response.ok) {
+        throw new Error(
+          body?.error || body?.message || bodyText || "Falha ao registrar fechamento da rodada."
+        );
+      }
+
+      if (body?.mode === "historical") {
+        setRoundCompletionModal({
+          mode: "historical",
+          title: "Rodada histórica registrada",
+          message:
+            "Todos os resultados desta data foram finalizados. Como já existe uma publicação mais recente no site público, o Time Campeão do Dia e os destaques desta rodada foram registrados apenas para histórico, rankings, perfis dos atletas e Card Lendário.",
+          details:
+            "A vitrine pública do racha não foi alterada e continuará mostrando a publicação mais recente.",
+        });
+        return;
+      }
+
+      setRoundCompletionModal({
+        mode: "current_publication_required",
+        title: "Resultados finalizados",
+        message:
+          "Todos os resultados desta data foram finalizados. Agora vá para a tela Time Campeão do Dia para revisar os destaques, escolher o Zagueiro do Dia, adicionar o banner e publicar no site.",
+        details: "Essa publicação atualizará a vitrine pública do racha.",
+        redirectTo: body?.redirectTo || "/admin/partidas/time-campeao-do-dia",
+      });
+    } catch (err) {
+      setRoundCompletionError(
+        err instanceof Error ? err.message : "Falha ao registrar fechamento da rodada."
+      );
+    }
+  }, []);
+
   const { activeLabel, matchCards } = useMemo(() => {
     if (matchIds) {
       if (matchIds.length === 0) {
@@ -1258,12 +1332,9 @@ export default function ResultadosDoDiaAdmin({
         .filter(Boolean) as Array<{ match: PublicMatch; date: Date; status: MatchStatus }>;
 
       const cards = orderedEntries.map((item, index) => {
-        const teamAId = item.match.teamA.id ?? "team-a";
-        const teamBId = item.match.teamB.id ?? "team-b";
-        const goalsA = countPresenceGoals(item.match, teamAId, teamAId, teamBId);
-        const goalsB = countPresenceGoals(item.match, teamBId, teamAId, teamBId);
-        const scoreA = item.match.scoreA ?? goalsA;
-        const scoreB = item.match.scoreB ?? goalsB;
+        const hasResult = item.match.scoreA !== null && item.match.scoreB !== null;
+        const scoreA = hasResult ? Number(item.match.scoreA) : null;
+        const scoreB = hasResult ? Number(item.match.scoreB) : null;
 
         return {
           match: item.match,
@@ -1272,6 +1343,7 @@ export default function ResultadosDoDiaAdmin({
           status: item.status,
           scoreA,
           scoreB,
+          scoreLabel: hasResult ? `${scoreA} x ${scoreB}` : "-- x --",
         } as MatchCard;
       });
 
@@ -1371,12 +1443,9 @@ export default function ResultadosDoDiaAdmin({
     }
 
     const cards = orderedEntries.map((item, index) => {
-      const teamAId = item.match.teamA.id ?? "team-a";
-      const teamBId = item.match.teamB.id ?? "team-b";
-      const goalsA = countPresenceGoals(item.match, teamAId, teamAId, teamBId);
-      const goalsB = countPresenceGoals(item.match, teamBId, teamAId, teamBId);
-      const scoreA = item.match.scoreA ?? goalsA;
-      const scoreB = item.match.scoreB ?? goalsB;
+      const hasResult = item.match.scoreA !== null && item.match.scoreB !== null;
+      const scoreA = hasResult ? Number(item.match.scoreA) : null;
+      const scoreB = hasResult ? Number(item.match.scoreB) : null;
 
       return {
         match: item.match,
@@ -1385,6 +1454,7 @@ export default function ResultadosDoDiaAdmin({
         status: item.status,
         scoreA,
         scoreB,
+        scoreLabel: hasResult ? `${scoreA} x ${scoreB}` : "-- x --",
       } as MatchCard;
     });
 
@@ -1438,6 +1508,26 @@ export default function ResultadosDoDiaAdmin({
 
   const pendingLabel = totals.notStarted > 0 ? `${totals.notStarted} partidas sem resultado` : "";
 
+  const handleMatchSaved = useCallback(
+    async (match: PublicMatch, savedStatus: MatchStatus) => {
+      setSelectedMatch(null);
+      await mutate();
+
+      if (savedStatus !== "finished") return;
+
+      const hasUnfinishedOtherMatch = matchCards.some(
+        (item) => item.match.id !== match.id && item.status !== "finished"
+      );
+      if (hasUnfinishedOtherMatch) return;
+
+      const matchDate = parseMatchDate(match.date);
+      if (!matchDate) return;
+
+      await registerRoundCompletion(format(matchDate, "yyyy-MM-dd"));
+    },
+    [matchCards, mutate, registerRoundCompletion]
+  );
+
   return (
     <div className="space-y-6">
       {pendingInfo && showPendingAlert && (
@@ -1462,20 +1552,21 @@ export default function ResultadosDoDiaAdmin({
           </div>
         </div>
       )}
-      {allFinished && (
+      {allFinished && !roundCompletionModal && (
         <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-4 py-4 text-sm text-green-100">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <FaCheckCircle className="text-green-300 text-lg" />
-              <span>Veja o Time Campeão do Dia e os destaques individuais da rodada.</span>
+              <span>
+                Rodada completa. O sistema validou o fechamento dos resultados desta data.
+              </span>
             </div>
-            <Link
-              href="/admin/partidas/time-campeao-do-dia"
-              className="rounded-full border border-green-400/60 bg-green-400/10 px-4 py-2 text-xs font-semibold text-green-100 hover:border-green-300 hover:bg-green-400/20"
-            >
-              Abrir Time Campeão do Dia
-            </Link>
           </div>
+        </div>
+      )}
+      {roundCompletionError && (
+        <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-4 text-sm text-red-100">
+          {roundCompletionError}
         </div>
       )}
       {showHeader && (
@@ -1590,9 +1681,7 @@ export default function ResultadosDoDiaAdmin({
                 </div>
 
                 <div className="text-center">
-                  <p className="text-lg font-bold text-yellow-400">
-                    {item.scoreA} x {item.scoreB}
-                  </p>
+                  <p className="text-lg font-bold text-yellow-400">{item.scoreLabel}</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -1640,11 +1729,65 @@ export default function ResultadosDoDiaAdmin({
           status={resolveMatchStatus(selectedMatch, statusMap)}
           onStatusChange={updateStatus}
           onClose={() => setSelectedMatch(null)}
-          onSaved={() => {
-            setSelectedMatch(null);
-            mutate();
-          }}
+          onSaved={(status) => handleMatchSaved(selectedMatch, status)}
         />
+      )}
+
+      {roundCompletionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+          <div className="w-full max-w-lg rounded-2xl border border-yellow-500/40 bg-[#151515] p-6 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-400/10">
+                <FaCheckCircle className="text-yellow-300" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-yellow-300">{roundCompletionModal.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-100">
+                  {roundCompletionModal.message}
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-neutral-300">
+                  {roundCompletionModal.details}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              {roundCompletionModal.mode === "historical" ? (
+                <>
+                  <Link
+                    href="/admin/partidas/historico"
+                    className="rounded-xl border border-neutral-700 px-4 py-2 text-center text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
+                  >
+                    Ver histórico
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => setRoundCompletionModal(null)}
+                    className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
+                  >
+                    Entendi
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setRoundCompletionModal(null)}
+                    className="rounded-xl border border-neutral-700 px-4 py-2 text-sm font-semibold text-neutral-100 hover:bg-neutral-800"
+                  >
+                    Continuar aqui
+                  </button>
+                  <Link
+                    href={roundCompletionModal.redirectTo}
+                    className="rounded-xl bg-yellow-400 px-4 py-2 text-center text-sm font-semibold text-black hover:bg-yellow-300"
+                  >
+                    Ir para Time Campeão do Dia
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {deleteTarget && (

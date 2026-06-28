@@ -982,7 +982,7 @@ export default function HistoricoPartidasAdmin() {
     setHistoricalChampion({ loadingKey: day.key, message: null, error: null });
 
     try {
-      const response = await fetch("/api/admin/destaques-do-dia/time-campeao/publicar", {
+      const response = await fetch("/api/admin/destaques-do-dia/historico/registrar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ date: day.key }),
@@ -994,24 +994,15 @@ export default function HistoricoPartidasAdmin() {
         throw new Error(body?.error || body?.message || bodyText || "Falha ao registrar campeão.");
       }
 
-      if (!body?.timeCampeaoDoDia || body.timeCampeaoDoDia.status !== "published") {
-        throw new Error("Time Campeão do Dia não foi oficializado no backend.");
+      if (body?.mode === "current_publication_required") {
+        throw new Error(
+          body?.message ||
+            "Esta é a rodada mais recente. Publique pela tela Time Campeão do Dia para atualizar a vitrine pública."
+        );
       }
 
-      if (body?.publication?.shouldUpdatePublicSpotlight) {
-        const publishResponse = await fetch("/api/admin/destaques-do-dia/publicar", {
-          method: "POST",
-        });
-        const publishBody = await publishResponse.text().catch(() => "");
-        const parsedPublishBody = parseJson(publishBody);
-        if (!publishResponse.ok) {
-          throw new Error(
-            parsedPublishBody?.error ||
-              parsedPublishBody?.message ||
-              publishBody ||
-              "Falha ao atualizar a vitrine pública."
-          );
-        }
+      if (!body?.timeCampeaoDoDia || body.timeCampeaoDoDia.status !== "published") {
+        throw new Error("Time Campeão do Dia não foi oficializado no backend.");
       }
 
       setHistoricalChampion({
