@@ -38,7 +38,10 @@ const ADMIN_ACCESS_TIMEOUT_MS = 12000;
 const ADMIN_ACCESS_MAX_ATTEMPTS = 2;
 const ADMIN_ACCESS_RETRY_DELAY_MS = 250;
 
-const fetcher = async (url: string): Promise<AdminAccessResponse> => {
+type AdminAccessKey = string | [string, string];
+
+const fetcher = async (key: AdminAccessKey): Promise<AdminAccessResponse> => {
+  const url = Array.isArray(key) ? key[0] : key;
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), ADMIN_ACCESS_TIMEOUT_MS);
 
@@ -103,8 +106,9 @@ type UseAdminAccessOptions = {
 
 export function useAdminAccess(options: UseAdminAccessOptions = {}) {
   const enabled = options.enabled ?? true;
+  const tenantScopeKey = options.tenantSlug?.trim() || "";
   const { data, error, isLoading, isValidating, mutate } = useSWR<AdminAccessResponse>(
-    enabled ? "/api/admin/access" : null,
+    enabled ? ["/api/admin/access", tenantScopeKey] : null,
     fetcher,
     {
       revalidateOnFocus: false,
