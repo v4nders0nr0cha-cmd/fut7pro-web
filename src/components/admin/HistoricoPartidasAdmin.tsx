@@ -14,7 +14,6 @@ const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
 const FALLBACK_PLAYER = "/images/jogadores/jogador_padrao_01.jpg";
 const PAGE_SIZE = 30;
 const HISTORICO_LIMIT = 90;
-const DEFAULT_RANGE_DAYS = 30;
 
 const DAY_STATUS_LABELS: Record<DayStatus, string> = {
   pending: "Pendente",
@@ -30,7 +29,7 @@ const DAY_STATUS_BADGES: Record<DayStatus, string> = {
 
 const ORIGIN_LABELS: Record<DayOrigin, string> = {
   sorteio: "Sorteio Inteligente",
-  classica: "Partida Classica",
+  classica: "Partida Clássica",
   misto: "Misto",
 };
 
@@ -47,6 +46,8 @@ type DayOrigin = "sorteio" | "classica" | "misto";
 type DayFilter = DayStatus | "all";
 
 type OriginFilter = DayOrigin | "all";
+
+type QuickFilter = "all" | "pending-results" | "today";
 
 type MatchMeta = {
   match: PublicMatch;
@@ -75,12 +76,6 @@ type DaySummary = {
   highlights: DayHighlights;
   lastUpdateLabel: string | null;
   searchLabel: string;
-};
-
-type HistoricalChampionState = {
-  loadingKey: string | null;
-  message: string | null;
-  error: string | null;
 };
 
 type GoalEvent = {
@@ -138,16 +133,6 @@ function parseDayKey(value?: string | null) {
   const [year, month, day] = value.split("-").map(Number);
   if (!year || !month || !day) return null;
   return new Date(year, month - 1, day);
-}
-
-function buildDefaultRange() {
-  const end = new Date();
-  const start = new Date(end);
-  start.setDate(start.getDate() - DEFAULT_RANGE_DAYS);
-  return {
-    start: format(start, "yyyy-MM-dd"),
-    end: format(end, "yyyy-MM-dd"),
-  };
 }
 
 function isWithinRange(date: Date, start?: Date | null, end?: Date | null) {
@@ -814,19 +799,14 @@ export default function HistoricoPartidasAdmin() {
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
   const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
-  const defaultRange = useMemo(() => buildDefaultRange(), []);
   const [search, setSearch] = useState("");
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [statusFilter, setStatusFilter] = useState<DayFilter>("all");
   const [originFilter, setOriginFilter] = useState<OriginFilter>("all");
-  const [rangeStart, setRangeStart] = useState(defaultRange.start);
-  const [rangeEnd, setRangeEnd] = useState(defaultRange.end);
+  const [rangeStart, setRangeStart] = useState("");
+  const [rangeEnd, setRangeEnd] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [historicalChampion, setHistoricalChampion] = useState<HistoricalChampionState>({
-    loadingKey: null,
-    message: null,
-    error: null,
-  });
 
   useEffect(() => {
     if (!searchParams) return;
@@ -844,10 +824,20 @@ export default function HistoricoPartidasAdmin() {
 
     const scopeParam = normalizeKey(searchParams.get("scope"));
     if (scopeParam === "hoje" || scopeParam === "today") {
-      const todayKey = toDayKey(new Date());
-      setRangeStart(todayKey);
-      setRangeEnd(todayKey);
+      setQuickFilter("today");
+      setRangeStart("");
+      setRangeEnd("");
+    } else if (
+      scopeParam === "pendentes" ||
+      scopeParam === "pending" ||
+      scopeParam === "resultados-pendentes"
+    ) {
+      setQuickFilter("pending-results");
+      setStatusFilter("all");
+      setRangeStart("");
+      setRangeEnd("");
     } else if (scopeParam === "todas" || scopeParam === "all" || scopeParam === "completo") {
+      setQuickFilter("all");
       setRangeStart("");
       setRangeEnd("");
     }
@@ -856,11 +846,11 @@ export default function HistoricoPartidasAdmin() {
     if (originParam === "sorteio" || originParam === "classica" || originParam === "misto") {
       setOriginFilter(originParam as OriginFilter);
     }
-  }, [defaultRange, searchParams]);
+  }, [searchParams]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [search, statusFilter, originFilter, rangeStart, rangeEnd]);
+  }, [search, quickFilter, statusFilter, originFilter, rangeStart, rangeEnd]);
 
   const sorteioMap = useMemo(() => buildSorteioMap(sorteioHistorico), [sorteioHistorico]);
 
@@ -924,13 +914,15 @@ export default function HistoricoPartidasAdmin() {
     const endDate = parseDayKey(rangeEnd);
 
     return daySummaries.filter((day) => {
+      if (quickFilter === "pending-results" && day.status === "complete") return false;
+      if (quickFilter === "today" && day.key !== toDayKey(new Date())) return false;
       if (statusFilter !== "all" && day.status !== statusFilter) return false;
       if (originFilter !== "all" && day.origin !== originFilter) return false;
       if (!isWithinRange(day.date, startDate, endDate)) return false;
       if (!searchValue) return true;
       return day.searchLabel.includes(searchValue);
     });
-  }, [daySummaries, originFilter, rangeEnd, rangeStart, search, statusFilter]);
+  }, [daySummaries, originFilter, quickFilter, rangeEnd, rangeStart, search, statusFilter]);
 
   const totals = useMemo(() => {
     const total = filteredDays.length;
@@ -940,9 +932,6 @@ export default function HistoricoPartidasAdmin() {
     return { total, pending, partial, complete };
   }, [filteredDays]);
 
-  const todayKey = toDayKey(new Date());
-  const todayDay = daySummaries.find((day) => day.key === todayKey) ?? null;
-  const nextPendingDay = daySummaries.find((day) => day.status !== "complete") ?? null;
   const selectedDayKey = searchParams?.get("dia") ?? "";
   const selectedDay = selectedDayKey
     ? (daySummaries.find((day) => day.key === selectedDayKey) ?? null)
@@ -966,63 +955,6 @@ export default function HistoricoPartidasAdmin() {
       {message}
     </div>
   );
-
-  const parseJson = (text: string) => {
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return null;
-    }
-  };
-
-  const handlePublishHistoricalChampion = async (day: DaySummary) => {
-    if (day.status !== "complete") return;
-
-    setHistoricalChampion({ loadingKey: day.key, message: null, error: null });
-
-    try {
-      const response = await fetch("/api/admin/destaques-do-dia/historico/registrar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: day.key }),
-      });
-      const bodyText = await response.text().catch(() => "");
-      const body = parseJson(bodyText);
-
-      if (!response.ok) {
-        throw new Error(body?.error || body?.message || bodyText || "Falha ao registrar campeão.");
-      }
-
-      if (body?.mode === "current_publication_required") {
-        throw new Error(
-          body?.message ||
-            "Esta é a rodada mais recente. Publique pela tela Time Campeão do Dia para atualizar a vitrine pública."
-        );
-      }
-
-      if (!body?.timeCampeaoDoDia || body.timeCampeaoDoDia.status !== "published") {
-        throw new Error("Time Campeão do Dia não foi oficializado no backend.");
-      }
-
-      setHistoricalChampion({
-        loadingKey: null,
-        message:
-          body?.publication?.message || "Time Campeão do Dia registrado no histórico com sucesso.",
-        error: null,
-      });
-      mutate();
-    } catch (err) {
-      setHistoricalChampion({
-        loadingKey: null,
-        message: null,
-        error:
-          err instanceof Error
-            ? err.message
-            : "Falha ao registrar Time Campeão do Dia no histórico.",
-      });
-    }
-  };
 
   if (isLoading) {
     return renderEmptyState("Carregando histórico...");
@@ -1052,22 +984,9 @@ export default function HistoricoPartidasAdmin() {
     const statusLabel = DAY_STATUS_LABELS[selectedDay.status];
     const originLabel = ORIGIN_LABELS[selectedDay.origin];
     const statusBadge = DAY_STATUS_BADGES[selectedDay.status];
-    const isPublishingSelectedDay = historicalChampion.loadingKey === selectedDay.key;
 
     return (
       <div className="space-y-6">
-        {(historicalChampion.message || historicalChampion.error) && (
-          <div
-            className={`rounded-2xl border px-4 py-3 text-sm ${
-              historicalChampion.error
-                ? "border-red-500/40 bg-red-500/10 text-red-200"
-                : "border-green-500/40 bg-green-500/10 text-green-200"
-            }`}
-          >
-            {historicalChampion.error || historicalChampion.message}
-          </div>
-        )}
-
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -1110,18 +1029,8 @@ export default function HistoricoPartidasAdmin() {
                   href={`/admin/partidas/resultados-do-dia?data=${selectedDay.key}`}
                   className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300"
                 >
-                  Continuar lancando resultados
+                  Continuar lançando resultados
                 </Link>
-              )}
-              {selectedDay.status === "complete" && (
-                <button
-                  type="button"
-                  onClick={() => handlePublishHistoricalChampion(selectedDay)}
-                  disabled={isPublishingSelectedDay}
-                  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-semibold text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isPublishingSelectedDay ? "Registrando campeão..." : "Registrar Campeão do Dia"}
-                </button>
               )}
               <button
                 type="button"
@@ -1141,8 +1050,8 @@ export default function HistoricoPartidasAdmin() {
             </p>
             {selectedDay.status === "complete" && (
               <p className="mt-2 text-[11px] leading-relaxed text-neutral-500">
-                O registro histórico alimenta rankings, perfil premium e Card Lendário. A vitrine
-                pública só muda se este for o dia mais recente finalizado.
+                Os dados desta rodada alimentam histórico, rankings, perfis dos atletas e Card
+                Lendário. A vitrine pública principal continua separada.
               </p>
             )}
           </div>
@@ -1238,7 +1147,7 @@ export default function HistoricoPartidasAdmin() {
                       onClick={() => setSelectedMatch(match)}
                       className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
                     >
-                      {hasResult ? "Editar resultado" : "Lancar resultado"}
+                      {hasResult ? "Editar resultado" : "Lançar resultado"}
                     </button>
                   </div>
                 </div>
@@ -1265,18 +1174,6 @@ export default function HistoricoPartidasAdmin() {
 
   return (
     <div className="space-y-6">
-      {(historicalChampion.message || historicalChampion.error) && (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
-            historicalChampion.error
-              ? "border-red-500/40 bg-red-500/10 text-red-200"
-              : "border-green-500/40 bg-green-500/10 text-green-200"
-          }`}
-        >
-          {historicalChampion.error || historicalChampion.message}
-        </div>
-      )}
-
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
           <p className="text-xs text-neutral-400">Total de dias</p>
@@ -1297,42 +1194,64 @@ export default function HistoricoPartidasAdmin() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={todayDay ? buildHistoricoLink({ dia: todayDay.key }) : buildHistoricoLink({})}
-          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-            todayDay
-              ? "border-cyan-400 bg-cyan-400/20 text-cyan-200"
-              : "border-neutral-700 bg-[#1a1a1a] text-neutral-400"
-          }`}
-        >
-          Hoje
-        </Link>
-        <Link
-          href={
-            nextPendingDay
-              ? buildHistoricoLink({ dia: nextPendingDay.key })
-              : buildHistoricoLink({})
-          }
-          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
-            nextPendingDay
-              ? "border-yellow-400 bg-yellow-400/10 text-yellow-200"
-              : "border-neutral-700 bg-[#1a1a1a] text-neutral-400"
-          }`}
-        >
-          Proximo dia pendente
-        </Link>
         <button
           type="button"
           onClick={() => {
             setSearch("");
+            setQuickFilter("all");
             setStatusFilter("all");
             setOriginFilter("all");
             setRangeStart("");
             setRangeEnd("");
           }}
-          className="rounded-full border border-neutral-700 bg-[#1a1a1a] px-4 py-2 text-xs font-semibold text-neutral-200 hover:border-yellow-400/60"
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+            quickFilter === "all" &&
+            statusFilter === "all" &&
+            originFilter === "all" &&
+            !rangeStart &&
+            !rangeEnd &&
+            !search
+              ? "border-yellow-400 bg-yellow-400/15 text-yellow-200"
+              : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
+          }`}
         >
           Histórico completo
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSearch("");
+            setQuickFilter("pending-results");
+            setStatusFilter("all");
+            setOriginFilter("all");
+            setRangeStart("");
+            setRangeEnd("");
+          }}
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+            quickFilter === "pending-results"
+              ? "border-yellow-400 bg-yellow-400/15 text-yellow-200"
+              : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-yellow-400/60"
+          }`}
+        >
+          Resultados pendentes
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSearch("");
+            setQuickFilter("today");
+            setStatusFilter("all");
+            setOriginFilter("all");
+            setRangeStart("");
+            setRangeEnd("");
+          }}
+          className={`rounded-full border px-4 py-2 text-xs font-semibold transition ${
+            quickFilter === "today"
+              ? "border-cyan-400 bg-cyan-400/20 text-cyan-200"
+              : "border-neutral-700 bg-[#1a1a1a] text-neutral-200 hover:border-cyan-400/60"
+          }`}
+        >
+          Hoje
         </button>
       </div>
 
@@ -1345,7 +1264,10 @@ export default function HistoricoPartidasAdmin() {
         />
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as DayFilter)}
+          onChange={(e) => {
+            setQuickFilter("all");
+            setStatusFilter(e.target.value as DayFilter);
+          }}
           className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
         >
           <option value="all">Todos os status</option>
@@ -1355,25 +1277,34 @@ export default function HistoricoPartidasAdmin() {
         </select>
         <select
           value={originFilter}
-          onChange={(e) => setOriginFilter(e.target.value as OriginFilter)}
+          onChange={(e) => {
+            setQuickFilter("all");
+            setOriginFilter(e.target.value as OriginFilter);
+          }}
           className="rounded-xl border border-neutral-800 bg-[#101010] px-4 py-3 text-sm text-neutral-100"
         >
           <option value="all">Todas as origens</option>
           <option value="sorteio">Sorteio Inteligente</option>
-          <option value="classica">Partida Classica</option>
+          <option value="classica">Partida Clássica</option>
           <option value="misto">Misto</option>
         </select>
         <div className="grid grid-cols-2 gap-2">
           <input
             type="date"
             value={rangeStart}
-            onChange={(e) => setRangeStart(e.target.value)}
+            onChange={(e) => {
+              setQuickFilter("all");
+              setRangeStart(e.target.value);
+            }}
             className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-3 py-3 text-xs text-neutral-100"
           />
           <input
             type="date"
             value={rangeEnd}
-            onChange={(e) => setRangeEnd(e.target.value)}
+            onChange={(e) => {
+              setQuickFilter("all");
+              setRangeEnd(e.target.value);
+            }}
             className="w-full rounded-xl border border-neutral-800 bg-[#101010] px-3 py-3 text-xs text-neutral-100"
           />
         </div>
@@ -1395,8 +1326,6 @@ export default function HistoricoPartidasAdmin() {
             const statusBadge = DAY_STATUS_BADGES[day.status];
             const originLabel = ORIGIN_LABELS[day.origin];
             const originBadge = ORIGIN_BADGES[day.origin];
-            const isPublishingDay = historicalChampion.loadingKey === day.key;
-
             return (
               <div key={day.key} className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
                 <div className="flex items-start justify-between gap-3 mb-4">
@@ -1464,18 +1393,8 @@ export default function HistoricoPartidasAdmin() {
                       href={`/admin/partidas/resultados-do-dia?data=${day.key}`}
                       className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300"
                     >
-                      Continuar lancando resultados
+                      Continuar lançando resultados
                     </Link>
-                  )}
-                  {day.status === "complete" && (
-                    <button
-                      type="button"
-                      onClick={() => handlePublishHistoricalChampion(day)}
-                      disabled={isPublishingDay}
-                      className="rounded-xl bg-yellow-400 px-4 py-2 text-xs font-semibold text-black hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isPublishingDay ? "Registrando..." : "Registrar campeão histórico"}
-                    </button>
                   )}
                 </div>
               </div>
