@@ -3,7 +3,6 @@
 import Head from "next/head";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePartidas } from "@/hooks/usePartidas";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
@@ -17,24 +16,8 @@ type SaveDestaquePayload = Partial<DestaqueDiaResponse> & {
   timeCampeaoStatus?: "draft" | "published";
 };
 
-function isValidDateKey(value?: string | null) {
-  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
-}
-
-function resolveMatchDateKey(match: any) {
-  const raw = match?.date ?? match?.data ?? match?.createdAt;
-  if (!raw) return null;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return format(date, "yyyy-MM-dd");
-}
-
 export default function TimeCampeaoDoDiaPage() {
   const { partidas, isLoading, isError, error, mutate } = usePartidas();
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const selectedDateParam = searchParams?.get("data") ?? "";
   const [destaqueDia, setDestaqueDia] = useState<DestaqueDiaResponse | null>(null);
   const [isFetchingDestaque, setIsFetchingDestaque] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,17 +27,9 @@ export default function TimeCampeaoDoDiaPage() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
 
-  const selectedDateKey = isValidDateKey(selectedDateParam) ? selectedDateParam : "";
-  const scopedPartidas = useMemo(() => {
-    if (!selectedDateKey) return partidas;
-    return (partidas as any[]).filter(
-      (partida) => resolveMatchDateKey(partida) === selectedDateKey
-    );
-  }, [partidas, selectedDateKey]);
-
   const { confrontos, times, dataReferencia } = useMemo(
-    () => buildDestaquesDoDia(scopedPartidas as any),
-    [scopedPartidas]
+    () => buildDestaquesDoDia(partidas as any),
+    [partidas]
   );
 
   const hasDados = confrontos.length > 0 && times.length > 0;
@@ -110,18 +85,7 @@ export default function TimeCampeaoDoDiaPage() {
   useEffect(() => {
     setPublishMessage(null);
     setPublishError(null);
-  }, [dataKey, selectedDateKey]);
-
-  const handleDateChange = (value: string) => {
-    const params = new URLSearchParams(searchParams?.toString());
-    if (value) {
-      params.set("data", value);
-    } else {
-      params.delete("data");
-    }
-    const query = params.toString();
-    router.push(query ? `${pathname}?${query}` : pathname);
-  };
+  }, [dataKey]);
 
   const parseBody = (text: string) => {
     if (!text) return null;
@@ -296,36 +260,6 @@ export default function TimeCampeaoDoDiaPage() {
           Resultados do Dia. Zagueiro do Dia tem que ser escolhido manualmente.
         </p>
 
-        <div className="mb-6 w-full max-w-2xl rounded-2xl border border-yellow-500/20 bg-black/20 p-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-yellow-300">
-                Data do Campeão do Dia
-              </label>
-              <input
-                type="date"
-                value={selectedDateKey}
-                onChange={(event) => handleDateChange(event.target.value)}
-                className="w-full rounded-xl border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-              />
-              <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-                Datas antigas podem ser registradas no histórico para rankings, perfil premium e
-                Card Lendário. O banner e os destaques da vitrine pública só mudam quando esta for a
-                data mais recente finalizada.
-              </p>
-            </div>
-            {selectedDateKey && (
-              <button
-                type="button"
-                onClick={() => handleDateChange("")}
-                className="rounded-xl border border-neutral-700 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-800"
-              >
-                Usar mais recente
-              </button>
-            )}
-          </div>
-        </div>
-
         {isFetchingDestaque && (
           <div className="text-xs text-yellow-300 mb-3">Carregando dados salvos do dia...</div>
         )}
@@ -356,8 +290,8 @@ export default function TimeCampeaoDoDiaPage() {
 
         {!isLoading && !isError && !hasDados && (
           <div className="text-gray-300 py-10 text-center">
-            Nenhuma partida finalizada encontrada para o dia selecionado. Registre partidas no
-            painel para habilitar o cálculo do Time Campeão do Dia.
+            Nenhuma partida finalizada encontrada. Registre partidas no painel para habilitar o
+            cálculo do Time Campeão do Dia.
           </div>
         )}
 
