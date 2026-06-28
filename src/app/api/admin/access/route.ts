@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildHeaders, proxyBackend, requireUser, resolveTenantSlug } from "../../_proxy/helpers";
+import { buildHeaders, proxyBackend, requireUser } from "../../_proxy/helpers";
 import { getApiBase } from "@/lib/get-api-base";
 import {
   ADMIN_ACTIVE_TENANT_COOKIE,
+  ADMIN_ACTIVE_TENANT_COOKIE_MAX_AGE,
   LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
 } from "@/lib/admin-tenant-cookie";
 
@@ -51,17 +52,32 @@ async function resolveSingleTenantSlug(user: Awaited<ReturnType<typeof requireUs
   return slug || null;
 }
 
+function resolveActiveTenantCookie(req: NextRequest) {
+  return (
+    req.cookies.get(ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
+    req.cookies.get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
+    null
+  );
+}
+
 export async function GET(req: NextRequest) {
   const user = await requireUser();
   if (!user) {
     return NextResponse.json({ error: "Nao autorizado" }, { status: 401 });
   }
 
-  const slugParam = req.nextUrl.searchParams.get("slug") || undefined;
-  const tenantSlug =
-    resolveTenantSlug(user, slugParam) || (await resolveSingleTenantSlug(user)) || null;
+  const slugParam = req.nextUrl.searchParams.get("slug")?.trim() || null;
+  const cookieSlug = resolveActiveTenantCookie(req);
+  const tenantSlug = cookieSlug || slugParam || (await resolveSingleTenantSlug(user)) || null;
   if (!tenantSlug) {
-    return NextResponse.json({ error: "Tenant nao identificado" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "Tenant ativo nao selecionado",
+        code: "ACTIVE_TENANT_REQUIRED",
+        redirectTo: "/admin/selecionar-racha",
+      },
+      { status: 409 }
+    );
   }
 
   const baseUrl = getApiBase().replace(/\/+$/, "");
@@ -82,6 +98,7 @@ export async function GET(req: NextRequest) {
     if (resolvedSlug) {
       result.cookies.set(ADMIN_ACTIVE_TENANT_COOKIE, resolvedSlug, {
         path: "/",
+        maxAge: ADMIN_ACTIVE_TENANT_COOKIE_MAX_AGE,
         sameSite: "lax",
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

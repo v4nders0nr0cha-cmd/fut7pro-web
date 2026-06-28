@@ -3,6 +3,7 @@ import { buildHeaders, proxyBackend, requireUser } from "../../../_proxy/helpers
 import { getApiBase } from "@/lib/get-api-base";
 import {
   ADMIN_ACTIVE_TENANT_COOKIE,
+  ADMIN_ACTIVE_TENANT_COOKIE_MAX_AGE,
   LEGACY_ADMIN_ACTIVE_TENANT_COOKIE,
 } from "@/lib/admin-tenant-cookie";
 
@@ -92,6 +93,7 @@ export async function GET(_req: NextRequest) {
   });
   res.cookies.set(ADMIN_ACTIVE_TENANT_COOKIE, singleSlug, {
     path: "/",
+    maxAge: ADMIN_ACTIVE_TENANT_COOKIE_MAX_AGE,
     sameSite: "lax",
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
