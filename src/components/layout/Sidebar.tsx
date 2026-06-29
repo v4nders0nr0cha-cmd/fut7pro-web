@@ -4,9 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, type MouseEvent } from "react";
 import { Info } from "lucide-react";
-import { useTema } from "@/hooks/useTema";
+import { usePublicMatches } from "@/hooks/usePublicMatches";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
-import type { RankingAtleta } from "@/types/estatisticas";
+import type { PublicMatch } from "@/types/partida";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import DestaquesRegrasModal from "@/components/modals/DestaquesRegrasModal";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
@@ -19,11 +19,24 @@ const CRITERIA_DIA = {
   maestro: "Mais assistências no dia (qualquer time)",
 };
 
+type DayHighlightStats = {
+  id: string;
+  name: string;
+  slug?: string | null;
+  photoUrl?: string | null;
+  goals: number;
+  assists: number;
+};
+
 export default function Sidebar() {
-  const { logo, nome } = useTema();
   const { publicHref, publicSlug } = usePublicLinks();
   const [regrasOpen, setRegrasOpen] = useState(false);
   const currentYear = new Date().getFullYear();
+  const { matches } = usePublicMatches({
+    slug: publicSlug,
+    scope: "recent",
+    limit: 24,
+  });
   const { rankings: topGeral } = usePublicPlayerRankings({
     slug: publicSlug,
     type: "geral",
@@ -31,48 +44,98 @@ export default function Sidebar() {
     year: currentYear,
     limit: 5,
   });
-  const { rankings: topGols } = usePublicPlayerRankings({
+  const { rankings: topAtacante } = usePublicPlayerRankings({
     slug: publicSlug,
-    type: "artilheiros",
+    type: "geral",
     period: "year",
     year: currentYear,
     limit: 1,
+    position: "atacante",
   });
   const { rankings: topAssist } = usePublicPlayerRankings({
     slug: publicSlug,
-    type: "assistencias",
+    type: "geral",
     period: "year",
     year: currentYear,
     limit: 1,
+    position: "meia",
+  });
+  const { rankings: topZagueiro } = usePublicPlayerRankings({
+    slug: publicSlug,
+    type: "geral",
+    period: "year",
+    year: currentYear,
+    limit: 1,
+    position: "zagueiro",
+  });
+  const { rankings: topGoleiro } = usePublicPlayerRankings({
+    slug: publicSlug,
+    type: "geral",
+    period: "year",
+    year: currentYear,
+    limit: 1,
+    position: "goleiro",
   });
 
-  const artilheiro = topGols?.[0];
-  const maestro = topAssist?.[0];
+  const dayHighlights = resolveLatestDayHighlights(matches);
+  const artilheiroDia = dayHighlights.artilheiro;
+  const maestroDia = dayHighlights.maestro;
+  const atacanteAno = topAtacante?.[0];
+  const meiaAno = topAssist?.[0];
+  const zagueiroAno = topZagueiro?.[0];
+  const goleiroAno = topGoleiro?.[0];
   const melhorDoAno = topGeral?.[0];
-  const goleiro = resolveGoleiro(topGeral);
-  const artilheiroGols = typeof artilheiro?.gols === "number" ? artilheiro.gols : null;
-  const maestroAssists = typeof maestro?.assistencias === "number" ? maestro.assistencias : null;
+  const artilheiroDiaGols = typeof artilheiroDia?.goals === "number" ? artilheiroDia.goals : null;
+  const maestroDiaAssists = typeof maestroDia?.assists === "number" ? maestroDia.assists : null;
 
   const maioresPontuadores = topGeral?.slice(0, 5);
 
-  const artilheiroData = {
-    name: artilheiro?.nome ?? "Artilheiro em atualização",
-    value: artilheiro ? `${artilheiro.gols ?? artilheiro.pontos ?? 0} gols` : "Em processamento",
+  const artilheiroDiaData = {
+    name: artilheiroDia?.name ?? "Artilheiro em atualização",
+    value: artilheiroDia ? `${artilheiroDia.goals} gols` : "Em processamento",
     href: publicHref(
-      artilheiro?.slug
-        ? `/atletas/${artilheiro.slug}`
+      artilheiroDia?.slug
+        ? `/atletas/${artilheiroDia.slug}`
         : "/estatisticas/melhores-por-posicao/atacantes"
     ),
-    image: safeImage(artilheiro?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
+    image: safeImage(artilheiroDia?.photoUrl, "/images/jogadores/jogador_padrao_01.jpg"),
   };
 
-  const maestroData = {
-    name: maestro?.nome ?? "Maestro em atualização",
-    value: maestro ? `${maestro.assistencias ?? 0} assistências` : "Em processamento",
+  const maestroDiaData = {
+    name: maestroDia?.name ?? "Maestro em atualização",
+    value: maestroDia ? `${maestroDia.assists} assistências` : "Em processamento",
     href: publicHref(
-      maestro?.slug ? `/atletas/${maestro.slug}` : "/estatisticas/melhores-por-posicao/meias"
+      maestroDia?.slug ? `/atletas/${maestroDia.slug}` : "/estatisticas/melhores-por-posicao/meias"
     ),
-    image: safeImage(maestro?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
+    image: safeImage(maestroDia?.photoUrl, "/images/jogadores/jogador_padrao_03.jpg"),
+  };
+
+  const atacanteAnoData = {
+    name: atacanteAno?.nome ?? "Atacante em atualização",
+    value: atacanteAno ? `${atacanteAno.pontos ?? 0} pontos` : "Em processamento",
+    href: publicHref("/estatisticas/melhores-por-posicao/atacantes"),
+    image: safeImage(atacanteAno?.foto, "/images/jogadores/jogador_padrao_01.jpg"),
+  };
+
+  const meiaAnoData = {
+    name: meiaAno?.nome ?? "Meia em atualização",
+    value: meiaAno ? `${meiaAno.pontos ?? 0} pontos` : "Em processamento",
+    href: publicHref("/estatisticas/melhores-por-posicao/meias"),
+    image: safeImage(meiaAno?.foto, "/images/jogadores/jogador_padrao_03.jpg"),
+  };
+
+  const zagueiroAnoData = {
+    name: zagueiroAno?.nome ?? "Zagueiro em atualização",
+    value: zagueiroAno ? `${zagueiroAno.pontos ?? 0} pontos` : "Em processamento",
+    href: publicHref("/estatisticas/melhores-por-posicao/zagueiros"),
+    image: safeImage(zagueiroAno?.foto, "/images/jogadores/jogador_padrao_07.jpg"),
+  };
+
+  const goleiroAnoData = {
+    name: goleiroAno?.nome ?? "Goleiro em atualização",
+    value: goleiroAno ? `${goleiroAno.pontos ?? 0} pontos` : "Em processamento",
+    href: publicHref("/estatisticas/melhores-por-posicao/goleiros"),
+    image: safeImage(goleiroAno?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
   };
 
   const melhorDoAnoData = {
@@ -82,54 +145,32 @@ export default function Sidebar() {
     image: safeImage(melhorDoAno?.foto, "/images/jogadores/jogador_padrao_05.jpg"),
   };
 
-  const goleiroData = {
-    name: goleiro?.nome ?? melhorDoAnoData.name,
-    value: goleiro ? `${goleiro.pontos ?? 0} pontos` : melhorDoAnoData.value,
-    href: publicHref(
-      goleiro?.slug ? `/atletas/${goleiro.slug}` : "/estatisticas/melhores-por-posicao/goleiros"
-    ),
-    image: safeImage(goleiro?.foto, "/images/jogadores/jogador_padrao_09.jpg"),
-  };
-
   return (
-    <aside className="w-full h-full bg-[#111] text-white px-1 py-3">
-      <div className="flex flex-col items-center gap-2 mb-6">
-        {logo && (
-          <Image
-            src={logo}
-            alt={`Logo do ${nome} - sistema de futebol 7`}
-            width={80}
-            height={80}
-            className="object-contain"
-          />
-        )}
-        <span className="text-xl font-bold text-brand">{nome}</span>
-      </div>
-
+    <aside className="w-full bg-[#111] text-white px-1 pb-3">
       <SidebarPlayerCard
         title="Artilheiro do Dia"
-        name={artilheiroData.name}
-        value={artilheiroData.value}
-        href={artilheiroData.href}
-        image={artilheiroData.image}
+        name={artilheiroDiaData.name}
+        value={artilheiroDiaData.value}
+        href={artilheiroDiaData.href}
+        image={artilheiroDiaData.image}
         icon="/images/icons/bola-de-ouro.png"
         badge={BADGE_AUTOMATICO}
         criteria={CRITERIA_DIA.artilheiro}
-        footerValue={artilheiroGols}
+        footerValue={artilheiroDiaGols}
         footerLabel="gols"
         onRulesClick={() => setRegrasOpen(true)}
       />
 
       <SidebarPlayerCard
         title="Maestro do Dia"
-        name={maestroData.name}
-        value={maestroData.value}
-        href={maestroData.href}
-        image={maestroData.image}
+        name={maestroDiaData.name}
+        value={maestroDiaData.value}
+        href={maestroDiaData.href}
+        image={maestroDiaData.image}
         icon="/images/icons/chuteira-de-ouro.png"
         badge={BADGE_AUTOMATICO}
         criteria={CRITERIA_DIA.maestro}
-        footerValue={maestroAssists}
+        footerValue={maestroDiaAssists}
         footerLabel="assistências"
         onRulesClick={() => setRegrasOpen(true)}
       />
@@ -137,35 +178,44 @@ export default function Sidebar() {
       <div className="my-2 flex items-center gap-2 px-1">
         <div className="h-px flex-1 bg-white/10" />
         <span className="text-[10px] uppercase tracking-[0.2em] text-brand-soft opacity-70">
-          Melhores do Ano
+          Melhores do Ano até agora
         </span>
         <div className="h-px flex-1 bg-white/10" />
       </div>
 
       <SidebarPlayerCard
-        title="Artilheiro do Ano"
-        name={artilheiroData.name}
-        value={artilheiroData.value}
+        title="Atacante do Ano"
+        name={atacanteAnoData.name}
+        value={atacanteAnoData.value}
         href={publicHref("/estatisticas/melhores-por-posicao/atacantes")}
-        image={artilheiroData.image}
+        image={atacanteAnoData.image}
         icon="/images/icons/bola-de-ouro.png"
       />
 
       <SidebarPlayerCard
         title="Meia do Ano"
-        name={maestroData.name}
-        value={maestroData.value}
+        name={meiaAnoData.name}
+        value={meiaAnoData.value}
         href={publicHref("/estatisticas/melhores-por-posicao/meias")}
-        image={maestroData.image}
+        image={meiaAnoData.image}
         icon="/images/icons/chuteira-de-ouro.png"
       />
 
       <SidebarPlayerCard
+        title="Zagueiro do Ano"
+        name={zagueiroAnoData.name}
+        value={zagueiroAnoData.value}
+        href={publicHref("/estatisticas/melhores-por-posicao/zagueiros")}
+        image={zagueiroAnoData.image}
+        icon="/images/icons/zagueiro-do-ano.png"
+      />
+
+      <SidebarPlayerCard
         title="Goleiro do Ano"
-        name={goleiroData.name}
-        value={goleiroData.value}
+        name={goleiroAnoData.name}
+        value={goleiroAnoData.value}
         href={publicHref("/estatisticas/melhores-por-posicao/goleiros")}
-        image={goleiroData.image}
+        image={goleiroAnoData.image}
         icon="/images/icons/luva-de-ouro.png"
       />
 
@@ -399,21 +449,94 @@ function safeImage(src?: string, fallback: string = DEFAULT_IMAGE) {
   return getAvatarSrc(src, fallback);
 }
 
-function resolveGoleiro(rankings?: RankingAtleta[]) {
-  if (!rankings) return undefined;
-  const goalieTags = [
-    "GOL",
-    "GOLEIRO",
-    "GOLEIRA",
-    "GK",
-    "GL",
-    "GOALKEEPER",
-    "GOALIE",
-    "KEEPER",
-    "GOALKEEP",
-  ];
-  return rankings.find((p) => {
-    const pos = (p.posicao || p.position || "").toUpperCase().replace(/[^A-Z]/g, "");
-    return goalieTags.some((tag) => pos === tag || pos.startsWith(tag));
+function parseMatchDate(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function hasValidScore(match: PublicMatch) {
+  return (
+    (typeof match.scoreA === "number" && typeof match.scoreB === "number") ||
+    (typeof match.score?.teamA === "number" && typeof match.score?.teamB === "number")
+  );
+}
+
+function resolveLatestDayHighlights(matches: PublicMatch[]) {
+  const datedMatches = matches
+    .map((match) => ({ match, date: parseMatchDate(match.date) }))
+    .filter((item): item is { match: PublicMatch; date: Date } =>
+      Boolean(item.date && hasValidScore(item.match))
+    );
+
+  if (!datedMatches.length) {
+    return { artilheiro: null, maestro: null };
+  }
+
+  const latestDate = datedMatches
+    .map((item) => item.date)
+    .sort((a, b) => b.getTime() - a.getTime())[0];
+  const matchesDoDia = datedMatches
+    .filter((item) => isSameDay(item.date, latestDate))
+    .map((item) => item.match);
+
+  const stats = buildDayHighlightStats(matchesDoDia);
+  return {
+    artilheiro: pickDayHighlight(stats, "goals", "assists", 1),
+    maestro: pickDayHighlight(stats, "assists", "goals", 1),
+  };
+}
+
+function buildDayHighlightStats(matches: PublicMatch[]) {
+  const statsByAthlete = new Map<string, DayHighlightStats>();
+
+  matches.forEach((match) => {
+    match.presences.forEach((presence) => {
+      if (presence.status === "AUSENTE") return;
+      const athlete = presence.athlete;
+      if (!athlete?.name) return;
+
+      const id = athlete.id || presence.athleteId;
+      const current =
+        statsByAthlete.get(id) ??
+        ({
+          id,
+          name: athlete.name,
+          slug: id,
+          photoUrl: athlete.photoUrl || athlete.avatarUrl || null,
+          goals: 0,
+          assists: 0,
+        } satisfies DayHighlightStats);
+
+      current.goals += Number(presence.goals ?? 0);
+      current.assists += Number(presence.assists ?? 0);
+      statsByAthlete.set(id, current);
+    });
   });
+
+  return Array.from(statsByAthlete.values());
+}
+
+function pickDayHighlight(
+  stats: DayHighlightStats[],
+  primary: keyof Pick<DayHighlightStats, "goals" | "assists">,
+  secondary: keyof Pick<DayHighlightStats, "goals" | "assists">,
+  minValue: number
+) {
+  const candidates = stats.filter((item) => item[primary] >= minValue);
+  if (!candidates.length) return null;
+
+  return [...candidates].sort((a, b) => {
+    if (b[primary] !== a[primary]) return b[primary] - a[primary];
+    if (b[secondary] !== a[secondary]) return b[secondary] - a[secondary];
+    return a.name.localeCompare(b.name, "pt-BR");
+  })[0];
 }
