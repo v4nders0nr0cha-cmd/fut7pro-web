@@ -22,9 +22,11 @@ jest.mock("@/hooks/useComunicacao", () => ({
 }));
 
 describe("Sidebar", () => {
-  it("renderiza nome do racha", () => {
+  it("renderiza destaques do dia e melhores do ano", () => {
     render(<Sidebar />);
-    expect(screen.getByText(/Fut7/i)).toBeInTheDocument();
+    expect(screen.getByText(/Artilheiro do Dia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Melhores do Ano até agora/i)).toBeInTheDocument();
+    expect(screen.getByText(/Atacante do Ano/i)).toBeInTheDocument();
   });
 });
 
