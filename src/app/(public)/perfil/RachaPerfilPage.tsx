@@ -14,14 +14,21 @@ import {
 } from "@/hooks/useAthletePremiumProfile";
 import { mapPremiumPayloadToView } from "@/utils/athlete-premium-contract";
 
-// --- Card Solicitar Mensalista ---
-function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => Promise<void> }) {
+function MembershipStatusCard({
+  variant,
+  rachaName,
+  onConfirm,
+}: {
+  variant: "active" | "request" | "pending";
+  rachaName: string;
+  onConfirm?: () => Promise<void>;
+}) {
   const [modalOpen, setModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   async function handleConfirm() {
-    if (isSubmitting) return;
+    if (!onConfirm || isSubmitting) return;
     setSubmitError(null);
     setIsSubmitting(true);
     try {
@@ -34,44 +41,59 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => Promise<void>
     }
   }
 
+  const isRequest = variant === "request";
+  const title =
+    variant === "active"
+      ? "Mensalista neste racha"
+      : variant === "pending"
+        ? "Solicitação em análise"
+        : "Solicitar vaga de mensalista";
+  const description =
+    variant === "active"
+      ? `Você já tem status de mensalista no ${rachaName}.`
+      : variant === "pending"
+        ? `Seu pedido de mensalista no ${rachaName} foi enviado e está aguardando avaliação do administrador.`
+        : `Solicite uma vaga de mensalista no ${rachaName}. O administrador irá avaliar e aprovar caso exista vaga disponível.`;
+
   return (
     <>
       <button
         type="button"
-        className="group relative w-full overflow-hidden rounded-xl border border-emerald-400/35 bg-[linear-gradient(135deg,rgba(5,18,18,0.92),rgba(3,8,8,0.92))] px-4 py-3 text-left shadow-[0_14px_28px_rgba(0,0,0,0.35)] transition duration-200 hover:border-emerald-300/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/70"
-        onClick={() => setModalOpen(true)}
-        title="Solicitar vaga de mensalista"
+        className={`group relative w-full overflow-hidden rounded-xl border border-[#f8c64a]/35 bg-[linear-gradient(135deg,rgba(16,12,4,0.94),rgba(3,4,4,0.96))] px-4 py-3 text-left shadow-[0_14px_28px_rgba(0,0,0,0.35)] transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f8c64a]/60 ${
+          isRequest ? "hover:border-[#f8c64a]/70" : "cursor-default"
+        }`}
+        onClick={() => {
+          if (isRequest) setModalOpen(true);
+        }}
+        title={title}
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(16,185,129,0.22),transparent_42%),radial-gradient(circle_at_88%_82%,rgba(16,185,129,0.16),transparent_38%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_16%,rgba(248,198,74,0.16),transparent_42%),radial-gradient(circle_at_88%_82%,rgba(248,198,74,0.10),transparent_38%)]" />
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="inline-flex w-fit rounded-full border border-emerald-300/45 bg-emerald-300/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-100">
-              Plano mensal
+            <span className="inline-flex w-fit rounded-full border border-[#f8c64a]/45 bg-[#f8c64a]/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-[#ffe08a]">
+              Mensalista
             </span>
-            <h3 className="mt-2 text-lg font-extrabold leading-tight text-white">
-              Torne-se mensalista
-            </h3>
-            <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-zinc-200">
-              Solicite uma vaga mensalista para o administrador do racha.
-            </p>
+            <h3 className="mt-2 text-lg font-extrabold leading-tight text-white">{title}</h3>
+            <p className="mt-1 max-w-[58ch] text-sm leading-relaxed text-zinc-200">{description}</p>
           </div>
-          <span className="inline-flex w-fit shrink-0 items-center rounded-lg bg-emerald-400 px-4 py-2 text-sm font-bold text-zinc-950 transition group-hover:bg-emerald-300">
-            Solicitar vaga agora
-          </span>
+          {isRequest && (
+            <span className="inline-flex w-fit shrink-0 items-center rounded-lg bg-gradient-to-r from-[#b97808] via-[#f8c64a] to-[#fff0a8] px-4 py-2 text-sm font-black text-black transition group-hover:brightness-110">
+              Solicitar vaga
+            </span>
+          )}
         </div>
       </button>
-      {modalOpen && (
+      {isRequest && modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-emerald-400/60 bg-zinc-900 p-6 shadow-xl sm:p-8">
-            <div className="text-lg font-semibold text-brand mb-2 text-center">
-              Solicitar vaga de Mensalista
+          <div className="w-full max-w-sm rounded-xl border border-[#f8c64a]/55 bg-zinc-950 p-6 shadow-xl sm:p-8">
+            <div className="mb-2 text-center text-lg font-semibold text-[#f8c64a]">
+              Solicitar vaga de mensalista
             </div>
-            <div className="text-sm text-zinc-100 text-center mb-6">
-              Ao confirmar, seu pedido para se tornar mensalista será enviado ao administrador.
+            <div className="mb-6 text-center text-sm text-zinc-100">
+              Ao confirmar, seu pedido de mensalista no {rachaName} será enviado ao administrador.
               <br />
-              <span className="text-brand-soft">
-                Caso todas as vagas já estejam ocupadas, você entrará automaticamente na lista de
-                espera por ordem de solicitação.
+              <span className="text-[#ffe08a]">
+                A aprovação depende da disponibilidade de vaga e das regras do racha.
               </span>
               <br />
               Deseja realmente enviar este pedido?
@@ -84,7 +106,7 @@ function CardSolicitarMensalista({ onConfirm }: { onConfirm: () => Promise<void>
             <div className="mt-2 grid w-full grid-cols-1 gap-3 sm:grid-cols-2">
               <button
                 type="button"
-                className="rounded px-5 py-2 font-semibold text-zinc-950 transition bg-emerald-500 hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded bg-[#f8c64a] px-5 py-2 font-semibold text-zinc-950 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f8c64a]/70 disabled:cursor-not-allowed disabled:opacity-70"
                 onClick={handleConfirm}
                 disabled={isSubmitting}
               >
@@ -272,6 +294,8 @@ export default function PerfilUsuarioPage() {
     titulosAnuais = [],
     titulosQuadrimestrais = [],
   } = premiumView.achievementGroups ?? {};
+  const rachaName =
+    premiumProfile.tenant.name || premiumProfile.tenant.slug || publicSlug || "racha";
   const nivelAssiduidade = premiumProfile.stats.attendancePercent
     ? `${premiumProfile.stats.attendancePercent}%`
     : "Sem dados";
@@ -318,12 +342,16 @@ export default function PerfilUsuarioPage() {
           historyUrl: publicHref(`/atletas/${athleteSlugForLinks}/historico`),
         }}
         ownerActions={
-          usuario.mensalista ? null : !pedidoEnviado ? (
-            <CardSolicitarMensalista onConfirm={solicitarVagaMensalista} />
+          usuario.mensalista ? (
+            <MembershipStatusCard variant="active" rachaName={rachaName} />
+          ) : !pedidoEnviado ? (
+            <MembershipStatusCard
+              variant="request"
+              rachaName={rachaName}
+              onConfirm={solicitarVagaMensalista}
+            />
           ) : (
-            <div className="rounded-xl border border-emerald-400/35 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-100">
-              Pedido de mensalista enviado. Aguarde a análise do administrador do racha.
-            </div>
+            <MembershipStatusCard variant="pending" rachaName={rachaName} />
           )
         }
       />
