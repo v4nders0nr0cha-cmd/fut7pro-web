@@ -15,6 +15,7 @@ import {
   FaFutbol,
   FaImage,
   FaInfoCircle,
+  FaInstagram,
   FaMedal,
   FaShareAlt,
   FaShieldAlt,
@@ -573,6 +574,7 @@ function ShareReadyModal({
   onCopyImage,
   onCopyLink,
   onNativeShare,
+  onInstagram,
   onWhatsapp,
 }: {
   isOpen: boolean;
@@ -585,6 +587,7 @@ function ShareReadyModal({
   onCopyImage: () => void;
   onCopyLink: () => void;
   onNativeShare: () => void;
+  onInstagram: () => void;
   onWhatsapp: () => void;
 }) {
   if (!isOpen || !generatedCard) return null;
@@ -603,7 +606,7 @@ function ShareReadyModal({
     Boolean((navigator.clipboard as ClipboardWithImages | undefined)?.write);
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/82 px-4 py-6 backdrop-blur-md">
+    <div className="fixed inset-0 z-[1000] flex items-start justify-center overflow-y-auto bg-black/82 px-4 py-5 backdrop-blur-md sm:py-6">
       <div className="relative w-full max-w-[980px] overflow-hidden rounded-2xl border border-[#f8c64a]/55 bg-[#050505] shadow-[0_0_0_1px_rgba(255,240,168,0.08),0_30px_90px_rgba(0,0,0,0.78),0_0_60px_rgba(248,198,74,0.20)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_12%,rgba(248,198,74,0.18),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),transparent_36%)]" />
         <button
@@ -683,6 +686,14 @@ function ShareReadyModal({
               >
                 <FaWhatsapp />
                 Compartilhar no WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={onInstagram}
+                className="inline-flex min-h-[50px] items-center justify-center gap-2 rounded-lg border border-[#f09433]/55 bg-[#f09433]/10 px-4 py-3 text-sm font-black uppercase tracking-[0.12em] text-[#ffb36b] transition hover:bg-[#f09433] hover:text-black sm:col-span-2"
+              >
+                <FaInstagram />
+                Abrir Instagram
               </button>
             </div>
 
@@ -907,6 +918,13 @@ export default function AthletePremiumProfileView({
     );
   };
 
+  const openInstagramShare = () => {
+    setShareFeedback(
+      "Para postar no Instagram, baixe ou copie a imagem e envie nos Stories pelo app."
+    );
+    window.open("https://www.instagram.com/", "_blank", "noopener,noreferrer");
+  };
+
   const closeShareModal = () => {
     setShareModalOpen(false);
     setShareFeedback(null);
@@ -1008,6 +1026,7 @@ export default function AthletePremiumProfileView({
         onCopyImage={copyGeneratedImage}
         onCopyLink={copyProfileLink}
         onNativeShare={nativeShareGeneratedImage}
+        onInstagram={openInstagramShare}
         onWhatsapp={openWhatsappShare}
       />
     </section>
