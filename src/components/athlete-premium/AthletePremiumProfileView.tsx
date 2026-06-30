@@ -66,6 +66,7 @@ type AthletePremiumProfileViewProps = {
   tenant?: {
     name?: string | null;
     slug?: string | null;
+    logoUrl?: string | null;
   };
   stats: PremiumStats;
   index: PremiumIndex;
@@ -322,8 +323,16 @@ function PremiumAthleteMedallion({
           </div>
 
           <div className="relative z-20 flex h-[142px] flex-col items-center justify-center rounded-[18px] border border-[#f8c64a]/38 bg-black/70 px-2 text-center shadow-[inset_0_0_28px_rgba(248,198,74,0.08)] sm:h-[218px] sm:bg-black/46 sm:px-4">
-            <div className="hidden items-center justify-center rounded-xl border border-[#f8c64a]/50 bg-black/50 text-[#f8c64a] shadow-[0_0_18px_rgba(248,198,74,0.20)] sm:flex sm:h-14 sm:w-14">
-              <FaShieldAlt size={24} />
+            <div className="hidden items-center justify-center overflow-hidden rounded-xl border border-[#f8c64a]/50 bg-black/50 text-[#f8c64a] shadow-[0_0_18px_rgba(248,198,74,0.20)] sm:flex sm:h-14 sm:w-14">
+              {tenant?.logoUrl ? (
+                <img
+                  src={tenant.logoUrl}
+                  alt={`Logo ${tenant?.name || "do racha"}`}
+                  className="h-full w-full object-contain p-1.5"
+                />
+              ) : (
+                <FaShieldAlt size={24} />
+              )}
             </div>
             <div className="text-[8px] font-black uppercase tracking-[0.14em] text-zinc-400 sm:mt-3 sm:text-[9px] sm:tracking-[0.18em]">
               {isLegendary ? "Lendário" : "Oficial"}

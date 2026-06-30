@@ -52,6 +52,7 @@ export type AthletePremiumProfilePayload = {
   tenant: {
     slug: string;
     name: string;
+    logoUrl?: string | null;
   };
   athlete: {
     id: string;
