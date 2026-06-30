@@ -5,118 +5,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
+import AthletePremiumProfileView from "@/components/athlete-premium/AthletePremiumProfileView";
+import LegendaryUnlockedModal from "@/components/athlete-premium/LegendaryUnlockedModal";
 import { usePerfil } from "@/components/atletas/PerfilContext";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { usePublicAthlete } from "@/hooks/usePublicAthlete";
-import { usePublicMatches } from "@/hooks/usePublicMatches";
-import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
-import type { PublicMatch } from "@/types/partida";
-import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
-
-const FORTALEZA_TZ = "America/Fortaleza";
-
-function formatDateYMD(date: Date, timeZone: string) {
-  if (Number.isNaN(date.getTime())) return "";
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(date);
-  const year = parts.find((part) => part.type === "year")?.value;
-  const month = parts.find((part) => part.type === "month")?.value;
-  const day = parts.find((part) => part.type === "day")?.value;
-  if (!year || !month || !day) return "";
-  return `${year}-${month}-${day}`;
-}
-
-function getCurrentYear() {
-  const year = new Intl.DateTimeFormat("en-US", {
-    timeZone: FORTALEZA_TZ,
-    year: "numeric",
-  }).format(new Date());
-  const parsed = Number.parseInt(year, 10);
-  return Number.isNaN(parsed) ? new Date().getFullYear() : parsed;
-}
-
-function resolveTeamKey(team: PublicMatch["teamA"] | null | undefined, fallback?: string | null) {
-  const key = team?.id ?? fallback ?? team?.name ?? "";
-  if (!key) return "";
-  return String(key);
-}
-
-function getMatchScore(match: PublicMatch) {
-  const scoreA = match.score?.teamA ?? match.scoreA;
-  const scoreB = match.score?.teamB ?? match.scoreB;
-  if (typeof scoreA !== "number" || typeof scoreB !== "number") return null;
-  return { scoreA, scoreB };
-}
-
-function countChampionDays(matches: PublicMatch[], athleteId?: string | null) {
-  if (!athleteId) return 0;
-  const matchesByDay = new Map<string, PublicMatch[]>();
-
-  matches.forEach((match) => {
-    const key = formatDateYMD(new Date(match.date), FORTALEZA_TZ);
-    if (!key) return;
-    const list = matchesByDay.get(key);
-    if (list) {
-      list.push(match);
-    } else {
-      matchesByDay.set(key, [match]);
-    }
-  });
-
-  let total = 0;
-  matchesByDay.forEach((dayMatches) => {
-    const points = new Map<string, number>();
-
-    dayMatches.forEach((match) => {
-      const score = getMatchScore(match);
-      if (!score) return;
-      const teamAKey = resolveTeamKey(match.teamA, match.teamA?.id ?? null);
-      const teamBKey = resolveTeamKey(match.teamB, match.teamB?.id ?? null);
-      if (!teamAKey || !teamBKey) return;
-
-      if (score.scoreA > score.scoreB) {
-        points.set(teamAKey, (points.get(teamAKey) ?? 0) + 3);
-        points.set(teamBKey, points.get(teamBKey) ?? 0);
-      } else if (score.scoreB > score.scoreA) {
-        points.set(teamBKey, (points.get(teamBKey) ?? 0) + 3);
-        points.set(teamAKey, points.get(teamAKey) ?? 0);
-      } else {
-        points.set(teamAKey, (points.get(teamAKey) ?? 0) + 1);
-        points.set(teamBKey, (points.get(teamBKey) ?? 0) + 1);
-      }
-    });
-
-    if (!points.size) return;
-    const [championKey] = Array.from(points.entries()).sort((a, b) => b[1] - a[1])[0];
-    if (!championKey) return;
-
-    const atletaNoTimeCampeao = dayMatches.some((match) =>
-      (match.presences ?? []).some((presence) => {
-        if (presence.status === "AUSENTE") return false;
-        if (presence.athleteId !== athleteId) return false;
-        const teamKey = resolveTeamKey(presence.team, presence.teamId ?? null);
-        return teamKey === championKey;
-      })
-    );
-
-    if (atletaNoTimeCampeao) total += 1;
-  });
-
-  return total;
-}
-
-function resolveAssiduidadeLevel(jogos: number) {
-  if (jogos >= 100) return "Lenda";
-  if (jogos >= 50) return "Veterano";
-  if (jogos >= 20) return "Destaque";
-  if (jogos >= 10) return "Titular";
-  if (jogos >= 3) return "Juvenil";
-  return "Novato";
-}
+import {
+  markLegendaryCelebrationSeen,
+  useOwnerAthletePremiumProfile,
+} from "@/hooks/useAthletePremiumProfile";
+import { mapPremiumPayloadToView } from "@/utils/athlete-premium-contract";
 
 // --- Card Mensalista Premium ---
 function CartaoMensalistaPremium({
@@ -286,51 +183,19 @@ export default function PerfilUsuarioPage() {
   const [pedidoEnviado, setPedidoEnviado] = useState<boolean>(
     usuario?.mensalistaRequestStatus === "PENDING"
   );
-  const currentYear = useMemo(() => getCurrentYear(), []);
-  const rangeFrom = statsPeriod === "all" ? "2000-01-01" : `${currentYear}-01-01`;
-  const rangeTo =
-    statsPeriod === "all" ? formatDateYMD(new Date(), FORTALEZA_TZ) : `${currentYear}-12-31`;
-  const athleteSlug = usuario?.slug;
-
-  const { athlete, conquistas } = usePublicAthlete({
+  const [showLegendaryModal, setShowLegendaryModal] = useState(false);
+  const [isMarkingLegendarySeen, setIsMarkingLegendarySeen] = useState(false);
+  const {
+    premiumProfile,
+    isError: isErrorPremium,
+    isLoading: isLoadingPremium,
+    error: premiumError,
+    mutate: mutatePremiumProfile,
+  } = useOwnerAthletePremiumProfile({
     tenantSlug: publicSlug,
-    athleteSlug,
-    enabled: Boolean(publicSlug && athleteSlug && isAuthenticated && !isPendingApproval),
-  });
-
-  const {
-    rankings,
-    isLoading: isLoadingRankings,
-    isError: isErrorRankings,
-  } = usePublicPlayerRankings({
-    slug: publicSlug,
-    type: "geral",
-    period: statsPeriod === "all" ? "all" : "year",
-    year: statsPeriod === "all" ? undefined : currentYear,
-  });
-
-  const {
-    matches,
-    isLoading: isLoadingMatches,
-    isError: isErrorMatches,
-  } = usePublicMatches({
-    slug: publicSlug,
-    from: rangeFrom,
-    to: rangeTo,
     enabled: Boolean(publicSlug && isAuthenticated && !isPendingApproval),
+    statsPeriod,
   });
-
-  const atletaRanking = useMemo(() => {
-    if (!rankings.length) return null;
-    return (
-      rankings.find(
-        (item) => item.slug === athleteSlug || item.id === athlete?.id || item.id === usuario?.id
-      ) ?? null
-    );
-  }, [rankings, athleteSlug, athlete?.id, usuario?.id]);
-
-  const athleteId = athlete?.id || atletaRanking?.id || usuario?.id || null;
-  const campeaoDia = useMemo(() => countChampionDays(matches, athleteId), [matches, athleteId]);
 
   async function solicitarVagaMensalista() {
     if (!publicSlug) {
@@ -365,34 +230,6 @@ export default function PerfilUsuarioPage() {
 
     setPedidoEnviado(true);
   }
-  const stats = useMemo(() => {
-    if (isLoadingRankings || isErrorRankings) return null;
-    const jogos = atletaRanking?.jogos ?? 0;
-    const vitorias = atletaRanking?.vitorias ?? 0;
-    const mediaVitorias = jogos > 0 ? vitorias / jogos : 0;
-    const campeaoDiaValue = isLoadingMatches || isErrorMatches ? null : campeaoDia;
-    return {
-      jogos,
-      gols: atletaRanking?.gols ?? 0,
-      assistencias: atletaRanking?.assistencias ?? 0,
-      campeaoDia: campeaoDiaValue,
-      mediaVitorias,
-      pontuacao: atletaRanking?.pontos ?? 0,
-    };
-  }, [
-    isLoadingRankings,
-    isErrorRankings,
-    atletaRanking,
-    campeaoDia,
-    isLoadingMatches,
-    isErrorMatches,
-  ]);
-
-  const nivelAssiduidade = stats
-    ? resolveAssiduidadeLevel(stats.jogos)
-    : isErrorRankings
-      ? "Indisponivel"
-      : "Carregando";
 
   useEffect(() => {
     if (!isAuthenticated || isLoading) return;
@@ -414,6 +251,33 @@ export default function PerfilUsuarioPage() {
     }
   }, [usuario?.mensalistaRequestStatus]);
 
+  useEffect(() => {
+    if (premiumProfile?.legendaryCelebration?.shouldShow) {
+      setShowLegendaryModal(true);
+    }
+  }, [premiumProfile?.legendaryCelebration?.shouldShow]);
+
+  async function handleLegendaryCelebrationSeen() {
+    if (!publicSlug || !premiumProfile?.legendaryCelebration?.seasonYear) {
+      setShowLegendaryModal(false);
+      return;
+    }
+
+    setIsMarkingLegendarySeen(true);
+    try {
+      await markLegendaryCelebrationSeen({
+        tenantSlug: publicSlug,
+        year: premiumProfile.legendaryCelebration.seasonYear,
+      });
+      setShowLegendaryModal(false);
+      await mutatePremiumProfile();
+    } catch {
+      setShowLegendaryModal(false);
+    } finally {
+      setIsMarkingLegendarySeen(false);
+    }
+  }
+
   if (isLoading) {
     return <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil...</div>;
   }
@@ -429,7 +293,7 @@ export default function PerfilUsuarioPage() {
   if (isError || !usuario) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-16 text-red-200">
-        Nao foi possivel carregar o perfil. Tente novamente mais tarde.
+        Não foi possível carregar o perfil. Tente novamente mais tarde.
       </div>
     );
   }
@@ -442,147 +306,155 @@ export default function PerfilUsuarioPage() {
     );
   }
 
-  const athleteSlugForLinks = athlete?.slug || usuario.slug;
+  if (isLoadingPremium && !premiumProfile) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">Carregando perfil premium...</div>
+    );
+  }
 
+  if (isErrorPremium || !premiumProfile) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-red-100">
+        <div className="rounded-xl border border-red-500/40 bg-red-950/25 p-5">
+          <h1 className="text-xl font-bold">Perfil premium indisponível</h1>
+          <p className="mt-2 text-sm text-red-100/80">
+            Não foi possível carregar o contrato oficial do seu Perfil Premium neste racha. Tente
+            novamente em instantes.
+          </p>
+          {premiumError && <p className="mt-3 text-xs text-red-200/70">{premiumError}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  const athleteSlugForLinks = premiumProfile.athlete.slug || usuario.slug;
+  const premiumView = mapPremiumPayloadToView(premiumProfile, premiumProfile.stats.titles);
   const {
     titulosGrandesTorneios = [],
     titulosAnuais = [],
     titulosQuadrimestrais = [],
-  } = conquistas ?? {};
+  } = premiumView.achievementGroups ?? {};
+  const nivelAssiduidade = premiumProfile.stats.attendancePercent
+    ? `${premiumProfile.stats.attendancePercent}%`
+    : "Sem dados";
+
   return (
-    <div className="p-6 text-white w-full">
+    <div className="text-white w-full">
       <h1 className="sr-only">Meu Perfil – Estatísticas, Conquistas e Histórico | Fut7Pro</h1>
       {isPendingApproval && (
-        <div className="mb-6 rounded-xl border border-brand/40 bg-brand/10 px-4 py-3 text-sm text-brand-soft">
+        <div className="mx-auto mb-6 max-w-5xl rounded-xl border border-brand/40 bg-brand/10 px-4 py-3 text-sm text-brand-soft">
           <strong className="block text-brand-soft">Aguardando aprovacao do admin.</strong>
           Seu cadastro foi recebido e o acesso completo sera liberado em breve.
         </div>
       )}
-      <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-        {/* Dados do usuário logado */}
-        <div className="flex-1 flex flex-col md:flex-row gap-6 items-center">
-          <AvatarFut7Pro
-            src={usuario.foto}
-            alt={`Foto de ${usuario.nome}`}
-            width={160}
-            height={160}
-            className="rounded-full border-4 border-brand"
-          />
-
-          <div className="flex flex-col gap-1">
-            <h2 className="text-3xl font-bold mb-1">{usuario.nome}</h2>
-            {usuario.apelido && <p className="text-brand-soft mb-1">Apelido: {usuario.apelido}</p>}
+      {(roleLabel || nivelAssiduidade) && (
+        <div className="mx-auto mb-4 max-w-[1280px] px-4">
+          <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-gray-300">
             {roleLabel && (
-              <span className="inline-block bg-brand text-black rounded px-3 py-1 text-xs font-bold mt-1">
+              <span className="rounded-full border border-brand/50 px-3 py-1 text-brand-soft">
                 {roleLabel}
               </span>
             )}
-            <p className="text-sm">Posição: {usuario.posicao}</p>
-            <p className="text-sm">
-              Posicao secundaria: {usuario.posicaoSecundaria || "Nao informado"}
-            </p>
-            <p
-              className="text-sm text-zinc-300"
-              title={`Último jogo: ${usuario.ultimaPartida ?? "Data não registrada"}`}
-            >
-              Status: {usuario.status}
-            </p>
-            <p className="text-sm mt-1">
-              {usuario.mensalista ? (
-                <span className="text-green-400 font-semibold">MENSALISTA ATIVO</span>
-              ) : (
-                <span className="text-zinc-400">NAO E MENSALISTA</span>
-              )}
-            </p>
-            <p className="text-sm mt-1">Nivel de Assiduidade: {nivelAssiduidade}</p>
-
-            {isPendingApproval && (
-              <span className="mt-4 inline-flex rounded-full border border-brand/40 px-3 py-1 text-xs font-semibold text-brand-soft">
-                Cadastro em aprovacao
-              </span>
-            )}
+            <span className="rounded-full border border-zinc-700 px-3 py-1 text-zinc-200">
+              Assiduidade: {nivelAssiduidade}
+            </span>
           </div>
         </div>
-        {/* Cartão à direita: Mensalista Premium OU Solicitar Mensalista */}
-        <div className="w-full md:w-auto flex-shrink-0 flex justify-center">
-          {isPendingApproval ? (
-            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-brand-soft border-4 border-brand-strong/60 rounded-2xl shadow-md text-center text-brand-strong font-semibold text-lg">
-              Cadastro em analise.
-              <br />
-              <span className="text-sm font-normal text-brand-soft">
-                Aguarde a aprovacao para liberar as acoes do perfil.
-              </span>
-            </div>
-          ) : usuario.mensalista ? (
-            <CartaoMensalistaPremium
-              nome={usuario.nome}
-              logoRacha="/images/logos/logo_fut7pro.png"
-              ativo={usuario.mensalista}
-            />
-          ) : !pedidoEnviado ? (
-            <CardSolicitarMensalista onConfirm={solicitarVagaMensalista} />
-          ) : (
-            <div className="w-[340px] h-[160px] flex flex-col items-center justify-center bg-green-900/80 border-4 border-green-500 rounded-2xl shadow-md text-center text-green-200 font-semibold text-lg">
-              Pedido enviado! Aguarde a análise do administrador.
-              <br />
-              <span className="text-sm font-normal text-green-300">
-                Sua solicitação entrou na fila de avaliação do racha.
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
-      {/* Filtro de estatísticas */}
-      <div className="flex gap-4 mt-8 mb-2 items-center">
-        <span className="font-semibold text-brand">Estatísticas:</span>
-        <button
-          className={`px-3 py-1 rounded font-semibold border transition ${
-            statsPeriod === "current"
-              ? "bg-brand text-black border-brand"
-              : "bg-zinc-900 text-brand-soft border-brand"
-          }`}
-          onClick={() => setStatsPeriod("current")}
-        >
-          Temporada atual
-        </button>
-        <button
-          className={`px-3 py-1 rounded font-semibold border transition ${
-            statsPeriod === "all"
-              ? "bg-brand text-black border-brand"
-              : "bg-zinc-900 text-brand-soft border-brand"
-          }`}
-          onClick={() => setStatsPeriod("all")}
-        >
-          Todas as Temporadas
-        </button>
-      </div>
-
-      {/* Estatísticas */}
-      <section>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          {[
-            { label: "Jogos", valor: stats?.jogos ?? "-" },
-            { label: "Gols", valor: stats?.gols ?? "-" },
-            { label: "Assistências", valor: stats?.assistencias ?? "-" },
-            { label: "Campeão do Dia", valor: stats?.campeaoDia ?? "-" },
-            {
-              label: "Média Vitórias",
-              valor:
-                typeof stats?.mediaVitorias === "number" ? stats?.mediaVitorias.toFixed(2) : "-",
-            },
-            { label: "Pontuação", valor: stats?.pontuacao ?? "-" },
-          ].map((item) => (
-            <div key={item.label} className="bg-zinc-800 p-4 rounded text-center shadow-md">
-              <p className="text-xl font-bold text-brand">{item.valor}</p>
-              <p className="text-sm text-zinc-400 mt-1">{item.label}</p>
+      <AthletePremiumProfileView
+        mode="owner"
+        athlete={premiumView.athlete}
+        tenant={premiumView.tenant}
+        stats={premiumView.stats}
+        index={premiumView.index}
+        achievements={premiumView.achievements}
+        achievementGroups={premiumView.achievementGroups}
+        badges={premiumView.badges}
+        legendaryProgress={premiumView.legendaryProgress}
+        statsPeriod={statsPeriod}
+        onStatsPeriodChange={setStatsPeriod}
+        links={{
+          statsUrl: publicHref("/estatisticas/ranking-geral"),
+          achievementsUrl: publicHref(`/atletas/${athleteSlugForLinks}/conquistas`),
+          historyUrl: publicHref(`/atletas/${athleteSlugForLinks}/historico`),
+        }}
+        ownerActions={
+          <div className="grid gap-4">
+            <div className="rounded-xl border border-[#f7b91b]/35 bg-black/45 p-4">
+              <h3 className="text-sm font-black uppercase tracking-[0.18em] text-[#f7b91b]">
+                Ações do atleta
+              </h3>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  className="rounded-lg border border-[#f7b91b]/50 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#f7b91b] opacity-70"
+                  disabled
+                >
+                  Editar aparência em breve
+                </button>
+                <button
+                  type="button"
+                  className="rounded-lg border border-[#f7b91b]/50 px-4 py-3 text-sm font-bold uppercase tracking-wide text-[#f7b91b] opacity-70"
+                  disabled
+                >
+                  Alterar foto em breve
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="flex justify-center">
+              {isPendingApproval ? (
+                <div className="flex h-[160px] w-[340px] flex-col items-center justify-center rounded-2xl border-4 border-brand-strong/60 bg-brand-soft text-center text-lg font-semibold text-brand-strong shadow-md">
+                  Cadastro em analise.
+                  <br />
+                  <span className="text-sm font-normal text-brand-soft">
+                    Aguarde a aprovacao para liberar as acoes do perfil.
+                  </span>
+                </div>
+              ) : usuario.mensalista ? (
+                <CartaoMensalistaPremium
+                  nome={usuario.nome}
+                  logoRacha="/images/logos/logo_fut7pro.png"
+                  ativo={usuario.mensalista}
+                />
+              ) : !pedidoEnviado ? (
+                <CardSolicitarMensalista onConfirm={solicitarVagaMensalista} />
+              ) : (
+                <div className="flex h-[160px] w-[340px] flex-col items-center justify-center rounded-2xl border-4 border-green-500 bg-green-900/80 text-center text-lg font-semibold text-green-200 shadow-md">
+                  Pedido enviado! Aguarde a análise do administrador.
+                  <br />
+                  <span className="text-sm font-normal text-green-300">
+                    Sua solicitação entrou na fila de avaliação do racha.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        }
+      />
+      {showLegendaryModal && premiumProfile?.legendaryCelebration?.shouldShow && (
+        <LegendaryUnlockedModal
+          title={
+            premiumProfile.legendaryCelebration.title ||
+            `Você desbloqueou o Card Lendário ${premiumProfile.legendaryCelebration.seasonYear}!`
+          }
+          message={
+            premiumProfile.legendaryCelebration.message ||
+            "Sua presença, constância e conquistas como Campeão do Dia colocaram você entre os grandes da temporada."
+          }
+          primaryActionLabel={premiumProfile.legendaryCelebration.primaryActionLabel}
+          secondaryActionLabel={premiumProfile.legendaryCelebration.secondaryActionLabel}
+          medalAsset={premiumProfile.visual.medalAsset}
+          athleteName={premiumProfile.athlete.publicName}
+          isSubmitting={isMarkingLegendarySeen}
+          onPrimaryAction={handleLegendaryCelebrationSeen}
+          onSecondaryAction={handleLegendaryCelebrationSeen}
+          onClose={handleLegendaryCelebrationSeen}
+        />
+      )}
 
       {/* Conquistas */}
-      <section className="mt-12">
+      <section className="mt-12 px-4">
         <ConquistasDoAtleta
           slug={athleteSlugForLinks}
           titulosGrandesTorneios={titulosGrandesTorneios}
@@ -593,7 +465,7 @@ export default function PerfilUsuarioPage() {
 
       {/* Histórico */}
       {usuario.historico && usuario.historico.length > 0 && (
-        <section className="mt-12">
+        <section className="mt-12 px-4">
           <HistoricoJogos historico={usuario.historico} />
           <div className="text-center mt-4">
             <span className="inline-block text-brand text-sm opacity-70 cursor-not-allowed">
