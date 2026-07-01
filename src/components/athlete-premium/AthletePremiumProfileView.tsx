@@ -40,6 +40,7 @@ type LegendaryProgress = {
   status: "locked" | "in_progress" | "unlocked";
   progressPercent: number;
   isSeasonForming?: boolean;
+  registeredGameDays?: number;
   requiredRachaDaysToUnlock?: number;
   remainingRachaDaysToUnlock?: number;
   attendance: {
@@ -240,6 +241,7 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
   const isUnlocked = progress.status === "unlocked";
   const isSeasonForming = Boolean(progress.isSeasonForming);
   const requiredDays = progress.requiredRachaDaysToUnlock ?? 8;
+  const registeredGameDays = progress.registeredGameDays ?? progress.attendance.current;
 
   return (
     <PremiumPanel className={isUnlocked ? "p-4 shadow-[0_0_42px_rgba(248,198,74,0.16)]" : "p-4"}>
@@ -269,7 +271,7 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
               </p>
             </div>
             <strong className="text-3xl font-black text-[#f8c64a]">
-              {progress.attendance.current}/{requiredDays}
+              {registeredGameDays}/{requiredDays}
             </strong>
           </div>
           <div className="relative mt-3 h-3 overflow-hidden rounded-full border border-[#f8c64a]/25 bg-black/45">
@@ -278,7 +280,7 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
               style={{
                 width: `${Math.min(
                   100,
-                  Math.max(4, (progress.attendance.current / Math.max(1, requiredDays)) * 100)
+                  Math.max(4, (registeredGameDays / Math.max(1, requiredDays)) * 100)
                 )}%`,
               }}
             />

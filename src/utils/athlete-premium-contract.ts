@@ -67,6 +67,7 @@ export function mapPremiumPayloadToView(payload: AthletePremiumProfilePayload, t
       status: payload.legendaryProgress.status,
       progressPercent: payload.legendaryProgress.progressPercent,
       isSeasonForming: payload.legendaryProgress.isSeasonForming ?? false,
+      registeredGameDays: payload.legendaryProgress.attendance.rachaDays,
       requiredRachaDaysToUnlock:
         payload.legendaryProgress.requiredRachaDaysToUnlock ??
         payload.legendaryProgress.rules.minRachaDaysToUnlock,
