@@ -136,7 +136,13 @@ function MetricInfoTooltip({
         onClick={(event) => {
           event.preventDefault();
           event.stopPropagation();
-          setOpen((current) => !current);
+          setOpen(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false);
+            event.currentTarget.blur();
+          }
         }}
         className="inline-flex cursor-help items-center justify-center rounded-full text-[#f8c64a] outline-none transition hover:text-[#fff0a8] focus-visible:ring-2 focus-visible:ring-[#f8c64a]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
