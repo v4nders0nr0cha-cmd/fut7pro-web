@@ -39,6 +39,9 @@ type LegendaryProgress = {
   seasonLabel: string;
   status: "locked" | "in_progress" | "unlocked";
   progressPercent: number;
+  isSeasonForming?: boolean;
+  requiredRachaDaysToUnlock?: number;
+  remainingRachaDaysToUnlock?: number;
   attendance: {
     current: number;
     target: number;
@@ -91,22 +94,22 @@ const METRIC_HELP = {
   legendaryProgress:
     "Mostra o avanço do atleta na disputa pelo Card Lendário da temporada, considerando assiduidade e Campeão do Dia.",
   legendaryAttendance:
-    "Mostra quantos dias o atleta participou no período da temporada. Conta presença por dia de racha, não por quantidade de partidas.",
+    "Mostra quantos dias o atleta participou na temporada. Conta presença por dia de jogo, não por quantidade de partidas.",
   legendaryChampion: "Mostra quantas vezes o atleta fez parte do Time Campeão do Dia na temporada.",
   level:
-    "Representa a evolução do atleta dentro do racha, considerando volume de jogos e participação registrada.",
+    "Representa a evolução do atleta dentro do grupo, considerando volume de jogos e participação registrada.",
   fut7ProScore:
-    "Nota visual do Card Fut7Pro. Ela considera desempenho, posição, volume, constância e impacto do atleta no racha.",
+    "Nota visual do Card Fut7Pro. Ela considera desempenho, posição, volume, constância e impacto do atleta no grupo.",
   games: "Total de partidas registradas para este atleta no período selecionado.",
   goals: "Total de gols marcados pelo atleta no período selecionado.",
   assists: "Total de assistências registradas para o atleta no período selecionado.",
   titles:
     "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações do racha.",
   winRate: "Percentual médio de vitórias do atleta nas partidas em que participou.",
-  points: "Pontuação do atleta no ranking do racha, calculada com base nos resultados registrados.",
+  points: "Pontuação do atleta no ranking do grupo, calculada com base nos resultados registrados.",
   championOfDay:
     "Quantidade de vezes em que o atleta fez parte do Time Campeão do Dia no período selecionado.",
-  attendance: "Percentual de presença do atleta nos dias de racha do período selecionado.",
+  attendance: "Percentual de presença do atleta nos dias de jogo do período selecionado.",
   position: (shortPosition: string, positionTitle: string) => `${shortPosition} = ${positionTitle}`,
 } as const;
 
@@ -235,6 +238,8 @@ function MetricWidget({
 
 function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
   const isUnlocked = progress.status === "unlocked";
+  const isSeasonForming = Boolean(progress.isSeasonForming);
+  const requiredDays = progress.requiredRachaDaysToUnlock ?? 8;
 
   return (
     <PremiumPanel className={isUnlocked ? "p-4 shadow-[0_0_42px_rgba(248,198,74,0.16)]" : "p-4"}>
@@ -254,35 +259,72 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
         </MetricInfoTooltip>
       </div>
 
-      <div className="mt-4">
-        <div className="flex items-end justify-between">
-          <span className="text-sm font-semibold text-zinc-300">Progresso</span>
-          <strong className="text-3xl font-black text-[#f8c64a]">
-            {progress.progressPercent}%
-          </strong>
+      {isSeasonForming ? (
+        <div className="mt-4 rounded-xl border border-[#f8c64a]/25 bg-black/30 p-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <span className="text-sm font-semibold text-zinc-300">Corrida em formação</span>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                Dias de jogo registrados
+              </p>
+            </div>
+            <strong className="text-3xl font-black text-[#f8c64a]">
+              {progress.attendance.current}/{requiredDays}
+            </strong>
+          </div>
+          <div className="relative mt-3 h-3 overflow-hidden rounded-full border border-[#f8c64a]/25 bg-black/45">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#8f5f08] via-[#f8c64a] to-[#fff0a8] shadow-[0_0_18px_rgba(248,198,74,0.35)]"
+              style={{
+                width: `${Math.min(
+                  100,
+                  Math.max(4, (progress.attendance.current / Math.max(1, requiredDays)) * 100)
+                )}%`,
+              }}
+            />
+          </div>
         </div>
-        <div className="relative mt-2 h-3 overflow-hidden rounded-full border border-[#f8c64a]/25 bg-black/45">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-[#8f5f08] via-[#f8c64a] to-[#fff0a8] shadow-[0_0_18px_rgba(248,198,74,0.55)]"
-            style={{ width: `${Math.min(100, Math.max(4, progress.progressPercent))}%` }}
-          />
-          {isUnlocked && (
-            <div className="absolute inset-y-0 left-0 w-1/3 animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/55 to-transparent" />
-          )}
+      ) : (
+        <div className="mt-4">
+          <div className="flex items-end justify-between">
+            <span className="text-sm font-semibold text-zinc-300">Progresso</span>
+            <strong className="text-3xl font-black text-[#f8c64a]">
+              {progress.progressPercent}%
+            </strong>
+          </div>
+          <div className="relative mt-2 h-3 overflow-hidden rounded-full border border-[#f8c64a]/25 bg-black/45">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#8f5f08] via-[#f8c64a] to-[#fff0a8] shadow-[0_0_18px_rgba(248,198,74,0.55)]"
+              style={{ width: `${Math.min(100, Math.max(4, progress.progressPercent))}%` }}
+            />
+            {isUnlocked && (
+              <div className="absolute inset-y-0 left-0 w-1/3 animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-white/55 to-transparent" />
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         <LegendaryMiniStat
           label="Assiduidade"
-          value={`${progress.attendance.current}/${progress.attendance.target}`}
-          score={progress.attendance.score}
+          value={
+            isSeasonForming
+              ? `${progress.attendance.current} ${progress.attendance.current === 1 ? "dia" : "dias"}`
+              : `${progress.attendance.current}/${progress.attendance.target}`
+          }
+          score={isSeasonForming ? null : progress.attendance.score}
           info={METRIC_HELP.legendaryAttendance}
         />
         <LegendaryMiniStat
           label="Campeão do Dia"
-          value={`${progress.championOfDay.current}/${progress.championOfDay.target}`}
-          score={progress.championOfDay.score}
+          value={
+            isSeasonForming
+              ? `${progress.championOfDay.current} ${
+                  progress.championOfDay.current === 1 ? "vez" : "vezes"
+                }`
+              : `${progress.championOfDay.current}/${progress.championOfDay.target}`
+          }
+          score={isSeasonForming ? null : progress.championOfDay.score}
           info={METRIC_HELP.legendaryChampion}
         />
       </div>
@@ -302,7 +344,7 @@ function LegendaryMiniStat({
 }: {
   label: string;
   value: string;
-  score: number;
+  score: number | null;
   info: string;
 }) {
   return (
@@ -314,9 +356,11 @@ function LegendaryMiniStat({
         </MetricInfoTooltip>
       </div>
       <div className="mt-1 text-xl font-black text-[#f8c64a]">{value}</div>
-      <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
-        {score.toFixed(1)} pts
-      </div>
+      {typeof score === "number" && (
+        <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+          {score.toFixed(1)} pts
+        </div>
+      )}
     </div>
   );
 }
@@ -863,7 +907,7 @@ export default function AthletePremiumProfileView({
   const athleteName = athlete.name;
   const cardName = athlete.nickname || athlete.name;
   const level = Math.max(1, Math.round(stats.jogos / 4));
-  const indexDisplay = index.value !== null ? (index.value / 10).toFixed(1) : "--";
+  const indexDisplay = index.overall !== null ? String(index.overall) : "--";
   const progress = legendaryProgress || defaultLegendaryProgress();
   const storyRef = useRef<HTMLDivElement | null>(null);
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
@@ -1084,7 +1128,11 @@ export default function AthletePremiumProfileView({
               <MetricWidget
                 label="Nota Fut7Pro"
                 value={indexDisplay}
-                detail={index.status === "provisional" ? "Nota em formação" : "Baseado no racha"}
+                detail={
+                  index.status === "provisional"
+                    ? "Nota em formação"
+                    : "Baseada no desempenho no grupo"
+                }
                 info={METRIC_HELP.fut7ProScore}
                 variant="index"
               />

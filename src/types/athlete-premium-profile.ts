@@ -20,6 +20,9 @@ export type PremiumLegendaryProgress = {
   isLegendary: boolean;
   progressPercent: number;
   totalScore: number;
+  isSeasonForming?: boolean;
+  requiredRachaDaysToUnlock?: number;
+  remainingRachaDaysToUnlock?: number;
   attendance: {
     rachaDays: number;
     presences: number;
@@ -95,9 +98,11 @@ export type AthletePremiumProfilePayload = {
     rank?: number | null;
   };
   fut7ProIndex: {
-    value: number;
+    value?: number;
     overall: number;
     confidence: number;
+    overallStatus?: "no_data" | "evaluating" | "stable";
+    formulaVersion?: string;
     explanation: string;
   };
   legendaryProgress: PremiumLegendaryProgress;
