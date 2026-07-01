@@ -86,6 +86,7 @@ type AthletePremiumProfileViewProps = {
   };
   ownerActions?: React.ReactNode;
   statsPeriod?: "current" | "all";
+  isPeriodSwitching?: boolean;
   onStatsPeriodChange?: (period: "current" | "all") => void;
 };
 
@@ -561,37 +562,62 @@ function PerformanceSummary({ badges }: { badges: PremiumBadge[] }) {
 
 function PeriodSelector({
   value,
+  isUpdating,
   onChange,
 }: {
   value?: "current" | "all";
+  isUpdating?: boolean;
   onChange?: (period: "current" | "all") => void;
 }) {
+  const [localIsUpdating, setLocalIsUpdating] = useState(false);
+
+  useEffect(() => {
+    if (isUpdating) {
+      setLocalIsUpdating(false);
+      return;
+    }
+  }, [isUpdating]);
+
   if (!onChange) return null;
   const selected = value ?? "current";
+  const showUpdating = Boolean(isUpdating || localIsUpdating);
   const options: Array<{ value: "current" | "all"; label: string }> = [
     { value: "current", label: "Temporada atual" },
     { value: "all", label: "Todas as temporadas" },
   ];
 
   return (
-    <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-      <span className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
-        Estatísticas
-      </span>
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition ${
-            selected === option.value
-              ? "border-[#f8c64a] bg-[#f8c64a] text-black"
-              : "border-[#f8c64a]/45 bg-black/45 text-[#f8c64a] hover:border-[#f8c64a]"
-          }`}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div className="mt-5">
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <span className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+          Estatísticas
+        </span>
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            disabled={showUpdating || selected === option.value}
+            onClick={() => {
+              if (option.value === selected) return;
+              setLocalIsUpdating(true);
+              window.setTimeout(() => setLocalIsUpdating(false), 650);
+              onChange(option.value);
+            }}
+            className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.12em] transition disabled:cursor-not-allowed ${
+              selected === option.value
+                ? "border-[#f8c64a] bg-[#f8c64a] text-black"
+                : "border-[#f8c64a]/45 bg-black/45 text-[#f8c64a] hover:border-[#f8c64a] disabled:opacity-60"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      {showUpdating && (
+        <p className="mt-2 text-center text-xs font-bold uppercase tracking-[0.14em] text-[#ffe08a]">
+          Atualizando estatísticas...
+        </p>
+      )}
     </div>
   );
 }
@@ -904,6 +930,7 @@ export default function AthletePremiumProfileView({
   links,
   ownerActions,
   statsPeriod,
+  isPeriodSwitching = false,
   onStatsPeriodChange,
 }: AthletePremiumProfileViewProps) {
   const athleteName = athlete.name;
@@ -1115,40 +1142,56 @@ export default function AthletePremiumProfileView({
           />
         </div>
 
-        <PeriodSelector value={statsPeriod} onChange={onStatsPeriodChange} />
+        <PeriodSelector
+          value={statsPeriod}
+          isUpdating={isPeriodSwitching}
+          onChange={onStatsPeriodChange}
+        />
 
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.45fr] lg:items-start">
-          <aside className="grid gap-4">
-            <LegendaryProgressPanel progress={progress} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <MetricWidget
-                label="Nível"
-                value={level}
-                detail={`${stats.jogos} jogos registrados`}
-                info={METRIC_HELP.level}
-              />
-              <MetricWidget
-                label="Nota Fut7Pro"
-                value={indexDisplay}
-                detail={
-                  index.status === "provisional"
-                    ? "Nota em formação"
-                    : "Baseada no desempenho no grupo"
-                }
-                info={METRIC_HELP.fut7ProScore}
-                variant="index"
-              />
+        <div
+          aria-busy={isPeriodSwitching}
+          className={`relative transition-opacity duration-200 ${
+            isPeriodSwitching ? "opacity-80" : "opacity-100"
+          }`}
+        >
+          {isPeriodSwitching && (
+            <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-full border border-[#f8c64a]/35 bg-black/75 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#ffe08a] shadow-[0_10px_28px_rgba(0,0,0,0.38)]">
+              Atualizando dados
             </div>
-          </aside>
+          )}
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.45fr] lg:items-start">
+            <aside className="grid gap-4">
+              <LegendaryProgressPanel progress={progress} />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <MetricWidget
+                  label="Nível"
+                  value={level}
+                  detail={`${stats.jogos} jogos registrados`}
+                  info={METRIC_HELP.level}
+                />
+                <MetricWidget
+                  label="Nota Fut7Pro"
+                  value={indexDisplay}
+                  detail={
+                    index.status === "provisional"
+                      ? "Nota em formação"
+                      : "Baseada no desempenho no grupo"
+                  }
+                  info={METRIC_HELP.fut7ProScore}
+                  variant="index"
+                />
+              </div>
+            </aside>
 
-          <aside className="grid gap-4">
-            <PerformanceSummary badges={badges} />
-            {ownerActions}
-          </aside>
-        </div>
+            <aside className="grid gap-4">
+              <PerformanceSummary badges={badges} />
+              {ownerActions}
+            </aside>
+          </div>
 
-        <div className="mt-4">
-          <AchievementsSection groups={achievementGroups} />
+          <div className="mt-4">
+            <AchievementsSection groups={achievementGroups} />
+          </div>
         </div>
 
         <div className="mt-6 lg:mt-8">
