@@ -33,7 +33,7 @@ export function mapPremiumPayloadToView(payload: AthletePremiumProfilePayload, t
     campeaoDia: payload.stats.championOfDay ?? payload.legendaryProgress.championOfDay.championDays,
   };
   const index: PremiumIndex = {
-    value: payload.fut7ProIndex.value,
+    value: payload.fut7ProIndex.overall,
     overall: payload.fut7ProIndex.overall,
     confidence: payload.fut7ProIndex.confidence,
     status:
@@ -66,6 +66,12 @@ export function mapPremiumPayloadToView(payload: AthletePremiumProfilePayload, t
       seasonLabel: payload.legendaryProgress.season.label,
       status: payload.legendaryProgress.status,
       progressPercent: payload.legendaryProgress.progressPercent,
+      isSeasonForming: payload.legendaryProgress.isSeasonForming ?? false,
+      registeredGameDays: payload.legendaryProgress.attendance.rachaDays,
+      requiredRachaDaysToUnlock:
+        payload.legendaryProgress.requiredRachaDaysToUnlock ??
+        payload.legendaryProgress.rules.minRachaDaysToUnlock,
+      remainingRachaDaysToUnlock: payload.legendaryProgress.remainingRachaDaysToUnlock ?? 0,
       attendance: {
         current: payload.legendaryProgress.attendance.presences,
         target: payload.legendaryProgress.attendance.targetPresences,

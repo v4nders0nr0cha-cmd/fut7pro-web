@@ -43,7 +43,7 @@ export type PremiumStats = {
 };
 
 export type PremiumIndex = {
-  value: number | null;
+  value?: number | null;
   overall: number | null;
   confidence: number;
   status: "ready" | "provisional" | "insufficient_data";
@@ -197,11 +197,12 @@ export function buildPremiumAchievements(params: {
   });
 
   achievements.push({
-    title: params.index.status === "ready" && (params.index.value ?? 0) >= 75 ? "Destaque" : "Foco",
+    title:
+      params.index.status === "ready" && (params.index.overall ?? 0) >= 75 ? "Destaque" : "Foco",
     description:
-      params.index.status === "ready" && (params.index.value ?? 0) >= 75
+      params.index.status === "ready" && (params.index.overall ?? 0) >= 75
         ? "Alto desempenho"
-        : "Indice em formacao",
+        : "Nota em formacao",
     icon: "star",
   });
 
