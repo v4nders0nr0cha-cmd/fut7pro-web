@@ -87,6 +87,79 @@ type AthletePremiumProfileViewProps = {
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 
+const METRIC_HELP = {
+  legendaryProgress:
+    "Mostra o avanço do atleta na disputa pelo Card Lendário da temporada, considerando assiduidade e Campeão do Dia.",
+  legendaryAttendance:
+    "Mostra quantos dias o atleta participou no período da temporada. Conta presença por dia de racha, não por quantidade de partidas.",
+  legendaryChampion: "Mostra quantas vezes o atleta fez parte do Time Campeão do Dia na temporada.",
+  level:
+    "Representa a evolução do atleta dentro do racha, considerando volume de jogos e participação registrada.",
+  fut7ProScore:
+    "Nota visual do Card Fut7Pro. Ela considera desempenho, posição, volume, constância e impacto do atleta no racha.",
+  games: "Total de partidas registradas para este atleta no período selecionado.",
+  goals: "Total de gols marcados pelo atleta no período selecionado.",
+  assists: "Total de assistências registradas para o atleta no período selecionado.",
+  titles:
+    "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações do racha.",
+  winRate: "Percentual médio de vitórias do atleta nas partidas em que participou.",
+  points: "Pontuação do atleta no ranking do racha, calculada com base nos resultados registrados.",
+  championOfDay:
+    "Quantidade de vezes em que o atleta fez parte do Time Campeão do Dia no período selecionado.",
+  attendance: "Percentual de presença do atleta nos dias de racha do período selecionado.",
+  position: (shortPosition: string, positionTitle: string) => `${shortPosition} = ${positionTitle}`,
+} as const;
+
+function MetricInfoTooltip({
+  label,
+  content,
+  children,
+  className = "",
+}: {
+  label: string;
+  content: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <span className={`relative inline-flex ${className}`}>
+      <button
+        type="button"
+        aria-label={`Explicação: ${label}`}
+        aria-expanded={open}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setOpen(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setOpen(false);
+            event.currentTarget.blur();
+          }
+        }}
+        className="inline-flex cursor-help items-center justify-center rounded-full text-[#f8c64a] outline-none transition hover:text-[#fff0a8] focus-visible:ring-2 focus-visible:ring-[#f8c64a]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      >
+        {children}
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          className="absolute left-1/2 top-full z-50 mt-2 w-[min(260px,72vw)] -translate-x-1/2 rounded-lg border border-[#f8c64a]/45 bg-[#070707] px-3 py-2 text-left text-xs font-medium leading-relaxed text-zinc-100 shadow-[0_18px_38px_rgba(0,0,0,0.55),0_0_18px_rgba(248,198,74,0.16)]"
+        >
+          {content}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function PremiumPanel({
   children,
   className = "",
@@ -96,7 +169,7 @@ function PremiumPanel({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-[#b88922]/45 bg-[#060706]/80 shadow-[0_18px_45px_rgba(0,0,0,0.48),inset_0_1px_0_rgba(255,223,139,0.12)] ${className}`}
+      className={`relative overflow-visible rounded-xl border border-[#b88922]/45 bg-[#060706]/80 shadow-[0_18px_45px_rgba(0,0,0,0.48),inset_0_1px_0_rgba(255,223,139,0.12)] ${className}`}
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(248,198,74,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.07),transparent_38%)]" />
       <div className="relative">{children}</div>
@@ -108,11 +181,13 @@ function MetricWidget({
   label,
   value,
   detail,
+  info,
   variant = "level",
 }: {
   label: string;
   value: string | number;
   detail: string;
+  info: string;
   variant?: "level" | "index";
 }) {
   const chart = [22, 31, 28, 42, 38, 52, 47, 65, 59, 78];
@@ -126,9 +201,13 @@ function MetricWidget({
             {value}
           </div>
         </div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f8c64a]/35 bg-[#f8c64a]/10 text-[#f8c64a]">
+        <MetricInfoTooltip
+          label={label}
+          content={info}
+          className="h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f8c64a]/35 bg-[#f8c64a]/10 text-[#f8c64a]"
+        >
           {variant === "level" ? <FaBolt /> : <FaChartBar />}
-        </div>
+        </MetricInfoTooltip>
       </div>
 
       {variant === "level" ? (
@@ -166,9 +245,13 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
           </p>
           <h2 className="mt-1 text-lg font-black uppercase text-white">{progress.seasonLabel}</h2>
         </div>
-        <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#f8c64a]/50 bg-[#f8c64a]/12 text-[#f8c64a] shadow-[0_0_18px_rgba(248,198,74,0.28)]">
+        <MetricInfoTooltip
+          label="Progresso Lendário"
+          content={METRIC_HELP.legendaryProgress}
+          className="h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#f8c64a]/50 bg-[#f8c64a]/12 text-[#f8c64a] shadow-[0_0_18px_rgba(248,198,74,0.28)]"
+        >
           {isUnlocked ? <FaCrown /> : <FaMedal />}
-        </div>
+        </MetricInfoTooltip>
       </div>
 
       <div className="mt-4">
@@ -194,11 +277,13 @@ function LegendaryProgressPanel({ progress }: { progress: LegendaryProgress }) {
           label="Assiduidade"
           value={`${progress.attendance.current}/${progress.attendance.target}`}
           score={progress.attendance.score}
+          info={METRIC_HELP.legendaryAttendance}
         />
         <LegendaryMiniStat
           label="Campeão do Dia"
           value={`${progress.championOfDay.current}/${progress.championOfDay.target}`}
           score={progress.championOfDay.score}
+          info={METRIC_HELP.legendaryChampion}
         />
       </div>
 
@@ -213,14 +298,21 @@ function LegendaryMiniStat({
   label,
   value,
   score,
+  info,
 }: {
   label: string;
   value: string;
   score: number;
+  info: string;
 }) {
   return (
     <div className="rounded-lg border border-[#f8c64a]/16 bg-black/30 p-2.5">
-      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400">{label}</div>
+      <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-400">
+        <span>{label}</span>
+        <MetricInfoTooltip label={label} content={info}>
+          <FaInfoCircle className="text-[10px]" />
+        </MetricInfoTooltip>
+      </div>
       <div className="mt-1 text-xl font-black text-[#f8c64a]">{value}</div>
       <div className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
         {score.toFixed(1)} pts
@@ -286,12 +378,13 @@ function PremiumAthleteMedallion({
             </div>
             <div className="mt-1 flex items-center gap-1.5 text-sm font-black text-white sm:text-xl">
               {shortPosition}
-              <span
-                title={`${shortPosition} = ${positionTitle}`}
+              <MetricInfoTooltip
+                label="Posição"
+                content={METRIC_HELP.position(shortPosition, positionTitle)}
                 className="text-[10px] text-[#f8c64a]/80 sm:text-xs"
               >
                 <FaInfoCircle />
-              </span>
+              </MetricInfoTooltip>
             </div>
             <div className="mt-2 h-px w-9 bg-[#f8c64a]/45 sm:w-14" />
             <div className="mt-2 rounded border border-[#f8c64a]/35 bg-[#f8c64a]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.08em] text-[#fff0a8] sm:text-[10px]">
@@ -374,6 +467,16 @@ function PerformanceSummary({ badges }: { badges: PremiumBadge[] }) {
     "campeao-dia": FaCrown,
     assiduidade: FaCheckCircle,
   };
+  const infoByKey: Record<string, string> = {
+    jogos: METRIC_HELP.games,
+    gols: METRIC_HELP.goals,
+    assistencias: METRIC_HELP.assists,
+    titulos: METRIC_HELP.titles,
+    "media-vitorias": METRIC_HELP.winRate,
+    pontos: METRIC_HELP.points,
+    "campeao-dia": METRIC_HELP.championOfDay,
+    assiduidade: METRIC_HELP.attendance,
+  };
 
   return (
     <PremiumPanel className="p-4">
@@ -381,7 +484,7 @@ function PerformanceSummary({ badges }: { badges: PremiumBadge[] }) {
         Desempenho Geral
       </h2>
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-2">
-        {badges.map((badge, indexItem) => {
+        {badges.map((badge) => {
           const Icon = icons[badge.key] ?? FaMedal;
 
           return (
@@ -389,7 +492,15 @@ function PerformanceSummary({ badges }: { badges: PremiumBadge[] }) {
               key={badge.key}
               className="rounded-lg border border-[#f8c64a]/18 bg-black/30 px-2 py-2.5 text-center"
             >
-              <Icon className="mx-auto text-base text-[#f8c64a]" />
+              <MetricInfoTooltip
+                label={badge.label}
+                content={
+                  infoByKey[badge.key] ?? "Métrica de desempenho do atleta no período selecionado."
+                }
+                className="mx-auto text-base"
+              >
+                <Icon />
+              </MetricInfoTooltip>
               <div className="mt-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-zinc-400">
                 {badge.label}
               </div>
@@ -968,11 +1079,13 @@ export default function AthletePremiumProfileView({
                 label="Nível"
                 value={level}
                 detail={`${stats.jogos} jogos registrados`}
+                info={METRIC_HELP.level}
               />
               <MetricWidget
-                label="Índice Fut7Pro"
+                label="Nota Fut7Pro"
                 value={indexDisplay}
-                detail={index.status === "provisional" ? "Índice em formação" : "Baseado no racha"}
+                detail={index.status === "provisional" ? "Nota em formação" : "Baseado no racha"}
+                info={METRIC_HELP.fut7ProScore}
                 variant="index"
               />
             </div>
