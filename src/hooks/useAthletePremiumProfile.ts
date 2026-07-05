@@ -46,13 +46,19 @@ export function usePublicAthletePremiumProfile(options: {
         )}/premium-profile${suffix}`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<AthletePremiumProfilePayload>(key, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<AthletePremiumProfilePayload>(
+    key,
+    fetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     premiumProfile: data ?? null,
     isLoading,
+    isValidating,
     isError: Boolean(error),
     error: error instanceof Error ? error.message : null,
     mutate,
@@ -76,13 +82,19 @@ export function useOwnerAthletePremiumProfile(options: {
       ? `/api/tenants/${encodeURIComponent(tenantSlug)}/me/premium-profile${suffix}`
       : null;
 
-  const { data, error, isLoading, mutate } = useSWR<AthletePremiumProfilePayload>(key, fetcher, {
-    revalidateOnFocus: false,
-  });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<AthletePremiumProfilePayload>(
+    key,
+    fetcher,
+    {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+    }
+  );
 
   return {
     premiumProfile: data ?? null,
     isLoading,
+    isValidating,
     isError: Boolean(error),
     error: error instanceof Error ? error.message : null,
     mutate,

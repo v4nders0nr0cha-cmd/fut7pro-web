@@ -10,11 +10,15 @@ import AthletePremiumProfileView from "@/components/athlete-premium/AthletePremi
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { mapPremiumPayloadToView } from "@/utils/athlete-premium-contract";
 
+const MIN_PERIOD_SWITCH_LOADING_MS = 650;
+
 export default function PerfilAtletaSlugPage() {
   const { slug, athleteSlug } = useParams() as { slug: string; athleteSlug: string };
   const { setTenantSlug } = useRacha();
   const { publicHref } = usePublicLinks();
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
+  const [pendingStatsPeriod, setPendingStatsPeriod] = useState<"current" | "all" | null>(null);
+  const [periodSwitchStartedAt, setPeriodSwitchStartedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (slug) setTenantSlug(slug);
@@ -23,6 +27,7 @@ export default function PerfilAtletaSlugPage() {
   const {
     premiumProfile,
     isLoading: isLoadingPremium,
+    isValidating: isValidatingPremium,
     isError: isErrorPremium,
     error: premiumError,
   } = usePublicAthletePremiumProfile({
@@ -30,6 +35,38 @@ export default function PerfilAtletaSlugPage() {
     athleteSlug,
     statsPeriod,
   });
+
+  useEffect(() => {
+    if (!pendingStatsPeriod) return;
+
+    const elapsed = periodSwitchStartedAt ? Date.now() - periodSwitchStartedAt : 0;
+    const remaining = Math.max(0, MIN_PERIOD_SWITCH_LOADING_MS - elapsed);
+    if (remaining > 0) {
+      const timeoutId = window.setTimeout(() => {
+        if (!isLoadingPremium && !isValidatingPremium) {
+          setPendingStatsPeriod(null);
+          setPeriodSwitchStartedAt(null);
+        }
+      }, remaining);
+
+      return () => window.clearTimeout(timeoutId);
+    }
+
+    if (isLoadingPremium || isValidatingPremium) return;
+
+    setPendingStatsPeriod(null);
+    setPeriodSwitchStartedAt(null);
+  }, [isLoadingPremium, isValidatingPremium, pendingStatsPeriod, periodSwitchStartedAt]);
+
+  useEffect(() => {
+    if (!pendingStatsPeriod) return;
+    const timeoutId = window.setTimeout(() => {
+      setPendingStatsPeriod(null);
+      setPeriodSwitchStartedAt(null);
+    }, 8000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [pendingStatsPeriod]);
 
   if (isLoadingPremium && !premiumProfile) {
     return (
@@ -60,6 +97,16 @@ export default function PerfilAtletaSlugPage() {
   const backToListHref = publicHref("/atletas");
   const premiumView = mapPremiumPayloadToView(premiumProfile, premiumProfile.stats.titles);
   const displayName = premiumView.athlete.name || "Atleta";
+  const isPeriodSwitching =
+    Boolean(pendingStatsPeriod) ||
+    Boolean(premiumProfile && (isLoadingPremium || isValidatingPremium)) ||
+    Boolean(premiumProfile.stats.period && premiumProfile.stats.period !== statsPeriod);
+  const handleStatsPeriodChange = (period: "current" | "all") => {
+    if (period === statsPeriod) return;
+    setPendingStatsPeriod(period);
+    setPeriodSwitchStartedAt(Date.now());
+    setStatsPeriod(period);
+  };
 
   return (
     <>
@@ -87,7 +134,8 @@ export default function PerfilAtletaSlugPage() {
           badges={premiumView.badges}
           legendaryProgress={premiumView.legendaryProgress}
           statsPeriod={statsPeriod}
-          onStatsPeriodChange={setStatsPeriod}
+          isPeriodSwitching={isPeriodSwitching}
+          onStatsPeriodChange={handleStatsPeriodChange}
           links={{
             statsUrl: publicHref("/estatisticas/ranking-geral"),
             achievementsUrl: publicHref(`/atletas/${athleteSlug}/conquistas`),
