@@ -475,11 +475,11 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
       const hubUnavailable = await isHubUnavailable(page);
       if (hubUnavailable) {
         throw new Error(
-          "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas)."
+          "Hub de seleção de grupo indisponível no ambiente E2E (falha ao carregar grupos)."
         );
       }
       throw new Error(
-        "Login autenticado, mas não foi possível localizar botões de seleção de racha no Hub."
+        "Login autenticado, mas não foi possível localizar botões de seleção de grupo no Hub."
       );
     }
     await Promise.all([
@@ -556,7 +556,7 @@ async function waitForAdminShell(page: Page) {
       const selectButton = await selectTenantFromHub(page, "active", activeTenantSlug);
       if (!selectButton) {
         throw new Error(
-          "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha)."
+          "Hub admin indisponível durante navegação ativa (sem botões de seleção de grupo)."
         );
       }
       await Promise.all([
