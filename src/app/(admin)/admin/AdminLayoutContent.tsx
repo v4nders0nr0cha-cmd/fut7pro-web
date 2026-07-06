@@ -488,7 +488,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
         <div className="max-w-md w-full rounded-2xl border border-red-500/30 bg-red-500/10 p-6 text-center">
           <h1 className="text-xl font-bold text-red-200 mb-2">Falha ao carregar o painel</h1>
           <p className="text-sm text-zinc-200 mb-6">
-            Não foi possível validar o racha ativo agora. Volte para selecionar seu racha ou saia da
+            Não foi possível validar o grupo ativo agora. Volte para selecionar seu grupo ou saia da
             conta.
           </p>
           <div className="flex flex-col gap-2">
@@ -497,7 +497,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
               className="rounded-lg bg-yellow-400 text-black font-semibold px-4 py-2"
               onClick={() => router.replace("/admin/selecionar-racha")}
             >
-              Voltar para selecionar racha
+              Voltar para selecionar grupo
             </button>
             <button
               type="button"
@@ -519,7 +519,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
           <h1 className="text-xl font-bold text-yellow-300 mb-2">Painel demorou para responder</h1>
           <p className="text-sm text-zinc-200 mb-6">
             O carregamento levou mais tempo que o esperado. Tente novamente ou volte ao Hub para
-            selecionar o racha.
+            selecionar o grupo.
           </p>
           <div className="flex flex-col gap-2">
             <button
@@ -534,7 +534,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
               className="rounded-lg border border-zinc-500/40 bg-zinc-500/10 text-zinc-100 font-semibold px-4 py-2"
               onClick={() => router.replace("/admin/selecionar-racha")}
             >
-              Voltar para selecionar racha
+              Voltar para selecionar grupo
             </button>
             <button
               type="button"
@@ -566,10 +566,10 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#181818] to-[#232323] text-white px-4">
         <div className="max-w-md w-full rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center">
           <h1 className="text-xl font-bold text-yellow-300 mb-2">
-            Não foi possível abrir este racha
+            Não foi possível abrir este grupo
           </h1>
           <p className="text-sm text-zinc-200 mb-6">
-            O painel ficou carregando além do esperado. Tente selecionar o racha novamente.
+            O painel ficou carregando além do esperado. Tente selecionar o grupo novamente.
           </p>
           <div className="flex flex-col gap-2">
             <button
@@ -577,7 +577,7 @@ export default function AdminLayoutContent({ children }: { children: ReactNode }
               className="rounded-lg bg-yellow-400 text-black font-semibold px-4 py-2"
               onClick={() => router.replace("/admin/selecionar-racha")}
             >
-              Voltar para selecionar racha
+              Voltar para selecionar grupo
             </button>
             <button
               type="button"

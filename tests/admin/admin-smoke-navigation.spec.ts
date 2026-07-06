@@ -24,14 +24,14 @@ const shouldRunBlocked =
 
 const FORBIDDEN_TEXTS = ["mock", "em construção", "temporário", "placeholder"];
 const ADMIN_ACTIVE_TENANT_COOKIE = "fut7pro_admin_active_tenant";
-const HUB_LOAD_ERROR_REGEX = /Não foi possível carregar seus rachas/i;
+const HUB_LOAD_ERROR_REGEX = /Não foi possível carregar seus grupos/i;
 const TURNSTILE_REQUIRED_E2E_ERROR_TEXT =
   "Turnstile obrigatório no backend de produção para login admin automatizado.";
 const SMOKE_ENV_UNSTABLE_ERRORS = [
   "Login não redirecionou para /admin/selecionar-racha ou /admin/dashboard dentro do tempo esperado.",
   "Shell admin não carregou sidebar/menu de navegação.",
-  "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas).",
-  "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha).",
+  "Hub de seleção de grupo indisponível no ambiente E2E (falha ao carregar grupos).",
+  "Hub admin indisponível durante navegação ativa (sem botões de seleção de grupo).",
   "Seleção por /api/admin/hub/entry levou para /admin/status-assinatura, mas o cenário exige acesso ativo.",
   TURNSTILE_REQUIRED_E2E_ERROR_TEXT,
 ];
@@ -373,7 +373,7 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
         .then(() => "list" as const)
         .catch(() => null),
       page
-        .getByRole("heading", { name: /Nenhum racha encontrado/i })
+        .getByRole("heading", { name: /Nenhum grupo encontrado/i })
         .waitFor({ state: "visible", timeout: 30000 })
         .then(() => "empty" as const)
         .catch(() => null),
@@ -462,7 +462,7 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
       return { path: autoPath, access: "active" };
     }
 
-    const noTenantState = page.getByRole("heading", { name: /Nenhum racha encontrado/i });
+    const noTenantState = page.getByRole("heading", { name: /Nenhum grupo encontrado/i });
     const hasNoTenantState = await noTenantState.isVisible({ timeout: 2000 }).catch(() => false);
     if (hasNoTenantState) {
       throw new Error(
@@ -475,11 +475,11 @@ async function loginAdmin(page: Page, options: LoginOptions): Promise<LoginResul
       const hubUnavailable = await isHubUnavailable(page);
       if (hubUnavailable) {
         throw new Error(
-          "Hub de seleção de racha indisponível no ambiente E2E (falha ao carregar rachas)."
+          "Hub de seleção de grupo indisponível no ambiente E2E (falha ao carregar grupos)."
         );
       }
       throw new Error(
-        "Login autenticado, mas não foi possível localizar botões de seleção de racha no Hub."
+        "Login autenticado, mas não foi possível localizar botões de seleção de grupo no Hub."
       );
     }
     await Promise.all([
@@ -556,7 +556,7 @@ async function waitForAdminShell(page: Page) {
       const selectButton = await selectTenantFromHub(page, "active", activeTenantSlug);
       if (!selectButton) {
         throw new Error(
-          "Hub admin indisponível durante navegação ativa (sem botões de seleção de racha)."
+          "Hub admin indisponível durante navegação ativa (sem botões de seleção de grupo)."
         );
       }
       await Promise.all([

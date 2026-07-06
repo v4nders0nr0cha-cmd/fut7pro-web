@@ -6,7 +6,7 @@ import { usePublicLinks } from "@/hooks/usePublicLinks";
 export default function AguardandoAprovacaoClient() {
   const { nome } = useTema();
   const { publicHref } = usePublicLinks();
-  const nomeDoRacha = nome || "Fut7Pro";
+  const nomeDoRacha = nome?.trim() || "seu grupo";
 
   return (
     <section className="w-full px-4">
@@ -16,13 +16,13 @@ export default function AguardandoAprovacaoClient() {
             Aguardando aprovação
           </p>
           <p className="text-sm text-gray-200">
-            Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
+            <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
         </div>
 
         <h1 className="text-xl font-bold text-white">Solicitação enviada</h1>
         <p className="mt-2 text-sm text-gray-300">
-          Seu cadastro está em análise. O administrador precisa aprovar o acesso completo ao racha.
+          Sua entrada está aguardando aprovação. O administrador precisa aprovar seu acesso.
         </p>
         <p className="mt-2 text-sm text-emerald-200">
           Solicitação enviada, agora é só aguardar a liberação do admin.

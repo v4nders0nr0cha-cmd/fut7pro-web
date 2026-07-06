@@ -49,18 +49,18 @@ describe("Header", () => {
     expect(screen.getByLabelText("Comunicação")).toBeInTheDocument();
     expect(screen.getByLabelText("Sugestões")).toBeInTheDocument();
     expect(screen.getByText(/Entrar/i)).toBeInTheDocument();
-    expect(screen.getByText(/Atletas do/i)).toBeInTheDocument();
+    expect(screen.getByText(/Área dos Atletas/i)).toBeInTheDocument();
   });
 
   it("no vitrine exibe apenas CTA de Entrar", () => {
     usePathname.mockReturnValue("/vitrine");
     render(<Header />);
     expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
-    expect(screen.queryByText(/Criar meu racha/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Criar meu grupo/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Demonstração do Fut7Pro/i)).not.toBeInTheDocument();
   });
 
-  it("mantem fallback de nome completo no title do nome do racha", () => {
+  it("mantem fallback de nome completo no title do nome do grupo", () => {
     render(<Header />);
     const homeLink = screen.getByRole("link", { name: /Página inicial/i });
     const tenantNameEl = homeLink.querySelector("span[title]");
@@ -88,7 +88,7 @@ describe("Header", () => {
     expect(screen.queryByRole("button", { name: /Pele/i })).not.toBeInTheDocument();
   });
 
-  it("troca o CTA por perfil quando a sessao tem atleta aprovado no racha atual", () => {
+  it("troca o CTA por perfil quando a sessao tem atleta aprovado no grupo atual", () => {
     useSession.mockReturnValue({
       data: {
         user: {

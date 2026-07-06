@@ -173,12 +173,12 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
               </Link>
               {profileHref && (
                 <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
-                  Meu perfil neste racha
+                  Meu perfil
                 </Link>
               )}
               {canSwitchRacha && (
                 <Link href={switchRachaHref} onClick={onClose} className="hover:text-brand-soft">
-                  Trocar de racha
+                  Trocar de grupo
                 </Link>
               )}
             </div>

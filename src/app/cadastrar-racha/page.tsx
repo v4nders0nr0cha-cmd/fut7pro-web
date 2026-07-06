@@ -30,7 +30,7 @@ const POSITION_LABEL_BY_VALUE: Record<string, (typeof POSICOES)[number]> = {
 const BENEFITS = [
   {
     title: "100% multi-tenant",
-    description: "Site público exclusivo por racha via slug.",
+    description: "Site público exclusivo para seu grupo de futebol.",
   },
   {
     title: "Logo dinâmica",
@@ -52,16 +52,16 @@ const PLAN_MICRO_COPY: Record<
 > = {
   monthly_essential: {
     title: "Mensal Essencial",
-    blurb: "Controle total do racha, com menos esforço e mais organização.",
+    blurb: "Controle total do grupo, com menos esforço e mais organização.",
     bullets: [
       "Sorteio inteligente e rankings automáticos",
       "Finanças e patrocínios organizados no site",
-      "Painel completo para administrar o racha",
+      "Painel completo para administrar o grupo",
     ],
   },
   monthly_marketing: {
     title: "Essencial + Marketing",
-    blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
+    blurb: "Para grupos de futebol que querem crescer e monetizar com apoio profissional.",
     bullets: [
       "Tudo do Essencial",
       "Designers Fut7Pro para artes e kit patrocinador",
@@ -71,16 +71,16 @@ const PLAN_MICRO_COPY: Record<
   },
   yearly_essential: {
     title: "Anual Essencial",
-    blurb: "Controle total do racha, com menos esforço e mais organização.",
+    blurb: "Controle total do grupo, com menos esforço e mais organização.",
     bullets: [
       "Sorteio inteligente e rankings automáticos",
       "Finanças e patrocínios organizados no site",
-      "Painel completo para administrar o racha",
+      "Painel completo para administrar o grupo",
     ],
   },
   yearly_marketing: {
     title: "Essencial + Marketing anual",
-    blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
+    blurb: "Para grupos de futebol que querem crescer e monetizar com apoio profissional.",
     bullets: [
       "Tudo do Essencial",
       "Designers Fut7Pro para artes e kit patrocinador",
@@ -591,7 +591,7 @@ function CadastroRachaPageContent() {
     setExistingCodeSent(false);
     setExistingCodeCooldown(0);
     setFormError("");
-    setSucesso("Conta global conectada com Google. Continue com os dados do racha.");
+    setSucesso("Conta global conectada com Google. Continue com os dados do grupo de futebol.");
     setUseExistingGlobalAccount(true);
     setExistingGlobalAuthMode("google");
     setAdminEmail(sessionEmail);
@@ -1218,8 +1218,8 @@ function CadastroRachaPageContent() {
       }
       setSucesso(
         isNewUser
-          ? "Primeiro acesso, vamos criar sua conta global Fut7Pro agora e seguir para o cadastro do racha."
-          : "Bem-vindo de volta. Continue com os dados do racha."
+          ? "Primeiro acesso, vamos criar sua conta global Fut7Pro agora e seguir para o cadastro do grupo de futebol."
+          : "Bem-vindo de volta. Continue com os dados do grupo de futebol."
       );
     } catch {
       trackCadastroFunnelEvent("code_verified_fail", {
@@ -1282,7 +1282,7 @@ function CadastroRachaPageContent() {
       setStep(2);
       setErrors({});
       setAccessFlow("wizard");
-      setSucesso("Conta global reconhecida. Continue com os dados do racha.");
+      setSucesso("Conta global reconhecida. Continue com os dados do grupo de futebol.");
     } catch {
       setExistingLoginError("Não foi possível entrar agora. Tente novamente.");
     } finally {
@@ -1368,7 +1368,7 @@ function CadastroRachaPageContent() {
       }
       if (useExistingGlobalAccount && existingGlobalAuthMode === "none") {
         setAccessFlow("existing-password");
-        setFormError("Valide sua conta antes de concluir o cadastro do racha.");
+        setFormError("Valide sua conta antes de concluir o cadastro do grupo de futebol.");
         return;
       }
 
@@ -1457,7 +1457,7 @@ function CadastroRachaPageContent() {
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
 
       if (useExistingGlobalAccount) {
-        setSucesso("Racha cadastrado com conta global. Redirecionando para o painel.");
+        setSucesso("Grupo cadastrado com conta global. Redirecionando para o painel.");
         const accessToken = body?.accessToken;
         const refreshToken = body?.refreshToken;
 
@@ -1473,7 +1473,7 @@ function CadastroRachaPageContent() {
 
           if (signInResult?.error) {
             setFormError(
-              "Racha cadastrado, mas não foi possível entrar automaticamente. Faça login para continuar."
+              "Grupo cadastrado, mas não foi possível entrar automaticamente. Faça login para continuar."
             );
             setTimeout(() => router.push("/admin/login"), 1200);
             return;
@@ -1672,7 +1672,9 @@ function CadastroRachaPageContent() {
               <div className="text-xs uppercase tracking-[0.25em] text-yellow-300 font-semibold">
                 {accessFlow === "wizard" ? `Etapa ${step} de 3` : "Acesso Fut7Pro"}
               </div>
-              <h1 className="text-2xl font-bold text-white lg:hidden">Cadastre seu racha</h1>
+              <h1 className="text-2xl font-bold text-white lg:hidden">
+                Cadastre seu grupo de futebol
+              </h1>
               <p className="text-sm text-gray-400 lg:hidden">Leva menos de 2 min.</p>
             </div>
             {showWizardBackButton && (
@@ -2134,9 +2136,9 @@ function CadastroRachaPageContent() {
             {accessFlow === "wizard" && step === 2 && (
               <>
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-white">Dados do racha</h2>
+                  <h2 className="text-sm font-semibold text-white">Dados do grupo de futebol</h2>
                   <label className="text-xs text-gray-400">
-                    Nome do racha *
+                    Nome do grupo *
                     <input
                       type="text"
                       value={rachaNome}
@@ -2268,7 +2270,7 @@ function CadastroRachaPageContent() {
                     onClick={() => setShowRachaUploads((prev) => !prev)}
                     className="text-yellow-300 underline"
                   >
-                    {showRachaUploads ? "Ocultar logo do racha" : "Adicionar logo (opcional)"}
+                    {showRachaUploads ? "Ocultar logo do grupo" : "Adicionar logo do grupo"}
                   </button>
                   {showRachaUploads && (
                     <div className="mt-3 flex items-center gap-3">
@@ -2307,7 +2309,7 @@ function CadastroRachaPageContent() {
                     </p>
                     <p className="mt-2 text-[11px] text-gray-400">
                       Após o período grátis, será solicitada a confirmação da assinatura para manter
-                      o painel do racha ativo.
+                      o painel do grupo ativo.
                     </p>
                   </div>
 
@@ -2356,7 +2358,7 @@ function CadastroRachaPageContent() {
                       const isSelected = plan.key === selectedPlanKey;
                       const copy = PLAN_MICRO_COPY[plan.key] ?? {
                         title: plan.label,
-                        blurb: "Plano Fut7Pro para o seu racha.",
+                        blurb: "Plano Fut7Pro para o seu grupo.",
                         bullets: [],
                       };
                       const priceSuffix = plan.interval === "month" ? "mês" : "ano";
@@ -2619,10 +2621,10 @@ function CadastroRachaPageContent() {
             <div className="text-xs uppercase tracking-[0.25em] text-yellow-400 font-semibold">
               Experimente o Fut7Pro
             </div>
-            <h1 className="text-3xl font-bold text-white">Cadastre seu racha</h1>
+            <h1 className="text-3xl font-bold text-white">Cadastre seu grupo de futebol</h1>
             <p className="text-sm text-gray-300 leading-relaxed">
-              Crie seu racha e complete seu perfil. Em minutos você entra como presidente com painel
-              e site público sincronizados.
+              Crie seu grupo de futebol e complete seu perfil. Em minutos você entra como presidente
+              com painel e site público sincronizados.
             </p>
           </div>
 
@@ -2668,7 +2670,7 @@ function CadastroRachaPageContent() {
         imageSrc={cropImage || ""}
         aspect={1}
         shape={cropTarget === "avatar" ? "round" : "rect"}
-        title={cropTarget === "logo" ? "Ajustar logo do racha" : "Ajustar foto do presidente"}
+        title={cropTarget === "logo" ? "Ajustar logo do grupo" : "Ajustar foto do presidente"}
         onCancel={() => {
           setCropImage(undefined);
           setCropTarget(null);
@@ -2690,7 +2692,7 @@ export default function CadastroRachaPage() {
       fallback={
         <main className="w-full max-w-6xl mx-auto px-4 py-10">
           <div className="rounded-2xl bg-[#0f1118] border border-[#1c2030] p-6 text-sm text-gray-300">
-            Carregando cadastro do racha...
+            Carregando cadastro do grupo de futebol...
           </div>
         </main>
       }

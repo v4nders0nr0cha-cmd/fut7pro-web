@@ -253,7 +253,7 @@ const fetcher = async (url: string): Promise<HubEntryResponse> => {
     body = text;
   }
   if (!res.ok) {
-    const error = new Error(body?.message || "Falha ao carregar rachas") as Error & {
+    const error = new Error(body?.message || "Falha ao carregar grupos") as Error & {
       status?: number;
     };
     error.status = res.status;
@@ -481,9 +481,9 @@ export default function AdminHubClient() {
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.3em] text-yellow-300">Painel Fut7Pro</p>
-            <h1 className="text-2xl font-bold sm:text-3xl">Meus Rachas</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">Meus Grupos</h1>
             <p className="mt-2 text-sm text-gray-300">
-              Selecione o racha que deseja administrar. O acesso fica 100% isolado por racha.
+              Selecione o grupo que deseja administrar. O acesso fica 100% isolado por grupo.
             </p>
           </div>
           <button
@@ -508,7 +508,7 @@ export default function AdminHubClient() {
             />
           </label>
           <p className="text-xs text-gray-400">
-            {showCount ? `${filtered.length} racha(s) encontrado(s).` : "Carregando seus rachas..."}
+            {showCount ? `${filtered.length} grupo(s) encontrado(s).` : "Carregando seus grupos..."}
           </p>
         </div>
 
@@ -525,7 +525,7 @@ export default function AdminHubClient() {
 
         {error ? (
           <div className="rounded-2xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            Não foi possível carregar seus rachas. Tente novamente em instantes.
+            Não foi possível carregar seus grupos. Tente novamente em instantes.
           </div>
         ) : null}
 
@@ -537,22 +537,22 @@ export default function AdminHubClient() {
 
         {!showLoading && !error && !hasResults ? (
           <div className="rounded-2xl border border-white/10 bg-white/5 px-6 py-8 text-center">
-            <h2 className="text-lg font-semibold text-white">Nenhum racha encontrado</h2>
+            <h2 className="text-lg font-semibold text-white">Nenhum grupo encontrado</h2>
             <p className="mt-2 text-sm text-gray-300">
-              Você ainda não possui acesso administrativo em nenhum racha.
+              Você ainda não possui acesso administrativo em nenhum grupo.
             </p>
             <div className="mt-4 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
               <button
                 onClick={() => router.push("/cadastrar-racha")}
                 className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-black"
               >
-                Criar novo racha
+                Criar novo grupo
               </button>
               <button
                 onClick={() => {
                   if (typeof window !== "undefined") {
                     window.location.href = buildFut7ProOfficialWhatsAppUrl(
-                      "Olá! Preciso de suporte para acessar meus rachas no painel Fut7Pro."
+                      "Olá! Preciso de suporte para acessar meus grupos no painel Fut7Pro."
                     );
                   }
                 }}
@@ -613,7 +613,7 @@ export default function AdminHubClient() {
                       ) : (
                         <div
                           aria-label={`Sem logo cadastrada para ${racha.tenantName}`}
-                          title="Sem logo cadastrada para este racha"
+                          title="Sem logo cadastrada para este grupo"
                           className="h-12 w-12 rounded-xl border border-white/15 bg-white/10 text-brand-soft font-bold text-sm flex items-center justify-center"
                         >
                           {initials}

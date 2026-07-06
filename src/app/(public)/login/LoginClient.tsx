@@ -84,7 +84,7 @@ function isBlockedMembershipStatus(status: string) {
 
 export default function LoginClient({ entryPath = "/login", variant = "login" }: LoginClientProps) {
   const { nome } = useTema();
-  const nomeDoRacha = nome?.trim() || "este racha";
+  const nomeDoRacha = nome?.trim() || "seu grupo";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
 
@@ -228,7 +228,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const requestJoinForAuthenticatedUser = useCallback(
     async (authProvider: "credentials" | "passwordless" | "google" = "credentials") => {
       if (!publicSlug) {
-        throw new Error("Slug do racha não encontrado.");
+        throw new Error("Slug do grupo não encontrado.");
       }
 
       const requestJoin = async () =>
@@ -246,7 +246,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       if (!response.ok) {
         const message = Array.isArray(body?.message)
           ? body.message.join(" ")
-          : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
+          : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
         throw new Error(message);
       }
 
@@ -254,12 +254,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
       const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
       if (isActive && (!body?.accessToken || !body?.refreshToken)) {
-        throw new Error("Não foi possível finalizar o acesso neste racha.");
+        throw new Error("Não foi possível finalizar o acesso neste grupo.");
       }
       if (isActive) {
         const scoped = await signInWithScopedTokens(body, authProvider);
         if (!scoped) {
-          throw new Error("Não foi possível finalizar o acesso neste racha.");
+          throw new Error("Não foi possível finalizar o acesso neste grupo.");
         }
       }
 
@@ -451,7 +451,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           setErro(
             error instanceof Error
               ? error.message
-              : "Não foi possível continuar com Google neste racha."
+              : "Não foi possível continuar com Google neste grupo."
           );
         } finally {
           setRequestJoinInProgress(false);
@@ -490,7 +490,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (isBlockedMembershipStatus(membershipStatus) || nextAction === "BLOCKED_MESSAGE") {
-      setErro("Seu acesso a este racha não está disponível. Fale com o administrador.");
+      setErro("Seu acesso a este grupo não está disponível. Fale com o administrador.");
       return;
     }
 
@@ -532,7 +532,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (!publicSlug) {
-      setNotMemberMessage("Slug do racha não encontrado.");
+      setNotMemberMessage("Slug do grupo não encontrado.");
       return;
     }
 
@@ -550,7 +550,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       if (!hasAuthenticatedAccount) {
         if (!senha.trim()) {
           setNotMemberMessage(
-            "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste racha."
+            "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste grupo."
           );
           setRequestJoinInProgress(false);
           return;
@@ -624,19 +624,19 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (code === "REQUEST_REJECTED") {
-      setErro("Sua solicitação foi rejeitada. Fale com o administrador do racha.");
+      setErro("Sua solicitação foi rejeitada. Fale com o administrador do grupo.");
       return true;
     }
 
     if (code === "USER_NOT_FOUND") {
       setErro(
-        "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste racha."
+        "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
       );
       return true;
     }
 
     if (code === "PROFILE_INCOMPLETE") {
-      setErro("Complete sua Conta Global Fut7Pro antes de solicitar entrada neste racha.");
+      setErro("Complete sua Conta Global Fut7Pro antes de solicitar entrada neste grupo.");
       router.replace(
         `${publicHref("/register")}?email=${encodeURIComponent(email.trim().toLowerCase())}`
       );
@@ -739,7 +739,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
       if (body?.code === "USER_NOT_FOUND") {
         setErro(
-          "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste racha."
+          "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
         );
         return;
       }
@@ -826,7 +826,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
 
       if (!publicSlug) {
-        setErro("Slug do racha não encontrado.");
+        setErro("Slug do grupo não encontrado.");
         return;
       }
 
@@ -869,7 +869,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
               href="/cadastrar-racha"
               className="inline-flex items-center justify-center rounded-lg bg-brand py-2.5 font-bold text-black hover:bg-brand-soft"
             >
-              Criar meu racha
+              Criar meu grupo
             </a>
             <a
               href={publicHref("/")}
@@ -891,33 +891,31 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             Acesso do atleta
           </p>
           <p className="text-sm text-gray-200">
-            Login do Atleta no <span className="font-semibold text-brand">{nomeDoRacha}</span>
+            Login do Atleta - <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
             {variant === "entry"
-              ? "Use seu e-mail ou entre com o Google para acessar seu perfil e continuar no racha."
+              ? "Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil."
               : "Esta etapa é para atletas que já possuem Conta Global Fut7Pro."}
           </p>
         </div>
 
-        <h1 className="text-xl font-bold text-white text-center">
-          {variant === "entry" ? `Entrar no ${nomeDoRacha}` : "Login do Atleta"}
-        </h1>
+        <h1 className="text-xl font-bold text-white text-center">Acesse seu perfil</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
           {usarSenha
             ? "Use sua senha para continuar."
             : codigoEnviado
-              ? "Digite o código recebido para entrar no racha."
+              ? "Digite o código recebido para acessar seu perfil."
               : "Informe seu e-mail para receber um código de acesso."}
         </p>
 
         {requestJoinIntent ? (
           <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
-            <p className="font-semibold text-amber-200">Você ainda não joga neste racha</p>
+            <p className="font-semibold text-amber-200">Você ainda não faz parte deste grupo</p>
             <p className="mt-1">
-              Entre com código enviado por e-mail ou com sua senha para solicitar entrada no racha{" "}
-              {nomeDoRacha}. Assim que o administrador aprovar, você entra nos rankings,
-              estatísticas e comunicação.
+              Grupo: <span className="font-semibold text-amber-50">{nomeDoRacha}</span>. Entre com
+              código enviado por e-mail ou com sua senha para solicitar entrada. Assim que o
+              administrador aprovar, você entra nos rankings, estatísticas e comunicação.
             </p>
           </div>
         ) : null}
@@ -1039,7 +1037,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
               : usarSenha
                 ? "Entrar com senha"
                 : codigoEnviado
-                  ? "Entrar no racha"
+                  ? "Acessar perfil"
                   : "Enviar código de acesso"}
           </button>
           <button
@@ -1102,15 +1100,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitação pendente
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Seu cadastro no racha{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span> ainda esta
-                  pendente. Assim que os administradores aprovarem sua entrada, você poderá fazer
-                  login normalmente.
+                  Sua entrada está aguardando aprovação.
+                  <br />
+                  Grupo: <span className="font-semibold text-brand">{nomeDoRacha}</span>.
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
-                  Entre em contato com os administradores do{" "}
-                  <span className="font-semibold text-gray-200">{publicSlug}</span> e solicite sua
-                  aprovação.
+                  Entre em contato com os administradores e solicite sua aprovação.
                 </p>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <button
@@ -1158,16 +1153,16 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             >
               <Dialog.Panel className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-white shadow-2xl">
                 <Dialog.Title className="text-lg font-semibold text-white">
-                  Solicitar entrada no racha
+                  Solicitar entrada
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua Conta Global Fut7Pro já está pronta. Agora envie sua solicitação para
-                  participar do racha{" "}
-                  <span className="font-semibold text-brand">{nomeDoRacha}</span>.
+                  Sua Conta Global Fut7Pro já está pronta. Agora envie sua solicitação.
+                  <br />
+                  Grupo: <span className="font-semibold text-brand">{nomeDoRacha}</span>.
                 </p>
                 <p className="mt-2 text-sm text-gray-300">
-                  Criar sua conta no Fut7Pro não significa entrar automaticamente no racha. O
-                  administrador poderá aprovar seu pedido.
+                  Criar sua conta no Fut7Pro não aprova automaticamente sua entrada. O administrador
+                  poderá aprovar seu pedido.
                 </p>
                 {notMemberMessage ? (
                   <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
@@ -1188,7 +1183,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                     disabled={requestJoinLoading}
                     className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {requestJoinLoading ? "Solicitando..." : "Solicitar entrada neste racha"}
+                    {requestJoinLoading ? "Solicitando..." : "Solicitar entrada"}
                   </button>
                 </div>
               </Dialog.Panel>

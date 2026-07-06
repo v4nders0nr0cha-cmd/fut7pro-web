@@ -21,7 +21,7 @@ import {
 const HIGHLIGHTS = [
   {
     title: "Atualização em tempo real",
-    description: "Tudo que você edita no painel aparece no site público do racha.",
+    description: "Tudo que você edita no painel aparece no site público do grupo.",
   },
   {
     title: "Multi-admin com segurança",
@@ -395,7 +395,7 @@ export default function AdminLoginClient() {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold text-white">Acesse seu painel</h2>
               <p className="text-sm text-gray-300">
-                Use o e-mail cadastrado do presidente ou administrador do racha.
+                Use o e-mail cadastrado do presidente ou administrador do seu grupo de futebol.
               </p>
             </div>
 
@@ -588,7 +588,7 @@ export default function AdminLoginClient() {
                   href="/cadastrar-racha"
                   className="text-yellow-300 underline hover:text-yellow-200"
                 >
-                  Cadastre seu racha
+                  Cadastre seu grupo de futebol
                 </a>
               </div>
               <a
@@ -614,11 +614,11 @@ export default function AdminLoginClient() {
           <div className="space-y-3">
             <h1 className="text-3xl font-bold leading-tight sm:text-4xl">Login do Administrador</h1>
             <p className="text-sm leading-relaxed text-gray-300 sm:hidden">
-              Acesse a administração do seu racha.
+              Acesse a administração do seu grupo de futebol.
             </p>
             <p className="hidden text-sm leading-relaxed text-gray-300 sm:block sm:text-base">
-              Acesse o centro de comando do seu racha. Tudo que você atualiza no painel reflete no
-              site público do racha com sincronização imediata.
+              Acesse o centro de comando do seu grupo. Tudo que você atualiza no painel reflete no
+              site público do grupo com sincronização imediata.
             </p>
           </div>
 
@@ -684,7 +684,7 @@ export default function AdminLoginClient() {
           <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl animate-slide-in">
             <h2 className="text-xl font-bold text-center text-white">Acesso ao painel bloqueado</h2>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
-              Este racha está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível
+              Este grupo está temporariamente bloqueado pelo Fut7Pro e, no momento, não é possível
               acessar o painel administrativo.
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-300">
@@ -700,7 +700,7 @@ export default function AdminLoginClient() {
               .
             </p>
             <p className="mt-3 text-center text-sm leading-relaxed text-gray-400">
-              Se possível, informe o nome do racha, o slug e o e-mail do administrador.
+              Se possível, informe o nome do grupo, o slug e o e-mail do administrador.
             </p>
             <button
               className="mt-5 w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300"

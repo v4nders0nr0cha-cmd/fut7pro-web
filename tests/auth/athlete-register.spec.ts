@@ -13,7 +13,7 @@ test.describe("athlete register", () => {
 
     await page.goto(`/${slug}/register`);
     const blockedHeading = page.getByRole("heading", { name: "Cadastro de atleta desabilitado" });
-    const requestHeading = page.getByRole("heading", { name: "Solicitar entrada no racha" });
+    const requestHeading = page.getByRole("heading", { name: "Crie sua Conta Global Fut7Pro" });
 
     // Aguarda um dos estados finais para evitar flake em CI quando a tela ainda está no fallback.
     await Promise.race([
@@ -22,7 +22,7 @@ test.describe("athlete register", () => {
     ]);
 
     if (await blockedHeading.isVisible().catch(() => false)) {
-      await expect(page.getByRole("link", { name: /Criar meu racha/i })).toBeVisible();
+      await expect(page.getByRole("link", { name: /Criar meu grupo/i })).toBeVisible();
       return;
     }
 

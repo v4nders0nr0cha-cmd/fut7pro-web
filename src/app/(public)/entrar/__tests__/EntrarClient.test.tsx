@@ -108,7 +108,8 @@ describe("EntrarClient", () => {
 
     render(<EntrarClient />);
 
-    expect(screen.getByRole("heading", { name: "Entrar no Casa do Gamer" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Acesse seu perfil" })).toBeInTheDocument();
+    expect(screen.getByText("Casa do Gamer")).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
       target: { value: "atleta@teste.com" },
@@ -163,8 +164,8 @@ describe("EntrarClient", () => {
 
     render(<EntrarClient />);
 
-    expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste racha" }));
+    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith("/api/public/casa-do-gamer/auth/request-join", {

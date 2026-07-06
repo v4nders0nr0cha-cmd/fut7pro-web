@@ -336,7 +336,7 @@ export default function GlobalPerfilClient() {
       if (avatarFile) {
         const uploadSlug = resolvedCurrentSlug || membershipList[0]?.tenantSlug;
         if (!uploadSlug) {
-          throw new Error("Não foi possível identificar o racha para enviar a foto.");
+          throw new Error("Não foi possível identificar o grupo para enviar a foto.");
         }
         const formData = new FormData();
         formData.set("file", avatarFile);
@@ -388,12 +388,12 @@ export default function GlobalPerfilClient() {
       });
       const body = await res.json().catch(() => null);
       if (!res.ok) {
-        throw new Error(body?.message || body?.error || "Falha ao trocar racha.");
+        throw new Error(body?.message || body?.error || "Falha ao trocar grupo.");
       }
       setStoredTenantSlug(membership.tenantSlug);
       router.push(`/${membership.tenantSlug}`);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Falha ao trocar racha.");
+      setFormError(err instanceof Error ? err.message : "Falha ao trocar grupo.");
     } finally {
       setSwitchingSlug(null);
     }
@@ -416,7 +416,7 @@ export default function GlobalPerfilClient() {
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-8 text-center">
           <p className="text-lg font-semibold text-white mb-3">Voce precisa entrar.</p>
           <p className="text-sm text-zinc-400 mb-6">
-            Acesse sua conta Fut7Pro pelo painel admin ou pelo link do seu racha.
+            Acesse sua conta Fut7Pro pelo painel admin ou pelo link do seu grupo.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <a
@@ -507,8 +507,8 @@ export default function GlobalPerfilClient() {
 
       <section id="meus-rachas" className="mt-12">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-white">Meus Rachas</h2>
-          <span className="text-xs text-zinc-400">{membershipList.length} rachas</span>
+          <h2 className="text-xl font-bold text-white">Meus Grupos</h2>
+          <span className="text-xs text-zinc-400">{membershipList.length} grupos</span>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {membershipList.map((membership) => {
@@ -549,7 +549,7 @@ export default function GlobalPerfilClient() {
 
                 {isCurrent ? (
                   <span className="mt-auto inline-flex items-center justify-center rounded-full border border-brand/40 px-4 py-2 text-xs font-semibold text-brand-soft">
-                    Racha atual
+                    Grupo atual
                   </span>
                 ) : (
                   <button
@@ -557,7 +557,7 @@ export default function GlobalPerfilClient() {
                     disabled={!canSwitch || isSwitching}
                     className="mt-auto w-full rounded-full bg-brand text-black font-semibold py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isSwitching ? "Trocando..." : "Trocar para este racha"}
+                    {isSwitching ? "Acessando..." : "Acessar este grupo"}
                   </button>
                 )}
               </div>
@@ -698,7 +698,7 @@ export default function GlobalPerfilClient() {
                   className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-brand"
                 />
                 <span>
-                  Mostrar meu aniversario nos rachas que participo
+                  Mostrar meu aniversario nos grupos em que participo
                   <span className="block text-xs text-zinc-400">
                     Quando desmarcado, seu nome nao aparece nos cards e listas de aniversariantes.
                   </span>
