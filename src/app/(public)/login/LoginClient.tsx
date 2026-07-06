@@ -59,7 +59,30 @@ function resolveAuthErrorCode(body: any) {
         : null;
 }
 
-export default function LoginClient() {
+type LoginClientProps = {
+  entryPath?: "/login" | "/entrar";
+  variant?: "login" | "entry";
+};
+
+function isApprovedMembershipStatus(status: string) {
+  return status === "APROVADO" || status === "ACTIVE";
+}
+
+function isPendingMembershipStatus(status: string) {
+  return status === "PENDENTE" || status === "PENDING";
+}
+
+function isBlockedMembershipStatus(status: string) {
+  return (
+    status === "SUSPENSO" ||
+    status === "REJEITADO" ||
+    status === "BLOQUEADO" ||
+    status === "BLOCKED" ||
+    status === "REJECTED"
+  );
+}
+
+export default function LoginClient({ entryPath = "/login", variant = "login" }: LoginClientProps) {
   const { nome } = useTema();
   const nomeDoRacha = nome?.trim() || "este racha";
   const { publicHref, publicSlug } = usePublicLinks();
@@ -67,6 +90,7 @@ export default function LoginClient() {
 
   const { data: session, status, update } = useSession();
   const sessionUser = session?.user as {
+    email?: string | null;
     authProvider?: string | null;
     tenantSlug?: string | null;
   } | null;
@@ -78,6 +102,7 @@ export default function LoginClient() {
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
+  const processedGoogleCallbackRef = useRef<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -119,8 +144,8 @@ export default function LoginClient() {
     const params = new URLSearchParams();
     params.set("callbackUrl", redirectTo);
     params.set("oauth", "google");
-    return `${publicHref("/login")}?${params.toString()}`;
-  }, [publicHref, redirectTo]);
+    return `${publicHref(entryPath)}?${params.toString()}`;
+  }, [entryPath, publicHref, redirectTo]);
 
   const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
   const isAthleteSession = sessionRole === "ATLETA";
@@ -191,13 +216,13 @@ export default function LoginClient() {
         refreshToken,
         authProvider,
         role: body?.role || "ATLETA",
-        tenantSlug: body?.tenantSlug || publicSlug,
+        tenantSlug: body?.tenantSlug || undefined,
         tenantId: body?.tenantId,
       });
 
       return !signInResult?.error;
     },
-    [publicSlug]
+    []
   );
 
   const requestJoinForAuthenticatedUser = useCallback(
@@ -350,6 +375,14 @@ export default function LoginClient() {
   }, [applyJourneyProof, emailFromQuery, publicSlug]);
 
   useEffect(() => {
+    const sessionEmail = String(sessionUser?.email || "")
+      .trim()
+      .toLowerCase();
+    if (status !== "authenticated" || !sessionEmail) return;
+    setEmail((previous) => previous || sessionEmail);
+  }, [sessionUser?.email, status]);
+
+  useEffect(() => {
     setCodigo("");
     setCodigoEnviado(false);
     setInfoMessage("");
@@ -395,6 +428,13 @@ export default function LoginClient() {
         return;
       }
 
+      const sessionEmail = String(sessionUser?.email || "")
+        .trim()
+        .toLowerCase();
+      const googleCallbackKey = `${publicSlug}:${sessionEmail || "unknown"}`;
+      if (processedGoogleCallbackRef.current === googleCallbackKey) return;
+      processedGoogleCallbackRef.current = googleCallbackKey;
+
       setRequestJoinInProgress(true);
       void (async () => {
         try {
@@ -424,18 +464,46 @@ export default function LoginClient() {
 
     if (shouldLoadMe && isLoadingMe) return;
 
-    const membershipStatus = String(me?.membership?.status || "").toUpperCase();
-    if (membershipStatus === "PENDENTE") {
+    const athleteContext = me as
+      | (NonNullable<typeof me> & {
+          membershipStatus?: string | null;
+          status?: string | null;
+          nextAction?: string | null;
+        })
+      | null;
+    const membershipStatus = String(
+      athleteContext?.membershipStatus ||
+        athleteContext?.membership?.status ||
+        athleteContext?.status ||
+        ""
+    ).toUpperCase();
+    const nextAction = String(athleteContext?.nextAction || "").toUpperCase();
+
+    if (isApprovedMembershipStatus(membershipStatus)) {
+      void finalizeSuccessfulLogin(redirectTo);
+      return;
+    }
+
+    if (isPendingMembershipStatus(membershipStatus) || nextAction === "WAIT_APPROVAL") {
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
 
-    if (isErrorMe) {
-      navigateWithRefresh(publicHref("/register"));
+    if (isBlockedMembershipStatus(membershipStatus) || nextAction === "BLOCKED_MESSAGE") {
+      setErro("Seu acesso a este racha não está disponível. Fale com o administrador.");
       return;
     }
 
-    navigateWithRefresh(redirectTo);
+    if (
+      isErrorMe ||
+      membershipStatus === "NONE" ||
+      nextAction === "REQUEST_JOIN" ||
+      nextAction === "REGISTER"
+    ) {
+      setCanRequestJoin(true);
+      setNotMemberMessage("");
+      setNotMemberModalOpen(true);
+    }
   }, [
     status,
     isAthleteSession,
@@ -468,7 +536,7 @@ export default function LoginClient() {
       return;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = (email || sessionUser?.email || "").trim().toLowerCase();
     if (!normalizedEmail) {
       setNotMemberMessage("Informe e-mail para solicitar entrada.");
       return;
@@ -492,8 +560,10 @@ export default function LoginClient() {
           redirect: false,
           email: normalizedEmail,
           password: senha,
-          turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
-          turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+          turnstileToken:
+            turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
+          turnstileProof:
+            turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
         });
 
         if (signInResult?.error) {
@@ -619,8 +689,10 @@ export default function LoginClient() {
       body: JSON.stringify({
         email,
         password: senha,
-        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
-        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+        turnstileToken:
+          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
+        turnstileProof:
+          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
       }),
     });
 
@@ -650,8 +722,10 @@ export default function LoginClient() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: normalizedEmail,
-        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
-        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+        turnstileToken:
+          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
+        turnstileProof:
+          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -705,8 +779,10 @@ export default function LoginClient() {
       body: JSON.stringify({
         email: normalizedEmail,
         code: normalizedCode,
-        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
-        turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
+        turnstileToken:
+          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
+        turnstileProof:
+          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
         intent: requestJoinIntent ? "request-join" : undefined,
       }),
     });
@@ -754,7 +830,7 @@ export default function LoginClient() {
         return;
       }
 
-      if (!requireTurnstile(turnstileToken, setErro, turnstileProof)) {
+      if (!requireTurnstile(turnstileToken, setErro, hasTurnstileProof ? turnstileProof : null)) {
         return;
       }
 
@@ -812,20 +888,27 @@ export default function LoginClient() {
       <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-brand/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-soft">
-            Acesso exclusivo
+            Acesso do atleta
           </p>
           <p className="text-sm text-gray-200">
             Login do Atleta no <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Esta etapa é para atletas que já possuem Conta Global Fut7Pro.
+            {variant === "entry"
+              ? "Use seu e-mail ou entre com o Google para acessar seu perfil e continuar no racha."
+              : "Esta etapa é para atletas que já possuem Conta Global Fut7Pro."}
           </p>
         </div>
 
-        <h1 className="text-xl font-bold text-white text-center">Login do Atleta</h1>
+        <h1 className="text-xl font-bold text-white text-center">
+          {variant === "entry" ? `Entrar no ${nomeDoRacha}` : "Login do Atleta"}
+        </h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Entre com sua Conta Global Fut7Pro para acessar seu perfil e continuar no racha{" "}
-          {nomeDoRacha}.
+          {usarSenha
+            ? "Use sua senha para continuar."
+            : codigoEnviado
+              ? "Digite o código recebido para entrar no racha."
+              : "Informe seu e-mail para receber um código de acesso."}
         </p>
 
         {requestJoinIntent ? (
@@ -879,7 +962,8 @@ export default function LoginClient() {
               autoComplete="email"
               autoFocus
               placeholder="email@exemplo.com"
-              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
+              disabled={!usarSenha && codigoEnviado}
+              className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand disabled:cursor-not-allowed disabled:opacity-70"
             />
           </label>
 
@@ -902,7 +986,7 @@ export default function LoginClient() {
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  O código só pode ser enviado para uma Conta Global Fut7Pro existente.
+                  Enviaremos um código para a Conta Global Fut7Pro informada.
                 </div>
               )}
             </>
@@ -955,7 +1039,7 @@ export default function LoginClient() {
               : usarSenha
                 ? "Entrar com senha"
                 : codigoEnviado
-                  ? "Entrar com código"
+                  ? "Entrar no racha"
                   : "Enviar código de acesso"}
           </button>
           <button

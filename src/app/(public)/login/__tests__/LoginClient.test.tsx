@@ -135,7 +135,7 @@ describe("LoginClient", () => {
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
       target: { value: "123456" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar com código" }));
+    fireEvent.click(screen.getByRole("button", { name: "Entrar no racha" }));
 
     expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
     expect(screen.queryByText(/verificação de segurança/i)).not.toBeInTheDocument();
@@ -175,17 +175,15 @@ describe("LoginClient", () => {
     expect(signInMock).not.toHaveBeenCalled();
   });
 
-  it("permite solicitar entrada depois de login com senha retornar NOT_MEMBER", async () => {
+  it("permite solicitar entrada depois de login com senha retornar identidade global sem Membership", async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce(
-        mockJsonResponse(
-          {
-            code: "NOT_MEMBER",
-            message: "Sua conta existe, mas você ainda não participa deste racha.",
-          },
-          false,
-          403
-        )
+        mockJsonResponse({
+          accessToken: "global-access-token",
+          refreshToken: "global-refresh-token",
+          nextAction: "REQUEST_JOIN",
+          membershipStatus: "NONE",
+        })
       )
       .mockResolvedValueOnce(
         mockJsonResponse({
@@ -213,8 +211,9 @@ describe("LoginClient", () => {
         "credentials",
         expect.objectContaining({
           redirect: false,
-          email: "atleta@teste.com",
-          password: "Senha123!",
+          accessToken: "global-access-token",
+          refreshToken: "global-refresh-token",
+          tenantSlug: undefined,
         })
       );
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
