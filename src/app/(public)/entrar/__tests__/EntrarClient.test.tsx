@@ -10,14 +10,10 @@ jest.mock("next/image", () => ({
   },
 }));
 
-jest.mock("next/script", () => ({
-  __esModule: true,
-  default: () => null,
-}));
-
 const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
+const signInMock = jest.fn();
 let mockedSearchParams = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
@@ -27,21 +23,19 @@ jest.mock("next/navigation", () => ({
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
-  signIn: jest.fn(),
+  signIn: (...args: unknown[]) => signInMock(...args),
   signOut: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock("@/components/security/TurnstileWidget", () => ({
   __esModule: true,
-  default: ({ resetSignal }: { resetSignal?: number }) => (
-    <div data-testid="turnstile-widget" data-reset-signal={String(resetSignal ?? 0)} />
-  ),
+  default: () => null,
   AUTH_APP_TURNSTILE_ENABLED: false,
-  AUTH_APP_TURNSTILE_SITE_KEY: "site-key",
-  TURNSTILE_REQUIRED_MESSAGE: "Confirme a verificação de segurança para continuar.",
-  TURNSTILE_UNAVAILABLE_MESSAGE: "A verificação de segurança está indisponível.",
+  AUTH_APP_TURNSTILE_SITE_KEY: "",
+  TURNSTILE_REQUIRED_MESSAGE: "Confirme que você não é um robô para continuar.",
+  TURNSTILE_UNAVAILABLE_MESSAGE: "Não foi possível carregar a verificação de segurança.",
   isTurnstileErrorCode: () => false,
-  resolveTurnstileErrorMessage: () => "Não foi possível validar a segurança.",
+  resolveTurnstileErrorMessage: () => "Não foi possível validar a verificação de segurança.",
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -52,9 +46,26 @@ jest.mock("@/hooks/usePublicLinks", () => ({
   usePublicLinks: jest.fn(),
 }));
 
+jest.mock("@/hooks/useMe", () => ({
+  useMe: jest.fn(),
+}));
+
+jest.mock("@/utils/public-session-sync", () => ({
+  syncPublicAuthState: jest.fn().mockResolvedValue(undefined),
+}));
+
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
+const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
+
+function mockJsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
+  return {
+    ok,
+    status,
+    json: async () => body,
+  };
+}
 
 describe("EntrarClient", () => {
   beforeEach(() => {
@@ -69,13 +80,17 @@ describe("EntrarClient", () => {
       publicSlug: "casa-do-gamer",
       publicHref: (path: string) => `/casa-do-gamer${path}`,
     });
-    if (!global.fetch) {
-      (global as any).fetch = jest.fn();
-    }
-    (global.fetch as jest.Mock).mockReset();
+    mockedUseMe.mockReturnValue({
+      me: null,
+      isLoading: false,
+      isError: false,
+    });
+    signInMock.mockResolvedValue({});
+    global.fetch = jest.fn() as any;
     replaceMock.mockReset();
     refreshMock.mockReset();
     updateSessionMock.mockReset();
+    signInMock.mockClear();
     sessionStorage.clear();
   });
 
@@ -83,52 +98,73 @@ describe("EntrarClient", () => {
     jest.clearAllMocks();
   });
 
-  it("mostra explicacao antes de continuar para login", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
+  it("usa /entrar como fluxo principal e solicita codigo sem lookup nem redirect para /login", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
         ok: true,
         message: "Se estiver tudo certo, enviamos seu código.",
-        nextAction: "LOGIN",
-      }),
-    }) as any;
+      })
+    );
 
     render(<EntrarClient />);
 
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
+    expect(screen.getByRole("heading", { name: "Entrar no Casa do Gamer" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
       target: { value: "atleta@teste.com" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(await screen.findByText(/Conta Global Fut7Pro encontrada/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Continuar para login" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/login?email=atleta%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F"
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/public/casa-do-gamer/auth/passwordless/request",
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({
+            email: "atleta@teste.com",
+          }),
+        })
       );
     });
-
-    expect(sessionStorage.getItem("fut7pro_auth_email")).toBe("atleta@teste.com");
-    expect(sessionStorage.getItem("fut7pro_auth_slug")).toBe("casa-do-gamer");
+    expect(global.fetch).not.toHaveBeenCalledWith("/api/auth/lookup-email", expect.anything());
+    expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/login"));
   });
 
-  it("permite Google com conta global solicitar entrada no racha atual", async () => {
-    mockedSearchParams = new URLSearchParams("google=1");
+  it("mantem Google retornando para /entrar com callback seguro", async () => {
+    render(<EntrarClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Continuar com Google/i }));
+
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith("google", {
+        callbackUrl: "/casa-do-gamer/entrar?callbackUrl=%2Fcasa-do-gamer%2F&oauth=google",
+        login_hint: undefined,
+      });
+    });
+  });
+
+  it("sessao global sem Membership abre solicitacao de entrada sem pedir login novamente", async () => {
     mockedUseSession.mockReturnValue({
-      data: { user: { email: "admin@teste.com", role: "ADMIN" } },
+      data: { user: { email: "atleta@teste.com", role: "ATLETA" } },
       status: "authenticated",
       update: updateSessionMock,
     });
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
+    mockedUseMe.mockReturnValue({
+      me: { membershipStatus: "NONE", nextAction: "REQUEST_JOIN" },
+      isLoading: false,
+      isError: false,
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
         status: "PENDENTE",
         membershipStatus: "PENDING",
-      }),
-    }) as any;
+      })
+    );
 
     render(<EntrarClient />);
+
+    expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste racha" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith("/api/public/casa-do-gamer/auth/request-join", {
@@ -136,156 +172,5 @@ describe("EntrarClient", () => {
       });
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
-  });
-
-  it("não dispara nova verificação de segurança só porque o usuário digitou", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: false,
-      json: async () => ({
-        code: "CAPTCHA_REQUIRED",
-        message: "Captcha obrigatório",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "primeiro@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    const firstWidget = await screen.findByTestId("turnstile-widget");
-    const resetBefore = firstWidget.getAttribute("data-reset-signal");
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "segundo@teste.com" },
-    });
-
-    expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(screen.queryByTestId("turnstile-widget")).not.toBeInTheDocument();
-    expect(firstWidget.getAttribute("data-reset-signal")).toBe(resetBefore);
-  });
-
-  it("mostra explicacao antes de continuar para cadastro quando lookup sinaliza REGISTER", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        message: "Se estiver tudo certo, enviamos seu código.",
-        nextAction: "REGISTER",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "novo@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(
-      await screen.findByText(/Você ainda não possui Conta Global Fut7Pro/i)
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Criar Conta Global" }));
-
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/register?email=novo%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F"
-      );
-    });
-  });
-
-  it("mostra explicacao antes de continuar para login com intent request-join", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        message: "Se estiver tudo certo, enviamos seu código.",
-        nextAction: "REQUEST_JOIN",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "atleta@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(await screen.findByText(/Conta Global Fut7Pro encontrada/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Entrar e solicitar entrada" }));
-
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith(
-        "/casa-do-gamer/login?email=atleta%40teste.com&callbackUrl=%2Fcasa-do-gamer%2F&intent=request-join"
-      );
-    });
-  });
-
-  it("mostra solicitacao pendente antes de seguir para aguardando aprovacao", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        message: "Se estiver tudo certo, enviamos seu código.",
-        nextAction: "WAIT_APPROVAL",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "pendente@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(await screen.findByText(/já foi enviada/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
-
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
-    });
-  });
-
-  it("nao cai no login quando nextAction vem ausente", async () => {
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        ok: true,
-        message: "Resposta sem proxima acao",
-      }),
-    }) as any;
-
-    render(<EntrarClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("ex: seuemail@dominio.com"), {
-      target: { value: "novo@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(
-      await screen.findByText(/Não foi possível identificar o próximo passo/i)
-    ).toBeInTheDocument();
-    expect(replaceMock).not.toHaveBeenCalled();
-  });
-
-  it("no vitrine mostra fluxo educativo sem abrir login/cadastro", () => {
-    mockedUsePublicLinks.mockReturnValue({
-      publicSlug: "vitrine",
-      publicHref: (path: string) => `/vitrine${path}`,
-    });
-
-    render(<EntrarClient />);
-
-    expect(screen.getByRole("heading", { name: /Entrar no Racha Vitrine/i })).toBeInTheDocument();
-    expect(screen.getByText(/No site do seu racha, o botão/i)).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: /Voltar e continuar explorando o Racha Vitrine/i })
-    ).toHaveAttribute("href", "/vitrine/");
-    expect(
-      screen.getByRole("link", { name: /Criar o site do meu racha no Fut7Pro/i })
-    ).toHaveAttribute("href", "/cadastrar-racha");
-    expect(screen.queryByPlaceholderText("ex: seuemail@dominio.com")).not.toBeInTheDocument();
-    expect(global.fetch).not.toHaveBeenCalled();
   });
 });
