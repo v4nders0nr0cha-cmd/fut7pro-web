@@ -98,7 +98,7 @@ describe("LoginClient", () => {
     jest.clearAllMocks();
   });
 
-  it("login por codigo permite solicitar entrada no racha sem Turnstile no modal", async () => {
+  it("login por codigo permite solicitar entrada no grupo sem Turnstile no modal", async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce(
         mockJsonResponse({
@@ -135,11 +135,11 @@ describe("LoginClient", () => {
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
       target: { value: "123456" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar no racha" }));
+    fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
 
-    expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
     expect(screen.queryByText(/verificação de segurança/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste racha" }));
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
@@ -203,8 +203,8 @@ describe("LoginClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
 
-    expect(await screen.findByText("Solicitar entrada no racha")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada neste racha" }));
+    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
 
     await waitFor(() => {
       expect(signInMock).toHaveBeenCalledWith(
@@ -218,5 +218,30 @@ describe("LoginClient", () => {
       );
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
+  });
+
+  it.each(["Seu Racha", "Chelsea"])(
+    "usa nome publico sem slug cru no login do atleta: %s",
+    (tenantName) => {
+      mockedUseTema.mockReturnValue({ nome: tenantName });
+
+      render(<LoginClient entryPath="/entrar" variant="entry" />);
+
+      expect(screen.getByText(tenantName)).toBeInTheDocument();
+      expect(screen.getByText(/Login do Atleta -/i)).toBeInTheDocument();
+      expect(
+        screen.getByText("Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil.")
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/casa-do-gamer/i)).not.toBeInTheDocument();
+    }
+  );
+
+  it("usa fallback seu grupo quando nome publico nao existe", () => {
+    mockedUseTema.mockReturnValue({ nome: "" });
+
+    render(<LoginClient entryPath="/entrar" variant="entry" />);
+
+    expect(screen.getByText("seu grupo")).toBeInTheDocument();
+    expect(screen.getByText(/Login do Atleta -/i)).toBeInTheDocument();
   });
 });

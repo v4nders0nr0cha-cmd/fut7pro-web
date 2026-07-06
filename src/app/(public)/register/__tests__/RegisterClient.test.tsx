@@ -67,7 +67,7 @@ describe("RegisterClient", () => {
       ok: false,
       json: async () => ({
         code: "ACCOUNT_EXISTS",
-        message: "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha.",
+        message: "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: Racha Teste.",
       }),
     });
     global.fetch = fetchMock as any;
@@ -94,7 +94,9 @@ describe("RegisterClient", () => {
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText(/Sua conta Fut7Pro já existe/i)).toBeInTheDocument();
-    expect(screen.getByText(/Falta apenas solicitar entrada neste racha/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Falta apenas solicitar entrada\. Grupo: Racha Teste/i)
+    ).toBeInTheDocument();
 
     const loginCta = screen.getByRole("link", { name: /Entrar e solicitar/i });
     expect(loginCta.getAttribute("href")).toBe(
@@ -151,8 +153,6 @@ describe("RegisterClient", () => {
       screen.getByRole("heading", { name: "Crie sua Conta Global Fut7Pro" })
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText("email@exemplo.com")).toHaveValue("novo@teste.com");
-    expect(
-      screen.queryByRole("heading", { name: "Solicitar entrada no racha" })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Solicitar entrada" })).not.toBeInTheDocument();
   });
 });

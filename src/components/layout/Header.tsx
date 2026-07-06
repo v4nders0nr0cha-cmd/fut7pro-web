@@ -150,7 +150,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
               <span className="flex flex-col leading-tight text-left">
                 <span className="text-[13px] font-bold uppercase">Entrar</span>
                 <span className="text-[10px] font-semibold text-brand-soft normal-case truncate max-w-[140px]">
-                  {`Atletas do ${nome}`}
+                  Área dos Atletas
                 </span>
               </span>
             </Link>
@@ -189,7 +189,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       onClick={() => setDropdownOpen(false)}
                       className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                     >
-                      Meu perfil neste racha
+                      Meu perfil
                     </Link>
                   )}
                   {canSwitchRacha && (
@@ -198,7 +198,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       onClick={() => setDropdownOpen(false)}
                       className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                     >
-                      Trocar de racha
+                      Trocar de grupo
                     </Link>
                   )}
                   <div className="my-1 h-px bg-white/10" />

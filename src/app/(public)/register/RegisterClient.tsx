@@ -65,7 +65,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine e apenas demonstrativo. Login e cadastro de atletas estao desabilitados.";
+  "Este ambiente de demonstração é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 
 type SessionUser = {
   name?: string | null;
@@ -103,7 +103,7 @@ function toNumberOrNull(value: string) {
 
 export default function RegisterClient() {
   const { nome } = useTema();
-  const nomeDoRacha = nome?.trim() || "este racha";
+  const nomeDoRacha = nome?.trim() || "seu grupo";
   const { publicHref, publicSlug } = usePublicLinks();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -396,7 +396,7 @@ export default function RegisterClient() {
   const handleGoogle = async () => {
     setErro("");
     if (isRegistrationBlocked) {
-      setErro("Cadastro de atletas desabilitado no racha vitrine.");
+      setErro("Cadastro de atletas desabilitado neste ambiente de demonstração.");
       return;
     }
     const params = new URLSearchParams();
@@ -475,7 +475,7 @@ export default function RegisterClient() {
 
   const requestJoinAfterRegister = useCallback(async () => {
     if (!publicSlug) {
-      throw new Error("Slug do racha não encontrado.");
+      throw new Error("Slug do grupo não encontrado.");
     }
 
     const triggerJoin = async () =>
@@ -493,7 +493,7 @@ export default function RegisterClient() {
     if (!response.ok) {
       const message = Array.isArray(body?.message)
         ? body.message.join(" ")
-        : body?.message || body?.error || "Não foi possível solicitar entrada neste racha.";
+        : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
       throw new Error(message);
     }
 
@@ -510,7 +510,7 @@ export default function RegisterClient() {
     setAccountModalOpen(false);
     setAccountModalMessage("");
     if (isRegistrationBlocked) {
-      setErro("Cadastro de atletas desabilitado no racha vitrine.");
+      setErro("Cadastro de atletas desabilitado neste ambiente de demonstração.");
       return;
     }
 
@@ -599,20 +599,21 @@ export default function RegisterClient() {
           return;
         }
         if (errorCode === "ALREADY_MEMBER") {
-          setAccountModalMessage("Você já faz parte deste racha. Entre para acessar.");
+          setAccountModalMessage(`Você já faz parte deste grupo. Grupo: ${nomeDoRacha}.`);
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ATHLETE_ALREADY_REGISTERED") {
           setAccountModalMessage(
-            "Já existe um perfil de atleta com este e-mail neste racha. Entre com sua conta para solicitar entrada."
+            `Já existe um perfil de atleta com este e-mail neste grupo. Grupo: ${nomeDoRacha}. Entre com sua conta para solicitar entrada.`
           );
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ACCOUNT_EXISTS") {
           setAccountModalMessage(
-            message || "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha."
+            message ||
+              `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: ${nomeDoRacha}.`
           );
           setAccountModalOpen(true);
           return;
@@ -706,22 +707,22 @@ export default function RegisterClient() {
       <section className="w-full px-4">
         <div className="mx-auto w-full max-w-2xl rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
           <div className="mb-4 rounded-lg border border-amber-400/30 bg-[#141824] px-3 py-3 text-center">
-            <p className="text-sm font-semibold text-amber-200">Racha Vitrine</p>
+            <p className="text-sm font-semibold text-amber-200">Vitrine Fut7Pro</p>
             <p className="mt-1 text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
           </div>
           <h1 className="text-xl font-bold text-white text-center">
             Cadastro de atleta desabilitado
           </h1>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Este ambiente e apenas de demonstracao. Para usar o Fut7Pro de verdade, crie seu proprio
-            racha.
+            Este ambiente é apenas de demonstração. Para usar o Fut7Pro de verdade, crie seu próprio
+            grupo.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <a
               href="/cadastrar-racha"
               className="inline-flex items-center justify-center rounded-lg bg-yellow-400 py-2.5 font-bold text-black hover:bg-yellow-300"
             >
-              Criar meu racha
+              Criar meu grupo
             </a>
             <a
               href={publicHref("/")}
@@ -743,21 +744,21 @@ export default function RegisterClient() {
             Conta Global Fut7Pro
           </p>
           <p className="text-sm text-gray-200">
-            Racha <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
+            <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Depois do cadastro, você poderá solicitar entrada neste racha.
+            Depois do cadastro, você poderá solicitar entrada neste grupo.
           </p>
         </div>
         {isRegistrationBlocked ? (
           <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
-            Este racha e apenas demonstrativo. Cadastros de atletas estao desabilitados.
+            Este ambiente é apenas demonstrativo. Cadastros de atletas estão desabilitados.
             <div className="mt-2">
               <Link
                 href="/cadastrar-racha"
                 className="text-amber-200 underline underline-offset-2 hover:text-amber-100"
               >
-                Criar seu racha
+                Criar seu grupo
               </Link>
             </div>
           </div>
@@ -765,8 +766,8 @@ export default function RegisterClient() {
 
         <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Global Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Depois do cadastro, você poderá solicitar entrada no racha {nomeDoRacha} e acompanhar seu
-          histórico como atleta.
+          Depois do cadastro, você poderá solicitar entrada e acompanhar seu histórico como atleta.
+          Grupo: {nomeDoRacha}.
         </p>
 
         {!isAthleteAuthenticated && prefilledFromEntrar ? (
@@ -775,7 +776,7 @@ export default function RegisterClient() {
               Você ainda não possui Conta Global Fut7Pro
             </p>
             <p className="mt-1">
-              Primeiro criamos sua conta. Depois você solicita entrada neste racha e aguarda a
+              Primeiro criamos sua conta. Depois você solicita entrada neste grupo e aguarda a
               aprovação do administrador, se necessário.
             </p>
           </div>
@@ -869,7 +870,7 @@ export default function RegisterClient() {
                 onChange={(event) => setApelido(event.target.value)}
                 maxLength={10}
                 autoComplete="nickname"
-                placeholder="Apelido no racha"
+                placeholder="Apelido no grupo"
                 className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
               />
             </label>
@@ -1037,16 +1038,16 @@ export default function RegisterClient() {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">
-                  Aparecer na lista de aniversariantes do racha
+                  Aparecer na lista de aniversariantes do grupo
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  Se desligar, seu nome não aparece na página pública de aniversariantes do racha.
+                  Se desligar, seu nome não aparece na página pública de aniversariantes do grupo.
                 </p>
               </div>
               <Switch
                 checked={!ocultarNascimento}
                 onCheckedChange={(checked) => setOcultarNascimento(!checked)}
-                ariaLabel="Aparecer na lista de aniversariantes do racha"
+                ariaLabel="Aparecer na lista de aniversariantes do grupo"
               />
             </div>
           </div>
@@ -1128,7 +1129,7 @@ export default function RegisterClient() {
                 </Dialog.Title>
                 <p className="mt-3 text-sm text-gray-200">
                   {accountModalMessage ||
-                    "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada neste racha."}
+                    `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: ${nomeDoRacha}.`}
                 </p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
