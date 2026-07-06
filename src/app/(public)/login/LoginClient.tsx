@@ -74,7 +74,11 @@ function isPendingMembershipStatus(status: string) {
 
 function isBlockedMembershipStatus(status: string) {
   return (
-    status === "SUSPENSO" || status === "REJEITADO" || status === "BLOCKED" || status === "REJECTED"
+    status === "SUSPENSO" ||
+    status === "REJEITADO" ||
+    status === "BLOQUEADO" ||
+    status === "BLOCKED" ||
+    status === "REJECTED"
   );
 }
 
@@ -98,6 +102,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
+  const processedGoogleCallbackRef = useRef<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -422,6 +427,13 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         navigateWithRefresh(publicHref("/register"));
         return;
       }
+
+      const sessionEmail = String(sessionUser?.email || "")
+        .trim()
+        .toLowerCase();
+      const googleCallbackKey = `${publicSlug}:${sessionEmail || "unknown"}`;
+      if (processedGoogleCallbackRef.current === googleCallbackKey) return;
+      processedGoogleCallbackRef.current = googleCallbackKey;
 
       setRequestJoinInProgress(true);
       void (async () => {
