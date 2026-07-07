@@ -85,3 +85,21 @@ export function clearPublicAuthContext() {
   storage.removeItem(AUTH_TURNSTILE_PROOF_STORAGE_KEY);
   storage.removeItem(AUTH_TURNSTILE_PROOF_EXPIRES_AT_STORAGE_KEY);
 }
+
+export function isFut7ProAccountComplete(
+  profile:
+    | {
+        firstName?: string | null;
+        name?: string | null;
+        position?: string | null;
+        birthDay?: number | null;
+        birthMonth?: number | null;
+      }
+    | null
+    | undefined
+) {
+  if (!profile) return false;
+
+  const name = String(profile.firstName || profile.name || "").trim();
+  return Boolean(name && profile.position && profile.birthDay && profile.birthMonth);
+}

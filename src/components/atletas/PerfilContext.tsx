@@ -92,7 +92,7 @@ function normalizeStatus(value?: string | null): StatusAtleta {
 }
 
 function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): Atleta | null {
-  if (!me?.athlete && !sessionUser) {
+  if (!me?.athlete) {
     return null;
   }
 

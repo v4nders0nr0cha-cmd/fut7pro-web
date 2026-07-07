@@ -50,6 +50,10 @@ jest.mock("@/hooks/useMe", () => ({
   useMe: jest.fn(),
 }));
 
+jest.mock("@/hooks/useGlobalProfile", () => ({
+  useGlobalProfile: jest.fn(),
+}));
+
 jest.mock("@/utils/public-session-sync", () => ({
   syncPublicAuthState: jest.fn().mockResolvedValue(undefined),
 }));
@@ -58,6 +62,7 @@ const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
+const mockedUseGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
 
 function mockJsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return {
@@ -82,6 +87,11 @@ describe("EntrarClient", () => {
     });
     mockedUseMe.mockReturnValue({
       me: null,
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: null,
       isLoading: false,
       isError: false,
     });
@@ -155,6 +165,18 @@ describe("EntrarClient", () => {
       isLoading: false,
       isError: false,
     });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Atleta",
+          position: "meia",
+          birthDay: 10,
+          birthMonth: 5,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({
         status: "PENDENTE",
@@ -168,9 +190,10 @@ describe("EntrarClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith("/api/public/casa-do-gamer/auth/request-join", {
-        method: "POST",
-      });
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/public/casa-do-gamer/auth/request-join",
+        expect.objectContaining({ method: "POST" })
+      );
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
   });

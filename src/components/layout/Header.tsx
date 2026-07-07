@@ -15,6 +15,7 @@ import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
 
 type HeaderProps = {
   onOpenSidebar?: () => void;
@@ -43,10 +44,12 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     context: "athlete",
   });
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
-  const showUserMenu = Boolean(
+  const hasApprovedTenantProfile = Boolean(
     hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
+  const showUserMenu = hasGlobalSession;
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
+  const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const profileUser = globalProfile?.user;
@@ -64,15 +67,17 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     DEFAULT_ATHLETE_AVATAR
   );
   const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
-    enabled: showUserMenu,
+    enabled: hasApprovedTenantProfile,
   });
   const homeHref = publicHref("/");
   const loginHref = publicHref("/entrar");
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = activeSlug || fallbackSlug || "";
-  const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
+  const profileHref =
+    hasApprovedTenantProfile && resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
+  const completeAccountHref = publicHref("/register");
 
   useEffect(() => {
     if (!slugFromPath) return;
@@ -114,7 +119,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
 
             // Se não logado, permite navegação mas direciona para fluxo de entrada do racha.
             const handleClick = (e: React.MouseEvent) => {
-              if (!showUserMenu) {
+              if (!hasApprovedTenantProfile) {
                 e.preventDefault();
                 router.push(loginHref);
               }
@@ -181,7 +186,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                     onClick={() => setDropdownOpen(false)}
                     className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                   >
-                    Perfil Global Fut7Pro
+                    Minha conta Fut7Pro
                   </Link>
                   {profileHref && (
                     <Link
@@ -190,6 +195,15 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                     >
                       Meu perfil
+                    </Link>
+                  )}
+                  {!accountComplete && (
+                    <Link
+                      href={completeAccountHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Completar conta
                     </Link>
                   )}
                   {canSwitchRacha && (

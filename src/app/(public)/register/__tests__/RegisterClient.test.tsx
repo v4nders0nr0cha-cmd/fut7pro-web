@@ -89,7 +89,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "5" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Global Fut7Pro/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Fut7Pro/i }));
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
@@ -135,7 +135,7 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
 
-    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Global Fut7Pro/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Criar Conta Fut7Pro/i }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith(
@@ -144,14 +144,12 @@ describe("RegisterClient", () => {
     });
   });
 
-  it("preenche e-mail pela query e usa copy de Conta Global", () => {
+  it("preenche e-mail pela query e usa copy de Conta Fut7Pro", () => {
     searchParamsMock = new URLSearchParams("email=novo%40teste.com");
 
     render(<RegisterClient />);
 
-    expect(
-      screen.getByRole("heading", { name: "Crie sua Conta Global Fut7Pro" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Crie sua Conta Fut7Pro" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("email@exemplo.com")).toHaveValue("novo@teste.com");
     expect(screen.queryByRole("heading", { name: "Solicitar entrada" })).not.toBeInTheDocument();
   });

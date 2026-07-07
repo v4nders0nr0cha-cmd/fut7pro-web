@@ -129,7 +129,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText("Enviamos o código para a Conta Global Fut7Pro informada.")
+      await screen.findByText("Enviamos o código para a Conta Fut7Pro informada.")
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
@@ -151,7 +151,7 @@ describe("LoginClient", () => {
       mockJsonResponse(
         {
           code: "USER_NOT_FOUND",
-          message: "Você ainda não possui Conta Global Fut7Pro. Cadastre-se para continuar.",
+          message: "Você ainda não possui Conta Fut7Pro. Cadastre-se para continuar.",
         },
         false,
         404
@@ -166,9 +166,9 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText(/Não encontramos uma Conta Global Fut7Pro com este e-mail/i)
+      await screen.findByText(/Não encontramos uma Conta Fut7Pro com este e-mail/i)
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Criar Conta Global/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Criar Conta Fut7Pro/i })).toHaveAttribute(
       "href",
       "/casa-do-gamer/register?email=novo%40teste.com"
     );

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Header from "@/components/layout/Header";
 
 jest.mock("next-auth/react", () => ({
@@ -68,7 +68,7 @@ describe("Header", () => {
     expect(tenantNameEl).toHaveAttribute("title");
   });
 
-  it("mantem CTA quando existe apenas sessao global sem vinculo de atleta aprovado", () => {
+  it("mantem menu da conta e logout quando existe apenas sessao global sem atleta aprovado", () => {
     useSession.mockReturnValue({
       data: {
         user: {
@@ -84,8 +84,11 @@ describe("Header", () => {
 
     render(<Header />);
 
-    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Pele/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Pele/i }));
+    expect(screen.getByText("Minha conta Fut7Pro")).toBeInTheDocument();
+    expect(screen.getByText("Sair da conta")).toBeInTheDocument();
+    expect(screen.queryByText("Meu perfil")).not.toBeInTheDocument();
   });
 
   it("troca o CTA por perfil quando a sessao tem atleta aprovado no grupo atual", () => {

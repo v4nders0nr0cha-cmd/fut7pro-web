@@ -21,6 +21,14 @@ jest.mock("@/hooks/useComunicacao", () => ({
   })),
 }));
 
+jest.mock("@/hooks/useMe", () => ({
+  useMe: jest.fn(() => ({ me: null, isLoading: false, isError: false })),
+}));
+
+jest.mock("@/hooks/useGlobalProfile", () => ({
+  useGlobalProfile: jest.fn(() => ({ profile: null, isLoading: false, isError: false })),
+}));
+
 describe("Sidebar", () => {
   it("renderiza destaques do dia e melhores do ano", () => {
     render(<Sidebar />);
@@ -34,6 +42,16 @@ describe("BottomMenu", () => {
   const useSession = require("next-auth/react").useSession as jest.Mock;
   const useComunicacao = require("@/hooks/useComunicacao").useComunicacao as jest.Mock;
   const usePathname = require("next/navigation").usePathname as jest.Mock;
+  const useMe = require("@/hooks/useMe").useMe as jest.Mock;
+  const useGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
+
+  beforeEach(() => {
+    useSession.mockReturnValue({ data: null, status: "unauthenticated" });
+    usePathname.mockReturnValue("/ruimdebola");
+    useComunicacao.mockReturnValue({ badge: 0, badgeMensagem: 0, badgeSugestoes: 0 });
+    useMe.mockReturnValue({ me: null, isLoading: false, isError: false });
+    useGlobalProfile.mockReturnValue({ profile: null, isLoading: false, isError: false });
+  });
 
   it("mostra CTA de login quando não autenticado", () => {
     useSession.mockReturnValue({ data: null, status: "unauthenticated" });
@@ -53,12 +71,32 @@ describe("BottomMenu", () => {
     expect(screen.queryByText(/Criar meu racha/i)).not.toBeInTheDocument();
   });
 
-  it("mostra itens do menu e badges quando autenticado", () => {
+  it("mostra itens do menu e badges quando autenticado e aprovado no grupo", () => {
     useSession.mockReturnValue({
       data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola");
+    useMe.mockReturnValue({
+      me: {
+        athlete: {
+          firstName: "User",
+          position: "meia",
+          birthDay: 10,
+          birthMonth: 5,
+        },
+        membership: { status: "APROVADO" },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    useGlobalProfile.mockReturnValue({
+      profile: {
+        user: { name: "User", position: "meia", birthDay: 10, birthMonth: 5 },
+      },
+      isLoading: false,
+      isError: false,
+    });
     useComunicacao.mockReturnValue({
       badge: 2,
       badgeMensagem: 1,
@@ -73,7 +111,7 @@ describe("BottomMenu", () => {
     expect(screen.getAllByText("2").length).toBeGreaterThan(0);
   });
 
-  it("troca o CTA por menu completo assim que a sessao autentica existe", () => {
+  it("mantem CTA de completar conta quando ha sessao sem perfil completo aprovado", () => {
     useSession.mockReturnValue({
       data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
       status: "authenticated",
@@ -83,6 +121,7 @@ describe("BottomMenu", () => {
     render(<BottomMenu />);
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Perfil")).toBeInTheDocument();
+    expect(screen.getByLabelText("Completar conta")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
   });
 });
