@@ -5,6 +5,9 @@ import { useComunicacao } from "@/hooks/useComunicacao";
 import { useSession } from "next-auth/react";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
+import { useMe } from "@/hooks/useMe";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
+import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -43,7 +46,20 @@ export default function BottomMenu() {
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
   const isLoggedIn = status === "authenticated" && Boolean(session?.user);
-  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({ enabled: isLoggedIn });
+  const { me, isError: isMeError } = useMe({
+    enabled: isLoggedIn && Boolean(tenantSlug),
+    tenantSlug,
+    context: "athlete",
+  });
+  const { profile: globalProfile } = useGlobalProfile({ enabled: isLoggedIn });
+  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const hasApprovedTenantProfile = Boolean(
+    isLoggedIn && !isMeError && me?.athlete && membershipStatus === "APROVADO"
+  );
+  const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
+  const { badge, badgeMensagem, badgeSugestoes } = useComunicacao({
+    enabled: hasApprovedTenantProfile,
+  });
 
   if (!tenantSlug || isPublicAuthRoute(pathname)) {
     return null;
@@ -94,7 +110,28 @@ export default function BottomMenu() {
     );
   }
 
-  // SE LOGADO: mostra menu completo
+  if (!hasApprovedTenantProfile) {
+    const label = accountComplete ? "Solicitar entrada" : "Completar conta";
+    const href = accountComplete ? "/entrar" : "/register";
+
+    return (
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
+        <button
+          type="button"
+          onClick={() => router.push(publicHref(href))}
+          className="w-full flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
+          style={{ letterSpacing: 0.7 }}
+          title={label}
+          aria-label={label}
+        >
+          <FaUser size={18} />
+          {label}
+        </button>
+      </nav>
+    );
+  }
+
+  // SE LOGADO E APROVADO: mostra menu privado do atleta
   return (
     <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex justify-between items-center px-1 py-2 md:hidden animate-slide-down">
       {menu.map((item) => {

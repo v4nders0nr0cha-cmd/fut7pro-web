@@ -114,7 +114,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
             message:
               typeof parsedRecord?.message === "string"
                 ? parsedRecord.message
-                : "Você ainda não possui Conta Global Fut7Pro. Cadastre-se para continuar.",
+                : "Você ainda não possui Conta Fut7Pro. Cadastre-se para continuar.",
           },
           { status: response.status || 404 }
         );

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import AthletePremiumProfileView from "@/components/athlete-premium/AthletePremiumProfileView";
@@ -141,6 +142,11 @@ export default function PerfilUsuarioPage() {
     params.set("callbackUrl", publicHref("/perfil"));
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
+  const completeAccountHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("callbackUrl", publicHref("/perfil"));
+    return `${publicHref("/register")}?${params.toString()}`;
+  }, [publicHref]);
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pendingStatsPeriod, setPendingStatsPeriod] = useState<"current" | "all" | null>(null);
   const [periodSwitchStartedAt, setPeriodSwitchStartedAt] = useState<number | null>(null);
@@ -158,7 +164,7 @@ export default function PerfilUsuarioPage() {
     mutate: mutatePremiumProfile,
   } = useOwnerAthletePremiumProfile({
     tenantSlug: publicSlug,
-    enabled: Boolean(publicSlug && isAuthenticated && !isPendingApproval),
+    enabled: Boolean(publicSlug && isAuthenticated && usuario && !isPendingApproval),
     statsPeriod,
   });
 
@@ -289,8 +295,40 @@ export default function PerfilUsuarioPage() {
 
   if (isError || !usuario) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-red-200">
-        Não foi possível carregar o perfil. Tente novamente mais tarde.
+      <div className="mx-auto max-w-3xl px-4 py-16 text-zinc-100">
+        <div className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-soft">
+            Perfil do atleta
+          </p>
+          <h1 className="mt-2 text-2xl font-extrabold text-white">Complete sua conta</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            Antes de acessar seu perfil neste grupo, complete sua Conta Fut7Pro e aguarde a
+            aprovação dos administradores.
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => router.push(completeAccountHref)}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
+            >
+              Completar conta
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(publicHref("/entrar"))}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30"
+            >
+              Ir para entrada
+            </button>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: publicHref("/") })}
+              className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-200 transition hover:border-red-400"
+            >
+              Sair da conta
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

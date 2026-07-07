@@ -2,15 +2,17 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import {
   clearPublicAuthContext,
+  isFut7ProAccountComplete,
   persistPublicAuthContext,
   readPublicAuthContext,
 } from "@/utils/public-auth-flow";
@@ -159,6 +161,14 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     tenantSlug: publicSlug,
     context: "athlete",
   });
+  const {
+    profile: globalProfile,
+    isLoading: isLoadingGlobalProfile,
+    isError: isErrorGlobalProfile,
+  } = useGlobalProfile({
+    enabled: status === "authenticated",
+  });
+  const globalAccountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
 
   const navigateWithRefresh = useCallback(
     (href: string) => {
@@ -202,6 +212,21 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     [navigateWithDocumentRedirect, publicSlug, update]
   );
 
+  const buildRegisterHref = useCallback(
+    (nextEmail?: string | null) => {
+      const params = new URLSearchParams();
+      params.set("callbackUrl", redirectTo);
+      const emailForRegister = String(nextEmail || "")
+        .trim()
+        .toLowerCase();
+      if (emailForRegister) {
+        params.set("email", emailForRegister);
+      }
+      return `${publicHref("/register")}?${params.toString()}`;
+    },
+    [publicHref, redirectTo]
+  );
+
   const signInWithScopedTokens = useCallback(
     async (body: any, authProvider: "credentials" | "passwordless" | "google") => {
       const accessToken = body?.accessToken;
@@ -215,7 +240,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         accessToken,
         refreshToken,
         authProvider,
-        role: body?.role || "ATLETA",
+        role: body?.role || undefined,
         tenantSlug: body?.tenantSlug || undefined,
         tenantId: body?.tenantId,
       });
@@ -231,10 +256,18 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         throw new Error("Slug do grupo não encontrado.");
       }
 
-      const requestJoin = async () =>
-        fetch(`/api/public/${publicSlug}/auth/request-join`, {
-          method: "POST",
-        });
+      const requestJoin = async () => {
+        const controller = new AbortController();
+        const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+        try {
+          return await fetch(`/api/public/${publicSlug}/auth/request-join`, {
+            method: "POST",
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      };
 
       let response = await requestJoin();
       if (response.status === 401) {
@@ -244,6 +277,13 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
       const body = await response.json().catch(() => null);
       if (!response.ok) {
+        const code = resolveAuthErrorCode(body);
+        if (code === "PROFILE_INCOMPLETE") {
+          return { isActive: false, isPending: false, needsProfile: true };
+        }
+        if (code === "REQUEST_PENDING") {
+          return { isActive: false, isPending: true, needsProfile: false };
+        }
         const message = Array.isArray(body?.message)
           ? body.message.join(" ")
           : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
@@ -253,6 +293,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       const joinStatus = String(body?.status || "").toUpperCase();
       const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
       const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+      const isPending =
+        joinStatus === "PENDENTE" ||
+        joinStatus === "PENDING" ||
+        joinMembershipStatus === "PENDENTE" ||
+        joinMembershipStatus === "PENDING";
       if (isActive && (!body?.accessToken || !body?.refreshToken)) {
         throw new Error("Não foi possível finalizar o acesso neste grupo.");
       }
@@ -263,7 +308,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         }
       }
 
-      return { isActive };
+      return { isActive, isPending, needsProfile: false };
     },
     [publicSlug, signInWithScopedTokens]
   );
@@ -421,10 +466,16 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     if (status !== "authenticated") return;
     if (requestJoinInProgress) return;
     if (completedNavigationRef.current) return;
+    if (isLoadingGlobalProfile) return;
+
+    if (!globalAccountComplete && !isErrorGlobalProfile) {
+      navigateWithRefresh(buildRegisterHref());
+      return;
+    }
 
     if (returningFromGoogleLogin) {
       if (!publicSlug) {
-        navigateWithRefresh(publicHref("/register"));
+        navigateWithRefresh(buildRegisterHref());
         return;
       }
 
@@ -443,9 +494,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             await finalizeSuccessfulLogin(redirectTo);
             return;
           }
+          if (outcome.needsProfile) {
+            navigateWithRefresh(buildRegisterHref(sessionEmail));
+            return;
+          }
 
           clearPublicAuthContext();
-          await signOut({ redirect: false });
           navigateWithRefresh(publicHref("/aguardando-aprovacao"));
         } catch (error) {
           setErro(
@@ -511,6 +565,10 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     redirectTo,
     publicHref,
     publicSlug,
+    buildRegisterHref,
+    globalAccountComplete,
+    isErrorGlobalProfile,
+    isLoadingGlobalProfile,
     shouldLoadMe,
     isLoadingMe,
     isErrorMe,
@@ -567,9 +625,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         });
 
         if (signInResult?.error) {
-          setNotMemberMessage(
-            "Não foi possível validar sua Conta Global Fut7Pro. Tente novamente."
-          );
+          setNotMemberMessage("Não foi possível validar sua Conta Fut7Pro. Tente novamente.");
           setRequestJoinInProgress(false);
           return;
         }
@@ -581,9 +637,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         await finalizeSuccessfulLogin(redirectTo);
         return;
       }
+      if (outcome.needsProfile) {
+        navigateWithRefresh(buildRegisterHref(normalizedEmail));
+        return;
+      }
 
       clearPublicAuthContext();
-      await signOut({ redirect: false });
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
     } catch {
       setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
@@ -630,16 +689,13 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
     if (code === "USER_NOT_FOUND") {
       setErro(
-        "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
+        "Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
       );
       return true;
     }
 
     if (code === "PROFILE_INCOMPLETE") {
-      setErro("Complete sua Conta Global Fut7Pro antes de solicitar entrada neste grupo.");
-      router.replace(
-        `${publicHref("/register")}?email=${encodeURIComponent(email.trim().toLowerCase())}`
-      );
+      router.replace(buildRegisterHref(email));
       return true;
     }
 
@@ -739,7 +795,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
       if (body?.code === "USER_NOT_FOUND") {
         setErro(
-          "Não encontramos uma Conta Global Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
+          "Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
         );
         return;
       }
@@ -758,7 +814,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       resetTurnstile();
     }
     setCodigoEnviado(true);
-    setInfoMessage("Enviamos o código para a Conta Global Fut7Pro informada.");
+    setInfoMessage("Enviamos o código para a Conta Fut7Pro informada.");
   };
 
   const loginWithPasswordlessCode = async () => {
@@ -803,7 +859,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       membershipStatus === "PENDENTE"
     ) {
       clearPublicAuthContext();
-      await signOut({ redirect: false });
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
@@ -896,7 +951,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           <p className="mt-1 text-xs text-gray-400">
             {variant === "entry"
               ? "Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil."
-              : "Esta etapa é para atletas que já possuem Conta Global Fut7Pro."}
+              : "Esta etapa é para atletas que já possuem Conta Fut7Pro."}
           </p>
         </div>
 
@@ -984,7 +1039,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  Enviaremos um código para a Conta Global Fut7Pro informada.
+                  Enviaremos um código para a Conta Fut7Pro informada.
                 </div>
               )}
             </>
@@ -1067,7 +1122,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             href={`${publicHref("/register")}${email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ""}`}
             className="text-brand-soft underline hover:text-brand-soft"
           >
-            Criar Conta Global
+            Criar Conta Fut7Pro
           </a>
         </div>
       </div>
@@ -1156,13 +1211,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitar entrada
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua Conta Global Fut7Pro já está pronta. Agora envie sua solicitação.
+                  Sua Conta Fut7Pro está pronta. Agora envie sua solicitação para entrar em{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span>.
                   <br />
-                  Grupo: <span className="font-semibold text-brand">{nomeDoRacha}</span>.
                 </p>
                 <p className="mt-2 text-sm text-gray-300">
-                  Criar sua conta no Fut7Pro não aprova automaticamente sua entrada. O administrador
-                  poderá aprovar seu pedido.
+                  O administrador poderá aprovar ou recusar seu pedido.
                 </p>
                 {notMemberMessage ? (
                   <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">

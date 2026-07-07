@@ -22,6 +22,7 @@ import { Switch } from "@/components/ui/Switch";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import {
   clearPublicAuthContext,
+  isFut7ProAccountComplete,
   persistPublicAuthContext,
   readPublicAuthContext,
 } from "@/utils/public-auth-flow";
@@ -180,12 +181,7 @@ export default function RegisterClient() {
   const isPendingMembership = membershipStatus === "PENDENTE";
   const isApprovedMembership = membershipStatus === "APROVADO";
 
-  const profileComplete = Boolean(
-    me?.athlete?.firstName &&
-      me?.athlete?.position &&
-      me?.athlete?.birthDay &&
-      me?.athlete?.birthMonth
-  );
+  const profileComplete = isFut7ProAccountComplete(me?.athlete);
   const shouldUseCompleteEndpoint = isAthleteAuthenticated;
 
   const resetTurnstile = () => {
@@ -473,36 +469,6 @@ export default function RegisterClient() {
     setAvatarError("");
   };
 
-  const requestJoinAfterRegister = useCallback(async () => {
-    if (!publicSlug) {
-      throw new Error("Slug do grupo não encontrado.");
-    }
-
-    const triggerJoin = async () =>
-      fetch(`/api/public/${publicSlug}/auth/request-join`, {
-        method: "POST",
-      });
-
-    let response = await triggerJoin();
-    if (response.status === 401) {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      response = await triggerJoin();
-    }
-
-    const body = await response.json().catch(() => null);
-    if (!response.ok) {
-      const message = Array.isArray(body?.message)
-        ? body.message.join(" ")
-        : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
-      throw new Error(message);
-    }
-
-    const joinStatus = String(body?.status || "").toUpperCase();
-    const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
-    const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
-    return { isActive };
-  }, [publicSlug]);
-
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setErro("");
@@ -669,19 +635,13 @@ export default function RegisterClient() {
         }
       }
 
-      let joinIsActive = false;
-      if (!isApprovedMembership) {
-        const joinOutcome = await requestJoinAfterRegister();
-        joinIsActive = joinOutcome.isActive;
-      }
-
       if (requiresApproval) {
         clearPublicAuthContext();
         router.replace(publicHref("/aguardando-aprovacao"));
         return;
       }
 
-      if (!joinIsActive && !isApprovedMembership) {
+      if (!isApprovedMembership) {
         clearPublicAuthContext();
         router.replace(publicHref("/aguardando-aprovacao"));
         return;
@@ -741,13 +701,13 @@ export default function RegisterClient() {
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-yellow-400/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-yellow-300">
-            Conta Global Fut7Pro
+            Conta Fut7Pro
           </p>
           <p className="text-sm text-gray-200">
             <span className="font-semibold text-yellow-400">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            Depois do cadastro, você poderá solicitar entrada neste grupo.
+            Ao concluir, enviaremos sua solicitação de entrada em {nomeDoRacha}.
           </p>
         </div>
         {isRegistrationBlocked ? (
@@ -764,20 +724,18 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Global Fut7Pro</h1>
+        <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Depois do cadastro, você poderá solicitar entrada e acompanhar seu histórico como atleta.
-          Grupo: {nomeDoRacha}.
+          Complete seus dados para continuar. Seu pedido para entrar em {nomeDoRacha} será enviado
+          aos administradores.
         </p>
 
         {!isAthleteAuthenticated && prefilledFromEntrar ? (
           <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
-            <p className="font-semibold text-emerald-200">
-              Você ainda não possui Conta Global Fut7Pro
-            </p>
+            <p className="font-semibold text-emerald-200">Você ainda não possui Conta Fut7Pro</p>
             <p className="mt-1">
-              Primeiro criamos sua conta. Depois você solicita entrada neste grupo e aguarda a
-              aprovação do administrador, se necessário.
+              Primeiro criamos sua conta. Em seguida enviaremos seu pedido de entrada para os
+              administradores.
             </p>
           </div>
         ) : null}
@@ -805,8 +763,8 @@ export default function RegisterClient() {
         {isAthleteAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
             {isGoogleSession
-              ? "Complete sua Conta Global Fut7Pro para continuar."
-              : "Preencha os dados mínimos da sua Conta Global Fut7Pro."}
+              ? "Complete sua Conta Fut7Pro para continuar."
+              : "Preencha os dados mínimos da sua Conta Fut7Pro."}
             {sessionUser?.email ? (
               <div className="mt-1 text-xs text-gray-400">Conta: {sessionUser.email}</div>
             ) : null}
@@ -1070,9 +1028,9 @@ export default function RegisterClient() {
               ? "Enviando..."
               : isAthleteAuthenticated
                 ? isGoogleSession
-                  ? "Concluir Conta Global Fut7Pro"
-                  : "Atualizar Conta Global Fut7Pro"
-                : "Criar Conta Global Fut7Pro"}
+                  ? "Concluir Conta Fut7Pro"
+                  : "Atualizar Conta Fut7Pro"
+                : "Criar Conta Fut7Pro"}
           </button>
         </form>
 

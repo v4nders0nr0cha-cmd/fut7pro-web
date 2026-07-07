@@ -22,6 +22,7 @@ import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
+import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -44,10 +45,12 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
     context: "athlete",
   });
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
-  const showUserMenu = Boolean(
+  const hasApprovedTenantProfile = Boolean(
     hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
+  const showUserMenu = hasGlobalSession;
   const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
+  const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileUser = globalProfile?.user;
   const fallbackEmail = session?.user?.email || profileUser?.email || "";
@@ -65,9 +68,11 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
     "Usuario";
   const fallbackSlug = globalProfile?.memberships?.[0]?.tenantSlug || "";
   const resolvedSlug = activeSlug || fallbackSlug || "";
-  const profileHref = resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
+  const profileHref =
+    hasApprovedTenantProfile && resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
+  const completeAccountHref = publicHref("/register");
   const homeHref = publicHref("/");
 
   if (!open) return null;
@@ -169,11 +174,20 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
 
             <div className="mt-3 flex flex-col gap-2 text-sm text-zinc-200">
               <Link href={globalProfileHref} onClick={onClose} className="hover:text-brand-soft">
-                Perfil Global Fut7Pro
+                Minha conta Fut7Pro
               </Link>
               {profileHref && (
                 <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
                   Meu perfil
+                </Link>
+              )}
+              {!accountComplete && (
+                <Link
+                  href={completeAccountHref}
+                  onClick={onClose}
+                  className="hover:text-brand-soft"
+                >
+                  Completar conta
                 </Link>
               )}
               {canSwitchRacha && (
