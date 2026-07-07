@@ -71,7 +71,7 @@ function truncate(value: string, max = 110) {
 }
 
 function messageAuthorLabel(message: SupportTicketDetail["messages"][number]) {
-  if (message.authorType === "ADMIN") return "Admin do racha";
+  if (message.authorType === "ADMIN") return "Admin do grupo";
   if (message.authorType === "SUPERADMIN") return "Equipe Fut7Pro";
   return "Sistema";
 }
@@ -432,7 +432,7 @@ export default function SuportePage() {
         <article className="rounded-lg border border-zinc-700 bg-[#171717] p-4">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-300">
-              Chamados do racha
+              Chamados do grupo
             </h2>
             <span className="text-xs text-zinc-500">{tickets.length} itens</span>
           </div>

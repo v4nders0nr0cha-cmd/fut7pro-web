@@ -73,8 +73,8 @@ export default function NotificacoesPage() {
     return (
       <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
-          <h1 className="text-2xl font-bold text-brand mb-2">Notificações do Racha</h1>
-          <p className="text-gray-300 mb-4">Entre para ver notificações e avisos do seu racha.</p>
+          <h1 className="text-2xl font-bold text-brand mb-2">Notificações do grupo</h1>
+          <p className="text-gray-300 mb-4">Entre para ver notificações e avisos do seu grupo.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
@@ -90,7 +90,7 @@ export default function NotificacoesPage() {
   return (
     <main className="max-w-3xl mx-auto px-4 pt-20 pb-24">
       <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
-        <FaBell /> Notificações do Racha
+        <FaBell /> Notificações do grupo
       </h1>
       <div className="flex flex-col gap-5">
         {isLoading ? (

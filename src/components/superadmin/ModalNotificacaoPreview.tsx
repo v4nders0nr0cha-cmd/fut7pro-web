@@ -129,7 +129,7 @@ export const ModalNotificacaoPreview: FC<ModalNotificacaoPreviewProps> = ({
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-lg bg-zinc-800 p-3">
-              <div className="text-xs text-zinc-400">Rachas</div>
+              <div className="text-xs text-zinc-400">Grupos</div>
               <div className="text-lg text-white font-semibold">
                 {campaign.totalTenants ?? campaign.tenantCount ?? "-"}
               </div>

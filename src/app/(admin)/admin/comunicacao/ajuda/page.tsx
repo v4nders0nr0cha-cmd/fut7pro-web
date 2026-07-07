@@ -131,7 +131,7 @@ export default function CentralAjudaPage() {
         <title>Central de Ajuda | Fut7Pro Admin</title>
         <meta
           name="description"
-          content="Guia completo do painel admin Fut7Pro com processos operacionais, financeiro, comunicação, partidas e boas práticas de gestão do racha."
+          content="Guia completo do painel admin Fut7Pro com processos operacionais, financeiro, comunicação, partidas e boas práticas de gestão do grupo."
         />
         <meta
           name="keywords"
@@ -171,7 +171,7 @@ export default function CentralAjudaPage() {
             </p>
             <p className="mt-1">
               Esta central foi estruturada para reduzir dúvidas recorrentes e padronizar a gestão do
-              racha: rotina diária, partidas, jogadores, financeiro, comunicação, segurança e boas
+              grupo: rotina diária, partidas, jogadores, financeiro, comunicação, segurança e boas
               práticas.
             </p>
           </div>

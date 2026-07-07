@@ -76,7 +76,7 @@ describe("Formulários de contato público", () => {
         ok: true,
         json: async () => ({
           id: "sug-1",
-          message: "Nova ideia para o racha",
+          message: "Nova ideia para o grupo",
           category: "RACHA_IDEA",
           status: "RECEIVED",
           createdAt: "2025-01-01T00:00:00Z",
@@ -88,7 +88,7 @@ describe("Formulários de contato público", () => {
           results: [
             {
               id: "sug-1",
-              message: "Nova ideia para o racha",
+              message: "Nova ideia para o grupo",
               category: "RACHA_IDEA",
               status: "RECEIVED",
               createdAt: "2025-01-01T00:00:00Z",

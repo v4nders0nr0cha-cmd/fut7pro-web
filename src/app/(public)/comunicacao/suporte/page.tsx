@@ -1,7 +1,7 @@
 // src/app/comunicacao/suporte/page.tsx
 export const metadata = {
   title: "Chat | Fut7Pro",
-  description: "Converse com a administração do seu racha. Tire dúvidas e acompanhe respostas.",
+  description: "Converse com a administração do seu grupo. Tire dúvidas e acompanhe respostas.",
   keywords: "fut7, chat, suporte, racha, SaaS",
 };
 

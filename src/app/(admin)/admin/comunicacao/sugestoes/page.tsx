@@ -53,7 +53,7 @@ const categoryLabels: Record<SuggestionCategory, string> = {
   PLATFORM_IMPROVEMENT: "Melhoria da plataforma",
   BUG_REPORT: "Informar bug",
   QUESTION: "Dúvida",
-  RACHA_IDEA: "Ideia para o racha",
+  RACHA_IDEA: "Ideia para o grupo",
   FINANCE_SPONSORSHIP: "Financeiro e patrocínios",
   OTHER: "Outro",
 };
@@ -285,10 +285,10 @@ export default function SugestoesAdminPage() {
 
       <div className="mb-6 rounded-lg bg-[#232323] border-l-4 border-yellow-400 p-4 text-sm text-zinc-200">
         <p className="font-semibold text-yellow-300">
-          Central do racha e canal com a equipe Fut7Pro.
+          Central do grupo e canal com a equipe Fut7Pro.
         </p>
         <p className="mt-1">
-          Aqui chegam as sugestões dos atletas do seu racha. Você pode marcar como lida, responder
+          Aqui chegam as sugestões dos atletas do seu grupo. Você pode marcar como lida, responder
           internamente e encaminhar as melhores para a equipe Fut7Pro. Quando a equipe ler ou
           atualizar o status, essa informação aparece para você e para o atleta.
         </p>
@@ -386,7 +386,7 @@ export default function SugestoesAdminPage() {
             const author =
               item.createdByType === "ATHLETE"
                 ? item.athlete?.nickname || item.athlete?.name || "Atleta"
-                : "Admin do racha";
+                : "Admin do grupo";
 
             return (
               <article key={item.id} className="rounded-lg border border-zinc-700 bg-[#202020] p-4">

@@ -217,7 +217,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
   const handleTest = async () => {
     setError(null);
     if (!testTenantSlug.trim()) {
-      setError("Informe o slug do racha para teste.");
+      setError("Informe o slug do grupo para teste.");
       return;
     }
     if (!hasChannel) {
@@ -321,7 +321,7 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
                 onChange={(e) => setNewTenantDays(Number(e.target.value))}
               />
               <p className="text-[11px] text-zinc-500 mt-1">
-                Novos = rachas criados nos últimos X dias.
+                Novos = grupos criados nos últimos X dias.
               </p>
             </div>
           )}
@@ -407,17 +407,17 @@ export const ModalNovaNotificacao: FC<ModalNovaNotificacaoProps> = ({
             </button>
             <div className="text-xs text-zinc-400">
               {preview
-                ? `Você vai enviar para ${preview.admins} admins de ${preview.tenants} rachas.`
+                ? `Você vai enviar para ${preview.admins} admins de ${preview.tenants} grupos.`
                 : "Gere a prévia para validar o alcance."}
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-xs text-zinc-400">Teste (slug do racha)</label>
+              <label className="text-xs text-zinc-400">Teste (slug do grupo)</label>
               <input
                 className="w-full rounded bg-zinc-800 text-zinc-100 border border-zinc-700 px-3 py-2"
-                placeholder="rachaslug"
+                placeholder="slug-do-grupo"
                 value={testTenantSlug}
                 onChange={(e) => setTestTenantSlug(e.target.value)}
               />
