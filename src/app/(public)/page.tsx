@@ -430,7 +430,7 @@ export default function Home({
         })
       : isLoadingHighlights
         ? "Carregando..."
-        : "Resultados pendentes";
+        : "A bola ainda vai rolar por aqui ⚽";
 
   const championPlayers =
     campeaoInfo?.time?.jogadores?.map((player) => player.nome).filter(Boolean) ?? [];
