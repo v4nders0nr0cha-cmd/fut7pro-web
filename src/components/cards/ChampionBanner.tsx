@@ -66,7 +66,9 @@ const ChampionBanner = ({
           </p>
           <p className="text-white text-base sm:text-lg md:text-xl font-semibold mb-2">{date}</p>
           <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
-            {players.length ? players.join(", ") : "Jogadores não cadastrados"}
+            {players.length
+              ? players.join(", ")
+              : "O time campeão aparecerá após o registro dos resultados."}
           </p>
         </div>
       </div>
