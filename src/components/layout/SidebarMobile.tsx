@@ -44,7 +44,12 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
     tenantSlug,
     context: "athlete",
   });
-  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const membershipStatus = String(
+    me?.membership?.status ||
+      (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
+      ""
+  ).toUpperCase();
+  const isPendingMembership = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
   const hasApprovedTenantProfile = Boolean(
     hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
@@ -73,6 +78,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
   const completeAccountHref = publicHref("/register");
+  const pendingApprovalHref = publicHref("/aguardando-aprovacao");
   const homeHref = publicHref("/");
 
   if (!open) return null;
@@ -181,7 +187,16 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
                   Meu perfil
                 </Link>
               )}
-              {!accountComplete && (
+              {isPendingMembership && (
+                <Link
+                  href={pendingApprovalHref}
+                  onClick={onClose}
+                  className="hover:text-brand-soft"
+                >
+                  Solicitação em análise
+                </Link>
+              )}
+              {!isPendingMembership && !accountComplete && (
                 <Link
                   href={completeAccountHref}
                   onClick={onClose}

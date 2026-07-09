@@ -43,7 +43,12 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
     tenantSlug,
     context: "athlete",
   });
-  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const membershipStatus = String(
+    me?.membership?.status ||
+      (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
+      ""
+  ).toUpperCase();
+  const isPendingMembership = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
   const hasApprovedTenantProfile = Boolean(
     hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
@@ -78,6 +83,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
   const completeAccountHref = publicHref("/register");
+  const pendingApprovalHref = publicHref("/aguardando-aprovacao");
 
   useEffect(() => {
     if (!slugFromPath) return;
@@ -197,7 +203,16 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       Meu perfil
                     </Link>
                   )}
-                  {!accountComplete && (
+                  {isPendingMembership && (
+                    <Link
+                      href={pendingApprovalHref}
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-white hover:bg-white/5"
+                    >
+                      Solicitação em análise
+                    </Link>
+                  )}
+                  {!isPendingMembership && !accountComplete && (
                     <Link
                       href={completeAccountHref}
                       onClick={() => setDropdownOpen(false)}
