@@ -124,4 +124,26 @@ describe("BottomMenu", () => {
     expect(screen.getByLabelText("Completar conta")).toBeInTheDocument();
     expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
   });
+
+  it("não mostra CTA de completar conta quando a solicitação está pendente", () => {
+    useSession.mockReturnValue({
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      status: "authenticated",
+    });
+    usePathname.mockReturnValue("/ruimdebola/aguardando-aprovacao");
+    useMe.mockReturnValue({
+      me: {
+        athlete: null,
+        membershipStatus: "PENDING",
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<BottomMenu />);
+
+    expect(screen.queryByText(/Completar conta/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Solicitar entrada/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
+  });
 });

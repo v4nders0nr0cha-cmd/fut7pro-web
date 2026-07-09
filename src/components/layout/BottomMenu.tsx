@@ -52,7 +52,12 @@ export default function BottomMenu() {
     context: "athlete",
   });
   const { profile: globalProfile } = useGlobalProfile({ enabled: isLoggedIn });
-  const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const membershipStatus = String(
+    me?.membership?.status ||
+      (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
+      ""
+  ).toUpperCase();
+  const isPendingMembership = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
   const hasApprovedTenantProfile = Boolean(
     isLoggedIn && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
@@ -108,6 +113,10 @@ export default function BottomMenu() {
         </button>
       </nav>
     );
+  }
+
+  if (isPendingMembership) {
+    return null;
   }
 
   if (!hasApprovedTenantProfile) {
