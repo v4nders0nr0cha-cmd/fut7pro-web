@@ -223,8 +223,8 @@ export default function ComunicadosClient() {
         <div className="font-bold text-yellow-300 mb-2">O que são Comunicados?</div>
         <p className="text-gray-200">
           Comunicados são avisos institucionais ou recorrentes, com período definido, que ajudam a
-          manter todo mundo alinhado no racha. Durante o período ativo, o atleta vê o comunicado em
-          um modal sempre que fizer login no racha.
+          manter todo mundo alinhado no grupo. Durante o período ativo, o atleta vê o comunicado em
+          um modal sempre que acessar o Fut7Pro.
         </p>
         <div className="mt-3 text-gray-200 font-semibold">Exemplos de comunicados:</div>
         <ul className="mt-2 space-y-1 text-gray-200">

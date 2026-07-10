@@ -59,7 +59,7 @@ export default function ComunicadosPage() {
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">
         <div className="bg-[#1f1f23] rounded-xl p-6 text-center">
           <h1 className="text-2xl font-bold text-brand mb-2">Comunicados Oficiais</h1>
-          <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu racha.</p>
+          <p className="text-gray-300 mb-4">Entre para acessar os comunicados do seu grupo.</p>
           <button
             type="button"
             onClick={() => router.push(publicHref("/entrar"))}
@@ -78,7 +78,7 @@ export default function ComunicadosPage() {
         <title>Comunicados | Fut7Pro</title>
         <meta
           name="description"
-          content="Veja comunicados e avisos oficiais publicados pela administracao do seu racha."
+          content="Veja comunicados e avisos oficiais publicados pela administracao do seu grupo."
         />
       </Head>
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 max-w-2xl mx-auto px-4">

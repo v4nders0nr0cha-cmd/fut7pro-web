@@ -180,7 +180,7 @@ export default function SuperAdminNotificacoesPage() {
         <meta
           name="description"
           content={brandText(
-            "Controle e envie campanhas para administradores dos rachas do Fut7Pro."
+            "Controle e envie campanhas para administradores dos grupos do Fut7Pro."
           )}
         />
       </Head>

@@ -16,25 +16,25 @@ const items = [
     label: "Notificações",
     href: "/comunicacao/notificacoes",
     icon: <FaRegBell className="text-brand" size={22} />,
-    description: "Alertas importantes sobre jogos, times e novidades do racha.",
+    description: "Alertas importantes sobre jogos, times e novidades do grupo.",
   },
   {
     label: "Mensagens do Admin",
     href: "/comunicacao/mensagens",
     icon: <FaCommentDots className="text-brand" size={22} />,
-    description: "Mensagens diretas enviadas pela administração do racha.",
+    description: "Mensagens diretas enviadas pela administração do grupo.",
   },
   {
     label: "Comunicados",
     href: "/comunicacao/comunicados",
     icon: <FaClipboardList className="text-brand" size={22} />,
-    description: "Comunicados gerais, regras e avisos oficiais do racha.",
+    description: "Comunicados gerais, regras e avisos oficiais do grupo.",
   },
   {
     label: "Sugestões",
     href: "/comunicacao/sugestoes",
     icon: <FaLightbulb className="text-brand" size={22} />,
-    description: "Envie ideias e sugestões para melhorar o racha.",
+    description: "Envie ideias e sugestões para melhorar o grupo.",
   },
   {
     label: "Enquetes",
@@ -59,7 +59,7 @@ export default function ComunicacaoPage() {
         <title>Comunicação | Central de Avisos e Mensagens | Fut7Pro</title>
         <meta
           name="description"
-          content="Central de comunicação do Fut7Pro: notificações, mensagens do admin, comunicados, sugestões, enquetes, ajuda e suporte do racha."
+          content="Central de comunicação do Fut7Pro: notificações, mensagens do admin, comunicados, sugestões, enquetes, ajuda e suporte do grupo."
         />
         <meta
           name="keywords"
@@ -70,7 +70,7 @@ export default function ComunicacaoPage() {
         Central de Comunicação
       </h1>
       <p className="text-center text-sm text-gray-300 mb-10 max-w-2xl mx-auto">
-        Acesse todas as notificações, mensagens, comunicados, sugestões, enquetes e suporte do racha
+        Acesse todas as notificações, mensagens, comunicados, sugestões, enquetes e suporte do grupo
         em um só lugar. Fique por dentro de tudo que acontece no Fut7Pro!
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 max-w-5xl mx-auto">

@@ -30,7 +30,7 @@ export default function AjudaClient() {
       </p>
       {videos.length === 0 ? (
         <div className="rounded border border-zinc-700 bg-zinc-900 p-4 text-sm text-zinc-400">
-          Ainda não há vídeos publicados para este racha. Assim que novos tutoriais forem liberados,
+          Ainda não há vídeos publicados para este grupo. Assim que novos tutoriais forem liberados,
           eles aparecerão aqui automaticamente.
         </div>
       ) : (

@@ -141,10 +141,10 @@ export default function NotificacoesClient() {
       </div>
 
       <div className="mb-5 rounded-lg bg-[#232323] border-l-4 border-yellow-400 p-4 text-sm text-zinc-200">
-        <p className="font-semibold text-yellow-300">Central de notificações do seu racha.</p>
+        <p className="font-semibold text-yellow-300">Central de notificações do seu grupo.</p>
         <p className="mt-1">
           Aqui você acompanha novas sugestões, atualizações da equipe Fut7Pro e alertas importantes
-          do painel. Cada ação fica salva e sincronizada para todos os admins do seu racha.
+          do painel. Cada ação fica salva e sincronizada para todos os admins do seu grupo.
         </p>
       </div>
 

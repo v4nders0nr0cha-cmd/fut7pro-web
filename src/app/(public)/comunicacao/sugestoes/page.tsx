@@ -38,7 +38,7 @@ const categoryOptions: Array<{ value: SuggestionCategory; label: string }> = [
   { value: "PLATFORM_IMPROVEMENT", label: "Melhoria da plataforma" },
   { value: "BUG_REPORT", label: "Informar bug" },
   { value: "QUESTION", label: "Dúvida" },
-  { value: "RACHA_IDEA", label: "Ideia para o racha" },
+  { value: "RACHA_IDEA", label: "Ideia para o grupo" },
   { value: "FINANCE_SPONSORSHIP", label: "Financeiro e patrocínios" },
   { value: "OTHER", label: "Outro" },
 ];
@@ -146,7 +146,7 @@ export default function SugestoesPage() {
 
   async function handleSubmit() {
     if (!endpoint) {
-      setError("Racha não identificado.");
+      setError("Grupo não identificado.");
       return;
     }
 
@@ -197,7 +197,7 @@ export default function SugestoesPage() {
 
       <div className="mb-6 bg-zinc-800 rounded-lg p-4 border-l-4 border-brand">
         <p className="text-zinc-100 font-semibold">
-          Envie sua sugestão para o administrador do seu racha.
+          Envie sua sugestão para o administrador do seu grupo.
         </p>
         <p className="text-zinc-300 text-sm mt-1">
           Se for uma ideia para melhorar o Fut7Pro, o admin pode encaminhar para a nossa equipe, e
