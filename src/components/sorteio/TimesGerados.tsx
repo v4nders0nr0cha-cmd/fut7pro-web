@@ -21,6 +21,16 @@ interface Props {
   onSaveEdit?: (timesEditados: TimeSorteado[]) => void;
   jogadoresPorTime?: number;
   coeficienteContext?: CoeficienteContext;
+  rankingEmCalibracao?: boolean;
+  sorteiosPublicadosNaTemporada?: number;
+  onEditingStateChange?: (state: { editando: boolean; invalido: boolean }) => void;
+}
+
+function cloneTimes(times: TimeSorteado[]) {
+  if (typeof structuredClone === "function") {
+    return structuredClone(times);
+  }
+  return JSON.parse(JSON.stringify(times)) as TimeSorteado[];
 }
 
 export default function TimesGerados({
@@ -28,13 +38,18 @@ export default function TimesGerados({
   onSaveEdit,
   jogadoresPorTime,
   coeficienteContext,
+  rankingEmCalibracao = false,
+  sorteiosPublicadosNaTemporada,
+  onEditingStateChange,
 }: Props) {
-  const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(structuredClone(times));
+  const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(() => cloneTimes(times));
   const [editando, setEditando] = useState(false);
+  const calibracaoConcluida =
+    typeof sorteiosPublicadosNaTemporada === "number" && sorteiosPublicadosNaTemporada >= 8;
 
   useEffect(() => {
     if (!editando) {
-      setTimesEdit(structuredClone(times));
+      setTimesEdit(cloneTimes(times));
     }
   }, [editando, times]);
 
@@ -49,7 +64,7 @@ export default function TimesGerados({
     if (!over || !active) return;
     if (active.id === over.id) return;
 
-    const timesCopy = structuredClone(timesEdit);
+    const timesCopy = cloneTimes(timesEdit);
     const time = timesCopy.find((t) => t.id === timeId);
     if (!time) return;
 
@@ -67,13 +82,11 @@ export default function TimesGerados({
     if (!editando) return;
     if (timeOrigemId === timeDestinoId) return;
 
-    const timesCopy = structuredClone(timesEdit);
+    const timesCopy = cloneTimes(timesEdit);
     const timeOrigem = timesCopy.find((t) => t.id === timeOrigemId);
     const timeDestino = timesCopy.find((t) => t.id === timeDestinoId);
 
     if (!timeOrigem || !timeDestino) return;
-    if (jogadoresPorTime && timeDestino.jogadores.length >= jogadoresPorTime) return;
-
     timeOrigem.jogadores = timeOrigem.jogadores.filter((j) => j.id !== jogador.id);
     timeDestino.jogadores.push(jogador);
 
@@ -89,6 +102,12 @@ export default function TimesGerados({
     if (!jogadoresPorTime) return false;
     return timesEdit.some((t) => t.jogadores.length !== jogadoresPorTime);
   }
+
+  const timesInvalidos = alertaTimesInvalidos();
+
+  useEffect(() => {
+    onEditingStateChange?.({ editando, invalido: timesInvalidos });
+  }, [editando, onEditingStateChange, timesInvalidos]);
 
   // Função utilitária para ordenar jogadores na ordem desejada
   function ordenarJogadores(jogadores: Participante[]): Participante[] {
@@ -193,13 +212,61 @@ export default function TimesGerados({
           <button
             className="bg-green-600 hover:bg-green-700 text-white font-semibold px-3 py-1 rounded text-xs"
             onClick={salvarEdicao}
-            disabled={alertaTimesInvalidos()}
-            title={
-              alertaTimesInvalidos() ? "Todos os times devem ter o mesmo número de jogadores" : ""
-            }
+            disabled={timesInvalidos}
+            title={timesInvalidos ? "Todos os times devem ter o mesmo número de jogadores" : ""}
           >
             Salvar Alterações
           </button>
+        )}
+      </div>
+      {editando && timesInvalidos && (
+        <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          Ajuste os times para que todos fiquem com {jogadoresPorTime} jogador
+          {jogadoresPorTime === 1 ? "" : "es"}. Só será possível salvar quando a quantidade estiver
+          correta em todos os times.
+        </div>
+      )}
+      <div
+        className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+          rankingEmCalibracao
+            ? "border-yellow-500/30 bg-yellow-500/10 text-yellow-100"
+            : calibracaoConcluida
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+              : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+        }`}
+      >
+        {rankingEmCalibracao ? (
+          <>
+            <h3 className="mb-1 font-bold text-yellow-300">
+              Fase de calibração
+              {typeof sorteiosPublicadosNaTemporada === "number"
+                ? `: ${sorteiosPublicadosNaTemporada} de 8 sorteios publicados`
+                : ""}
+            </h3>
+            <p>
+              Este grupo ainda não completou os 8 sorteios publicados necessários para concluir a
+              calibração inicial. Durante esta fase, o balanceamento utiliza as estrelas definidas
+              pelo administrador. Depois disso, o ranking também passa a calibrar os times conforme
+              as regras do Sorteio Inteligente.
+            </p>
+          </>
+        ) : calibracaoConcluida ? (
+          <>
+            <h3 className="mb-1 font-bold text-emerald-300">Sorteio Inteligente completo</h3>
+            <p>
+              O balanceamento considerou estrelas, ranking, posição dos atletas e histórico recente
+              dos sorteios, incluindo o recurso anti-panelinha. Revise os times antes de continuar e
+              use Editar Times se precisar fazer ajustes manuais.
+            </p>
+          </>
+        ) : (
+          <>
+            <h3 className="mb-1 font-bold text-emerald-300">Times sorteados</h3>
+            <p>
+              Revise a composição antes de continuar. Se achar necessário, use Editar Times para
+              fazer ajustes manuais.
+            </p>
+          </>
         )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">

@@ -171,9 +171,13 @@ function ajustarPosicoesSecundarias(
   const avisos: string[] = [];
   const base: ParticipanteAjustado[] = participantes.map((p) => {
     const posicaoPrincipal = p.posicao;
+    const secundariaInformada = p.posicaoSecundaria;
     const posicaoSecundaria =
-      p.posicaoSecundaria && p.posicaoSecundaria !== posicaoPrincipal
-        ? p.posicaoSecundaria
+      posicaoPrincipal !== "GOL" &&
+      secundariaInformada &&
+      secundariaInformada !== "GOL" &&
+      secundariaInformada !== posicaoPrincipal
+        ? secundariaInformada
         : undefined;
     return {
       ...p,
@@ -184,27 +188,16 @@ function ajustarPosicoesSecundarias(
   });
 
   const primaryGoalies = base.filter((p) => p.posicaoPrincipal === "GOL");
-  const secondaryGoalies = base.filter(
-    (p) => p.posicaoPrincipal !== "GOL" && p.posicaoSecundaria === "GOL"
-  );
-  const totalGoalkeepers = primaryGoalies.length + secondaryGoalies.length;
-  if (totalGoalkeepers < quantidadeTimes) {
+  if (primaryGoalies.length < quantidadeTimes) {
     throw new Error(
-      `Goleiros insuficientes: ${totalGoalkeepers}/${quantidadeTimes}. Selecione mais goleiros.`
+      `Goleiros insuficientes: ${primaryGoalies.length}/${quantidadeTimes}. Selecione mais goleiros.`
     );
   }
 
   const sortByCoefDesc = <T extends Participante>(list: T[]) =>
     [...list].sort((a, b) => getCoeficiente(b, contexto) - getCoeficiente(a, contexto));
   const primarySorted = sortByCoefDesc(primaryGoalies);
-  const secondarySorted = sortByCoefDesc(secondaryGoalies);
-
   const goleirosSelecionados = primarySorted.slice(0, quantidadeTimes);
-  const faltando = quantidadeTimes - goleirosSelecionados.length;
-  if (faltando > 0) {
-    avisos.push("Goleiros insuficientes na posicao principal. Secundarias foram usadas.");
-    goleirosSelecionados.push(...secondarySorted.slice(0, faltando));
-  }
 
   const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
 
@@ -212,8 +205,8 @@ function ajustarPosicoesSecundarias(
     if (goleirosIds.has(p.id)) {
       return { ...p, posicao: "GOL" };
     }
-    if (p.posicaoPrincipal === "GOL" && p.posicaoSecundaria && p.posicaoSecundaria !== "GOL") {
-      return { ...p, posicao: p.posicaoSecundaria };
+    if (p.posicaoPrincipal === "GOL") {
+      return { ...p, posicao: "GOL" };
     }
     return { ...p, posicao: p.posicaoPrincipal };
   });

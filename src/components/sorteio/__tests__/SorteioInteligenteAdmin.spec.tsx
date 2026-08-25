@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
 import SorteioInteligenteAdmin from "../SorteioInteligenteAdmin";
 import type { Participante } from "@/types/sorteio";
@@ -76,16 +76,110 @@ const mockParticipantes: Participante[] = [
   },
 ];
 
+const mockParticipantesValidos = mockParticipantes.slice(0, 4);
+const mockParticipantes28: Participante[] = Array.from({ length: 28 }, (_, index) => {
+  const numero = index + 1;
+  const posicao = numero <= 4 ? "GOL" : numero % 3 === 0 ? "ZAG" : numero % 3 === 1 ? "MEI" : "ATA";
+  return {
+    id: `p28-${numero}`,
+    nome: `Participante ${numero}`,
+    slug: `participante-${numero}`,
+    foto: `/p28-${numero}.png`,
+    posicao,
+    rankingPontos: numero,
+    vitorias: 0,
+    gols: 0,
+    assistencias: 0,
+    estrelas: {
+      id: `e28-${numero}`,
+      rachaId: "racha-1",
+      jogadorId: `p28-${numero}`,
+      estrelas: (numero % 5) + 1,
+      atualizadoEm: "",
+    },
+    mensalista: true,
+    partidas: 5,
+  };
+});
+const draftStorageKey = "fut7pro_admin_sorteio_draft_v1:racha-1";
+const mockConfig = {
+  duracaoRachaMin: 90,
+  duracaoPartidaMin: 10,
+  numTimes: 2,
+  jogadoresPorTime: 2,
+  dataPartida: "2025-12-30",
+  horaPartida: "19:30",
+};
+const mockConfig4x7 = {
+  ...mockConfig,
+  duracaoPartidaMin: 6,
+  numTimes: 4,
+  jogadoresPorTime: 7,
+};
+const buildTestFingerprint = (
+  config = mockConfig,
+  timesSelecionados = ["t1", "t2"],
+  participantes = mockParticipantesValidos
+) =>
+  JSON.stringify({
+    config: {
+      numTimes: config.numTimes,
+      jogadoresPorTime: config.jogadoresPorTime,
+      duracaoRachaMin: config.duracaoRachaMin,
+      duracaoPartidaMin: config.duracaoPartidaMin,
+      dataPartida: config.dataPartida,
+      horaPartida: config.horaPartida,
+    },
+    timesSelecionados: [...timesSelecionados].sort(),
+    participantes: participantes.map((participante) => participante.id).sort(),
+  });
+const buildDraft = (overrides: Record<string, unknown> = {}) => ({
+  version: 1,
+  updatedAt: "2026-08-24T12:00:00.000Z",
+  step: "SORTEADO",
+  resultadoFingerprint: buildTestFingerprint(),
+  config: mockConfig,
+  participantes: mockParticipantesValidos,
+  timesSelecionados: ["t1", "t2"],
+  times: [
+    {
+      id: "t1",
+      nome: "Time A",
+      jogadores: mockParticipantesValidos.slice(0, 2),
+      coeficienteTotal: 10,
+    },
+    {
+      id: "t2",
+      nome: "Time B",
+      jogadores: mockParticipantesValidos.slice(2, 4),
+      coeficienteTotal: 10,
+    },
+  ],
+  tabelaJogos: [{ rodada: 1, timeA: "Time A", timeB: "Time B", duracao: 10 }],
+  configConfirmada: true,
+  publicado: false,
+  partidasTotaisSorteio: 20,
+  sorteioAvisos: ["Aviso antigo"],
+  sorteioReservas: [],
+  ...overrides,
+});
+let mockConfigNumTimes = 2;
+let mockTimesDisponiveis = [
+  { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
+  { id: "t2", nome: "Time B", logo: "/logo2.png", cor: "#222" },
+  { id: "t3", nome: "Time C", logo: "/logo3.png", cor: "#333" },
+  { id: "t4", nome: "Time D", logo: "/logo4.png", cor: "#444" },
+  { id: "t5", nome: "Time E", logo: "/logo5.png", cor: "#555" },
+  { id: "t6", nome: "Time F", logo: "/logo6.png", cor: "#666" },
+];
+
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ rachaId: "racha-1", tenantSlug: "racha-1" }),
 }));
 
 jest.mock("@/hooks/useTimes", () => ({
   useTimes: () => ({
-    times: [
-      { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
-      { id: "t2", nome: "Time B", logo: "/logo2.png", cor: "#222" },
-    ],
+    times: mockTimesDisponiveis,
     isLoading: false,
     isError: false,
     addTime: jest.fn(),
@@ -118,12 +212,8 @@ jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
       type="button"
       onClick={() =>
         onSubmit({
-          duracaoRachaMin: 90,
-          duracaoPartidaMin: 10,
-          numTimes: 2,
-          jogadoresPorTime: 2,
-          dataPartida: "2025-12-30",
-          horaPartida: "19:30",
+          ...mockConfig,
+          numTimes: mockConfigNumTimes,
         })
       }
       disabled={disabled}
@@ -137,13 +227,23 @@ jest.mock("@/components/sorteio/ConfiguracoesRacha", () => ({
 
 jest.mock("@/components/sorteio/SelecionarTimesDia", () => ({
   __esModule: true,
-  default: () => <div data-testid="selecionar-times-dia">Selecionar times</div>,
+  default: ({ timesDisponiveis, timesSelecionados, onChange, maxTimes }: any) => (
+    <div data-testid="selecionar-times-dia">
+      <span>{timesSelecionados.length} times selecionados</span>
+      <button
+        type="button"
+        onClick={() => onChange(timesDisponiveis.slice(0, maxTimes).map((time: any) => time.id))}
+      >
+        Selecionar times manualmente
+      </button>
+    </div>
+  ),
 }));
 
 jest.mock("@/components/sorteio/ParticipantesRacha", () => ({
   __esModule: true,
   default: ({ setParticipantes }: any) => (
-    <button type="button" onClick={() => setParticipantes(mockParticipantes)}>
+    <button type="button" onClick={() => setParticipantes(mockParticipantesValidos)}>
       Carregar participantes
     </button>
   ),
@@ -151,7 +251,16 @@ jest.mock("@/components/sorteio/ParticipantesRacha", () => ({
 
 jest.mock("@/components/sorteio/TimesGerados", () => ({
   __esModule: true,
-  default: ({ times }: any) => <div data-testid="times-gerados">{times.length} times gerados</div>,
+  default: ({ times }: any) => (
+    <div data-testid="times-gerados">
+      {times.length} times gerados
+      <span data-testid="times-gerados-composicao">
+        {times
+          .map((time: any) => time.jogadores.map((jogador: any) => jogador.id).join(","))
+          .join("|")}
+      </span>
+    </div>
+  ),
 }));
 
 jest.mock("@/components/sorteio/TabelaJogosRacha", () => ({
@@ -170,6 +279,15 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();
+    mockConfigNumTimes = 2;
+    mockTimesDisponiveis = [
+      { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
+      { id: "t2", nome: "Time B", logo: "/logo2.png", cor: "#222" },
+      { id: "t3", nome: "Time C", logo: "/logo3.png", cor: "#333" },
+      { id: "t4", nome: "Time D", logo: "/logo4.png", cor: "#444" },
+      { id: "t5", nome: "Time E", logo: "/logo5.png", cor: "#555" },
+      { id: "t6", nome: "Time F", logo: "/logo6.png", cor: "#666" },
+    ];
   });
 
   afterEach(() => {
@@ -177,11 +295,25 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     (global.fetch as jest.Mock).mockClear();
   });
 
+  async function avancarAteParticipantes() {
+    fireEvent.click(await screen.findByText(/Definir config/i));
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Times do Dia/i }));
+
+    const continuarParticipantes = await screen.findByRole("button", {
+      name: /Continuar para Participantes/i,
+    });
+    expect(continuarParticipantes).toBeDisabled();
+    fireEvent.click(await screen.findByRole("button", { name: /Selecionar times manualmente/i }));
+    await waitFor(() => expect(continuarParticipantes).not.toBeDisabled());
+    fireEvent.click(continuarParticipantes);
+  }
+
   it("gera times, tabela e permite publicar apos o sorteio", async () => {
     jest.useFakeTimers();
     render(<SorteioInteligenteAdmin />);
 
-    fireEvent.click(await screen.findByText(/Definir config/i));
+    await avancarAteParticipantes();
     fireEvent.click(screen.getByText(/Carregar participantes/i));
 
     await act(async () => {
@@ -190,6 +322,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     });
 
     expect(await screen.findByTestId("times-gerados")).toHaveTextContent(/times gerados/);
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Publicação/i }));
     expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(/jogos criados/);
 
     const publicar = await screen.findByRole("button", { name: /Publicar Times do Dia/i });
@@ -197,11 +330,54 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     expect(await screen.findByText(/Times Publicados!/i)).toBeInTheDocument();
   });
 
+  it("bloqueia o avancar quando a configuracao exige mais times do que existem cadastrados", async () => {
+    mockConfigNumTimes = 4;
+    mockTimesDisponiveis = mockTimesDisponiveis.slice(0, 3);
+    render(<SorteioInteligenteAdmin />);
+
+    fireEvent.click(await screen.findByText(/Definir config/i));
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Times do Dia/i }));
+
+    expect(
+      await screen.findByText(/Você configurou 4 times, mas existem apenas 3 disponíveis/i)
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continuar para Participantes/i })).toBeDisabled();
+  });
+
+  it("nao seleciona times automaticamente em um fluxo novo", async () => {
+    mockConfigNumTimes = 4;
+    render(<SorteioInteligenteAdmin />);
+
+    fireEvent.click(await screen.findByText(/Definir config/i));
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Times do Dia/i }));
+
+    expect(await screen.findByText(/0 times selecionados/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Continuar para Participantes/i })).toBeDisabled();
+
+    fireEvent.click(await screen.findByRole("button", { name: /Selecionar times manualmente/i }));
+
+    await waitFor(() =>
+      expect(screen.getAllByText(/4 times selecionados/i).length).toBeGreaterThan(0)
+    );
+    expect(
+      screen.getByRole("button", { name: /Continuar para Participantes/i })
+    ).not.toBeDisabled();
+  });
+
+  it("bloqueia o sorteio enquanto participantes e goleiros nao estiverem completos", async () => {
+    render(<SorteioInteligenteAdmin />);
+
+    await avancarAteParticipantes();
+
+    expect(screen.getByText(/Pendências antes do sorteio/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sortear Times/i })).toBeDisabled();
+  });
+
   it("restaura o rascunho gerado apos remontagem da tela", async () => {
     jest.useFakeTimers();
     const { unmount } = render(<SorteioInteligenteAdmin />);
 
-    fireEvent.click(await screen.findByText(/Definir config/i));
+    await avancarAteParticipantes();
     fireEvent.click(screen.getByText(/Carregar participantes/i));
 
     await act(async () => {
@@ -220,7 +396,127 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     render(<SorteioInteligenteAdmin />);
 
     expect(await screen.findByTestId("times-gerados")).toHaveTextContent(/times gerados/);
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Publicação/i }));
     expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(/jogos criados/);
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Times Sorteados/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Participantes/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Times do Dia/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Configuração/i }));
     expect(await screen.findByText(/Definir config 19:30/i)).toBeInTheDocument();
+  });
+
+  it("restaura Times Sorteados quando o rascunho tem fingerprint compativel", async () => {
+    window.sessionStorage.setItem(draftStorageKey, JSON.stringify(buildDraft()));
+
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByText(/Etapa 4 de 5/i)).toBeInTheDocument();
+    expect(screen.getByTestId("times-gerados")).toHaveTextContent("2 times gerados");
+    fireEvent.click(screen.getByRole("button", { name: /Continuar para Publicação/i }));
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent("1 jogos criados");
+  });
+
+  it("preserva 28 participantes e 4 goleiros ao voltar para Participantes apos restaurar a Etapa 4", async () => {
+    const timesSelecionados = ["t1", "t2", "t3", "t4"];
+    const timesSorteados = timesSelecionados.map((timeId, index) => ({
+      id: timeId,
+      nome: `Time ${index + 1}`,
+      jogadores: mockParticipantes28.slice(index * 7, index * 7 + 7),
+      coeficienteTotal: 10,
+    }));
+    window.sessionStorage.setItem(
+      draftStorageKey,
+      JSON.stringify(
+        buildDraft({
+          config: mockConfig4x7,
+          participantes: mockParticipantes28,
+          timesSelecionados,
+          times: timesSorteados,
+          resultadoFingerprint: buildTestFingerprint(
+            mockConfig4x7,
+            timesSelecionados,
+            mockParticipantes28
+          ),
+        })
+      )
+    );
+
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByText(/Etapa 4 de 5/i)).toBeInTheDocument();
+    const composicaoRestaurada = screen.getByTestId("times-gerados-composicao").textContent;
+
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Participantes/i }));
+
+    expect(await screen.findByText(/Etapa 3 de 5/i)).toBeInTheDocument();
+    expect(screen.getByText("28 / 28")).toBeInTheDocument();
+    expect(screen.getByText("4 / 4")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sortear Times/i })).not.toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: /Continuar para Times Sorteados/i }));
+
+    expect(await screen.findByText(/Etapa 4 de 5/i)).toBeInTheDocument();
+    expect(screen.getByTestId("times-gerados-composicao").textContent).toBe(composicaoRestaurada);
+  });
+
+  it("nao restaura resultado derivado de draft antigo sem fingerprint", async () => {
+    const draftAntigo = buildDraft();
+    delete (draftAntigo as any).resultadoFingerprint;
+    window.sessionStorage.setItem(draftStorageKey, JSON.stringify(draftAntigo));
+
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByText(/Etapa 3 de 5/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("times-gerados")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Sortear Times/i })).toBeInTheDocument();
+  });
+
+  it("invalida resultado derivado quando o fingerprint nao corresponde as entradas", async () => {
+    window.sessionStorage.setItem(
+      draftStorageKey,
+      JSON.stringify(
+        buildDraft({
+          config: mockConfig4x7,
+          participantes: mockParticipantes28,
+          timesSelecionados: ["t1", "t2", "t3", "t4"],
+          resultadoFingerprint: buildTestFingerprint(
+            mockConfig,
+            ["t1", "t2"],
+            [...mockParticipantesValidos, mockParticipantes[4]]
+          ),
+        })
+      )
+    );
+
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByText(/Etapa 3 de 5/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("times-gerados")).not.toBeInTheDocument();
+    expect(screen.getByText("28 / 28")).toBeInTheDocument();
+    expect(screen.getByText("4 / 4")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "✓" })[0]);
+    expect(await screen.findByText(/Definir config 19:30/i)).toBeInTheDocument();
+  });
+
+  it("limpa resultado derivado quando uma entrada relevante muda apos o sorteio", async () => {
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await avancarAteParticipantes();
+    fireEvent.click(screen.getByText(/Carregar participantes/i));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
+      jest.runAllTimers();
+    });
+
+    expect(await screen.findByTestId("times-gerados")).toHaveTextContent(/times gerados/);
+
+    mockConfigNumTimes = 4;
+    fireEvent.click(screen.getAllByRole("button", { name: "✓" })[0]);
+    fireEvent.click(await screen.findByText(/Definir config 19:30/i));
+
+    await waitFor(() => expect(screen.queryByTestId("times-gerados")).not.toBeInTheDocument());
+    expect(screen.getByText(/Etapa 1 de 5/i)).toBeInTheDocument();
   });
 });

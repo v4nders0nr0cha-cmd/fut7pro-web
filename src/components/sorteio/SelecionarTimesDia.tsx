@@ -42,10 +42,11 @@ export default function SelecionarTimesDia({
     }
   }
 
-  const limiteAlvo = Math.min(maxTimes, timesDisponiveis.length || maxTimes);
+  const limiteAlvo = maxTimes;
   const limiteExato = limiteAlvo > 0 ? timesSelecionados.length === limiteAlvo : false;
   const limiteAtingido = limiteAlvo > 0 ? timesSelecionados.length >= limiteAlvo : true;
   const faltamTimes = !loading && timesDisponiveis.length < maxTimes;
+  const quantidadeFaltante = Math.max(0, maxTimes - timesDisponiveis.length);
   const disableAll = disabled || loading;
 
   // Mensagem de aviso dinâmico
@@ -53,12 +54,10 @@ export default function SelecionarTimesDia({
     ? "Carregando times do racha..."
     : !hasTimes
       ? "Cadastre os times do racha para habilitar o sorteio."
-      : !limiteExato
-        ? `Selecione exatamente ${limiteAlvo} time${limiteAlvo > 1 ? "s" : ""} para o racha.`
-        : faltamTimes
-          ? `Pronto! Voce selecionou os ${timesDisponiveis.length} time${
-              timesDisponiveis.length === 1 ? "" : "s"
-            } disponiveis.`
+      : faltamTimes
+        ? `Voce configurou ${maxTimes} times, mas existem apenas ${timesDisponiveis.length} disponiveis. Cadastre mais ${quantidadeFaltante} time${quantidadeFaltante > 1 ? "s" : ""} para continuar.`
+        : !limiteExato
+          ? `Selecione exatamente ${limiteAlvo} time${limiteAlvo > 1 ? "s" : ""} para o racha.`
           : `Pronto! Voce selecionou todos os times necessarios.`;
 
   // Estado interno para shake, sincroniza quando o pai muda a prop "shake"
@@ -176,11 +175,16 @@ export default function SelecionarTimesDia({
       <div
         className={`text-xs mt-2 text-center font-bold transition-all duration-200 
                     ${avisoShake ? "animate-shake" : ""} 
-                    ${limiteExato ? "text-green-500" : "text-red-400"}
+                    ${limiteExato && !faltamTimes ? "text-green-500" : "text-red-400"}
                 `}
       >
         {avisoTimes}
       </div>
+      {faltamTimes && (
+        <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-center text-xs font-semibold text-red-200">
+          Cadastre mais {quantidadeFaltante} time{quantidadeFaltante > 1 ? "s" : ""} para continuar.
+        </div>
+      )}
     </div>
   );
 }

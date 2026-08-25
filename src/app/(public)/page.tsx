@@ -610,7 +610,7 @@ export default function Home({
           <ChampionBanner
             image={championBanner.image}
             date={championDate}
-            players={championPlayers.slice(0, 7)}
+            players={championPlayers}
             href={publicHref("/partidas/times-do-dia")}
             isImageLoading={championBanner.isImageLoading}
           />

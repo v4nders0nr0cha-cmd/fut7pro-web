@@ -287,6 +287,67 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     expect(resultado.times[0].jogadores.length).toBeGreaterThan(0);
   });
 
+  it.each([
+    [2, 11, 22],
+    [4, 11, 44],
+    [6, 11, 66],
+  ])(
+    "sortearTimesInteligente distribui %i times com %i jogadores por time",
+    (quantidadeTimes, jogadoresPorTime, totalParticipantes) => {
+      const participantes: Participante[] = Array.from({ length: totalParticipantes }, (_, idx) => {
+        const numero = idx + 1;
+        const posicao =
+          numero <= quantidadeTimes
+            ? "GOL"
+            : numero % 3 === 0
+              ? "ZAG"
+              : numero % 3 === 1
+                ? "MEI"
+                : "ATA";
+
+        return {
+          id: `p-${numero}`,
+          nome: `Participante ${numero}`,
+          slug: `participante-${numero}`,
+          foto: `/p-${numero}.png`,
+          posicao,
+          rankingPontos: numero % 12,
+          vitorias: numero % 5,
+          gols: numero % 7,
+          assistencias: numero % 4,
+          estrelas: {
+            id: `e-${numero}`,
+            rachaId: "r-fin",
+            jogadorId: `p-${numero}`,
+            estrelas: (numero % 5) + 1,
+            atualizadoEm: "",
+          },
+          mensalista: true,
+          partidas: 10,
+        };
+      });
+      const times = Array.from({ length: quantidadeTimes }, (_, idx) => ({
+        id: `t-${idx + 1}`,
+        nome: `Time ${idx + 1}`,
+        logo: `/t-${idx + 1}.png`,
+      }));
+
+      const resultado = sortearTimesInteligente(participantes, times, {
+        partidasTotais: 20,
+        sorteiosPublicadosNaTemporada: 9,
+        historico: [],
+        jogadoresPorTime,
+      });
+
+      expect(resultado.times).toHaveLength(quantidadeTimes);
+      expect(resultado.reservas).toHaveLength(0);
+      resultado.times.forEach((time) => {
+        expect(time.jogadores).toHaveLength(jogadoresPorTime);
+        expect(time.jogadores.filter((jogador) => jogador.posicao === "GOL")).toHaveLength(1);
+      });
+    }
+  );
+
   it("getCoeficiente prioriza ranking quando ha mais partidas", () => {
     const base: Participante = {
       id: "p10",
@@ -378,6 +439,154 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
         jogadoresPorTime: 2,
       })
     ).toThrow(/Goleiros insuficientes/);
+  });
+
+  it("sortearTimesInteligente ignora posicao secundaria GOL para jogador de linha", () => {
+    const base = {
+      rankingPontos: 1,
+      vitorias: 1,
+      assistencias: 0,
+      gols: 0,
+      mensalista: true,
+      partidas: 1,
+    };
+    const estrela = (id: string) => ({
+      id: "",
+      rachaId: "r-fin",
+      jogadorId: id,
+      estrelas: 3,
+      atualizadoEm: "",
+      atualizadoPor: "",
+    });
+    const participantes: Participante[] = [
+      {
+        id: "g30",
+        nome: "Goleiro Real",
+        slug: "g30",
+        foto: "/g30",
+        posicao: "GOL",
+        estrelas: estrela("g30"),
+        ...base,
+      },
+      {
+        id: "z30",
+        nome: "Zagueiro com secundaria gol",
+        slug: "z30",
+        foto: "/z30",
+        posicao: "ZAG",
+        posicaoSecundaria: "GOL",
+        estrelas: estrela("z30"),
+        ...base,
+      },
+      {
+        id: "m30",
+        nome: "Meia",
+        slug: "m30",
+        foto: "/m30",
+        posicao: "MEI",
+        estrelas: estrela("m30"),
+        ...base,
+      },
+    ];
+    const times = [
+      { id: "t1", nome: "Time A", logo: "/l1" },
+      { id: "t2", nome: "Time B", logo: "/l2" },
+    ];
+
+    expect(() =>
+      sortearTimesInteligente(participantes, times, {
+        partidasTotais: 2,
+        sorteiosPublicadosNaTemporada: 9,
+        historico: [],
+        jogadoresPorTime: 2,
+      })
+    ).toThrow(/Goleiros insuficientes: 1\/2/);
+  });
+
+  it("sortearTimesInteligente nao redistribui goleiro principal como jogador de linha", () => {
+    const base = {
+      rankingPontos: 1,
+      vitorias: 1,
+      assistencias: 0,
+      gols: 0,
+      mensalista: true,
+      partidas: 1,
+    };
+    const estrela = (id: string, estrelas = 3) => ({
+      id: "",
+      rachaId: "r-fin",
+      jogadorId: id,
+      estrelas,
+      atualizadoEm: "",
+      atualizadoPor: "",
+    });
+    const participantes: Participante[] = [
+      {
+        id: "g40",
+        nome: "Goleiro A",
+        slug: "g40",
+        foto: "/g40",
+        posicao: "GOL",
+        estrelas: estrela("g40", 5),
+        ...base,
+      },
+      {
+        id: "g41",
+        nome: "Goleiro B",
+        slug: "g41",
+        foto: "/g41",
+        posicao: "GOL",
+        estrelas: estrela("g41", 4),
+        ...base,
+      },
+      {
+        id: "g42",
+        nome: "Goleiro excedente",
+        slug: "g42",
+        foto: "/g42",
+        posicao: "GOL",
+        posicaoSecundaria: "ZAG",
+        estrelas: estrela("g42", 1),
+        ...base,
+      },
+      {
+        id: "z40",
+        nome: "Zagueiro",
+        slug: "z40",
+        foto: "/z40",
+        posicao: "ZAG",
+        estrelas: estrela("z40"),
+        ...base,
+      },
+      {
+        id: "m40",
+        nome: "Meia",
+        slug: "m40",
+        foto: "/m40",
+        posicao: "MEI",
+        estrelas: estrela("m40"),
+        ...base,
+      },
+    ];
+    const times = [
+      { id: "t1", nome: "Time A", logo: "/l1" },
+      { id: "t2", nome: "Time B", logo: "/l2" },
+    ];
+
+    const resultado = sortearTimesInteligente(participantes, times, {
+      partidasTotais: 2,
+      sorteiosPublicadosNaTemporada: 9,
+      historico: [],
+      jogadoresPorTime: 2,
+    });
+
+    expect(resultado.reservas.map((jogador) => jogador.id)).toContain("g42");
+    expect(
+      resultado.times.flatMap((time) => time.jogadores).map((jogador) => jogador.id)
+    ).not.toContain("g42");
+    resultado.times.forEach((time) => {
+      expect(time.jogadores.filter((jogador) => jogador.posicao === "GOL")).toHaveLength(1);
+    });
   });
 
   it("anti-panelinha evita repetir jogador com colega recente", () => {

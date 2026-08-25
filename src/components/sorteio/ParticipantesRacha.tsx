@@ -200,6 +200,8 @@ export default function ParticipantesRacha({
 
   const maxParticipantes =
     config?.numTimes && config?.jogadoresPorTime ? config.numTimes * config.jogadoresPorTime : 0;
+  const slotsGoleiro = config?.numTimes ?? 0;
+  const slotsLinha = Math.max(0, maxParticipantes - slotsGoleiro);
 
   const buildDefaultEstrelas = useCallback(
     (jogadorId: string): AvaliacaoEstrela => ({
@@ -379,17 +381,25 @@ export default function ParticipantesRacha({
 
   const mensalistasParaDia = useMemo(() => {
     if (agendaIdsSelecionados.length === 0) return [];
-    return participantesDisponiveis.filter((p) => {
+    const elegiveis = participantesDisponiveis.filter((p) => {
+      if (p.isBot) return false;
       if (!p.mensalista) return false;
       const agendaIdsAtleta = resolveAgendaIds(p.id);
       if (agendaIdsAtleta.length === 0) return false;
       return agendaIdsAtleta.some((id) => agendaIdsSelecionadosSet.has(id));
     });
+    if (maxParticipantes <= 0) return elegiveis;
+    const goleiros = elegiveis.filter((p) => p.posicao === "GOL").slice(0, slotsGoleiro);
+    const linha = elegiveis.filter((p) => p.posicao !== "GOL").slice(0, slotsLinha);
+    return [...goleiros, ...linha];
   }, [
     agendaIdsSelecionados.length,
     agendaIdsSelecionadosSet,
+    maxParticipantes,
     participantesDisponiveis,
     resolveAgendaIds,
+    slotsGoleiro,
+    slotsLinha,
   ]);
 
   const seedKey = useMemo(() => {
@@ -415,9 +425,14 @@ export default function ParticipantesRacha({
   // Inicializa mensalistas conforme dia/horario da partida
   useEffect(() => {
     if (!config || participantesDisponiveis.length === 0) return;
+    if (participantes.length > 0 && seededKey !== seedKey) {
+      setSeededKey(seedKey);
+      setSeededIdsKey("");
+      return;
+    }
     const isAutoSelection = seededIdsKey && participantesKey === seededIdsKey;
     const shouldReseedForData = isAutoSelection && mensalistasKey !== participantesKey;
-    const shouldSeed = participantes.length === 0 || seededKey !== seedKey || shouldReseedForData;
+    const shouldSeed = seededKey !== seedKey || shouldReseedForData;
     if (!shouldSeed) return;
     setParticipantes(mensalistasParaDia);
     setSeededKey(seedKey);
@@ -435,7 +450,29 @@ export default function ParticipantesRacha({
     setParticipantes,
   ]);
 
-  function handleSelect(id: string) {
+  useEffect(() => {
+    if (!maxParticipantes) return;
+    let goleiros = 0;
+    let linha = 0;
+    const reconciliados = participantes.filter((participante) => {
+      if (participante.posicao === "GOL") {
+        if (goleiros >= slotsGoleiro) return false;
+        goleiros += 1;
+        return true;
+      }
+      if (linha >= slotsLinha) return false;
+      linha += 1;
+      return true;
+    });
+    const mudou =
+      reconciliados.length !== participantes.length ||
+      reconciliados.some((participante, index) => participante.id !== participantes[index]?.id);
+    if (mudou) {
+      setParticipantes(reconciliados);
+    }
+  }, [maxParticipantes, participantes, setParticipantes, slotsGoleiro, slotsLinha]);
+
+  function handleSelect(id: string, tipoSlot?: "goleiro" | "linha") {
     const isSelected = participantes.some((p) => p.id === id);
     const participanteOriginal = participantesDisponiveis.find((p) => p.id === id);
 
@@ -444,6 +481,13 @@ export default function ParticipantesRacha({
     } else {
       if (maxParticipantes && participantes.length >= maxParticipantes) return;
       if (participanteOriginal) {
+        const isGoleiro = participanteOriginal.posicao === "GOL";
+        if (tipoSlot === "goleiro" && !isGoleiro) return;
+        if (tipoSlot === "linha" && isGoleiro) return;
+        const goleirosAtuais = participantes.filter((p) => p.posicao === "GOL").length;
+        const linhaAtual = participantes.length - goleirosAtuais;
+        if (isGoleiro && goleirosAtuais >= slotsGoleiro) return;
+        if (!isGoleiro && linhaAtual >= slotsLinha) return;
         setParticipantes([
           ...participantes,
           {
@@ -464,36 +508,31 @@ export default function ParticipantesRacha({
     (p) => !participantes.some((sel) => sel.id === p.id)
   );
 
-  const vagasRestantes = Math.max(0, maxParticipantes - participantes.length);
-  const goleirosNecessarios = config?.numTimes ?? 0;
-
   const {
     mensalistasSelecionados,
     goleirosSelecionados,
     outrosSelecionados,
     goleirosSelecionadosTotal,
+    linhaSelecionadosTotal,
   } = useMemo(() => {
-    const mensalistas = listSelecionados.filter((p) => p.mensalista);
+    const goleiros = listSelecionados.filter((p) => p.posicao === "GOL");
+    const linha = listSelecionados.filter((p) => p.posicao !== "GOL");
+    const mensalistas = linha.filter((p) => p.mensalista);
     const mensalistasIds = new Set(mensalistas.map((p) => p.id));
-    const goleiros = listSelecionados.filter(
-      (p) => p.posicao === "GOL" && !mensalistasIds.has(p.id)
-    );
-    const outros = listSelecionados.filter((p) => !mensalistasIds.has(p.id) && p.posicao !== "GOL");
-    const totalGoleiros = listSelecionados.filter((p) => p.posicao === "GOL").length;
+    const outros = linha.filter((p) => !mensalistasIds.has(p.id));
     return {
       mensalistasSelecionados: mensalistas,
       goleirosSelecionados: goleiros,
       outrosSelecionados: outros,
-      goleirosSelecionadosTotal: totalGoleiros,
+      goleirosSelecionadosTotal: goleiros.length,
+      linhaSelecionadosTotal: linha.length,
     };
   }, [listSelecionados]);
 
-  const goleiroSlots = Math.max(
-    0,
-    Math.min(vagasRestantes, goleirosNecessarios - goleirosSelecionadosTotal)
-  );
-  const vagasGerais = Math.max(0, vagasRestantes - goleiroSlots);
+  const goleiroSlots = Math.max(0, slotsGoleiro - goleirosSelecionadosTotal);
+  const vagasGerais = Math.max(0, slotsLinha - linhaSelecionadosTotal);
   const goleirosDisponiveis = atletasDisponiveis.filter((p) => p.posicao === "GOL");
+  const atletasLinhaDisponiveis = atletasDisponiveis.filter((p) => p.posicao !== "GOL");
 
   function CardJogador({
     jogador,
@@ -623,7 +662,7 @@ export default function ParticipantesRacha({
               <PopoverSelecionarJogador
                 open={isOpen}
                 onClose={() => setPopoverKey(null)}
-                onSelecionar={handleSelect}
+                onSelecionar={(id) => handleSelect(id, "goleiro")}
                 listaDisponivel={goleirosDisponiveis}
               />
             </div>
@@ -658,8 +697,8 @@ export default function ParticipantesRacha({
               <PopoverSelecionarJogador
                 open={isOpen}
                 onClose={() => setPopoverKey(null)}
-                onSelecionar={handleSelect}
-                listaDisponivel={atletasDisponiveis}
+                onSelecionar={(id) => handleSelect(id, "linha")}
+                listaDisponivel={atletasLinhaDisponiveis}
               />
             </div>
           );
