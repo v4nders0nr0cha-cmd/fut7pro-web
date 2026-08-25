@@ -348,27 +348,45 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     }
   );
 
-  it("getCoeficiente prioriza ranking quando ha mais partidas", () => {
+  it("getCoeficiente combina nivel, ranking e Campeoes do Dia apos a calibracao", () => {
     const base: Participante = {
       id: "p10",
       nome: "Tester",
       slug: "tester",
       foto: "/f.png",
       posicao: "ATA",
-      rankingPontos: 3,
+      rankingPontos: 50,
+      campeoesDoDia: 2,
       vitorias: 6,
       gols: 4,
       assistencias: 2,
       mensalista: false,
-      estrelas: { id: "s1", rachaId: "r-fin", jogadorId: "p10", estrelas: 3, atualizadoEm: "" },
+      estrelas: {
+        id: "s1",
+        rachaId: "r-fin",
+        jogadorId: "p10",
+        estrelas: 3,
+        nivelFinal: 3,
+        atualizadoEm: "",
+      },
       partidas: 12,
     };
-    const coefRankingBaixo = getCoeficiente({ ...base, rankingPontos: 1 }, { partidasTotais: 12 });
-    const coefRankingAlto = getCoeficiente({ ...base, rankingPontos: 8 }, { partidasTotais: 12 });
+    const contexto = {
+      partidasTotais: 12,
+      sorteiosPublicadosNaTemporada: 9,
+      maiorPontuacaoDaTemporada: 100,
+      maiorNumeroCampeoesDaTemporada: 4,
+    };
+    const coefRankingBaixo = getCoeficiente(
+      { ...base, rankingPontos: 10, campeoesDoDia: 0 },
+      contexto
+    );
+    const coefRankingAlto = getCoeficiente(base, contexto);
+    expect(coefRankingAlto).toBeCloseTo(2.75);
     expect(coefRankingAlto).toBeGreaterThan(coefRankingBaixo);
   });
 
-  it("getCoeficiente ignora ranking nos primeiros sorteios", () => {
+  it("getCoeficiente usa somente nivelFinal nos 8 primeiros sorteios publicados", () => {
     const base: Participante = {
       id: "p11",
       nome: "Tester 2",
@@ -376,17 +394,71 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
       foto: "/f2.png",
       posicao: "ATA",
       rankingPontos: 3,
+      campeoesDoDia: 3,
       vitorias: 2,
       gols: 1,
       assistencias: 0,
       mensalista: false,
-      estrelas: { id: "s2", rachaId: "r-fin", jogadorId: "p11", estrelas: 4, atualizadoEm: "" },
+      estrelas: {
+        id: "s2",
+        rachaId: "r-fin",
+        jogadorId: "p11",
+        estrelas: 4,
+        nivelFinal: 4,
+        atualizadoEm: "",
+      },
       partidas: 12,
     };
-    const contexto = { partidasTotais: 12, sorteiosPublicadosNaTemporada: 3 };
-    const coefRankingBaixo = getCoeficiente({ ...base, rankingPontos: 1 }, contexto);
-    const coefRankingAlto = getCoeficiente({ ...base, rankingPontos: 10 }, contexto);
+    const contexto = {
+      partidasTotais: 12,
+      sorteiosPublicadosNaTemporada: 8,
+      maiorPontuacaoDaTemporada: 100,
+      maiorNumeroCampeoesDaTemporada: 10,
+    };
+    const coefRankingBaixo = getCoeficiente(
+      { ...base, rankingPontos: 1, campeoesDoDia: 0 },
+      contexto
+    );
+    const coefRankingAlto = getCoeficiente(
+      { ...base, rankingPontos: 10, campeoesDoDia: 10 },
+      contexto
+    );
+    expect(coefRankingAlto).toBe(4);
     expect(coefRankingAlto).toBe(coefRankingBaixo);
+  });
+
+  it("getCoeficiente nao da vantagem de ranking ou Campeoes do Dia para BOT", () => {
+    const bot: Participante = {
+      id: "bot-gol",
+      nome: "Goleiro BOT",
+      slug: "goleiro-bot",
+      foto: "/bot.png",
+      posicao: "GOL",
+      rankingPontos: 100,
+      campeoesDoDia: 20,
+      vitorias: 0,
+      gols: 0,
+      assistencias: 0,
+      mensalista: false,
+      isBot: true,
+      estrelas: {
+        id: "s-bot",
+        rachaId: "r-fin",
+        jogadorId: "bot-gol",
+        estrelas: 5,
+        nivelFinal: 5,
+        atualizadoEm: "",
+      },
+    };
+
+    expect(
+      getCoeficiente(bot, {
+        partidasTotais: 20,
+        sorteiosPublicadosNaTemporada: 9,
+        maiorPontuacaoDaTemporada: 100,
+        maiorNumeroCampeoesDaTemporada: 20,
+      })
+    ).toBe(0);
   });
 
   it("sortearTimesInteligente exige goleiro por time", () => {

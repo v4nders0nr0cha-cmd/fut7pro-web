@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { act } from "react-dom/test-utils";
-import SorteioInteligenteAdmin from "../SorteioInteligenteAdmin";
+import SorteioInteligenteAdmin, { buildSorteioInputsFingerprint } from "../SorteioInteligenteAdmin";
 import type { Participante } from "@/types/sorteio";
 
 const mockParticipantes: Participante[] = [
@@ -76,6 +76,100 @@ const mockParticipantes: Participante[] = [
   },
 ];
 
+describe("buildSorteioInputsFingerprint", () => {
+  const config = {
+    duracaoRachaMin: 90,
+    duracaoPartidaMin: 6,
+    numTimes: 2,
+    jogadoresPorTime: 7,
+    dataPartida: "2026-08-25",
+    horaPartida: "19:00",
+  };
+  const baseParticipantes = mockParticipantes.slice(0, 4);
+
+  it("muda quando metricas, posicao ou historico anti-panelinha mudam", () => {
+    const base = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados: ["t1", "t2"],
+      timesDoDia: [
+        { id: "t1", nome: "Time 1", logo: "/t1.png" },
+        { id: "t2", nome: "Time 2", logo: "/t2.png" },
+      ],
+      participantes: baseParticipantes,
+      totalTemporada: 9,
+      historico: [
+        {
+          id: "h1",
+          createdAt: "2026-08-20T00:00:00.000Z",
+          times: [{ id: "t1", jogadoresIds: ["p1", "p2"] }],
+        },
+      ],
+    });
+
+    const comRankingAlterado = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados: ["t1", "t2"],
+      timesDoDia: [
+        { id: "t1", nome: "Time 1", logo: "/t1.png" },
+        { id: "t2", nome: "Time 2", logo: "/t2.png" },
+      ],
+      participantes: baseParticipantes.map((participante) =>
+        participante.id === "p2" ? { ...participante, rankingPontos: 999 } : participante
+      ),
+      totalTemporada: 9,
+      historico: [
+        {
+          id: "h1",
+          createdAt: "2026-08-20T00:00:00.000Z",
+          times: [{ id: "t1", jogadoresIds: ["p1", "p2"] }],
+        },
+      ],
+    });
+
+    const comCampeoesAlterado = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados: ["t1", "t2"],
+      timesDoDia: [
+        { id: "t1", nome: "Time 1", logo: "/t1.png" },
+        { id: "t2", nome: "Time 2", logo: "/t2.png" },
+      ],
+      participantes: baseParticipantes.map((participante) =>
+        participante.id === "p2" ? { ...participante, campeoesDoDia: 4 } : participante
+      ),
+      totalTemporada: 9,
+      historico: [
+        {
+          id: "h1",
+          createdAt: "2026-08-20T00:00:00.000Z",
+          times: [{ id: "t1", jogadoresIds: ["p1", "p2"] }],
+        },
+      ],
+    });
+
+    const comHistoricoAlterado = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados: ["t1", "t2"],
+      timesDoDia: [
+        { id: "t1", nome: "Time 1", logo: "/t1.png" },
+        { id: "t2", nome: "Time 2", logo: "/t2.png" },
+      ],
+      participantes: baseParticipantes,
+      totalTemporada: 9,
+      historico: [
+        {
+          id: "h2",
+          createdAt: "2026-08-21T00:00:00.000Z",
+          times: [{ id: "t2", jogadoresIds: ["p1", "p3"] }],
+        },
+      ],
+    });
+
+    expect(comRankingAlterado).not.toBe(base);
+    expect(comCampeoesAlterado).not.toBe(base);
+    expect(comHistoricoAlterado).not.toBe(base);
+  });
+});
+
 const mockParticipantesValidos = mockParticipantes.slice(0, 4);
 const mockParticipantes28: Participante[] = Array.from({ length: 28 }, (_, index) => {
   const numero = index + 1;
@@ -116,22 +210,26 @@ const mockConfig4x7 = {
   numTimes: 4,
   jogadoresPorTime: 7,
 };
+const mockTimesBase = [
+  { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
+  { id: "t2", nome: "Time B", logo: "/logo2.png", cor: "#222" },
+  { id: "t3", nome: "Time C", logo: "/logo3.png", cor: "#333" },
+  { id: "t4", nome: "Time D", logo: "/logo4.png", cor: "#444" },
+  { id: "t5", nome: "Time E", logo: "/logo5.png", cor: "#555" },
+  { id: "t6", nome: "Time F", logo: "/logo6.png", cor: "#666" },
+];
 const buildTestFingerprint = (
   config = mockConfig,
   timesSelecionados = ["t1", "t2"],
   participantes = mockParticipantesValidos
 ) =>
-  JSON.stringify({
-    config: {
-      numTimes: config.numTimes,
-      jogadoresPorTime: config.jogadoresPorTime,
-      duracaoRachaMin: config.duracaoRachaMin,
-      duracaoPartidaMin: config.duracaoPartidaMin,
-      dataPartida: config.dataPartida,
-      horaPartida: config.horaPartida,
-    },
-    timesSelecionados: [...timesSelecionados].sort(),
-    participantes: participantes.map((participante) => participante.id).sort(),
+  buildSorteioInputsFingerprint({
+    config,
+    timesSelecionados,
+    timesDoDia: mockTimesDisponiveis.filter((time) => timesSelecionados.includes(time.id)),
+    participantes,
+    totalTemporada: 9,
+    historico: [],
   });
 const buildDraft = (overrides: Record<string, unknown> = {}) => ({
   version: 1,
@@ -164,14 +262,7 @@ const buildDraft = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 let mockConfigNumTimes = 2;
-let mockTimesDisponiveis = [
-  { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
-  { id: "t2", nome: "Time B", logo: "/logo2.png", cor: "#222" },
-  { id: "t3", nome: "Time C", logo: "/logo3.png", cor: "#333" },
-  { id: "t4", nome: "Time D", logo: "/logo4.png", cor: "#444" },
-  { id: "t5", nome: "Time E", logo: "/logo5.png", cor: "#555" },
-  { id: "t6", nome: "Time F", logo: "/logo6.png", cor: "#666" },
-];
+let mockTimesDisponiveis = [...mockTimesBase];
 
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ rachaId: "racha-1", tenantSlug: "racha-1" }),
@@ -279,6 +370,12 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();
+    (global.fetch as jest.Mock).mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: async () => ({}),
+      } as any)
+    );
     mockConfigNumTimes = 2;
     mockTimesDisponiveis = [
       { id: "t1", nome: "Time A", logo: "/logo1.png", cor: "#111" },
@@ -328,6 +425,40 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     const publicar = await screen.findByRole("button", { name: /Publicar Times do Dia/i });
     fireEvent.click(publicar);
     expect(await screen.findByText(/Times Publicados!/i)).toBeInTheDocument();
+  });
+
+  it("mostra erro de publicacao na Etapa 5 sem perder o resultado", async () => {
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url === "/api/sorteio/publicar") {
+        return Promise.resolve({
+          ok: false,
+          text: async () => JSON.stringify({ error: "Backend indisponivel" }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({}),
+      });
+    });
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await avancarAteParticipantes();
+    fireEvent.click(screen.getByText(/Carregar participantes/i));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
+      jest.runAllTimers();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Publicação/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /Publicar Times do Dia/i }));
+
+    expect(
+      await screen.findByText(/Não foi possível publicar os Times do Dia/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Backend indisponivel/i)).toBeInTheDocument();
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(/jogos criados/);
   });
 
   it("bloqueia o avancar quando a configuracao exige mais times do que existem cadastrados", async () => {

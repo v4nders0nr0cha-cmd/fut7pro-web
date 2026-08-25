@@ -46,7 +46,7 @@ describe("TimesGerados", () => {
     );
 
     expect(screen.getByText(/Fase de calibração: 7 de 8 sorteios publicados/i)).toBeInTheDocument();
-    expect(screen.getByText(/ranking também passa a calibrar os times/i)).toBeInTheDocument();
+    expect(screen.getByText(/A partir do 9º sorteio publicado/i)).toBeInTheDocument();
   });
 
   it("mostra mensagem avancada quando a calibracao esta concluida", () => {
@@ -55,11 +55,11 @@ describe("TimesGerados", () => {
         times={times}
         jogadoresPorTime={1}
         rankingEmCalibracao={false}
-        sorteiosPublicadosNaTemporada={8}
+        sorteiosPublicadosNaTemporada={9}
       />
     );
 
     expect(screen.getByText(/Sorteio Inteligente completo/i)).toBeInTheDocument();
-    expect(screen.getByText(/estrelas, ranking, posição dos atletas/i)).toBeInTheDocument();
+    expect(screen.getByText(/nível final, ranking geral, Campeões do Dia/i)).toBeInTheDocument();
   });
 });

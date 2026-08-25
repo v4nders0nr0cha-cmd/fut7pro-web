@@ -45,7 +45,7 @@ export default function TimesGerados({
   const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(() => cloneTimes(times));
   const [editando, setEditando] = useState(false);
   const calibracaoConcluida =
-    typeof sorteiosPublicadosNaTemporada === "number" && sorteiosPublicadosNaTemporada >= 8;
+    typeof sorteiosPublicadosNaTemporada === "number" && sorteiosPublicadosNaTemporada > 8;
 
   useEffect(() => {
     if (!editando) {
@@ -245,18 +245,19 @@ export default function TimesGerados({
             </h3>
             <p>
               Este grupo ainda não completou os 8 sorteios publicados necessários para concluir a
-              calibração inicial. Durante esta fase, o balanceamento utiliza as estrelas definidas
-              pelo administrador. Depois disso, o ranking também passa a calibrar os times conforme
-              as regras do Sorteio Inteligente.
+              fase inicial de calibração. Durante esta fase, o balanceamento utiliza o nível final
+              definido pelo administrador. A partir do 9º sorteio publicado, ranking geral, Campeões
+              do Dia e histórico recente passam a participar do balanceamento conforme as regras do
+              Sorteio Inteligente.
             </p>
           </>
         ) : calibracaoConcluida ? (
           <>
             <h3 className="mb-1 font-bold text-emerald-300">Sorteio Inteligente completo</h3>
             <p>
-              O balanceamento considerou estrelas, ranking, posição dos atletas e histórico recente
-              dos sorteios, incluindo o recurso anti-panelinha. Revise os times antes de continuar e
-              use Editar Times se precisar fazer ajustes manuais.
+              O balanceamento considerou nível final, ranking geral, Campeões do Dia, posição dos
+              atletas e histórico recente dos sorteios, incluindo o recurso anti-panelinha. Revise
+              os times antes de continuar e use Editar Times se precisar fazer ajustes manuais.
             </p>
           </>
         ) : (

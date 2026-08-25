@@ -10,7 +10,12 @@ import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
 import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
+import type {
+  Participante,
+  ConfiguracaoRacha,
+  TimeSorteado,
+  SorteioHistoricoItem,
+} from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
@@ -41,11 +46,50 @@ type SorteioDraft = {
 
 const buildDraftStorageKey = (scope: string) => `${SORTEIO_DRAFT_STORAGE_PREFIX}:${scope}`;
 
-const buildSorteioInputsFingerprint = (
-  config: ConfiguracaoRacha | null,
-  timesSelecionados: string[],
-  participantes: Participante[]
-) => {
+function normalizeSecondaryForFingerprint(participante: Participante) {
+  const secundaria = participante.posicaoSecundaria;
+  if (!secundaria || secundaria === "GOL" || secundaria === participante.posicao) return null;
+  if (participante.posicao === "GOL") return null;
+  return secundaria;
+}
+
+function buildHistoricoFingerprint(historico: SorteioHistoricoItem[]) {
+  return historico.map((item, index) => ({
+    index,
+    id: item.id,
+    createdAt: item.createdAt,
+    dataPartida: item.dataPartida ?? null,
+    horaPartida: item.horaPartida ?? null,
+    times: item.times
+      .map((time) => ({
+        id: time.id ?? null,
+        jogadoresIds: [...(time.jogadoresIds ?? [])].sort(),
+      }))
+      .sort((a, b) => String(a.id || "").localeCompare(String(b.id || ""))),
+  }));
+}
+
+export const buildSorteioInputsFingerprint = ({
+  config,
+  timesSelecionados,
+  timesDoDia,
+  participantes,
+  totalTemporada,
+  historico,
+}: {
+  config: ConfiguracaoRacha | null;
+  timesSelecionados: string[];
+  timesDoDia?: Array<{
+    id: string;
+    nome?: string | null;
+    name?: string | null;
+    logo?: string | null;
+    logoUrl?: string | null;
+  }>;
+  participantes: Participante[];
+  totalTemporada?: number | null;
+  historico?: SorteioHistoricoItem[];
+}) => {
   if (!config) return null;
   return JSON.stringify({
     config: {
@@ -57,7 +101,25 @@ const buildSorteioInputsFingerprint = (
       horaPartida: config.horaPartida ?? "",
     },
     timesSelecionados: [...timesSelecionados].sort(),
-    participantes: participantes.map((participante) => participante.id).sort(),
+    timesDoDiaOrdem: (timesDoDia ?? []).map((time) => ({
+      id: time.id,
+      nome: time.nome ?? time.name ?? "",
+      logo: time.logo ?? time.logoUrl ?? "",
+    })),
+    participantesOrdem: participantes.map((participante) => participante.id),
+    participantes: [...participantes]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((participante) => ({
+        id: participante.id,
+        posicaoPrincipal: participante.posicao,
+        posicaoSecundaria: normalizeSecondaryForFingerprint(participante),
+        isBot: Boolean(participante.isBot),
+        nivelFinal: participante.estrelas?.nivelFinal ?? participante.estrelas?.estrelas ?? 0,
+        rankingPontos: participante.rankingPontos || 0,
+        campeoesDoDia: participante.campeoesDoDia || 0,
+      })),
+    totalTemporada: totalTemporada ?? null,
+    historicoAntiPanelinha: buildHistoricoFingerprint(historico ?? []),
   });
 };
 
@@ -381,8 +443,9 @@ export default function SorteioInteligenteAdmin() {
   const participantesNecessarios = maxTimes * (config?.jogadoresPorTime || 0);
   const selectedStep = SORTEIO_STEPS.find((step) => step.id === currentStep) ?? SORTEIO_STEPS[0];
   const currentStepIndex = SORTEIO_STEPS.findIndex((step) => step.id === currentStep);
-  const timesSelecionadosDetalhes = timesDisponiveis.filter((time) =>
-    timesSelecionados.includes(time.id)
+  const timesSelecionadosDetalhes = useMemo(
+    () => timesDisponiveis.filter((time) => timesSelecionados.includes(time.id)),
+    [timesDisponiveis, timesSelecionados]
   );
   const limiteTimesConfirmacao = maxTimes;
   const faltamTimesCadastrados = !loadingTimes && timesDisponiveis.length < maxTimes;
@@ -421,10 +484,18 @@ export default function SorteioInteligenteAdmin() {
       ? `Remova ${sobramLinha} jogador${sobramLinha === 1 ? "" : "es"} de linha excedente${sobramLinha === 1 ? "" : "s"}.`
       : null,
   ].filter(Boolean) as string[];
-  const rankingEmCalibracao = typeof totalTemporada === "number" && totalTemporada < 8;
+  const rankingEmCalibracao = typeof totalTemporada !== "number" || totalTemporada <= 8;
   const sorteioInputsFingerprint = useMemo(
-    () => buildSorteioInputsFingerprint(config, timesSelecionados, participantes),
-    [config, participantes, timesSelecionados]
+    () =>
+      buildSorteioInputsFingerprint({
+        config,
+        timesSelecionados,
+        timesDoDia: timesSelecionadosDetalhes,
+        participantes,
+        totalTemporada,
+        historico,
+      }),
+    [config, historico, participantes, timesSelecionados, timesSelecionadosDetalhes, totalTemporada]
   );
   const draftStep: SorteioDraftStep =
     times.length > 0 ? "SORTEADO" : configConfirmada ? "PARTICIPANTES" : "CONFIG";
@@ -511,15 +582,7 @@ export default function SorteioInteligenteAdmin() {
     setParticipantes(draft.participantes ?? []);
     setTimesSelecionados(draft.timesSelecionados ?? []);
     const draftFingerprint = draft.resultadoFingerprint ?? null;
-    const restoredInputsFingerprint = buildSorteioInputsFingerprint(
-      draft.config ?? null,
-      draft.timesSelecionados ?? [],
-      draft.participantes ?? []
-    );
-    const canRestoreResultado =
-      Boolean(draftFingerprint) &&
-      draftFingerprint === restoredInputsFingerprint &&
-      (draft.times ?? []).length > 0;
+    const canRestoreResultado = Boolean(draftFingerprint) && (draft.times ?? []).length > 0;
     setTimes(canRestoreResultado ? (draft.times ?? []) : []);
     setTabelaJogos(canRestoreResultado ? (draft.tabelaJogos ?? []) : []);
     setConfigConfirmada(Boolean(draft.configConfirmada));
@@ -610,6 +673,7 @@ export default function SorteioInteligenteAdmin() {
 
   useEffect(() => {
     if (!draftHydrated || times.length === 0) return;
+    if (loadingHistorico) return;
     if (resultadoFingerprint && resultadoFingerprint === sorteioInputsFingerprint) return;
 
     setTimes([]);
@@ -627,6 +691,7 @@ export default function SorteioInteligenteAdmin() {
     configConfirmada,
     currentStep,
     draftHydrated,
+    loadingHistorico,
     mudarEtapa,
     resultadoFingerprint,
     sorteioInputsFingerprint,
@@ -755,7 +820,14 @@ export default function SorteioInteligenteAdmin() {
 
     const [timesGerados] = await Promise.all([balanceamentoPromise, delayMinimo]);
 
-    const fingerprint = buildSorteioInputsFingerprint(config, timesSelecionados, participantes);
+    const fingerprint = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados,
+      timesDoDia: timesNormalizados,
+      participantes,
+      totalTemporada,
+      historico,
+    });
     setResultadoFingerprint(fingerprint);
     setTimes(timesGerados);
     setPublicado(false);
@@ -824,7 +896,7 @@ export default function SorteioInteligenteAdmin() {
     const dataPartida = config.dataPartida?.trim();
     const horaPartida = config.horaPartida?.trim();
     if (!dataPartida || !horaPartida) {
-      setSorteioErro("Defina a data e o horario da partida antes de publicar.");
+      setSorteioErro("Defina a data e o horário da partida antes de publicar.");
       return;
     }
 
@@ -879,7 +951,9 @@ export default function SorteioInteligenteAdmin() {
       console.error("Falha ao publicar sorteio", error);
       const message =
         error instanceof Error && error.message ? error.message : "Falha ao publicar times do dia.";
-      setSorteioErro(message);
+      setSorteioErro(
+        `Não foi possível publicar os Times do Dia. Seus dados foram preservados. Tente novamente.${message ? ` Detalhe: ${message}` : ""}`
+      );
     } finally {
       setPublicando(false);
     }
@@ -1208,9 +1282,9 @@ export default function SorteioInteligenteAdmin() {
                     {!loadingHistorico && !erroHistorico && (
                       <>
                         Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
-                        {totalTemporada < 8
-                          ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas as estrelas do admin."
-                          : "Ranking ativo no balanceamento."}
+                        {totalTemporada <= 8
+                          ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas o nível final definido pelo admin."
+                          : "Nível final, ranking, Campeões do Dia e anti-panelinha ativos no balanceamento."}
                       </>
                     )}
                   </>
@@ -1218,7 +1292,7 @@ export default function SorteioInteligenteAdmin() {
               </div>
             )}
 
-            {sorteioErro && (
+            {sorteioErro && currentStep !== "PUBLICACAO" && (
               <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg text-center mt-3">
                 {sorteioErro}
               </div>
@@ -1364,6 +1438,12 @@ export default function SorteioInteligenteAdmin() {
                     ))}
                   </div>
                 </div>
+
+                {sorteioErro && (
+                  <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    {sorteioErro}
+                  </div>
+                )}
 
                 {tabelaJogos.length > 0 && (
                   <div className="mb-5 rounded-lg border border-zinc-700 bg-[#181818] p-4">

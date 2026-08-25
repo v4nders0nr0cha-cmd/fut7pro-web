@@ -157,6 +157,7 @@ export default function ParticipantesRacha({
   const [seededKey, setSeededKey] = useState<string | null>(null);
   const [seededIdsKey, setSeededIdsKey] = useState("");
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
+  const [campeoesMap, setCampeoesMap] = useState<Record<string, number>>({});
 
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId, { includeBots: true });
   const { items: agendaItems } = useRachaAgenda();
@@ -223,6 +224,8 @@ export default function ParticipantesRacha({
     const needsUpdate = participantes.some((p) => {
       const next = estrelasGlobais[p.id] ?? buildDefaultEstrelas(p.id);
       const atual = p.estrelas;
+      const nextRanking = rankingMap[p.id] ?? 0;
+      const nextCampeoes = campeoesMap[p.id] ?? 0;
       return (
         !atual ||
         atual.id !== next.id ||
@@ -230,7 +233,9 @@ export default function ParticipantesRacha({
         atual.nivelFinal !== next.nivelFinal ||
         atual.habilidade !== next.habilidade ||
         atual.fisico !== next.fisico ||
-        atual.atualizadoEm !== next.atualizadoEm
+        atual.atualizadoEm !== next.atualizadoEm ||
+        p.rankingPontos !== nextRanking ||
+        (p.campeoesDoDia ?? 0) !== nextCampeoes
       );
     });
 
@@ -240,15 +245,26 @@ export default function ParticipantesRacha({
       participantes.map((p) => ({
         ...p,
         estrelas: estrelasGlobais[p.id] ?? buildDefaultEstrelas(p.id),
+        rankingPontos: rankingMap[p.id] ?? 0,
+        campeoesDoDia: campeoesMap[p.id] ?? 0,
       }))
     );
-  }, [rachaId, participantes, estrelasGlobais, buildDefaultEstrelas, setParticipantes]);
+  }, [
+    rachaId,
+    participantes,
+    estrelasGlobais,
+    buildDefaultEstrelas,
+    rankingMap,
+    campeoesMap,
+    setParticipantes,
+  ]);
 
   // Busca ranking publico para enriquecer o balanceamento
   useEffect(() => {
     const slug = tenantSlug?.trim();
     if (!slug) return;
-    fetch(`/api/public/${slug}/player-rankings?type=geral`)
+    const year = dataSelecionada?.getFullYear() ?? new Date().getFullYear();
+    fetch(`/api/public/${slug}/player-rankings?type=geral&period=year&year=${year}&limit=10000`)
       .then((res) => res.json())
       .then((data) => {
         const map: Record<string, number> = {};
@@ -261,6 +277,25 @@ export default function ParticipantesRacha({
       })
       .catch(() => {
         // silencioso: ranking não é obrigatório
+      });
+  }, [dataSelecionada, tenantSlug]);
+
+  useEffect(() => {
+    if (!tenantSlug?.trim()) return;
+    fetch("/api/admin/jogadores/ranking-campeoes-do-dia?periodo=ano")
+      .then((res) => res.json())
+      .then((data) => {
+        const map: Record<string, number> = {};
+        (data?.rankings || []).forEach((item: any) => {
+          const athleteId = item.athleteId || item.playerId || item.id;
+          if (athleteId) {
+            map[athleteId] = Number(item.campeoesDoDia || 0);
+          }
+        });
+        setCampeoesMap(map);
+      })
+      .catch(() => {
+        // silencioso: campeoes do dia nao sao obrigatorios na fase inicial
       });
   }, [tenantSlug]);
 
@@ -278,6 +313,7 @@ export default function ParticipantesRacha({
           ? normalizarPosicao(jogador.posicaoSecundaria)
           : undefined,
         rankingPontos: rankingMap[jogador.id] ?? 0,
+        campeoesDoDia: campeoesMap[jogador.id] ?? 0,
         vitorias: 0,
         assistencias: 0,
         gols: 0,
@@ -290,7 +326,7 @@ export default function ParticipantesRacha({
     const bots = mapped.filter((item) => item.isBot);
     const reais = mapped.filter((item) => !item.isBot);
     return [...reais, ...bots];
-  }, [jogadores, estrelasGlobais, buildDefaultEstrelas, rankingMap]);
+  }, [jogadores, estrelasGlobais, buildDefaultEstrelas, rankingMap, campeoesMap]);
 
   const agendaIdsPorDia = useMemo(() => {
     const map: Record<number, string[]> = {};
@@ -404,9 +440,8 @@ export default function ParticipantesRacha({
 
   const seedKey = useMemo(() => {
     const weekday = selectedWeekday === null ? "na" : String(selectedWeekday);
-    const hora = horaPartida ? horaPartida.slice(0, 5) : "";
-    return `${competenciaAno}-${competenciaMes}-${weekday}-${hora}`;
-  }, [competenciaAno, competenciaMes, horaPartida, selectedWeekday]);
+    return `${competenciaAno}-${competenciaMes}-${weekday}`;
+  }, [competenciaAno, competenciaMes, selectedWeekday]);
 
   const participantesKey = useMemo(() => {
     return participantes
@@ -425,12 +460,12 @@ export default function ParticipantesRacha({
   // Inicializa mensalistas conforme dia/horario da partida
   useEffect(() => {
     if (!config || participantesDisponiveis.length === 0) return;
-    if (participantes.length > 0 && seededKey !== seedKey) {
+    const isAutoSelection = Boolean(seededIdsKey) && participantesKey === seededIdsKey;
+    if (participantes.length > 0 && seededKey !== seedKey && !isAutoSelection) {
       setSeededKey(seedKey);
       setSeededIdsKey("");
       return;
     }
-    const isAutoSelection = seededIdsKey && participantesKey === seededIdsKey;
     const shouldReseedForData = isAutoSelection && mensalistasKey !== participantesKey;
     const shouldSeed = seededKey !== seedKey || shouldReseedForData;
     if (!shouldSeed) return;
