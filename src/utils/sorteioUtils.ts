@@ -15,6 +15,8 @@ export interface JogoConfronto {
 export type CoeficienteContext = {
   partidasTotais: number;
   sorteiosPublicadosNaTemporada?: number | null;
+  maiorPontuacaoDaTemporada?: number;
+  maiorNumeroCampeoesDaTemporada?: number;
 };
 
 export type SorteioResultado = {
@@ -28,46 +30,29 @@ const PESO_COEFICIENTE = 1;
 const PESO_PANELINHA = 1.2;
 const DECAY_PANELINHA = 0.85;
 
-function resolvePesos(partidasTotais: number, sorteiosPublicadosNaTemporada?: number | null) {
-  if (typeof sorteiosPublicadosNaTemporada === "number" && sorteiosPublicadosNaTemporada < 8) {
-    return { pesoEstrelas: 1, pesoRanking: 0 };
-  }
-
-  let pesoEstrelas = 0.8;
-  let pesoRanking = 0.2;
-
-  if (partidasTotais >= 10) {
-    pesoEstrelas = 0.4;
-    pesoRanking = 0.6;
-  } else if (partidasTotais >= 6) {
-    pesoEstrelas = 0.5;
-    pesoRanking = 0.5;
-  } else if (partidasTotais >= 3) {
-    pesoEstrelas = 0.6;
-    pesoRanking = 0.4;
-  }
-
-  return { pesoEstrelas, pesoRanking };
+function isFaseInicialCalibracao(sorteiosPublicadosNaTemporada?: number | null) {
+  return typeof sorteiosPublicadosNaTemporada !== "number" || sorteiosPublicadosNaTemporada <= 8;
 }
 
-// Coeficiente geral: pesos dinamicos (estrelas x ranking), ajustado pelo numero de partidas
+// Coeficiente oficial: nivelFinal durante a calibracao; depois nivel, ranking e Campeoes do Dia.
 export function getCoeficiente(j: Participante, contextoOuPartidas: number | CoeficienteContext) {
   if (j.isBot) return 0;
   const contexto =
     typeof contextoOuPartidas === "number"
       ? { partidasTotais: contextoOuPartidas }
       : contextoOuPartidas;
-  const partidasTotais = contexto?.partidasTotais ?? 0;
-  const { pesoEstrelas, pesoRanking } = resolvePesos(
-    partidasTotais,
-    contexto?.sorteiosPublicadosNaTemporada
-  );
+  const nivelScore = j.estrelas?.nivelFinal ?? j.estrelas?.estrelas ?? 0;
 
-  const mediaVitorias = j.partidas && j.partidas > 0 ? j.vitorias / j.partidas : 0;
-  const coefEstrelas = j.estrelas?.estrelas ?? 0;
-  const coefRanking = j.rankingPontos * 0.5 + mediaVitorias * 0.5;
+  if (isFaseInicialCalibracao(contexto?.sorteiosPublicadosNaTemporada)) {
+    return nivelScore;
+  }
 
-  return pesoEstrelas * coefEstrelas + pesoRanking * coefRanking;
+  const maiorPontuacao = contexto?.maiorPontuacaoDaTemporada ?? 0;
+  const maiorCampeoes = contexto?.maiorNumeroCampeoesDaTemporada ?? 0;
+  const rankingScore = maiorPontuacao > 0 ? 5 * ((j.rankingPontos || 0) / maiorPontuacao) : 0;
+  const campeaoScore = maiorCampeoes > 0 ? 5 * ((j.campeoesDoDia || 0) / maiorCampeoes) : 0;
+
+  return nivelScore * 0.5 + rankingScore * 0.3 + campeaoScore * 0.2;
 }
 
 function gerarOrdemSerpentina(quantidadeTimes: number, totalJogadores: number) {
@@ -171,9 +156,13 @@ function ajustarPosicoesSecundarias(
   const avisos: string[] = [];
   const base: ParticipanteAjustado[] = participantes.map((p) => {
     const posicaoPrincipal = p.posicao;
+    const secundariaInformada = p.posicaoSecundaria;
     const posicaoSecundaria =
-      p.posicaoSecundaria && p.posicaoSecundaria !== posicaoPrincipal
-        ? p.posicaoSecundaria
+      posicaoPrincipal !== "GOL" &&
+      secundariaInformada &&
+      secundariaInformada !== "GOL" &&
+      secundariaInformada !== posicaoPrincipal
+        ? secundariaInformada
         : undefined;
     return {
       ...p,
@@ -184,27 +173,16 @@ function ajustarPosicoesSecundarias(
   });
 
   const primaryGoalies = base.filter((p) => p.posicaoPrincipal === "GOL");
-  const secondaryGoalies = base.filter(
-    (p) => p.posicaoPrincipal !== "GOL" && p.posicaoSecundaria === "GOL"
-  );
-  const totalGoalkeepers = primaryGoalies.length + secondaryGoalies.length;
-  if (totalGoalkeepers < quantidadeTimes) {
+  if (primaryGoalies.length < quantidadeTimes) {
     throw new Error(
-      `Goleiros insuficientes: ${totalGoalkeepers}/${quantidadeTimes}. Selecione mais goleiros.`
+      `Goleiros insuficientes: ${primaryGoalies.length}/${quantidadeTimes}. Selecione mais goleiros.`
     );
   }
 
   const sortByCoefDesc = <T extends Participante>(list: T[]) =>
     [...list].sort((a, b) => getCoeficiente(b, contexto) - getCoeficiente(a, contexto));
   const primarySorted = sortByCoefDesc(primaryGoalies);
-  const secondarySorted = sortByCoefDesc(secondaryGoalies);
-
   const goleirosSelecionados = primarySorted.slice(0, quantidadeTimes);
-  const faltando = quantidadeTimes - goleirosSelecionados.length;
-  if (faltando > 0) {
-    avisos.push("Goleiros insuficientes na posicao principal. Secundarias foram usadas.");
-    goleirosSelecionados.push(...secondarySorted.slice(0, faltando));
-  }
 
   const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
 
@@ -212,8 +190,8 @@ function ajustarPosicoesSecundarias(
     if (goleirosIds.has(p.id)) {
       return { ...p, posicao: "GOL" };
     }
-    if (p.posicaoPrincipal === "GOL" && p.posicaoSecundaria && p.posicaoSecundaria !== "GOL") {
-      return { ...p, posicao: p.posicaoSecundaria };
+    if (p.posicaoPrincipal === "GOL") {
+      return { ...p, posicao: "GOL" };
     }
     return { ...p, posicao: p.posicaoPrincipal };
   });
@@ -359,6 +337,14 @@ export function sortearTimesInteligente(
   const coefContext: CoeficienteContext = {
     partidasTotais: contexto.partidasTotais,
     sorteiosPublicadosNaTemporada: contexto.sorteiosPublicadosNaTemporada,
+    maiorPontuacaoDaTemporada: Math.max(
+      0,
+      ...participantes.map((p) => Number(p.rankingPontos || 0))
+    ),
+    maiorNumeroCampeoesDaTemporada: Math.max(
+      0,
+      ...participantes.map((p) => Number(p.campeoesDoDia || 0))
+    ),
   };
   const pairWeights = buildPairWeights(contexto.historico ?? []);
   const ajustes = ajustarPosicoesSecundarias(participantes, quantidadeTimes, coefContext);

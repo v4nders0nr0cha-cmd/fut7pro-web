@@ -26,6 +26,7 @@ const menu = [
       { label: "Nível dos Atletas", href: "/admin/jogadores/nivel-dos-atletas" },
       { label: "Gestão de Mensalistas", href: "/admin/jogadores/mensalistas" },
       { label: "Ranking Assiduidade", href: "/admin/jogadores/ranking-assiduidade" },
+      { label: "Ranking Campeões do Dia", href: "/admin/jogadores/ranking-campeoes-do-dia" },
     ],
   },
   {

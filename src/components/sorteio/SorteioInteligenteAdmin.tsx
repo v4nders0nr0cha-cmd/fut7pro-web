@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import ConfiguracoesRacha from "./ConfiguracoesRacha";
 import SelecionarTimesDia from "./SelecionarTimesDia";
@@ -9,7 +10,12 @@ import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
 import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
-import type { Participante, ConfiguracaoRacha, TimeSorteado } from "@/types/sorteio";
+import type {
+  Participante,
+  ConfiguracaoRacha,
+  TimeSorteado,
+  SorteioHistoricoItem,
+} from "@/types/sorteio";
 import type { Time, JogoConfronto } from "@/utils/sorteioUtils";
 import { useRacha } from "@/context/RachaContext";
 import { useTimes } from "@/hooks/useTimes";
@@ -25,6 +31,7 @@ type SorteioDraft = {
   version: 1;
   updatedAt: string;
   step: SorteioDraftStep;
+  resultadoFingerprint?: string | null;
   config: ConfiguracaoRacha | null;
   participantes: Participante[];
   timesSelecionados: string[];
@@ -38,6 +45,83 @@ type SorteioDraft = {
 };
 
 const buildDraftStorageKey = (scope: string) => `${SORTEIO_DRAFT_STORAGE_PREFIX}:${scope}`;
+
+function normalizeSecondaryForFingerprint(participante: Participante) {
+  const secundaria = participante.posicaoSecundaria;
+  if (!secundaria || secundaria === "GOL" || secundaria === participante.posicao) return null;
+  if (participante.posicao === "GOL") return null;
+  return secundaria;
+}
+
+function buildHistoricoFingerprint(historico: SorteioHistoricoItem[]) {
+  return historico.map((item, index) => ({
+    index,
+    id: item.id,
+    createdAt: item.createdAt,
+    dataPartida: item.dataPartida ?? null,
+    horaPartida: item.horaPartida ?? null,
+    times: item.times
+      .map((time) => ({
+        id: time.id ?? null,
+        jogadoresIds: [...(time.jogadoresIds ?? [])].sort(),
+      }))
+      .sort((a, b) => String(a.id || "").localeCompare(String(b.id || ""))),
+  }));
+}
+
+export const buildSorteioInputsFingerprint = ({
+  config,
+  timesSelecionados,
+  timesDoDia,
+  participantes,
+  totalTemporada,
+  historico,
+}: {
+  config: ConfiguracaoRacha | null;
+  timesSelecionados: string[];
+  timesDoDia?: Array<{
+    id: string;
+    nome?: string | null;
+    name?: string | null;
+    logo?: string | null;
+    logoUrl?: string | null;
+  }>;
+  participantes: Participante[];
+  totalTemporada?: number | null;
+  historico?: SorteioHistoricoItem[];
+}) => {
+  if (!config) return null;
+  return JSON.stringify({
+    config: {
+      numTimes: config.numTimes,
+      jogadoresPorTime: config.jogadoresPorTime,
+      duracaoRachaMin: config.duracaoRachaMin,
+      duracaoPartidaMin: config.duracaoPartidaMin,
+      dataPartida: config.dataPartida ?? "",
+      horaPartida: config.horaPartida ?? "",
+    },
+    timesSelecionados: [...timesSelecionados].sort(),
+    timesDoDiaOrdem: (timesDoDia ?? []).map((time) => ({
+      id: time.id,
+      nome: time.nome ?? time.name ?? "",
+      logo: time.logo ?? time.logoUrl ?? "",
+    })),
+    participantesOrdem: participantes.map((participante) => participante.id),
+    participantes: [...participantes]
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((participante) => ({
+        id: participante.id,
+        posicaoPrincipal: participante.posicao,
+        posicaoSecundaria: normalizeSecondaryForFingerprint(participante),
+        isBot: Boolean(participante.isBot),
+        nivelFinal: participante.estrelas?.nivelFinal ?? participante.estrelas?.estrelas ?? 0,
+        rankingPontos: participante.rankingPontos || 0,
+        campeoesDoDia: participante.campeoesDoDia || 0,
+      })),
+    totalTemporada: totalTemporada ?? null,
+    historicoAntiPanelinha: buildHistoricoFingerprint(historico ?? []),
+  });
+};
 
 const parseDraft = (raw: string | null): SorteioDraft | null => {
   if (!raw) return null;
@@ -163,6 +247,149 @@ function LoaderBolaFutebol() {
   );
 }
 
+type VisualStepStatus = "complete" | "active" | "pending";
+type SorteioStep = "CONFIGURACAO" | "TIMES" | "PARTICIPANTES" | "TIMES_SORTEADOS" | "PUBLICACAO";
+
+const SORTEIO_STEPS: Array<{
+  id: SorteioStep;
+  numero: number;
+  titulo: string;
+  subtitulo: string;
+}> = [
+  {
+    id: "CONFIGURACAO",
+    numero: 1,
+    titulo: "Configuração",
+    subtitulo: "Defina a configuração do sorteio",
+  },
+  {
+    id: "TIMES",
+    numero: 2,
+    titulo: "Times do Dia",
+    subtitulo: "Escolha os times do dia",
+  },
+  {
+    id: "PARTICIPANTES",
+    numero: 3,
+    titulo: "Participantes",
+    subtitulo: "Selecione os participantes",
+  },
+  {
+    id: "TIMES_SORTEADOS",
+    numero: 4,
+    titulo: "Times Sorteados",
+    subtitulo: "Revise os times sorteados",
+  },
+  {
+    id: "PUBLICACAO",
+    numero: 5,
+    titulo: "Publicação",
+    subtitulo: "Revise os confrontos e publique",
+  },
+];
+
+function SorteioStepper({
+  currentStep,
+  statuses,
+  onStepClick,
+}: {
+  currentStep: SorteioStep;
+  statuses: Record<SorteioStep, VisualStepStatus>;
+  onStepClick: (step: SorteioStep) => void;
+}) {
+  return (
+    <nav aria-label="Etapas do Sorteio Inteligente" className="w-full overflow-x-auto pb-2">
+      <ol className="grid min-w-[560px] grid-cols-5 items-start gap-0 md:min-w-0">
+        {SORTEIO_STEPS.map((step, index) => {
+          const status = statuses[step.id];
+          const isComplete = status === "complete";
+          const isActive = currentStep === step.id;
+          const canClick = isComplete || isActive;
+
+          return (
+            <li key={step.id} className="relative flex flex-col items-center gap-2 text-center">
+              {index > 0 && (
+                <span
+                  className={`absolute left-0 top-4 h-0.5 w-1/2 ${
+                    status === "pending" ? "bg-zinc-700" : "bg-yellow-400"
+                  }`}
+                  aria-hidden
+                />
+              )}
+              {index < SORTEIO_STEPS.length - 1 && (
+                <span
+                  className={`absolute right-0 top-4 h-0.5 w-1/2 ${
+                    isComplete ? "bg-yellow-400" : "bg-zinc-700"
+                  }`}
+                  aria-hidden
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => canClick && onStepClick(step.id)}
+                disabled={!canClick}
+                aria-current={isActive ? "step" : undefined}
+                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border text-sm font-bold md:h-9 md:w-9 ${
+                  isComplete
+                    ? "border-yellow-400 bg-yellow-400 text-black"
+                    : isActive
+                      ? "border-yellow-400 bg-yellow-400 text-black"
+                      : "border-zinc-600 bg-[#161616] text-zinc-300"
+                } ${canClick ? "cursor-pointer" : "cursor-not-allowed"}`}
+              >
+                {isComplete ? "✓" : step.numero}
+              </button>
+              <span
+                className={`max-w-[104px] text-[11px] font-semibold leading-tight md:max-w-none md:text-sm ${
+                  isActive ? "text-yellow-300" : isComplete ? "text-zinc-100" : "text-zinc-400"
+                }`}
+              >
+                {step.titulo}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function StepPanel({
+  step,
+  currentStep,
+  children,
+}: {
+  step: SorteioStep;
+  currentStep: SorteioStep;
+  children: ReactNode;
+}) {
+  const isVisible = currentStep === step;
+
+  return (
+    <section className={isVisible ? "block" : "hidden"} aria-hidden={!isVisible}>
+      {children}
+    </section>
+  );
+}
+
+function EtapaSorteio({ status, children }: { status: VisualStepStatus; children: ReactNode }) {
+  const isActive = status === "active";
+
+  return (
+    <section
+      className={`rounded-xl border p-4 md:p-6 shadow-sm transition-all ${
+        isActive
+          ? "border-yellow-400 bg-[#202020]"
+          : status === "complete"
+            ? "border-emerald-500/40 bg-[#1b211d]"
+            : "border-zinc-800 bg-[#181818]"
+      }`}
+    >
+      {children}
+    </section>
+  );
+}
+
 export default function SorteioInteligenteAdmin() {
   const { rachaId, tenantSlug } = useRacha();
   const resolvedSlug = tenantSlug?.trim() || "";
@@ -197,8 +424,12 @@ export default function SorteioInteligenteAdmin() {
   const [sorteioAvisos, setSorteioAvisos] = useState<string[]>([]);
   const [sorteioReservas, setSorteioReservas] = useState<Participante[]>([]);
   const [sorteioErro, setSorteioErro] = useState<string | null>(null);
+  const [edicaoTimes, setEdicaoTimes] = useState({ editando: false, invalido: false });
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftRestoredAtLabel, setDraftRestoredAtLabel] = useState<string | null>(null);
+  const [resultadoFingerprint, setResultadoFingerprint] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<SorteioStep>("CONFIGURACAO");
+  const sorteioTopRef = useRef<HTMLDivElement | null>(null);
   const persistDraftTimerRef = useRef<number | null>(null);
   const lastDraftJsonRef = useRef<string>("");
   const draftStorageKey = useMemo(
@@ -209,6 +440,63 @@ export default function SorteioInteligenteAdmin() {
 
   // Quantidade máxima de times do config
   const maxTimes = config?.numTimes || 2;
+  const participantesNecessarios = maxTimes * (config?.jogadoresPorTime || 0);
+  const selectedStep = SORTEIO_STEPS.find((step) => step.id === currentStep) ?? SORTEIO_STEPS[0];
+  const currentStepIndex = SORTEIO_STEPS.findIndex((step) => step.id === currentStep);
+  const timesSelecionadosDetalhes = useMemo(
+    () => timesDisponiveis.filter((time) => timesSelecionados.includes(time.id)),
+    [timesDisponiveis, timesSelecionados]
+  );
+  const limiteTimesConfirmacao = maxTimes;
+  const faltamTimesCadastrados = !loadingTimes && timesDisponiveis.length < maxTimes;
+  const timesFaltantes = Math.max(0, maxTimes - timesDisponiveis.length);
+  const timesDoDiaValidos =
+    Boolean(config) && !faltamTimesCadastrados && timesSelecionados.length === maxTimes;
+  const goleirosSelecionadosTotal = participantes.filter((p) => p.posicao === "GOL").length;
+  const linhaNecessarios = Math.max(0, participantesNecessarios - maxTimes);
+  const linhaSelecionadosTotal = participantes.filter((p) => p.posicao !== "GOL").length;
+  const vagasRestantesParticipantes = Math.max(0, participantesNecessarios - participantes.length);
+  const faltamGoleiros = Math.max(0, maxTimes - goleirosSelecionadosTotal);
+  const sobramGoleiros = Math.max(0, goleirosSelecionadosTotal - maxTimes);
+  const faltamLinha = Math.max(0, linhaNecessarios - linhaSelecionadosTotal);
+  const sobramLinha = Math.max(0, linhaSelecionadosTotal - linhaNecessarios);
+  const participantesCompletos =
+    Boolean(config) &&
+    participantes.length === participantesNecessarios &&
+    goleirosSelecionadosTotal === maxTimes &&
+    linhaSelecionadosTotal === linhaNecessarios;
+  const pendenciasParticipantes = [
+    participantes.length !== participantesNecessarios
+      ? participantes.length < participantesNecessarios
+        ? `Selecione mais ${vagasRestantesParticipantes} participante${vagasRestantesParticipantes === 1 ? "" : "s"}.`
+        : `Remova ${participantes.length - participantesNecessarios} participante${participantes.length - participantesNecessarios === 1 ? "" : "s"} para respeitar o limite.`
+      : null,
+    faltamGoleiros > 0
+      ? `Preencha mais ${faltamGoleiros} slot${faltamGoleiros === 1 ? "" : "s"} de goleiro com goleiro real ou BOT.`
+      : null,
+    sobramGoleiros > 0
+      ? `Remova ${sobramGoleiros} goleiro${sobramGoleiros === 1 ? "" : "s"} excedente${sobramGoleiros === 1 ? "" : "s"}.`
+      : null,
+    faltamLinha > 0
+      ? `Preencha mais ${faltamLinha} vaga${faltamLinha === 1 ? "" : "s"} de jogador de linha.`
+      : null,
+    sobramLinha > 0
+      ? `Remova ${sobramLinha} jogador${sobramLinha === 1 ? "" : "es"} de linha excedente${sobramLinha === 1 ? "" : "s"}.`
+      : null,
+  ].filter(Boolean) as string[];
+  const rankingEmCalibracao = typeof totalTemporada !== "number" || totalTemporada <= 8;
+  const sorteioInputsFingerprint = useMemo(
+    () =>
+      buildSorteioInputsFingerprint({
+        config,
+        timesSelecionados,
+        timesDoDia: timesSelecionadosDetalhes,
+        participantes,
+        totalTemporada,
+        historico,
+      }),
+    [config, historico, participantes, timesSelecionados, timesSelecionadosDetalhes, totalTemporada]
+  );
   const draftStep: SorteioDraftStep =
     times.length > 0 ? "SORTEADO" : configConfirmada ? "PARTICIPANTES" : "CONFIG";
   const hasDirtyDraftState = Boolean(
@@ -218,6 +506,39 @@ export default function SorteioInteligenteAdmin() {
       timesSelecionados.length > 0 ||
       times.length > 0 ||
       tabelaJogos.length > 0
+  );
+  const stepStatuses = useMemo<Record<SorteioStep, VisualStepStatus>>(() => {
+    return SORTEIO_STEPS.reduce(
+      (acc, step, index) => {
+        acc[step.id] =
+          index < currentStepIndex ? "complete" : step.id === currentStep ? "active" : "pending";
+        return acc;
+      },
+      {} as Record<SorteioStep, VisualStepStatus>
+    );
+  }, [currentStep, currentStepIndex]);
+
+  const limparFeedbackSorteio = useCallback(() => {
+    setSorteioErro(null);
+    setSorteioAvisos([]);
+    setSorteioReservas([]);
+  }, []);
+
+  const mudarEtapa = useCallback(
+    (step: SorteioStep, options?: { limparFeedback?: boolean }) => {
+      if (options?.limparFeedback) {
+        limparFeedbackSorteio();
+      }
+      setCurrentStep(step);
+      if (typeof window !== "undefined") {
+        window.requestAnimationFrame(() => {
+          if (typeof sorteioTopRef.current?.scrollIntoView === "function") {
+            sorteioTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
+    },
+    [limparFeedbackSorteio]
   );
 
   useEffect(() => {
@@ -260,13 +581,23 @@ export default function SorteioInteligenteAdmin() {
     setConfig(draft.config ?? null);
     setParticipantes(draft.participantes ?? []);
     setTimesSelecionados(draft.timesSelecionados ?? []);
-    setTimes(draft.times ?? []);
-    setTabelaJogos(draft.tabelaJogos ?? []);
+    const draftFingerprint = draft.resultadoFingerprint ?? null;
+    const canRestoreResultado = Boolean(draftFingerprint) && (draft.times ?? []).length > 0;
+    setTimes(canRestoreResultado ? (draft.times ?? []) : []);
+    setTabelaJogos(canRestoreResultado ? (draft.tabelaJogos ?? []) : []);
     setConfigConfirmada(Boolean(draft.configConfirmada));
-    setPublicado(Boolean(draft.publicado));
+    setPublicado(canRestoreResultado ? Boolean(draft.publicado) : false);
     setPartidasTotaisSorteio(Number(draft.partidasTotaisSorteio || 0));
-    setSorteioAvisos(draft.sorteioAvisos ?? []);
-    setSorteioReservas(draft.sorteioReservas ?? []);
+    setSorteioAvisos(canRestoreResultado ? (draft.sorteioAvisos ?? []) : []);
+    setSorteioReservas(canRestoreResultado ? (draft.sorteioReservas ?? []) : []);
+    setResultadoFingerprint(canRestoreResultado ? draftFingerprint : null);
+    if (canRestoreResultado) {
+      setCurrentStep("TIMES_SORTEADOS");
+    } else if (draft.configConfirmada) {
+      setCurrentStep("PARTICIPANTES");
+    } else {
+      setCurrentStep("CONFIGURACAO");
+    }
     setDraftRestoredAtLabel(
       draft.updatedAt ? new Date(draft.updatedAt).toLocaleString("pt-BR") : null
     );
@@ -290,6 +621,7 @@ export default function SorteioInteligenteAdmin() {
       version: 1,
       updatedAt: new Date().toISOString(),
       step: draftStep,
+      resultadoFingerprint: times.length > 0 ? resultadoFingerprint : null,
       config,
       participantes,
       timesSelecionados,
@@ -331,11 +663,39 @@ export default function SorteioInteligenteAdmin() {
     participantes,
     partidasTotaisSorteio,
     publicado,
+    resultadoFingerprint,
     sorteioAvisos,
     sorteioReservas,
     tabelaJogos,
     times,
     timesSelecionados,
+  ]);
+
+  useEffect(() => {
+    if (!draftHydrated || times.length === 0) return;
+    if (loadingHistorico) return;
+    if (resultadoFingerprint && resultadoFingerprint === sorteioInputsFingerprint) return;
+
+    setTimes([]);
+    setTabelaJogos([]);
+    setSorteioAvisos([]);
+    setSorteioReservas([]);
+    setSorteioErro(null);
+    setPublicado(false);
+    setResultadoFingerprint(null);
+
+    if (currentStep === "TIMES_SORTEADOS" || currentStep === "PUBLICACAO") {
+      mudarEtapa(configConfirmada ? "PARTICIPANTES" : "CONFIGURACAO");
+    }
+  }, [
+    configConfirmada,
+    currentStep,
+    draftHydrated,
+    loadingHistorico,
+    mudarEtapa,
+    resultadoFingerprint,
+    sorteioInputsFingerprint,
+    times.length,
   ]);
 
   useEffect(() => {
@@ -348,19 +708,7 @@ export default function SorteioInteligenteAdmin() {
     }
 
     const disponiveisIds = new Set(timesDisponiveis.map((t) => t.id));
-    const filtrados = timesSelecionados.filter((id) => disponiveisIds.has(id));
-    const limite = Math.min(maxTimes, timesDisponiveis.length);
-
-    const faltando = limite - filtrados.length;
-    const extras =
-      faltando > 0
-        ? timesDisponiveis
-            .map((t) => t.id)
-            .filter((id) => !filtrados.includes(id))
-            .slice(0, faltando)
-        : [];
-
-    const proximos = faltando > 0 ? [...filtrados, ...extras] : filtrados.slice(0, limite);
+    const proximos = timesSelecionados.filter((id) => disponiveisIds.has(id)).slice(0, maxTimes);
     const mudou =
       proximos.length !== timesSelecionados.length ||
       proximos.some((id, idx) => id !== timesSelecionados[idx]);
@@ -370,14 +718,38 @@ export default function SorteioInteligenteAdmin() {
     }
   }, [loadingTimes, timesDisponiveis, maxTimes, timesSelecionados]);
 
+  useEffect(() => {
+    if (!draftHydrated || loadingSorteio) return;
+    if (
+      currentStep === "CONFIGURACAO" ||
+      currentStep === "TIMES" ||
+      currentStep === "PARTICIPANTES"
+    ) {
+      limparFeedbackSorteio();
+    }
+  }, [
+    config?.duracaoPartidaMin,
+    config?.duracaoRachaMin,
+    config?.horaPartida,
+    config?.dataPartida,
+    config?.jogadoresPorTime,
+    config?.numTimes,
+    currentStep,
+    draftHydrated,
+    limparFeedbackSorteio,
+    loadingSorteio,
+    participantes,
+    timesSelecionados,
+  ]);
+
   function handleConfirmarConfig() {
-    const limiteConfirmacao = Math.min(maxTimes, timesDisponiveis.length || maxTimes);
-    if (timesSelecionados.length !== limiteConfirmacao) {
+    if (faltamTimesCadastrados || timesSelecionados.length !== limiteTimesConfirmacao) {
       setAvisoTimesShake(true);
       setTimeout(() => setAvisoTimesShake(false), 500);
-      return;
+      return false;
     }
     setConfigConfirmada(true);
+    return true;
   }
 
   // NOVO: Função para somar o total de partidas já jogadas pelos participantes
@@ -393,10 +765,20 @@ export default function SorteioInteligenteAdmin() {
   });
 
   async function handleSortearTimes() {
-    if (!config || participantes.length === 0 || timesSelecionados.length < 2) return;
+    if (!config || !timesDoDiaValidos || !participantesCompletos) {
+      setSorteioErro(
+        pendenciasParticipantes.length
+          ? pendenciasParticipantes.join(" ")
+          : "Complete os times do dia antes de sortear."
+      );
+      return;
+    }
 
     const timesParaSorteio = timesDisponiveis.filter((t) => timesSelecionados.includes(t.id));
-    if (timesParaSorteio.length < 2) return;
+    if (timesParaSorteio.length !== maxTimes) {
+      setSorteioErro("A quantidade de times selecionados precisa ser igual a configuracao.");
+      return;
+    }
     const timesNormalizados = timesParaSorteio.map((time) => ({
       id: time.id,
       nome: time.nome || (time as any).name || "Time",
@@ -438,6 +820,15 @@ export default function SorteioInteligenteAdmin() {
 
     const [timesGerados] = await Promise.all([balanceamentoPromise, delayMinimo]);
 
+    const fingerprint = buildSorteioInputsFingerprint({
+      config,
+      timesSelecionados,
+      timesDoDia: timesNormalizados,
+      participantes,
+      totalTemporada,
+      historico,
+    });
+    setResultadoFingerprint(fingerprint);
     setTimes(timesGerados);
     setPublicado(false);
 
@@ -453,7 +844,50 @@ export default function SorteioInteligenteAdmin() {
       setTabelaJogos([]);
     }
 
+    if (timesGerados.length > 0) {
+      mudarEtapa("TIMES_SORTEADOS");
+    }
+
     setLoadingSorteio(false);
+  }
+
+  function voltarParaConfiguracao() {
+    setConfigConfirmada(false);
+    mudarEtapa("CONFIGURACAO", { limparFeedback: true });
+  }
+
+  function voltarParaTimesDia() {
+    setConfigConfirmada(false);
+    mudarEtapa("TIMES", { limparFeedback: true });
+  }
+
+  function continuarParaParticipantes() {
+    if (handleConfirmarConfig()) {
+      mudarEtapa("PARTICIPANTES", { limparFeedback: true });
+    }
+  }
+
+  function handleStepperClick(step: SorteioStep) {
+    if (step === currentStep) return;
+    if (step === "CONFIGURACAO") {
+      voltarParaConfiguracao();
+      return;
+    }
+    if (step === "TIMES" && currentStepIndex > 1) {
+      voltarParaTimesDia();
+      return;
+    }
+    if (step === "PARTICIPANTES" && currentStepIndex > 2 && configConfirmada) {
+      mudarEtapa("PARTICIPANTES", { limparFeedback: true });
+      return;
+    }
+    if (step === "TIMES_SORTEADOS" && times.length > 0) {
+      mudarEtapa("TIMES_SORTEADOS");
+      return;
+    }
+    if (step === "PUBLICACAO" && times.length > 0) {
+      mudarEtapa("PUBLICACAO");
+    }
   }
 
   async function handlePublicarTimes() {
@@ -462,7 +896,7 @@ export default function SorteioInteligenteAdmin() {
     const dataPartida = config.dataPartida?.trim();
     const horaPartida = config.horaPartida?.trim();
     if (!dataPartida || !horaPartida) {
-      setSorteioErro("Defina a data e o horario da partida antes de publicar.");
+      setSorteioErro("Defina a data e o horário da partida antes de publicar.");
       return;
     }
 
@@ -517,14 +951,19 @@ export default function SorteioInteligenteAdmin() {
       console.error("Falha ao publicar sorteio", error);
       const message =
         error instanceof Error && error.message ? error.message : "Falha ao publicar times do dia.";
-      setSorteioErro(message);
+      setSorteioErro(
+        `Não foi possível publicar os Times do Dia. Seus dados foram preservados. Tente novamente.${message ? ` Detalhe: ${message}` : ""}`
+      );
     } finally {
       setPublicando(false);
     }
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-fundo p-2 md:p-6 rounded-xl shadow-md">
+    <div
+      ref={sorteioTopRef}
+      className="mx-auto max-w-7xl bg-fundo px-3 pb-32 pt-4 md:px-6 md:pb-10"
+    >
       {/* LOADING ANIMADO */}
       {loadingSorteio && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
@@ -537,232 +976,519 @@ export default function SorteioInteligenteAdmin() {
         </div>
       )}
 
-      <h1 className="text-2xl font-bold text-yellow-400 mb-2 text-center">
-        Sorteio Inteligente – Painel do Admin
-      </h1>
+      <div className="mb-5 text-center md:text-left">
+        <h1 className="text-3xl font-bold text-yellow-400 md:text-4xl">Sorteio Inteligente</h1>
+        <p className="mt-1 text-sm text-zinc-300 md:text-base">
+          Etapa {selectedStep.numero} de 5 - {selectedStep.subtitulo}
+        </p>
+      </div>
       {draftRestoredAtLabel && (
         <div className="text-center text-xs text-emerald-300 mb-2">
           Rascunho restaurado automaticamente ({draftRestoredAtLabel}).
         </div>
       )}
-      <div className="flex flex-col items-center mb-4">
-        <button
-          className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold px-4 py-1 rounded transition-all text-sm"
-          onClick={() => setShowTip((v) => !v)}
-        >
-          ANTES DE REALIZAR O SORTEIO CLIQUE AQUI
-        </button>
-        {showTip && (
-          <div className="bg-[#232323] mt-2 p-4 rounded-lg text-sm text-gray-100 w-full shadow-lg max-w-2xl border border-yellow-400 relative">
-            <button
-              className="absolute right-2 top-2 text-yellow-400 text-lg font-bold rounded hover:bg-yellow-400 hover:text-black transition px-2 py-0.5"
-              onClick={() => setShowTip(false)}
-              aria-label="Fechar explicação"
+      <div className="mb-5">
+        <SorteioStepper
+          currentStep={currentStep}
+          statuses={stepStatuses}
+          onStepClick={handleStepperClick}
+        />
+      </div>
+
+      <div className="space-y-4 md:space-y-5">
+        <StepPanel step="CONFIGURACAO" currentStep={currentStep}>
+          <EtapaSorteio status={stepStatuses.CONFIGURACAO}>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div
+                className={
+                  configConfirmada
+                    ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+                    : "transition-all duration-300"
+                }
+              >
+                <ConfiguracoesRacha
+                  onSubmit={(nextConfig) => {
+                    setConfig(nextConfig);
+                    limparFeedbackSorteio();
+                  }}
+                  disabled={configConfirmada}
+                  initialConfig={config}
+                />
+              </div>
+
+              <aside className="rounded-lg border border-zinc-700 bg-[#181818] p-4">
+                <h2 className="mb-3 text-lg font-bold text-yellow-300">Resumo esperado</h2>
+                <div className="space-y-3 text-sm text-zinc-200">
+                  <div className="flex items-center justify-between rounded border border-zinc-700 bg-black/20 px-3 py-2">
+                    <span>Times</span>
+                    <strong className="text-yellow-300">{maxTimes}</strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded border border-zinc-700 bg-black/20 px-3 py-2">
+                    <span>Participantes necessários</span>
+                    <strong className="text-yellow-300">{participantesNecessarios}</strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded border border-zinc-700 bg-black/20 px-3 py-2">
+                    <span>Partida</span>
+                    <strong className="text-right text-yellow-300">
+                      {config?.dataPartida || "--"} {config?.horaPartida || ""}
+                    </strong>
+                  </div>
+                </div>
+              </aside>
+            </div>
+
+            <div className="mt-4 rounded-lg border border-zinc-700 bg-black/20 p-3">
+              <button
+                className="text-left text-sm font-semibold text-yellow-300 underline-offset-4 hover:underline"
+                onClick={() => setShowTip((v) => !v)}
+                type="button"
+              >
+                Como funciona o Sorteio Inteligente?
+              </button>
+              {showTip && (
+                <div className="mt-3 text-sm leading-relaxed text-gray-100">
+                  <b>Como garantir um sorteio realmente equilibrado?</b>
+                  <br />
+                  <br />O sorteio inteligente combina nível do atleta (habilidade 1-5 + físico 1-3),
+                  ranking do racha, posição e histórico recente de sorteios (anti-panelinha) para
+                  montar times equilibrados.
+                  <br />
+                  <br />
+                  <b>PRIMEIROS 8 SORTEIOS / INÍCIO DE TEMPORADA:</b> Nos primeiros 8 sorteios
+                  publicados do sistema (ou no início de cada ano/temporada, quando os rankings
+                  reiniciam), o balanceamento usa{" "}
+                  <b>somente as estrelas definidas pelo administrador</b>. A contagem começa após a
+                  publicação do sorteio. Rankings e estatísticas continuam sendo registrados, apenas
+                  não pesam no balanceamento.
+                  <br />
+                  <br />
+                  <b>APÓS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posição, e
+                  aplica o anti-panelinha com base no histórico recente para evitar repetição de
+                  jogadores no mesmo time. O equilíbrio melhora a cada racha conforme o histórico
+                  cresce.
+                  <br />
+                  <br />
+                  <b>GOLEIROS:</b> Sempre 1 goleiro por time. Se faltar goleiro real, use o Goleiro
+                  Reserva (BOT) para completar o sorteio.
+                  <br />
+                  <br />
+                  <b>CONFIGURAÇÕES INICIAIS:</b> Número de times, tempo de partida e jogadores por
+                  time <b>não influenciam no balanceamento</b>. Servem para organizar os times e
+                  gerar a tabela de confrontos.
+                  <br />
+                  <br />
+                  <b>TABELA DE CONFRONTOS:</b> A tabela é calculada conforme o tempo total do racha,
+                  reservando 15 minutos para organização e imprevistos. Exemplo: se o racha tem 60
+                  minutos, a tabela será criada para 45 minutos de jogos. O modelo e o tempo
+                  sugerido podem ser ajustados pelo administrador conforme a realidade do grupo.
+                  <br />
+                  <br />
+                  <b>ESTRELAS (NÍVEL DO ATLETA):</b> Defina habilidade e físico na página Nível dos
+                  Atletas. O nível final é calculado automaticamente e usado no sorteio. Ajuste
+                  sempre que perceber evolução ou queda de desempenho.
+                  <br />
+                  <br />
+                  <b>Dica:</b> Se notar desequilíbrio, ajuste manualmente os times enquanto o
+                  histórico ainda está curto. Isso garante jogos mais disputados até a calibração
+                  completa.
+                  <br />
+                  <br />
+                  Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e
+                  divertido!
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <button
+                className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500 disabled:pointer-events-none disabled:opacity-60 md:w-auto"
+                onClick={() => mudarEtapa("TIMES", { limparFeedback: true })}
+                disabled={!config}
+              >
+                Continuar para Times do Dia
+              </button>
+            </div>
+          </EtapaSorteio>
+        </StepPanel>
+
+        <StepPanel step="TIMES" currentStep={currentStep}>
+          <EtapaSorteio status={stepStatuses.TIMES}>
+            <div className="mb-4 grid gap-3 rounded-lg border border-zinc-700 bg-[#181818] p-4 text-sm text-zinc-200 md:grid-cols-4">
+              <div>
+                <span className="block text-zinc-400">Duração</span>
+                <strong>{config?.duracaoRachaMin ?? "--"} min</strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Partida</span>
+                <strong>{config?.duracaoPartidaMin ?? "--"} min</strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Times</span>
+                <strong>{maxTimes}</strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Data e horário</span>
+                <strong>
+                  {config?.dataPartida || "--"} {config?.horaPartida || ""}
+                </strong>
+              </div>
+            </div>
+
+            <div
+              className={
+                configConfirmada
+                  ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
+                  : "transition-all duration-300"
+              }
             >
-              ×
-            </button>
-            <b>Como garantir um sorteio realmente equilibrado?</b>
-            <br />
-            <br />
-            O sorteio inteligente combina nível do atleta (habilidade 1-5 + físico 1-3), ranking do
-            racha, posição e histórico recente de sorteios (anti-panelinha) para montar times
-            equilibrados.
-            <br />
-            <br />
-            <b>PRIMEIROS 8 SORTEIOS / INÍCIO DE TEMPORADA:</b> Nos primeiros 8 sorteios publicados
-            do sistema (ou no início de cada ano/temporada, quando os rankings reiniciam), o
-            balanceamento usa <b>somente as estrelas definidas pelo administrador</b>. A contagem
-            começa após a publicação do sorteio. Rankings e estatísticas continuam sendo
-            registrados, apenas não pesam no balanceamento.
-            <br />
-            <br />
-            <b>APÓS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posição, e aplica
-            o anti-panelinha com base no histórico recente para evitar repetição de jogadores no
-            mesmo time. O equilíbrio melhora a cada racha conforme o histórico cresce.
-            <br />
-            <br />
-            <b>GOLEIROS:</b> Sempre 1 goleiro por time. Se faltar goleiro real, use o Goleiro
-            Reserva (BOT) para completar o sorteio.
-            <br />
-            <br />
-            <b>CONFIGURAÇÕES INICIAIS:</b> Número de times, tempo de partida e jogadores por time
-            <b>não influenciam no balanceamento</b>. Servem para organizar os times e gerar a tabela
-            de confrontos.
-            <br />
-            <br />
-            <b>TABELA DE CONFRONTOS:</b> A tabela é calculada conforme o tempo total do racha,
-            reservando 15 minutos para organização e imprevistos. Exemplo: se o racha tem 60
-            minutos, a tabela será criada para 45 minutos de jogos. O modelo e o tempo sugerido
-            podem ser ajustados pelo administrador conforme a realidade do grupo.
-            <br />
-            <br />
-            <b>ESTRELAS (NÍVEL DO ATLETA):</b> Defina habilidade e físico na página Nível dos
-            Atletas. O nível final é calculado automaticamente e usado no sorteio. Ajuste sempre que
-            perceber evolução ou queda de desempenho.
-            <br />
-            <br />
-            <b>Dica:</b> Se notar desequilíbrio, ajuste manualmente os times enquanto o histórico
-            ainda está curto. Isso garante jogos mais disputados até a calibração completa.
-            <br />
-            <br />
-            Com o tempo, o sistema aprende e o sorteio fica cada vez mais preciso, justo e
-            divertido!
-          </div>
-        )}
-      </div>
+              <SelecionarTimesDia
+                timesDisponiveis={timesDisponiveis}
+                loading={loadingTimes}
+                timesSelecionados={timesSelecionados}
+                onChange={setTimesSelecionados}
+                disabled={configConfirmada}
+                maxTimes={maxTimes}
+                shake={avisoTimesShake}
+              />
+            </div>
 
-      {/* Card de Configurações - Fade ao confirmar */}
-      <div
-        className={
-          configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
-            : "transition-all duration-300"
-        }
-      >
-        <ConfiguracoesRacha
-          onSubmit={setConfig}
-          disabled={configConfirmada}
-          initialConfig={config}
-        />
-      </div>
-
-      {/* Card Selecionar Times do Dia - Fade ao confirmar */}
-      <div
-        className={
-          configConfirmada
-            ? "opacity-60 blur-[2px] pointer-events-none transition-all duration-300"
-            : "transition-all duration-300"
-        }
-      >
-        <SelecionarTimesDia
-          timesDisponiveis={timesDisponiveis}
-          loading={loadingTimes}
-          timesSelecionados={timesSelecionados}
-          onChange={setTimesSelecionados}
-          disabled={configConfirmada}
-          maxTimes={maxTimes}
-          shake={avisoTimesShake}
-        />
-      </div>
-
-      {/* Botão Confirmar/Editar Configuração */}
-      <div className="flex justify-center mt-3 mb-3">
-        {!configConfirmada ? (
-          <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg shadow transition disabled:opacity-60 disabled:pointer-events-none"
-            onClick={handleConfirmarConfig}
-            disabled={!config || timesSelecionados.length !== maxTimes}
-          >
-            Confirmar Configuração
-          </button>
-        ) : (
-          <button
-            className="w-full md:w-auto py-3 px-8 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded text-lg shadow transition"
-            onClick={() => {
-              setConfigConfirmada(false);
-            }}
-          >
-            Editar Configuração
-          </button>
-        )}
-      </div>
-
-      {/* O RESTANTE DA TELA (participantes, sorteio, botões) fica sempre ativo */}
-      {configConfirmada && (
-        <div className="text-center text-xs text-yellow-200 mb-4">
-          Esta configuração foi salva para este sorteio. Para alterar, clique em Editar
-          Configuração.
-        </div>
-      )}
-
-      <ParticipantesRacha
-        rachaId={rachaId}
-        config={config}
-        participantes={participantes}
-        setParticipantes={setParticipantes}
-      />
-      <button
-        className="w-full py-3 mt-3 mb-3 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded text-lg"
-        onClick={handleSortearTimes}
-        disabled={
-          loadingTimes || !config || timesSelecionados.length < 2 || timesDisponiveis.length < 2
-        }
-      >
-        Sortear Times
-      </button>
-      {(loadingHistorico || erroHistorico || typeof totalTemporada === "number") && (
-        <div className="text-xs text-center text-yellow-200 mb-3">
-          {loadingHistorico && "Carregando histórico de sorteios..."}
-          {erroHistorico && "Falha ao carregar histórico. Balanceamento parcial ativo."}
-          {typeof totalTemporada === "number" && (
-            <>
-              {!loadingHistorico && !erroHistorico && (
+            <div
+              className={`mt-4 rounded-lg border px-4 py-3 text-sm font-semibold ${
+                timesDoDiaValidos
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border-red-500/40 bg-red-500/10 text-red-200"
+              }`}
+            >
+              {faltamTimesCadastrados ? (
                 <>
-                  Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
-                  {totalTemporada < 8
-                    ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas as estrelas do admin."
-                    : "Ranking ativo no balanceamento."}
+                  Você configurou {maxTimes} times, mas existem apenas {timesDisponiveis.length}{" "}
+                  disponíveis. Cadastre mais {timesFaltantes} time{timesFaltantes > 1 ? "s" : ""}{" "}
+                  para continuar.
+                </>
+              ) : (
+                <>
+                  {timesSelecionados.length} de {limiteTimesConfirmacao} times selecionados.
                 </>
               )}
-            </>
-          )}
-        </div>
-      )}
-      {sorteioErro && (
-        <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg text-center mb-3">
-          {sorteioErro}
-        </div>
-      )}
-      {sorteioAvisos.length > 0 && (
-        <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-200 px-4 py-3 rounded-lg text-center mb-3">
-          {sorteioAvisos.map((aviso) => (
-            <div key={aviso}>{aviso}</div>
-          ))}
-        </div>
-      )}
-      {sorteioReservas.length > 0 && (
-        <div className="bg-zinc-800 border border-zinc-700 text-gray-200 px-4 py-3 rounded-lg text-center mb-3">
-          Reservas: {sorteioReservas.map((j) => j.nome).join(", ")}
-        </div>
-      )}
-      {times.length > 0 && (
-        <>
-          <TimesGerados
-            times={times}
-            onSaveEdit={setTimes}
-            jogadoresPorTime={config?.jogadoresPorTime}
-            coeficienteContext={{
-              partidasTotais: partidasTotaisSorteio,
-              sorteiosPublicadosNaTemporada:
-                typeof totalTemporada === "number" ? totalTemporada : undefined,
-            }}
-          />
-          {tabelaJogos.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-base md:text-lg text-yellow-300 font-bold text-center mb-3">
-                Tabela de Confrontos
-              </h3>
-              {/* NOVO: Tabela de jogos gerada automaticamente */}
-              <TabelaJogosRacha jogos={tabelaJogos} />
             </div>
-          )}
-          <BotaoPublicarTimes
-            publicado={publicado}
-            loading={publicando}
-            onClick={handlePublicarTimes}
-          />
-          {publicado && (
-            <div className="mt-3 text-center">
-              <Link
-                href="/admin/partidas/times-do-dia"
-                className="text-sm font-semibold text-yellow-300 hover:text-yellow-200 underline"
+
+            <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <button
+                className="w-full rounded border border-zinc-600 px-6 py-3 text-base font-bold text-zinc-100 transition hover:border-yellow-400 hover:text-yellow-300 md:w-auto"
+                onClick={voltarParaConfiguracao}
               >
-                Veja como os atletas veem no site público.
-              </Link>
+                Voltar para Configuração
+              </button>
+              <button
+                className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500 disabled:pointer-events-none disabled:opacity-60 md:w-auto"
+                onClick={continuarParaParticipantes}
+                disabled={!timesDoDiaValidos}
+              >
+                Continuar para Participantes
+              </button>
             </div>
-          )}
-        </>
-      )}
+          </EtapaSorteio>
+        </StepPanel>
+
+        <StepPanel step="PARTICIPANTES" currentStep={currentStep}>
+          <EtapaSorteio status={stepStatuses.PARTICIPANTES}>
+            <div className="mb-4 grid gap-3 rounded-lg border border-zinc-700 bg-[#181818] p-4 text-sm text-zinc-200 md:grid-cols-4">
+              <div>
+                <span className="block text-zinc-400">Selecionados</span>
+                <strong>
+                  {participantes.length} / {participantesNecessarios}
+                </strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Goleiros</span>
+                <strong>
+                  {goleirosSelecionadosTotal} / {maxTimes}
+                </strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Vagas restantes</span>
+                <strong>{vagasRestantesParticipantes}</strong>
+              </div>
+              <div>
+                <span className="block text-zinc-400">Times escolhidos</span>
+                <strong>
+                  {timesSelecionadosDetalhes
+                    .map((time) => time.nome || (time as any).name)
+                    .join(", ") || "--"}
+                </strong>
+              </div>
+            </div>
+
+            <div
+              className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+                participantesCompletos
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-yellow-500/40 bg-yellow-500/10 text-yellow-100"
+              }`}
+            >
+              <strong className="block">
+                {participantesCompletos
+                  ? "Tudo pronto para sortear."
+                  : "Pendências antes do sorteio"}
+              </strong>
+              {participantesCompletos ? (
+                <span>Quantidade de participantes e goleiros conferida.</span>
+              ) : (
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {pendenciasParticipantes.map((pendencia) => (
+                    <li key={pendencia}>{pendencia}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <ParticipantesRacha
+              rachaId={rachaId}
+              config={config}
+              participantes={participantes}
+              setParticipantes={setParticipantes}
+            />
+
+            <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <button
+                className="w-full rounded border border-zinc-600 px-6 py-3 text-base font-bold text-zinc-100 transition hover:border-yellow-400 hover:text-yellow-300 md:w-auto"
+                onClick={voltarParaTimesDia}
+              >
+                Voltar para Times do Dia
+              </button>
+              <button
+                className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500 disabled:pointer-events-none disabled:opacity-60 md:w-auto"
+                onClick={handleSortearTimes}
+                disabled={loadingTimes || !timesDoDiaValidos || !participantesCompletos}
+              >
+                Sortear Times
+              </button>
+              {times.length > 0 && timesDoDiaValidos && participantesCompletos && (
+                <button
+                  className="w-full rounded border border-yellow-400 px-6 py-3 text-base font-bold text-yellow-300 transition hover:bg-yellow-400 hover:text-black md:w-auto"
+                  onClick={() => mudarEtapa("TIMES_SORTEADOS")}
+                >
+                  Continuar para Times Sorteados
+                </button>
+              )}
+            </div>
+
+            {(loadingHistorico || erroHistorico || typeof totalTemporada === "number") && (
+              <div className="text-xs text-center text-yellow-200 mt-3">
+                {loadingHistorico && "Carregando histórico de sorteios..."}
+                {erroHistorico && "Falha ao carregar histórico. Balanceamento parcial ativo."}
+                {typeof totalTemporada === "number" && (
+                  <>
+                    {!loadingHistorico && !erroHistorico && (
+                      <>
+                        Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
+                        {totalTemporada <= 8
+                          ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas o nível final definido pelo admin."
+                          : "Nível final, ranking, Campeões do Dia e anti-panelinha ativos no balanceamento."}
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {sorteioErro && currentStep !== "PUBLICACAO" && (
+              <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg text-center mt-3">
+                {sorteioErro}
+              </div>
+            )}
+            {sorteioAvisos.length > 0 && (
+              <div className="bg-yellow-500/10 border border-yellow-500/40 text-yellow-200 px-4 py-3 rounded-lg text-center mt-3">
+                {sorteioAvisos.map((aviso) => (
+                  <div key={aviso}>{aviso}</div>
+                ))}
+              </div>
+            )}
+            {sorteioReservas.length > 0 && (
+              <div className="bg-zinc-800 border border-zinc-700 text-gray-200 px-4 py-3 rounded-lg text-center mt-3">
+                Reservas: {sorteioReservas.map((j) => j.nome).join(", ")}
+              </div>
+            )}
+          </EtapaSorteio>
+        </StepPanel>
+
+        <StepPanel step="TIMES_SORTEADOS" currentStep={currentStep}>
+          <EtapaSorteio status={stepStatuses.TIMES_SORTEADOS}>
+            {times.length > 0 ? (
+              <>
+                <div className="mb-4 grid gap-3 rounded-lg border border-zinc-700 bg-[#181818] p-4 text-sm text-zinc-200 md:grid-cols-4">
+                  <div>
+                    <span className="block text-zinc-400">Times</span>
+                    <strong>{times.length}</strong>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-400">Participantes</span>
+                    <strong>{participantes.length}</strong>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-400">Data</span>
+                    <strong>{config?.dataPartida || "--"}</strong>
+                  </div>
+                  <div>
+                    <span className="block text-zinc-400">Horário</span>
+                    <strong>{config?.horaPartida || "--"}</strong>
+                  </div>
+                </div>
+                <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+                  Times sorteados. Revise antes de continuar.
+                </div>
+                <TimesGerados
+                  times={times}
+                  onSaveEdit={setTimes}
+                  jogadoresPorTime={config?.jogadoresPorTime}
+                  coeficienteContext={{
+                    partidasTotais: partidasTotaisSorteio,
+                    sorteiosPublicadosNaTemporada:
+                      typeof totalTemporada === "number" ? totalTemporada : undefined,
+                  }}
+                  rankingEmCalibracao={rankingEmCalibracao}
+                  sorteiosPublicadosNaTemporada={
+                    typeof totalTemporada === "number" ? totalTemporada : undefined
+                  }
+                  onEditingStateChange={setEdicaoTimes}
+                />
+                <div className="mt-5 flex flex-col gap-3 md:grid md:grid-cols-3">
+                  <button
+                    className="w-full rounded border border-zinc-600 px-6 py-3 text-base font-bold text-zinc-100 transition hover:border-yellow-400 hover:text-yellow-300"
+                    onClick={() => mudarEtapa("PARTICIPANTES", { limparFeedback: true })}
+                  >
+                    Voltar para Participantes
+                  </button>
+                  <button
+                    className="w-full rounded border border-yellow-400 px-6 py-3 text-base font-bold text-yellow-300 transition hover:bg-yellow-400 hover:text-black"
+                    onClick={handleSortearTimes}
+                    disabled={
+                      loadingTimes ||
+                      !timesDoDiaValidos ||
+                      !participantesCompletos ||
+                      edicaoTimes.editando ||
+                      edicaoTimes.invalido
+                    }
+                  >
+                    Sortear Novamente
+                  </button>
+                  <button
+                    className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500"
+                    onClick={() => mudarEtapa("PUBLICACAO")}
+                    disabled={edicaoTimes.editando || edicaoTimes.invalido}
+                  >
+                    Continuar para Publicação
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-sm text-zinc-400 text-center">
+                Os times sorteados aparecerão aqui após o sorteio.
+              </div>
+            )}
+          </EtapaSorteio>
+        </StepPanel>
+
+        <StepPanel step="PUBLICACAO" currentStep={currentStep}>
+          <EtapaSorteio status={stepStatuses.PUBLICACAO}>
+            {times.length > 0 ? (
+              <>
+                <div className="mb-4 rounded-lg border border-zinc-700 bg-[#181818] p-4">
+                  <h2 className="mb-3 text-lg font-bold text-yellow-300">Resumo da Publicação</h2>
+                  <div className="grid gap-3 text-sm text-zinc-200 md:grid-cols-4">
+                    <div>
+                      <span className="block text-zinc-400">Times</span>
+                      <strong>{times.length}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-400">Participantes</span>
+                      <strong>{participantes.length}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-400">Data</span>
+                      <strong>{config?.dataPartida || "--"}</strong>
+                    </div>
+                    <div>
+                      <span className="block text-zinc-400">Horário</span>
+                      <strong>{config?.horaPartida || "--"}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mb-4 rounded-lg border border-zinc-700 bg-[#181818] p-4">
+                  <h3 className="mb-3 text-base font-bold text-yellow-300">Checklist final</h3>
+                  <div className="space-y-2 text-sm text-zinc-200">
+                    {[
+                      ["Configuração concluída", Boolean(config)],
+                      ["Times do dia definidos", timesDoDiaValidos],
+                      ["Participantes completos", participantesCompletos],
+                      ["Times sorteados", times.length > 0],
+                      ["Confrontos gerados", tabelaJogos.length > 0],
+                      [
+                        publicado ? "Publicação realizada" : "Publicação ainda não realizada",
+                        publicado,
+                      ],
+                    ].map(([label, done]) => (
+                      <div key={String(label)} className="flex items-center justify-between gap-3">
+                        <span>{label}</span>
+                        <span className={done ? "text-emerald-300" : "text-yellow-300"}>
+                          {done ? "Concluído" : "Pendente"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {sorteioErro && (
+                  <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+                    {sorteioErro}
+                  </div>
+                )}
+
+                {tabelaJogos.length > 0 && (
+                  <div className="mb-5 rounded-lg border border-zinc-700 bg-[#181818] p-4">
+                    <h3 className="mb-3 text-base font-bold text-yellow-300 md:text-lg">
+                      Tabela de Confrontos
+                    </h3>
+                    <TabelaJogosRacha jogos={tabelaJogos} />
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <button
+                    className="w-full rounded border border-zinc-600 px-6 py-3 text-base font-bold text-zinc-100 transition hover:border-yellow-400 hover:text-yellow-300 md:w-auto"
+                    onClick={() => mudarEtapa("TIMES_SORTEADOS")}
+                  >
+                    Voltar para Times Sorteados
+                  </button>
+                  <div className="w-full md:w-auto">
+                    <BotaoPublicarTimes
+                      publicado={publicado}
+                      loading={publicando}
+                      onClick={handlePublicarTimes}
+                    />
+                  </div>
+                </div>
+
+                {publicado && (
+                  <div className="mt-3 text-center">
+                    <Link
+                      href="/admin/partidas/times-do-dia"
+                      className="text-sm font-semibold text-yellow-300 hover:text-yellow-200 underline"
+                    >
+                      Veja como os atletas veem no site público.
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-sm text-zinc-400 text-center">
+                A publicação será liberada depois que os times forem sorteados.
+              </div>
+            )}
+          </EtapaSorteio>
+        </StepPanel>
+      </div>
     </div>
   );
 }

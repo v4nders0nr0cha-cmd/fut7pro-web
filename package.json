@@ -57,7 +57,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "lucide-react": "^0.514.0",
     "next": "14.2.35",
-    "next-auth": "^4.24.12",
+    "next-auth": "^4.24.15",
     "postcss": "^8.5.4",
     "qrcode": "^1.5.4",
     "react": "18.2.0",

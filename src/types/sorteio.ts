@@ -31,6 +31,7 @@ export interface Participante {
   posicaoPrincipal?: Posicao;
   posicaoSecundaria?: Posicao;
   rankingPontos: number;
+  campeoesDoDia?: number;
   vitorias: number;
   gols: number;
   assistencias: number;

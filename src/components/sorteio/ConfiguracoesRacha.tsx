@@ -13,7 +13,7 @@ interface Props {
 const DURACOES_RACHA = [60, 90, 120, 150];
 const DURACOES_PARTIDA = Array.from({ length: 41 }, (_, i) => 5 + i); // 5~45min
 const NUM_TIMES = [2, 3, 4, 5, 6];
-const JOGADORES_POR_TIME = [5, 6, 7];
+const JOGADORES_POR_TIME = [5, 6, 7, 8, 9, 10, 11];
 const DEFAULT_JOGADORES_POR_TIME = 7;
 
 // Função sempre segura
