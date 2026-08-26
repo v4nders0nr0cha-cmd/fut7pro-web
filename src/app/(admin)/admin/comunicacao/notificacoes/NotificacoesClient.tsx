@@ -9,6 +9,7 @@ import {
   FaGift,
   FaInfoCircle,
   FaPaperPlane,
+  FaRocket,
   FaUserPlus,
 } from "react-icons/fa";
 import {
@@ -56,6 +57,33 @@ const typeStyles: Record<AdminNotificationType, { icon: JSX.Element; chip: strin
     chip: "bg-amber-900/50 text-amber-200 border-amber-700/40",
   },
 };
+
+const productUpdateStyle = {
+  icon: <FaRocket className="text-yellow-300" />,
+  chip: "bg-yellow-900/50 text-yellow-200 border-yellow-700/40",
+};
+
+export function isProductUpdateNotification(notification: Pick<AdminNotificationItem, "metadata">) {
+  return notification.metadata?.category === "product_update";
+}
+
+export function getNotificationTypeLabel(notification: AdminNotificationItem) {
+  if (notification.type === "SYSTEM_ANNOUNCEMENT" && isProductUpdateNotification(notification)) {
+    return "Atualizações";
+  }
+  return typeLabels[notification.type];
+}
+
+export function getNotificationTypeStyle(notification: AdminNotificationItem) {
+  if (notification.type === "SYSTEM_ANNOUNCEMENT" && isProductUpdateNotification(notification)) {
+    return productUpdateStyle;
+  }
+  return typeStyles[notification.type];
+}
+
+export function getNotificationActionLabel(notification: AdminNotificationItem) {
+  return isProductUpdateNotification(notification) ? "Ver novidades" : "Abrir item";
+}
 
 function formatDate(value?: string | null) {
   if (!value) return "--";
@@ -196,7 +224,7 @@ export default function NotificacoesClient() {
       ) : (
         <div className="space-y-3">
           {visibleNotifications.map((notification) => {
-            const typeUi = typeStyles[notification.type];
+            const typeUi = getNotificationTypeStyle(notification);
             return (
               <article
                 key={notification.id}
@@ -217,7 +245,7 @@ export default function NotificacoesClient() {
                         <span
                           className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${typeUi.chip}`}
                         >
-                          {typeLabels[notification.type]}
+                          {getNotificationTypeLabel(notification)}
                         </span>
                         {!notification.isRead && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-yellow-900/40 px-2 py-0.5 text-[11px] font-semibold text-yellow-200">
@@ -239,7 +267,7 @@ export default function NotificacoesClient() {
                         onClick={() => openNotification(notification)}
                         className="rounded border border-zinc-600 px-3 py-1 text-xs font-semibold text-zinc-100 hover:bg-zinc-800 transition"
                       >
-                        Abrir item
+                        {getNotificationActionLabel(notification)}
                       </button>
                     )}
                     {!notification.isRead && (
