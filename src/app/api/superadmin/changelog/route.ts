@@ -26,20 +26,3 @@ export async function GET(req: NextRequest) {
 
   return forwardResponse(response.status, body);
 }
-
-export async function POST(req: NextRequest) {
-  const user = await requireSuperAdminUser();
-  if (!user) {
-    return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
-  }
-
-  const payload = await req.text();
-  const { response, body } = await proxyBackend(`${getApiBase()}/superadmin/changelog`, {
-    method: "POST",
-    headers: buildHeaders(user, undefined, { includeContentType: true }),
-    body: payload,
-    cache: "no-store",
-  });
-
-  return forwardResponse(response.status, body);
-}
