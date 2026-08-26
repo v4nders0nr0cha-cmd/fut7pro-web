@@ -83,11 +83,11 @@ async function validateBackendChangelogPr(reference, options = {}) {
   const fetchPr =
     options.fetchPr ||
     ((ref) => fetchJson(`https://api.github.com/repos/${ref.repo}/pulls/${ref.number}`, token));
-  const fetchFiles =
-    options.fetchFiles ||
-    ((ref) =>
+  const fetchFilesPage =
+    options.fetchFilesPage ||
+    ((ref, page) =>
       fetchJson(
-        `https://api.github.com/repos/${ref.repo}/pulls/${ref.number}/files?per_page=100`,
+        `https://api.github.com/repos/${ref.repo}/pulls/${ref.number}/files?per_page=100&page=${page}`,
         token
       ));
 
@@ -99,12 +99,29 @@ async function validateBackendChangelogPr(reference, options = {}) {
   }
 
   try {
-    const [pr, files] = await Promise.all([fetchPr(reference), fetchFiles(reference)]);
-    const touchesCanonicalSource = Array.isArray(files)
-      ? files.some((file) => String(file.filename || "").replace(/\\/g, "/") === expectedPath)
-      : false;
+    const pr = await fetchPr(reference);
+    const isUsablePr = pr?.state === "open" || Boolean(pr?.merged_at);
 
-    if (!pr?.number || !touchesCanonicalSource) {
+    if (!pr?.number || !isUsablePr) {
+      return {
+        ok: false,
+        reason: `Changelog PR #${reference.number} precisa estar aberto ou mergeado.`,
+      };
+    }
+
+    let touchesCanonicalSource = false;
+    for (let page = 1; page <= 10; page += 1) {
+      const files = await fetchFilesPage(reference, page);
+      const pageFiles = Array.isArray(files) ? files : [];
+      touchesCanonicalSource = pageFiles.some(
+        (file) => String(file.filename || "").replace(/\\/g, "/") === expectedPath
+      );
+      if (touchesCanonicalSource || pageFiles.length < 100) {
+        break;
+      }
+    }
+
+    if (!touchesCanonicalSource) {
       return {
         ok: false,
         reason: `Changelog PR #${reference.number} nao altera ${expectedPath}.`,

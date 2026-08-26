@@ -54,8 +54,8 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 201 },
     {
-      fetchPr: async () => ({ number: 201, merged_at: null }),
-      fetchFiles: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
+      fetchPr: async () => ({ number: 201, state: "open", merged_at: null }),
+      fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
     }
   );
   assert.equal(result.ok, true, "valida PR existente que altera a fonte canonica");
@@ -63,11 +63,40 @@ async function run() {
   result = await validateBackendChangelogPr(
     { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 202 },
     {
-      fetchPr: async () => ({ number: 202, merged_at: "2026-08-25T20:37:22Z" }),
-      fetchFiles: async () => [{ filename: "src/app.module.ts" }],
+      fetchPr: async () => ({
+        number: 202,
+        state: "closed",
+        merged_at: "2026-08-25T20:37:22Z",
+      }),
+      fetchFilesPage: async () => [{ filename: "src/app.module.ts" }],
     }
   );
   assert.equal(result.ok, false, "falha se PR backend nao altera a fonte canonica");
+
+  result = await validateBackendChangelogPr(
+    { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 203 },
+    {
+      fetchPr: async () => ({ number: 203, state: "closed", merged_at: null }),
+      fetchFilesPage: async () => [{ filename: "src/modules/changelog/changelog.entries.ts" }],
+    }
+  );
+  assert.equal(result.ok, false, "falha se PR backend estiver fechado sem merge");
+
+  result = await validateBackendChangelogPr(
+    { repo: "v4nders0nr0cha-cmd/fut7pro-backend", number: 204 },
+    {
+      fetchPr: async () => ({ number: 204, state: "open", merged_at: null }),
+      fetchFilesPage: async (_reference, page) => {
+        if (page === 1) {
+          return Array.from({ length: 100 }, (_, index) => ({
+            filename: `src/large-change/file-${index}.ts`,
+          }));
+        }
+        return [{ filename: "src/modules/changelog/changelog.entries.ts" }];
+      },
+    }
+  );
+  assert.equal(result.ok, true, "valida changelog encontrado na segunda pagina de arquivos");
 
   assert.deepEqual(parseChangelogPrReference("Changelog PR: backend#129"), {
     repo: "v4nders0nr0cha-cmd/fut7pro-backend",
