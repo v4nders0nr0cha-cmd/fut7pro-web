@@ -18,6 +18,12 @@ interface Props {
   config: ConfiguracaoRacha | null;
   participantes: Participante[];
   setParticipantes: (p: Participante[]) => void;
+  onMetricasTemporadaChange?: (metricas: {
+    maiorPontuacaoDaTemporada: number | null;
+    maiorNumeroCampeoesDaTemporada: number | null;
+    rankingCarregado: boolean;
+    campeoesCarregado: boolean;
+  }) => void;
 }
 
 function normalizarPosicao(posicao?: Jogador["posicao"] | Jogador["posicaoSecundaria"]): Posicao {
@@ -150,6 +156,7 @@ export default function ParticipantesRacha({
   config,
   participantes,
   setParticipantes,
+  onMetricasTemporadaChange,
 }: Props) {
   const { tenantSlug } = useRacha();
   const { niveis, isLoading: loadingEstrelas } = useNiveisAtletas(rachaId);
@@ -158,6 +165,12 @@ export default function ParticipantesRacha({
   const [seededIdsKey, setSeededIdsKey] = useState("");
   const [rankingMap, setRankingMap] = useState<Record<string, number>>({});
   const [campeoesMap, setCampeoesMap] = useState<Record<string, number>>({});
+  const [maiorPontuacaoDaTemporada, setMaiorPontuacaoDaTemporada] = useState<number | null>(null);
+  const [maiorNumeroCampeoesDaTemporada, setMaiorNumeroCampeoesDaTemporada] = useState<
+    number | null
+  >(null);
+  const [rankingCarregado, setRankingCarregado] = useState(false);
+  const [campeoesCarregado, setCampeoesCarregado] = useState(false);
 
   const { jogadores, isLoading: loadingJogadores } = useJogadores(rachaId, { includeBots: true });
   const { items: agendaItems } = useRachaAgenda();
@@ -263,27 +276,44 @@ export default function ParticipantesRacha({
   useEffect(() => {
     const slug = tenantSlug?.trim();
     if (!slug) return;
+    setRankingCarregado(false);
     const year = dataSelecionada?.getFullYear() ?? new Date().getFullYear();
     fetch(`/api/public/${slug}/player-rankings?type=geral&period=year&year=${year}&limit=10000`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("ranking_unavailable");
+        return res.json();
+      })
       .then((data) => {
         const map: Record<string, number> = {};
-        (data?.rankings || data?.results || []).forEach((item: any) => {
+        const rankingRows = data?.rankings || data?.results || [];
+        rankingRows.forEach((item: any) => {
           if (item.playerId || item.id) {
             map[item.playerId || item.id] = item.pontos || item.rankingPontos || 0;
           }
         });
         setRankingMap(map);
+        const maiorPontuacao = Number(data?.maiorPontuacaoDaTemporada);
+        const maiorPontuacaoDasLinhas = Math.max(0, ...Object.values(map).map(Number));
+        setMaiorPontuacaoDaTemporada(
+          Number.isFinite(maiorPontuacao) ? maiorPontuacao : maiorPontuacaoDasLinhas
+        );
+        setRankingCarregado(true);
       })
       .catch(() => {
-        // silencioso: ranking não é obrigatório
+        // silencioso: ranking não é obrigatório na fase inicial
+        setRankingMap({});
+        setMaiorPontuacaoDaTemporada(0);
       });
   }, [dataSelecionada, tenantSlug]);
 
   useEffect(() => {
     if (!tenantSlug?.trim()) return;
+    setCampeoesCarregado(false);
     fetch("/api/admin/jogadores/ranking-campeoes-do-dia?periodo=ano")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("campeoes_unavailable");
+        return res.json();
+      })
       .then((data) => {
         const map: Record<string, number> = {};
         (data?.rankings || []).forEach((item: any) => {
@@ -293,11 +323,34 @@ export default function ParticipantesRacha({
           }
         });
         setCampeoesMap(map);
+        const maiorCampeoes = Number(data?.maiorNumeroCampeoesDaTemporada);
+        const maiorCampeoesDasLinhas = Math.max(0, ...Object.values(map).map(Number));
+        setMaiorNumeroCampeoesDaTemporada(
+          Number.isFinite(maiorCampeoes) ? maiorCampeoes : maiorCampeoesDasLinhas
+        );
+        setCampeoesCarregado(true);
       })
       .catch(() => {
         // silencioso: campeoes do dia nao sao obrigatorios na fase inicial
+        setCampeoesMap({});
+        setMaiorNumeroCampeoesDaTemporada(0);
       });
   }, [tenantSlug]);
+
+  useEffect(() => {
+    onMetricasTemporadaChange?.({
+      maiorPontuacaoDaTemporada,
+      maiorNumeroCampeoesDaTemporada,
+      rankingCarregado,
+      campeoesCarregado,
+    });
+  }, [
+    campeoesCarregado,
+    maiorNumeroCampeoesDaTemporada,
+    maiorPontuacaoDaTemporada,
+    onMetricasTemporadaChange,
+    rankingCarregado,
+  ]);
 
   const participantesDisponiveis = useMemo<Participante[]>(() => {
     const mapped = (jogadores || []).map((jogador) => {

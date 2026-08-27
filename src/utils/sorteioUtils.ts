@@ -25,13 +25,13 @@ export type SorteioResultado = {
   avisos: string[];
 };
 
-const LIMIAR_DIFERENCA = 0.15;
 const PESO_COEFICIENTE = 1;
 const PESO_PANELINHA = 1.2;
 const DECAY_PANELINHA = 0.85;
+export const SORTEIO_ALGORITHM_VERSION = 2;
 
-function isFaseInicialCalibracao(sorteiosPublicadosNaTemporada?: number | null) {
-  return typeof sorteiosPublicadosNaTemporada !== "number" || sorteiosPublicadosNaTemporada <= 8;
+export function isFaseInicialCalibracao(sorteiosPublicadosNaTemporada?: number | null) {
+  return typeof sorteiosPublicadosNaTemporada !== "number" || sorteiosPublicadosNaTemporada < 8;
 }
 
 // Coeficiente oficial: nivelFinal durante a calibracao; depois nivel, ranking e Campeoes do Dia.
@@ -55,10 +55,15 @@ export function getCoeficiente(j: Participante, contextoOuPartidas: number | Coe
   return nivelScore * 0.5 + rankingScore * 0.3 + campeaoScore * 0.2;
 }
 
-function gerarOrdemSerpentina(quantidadeTimes: number, totalJogadores: number) {
+function gerarOrdemSerpentina(
+  quantidadeTimes: number,
+  totalJogadores: number,
+  startIndex = 0,
+  initialDirection = 1
+) {
   const ordem: number[] = [];
-  let idx = 0;
-  let direction = 1;
+  let idx = Math.min(Math.max(startIndex, 0), Math.max(quantidadeTimes - 1, 0));
+  let direction = initialDirection >= 0 ? 1 : -1;
 
   for (let i = 0; i < totalJogadores; i += 1) {
     ordem.push(idx);
@@ -114,8 +119,8 @@ function calcularPenalidadePanelinha(
 function ordenarJogadoresNoTime(jogadores: Participante[], contexto: CoeficienteContext) {
   const ordem = { GOL: 0, ZAG: 1, MEI: 2, ATA: 3 } as const;
   return [...jogadores].sort((a, b) => {
-    const ordemA = ordem[a.posicao] ?? 99;
-    const ordemB = ordem[b.posicao] ?? 99;
+    const ordemA = ordem[a.posicaoEfetivaSorteio ?? a.posicao] ?? 99;
+    const ordemB = ordem[b.posicaoEfetivaSorteio ?? b.posicao] ?? 99;
     if (ordemA !== ordemB) {
       return ordemA - ordemB;
     }
@@ -126,193 +131,307 @@ function ordenarJogadoresNoTime(jogadores: Participante[], contexto: Coeficiente
 function recalcularTimes(times: TimeSorteado[], contexto: CoeficienteContext) {
   times.forEach((time) => {
     const totalRanking = time.jogadores.reduce((acc, j) => acc + (j.rankingPontos || 0), 0);
-    const totalEstrelas = time.jogadores.reduce((acc, j) => acc + (j.estrelas?.estrelas ?? 0), 0);
+    const totalNivel = time.jogadores.reduce(
+      (acc, j) => acc + (j.estrelas?.nivelFinal ?? j.estrelas?.estrelas ?? 0),
+      0
+    );
     time.mediaRanking = time.jogadores.length ? totalRanking / time.jogadores.length : 0;
-    time.mediaEstrelas = time.jogadores.length ? totalEstrelas / time.jogadores.length : 0;
+    time.mediaEstrelas = time.jogadores.length ? totalNivel / time.jogadores.length : 0;
     time.coeficienteTotal = time.jogadores.reduce((acc, j) => acc + getCoeficiente(j, contexto), 0);
+    time.forcaMedia = time.jogadores.length ? time.coeficienteTotal / time.jogadores.length : 0;
   });
 }
 
-type AjustePosicaoResult = {
-  participantes: Participante[];
-  goleirosSelecionados: Participante[];
-  avisos: string[];
-};
+type LinhaPosicao = "ZAG" | "MEI" | "ATA";
+
+type FormationTemplate = Record<Posicao, number>;
+type LineQuotas = Record<LinhaPosicao, number>;
 
 type ParticipanteAjustado = Participante & {
   posicaoPrincipal: Posicao;
-  posicaoSecundaria?: Posicao;
+  posicaoSecundaria?: LinhaPosicao;
+  posicaoEfetivaSorteio: Posicao;
 };
 
-function ajustarPosicoesSecundarias(
-  participantes: Participante[],
-  quantidadeTimes: number,
-  contexto: CoeficienteContext
-): AjustePosicaoResult {
-  if (!quantidadeTimes) {
-    return { participantes, goleirosSelecionados: [], avisos: [] };
-  }
+export const FORMATION_TEMPLATES: Record<number, FormationTemplate> = {
+  5: { GOL: 1, ZAG: 2, MEI: 1, ATA: 1 },
+  6: { GOL: 1, ZAG: 2, MEI: 2, ATA: 1 },
+  7: { GOL: 1, ZAG: 2, MEI: 2, ATA: 2 },
+  8: { GOL: 1, ZAG: 3, MEI: 2, ATA: 2 },
+  9: { GOL: 1, ZAG: 3, MEI: 3, ATA: 2 },
+  10: { GOL: 1, ZAG: 3, MEI: 3, ATA: 3 },
+  11: { GOL: 1, ZAG: 4, MEI: 3, ATA: 3 },
+};
 
-  const avisos: string[] = [];
-  const base: ParticipanteAjustado[] = participantes.map((p) => {
-    const posicaoPrincipal = p.posicao;
-    const secundariaInformada = p.posicaoSecundaria;
-    const posicaoSecundaria =
-      posicaoPrincipal !== "GOL" &&
-      secundariaInformada &&
-      secundariaInformada !== "GOL" &&
-      secundariaInformada !== posicaoPrincipal
-        ? secundariaInformada
-        : undefined;
-    return {
-      ...p,
-      posicao: posicaoPrincipal,
-      posicaoPrincipal,
-      posicaoSecundaria,
-    };
-  });
+const LINHA_POSICOES: LinhaPosicao[] = ["ZAG", "MEI", "ATA"];
 
-  const primaryGoalies = base.filter((p) => p.posicaoPrincipal === "GOL");
-  if (primaryGoalies.length < quantidadeTimes) {
-    throw new Error(
-      `Goleiros insuficientes: ${primaryGoalies.length}/${quantidadeTimes}. Selecione mais goleiros.`
-    );
-  }
+export function getFormationTemplate(jogadoresPorTime?: number): FormationTemplate {
+  return FORMATION_TEMPLATES[jogadoresPorTime || 7] ?? FORMATION_TEMPLATES[7]!;
+}
 
-  const sortByCoefDesc = <T extends Participante>(list: T[]) =>
-    [...list].sort((a, b) => getCoeficiente(b, contexto) - getCoeficiente(a, contexto));
-  const primarySorted = sortByCoefDesc(primaryGoalies);
-  const goleirosSelecionados = primarySorted.slice(0, quantidadeTimes);
+function isLinhaPosicao(posicao: Posicao | undefined | null): posicao is LinhaPosicao {
+  return posicao === "ZAG" || posicao === "MEI" || posicao === "ATA";
+}
 
-  const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
-
-  const ajustados: ParticipanteAjustado[] = base.map((p) => {
-    if (goleirosIds.has(p.id)) {
-      return { ...p, posicao: "GOL" };
-    }
-    if (p.posicaoPrincipal === "GOL") {
-      return { ...p, posicao: "GOL" };
-    }
-    return { ...p, posicao: p.posicaoPrincipal };
-  });
-
-  const counts: Record<"GOL" | "ZAG" | "MEI" | "ATA", number> = {
-    GOL: 0,
-    ZAG: 0,
-    MEI: 0,
-    ATA: 0,
-  };
-  ajustados.forEach((p) => {
-    counts[p.posicao] = (counts[p.posicao] ?? 0) + 1;
-  });
-
-  const targetPorLinha = quantidadeTimes;
-  const linhas = ["ZAG", "MEI", "ATA"] as const;
-  const shortages = linhas
-    .map((pos) => ({
-      pos,
-      shortage: Math.max(0, targetPorLinha - counts[pos]),
-    }))
-    .filter((item) => item.shortage > 0)
-    .sort((a, b) => b.shortage - a.shortage);
-
-  shortages.forEach((item) => {
-    let faltam = item.shortage;
-    while (faltam > 0) {
-      const candidatos = ajustados.filter(
-        (p) => p.posicao !== "GOL" && p.posicao !== item.pos && p.posicaoSecundaria === item.pos
-      );
-      if (!candidatos.length) {
-        avisos.push(`Posicao ${item.pos} insuficiente mesmo com secundarias.`);
-        break;
-      }
-
-      candidatos.sort((a, b) => {
-        const surplusA = counts[a.posicao] - targetPorLinha;
-        const surplusB = counts[b.posicao] - targetPorLinha;
-        if (surplusA !== surplusB) {
-          return surplusB - surplusA;
-        }
-        return getCoeficiente(a, contexto) - getCoeficiente(b, contexto);
-      });
-
-      const escolhido = candidatos[0]!;
-      counts[escolhido.posicao] -= 1;
-      escolhido.posicao = item.pos;
-      counts[item.pos] += 1;
-      faltam -= 1;
-    }
-  });
-
-  const goleirosSelecionadosAjustados = ajustados.filter((p) => goleirosIds.has(p.id));
+function normalizeParticipante(p: Participante): ParticipanteAjustado {
+  const posicaoPrincipal = p.posicaoPrincipal ?? p.posicao;
+  const secundaria =
+    isLinhaPosicao(posicaoPrincipal) &&
+    isLinhaPosicao(p.posicaoSecundaria) &&
+    p.posicaoSecundaria !== posicaoPrincipal
+      ? p.posicaoSecundaria
+      : undefined;
 
   return {
-    participantes: ajustados,
-    goleirosSelecionados: sortByCoefDesc(goleirosSelecionadosAjustados),
-    avisos,
+    ...p,
+    posicao: posicaoPrincipal,
+    posicaoPrincipal,
+    posicaoSecundaria: secundaria,
+    posicaoEfetivaSorteio: posicaoPrincipal,
   };
 }
 
-function distribuirComCusto({
+function sortByCoefDesc<T extends Participante>(list: T[], contexto: CoeficienteContext) {
+  return [...list].sort((a, b) => {
+    const diff = getCoeficiente(b, contexto) - getCoeficiente(a, contexto);
+    if (Math.abs(diff) > 0.0001) return diff;
+    return a.nome.localeCompare(b.nome) || a.id.localeCompare(b.id);
+  });
+}
+
+function clonePlayerWithEffective(
+  jogador: ParticipanteAjustado,
+  posicaoEfetivaSorteio: Posicao
+): ParticipanteAjustado {
+  return {
+    ...jogador,
+    posicaoEfetivaSorteio,
+  };
+}
+
+function definirPosicoesEfetivas(
+  linhas: ParticipanteAjustado[],
+  template: FormationTemplate,
+  quantidadeTimes: number,
+  contexto: CoeficienteContext
+) {
+  const targetGlobal = Object.fromEntries(
+    LINHA_POSICOES.map((pos) => [pos, template[pos] * quantidadeTimes])
+  ) as Record<LinhaPosicao, number>;
+
+  const porPrincipal: Record<LinhaPosicao, ParticipanteAjustado[]> = {
+    ZAG: [],
+    MEI: [],
+    ATA: [],
+  };
+  linhas.forEach((jogador) => {
+    if (isLinhaPosicao(jogador.posicaoPrincipal)) {
+      porPrincipal[jogador.posicaoPrincipal].push(jogador);
+    }
+  });
+
+  const efetivos: ParticipanteAjustado[] = [];
+  const excedentes: ParticipanteAjustado[] = [];
+  const counts: Record<LinhaPosicao, number> = { ZAG: 0, MEI: 0, ATA: 0 };
+
+  LINHA_POSICOES.forEach((posicao) => {
+    const ordenados = sortByCoefDesc(porPrincipal[posicao], contexto);
+    const naturais = ordenados.slice(0, targetGlobal[posicao]);
+    const sobra = ordenados.slice(targetGlobal[posicao]);
+    naturais.forEach((jogador) => {
+      efetivos.push(clonePlayerWithEffective(jogador, posicao));
+      counts[posicao] += 1;
+    });
+    excedentes.push(...sobra);
+  });
+
+  const excedentesDisponiveis = sortByCoefDesc(excedentes, contexto).reverse();
+  const avisos: string[] = [];
+
+  LINHA_POSICOES.map((posicao) => ({
+    posicao,
+    deficit: Math.max(0, targetGlobal[posicao] - counts[posicao]),
+  }))
+    .filter((item) => item.deficit > 0)
+    .sort((a, b) => b.deficit - a.deficit || a.posicao.localeCompare(b.posicao))
+    .forEach(({ posicao, deficit }) => {
+      let faltam = deficit;
+      while (faltam > 0) {
+        const idx = excedentesDisponiveis.findIndex(
+          (jogador) => jogador.posicaoSecundaria === posicao
+        );
+        if (idx < 0) {
+          avisos.push(
+            `Posicao ${posicao} ficou abaixo do template por falta de atletas compativeis.`
+          );
+          break;
+        }
+        const [jogador] = excedentesDisponiveis.splice(idx, 1);
+        if (!jogador) break;
+        efetivos.push(clonePlayerWithEffective(jogador, posicao));
+        counts[posicao] += 1;
+        faltam -= 1;
+      }
+    });
+
+  excedentesDisponiveis.forEach((jogador) => {
+    if (isLinhaPosicao(jogador.posicaoPrincipal)) {
+      efetivos.push(clonePlayerWithEffective(jogador, jogador.posicaoPrincipal));
+      counts[jogador.posicaoPrincipal] += 1;
+    }
+  });
+
+  return { jogadores: efetivos, avisos };
+}
+
+function gerarQuotasCandidatas(lineSlots: number): LineQuotas[] {
+  const candidates: LineQuotas[] = [];
+  for (let zag = 0; zag <= lineSlots; zag += 1) {
+    for (let mei = 0; mei <= lineSlots - zag; mei += 1) {
+      const ata = lineSlots - zag - mei;
+      candidates.push({ ZAG: zag, MEI: mei, ATA: ata });
+    }
+  }
+  return candidates;
+}
+
+function quotaDeviation(quota: LineQuotas, template: FormationTemplate) {
+  return LINHA_POSICOES.reduce((acc, pos) => acc + Math.abs(quota[pos] - template[pos]), 0);
+}
+
+function escolherQuotasPorTime(
+  quantidadeTimes: number,
+  jogadoresPorTime: number,
+  template: FormationTemplate,
+  totalPorPosicao: Record<LinhaPosicao, number>
+): LineQuotas[] {
+  const lineSlots = Math.max(0, jogadoresPorTime - 1);
+  const targetGlobal = {
+    ZAG: template.ZAG * quantidadeTimes,
+    MEI: template.MEI * quantidadeTimes,
+    ATA: template.ATA * quantidadeTimes,
+  };
+  if (
+    totalPorPosicao.ZAG === targetGlobal.ZAG &&
+    totalPorPosicao.MEI === targetGlobal.MEI &&
+    totalPorPosicao.ATA === targetGlobal.ATA
+  ) {
+    return Array.from({ length: quantidadeTimes }, () => ({
+      ZAG: template.ZAG,
+      MEI: template.MEI,
+      ATA: template.ATA,
+    }));
+  }
+
+  const quotas = Array.from({ length: quantidadeTimes }, () => ({
+    ZAG: Math.floor(totalPorPosicao.ZAG / quantidadeTimes),
+    MEI: Math.floor(totalPorPosicao.MEI / quantidadeTimes),
+    ATA: Math.floor(totalPorPosicao.ATA / quantidadeTimes),
+  }));
+  const vagasRestantes = quotas.map((quota) => lineSlots - quota.ZAG - quota.MEI - quota.ATA);
+  const remainders: Record<LinhaPosicao, number> = {
+    ZAG: totalPorPosicao.ZAG % quantidadeTimes,
+    MEI: totalPorPosicao.MEI % quantidadeTimes,
+    ATA: totalPorPosicao.ATA % quantidadeTimes,
+  };
+
+  LINHA_POSICOES.forEach((posicao) => {
+    for (let count = 0; count < remainders[posicao]; count += 1) {
+      const targetIndex = vagasRestantes.findIndex((vagas) => vagas > 0);
+      if (targetIndex < 0) break;
+      quotas[targetIndex]![posicao] += 1;
+      vagasRestantes[targetIndex] -= 1;
+    }
+  });
+
+  return quotas;
+}
+
+function calcularEstruturaScore(
+  times: TimeSorteado[],
+  quotas: LineQuotas[],
+  jogadoresPorTime: number
+) {
+  let erros = 0;
+  times.forEach((time, idx) => {
+    if (time.jogadores.length !== jogadoresPorTime) {
+      erros += Math.abs(time.jogadores.length - jogadoresPorTime) * 100;
+    }
+    if (
+      time.jogadores.filter((j) => j.posicaoEfetivaSorteio === "GOL" || j.posicao === "GOL")
+        .length !== 1
+    ) {
+      erros += 1000;
+    }
+    const quota = quotas[idx];
+    if (!quota) return;
+    LINHA_POSICOES.forEach((posicao) => {
+      const count = time.jogadores.filter(
+        (j) => (j.posicaoEfetivaSorteio ?? j.posicao) === posicao
+      ).length;
+      erros += Math.abs(count - quota[posicao]) * 20;
+    });
+  });
+  return erros;
+}
+
+function calcularForcaStats(times: TimeSorteado[]) {
+  const valores = times.map((t) => t.coeficienteTotal);
+  return calcularForcaStatsFromValues(valores);
+}
+
+function calcularForcaStatsFromValues(valores: number[]) {
+  const max = Math.max(...valores);
+  const min = Math.min(...valores);
+  const media = valores.reduce((acc, v) => acc + v, 0) / Math.max(1, valores.length);
+  const variancia =
+    valores.reduce((acc, v) => acc + Math.pow(v - media, 2), 0) / Math.max(1, valores.length);
+  return { spread: max - min, variancia };
+}
+
+function distribuirPosicao({
+  posicao,
   jogadores,
   times,
+  quotas,
   contexto,
   pairWeights,
-  maxJogadoresPorTime,
-  reservas,
+  jogadoresPorTime,
 }: {
-  jogadores: Participante[];
+  posicao: LinhaPosicao;
+  jogadores: ParticipanteAjustado[];
   times: TimeSorteado[];
+  quotas: LineQuotas[];
   contexto: CoeficienteContext;
   pairWeights: Map<string, number>;
-  maxJogadoresPorTime?: number;
-  reservas: Participante[];
+  jogadoresPorTime: number;
 }) {
-  if (!jogadores.length) return;
-  const ordenados = [...jogadores].sort(
-    (a, b) => getCoeficiente(b, contexto) - getCoeficiente(a, contexto)
-  );
-  const ordem = gerarOrdemSerpentina(times.length, ordenados.length);
+  const ordenados = sortByCoefDesc(jogadores, contexto);
 
-  ordenados.forEach((jogador, idx) => {
-    const baseIdx = ordem[idx] ?? 0;
-    const candidatosBase = [baseIdx, baseIdx - 1, baseIdx + 1].filter(
-      (pos) => pos >= 0 && pos < times.length
-    );
-    const candidatosValidos = candidatosBase.filter((pos) => {
-      if (maxJogadoresPorTime && times[pos]) {
-        return times[pos]!.jogadores.length < maxJogadoresPorTime;
-      }
-      return true;
+  ordenados.forEach((jogador) => {
+    const candidatos = times
+      .map((time, index) => ({ time, index }))
+      .filter(({ time, index }) => {
+        const quota = quotas[index];
+        if (!quota) return false;
+        const posCount = time.jogadores.filter(
+          (j) => (j.posicaoEfetivaSorteio ?? j.posicao) === posicao
+        ).length;
+        return posCount < quota[posicao] && time.jogadores.length < jogadoresPorTime;
+      });
+
+    if (!candidatos.length) return;
+
+    candidatos.sort((a, b) => {
+      const coefDiff = a.time.coeficienteTotal - b.time.coeficienteTotal;
+      if (Math.abs(coefDiff) > 0.0001) return coefDiff;
+      const panelinhaA = calcularPenalidadePanelinha(jogador.id, a.time.jogadores, pairWeights);
+      const panelinhaB = calcularPenalidadePanelinha(jogador.id, b.time.jogadores, pairWeights);
+      if (Math.abs(panelinhaA - panelinhaB) > 0.0001) return panelinhaA - panelinhaB;
+      return a.index - b.index;
     });
 
-    let candidatos = candidatosValidos;
-    if (!candidatos.length && maxJogadoresPorTime) {
-      candidatos = times
-        .map((_, index) => index)
-        .filter((pos) => times[pos]!.jogadores.length < maxJogadoresPorTime);
-    }
-
-    if (!candidatos.length) {
-      reservas.push(jogador);
-      return;
-    }
-
-    let melhorIdx = candidatos[0]!;
-    let melhorScore = Number.POSITIVE_INFINITY;
-
-    candidatos.forEach((pos) => {
-      const time = times[pos]!;
-      const coefComJogador = time.coeficienteTotal + getCoeficiente(jogador, contexto);
-      const penalidade = calcularPenalidadePanelinha(jogador.id, time.jogadores, pairWeights);
-      const score = PESO_COEFICIENTE * coefComJogador + PESO_PANELINHA * penalidade;
-      if (score < melhorScore) {
-        melhorScore = score;
-        melhorIdx = pos;
-      }
-    });
-
-    const alvo = times[melhorIdx]!;
+    const alvo = candidatos[0]!.time;
     alvo.jogadores.push(jogador);
     alvo.coeficienteTotal += getCoeficiente(jogador, contexto);
   });
@@ -337,21 +456,18 @@ export function sortearTimesInteligente(
   const coefContext: CoeficienteContext = {
     partidasTotais: contexto.partidasTotais,
     sorteiosPublicadosNaTemporada: contexto.sorteiosPublicadosNaTemporada,
-    maiorPontuacaoDaTemporada: Math.max(
-      0,
-      ...participantes.map((p) => Number(p.rankingPontos || 0))
-    ),
-    maiorNumeroCampeoesDaTemporada: Math.max(
-      0,
-      ...participantes.map((p) => Number(p.campeoesDoDia || 0))
-    ),
+    maiorPontuacaoDaTemporada:
+      contexto.maiorPontuacaoDaTemporada ??
+      Math.max(0, ...participantes.map((p) => Number(p.rankingPontos || 0))),
+    maiorNumeroCampeoesDaTemporada:
+      contexto.maiorNumeroCampeoesDaTemporada ??
+      Math.max(0, ...participantes.map((p) => Number(p.campeoesDoDia || 0))),
   };
   const pairWeights = buildPairWeights(contexto.historico ?? []);
-  const ajustes = ajustarPosicoesSecundarias(participantes, quantidadeTimes, coefContext);
-  const participantesAjustados = ajustes.participantes;
-  if (ajustes.avisos.length) {
-    avisos.push(...ajustes.avisos);
-  }
+  const jogadoresPorTime =
+    contexto.jogadoresPorTime ?? Math.ceil(participantes.length / quantidadeTimes);
+  const template = getFormationTemplate(jogadoresPorTime);
+  const participantesNormalizados = participantes.map(normalizeParticipante);
 
   // 1. Inicializar times
   const times: TimeSorteado[] = timesSelecionados.map((t) => ({
@@ -364,10 +480,18 @@ export function sortearTimesInteligente(
   }));
 
   // 2. Garantir 1 goleiro por time
-  const goleirosSelecionados = ajustes.goleirosSelecionados;
+  const goleirosPrimarios = participantesNormalizados.filter((p) => p.posicaoPrincipal === "GOL");
+  if (goleirosPrimarios.length < quantidadeTimes) {
+    throw new Error(
+      `Goleiros insuficientes: ${goleirosPrimarios.length}/${quantidadeTimes}. Selecione mais goleiros.`
+    );
+  }
+  const goleirosSelecionados = sortByCoefDesc(goleirosPrimarios, coefContext)
+    .slice(0, quantidadeTimes)
+    .map((goleiro) => clonePlayerWithEffective(goleiro, "GOL"));
   const goleirosIds = new Set(goleirosSelecionados.map((g) => g.id));
-  const goleirosReservas = participantesAjustados.filter(
-    (p) => p.posicao === "GOL" && !goleirosIds.has(p.id)
+  const goleirosReservas = participantesNormalizados.filter(
+    (p) => p.posicaoPrincipal === "GOL" && !goleirosIds.has(p.id)
   );
 
   if (goleirosReservas.length) {
@@ -384,35 +508,75 @@ export function sortearTimesInteligente(
     time.coeficienteTotal += getCoeficiente(goleiro, coefContext);
   });
 
-  const participantesAtivos = participantesAjustados.filter(
-    (p) => p.posicao !== "GOL" || goleirosIds.has(p.id)
+  // 3. Definir posicoes efetivas e quotas estruturais de cada time.
+  const linhasSelecionadas = participantesNormalizados.filter((p) => p.posicaoPrincipal !== "GOL");
+  const { jogadores: linhasComPosicaoEfetiva, avisos: avisosPosicao } = definirPosicoesEfetivas(
+    linhasSelecionadas,
+    template,
+    quantidadeTimes,
+    coefContext
   );
+  avisos.push(...avisosPosicao);
 
-  // 3. Agrupar posicoes de linha
-  const grupos: Record<"ZAG" | "MEI" | "ATA", Participante[]> = {
+  const totalPorPosicao: Record<LinhaPosicao, number> = { ZAG: 0, MEI: 0, ATA: 0 };
+  linhasComPosicaoEfetiva.forEach((jogador) => {
+    if (isLinhaPosicao(jogador.posicaoEfetivaSorteio)) {
+      totalPorPosicao[jogador.posicaoEfetivaSorteio] += 1;
+    }
+  });
+
+  const quotasBase = escolherQuotasPorTime(
+    quantidadeTimes,
+    jogadoresPorTime,
+    template,
+    totalPorPosicao
+  );
+  const quotaRows = [...quotasBase].sort(
+    (a, b) => quotaDeviation(a, template) - quotaDeviation(b, template)
+  );
+  const teamOrderByStrength = times
+    .map((time, index) => ({ time, index }))
+    .sort((a, b) => a.time.coeficienteTotal - b.time.coeficienteTotal || a.index - b.index);
+  const quotas: LineQuotas[] = Array.from({ length: quantidadeTimes }, () => ({
+    ZAG: template.ZAG,
+    MEI: template.MEI,
+    ATA: template.ATA,
+  }));
+  teamOrderByStrength.forEach(({ index }, orderIndex) => {
+    quotas[index] = quotaRows[orderIndex] ?? quotas[index]!;
+  });
+
+  // 4. Agrupar posicoes efetivas de linha
+  const grupos: Record<LinhaPosicao, ParticipanteAjustado[]> = {
     ZAG: [],
     MEI: [],
     ATA: [],
   };
-  participantesAtivos.forEach((p) => {
-    if (p.posicao === "ZAG" || p.posicao === "MEI" || p.posicao === "ATA") {
-      grupos[p.posicao].push(p);
+  linhasComPosicaoEfetiva.forEach((p) => {
+    if (isLinhaPosicao(p.posicaoEfetivaSorteio)) {
+      grupos[p.posicaoEfetivaSorteio].push(p);
     }
   });
 
-  // 4. Distribuir linha com serpentina + custo anti-panelinha
+  // 5. Distribuir linha respeitando slots previamente calculados.
   (["ZAG", "MEI", "ATA"] as const).forEach((posicao) => {
-    distribuirComCusto({
+    distribuirPosicao({
+      posicao,
       jogadores: grupos[posicao],
       times,
+      quotas,
       contexto: coefContext,
       pairWeights,
-      maxJogadoresPorTime: contexto.jogadoresPorTime,
-      reservas,
+      jogadoresPorTime,
     });
   });
 
-  if (reservas.some((j) => j.posicao !== "GOL")) {
+  const distribuidoIds = new Set(times.flatMap((time) => time.jogadores.map((j) => j.id)));
+  const linhaReservas = linhasComPosicaoEfetiva.filter(
+    (jogador) => !distribuidoIds.has(jogador.id)
+  );
+  if (linhaReservas.length) {
+    reservas.push(...linhaReservas);
     avisos.push("Jogadores excedentes foram movidos para reserva por limite de vagas.");
   }
 
@@ -421,8 +585,12 @@ export function sortearTimesInteligente(
   });
   recalcularTimes(times, coefContext);
 
-  // 5. Ajuste fino com objetivo combinado (coeficiente + panelinha)
-  ajusteFinoBalanceamento(times, coefContext, pairWeights);
+  // 6. Ajuste fino de forca e anti-panelinha preservando a formacao.
+  const totalEscalado = times.reduce((acc, time) => acc + time.jogadores.length, 0);
+  const maxAjustes = totalEscalado >= 60 ? 6 : totalEscalado >= 44 ? 24 : 160;
+  const maxAntiPanelinha = totalEscalado >= 60 ? 6 : totalEscalado >= 44 ? 24 : 80;
+  ajusteFinoBalanceamento(times, coefContext, pairWeights, quotas, jogadoresPorTime, maxAjustes);
+  aplicarAntiPanelinha(times, coefContext, pairWeights, quotas, jogadoresPorTime, maxAntiPanelinha);
   times.forEach((time) => {
     time.jogadores = ordenarJogadoresNoTime(time.jogadores, coefContext);
   });
@@ -448,77 +616,162 @@ function calcularScoreBalanceamento(times: TimeSorteado[], pairWeights: Map<stri
   const coeficientes = times.map((t) => t.coeficienteTotal);
   const maior = Math.max(...coeficientes);
   const menor = Math.min(...coeficientes);
-  const diffRelativo = maior > 0 ? (maior - menor) / maior : 0;
+  const diffRelativo = maior - menor;
   const panelinhaTotal = calcularPanelinhaTotal(times, pairWeights);
   return diffRelativo * PESO_COEFICIENTE + panelinhaTotal * (PESO_PANELINHA * 0.2);
 }
 
-// Ajuste fino do balanceamento (trocas por posicao para reduzir desequilibrio e panelinha)
+function canSwapPreserveStructure(jogadorA: Participante, jogadorB: Participante) {
+  const posA = jogadorA.posicaoEfetivaSorteio ?? jogadorA.posicao;
+  const posB = jogadorB.posicaoEfetivaSorteio ?? jogadorB.posicao;
+  return posA === posB;
+}
+
+function aplicarTroca(
+  timeA: TimeSorteado,
+  timeB: TimeSorteado,
+  jogadorA: Participante,
+  jogadorB: Participante,
+  contexto: CoeficienteContext
+) {
+  timeA.jogadores = timeA.jogadores.filter((j) => j.id !== jogadorA.id);
+  timeB.jogadores = timeB.jogadores.filter((j) => j.id !== jogadorB.id);
+  timeA.jogadores.push(jogadorB);
+  timeB.jogadores.push(jogadorA);
+  recalcularTimes([timeA, timeB], contexto);
+}
+
+function desfazerTroca(
+  timeA: TimeSorteado,
+  timeB: TimeSorteado,
+  jogadorA: Participante,
+  jogadorB: Participante,
+  contexto: CoeficienteContext
+) {
+  aplicarTroca(timeA, timeB, jogadorB, jogadorA, contexto);
+}
+
+// Ajuste fino do balanceamento (trocas por posicao efetiva para reduzir desequilibrio)
 export function ajusteFinoBalanceamento(
   times: TimeSorteado[],
   contexto: CoeficienteContext,
   pairWeights: Map<string, number>,
+  quotas: LineQuotas[] = [],
+  jogadoresPorTime = 0,
   maxTentativas = 200
 ) {
   let tentativas = 0;
 
   while (tentativas < maxTentativas) {
     tentativas += 1;
-    const coeficientes = times.map((t) => t.coeficienteTotal);
-    const maiorCoef = Math.max(...coeficientes);
-    const menorCoef = Math.min(...coeficientes);
-    const diffRelativo = maiorCoef > 0 ? (maiorCoef - menorCoef) / maiorCoef : 0;
-    const shouldAdjust = diffRelativo > LIMIAR_DIFERENCA || pairWeights.size > 0;
-    if (!shouldAdjust) {
-      return;
-    }
+    const statsAtual = calcularForcaStats(times);
+    const totaisAtuais = times.map((time) => time.coeficienteTotal);
+    let melhor = {
+      spread: statsAtual.spread,
+      variancia: statsAtual.variancia,
+      timeA: null as TimeSorteado | null,
+      timeB: null as TimeSorteado | null,
+      jogadorA: null as Participante | null,
+      jogadorB: null as Participante | null,
+    };
 
-    const timeForte = times.find((t) => t.coeficienteTotal === maiorCoef);
-    const timeFraco = times.find((t) => t.coeficienteTotal === menorCoef);
-    if (!timeForte || !timeFraco) {
-      return;
-    }
-
-    const scoreAtual = calcularScoreBalanceamento(times, pairWeights);
-    let melhorScore = scoreAtual;
-    let melhorTroca: { jogadorForte: Participante; jogadorFraco: Participante } | null = null;
-
-    for (const jogadorForte of timeForte.jogadores) {
-      for (const jogadorFraco of timeFraco.jogadores) {
-        if (jogadorForte.posicao !== jogadorFraco.posicao) continue;
-
-        // troca provisoria
-        timeForte.jogadores = timeForte.jogadores.filter((j) => j.id !== jogadorForte.id);
-        timeFraco.jogadores = timeFraco.jogadores.filter((j) => j.id !== jogadorFraco.id);
-        timeForte.jogadores.push(jogadorFraco);
-        timeFraco.jogadores.push(jogadorForte);
-
-        recalcularTimes([timeForte, timeFraco], contexto);
-        const scoreNovo = calcularScoreBalanceamento(times, pairWeights);
-
-        if (scoreNovo < melhorScore - 0.0001) {
-          melhorScore = scoreNovo;
-          melhorTroca = { jogadorForte, jogadorFraco };
+    for (let i = 0; i < times.length; i += 1) {
+      for (let j = i + 1; j < times.length; j += 1) {
+        const timeA = times[i]!;
+        const timeB = times[j]!;
+        for (const jogadorA of timeA.jogadores) {
+          for (const jogadorB of timeB.jogadores) {
+            if (quotas.length && !canSwapPreserveStructure(jogadorA, jogadorB)) {
+              continue;
+            }
+            const coefA = getCoeficiente(jogadorA, contexto);
+            const coefB = getCoeficiente(jogadorB, contexto);
+            const totaisNovos = [...totaisAtuais];
+            totaisNovos[i] = timeA.coeficienteTotal - coefA + coefB;
+            totaisNovos[j] = timeB.coeficienteTotal - coefB + coefA;
+            const statsNovo = calcularForcaStatsFromValues(totaisNovos);
+            const improvesSpread = statsNovo.spread < melhor.spread - 0.0001;
+            const improvesVariance =
+              Math.abs(statsNovo.spread - melhor.spread) <= 0.0001 &&
+              statsNovo.variancia < melhor.variancia - 0.0001;
+            if (improvesSpread || improvesVariance) {
+              melhor = {
+                spread: statsNovo.spread,
+                variancia: statsNovo.variancia,
+                timeA,
+                timeB,
+                jogadorA,
+                jogadorB,
+              };
+            }
+          }
         }
-
-        // desfaz troca
-        timeForte.jogadores = timeForte.jogadores.filter((j) => j.id !== jogadorFraco.id);
-        timeFraco.jogadores = timeFraco.jogadores.filter((j) => j.id !== jogadorForte.id);
-        timeForte.jogadores.push(jogadorForte);
-        timeFraco.jogadores.push(jogadorFraco);
-        recalcularTimes([timeForte, timeFraco], contexto);
       }
     }
 
-    if (melhorTroca) {
-      timeForte.jogadores = timeForte.jogadores.filter((j) => j.id !== melhorTroca.jogadorForte.id);
-      timeFraco.jogadores = timeFraco.jogadores.filter((j) => j.id !== melhorTroca.jogadorFraco.id);
-      timeForte.jogadores.push(melhorTroca.jogadorFraco);
-      timeFraco.jogadores.push(melhorTroca.jogadorForte);
-      recalcularTimes([timeForte, timeFraco], contexto);
-    } else {
+    if (!melhor.timeA || !melhor.timeB || !melhor.jogadorA || !melhor.jogadorB) {
       return;
     }
+    aplicarTroca(melhor.timeA, melhor.timeB, melhor.jogadorA, melhor.jogadorB, contexto);
+  }
+}
+
+function aplicarAntiPanelinha(
+  times: TimeSorteado[],
+  contexto: CoeficienteContext,
+  pairWeights: Map<string, number>,
+  quotas: LineQuotas[],
+  jogadoresPorTime: number,
+  maxTentativas = 80
+) {
+  if (!pairWeights.size) return;
+
+  let tentativas = 0;
+  while (tentativas < maxTentativas) {
+    tentativas += 1;
+    const statsAtual = calcularForcaStats(times);
+    const panelinhaAtual = calcularPanelinhaTotal(times, pairWeights);
+    let melhor = {
+      panelinha: panelinhaAtual,
+      coefDiff: Number.POSITIVE_INFINITY,
+      timeA: null as TimeSorteado | null,
+      timeB: null as TimeSorteado | null,
+      jogadorA: null as Participante | null,
+      jogadorB: null as Participante | null,
+    };
+
+    for (let i = 0; i < times.length; i += 1) {
+      for (let j = i + 1; j < times.length; j += 1) {
+        const timeA = times[i]!;
+        const timeB = times[j]!;
+        for (const jogadorA of timeA.jogadores) {
+          for (const jogadorB of timeB.jogadores) {
+            if (!canSwapPreserveStructure(jogadorA, jogadorB)) {
+              continue;
+            }
+            aplicarTroca(timeA, timeB, jogadorA, jogadorB, contexto);
+            const statsNovo = calcularForcaStats(times);
+            const panelinhaNovo = calcularPanelinhaTotal(times, pairWeights);
+            const coefDiff = Math.abs(
+              getCoeficiente(jogadorA, contexto) - getCoeficiente(jogadorB, contexto)
+            );
+            if (
+              panelinhaNovo < melhor.panelinha - 0.0001 &&
+              statsNovo.spread <= statsAtual.spread + 0.0001 &&
+              coefDiff < melhor.coefDiff
+            ) {
+              melhor = { panelinha: panelinhaNovo, coefDiff, timeA, timeB, jogadorA, jogadorB };
+            }
+            desfazerTroca(timeA, timeB, jogadorA, jogadorB, contexto);
+          }
+        }
+      }
+    }
+
+    if (!melhor.timeA || !melhor.timeB || !melhor.jogadorA || !melhor.jogadorB) {
+      return;
+    }
+    aplicarTroca(melhor.timeA, melhor.timeB, melhor.jogadorA, melhor.jogadorB, contexto);
   }
 }
 

@@ -3,11 +3,65 @@ import { useFinanceiro } from "@/hooks/useFinanceiro";
 import { useFinanceiroPublic } from "@/hooks/useFinanceiroPublic";
 import { usePublicTeamRankings } from "@/hooks/usePublicTeamRankings";
 import { usePublicPlayerRankings } from "@/hooks/usePublicPlayerRankings";
-import { sortearTimesInteligente, gerarTabelaJogos, getCoeficiente } from "@/utils/sorteioUtils";
-import type { Participante } from "@/types/sorteio";
+import {
+  sortearTimesInteligente,
+  gerarTabelaJogos,
+  getCoeficiente,
+  getFormationTemplate,
+  isFaseInicialCalibracao,
+} from "@/utils/sorteioUtils";
+import type { Participante, Posicao, TimeSorteado } from "@/types/sorteio";
 
 const mutateMock = jest.fn();
 const handleAsyncMock = jest.fn((fn: any) => fn());
+
+function criarParticipanteTeste(
+  id: string,
+  posicao: Posicao,
+  nivelFinal = 3,
+  posicaoSecundaria?: Posicao
+): Participante {
+  return {
+    id,
+    nome: id,
+    slug: id,
+    foto: `/${id}.png`,
+    posicao,
+    posicaoSecundaria,
+    rankingPontos: Math.round(nivelFinal * 10),
+    campeoesDoDia: Math.max(0, Math.floor(nivelFinal - 2)),
+    vitorias: 0,
+    gols: 0,
+    assistencias: 0,
+    estrelas: {
+      id: `e-${id}`,
+      rachaId: "r-fin",
+      jogadorId: id,
+      estrelas: nivelFinal,
+      nivelFinal,
+      atualizadoEm: "",
+    },
+    mensalista: true,
+    partidas: 10,
+  };
+}
+
+function criarTimesTeste(qtd: number) {
+  return Array.from({ length: qtd }, (_, idx) => ({
+    id: `t-${idx + 1}`,
+    nome: `Time ${idx + 1}`,
+    logo: `/t-${idx + 1}.png`,
+  }));
+}
+
+function contarPosicoes(times: TimeSorteado[]) {
+  return times.map((time) => ({
+    GOL: time.jogadores.filter((j) => (j.posicaoEfetivaSorteio ?? j.posicao) === "GOL").length,
+    ZAG: time.jogadores.filter((j) => (j.posicaoEfetivaSorteio ?? j.posicao) === "ZAG").length,
+    MEI: time.jogadores.filter((j) => (j.posicaoEfetivaSorteio ?? j.posicao) === "MEI").length,
+    ATA: time.jogadores.filter((j) => (j.posicaoEfetivaSorteio ?? j.posicao) === "ATA").length,
+  }));
+}
 
 const swrMock = jest.fn((key: string) => {
   const map: Record<string, any> = {
@@ -348,6 +402,139 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     }
   );
 
+  it("sortearTimesInteligente respeita template perfeito 4x7", () => {
+    const participantes = [
+      ...Array.from({ length: 4 }, (_, idx) =>
+        criarParticipanteTeste(`gol-${idx}`, "GOL", 3 + idx * 0.1)
+      ),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`zag-${idx}`, "ZAG", 5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`mei-${idx}`, "MEI", 4.5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`ata-${idx}`, "ATA", 4 - idx * 0.1)
+      ),
+    ];
+
+    const resultado = sortearTimesInteligente(participantes, criarTimesTeste(4), {
+      partidasTotais: 20,
+      sorteiosPublicadosNaTemporada: 8,
+      historico: [],
+      jogadoresPorTime: 7,
+    });
+
+    expect(contarPosicoes(resultado.times)).toEqual(
+      Array.from({ length: 4 }, () => ({ GOL: 1, ZAG: 2, MEI: 2, ATA: 2 }))
+    );
+  });
+
+  it("sortearTimesInteligente minimiza posicoes no cenario real sem secundarias uteis", () => {
+    const participantes = [
+      ...Array.from({ length: 4 }, (_, idx) => criarParticipanteTeste(`gol-real-${idx}`, "GOL", 3)),
+      ...Array.from({ length: 11 }, (_, idx) =>
+        criarParticipanteTeste(`zag-real-${idx}`, "ZAG", 5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 5 }, (_, idx) =>
+        criarParticipanteTeste(`mei-real-${idx}`, "MEI", 4.5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`ata-real-${idx}`, "ATA", 4 - idx * 0.1)
+      ),
+    ];
+
+    const resultado = sortearTimesInteligente(participantes, criarTimesTeste(4), {
+      partidasTotais: 20,
+      sorteiosPublicadosNaTemporada: 8,
+      historico: [],
+      jogadoresPorTime: 7,
+    });
+    const counts = contarPosicoes(resultado.times);
+
+    expect(counts.map((item) => item.ZAG).sort()).toEqual([2, 3, 3, 3]);
+    expect(counts.map((item) => item.MEI).sort()).toEqual([1, 1, 1, 2]);
+    expect(counts.map((item) => item.ATA).sort()).toEqual([2, 2, 2, 2]);
+    counts.forEach((item) => {
+      expect(item.GOL).toBe(1);
+      expect(item.ZAG + item.MEI + item.ATA).toBe(6);
+      expect(item.MEI).toBeGreaterThan(0);
+    });
+  });
+
+  it("sortearTimesInteligente usa excedentes com secundaria para fechar template", () => {
+    const participantes = [
+      ...Array.from({ length: 4 }, (_, idx) => criarParticipanteTeste(`gol-flex-${idx}`, "GOL", 3)),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`zag-flex-main-${idx}`, "ZAG", 5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 3 }, (_, idx) =>
+        criarParticipanteTeste(`zag-flex-sec-${idx}`, "ZAG", 2.5 - idx * 0.1, "MEI")
+      ),
+      ...Array.from({ length: 5 }, (_, idx) =>
+        criarParticipanteTeste(`mei-flex-${idx}`, "MEI", 4.5 - idx * 0.1)
+      ),
+      ...Array.from({ length: 8 }, (_, idx) =>
+        criarParticipanteTeste(`ata-flex-${idx}`, "ATA", 4 - idx * 0.1)
+      ),
+    ];
+
+    const resultado = sortearTimesInteligente(participantes, criarTimesTeste(4), {
+      partidasTotais: 20,
+      sorteiosPublicadosNaTemporada: 8,
+      historico: [],
+      jogadoresPorTime: 7,
+    });
+
+    expect(contarPosicoes(resultado.times)).toEqual(
+      Array.from({ length: 4 }, () => ({ GOL: 1, ZAG: 2, MEI: 2, ATA: 2 }))
+    );
+    expect(
+      resultado.times.flatMap((time) =>
+        time.jogadores.filter(
+          (jogador) => jogador.posicaoPrincipal === "ZAG" && jogador.posicaoEfetivaSorteio === "MEI"
+        )
+      )
+    ).toHaveLength(3);
+  });
+
+  it.each([5, 6, 7, 8, 9, 10, 11])(
+    "sortearTimesInteligente respeita template ideal com %i jogadores por time",
+    (jogadoresPorTime) => {
+      const template = getFormationTemplate(jogadoresPorTime);
+      const participantes = [
+        ...Array.from({ length: 4 * template.GOL }, (_, idx) =>
+          criarParticipanteTeste(`gol-template-${jogadoresPorTime}-${idx}`, "GOL", 3)
+        ),
+        ...Array.from({ length: 4 * template.ZAG }, (_, idx) =>
+          criarParticipanteTeste(`zag-template-${jogadoresPorTime}-${idx}`, "ZAG", 5 - idx * 0.02)
+        ),
+        ...Array.from({ length: 4 * template.MEI }, (_, idx) =>
+          criarParticipanteTeste(`mei-template-${jogadoresPorTime}-${idx}`, "MEI", 4 - idx * 0.02)
+        ),
+        ...Array.from({ length: 4 * template.ATA }, (_, idx) =>
+          criarParticipanteTeste(`ata-template-${jogadoresPorTime}-${idx}`, "ATA", 3 - idx * 0.02)
+        ),
+      ];
+
+      const resultado = sortearTimesInteligente(participantes, criarTimesTeste(4), {
+        partidasTotais: 20,
+        sorteiosPublicadosNaTemporada: 8,
+        historico: [],
+        jogadoresPorTime,
+      });
+
+      expect(contarPosicoes(resultado.times)).toEqual(
+        Array.from({ length: 4 }, () => ({
+          GOL: template.GOL,
+          ZAG: template.ZAG,
+          MEI: template.MEI,
+          ATA: template.ATA,
+        }))
+      );
+    }
+  );
+
   it("getCoeficiente combina nivel, ranking e Campeoes do Dia apos a calibracao", () => {
     const base: Participante = {
       id: "p10",
@@ -386,7 +573,40 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
     expect(coefRankingAlto).toBeGreaterThan(coefRankingBaixo);
   });
 
-  it("getCoeficiente usa somente nivelFinal nos 8 primeiros sorteios publicados", () => {
+  it("normaliza ranking e Campeoes do Dia pelos maximos oficiais da temporada", () => {
+    const participante: Participante = {
+      id: "p-oficial",
+      nome: "Oficial",
+      slug: "oficial",
+      foto: "/f.png",
+      posicao: "ATA",
+      rankingPontos: 40,
+      campeoesDoDia: 5,
+      vitorias: 0,
+      gols: 0,
+      assistencias: 0,
+      mensalista: false,
+      estrelas: {
+        id: "s-oficial",
+        rachaId: "r-fin",
+        jogadorId: "p-oficial",
+        estrelas: 4,
+        nivelFinal: 4,
+        atualizadoEm: "",
+      },
+    };
+
+    const coeficiente = getCoeficiente(participante, {
+      partidasTotais: 10,
+      sorteiosPublicadosNaTemporada: 8,
+      maiorPontuacaoDaTemporada: 80,
+      maiorNumeroCampeoesDaTemporada: 10,
+    });
+
+    expect(coeficiente).toBeCloseTo(3.25);
+  });
+
+  it("getCoeficiente usa nivelFinal ate o 8o sorteio e formula completa a partir do 9o", () => {
     const base: Participante = {
       id: "p11",
       nome: "Tester 2",
@@ -409,22 +629,29 @@ describe("Fluxos de financeiro, sorteio e rankings", () => {
       },
       partidas: 12,
     };
-    const contexto = {
+    const contextoBase = {
       partidasTotais: 12,
-      sorteiosPublicadosNaTemporada: 8,
       maiorPontuacaoDaTemporada: 100,
       maiorNumeroCampeoesDaTemporada: 10,
     };
-    const coefRankingBaixo = getCoeficiente(
-      { ...base, rankingPontos: 1, campeoesDoDia: 0 },
-      contexto
-    );
-    const coefRankingAlto = getCoeficiente(
+    expect(isFaseInicialCalibracao(7)).toBe(true);
+    expect(isFaseInicialCalibracao(8)).toBe(false);
+    expect(isFaseInicialCalibracao(9)).toBe(false);
+
+    const coefSetePublicados = getCoeficiente(
       { ...base, rankingPontos: 10, campeoesDoDia: 10 },
-      contexto
+      { ...contextoBase, sorteiosPublicadosNaTemporada: 7 }
     );
-    expect(coefRankingAlto).toBe(4);
-    expect(coefRankingAlto).toBe(coefRankingBaixo);
+    const coefOitoPublicadosBaixo = getCoeficiente(
+      { ...base, rankingPontos: 1, campeoesDoDia: 0 },
+      { ...contextoBase, sorteiosPublicadosNaTemporada: 8 }
+    );
+    const coefOitoPublicadosAlto = getCoeficiente(
+      { ...base, rankingPontos: 10, campeoesDoDia: 10 },
+      { ...contextoBase, sorteiosPublicadosNaTemporada: 8 }
+    );
+    expect(coefSetePublicados).toBe(4);
+    expect(coefOitoPublicadosAlto).toBeGreaterThan(coefOitoPublicadosBaixo);
   });
 
   it("getCoeficiente nao da vantagem de ranking ou Campeoes do Dia para BOT", () => {

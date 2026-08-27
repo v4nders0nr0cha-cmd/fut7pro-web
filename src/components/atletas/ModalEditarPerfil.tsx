@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePerfil } from "./PerfilContext";
 import type { PosicaoAtleta } from "@/types/atletas";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
+import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -83,8 +84,21 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       return;
     }
     const posicaoSecundariaSelecionada = (posicaoSecundaria || "") as PosicaoAtleta | "";
-    if (posicaoSecundariaSelecionada && posicaoSecundariaSelecionada === posicaoSelecionada) {
-      setErro("Posicao secundaria nao pode ser igual a principal.");
+    if (!isGoalkeeperPosition(posicaoSelecionada) && !posicaoSecundariaSelecionada) {
+      setErro("Informe a posicao secundaria.");
+      return;
+    }
+    if (isGoalkeeperPosition(posicaoSelecionada) && posicaoSecundariaSelecionada) {
+      setErro("Goleiro nao deve ter posicao secundaria.");
+      return;
+    }
+    if (
+      posicaoSecundariaSelecionada &&
+      !getValidSecondaryDisplayOptions(posicaoSelecionada).includes(
+        posicaoSecundariaSelecionada as any
+      )
+    ) {
+      setErro("Posicao secundaria invalida para a posicao principal.");
       return;
     }
 
@@ -95,7 +109,9 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
         firstName: trimmedNome,
         nickname: trimmedApelido,
         position: posicaoSelecionada,
-        positionSecondary: posicaoSecundariaSelecionada || null,
+        positionSecondary: isGoalkeeperPosition(posicaoSelecionada)
+          ? null
+          : posicaoSecundariaSelecionada || null,
         avatarFile: fotoFile ?? undefined,
       });
       setSucesso(true);
@@ -183,7 +199,16 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
             Posição
             <select
               value={posicao}
-              onChange={(e) => setPosicao(e.target.value as PosicaoAtleta | "")}
+              onChange={(e) => {
+                const next = e.target.value as PosicaoAtleta | "";
+                setPosicao(next);
+                if (
+                  isGoalkeeperPosition(next) ||
+                  !getValidSecondaryDisplayOptions(next).includes(posicaoSecundaria as any)
+                ) {
+                  setPosicaoSecundaria("");
+                }
+              }}
               disabled={salvando}
               className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
             >
@@ -194,22 +219,30 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
               <option value="Atacante">Atacante</option>
             </select>
           </label>
-          <label className="text-sm text-brand-soft">
-            Posição secundária (opcional)
-            <select
-              value={posicaoSecundaria}
-              onChange={(e) => setPosicaoSecundaria(e.target.value as PosicaoAtleta | "")}
-              disabled={salvando}
-              className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
-            >
-              <option value="">Nenhuma</option>
-              <option value="Goleiro">Goleiro</option>
-              <option value="Zagueiro">Zagueiro</option>
-              <option value="Meia">Meia</option>
-              <option value="Atacante">Atacante</option>
-            </select>
-            <SecondaryPositionHint className="text-zinc-400" />
-          </label>
+          {!isGoalkeeperPosition(posicao) && (
+            <label className="text-sm text-brand-soft">
+              Posição secundária
+              <select
+                value={posicaoSecundaria}
+                onChange={(e) => setPosicaoSecundaria(e.target.value as PosicaoAtleta | "")}
+                disabled={salvando}
+                required={!isGoalkeeperPosition(posicao)}
+                className="w-full mt-1 px-2 py-1 rounded bg-zinc-800 border border-brand text-white"
+              >
+                <option value="">Selecione</option>
+                {getValidSecondaryDisplayOptions(posicao).map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <SecondaryPositionHint className="text-zinc-400">
+                Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
+                posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente a
+                equilibrar melhor os times.
+              </SecondaryPositionHint>
+            </label>
+          )}
         </div>
         {erro && <div className="text-red-400 text-sm mt-2">{erro}</div>}
         {sucesso && (

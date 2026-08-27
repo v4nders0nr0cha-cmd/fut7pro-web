@@ -105,9 +105,11 @@ const mockParticipantesRestaurados: Participante[] = mockJogadores.map((jogador,
 function ParticipantesHarness({
   config,
   initialParticipantes = [],
+  onMetricasTemporadaChange,
 }: {
   config: ConfiguracaoRacha;
   initialParticipantes?: Participante[];
+  onMetricasTemporadaChange?: jest.Mock;
 }) {
   const [participantes, setParticipantes] = useState<Participante[]>(initialParticipantes);
   return (
@@ -124,6 +126,7 @@ function ParticipantesHarness({
         config={config}
         participantes={participantes}
         setParticipantes={setParticipantes}
+        onMetricasTemporadaChange={onMetricasTemporadaChange}
       />
     </>
   );
@@ -206,5 +209,93 @@ describe("ParticipantesRacha", () => {
     expect(screen.getByTestId("linha-selecionados")).toHaveTextContent("24");
     expect(document.body).toHaveTextContent("28 / 28");
     expect(document.body).toHaveTextContent("Limite perfeito! Pronto para sortear.");
+  });
+
+  it("deriva a maior pontuacao da temporada das linhas do ranking quando a API nao envia o campo agregado", async () => {
+    const onMetricasTemporadaChange = jest.fn();
+
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes("/player-rankings")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            results: [
+              { id: "jogador-1", pontos: 40 },
+              { id: "jogador-2", pontos: 80 },
+            ],
+          }),
+        } as any);
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ rankings: [] }),
+      } as any);
+    });
+
+    render(
+      <ParticipantesHarness
+        onMetricasTemporadaChange={onMetricasTemporadaChange}
+        config={{
+          duracaoRachaMin: 90,
+          duracaoPartidaMin: 6,
+          numTimes: 2,
+          jogadoresPorTime: 7,
+          dataPartida: "2025-12-30",
+          horaPartida: "19:30",
+        }}
+      />
+    );
+
+    await waitFor(() =>
+      expect(onMetricasTemporadaChange).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maiorPontuacaoDaTemporada: 80,
+          rankingCarregado: true,
+        })
+      )
+    );
+  });
+
+  it("nao marca ranking como carregado quando a API falha", async () => {
+    const onMetricasTemporadaChange = jest.fn();
+
+    (global.fetch as jest.Mock).mockImplementation((url: string) => {
+      if (url.includes("/player-rankings")) {
+        return Promise.resolve({
+          ok: false,
+          json: async () => ({ error: "ranking indisponivel" }),
+        } as any);
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ rankings: [] }),
+      } as any);
+    });
+
+    render(
+      <ParticipantesHarness
+        onMetricasTemporadaChange={onMetricasTemporadaChange}
+        config={{
+          duracaoRachaMin: 90,
+          duracaoPartidaMin: 6,
+          numTimes: 2,
+          jogadoresPorTime: 7,
+          dataPartida: "2025-12-30",
+          horaPartida: "19:30",
+        }}
+      />
+    );
+
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining("/player-rankings"))
+    );
+
+    expect(onMetricasTemporadaChange).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        rankingCarregado: true,
+      })
+    );
   });
 });

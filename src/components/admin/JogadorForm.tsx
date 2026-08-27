@@ -6,6 +6,12 @@ import type { Jogador, PosicaoJogador } from "@/types/jogador";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import {
+  getValidSecondaryCanonicalOptions,
+  isGoalkeeperPosition,
+  isSecondaryRequired,
+  normalizeSecondaryCanonical,
+} from "@/utils/position-secondary";
+import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
 } from "@/lib/forms/native-ptbr-validation";
@@ -102,6 +108,13 @@ export default function JogadorForm({
       setForm((prev) => ({
         ...prev,
         [name]: value,
+        ...(name === "posicao"
+          ? {
+              posicaoSecundaria: isGoalkeeperPosition(value)
+                ? null
+                : normalizeSecondaryCanonical(value, prev.posicaoSecundaria) || null,
+            }
+          : {}),
       }));
     }
   }
@@ -131,11 +144,27 @@ export default function JogadorForm({
     e.preventDefault();
     const posicaoPrimaria = String(form.posicao || "").toLowerCase();
     const posicaoSec = String(form.posicaoSecundaria || "").toLowerCase();
-    if (posicaoSec && posicaoPrimaria === posicaoSec) {
-      toast.error("Posicao secundaria nao pode ser igual a principal.");
+    if (isSecondaryRequired(posicaoPrimaria) && !posicaoSec) {
+      toast.error("Informe a posicao secundaria do jogador.");
       return;
     }
-    if (onSave) onSave(form, fotoFile);
+    if (isGoalkeeperPosition(posicaoPrimaria) && posicaoSec) {
+      toast.error("Goleiro nao deve ter posicao secundaria.");
+      return;
+    }
+    if (!normalizeSecondaryCanonical(posicaoPrimaria, posicaoSec) && posicaoSec) {
+      toast.error("Posicao secundaria invalida para a posicao principal.");
+      return;
+    }
+    if (onSave) {
+      onSave(
+        {
+          ...form,
+          posicaoSecundaria: isGoalkeeperPosition(posicaoPrimaria) ? null : form.posicaoSecundaria,
+        },
+        fotoFile
+      );
+    }
   }
 
   async function handleCropApply(cropped: string) {
@@ -152,6 +181,8 @@ export default function JogadorForm({
   }
 
   const hasPreview = !!fotoPreview && fotoPreview !== "null" && fotoPreview !== "undefined";
+  const secondaryOptions = getValidSecondaryCanonicalOptions(form.posicao) as PosicaoJogador[];
+  const showSecondary = !isGoalkeeperPosition(form.posicao);
 
   return (
     <form
@@ -251,25 +282,32 @@ export default function JogadorForm({
           </label>
         </div>
       </div>
-      <div className="flex gap-4">
-        <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Posição secundária</label>
-          <select
-            name="posicaoSecundaria"
-            value={form.posicaoSecundaria ?? ""}
-            onChange={handleChange}
-            className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-          >
-            <option value="">Nenhuma</option>
-            {POSICOES.map((pos) => (
-              <option key={pos.value} value={pos.value}>
-                {pos.label}
-              </option>
-            ))}
-          </select>
-          <SecondaryPositionHint />
+      {showSecondary && (
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label className="block font-medium text-yellow-500 mb-1">Posição secundária</label>
+            <select
+              name="posicaoSecundaria"
+              value={form.posicaoSecundaria ?? ""}
+              onChange={handleChange}
+              className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
+              required={isSecondaryRequired(form.posicao)}
+            >
+              <option value="">Selecione</option>
+              {POSICOES.filter((pos) => secondaryOptions.includes(pos.value)).map((pos) => (
+                <option key={pos.value} value={pos.value}>
+                  {pos.label}
+                </option>
+              ))}
+            </select>
+            <SecondaryPositionHint>
+              Se houver excesso de atletas na posição principal deste jogador, em qual outra posição
+              ele pode atuar? Essa informação é usada pelo Sorteio Inteligente para equilibrar
+              melhor os times.
+            </SecondaryPositionHint>
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex gap-4">
         <button
           type="submit"
