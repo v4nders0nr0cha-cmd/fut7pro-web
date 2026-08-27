@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import RegisterClient from "../RegisterClient";
 
 const replaceMock = jest.fn();
@@ -86,6 +86,9 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
+    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
+      target: { value: "Meia" },
+    });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "5" } });
 
@@ -132,6 +135,9 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
+    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
+      target: { value: "Meia" },
+    });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
 
@@ -152,5 +158,42 @@ describe("RegisterClient", () => {
     expect(screen.getByRole("heading", { name: "Crie sua Conta Fut7Pro" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("email@exemplo.com")).toHaveValue("novo@teste.com");
     expect(screen.queryByRole("heading", { name: "Solicitar entrada" })).not.toBeInTheDocument();
+  });
+
+  it("exibe posicao secundaria sem valor inicial e filtra opcoes pela posicao principal", () => {
+    render(<RegisterClient />);
+
+    const secundaria = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
+    expect(secundaria).toHaveValue("");
+    expect(within(secundaria).getByRole("option", { name: "Selecione" })).toBeInTheDocument();
+    expect(within(secundaria).queryByRole("option", { name: "Goleiro" })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, {
+      target: { value: "Meia" },
+    });
+
+    const secundariaAtualizada = screen.getAllByRole("combobox")[1]!;
+    expect(
+      within(secundariaAtualizada).getByRole("option", { name: "Zagueiro" })
+    ).toBeInTheDocument();
+    expect(
+      within(secundariaAtualizada).getByRole("option", { name: "Atacante" })
+    ).toBeInTheDocument();
+    expect(
+      within(secundariaAtualizada).queryByRole("option", { name: "Meia" })
+    ).not.toBeInTheDocument();
+    expect(
+      within(secundariaAtualizada).queryByRole("option", { name: "Goleiro" })
+    ).not.toBeInTheDocument();
+  });
+
+  it("nao solicita posicao secundaria para goleiro", () => {
+    render(<RegisterClient />);
+
+    fireEvent.change(screen.getByLabelText("Posição principal"), {
+      target: { value: "Goleiro" },
+    });
+
+    expect(screen.queryByLabelText("Posição secundária")).not.toBeInTheDocument();
   });
 });

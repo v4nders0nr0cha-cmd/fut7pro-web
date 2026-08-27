@@ -229,6 +229,12 @@ const buildTestFingerprint = (
     timesDoDia: mockTimesDisponiveis.filter((time) => timesSelecionados.includes(time.id)),
     participantes,
     totalTemporada: 9,
+    metricasTemporada: {
+      maiorPontuacaoDaTemporada: 80,
+      maiorNumeroCampeoesDaTemporada: 10,
+      rankingCarregado: true,
+      campeoesCarregado: true,
+    },
     historico: [],
   });
 const buildDraft = (overrides: Record<string, unknown> = {}) => ({
@@ -333,11 +339,22 @@ jest.mock("@/components/sorteio/SelecionarTimesDia", () => ({
 
 jest.mock("@/components/sorteio/ParticipantesRacha", () => ({
   __esModule: true,
-  default: ({ setParticipantes }: any) => (
-    <button type="button" onClick={() => setParticipantes(mockParticipantesValidos)}>
-      Carregar participantes
-    </button>
-  ),
+  default: function ParticipantesRachaMock({ setParticipantes, onMetricasTemporadaChange }: any) {
+    const React = require("react");
+    React.useEffect(() => {
+      onMetricasTemporadaChange?.({
+        maiorPontuacaoDaTemporada: 80,
+        maiorNumeroCampeoesDaTemporada: 10,
+        rankingCarregado: true,
+        campeoesCarregado: true,
+      });
+    }, [onMetricasTemporadaChange]);
+    return (
+      <button type="button" onClick={() => setParticipantes(mockParticipantesValidos)}>
+        Carregar participantes
+      </button>
+    );
+  },
 }));
 
 jest.mock("@/components/sorteio/TimesGerados", () => ({
@@ -406,12 +423,19 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     fireEvent.click(continuarParticipantes);
   }
 
+  async function carregarParticipantesEAguardarSorteio() {
+    fireEvent.click(screen.getByText(/Carregar participantes/i));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Sortear Times/i })).not.toBeDisabled()
+    );
+  }
+
   it("gera times, tabela e permite publicar apos o sorteio", async () => {
     jest.useFakeTimers();
     render(<SorteioInteligenteAdmin />);
 
     await avancarAteParticipantes();
-    fireEvent.click(screen.getByText(/Carregar participantes/i));
+    await carregarParticipantesEAguardarSorteio();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
@@ -444,7 +468,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     render(<SorteioInteligenteAdmin />);
 
     await avancarAteParticipantes();
-    fireEvent.click(screen.getByText(/Carregar participantes/i));
+    await carregarParticipantesEAguardarSorteio();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
@@ -509,7 +533,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     const { unmount } = render(<SorteioInteligenteAdmin />);
 
     await avancarAteParticipantes();
-    fireEvent.click(screen.getByText(/Carregar participantes/i));
+    await carregarParticipantesEAguardarSorteio();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
@@ -634,7 +658,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     render(<SorteioInteligenteAdmin />);
 
     await avancarAteParticipantes();
-    fireEvent.click(screen.getByText(/Carregar participantes/i));
+    await carregarParticipantesEAguardarSorteio();
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));

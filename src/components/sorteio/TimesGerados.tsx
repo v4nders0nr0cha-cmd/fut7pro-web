@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import type { TimeSorteado, Participante } from "@/types/sorteio";
-import { getCoeficiente, type CoeficienteContext } from "@/utils/sorteioUtils";
+import {
+  getCoeficiente,
+  isFaseInicialCalibracao,
+  type CoeficienteContext,
+} from "@/utils/sorteioUtils";
 import { formatNivel } from "@/utils/nivel-atleta";
 import { useEffect, useState } from "react";
 import StarRatingDisplay from "@/components/ui/StarRatingDisplay";
@@ -44,8 +48,7 @@ export default function TimesGerados({
 }: Props) {
   const [timesEdit, setTimesEdit] = useState<TimeSorteado[]>(() => cloneTimes(times));
   const [editando, setEditando] = useState(false);
-  const calibracaoConcluida =
-    typeof sorteiosPublicadosNaTemporada === "number" && sorteiosPublicadosNaTemporada > 8;
+  const calibracaoConcluida = !isFaseInicialCalibracao(sorteiosPublicadosNaTemporada);
 
   useEffect(() => {
     if (!editando) {
@@ -114,8 +117,8 @@ export default function TimesGerados({
     const ordemPosicoes: Record<string, number> = { GOL: 0, ZAG: 1, MEI: 2, ATA: 3 };
     const contexto: CoeficienteContext = coeficienteContext ?? { partidasTotais: 0 };
     return [...jogadores].sort((a, b) => {
-      const posA = ordemPosicoes[a.posicao] ?? 99;
-      const posB = ordemPosicoes[b.posicao] ?? 99;
+      const posA = ordemPosicoes[a.posicaoEfetivaSorteio ?? a.posicao] ?? 99;
+      const posB = ordemPosicoes[b.posicaoEfetivaSorteio ?? b.posicao] ?? 99;
       if (posA !== posB) return posA - posB;
       // Dentro da mesma posição, mais forte em cima
       return getCoeficiente(b, contexto) - getCoeficiente(a, contexto);
@@ -125,10 +128,16 @@ export default function TimesGerados({
   // Calcula médias dinâmicas em tempo real para o time atual
   function calcularMedias(jogadores: Participante[]) {
     const totalRanking = jogadores.reduce((acc, j) => acc + (j.rankingPontos || 0), 0);
-    const totalEstrelas = jogadores.reduce((acc, j) => acc + (j.estrelas?.estrelas || 0), 0);
+    const totalNivel = jogadores.reduce(
+      (acc, j) => acc + (j.estrelas?.nivelFinal ?? j.estrelas?.estrelas ?? 0),
+      0
+    );
+    const contexto: CoeficienteContext = coeficienteContext ?? { partidasTotais: 0 };
+    const totalForca = jogadores.reduce((acc, j) => acc + getCoeficiente(j, contexto), 0);
     return {
       mediaRanking: jogadores.length ? totalRanking / jogadores.length : 0,
-      mediaEstrelas: jogadores.length ? totalEstrelas / jogadores.length : 0,
+      mediaNivel: jogadores.length ? totalNivel / jogadores.length : 0,
+      forcaMedia: jogadores.length ? totalForca / jogadores.length : 0,
     };
   }
 
@@ -144,12 +153,13 @@ export default function TimesGerados({
     const temNivel = typeof habilidade === "number" && typeof fisico === "number";
     const tooltip = `Habilidade ${typeof habilidade === "number" ? habilidade : "-"}, Fisico ${typeof fisico === "number" ? fisico : "-"}`;
     const nivelTexto = formatNivel(temNivel ? nivelFinal : null);
+    const posicaoEfetiva = jogador.posicaoEfetivaSorteio ?? jogador.posicao;
     const posicaoPrincipal = jogador.posicaoPrincipal;
-    const usandoSecundaria = posicaoPrincipal && posicaoPrincipal !== jogador.posicao;
-    const posicaoLabel = usandoSecundaria ? `${jogador.posicao} (sec)` : jogador.posicao;
+    const usandoSecundaria = posicaoPrincipal && posicaoPrincipal !== posicaoEfetiva;
+    const posicaoLabel = usandoSecundaria ? `${posicaoEfetiva} (sec)` : posicaoEfetiva;
     const posicaoTitle = usandoSecundaria
       ? `Posicao principal: ${posicaoPrincipal}`
-      : jogador.posicao;
+      : posicaoEfetiva;
 
     return (
       <div
@@ -275,7 +285,7 @@ export default function TimesGerados({
           // Ordenar jogadores na ordem desejada!
           const jogadoresOrdenados = ordenarJogadores(time.jogadores);
           // Calcular médias atualizadas em tempo real
-          const { mediaRanking, mediaEstrelas } = calcularMedias(jogadoresOrdenados);
+          const { mediaRanking, mediaNivel, forcaMedia } = calcularMedias(jogadoresOrdenados);
 
           return (
             <div
@@ -306,11 +316,23 @@ export default function TimesGerados({
               </DndContext>
               <div className="flex justify-between mt-2 text-xs text-gray-400">
                 <span>
-                  Média Ranking: <b className="text-white">{mediaRanking.toFixed(1)}</b>
+                  Média Ranking:{" "}
+                  {rankingEmCalibracao ? (
+                    <b className="text-zinc-300">
+                      — <span className="font-normal text-zinc-500">Após calibração</span>
+                    </b>
+                  ) : (
+                    <b className="text-white">{mediaRanking.toFixed(1)}</b>
+                  )}
                 </span>
                 <span>
-                  Média Estrelas: <b className="text-yellow-400">{mediaEstrelas.toFixed(1)}</b>
+                  Nível médio: <b className="text-yellow-400">{mediaNivel.toFixed(1)}</b>
                 </span>
+                {calibracaoConcluida && (
+                  <span>
+                    Força do time: <b className="text-emerald-300">{forcaMedia.toFixed(2)}</b>
+                  </span>
+                )}
               </div>
               {editando && jogadoresPorTime && time.jogadores.length !== jogadoresPorTime && (
                 <span className="text-xs text-red-400 mt-1">

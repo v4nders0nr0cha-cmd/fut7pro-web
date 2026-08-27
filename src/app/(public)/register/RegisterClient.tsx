@@ -20,6 +20,7 @@ import { useMe } from "@/hooks/useMe";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
+import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 import {
   clearPublicAuthContext,
   isFut7ProAccountComplete,
@@ -355,7 +356,14 @@ export default function RegisterClient() {
       setPosicao(String(me.athlete.position));
     }
     if (!posicaoSecundaria && me?.athlete?.positionSecondary) {
-      setPosicaoSecundaria(String(me.athlete.positionSecondary));
+      const secundaria = String(me.athlete.positionSecondary);
+      if (
+        getValidSecondaryDisplayOptions(posicao || me?.athlete?.position).includes(
+          secundaria as any
+        )
+      ) {
+        setPosicaoSecundaria(secundaria);
+      }
     }
     if (!dia && me?.athlete?.birthDay) {
       setDia(String(me.athlete.birthDay));
@@ -420,8 +428,17 @@ export default function RegisterClient() {
     if (!posicao) {
       return "Selecione a posicao principal.";
     }
-    if (posicaoSecundaria && posicaoSecundaria === posicao) {
-      return "Posicao secundaria nao pode ser igual a principal.";
+    if (!isGoalkeeperPosition(posicao) && !posicaoSecundaria) {
+      return "Informe a posicao secundaria.";
+    }
+    if (isGoalkeeperPosition(posicao) && posicaoSecundaria) {
+      return "Goleiro nao deve ter posicao secundaria.";
+    }
+    if (
+      posicaoSecundaria &&
+      !getValidSecondaryDisplayOptions(posicao).includes(posicaoSecundaria as any)
+    ) {
+      return "Posicao secundaria invalida para a posicao principal.";
     }
     if (!dia || !mes) {
       return "Informe o dia e o mes de nascimento.";
@@ -508,7 +525,7 @@ export default function RegisterClient() {
       name: trimmedNome,
       nickname: trimmedApelido ? trimmedApelido : undefined,
       position: posicao,
-      positionSecondary: posicaoSecundaria || null,
+      positionSecondary: isGoalkeeperPosition(posicao) ? null : posicaoSecundaria || null,
       birthDay: Number(dia),
       birthMonth: Number(mes),
       birthYear: toNumberOrNull(ano),
@@ -911,7 +928,16 @@ export default function RegisterClient() {
               Posição principal
               <select
                 value={posicao}
-                onChange={(event) => setPosicao(event.target.value)}
+                onChange={(event) => {
+                  const next = event.target.value;
+                  setPosicao(next);
+                  if (
+                    isGoalkeeperPosition(next) ||
+                    !getValidSecondaryDisplayOptions(next).includes(posicaoSecundaria as any)
+                  ) {
+                    setPosicaoSecundaria("");
+                  }
+                }}
                 required
                 className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
@@ -923,22 +949,29 @@ export default function RegisterClient() {
                 ))}
               </select>
             </label>
-            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-              Posição secundária
-              <select
-                value={posicaoSecundaria}
-                onChange={(event) => setPosicaoSecundaria(event.target.value)}
-                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
-              >
-                <option value="">Nenhuma</option>
-                {POSICOES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-              <SecondaryPositionHint className="normal-case tracking-normal font-normal text-gray-400" />
-            </label>
+            {!isGoalkeeperPosition(posicao) && (
+              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                Posição secundária
+                <select
+                  value={posicaoSecundaria}
+                  onChange={(event) => setPosicaoSecundaria(event.target.value)}
+                  required={!isGoalkeeperPosition(posicao)}
+                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
+                >
+                  <option value="">Selecione</option>
+                  {getValidSecondaryDisplayOptions(posicao).map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <SecondaryPositionHint className="normal-case tracking-normal font-normal text-gray-400">
+                  Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
+                  posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente a
+                  equilibrar melhor os times.
+                </SecondaryPositionHint>
+              </label>
+            )}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">

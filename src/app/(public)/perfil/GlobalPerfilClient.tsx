@@ -10,6 +10,7 @@ import SecurityRecoveryPanel from "@/components/profile/SecurityRecoveryPanel";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
+import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -322,8 +323,19 @@ export default function GlobalPerfilClient() {
       setFormError("Selecione a posição principal.");
       return;
     }
-    if (form.positionSecondary && form.positionSecondary === resolvedPosition) {
-      setFormError("A posição secundária não pode ser igual à principal.");
+    if (!isGoalkeeperPosition(resolvedPosition) && !form.positionSecondary) {
+      setFormError("Informe a posição secundária.");
+      return;
+    }
+    if (isGoalkeeperPosition(resolvedPosition) && form.positionSecondary) {
+      setFormError("Goleiro não deve ter posição secundária.");
+      return;
+    }
+    if (
+      form.positionSecondary &&
+      !getValidSecondaryDisplayOptions(resolvedPosition).includes(form.positionSecondary as any)
+    ) {
+      setFormError("Posição secundária inválida para a posição principal.");
       return;
     }
 
@@ -359,7 +371,9 @@ export default function GlobalPerfilClient() {
         nickname: form.nickname.trim() || null,
         avatarUrl,
         position: resolvedPosition,
-        positionSecondary: form.positionSecondary || null,
+        positionSecondary: isGoalkeeperPosition(resolvedPosition)
+          ? null
+          : form.positionSecondary || null,
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
@@ -632,7 +646,21 @@ export default function GlobalPerfilClient() {
                 Posição principal *
                 <select
                   value={form.position}
-                  onChange={(event) => updateFormField("position", event.target.value as Posicao)}
+                  onChange={(event) => {
+                    const next = event.target.value as Posicao;
+                    setHasEditedForm(true);
+                    setForm((prev) => ({
+                      ...prev,
+                      position: next,
+                      positionSecondary:
+                        isGoalkeeperPosition(next) ||
+                        !getValidSecondaryDisplayOptions(next).includes(
+                          prev.positionSecondary as any
+                        )
+                          ? ""
+                          : prev.positionSecondary,
+                    }));
+                  }}
                   className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
                 >
                   <option value="">Selecione</option>
@@ -643,24 +671,31 @@ export default function GlobalPerfilClient() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm text-zinc-300">
-                Posição secundária
-                <select
-                  value={form.positionSecondary}
-                  onChange={(event) =>
-                    updateFormField("positionSecondary", event.target.value as Posicao)
-                  }
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
-                >
-                  <option value="">Nenhuma</option>
-                  {POSICOES.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-                <SecondaryPositionHint className="text-zinc-400" />
-              </label>
+              {!isGoalkeeperPosition(form.position) && (
+                <label className="text-sm text-zinc-300">
+                  Posição secundária
+                  <select
+                    value={form.positionSecondary}
+                    onChange={(event) =>
+                      updateFormField("positionSecondary", event.target.value as Posicao)
+                    }
+                    required={!isGoalkeeperPosition(form.position)}
+                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                  >
+                    <option value="">Selecione</option>
+                    {getValidSecondaryDisplayOptions(form.position).map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                  <SecondaryPositionHint className="text-zinc-400">
+                    Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
+                    posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente
+                    a equilibrar melhor os times.
+                  </SecondaryPositionHint>
+                </label>
+              )}
               <div className="grid grid-cols-3 gap-3 sm:col-span-2">
                 <label className="text-sm text-zinc-300">
                   Dia

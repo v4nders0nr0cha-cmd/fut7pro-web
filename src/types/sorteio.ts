@@ -30,6 +30,7 @@ export interface Participante {
   posicao: Posicao;
   posicaoPrincipal?: Posicao;
   posicaoSecundaria?: Posicao;
+  posicaoEfetivaSorteio?: Posicao;
   rankingPontos: number;
   campeoesDoDia?: number;
   vitorias: number;
@@ -48,6 +49,7 @@ export interface TimeSorteado {
   coeficienteTotal: number; // Soma dos coeficientes dos jogadores do time
   mediaRanking?: number;
   mediaEstrelas?: number;
+  forcaMedia?: number;
 }
 
 export interface ConfiguracaoRacha {

@@ -8,7 +8,12 @@ import SelecionarTimesDia from "./SelecionarTimesDia";
 import ParticipantesRacha from "./ParticipantesRacha";
 import TimesGerados from "./TimesGerados";
 import BotaoPublicarTimes from "./BotaoPublicarTimes";
-import { sortearTimesInteligente, gerarTabelaJogos } from "@/utils/sorteioUtils";
+import {
+  sortearTimesInteligente,
+  gerarTabelaJogos,
+  SORTEIO_ALGORITHM_VERSION,
+  isFaseInicialCalibracao,
+} from "@/utils/sorteioUtils";
 import TabelaJogosRacha from "./TabelaJogosRacha";
 import type {
   Participante,
@@ -22,6 +27,9 @@ import { useTimes } from "@/hooks/useTimes";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import { useCriticalSessionRefresh } from "@/hooks/useCriticalSessionRefresh";
 import { logoPadrao } from "@/config/teamLogoMap";
+import EditorTabelaConfrontos, {
+  validarTabelaConfrontos,
+} from "@/components/sorteio/EditorTabelaConfrontos";
 
 const SORTEIO_DRAFT_STORAGE_PREFIX = "fut7pro_admin_sorteio_draft_v1";
 
@@ -42,6 +50,13 @@ type SorteioDraft = {
   partidasTotaisSorteio: number;
   sorteioAvisos: string[];
   sorteioReservas: Participante[];
+};
+
+type SorteioMetricasTemporada = {
+  maiorPontuacaoDaTemporada: number | null;
+  maiorNumeroCampeoesDaTemporada: number | null;
+  rankingCarregado: boolean;
+  campeoesCarregado: boolean;
 };
 
 const buildDraftStorageKey = (scope: string) => `${SORTEIO_DRAFT_STORAGE_PREFIX}:${scope}`;
@@ -75,6 +90,7 @@ export const buildSorteioInputsFingerprint = ({
   timesDoDia,
   participantes,
   totalTemporada,
+  metricasTemporada,
   historico,
 }: {
   config: ConfiguracaoRacha | null;
@@ -88,11 +104,13 @@ export const buildSorteioInputsFingerprint = ({
   }>;
   participantes: Participante[];
   totalTemporada?: number | null;
+  metricasTemporada?: SorteioMetricasTemporada;
   historico?: SorteioHistoricoItem[];
 }) => {
   if (!config) return null;
   return JSON.stringify({
     config: {
+      sorteioAlgorithmVersion: SORTEIO_ALGORITHM_VERSION,
       numTimes: config.numTimes,
       jogadoresPorTime: config.jogadoresPorTime,
       duracaoRachaMin: config.duracaoRachaMin,
@@ -119,6 +137,10 @@ export const buildSorteioInputsFingerprint = ({
         campeoesDoDia: participante.campeoesDoDia || 0,
       })),
     totalTemporada: totalTemporada ?? null,
+    metricasTemporada: {
+      maiorPontuacaoDaTemporada: metricasTemporada?.maiorPontuacaoDaTemporada ?? null,
+      maiorNumeroCampeoesDaTemporada: metricasTemporada?.maiorNumeroCampeoesDaTemporada ?? null,
+    },
     historicoAntiPanelinha: buildHistoricoFingerprint(historico ?? []),
   });
 };
@@ -138,112 +160,105 @@ const parseDraft = (raw: string | null): SorteioDraft | null => {
   }
 };
 
-// SVG Loader animado de bola pulando (não precisa instalar nada)
-function LoaderBolaFutebol() {
+function SorteioLoadingModal({ calibracao }: { calibracao: boolean }) {
+  const etapas = useMemo(
+    () =>
+      calibracao
+        ? [
+            "Validando configuração do sorteio",
+            "Usando o nível dos atletas na fase de calibração",
+            "Conferindo equilíbrio por posição",
+            "Organizando goleiros e jogadores de linha",
+            "Distribuindo atletas entre os times",
+            "Aplicando histórico recente de combinações",
+            "Ajustando equilíbrio final",
+            "Montando a tabela dos times sorteados",
+          ]
+        : [
+            "Validando configuração do sorteio",
+            "Analisando nível dos atletas",
+            "Considerando Ranking Geral da temporada",
+            "Considerando Campeões do Dia",
+            "Conferindo equilíbrio por posição",
+            "Distribuindo atletas entre os times",
+            "Aplicando histórico recente de combinações",
+            "Ajustando equilíbrio final",
+          ],
+    [calibracao]
+  );
+  const [etapaAtual, setEtapaAtual] = useState(0);
+
+  useEffect(() => {
+    setEtapaAtual(0);
+    const interval = window.setInterval(() => {
+      setEtapaAtual((current) => Math.min(current + 1, etapas.length - 1));
+    }, 620);
+    return () => window.clearInterval(interval);
+  }, [etapas.length]);
+
+  const progresso = ((etapaAtual + 1) / etapas.length) * 100;
+
   return (
-    <svg width="72" height="72" viewBox="0 0 72 72" className="mb-2" aria-hidden>
-      <g>
-        {/* Sombra */}
-        <ellipse cx="36" cy="64" rx="20" ry="5" fill="#000" opacity="0.2">
-          <animate
-            attributeName="rx"
-            values="20;12;20"
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+      <div
+        role="status"
+        aria-live="polite"
+        className="w-full max-w-lg rounded-2xl border border-yellow-400/40 bg-[#111214] p-6 shadow-2xl shadow-black/50"
+      >
+        <div className="flex items-start gap-4">
+          <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-yellow-400/40 bg-yellow-400/10">
+            <div className="absolute h-14 w-14 animate-ping rounded-full border border-yellow-400/30" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-yellow-400 border-t-transparent" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-yellow-300">Montando os times</h2>
+            <p className="mt-1 text-sm leading-relaxed text-zinc-300">
+              O Fut7Pro está conferindo as regras do sorteio e organizando a melhor composição
+              possível.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 h-2 overflow-hidden rounded-full bg-zinc-800">
+          <div
+            className="h-full rounded-full bg-yellow-400 transition-all duration-500 ease-out"
+            style={{ width: `${progresso}%` }}
           />
-          <animate
-            attributeName="opacity"
-            values="0.2;0.35;0.2"
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </ellipse>
-        {/* Bola */}
-        <circle cx="36" cy="36" r="20" fill="#fff" stroke="#222" strokeWidth="3">
-          <animate
-            attributeName="cy"
-            values="36;16;36"
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </circle>
-        {/* Hexágono central */}
-        <polygon points="36,24 44,28 44,36 36,40 28,36 28,28" fill="#222">
-          <animate
-            attributeName="points"
-            values="
-                            36,24 44,28 44,36 36,40 28,36 28,28;
-                            36,14 46,20 46,36 36,42 26,36 26,20;
-                            36,24 44,28 44,36 36,40 28,36 28,28
-                        "
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </polygon>
-        {/* Detalhes (gomos) */}
-        <polyline
-          points="36,24 36,40"
-          stroke="#fff"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-        >
-          <animate
-            attributeName="points"
-            values="
-                            36,24 36,40;
-                            36,14 36,42;
-                            36,24 36,40
-                        "
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </polyline>
-        <polyline
-          points="36,24 44,28"
-          stroke="#fff"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-        >
-          <animate
-            attributeName="points"
-            values="
-                            36,24 44,28;
-                            36,14 46,20;
-                            36,24 44,28
-                        "
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </polyline>
-        <polyline
-          points="36,24 28,28"
-          stroke="#fff"
-          strokeWidth="2"
-          strokeLinecap="round"
-          fill="none"
-        >
-          <animate
-            attributeName="points"
-            values="
-                            36,24 28,28;
-                            36,14 26,20;
-                            36,24 28,28
-                        "
-            keyTimes="0;0.5;1"
-            dur="0.7s"
-            repeatCount="indefinite"
-          />
-        </polyline>
-      </g>
-    </svg>
+        </div>
+
+        <div className="mt-5 space-y-2">
+          {etapas.map((etapa, index) => {
+            const ativa = index === etapaAtual;
+            const concluida = index < etapaAtual;
+            return (
+              <div
+                key={etapa}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  ativa
+                    ? "bg-yellow-400/10 text-yellow-200"
+                    : concluida
+                      ? "text-emerald-300"
+                      : "text-zinc-500"
+                }`}
+              >
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full border text-[11px] ${
+                    ativa
+                      ? "border-yellow-400 text-yellow-300"
+                      : concluida
+                        ? "border-emerald-400 bg-emerald-400 text-black"
+                        : "border-zinc-700"
+                  }`}
+                >
+                  {concluida ? "✓" : index + 1}
+                </span>
+                <span>{etapa}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -425,6 +440,13 @@ export default function SorteioInteligenteAdmin() {
   const [sorteioReservas, setSorteioReservas] = useState<Participante[]>([]);
   const [sorteioErro, setSorteioErro] = useState<string | null>(null);
   const [edicaoTimes, setEdicaoTimes] = useState({ editando: false, invalido: false });
+  const [edicaoTabela, setEdicaoTabela] = useState(false);
+  const [metricasTemporada, setMetricasTemporada] = useState<SorteioMetricasTemporada>({
+    maiorPontuacaoDaTemporada: null,
+    maiorNumeroCampeoesDaTemporada: null,
+    rankingCarregado: false,
+    campeoesCarregado: false,
+  });
   const [draftHydrated, setDraftHydrated] = useState(false);
   const [draftRestoredAtLabel, setDraftRestoredAtLabel] = useState<string | null>(null);
   const [resultadoFingerprint, setResultadoFingerprint] = useState<string | null>(null);
@@ -447,6 +469,15 @@ export default function SorteioInteligenteAdmin() {
     () => timesDisponiveis.filter((time) => timesSelecionados.includes(time.id)),
     [timesDisponiveis, timesSelecionados]
   );
+  const timesSelecionadosParaTabela = useMemo(
+    () =>
+      timesSelecionadosDetalhes.map((time) => ({
+        id: time.id,
+        nome: time.nome,
+        logo: time.logo || logoPadrao,
+      })),
+    [timesSelecionadosDetalhes]
+  );
   const limiteTimesConfirmacao = maxTimes;
   const faltamTimesCadastrados = !loadingTimes && timesDisponiveis.length < maxTimes;
   const timesFaltantes = Math.max(0, maxTimes - timesDisponiveis.length);
@@ -465,6 +496,10 @@ export default function SorteioInteligenteAdmin() {
     participantes.length === participantesNecessarios &&
     goleirosSelecionadosTotal === maxTimes &&
     linhaSelecionadosTotal === linhaNecessarios;
+  const rankingEmCalibracao = isFaseInicialCalibracao(totalTemporada);
+  const metricasOficiaisProntas =
+    rankingEmCalibracao ||
+    (metricasTemporada.rankingCarregado && metricasTemporada.campeoesCarregado);
   const pendenciasParticipantes = [
     participantes.length !== participantesNecessarios
       ? participantes.length < participantesNecessarios
@@ -483,8 +518,10 @@ export default function SorteioInteligenteAdmin() {
     sobramLinha > 0
       ? `Remova ${sobramLinha} jogador${sobramLinha === 1 ? "" : "es"} de linha excedente${sobramLinha === 1 ? "" : "s"}.`
       : null,
+    !metricasOficiaisProntas
+      ? "Aguarde carregar Ranking Geral e Campeões do Dia da temporada antes de sortear."
+      : null,
   ].filter(Boolean) as string[];
-  const rankingEmCalibracao = typeof totalTemporada !== "number" || totalTemporada <= 8;
   const sorteioInputsFingerprint = useMemo(
     () =>
       buildSorteioInputsFingerprint({
@@ -493,9 +530,18 @@ export default function SorteioInteligenteAdmin() {
         timesDoDia: timesSelecionadosDetalhes,
         participantes,
         totalTemporada,
+        metricasTemporada,
         historico,
       }),
-    [config, historico, participantes, timesSelecionados, timesSelecionadosDetalhes, totalTemporada]
+    [
+      config,
+      historico,
+      metricasTemporada,
+      participantes,
+      timesSelecionados,
+      timesSelecionadosDetalhes,
+      totalTemporada,
+    ]
   );
   const draftStep: SorteioDraftStep =
     times.length > 0 ? "SORTEADO" : configConfirmada ? "PARTICIPANTES" : "CONFIG";
@@ -765,7 +811,7 @@ export default function SorteioInteligenteAdmin() {
   });
 
   async function handleSortearTimes() {
-    if (!config || !timesDoDiaValidos || !participantesCompletos) {
+    if (!config || !timesDoDiaValidos || !participantesCompletos || !metricasOficiaisProntas) {
       setSorteioErro(
         pendenciasParticipantes.length
           ? pendenciasParticipantes.join(" ")
@@ -803,6 +849,9 @@ export default function SorteioInteligenteAdmin() {
           const resultado = sortearTimesInteligente(participantes, timesNormalizados, {
             partidasTotais,
             sorteiosPublicadosNaTemporada: sorteiosPublicados,
+            maiorPontuacaoDaTemporada: metricasTemporada.maiorPontuacaoDaTemporada ?? undefined,
+            maiorNumeroCampeoesDaTemporada:
+              metricasTemporada.maiorNumeroCampeoesDaTemporada ?? undefined,
             historico,
             jogadoresPorTime: config.jogadoresPorTime,
           });
@@ -826,6 +875,7 @@ export default function SorteioInteligenteAdmin() {
       timesDoDia: timesNormalizados,
       participantes,
       totalTemporada,
+      metricasTemporada,
       historico,
     });
     setResultadoFingerprint(fingerprint);
@@ -890,13 +940,58 @@ export default function SorteioInteligenteAdmin() {
     }
   }
 
+  function handleDuracaoConfrontosChange(duracao: number) {
+    if (!Number.isFinite(duracao) || duracao <= 0) return;
+    setConfig((current) => {
+      if (!current) return current;
+      const nextConfig = { ...current, duracaoPartidaMin: duracao };
+      if (times.length > 0) {
+        setResultadoFingerprint(
+          buildSorteioInputsFingerprint({
+            config: nextConfig,
+            timesSelecionados,
+            timesDoDia: timesSelecionadosDetalhes,
+            participantes,
+            totalTemporada,
+            metricasTemporada,
+            historico,
+          })
+        );
+      }
+      return nextConfig;
+    });
+    setTabelaJogos((current) => current.map((jogo) => ({ ...jogo, tempo: duracao })));
+  }
+
+  function handleRestaurarTabelaAutomatica() {
+    if (!config) return;
+    setTabelaJogos(
+      gerarTabelaJogos({
+        times: timesSelecionadosParaTabela,
+        duracaoRachaMin: config.duracaoRachaMin,
+        duracaoPartidaMin: config.duracaoPartidaMin,
+      })
+    );
+  }
+
   async function handlePublicarTimes() {
     if (!config || times.length === 0 || !resolvedSlug) return;
+    if (edicaoTabela) {
+      setSorteioErro("Salve ou cancele a edição da tabela antes de publicar.");
+      return;
+    }
 
     const dataPartida = config.dataPartida?.trim();
     const horaPartida = config.horaPartida?.trim();
     if (!dataPartida || !horaPartida) {
       setSorteioErro("Defina a data e o horário da partida antes de publicar.");
+      return;
+    }
+    const validacaoTabela = validarTabelaConfrontos(tabelaJogos, timesSelecionadosParaTabela, {
+      duracaoRachaMin: config.duracaoRachaMin,
+    });
+    if (validacaoTabela.erros.length > 0) {
+      setSorteioErro(validacaoTabela.erros.join(" "));
       return;
     }
 
@@ -964,17 +1059,7 @@ export default function SorteioInteligenteAdmin() {
       ref={sorteioTopRef}
       className="mx-auto max-w-7xl bg-fundo px-3 pb-32 pt-4 md:px-6 md:pb-10"
     >
-      {/* LOADING ANIMADO */}
-      {loadingSorteio && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-          <div className="flex flex-col items-center gap-4 p-8 rounded-xl bg-[#181818] border-2 border-yellow-400 shadow-xl">
-            <LoaderBolaFutebol />
-            <div className="text-yellow-200 text-xl font-bold text-center">
-              Aguarde, o melhor Sistema de Balanceamento do Brasil está equilibrando seus times!
-            </div>
-          </div>
-        </div>
-      )}
+      {loadingSorteio && <SorteioLoadingModal calibracao={rankingEmCalibracao} />}
 
       <div className="mb-5 text-center md:text-left">
         <h1 className="text-3xl font-bold text-yellow-400 md:text-4xl">Sorteio Inteligente</h1>
@@ -1247,6 +1332,7 @@ export default function SorteioInteligenteAdmin() {
               config={config}
               participantes={participantes}
               setParticipantes={setParticipantes}
+              onMetricasTemporadaChange={setMetricasTemporada}
             />
 
             <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -1259,7 +1345,12 @@ export default function SorteioInteligenteAdmin() {
               <button
                 className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500 disabled:pointer-events-none disabled:opacity-60 md:w-auto"
                 onClick={handleSortearTimes}
-                disabled={loadingTimes || !timesDoDiaValidos || !participantesCompletos}
+                disabled={
+                  loadingTimes ||
+                  !timesDoDiaValidos ||
+                  !participantesCompletos ||
+                  !metricasOficiaisProntas
+                }
               >
                 Sortear Times
               </button>
@@ -1282,7 +1373,7 @@ export default function SorteioInteligenteAdmin() {
                     {!loadingHistorico && !erroHistorico && (
                       <>
                         Temporada {anoTemporada ?? ""}: {totalTemporada} sorteios publicados.{" "}
-                        {totalTemporada <= 8
+                        {isFaseInicialCalibracao(totalTemporada)
                           ? "Fase de calibração: nos primeiros 8 sorteios publicados, o balanceamento usa apenas o nível final definido pelo admin."
                           : "Nível final, ranking, Campeões do Dia e anti-panelinha ativos no balanceamento."}
                       </>
@@ -1345,6 +1436,10 @@ export default function SorteioInteligenteAdmin() {
                     partidasTotais: partidasTotaisSorteio,
                     sorteiosPublicadosNaTemporada:
                       typeof totalTemporada === "number" ? totalTemporada : undefined,
+                    maiorPontuacaoDaTemporada:
+                      metricasTemporada.maiorPontuacaoDaTemporada ?? undefined,
+                    maiorNumeroCampeoesDaTemporada:
+                      metricasTemporada.maiorNumeroCampeoesDaTemporada ?? undefined,
                   }}
                   rankingEmCalibracao={rankingEmCalibracao}
                   sorteiosPublicadosNaTemporada={
@@ -1366,6 +1461,7 @@ export default function SorteioInteligenteAdmin() {
                       loadingTimes ||
                       !timesDoDiaValidos ||
                       !participantesCompletos ||
+                      !metricasOficiaisProntas ||
                       edicaoTimes.editando ||
                       edicaoTimes.invalido
                     }
@@ -1451,6 +1547,16 @@ export default function SorteioInteligenteAdmin() {
                       Tabela de Confrontos
                     </h3>
                     <TabelaJogosRacha jogos={tabelaJogos} />
+                    <EditorTabelaConfrontos
+                      jogos={tabelaJogos}
+                      timesDisponiveis={timesSelecionadosParaTabela}
+                      duracaoGlobal={config?.duracaoPartidaMin ?? 6}
+                      duracaoRachaMin={config?.duracaoRachaMin ?? 0}
+                      onDuracaoGlobalChange={handleDuracaoConfrontosChange}
+                      onSave={setTabelaJogos}
+                      onRestoreAutomatic={handleRestaurarTabelaAutomatica}
+                      onEditingStateChange={setEdicaoTabela}
+                    />
                   </div>
                 )}
 

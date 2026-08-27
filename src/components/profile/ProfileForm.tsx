@@ -4,6 +4,11 @@ import { useEffect, useState, type ChangeEvent } from "react";
 import { toast } from "react-hot-toast";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
+import {
+  getValidSecondaryDisplayOptions,
+  isGoalkeeperPosition,
+  type DisplayPosition,
+} from "@/utils/position-secondary";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
 type Posicao = (typeof POSICOES)[number] | "";
@@ -86,8 +91,17 @@ export default function ProfileForm({
     if (trimmed.length > 10) return "Maximo de 10 caracteres.";
     if (nickname.trim().length > 10) return "Apelido com maximo de 10 caracteres.";
     if (!position) return "Selecione a posicao.";
-    if (positionSecondary && positionSecondary === position) {
-      return "Posicao secundaria nao pode ser igual a principal.";
+    if (!isGoalkeeperPosition(position) && !positionSecondary) {
+      return "Informe a posicao secundaria.";
+    }
+    if (isGoalkeeperPosition(position) && positionSecondary) {
+      return "Goleiro nao deve ter posicao secundaria.";
+    }
+    if (
+      positionSecondary &&
+      !getValidSecondaryDisplayOptions(position).includes(positionSecondary)
+    ) {
+      return "Posicao secundaria invalida para a posicao principal.";
     }
     return null;
   }
@@ -133,7 +147,7 @@ export default function ProfileForm({
       firstName: firstName.trim(),
       nickname: nickname.trim(),
       position,
-      positionSecondary: positionSecondary || null,
+      positionSecondary: isGoalkeeperPosition(position) ? null : positionSecondary || null,
       avatarUrl: initialValues.avatarUrl ?? null,
       avatarFile,
     });
@@ -196,7 +210,18 @@ export default function ProfileForm({
               Posição *
               <select
                 value={position}
-                onChange={(e) => setPosition(e.target.value as Posicao)}
+                onChange={(e) => {
+                  const next = e.target.value as Posicao;
+                  setPosition(next);
+                  if (
+                    isGoalkeeperPosition(next) ||
+                    !getValidSecondaryDisplayOptions(next).includes(
+                      positionSecondary as DisplayPosition
+                    )
+                  ) {
+                    setPositionSecondary("");
+                  }
+                }}
                 disabled={saving}
                 className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
               >
@@ -208,23 +233,30 @@ export default function ProfileForm({
                 ))}
               </select>
             </label>
-            <label className="text-sm text-zinc-300">
-              Posição secundária
-              <select
-                value={positionSecondary}
-                onChange={(e) => setPositionSecondary(e.target.value as Posicao | "")}
-                disabled={saving}
-                className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
-              >
-                <option value="">Nenhuma</option>
-                {POSICOES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-              <SecondaryPositionHint className="text-zinc-400" />
-            </label>
+            {!isGoalkeeperPosition(position) && (
+              <label className="text-sm text-zinc-300">
+                Posição secundária
+                <select
+                  value={positionSecondary}
+                  onChange={(e) => setPositionSecondary(e.target.value as Posicao | "")}
+                  disabled={saving}
+                  required={!isGoalkeeperPosition(position)}
+                  className="mt-2 w-full rounded-lg bg-[#111111] border border-[#2a2a2a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-brand disabled:opacity-60"
+                >
+                  <option value="">Selecione</option>
+                  {getValidSecondaryDisplayOptions(position).map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <SecondaryPositionHint className="text-zinc-400">
+                  Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
+                  posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente a
+                  equilibrar melhor os times.
+                </SecondaryPositionHint>
+              </label>
+            )}
           </div>
         </div>
       </div>
