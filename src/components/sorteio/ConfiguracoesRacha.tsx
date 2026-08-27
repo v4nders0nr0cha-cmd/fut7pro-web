@@ -252,7 +252,7 @@ export default function ConfiguracoesRacha({
         </div>
         <div className="flex-1">
           <label htmlFor="hora-partida" className="text-sm">
-            Horario da Partida:
+            Horário da Partida:
           </label>
           <input
             id="hora-partida"
@@ -267,7 +267,7 @@ export default function ConfiguracoesRacha({
         </div>
       </div>
       <p className="text-xs text-gray-400">
-        A data e o horario aparecem nas paginas de Times do Dia.
+        A data e o horário aparecem nas páginas de Times do Dia.
       </p>
     </form>
   );
