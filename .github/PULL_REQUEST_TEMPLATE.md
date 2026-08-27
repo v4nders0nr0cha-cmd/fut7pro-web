@@ -1,11 +1,12 @@
 ## Resumo
 
-Descreva a mudanca e o impacto para administradores, atletas ou operacao.
+Descreva a mudança e o impacto para administradores, atletas ou operação.
 
-## Central de Atualizacoes
+## Central de Atualizações
 
-- [ ] Central de Atualizacoes atualizada
+- [ ] Central de Atualizações atualizada
 - [ ] `no-changelog` aplicado e justificado
+- [ ] Textos visíveis ao usuário revisados em português do Brasil
 
 Quando este PR precisar atualizar a Central, informe o PR correspondente no backend:
 
@@ -15,9 +16,9 @@ Preencha quando usar a label `no-changelog`.
 
 Motivo do no-changelog:
 
-## Validacao
+## Validação
 
 - [ ] TypeScript
 - [ ] Testes
 - [ ] Build
-- [ ] Smoke/validacao manual quando aplicavel
+- [ ] Smoke/validação manual quando aplicável

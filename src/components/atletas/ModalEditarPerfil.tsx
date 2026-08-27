@@ -44,7 +44,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       return;
     }
     if (file.size > MAX_AVATAR_SIZE) {
-      setErro("Envie uma imagem com ate 2MB.");
+      setErro("Envie uma imagem com até 2MB.");
       return;
     }
     setFotoFile(file);
@@ -71,25 +71,25 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
       return;
     }
     if (trimmedNome.length > 10) {
-      setErro("Maximo de 10 caracteres.");
+      setErro("Máximo de 10 caracteres.");
       return;
     }
     if (trimmedApelido.length > 10) {
-      setErro("Apelido com maximo de 10 caracteres.");
+      setErro("Apelido com máximo de 10 caracteres.");
       return;
     }
     const posicaoSelecionada = (posicao || usuario.posicao) as PosicaoAtleta;
     if (!posicaoSelecionada) {
-      setErro("Selecione a posicao.");
+      setErro("Selecione a posição.");
       return;
     }
     const posicaoSecundariaSelecionada = (posicaoSecundaria || "") as PosicaoAtleta | "";
     if (!isGoalkeeperPosition(posicaoSelecionada) && !posicaoSecundariaSelecionada) {
-      setErro("Informe a posicao secundaria.");
+      setErro("Informe a posição secundária.");
       return;
     }
     if (isGoalkeeperPosition(posicaoSelecionada) && posicaoSecundariaSelecionada) {
-      setErro("Goleiro nao deve ter posicao secundaria.");
+      setErro("Goleiro não deve ter posição secundária.");
       return;
     }
     if (
@@ -98,7 +98,7 @@ export default function ModalEditarPerfil({ onClose }: { onClose: () => void }) 
         posicaoSecundariaSelecionada as any
       )
     ) {
-      setErro("Posicao secundaria invalida para a posicao principal.");
+      setErro("Posição secundária inválida para a posição principal.");
       return;
     }
 

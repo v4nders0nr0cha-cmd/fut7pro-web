@@ -59,7 +59,7 @@ export default function JogadorForm({
   function dataUrlToFile(dataUrl: string) {
     const [header, base64Data] = dataUrl.split(",");
     if (!base64Data) {
-      throw new Error("Imagem invalida.");
+      throw new Error("Imagem inválida.");
     }
     const match = header?.match(/data:(.*);base64/);
     const mime = match?.[1] || "image/jpeg";
@@ -127,7 +127,7 @@ export default function JogadorForm({
       return;
     }
     if (file.size > MAX_AVATAR_SIZE) {
-      toast.error("Envie uma imagem com ate 2MB.");
+      toast.error("Envie uma imagem com até 2MB.");
       return;
     }
     const reader = new FileReader();
@@ -145,15 +145,15 @@ export default function JogadorForm({
     const posicaoPrimaria = String(form.posicao || "").toLowerCase();
     const posicaoSec = String(form.posicaoSecundaria || "").toLowerCase();
     if (isSecondaryRequired(posicaoPrimaria) && !posicaoSec) {
-      toast.error("Informe a posicao secundaria do jogador.");
+      toast.error("Informe a posição secundária do jogador.");
       return;
     }
     if (isGoalkeeperPosition(posicaoPrimaria) && posicaoSec) {
-      toast.error("Goleiro nao deve ter posicao secundaria.");
+      toast.error("Goleiro não deve ter posição secundária.");
       return;
     }
     if (!normalizeSecondaryCanonical(posicaoPrimaria, posicaoSec) && posicaoSec) {
-      toast.error("Posicao secundaria invalida para a posicao principal.");
+      toast.error("Posição secundária inválida para a posição principal.");
       return;
     }
     if (onSave) {
