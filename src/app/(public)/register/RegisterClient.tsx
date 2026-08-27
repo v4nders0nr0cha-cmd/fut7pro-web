@@ -420,31 +420,31 @@ export default function RegisterClient() {
       return "Use apenas o primeiro nome.";
     }
     if (trimmedNome.length > 10) {
-      return "Nome com maximo de 10 letras.";
+      return "Nome com máximo de 10 letras.";
     }
     if (trimmedApelido.length > 10) {
-      return "Apelido com maximo de 10 letras.";
+      return "Apelido com máximo de 10 letras.";
     }
     if (!posicao) {
-      return "Selecione a posicao principal.";
+      return "Selecione a posição principal.";
     }
     if (!isGoalkeeperPosition(posicao) && !posicaoSecundaria) {
-      return "Informe a posicao secundaria.";
+      return "Informe a posição secundária.";
     }
     if (isGoalkeeperPosition(posicao) && posicaoSecundaria) {
-      return "Goleiro nao deve ter posicao secundaria.";
+      return "Goleiro não deve ter posição secundária.";
     }
     if (
       posicaoSecundaria &&
       !getValidSecondaryDisplayOptions(posicao).includes(posicaoSecundaria as any)
     ) {
-      return "Posicao secundaria invalida para a posicao principal.";
+      return "Posição secundária inválida para a posição principal.";
     }
     if (!dia || !mes) {
-      return "Informe o dia e o mes de nascimento.";
+      return "Informe o dia e o mês de nascimento.";
     }
     if (!isYearValid(ano)) {
-      return "Ano de nascimento invalido.";
+      return "Ano de nascimento inválido.";
     }
 
     return null;
@@ -459,7 +459,7 @@ export default function RegisterClient() {
       return;
     }
     if (file.size > MAX_AVATAR_SIZE) {
-      setAvatarError("Envie uma imagem com ate 2MB.");
+      setAvatarError("Envie uma imagem com até 2MB.");
       return;
     }
     const reader = new FileReader();
@@ -647,7 +647,7 @@ export default function RegisterClient() {
         });
 
         if (signInResult?.error) {
-          setErro("Nao foi possivel finalizar o acesso. Tente novamente.");
+          setErro("Não foi possível finalizar o acesso. Tente novamente.");
           return;
         }
       }
@@ -865,7 +865,7 @@ export default function RegisterClient() {
                   />
                   <div>
                     <p className="text-sm font-semibold text-white">Foto do atleta (opcional)</p>
-                    <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WebP, ate 2MB.</p>
+                    <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WebP, até 2MB.</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

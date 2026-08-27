@@ -39,12 +39,14 @@ type SorteioDraft = {
   version: 1;
   updatedAt: string;
   step: SorteioDraftStep;
+  currentStep?: SorteioStep;
   resultadoFingerprint?: string | null;
   config: ConfiguracaoRacha | null;
   participantes: Participante[];
   timesSelecionados: string[];
   times: TimeSorteado[];
   tabelaJogos: JogoConfronto[];
+  tabelaPersonalizada?: boolean;
   configConfirmada: boolean;
   publicado: boolean;
   partidasTotaisSorteio: number;
@@ -429,6 +431,7 @@ export default function SorteioInteligenteAdmin() {
 
   // Estado para a tabela de jogos
   const [tabelaJogos, setTabelaJogos] = useState<JogoConfronto[]>([]);
+  const [tabelaPersonalizada, setTabelaPersonalizada] = useState(false);
 
   // Shake no aviso se tentar confirmar sem estar correto
   const [avisoTimesShake, setAvisoTimesShake] = useState(false);
@@ -631,6 +634,7 @@ export default function SorteioInteligenteAdmin() {
     const canRestoreResultado = Boolean(draftFingerprint) && (draft.times ?? []).length > 0;
     setTimes(canRestoreResultado ? (draft.times ?? []) : []);
     setTabelaJogos(canRestoreResultado ? (draft.tabelaJogos ?? []) : []);
+    setTabelaPersonalizada(canRestoreResultado ? Boolean(draft.tabelaPersonalizada) : false);
     setConfigConfirmada(Boolean(draft.configConfirmada));
     setPublicado(canRestoreResultado ? Boolean(draft.publicado) : false);
     setPartidasTotaisSorteio(Number(draft.partidasTotaisSorteio || 0));
@@ -638,7 +642,7 @@ export default function SorteioInteligenteAdmin() {
     setSorteioReservas(canRestoreResultado ? (draft.sorteioReservas ?? []) : []);
     setResultadoFingerprint(canRestoreResultado ? draftFingerprint : null);
     if (canRestoreResultado) {
-      setCurrentStep("TIMES_SORTEADOS");
+      setCurrentStep(draft.currentStep === "PUBLICACAO" ? "PUBLICACAO" : "TIMES_SORTEADOS");
     } else if (draft.configConfirmada) {
       setCurrentStep("PARTICIPANTES");
     } else {
@@ -667,12 +671,14 @@ export default function SorteioInteligenteAdmin() {
       version: 1,
       updatedAt: new Date().toISOString(),
       step: draftStep,
+      currentStep,
       resultadoFingerprint: times.length > 0 ? resultadoFingerprint : null,
       config,
       participantes,
       timesSelecionados,
       times,
       tabelaJogos,
+      tabelaPersonalizada,
       configConfirmada,
       publicado,
       partidasTotaisSorteio,
@@ -702,6 +708,7 @@ export default function SorteioInteligenteAdmin() {
     config,
     configConfirmada,
     clearDraft,
+    currentStep,
     draftHydrated,
     draftStep,
     draftStorageKey,
@@ -713,6 +720,7 @@ export default function SorteioInteligenteAdmin() {
     sorteioAvisos,
     sorteioReservas,
     tabelaJogos,
+    tabelaPersonalizada,
     times,
     timesSelecionados,
   ]);
@@ -724,6 +732,7 @@ export default function SorteioInteligenteAdmin() {
 
     setTimes([]);
     setTabelaJogos([]);
+    setTabelaPersonalizada(false);
     setSorteioAvisos([]);
     setSorteioReservas([]);
     setSorteioErro(null);
@@ -822,7 +831,7 @@ export default function SorteioInteligenteAdmin() {
 
     const timesParaSorteio = timesDisponiveis.filter((t) => timesSelecionados.includes(t.id));
     if (timesParaSorteio.length !== maxTimes) {
-      setSorteioErro("A quantidade de times selecionados precisa ser igual a configuracao.");
+      setSorteioErro("A quantidade de times selecionados precisa ser igual à configuração.");
       return;
     }
     const timesNormalizados = timesParaSorteio.map((time) => ({
@@ -881,6 +890,7 @@ export default function SorteioInteligenteAdmin() {
     setResultadoFingerprint(fingerprint);
     setTimes(timesGerados);
     setPublicado(false);
+    setTabelaPersonalizada(false);
 
     // GERA A TABELA DE JOGOS conforme times selecionados
     if (timesNormalizados.length >= 2 && timesGerados.length > 0) {
@@ -936,8 +946,26 @@ export default function SorteioInteligenteAdmin() {
       return;
     }
     if (step === "PUBLICACAO" && times.length > 0) {
-      mudarEtapa("PUBLICACAO");
+      entrarPublicacaoComTabelaAutomatica();
     }
+  }
+
+  function gerarTabelaAutomaticaAtual(duracaoPartidaMin?: number) {
+    if (!config) return [];
+    return gerarTabelaJogos({
+      times: timesSelecionadosParaTabela,
+      duracaoRachaMin: config.duracaoRachaMin,
+      duracaoPartidaMin: duracaoPartidaMin ?? config.duracaoPartidaMin,
+    });
+  }
+
+  function entrarPublicacaoComTabelaAutomatica() {
+    if (!config || times.length === 0) return;
+    setTabelaJogos(gerarTabelaAutomaticaAtual());
+    setTabelaPersonalizada(false);
+    setEdicaoTabela(false);
+    setPublicado(false);
+    mudarEtapa("PUBLICACAO", { limparFeedback: true });
   }
 
   function handleDuracaoConfrontosChange(duracao: number) {
@@ -963,15 +991,19 @@ export default function SorteioInteligenteAdmin() {
     setTabelaJogos((current) => current.map((jogo) => ({ ...jogo, tempo: duracao })));
   }
 
-  function handleRestaurarTabelaAutomatica() {
+  function handleRestaurarTabelaAutomatica(duracaoPartidaMin?: number) {
     if (!config) return;
-    setTabelaJogos(
-      gerarTabelaJogos({
-        times: timesSelecionadosParaTabela,
-        duracaoRachaMin: config.duracaoRachaMin,
-        duracaoPartidaMin: config.duracaoPartidaMin,
-      })
-    );
+    if (duracaoPartidaMin && duracaoPartidaMin !== config.duracaoPartidaMin) {
+      handleDuracaoConfrontosChange(duracaoPartidaMin);
+    }
+    setTabelaJogos(gerarTabelaAutomaticaAtual(duracaoPartidaMin));
+    setTabelaPersonalizada(false);
+    setEdicaoTabela(false);
+  }
+
+  function handleSalvarTabelaPersonalizada(jogos: JogoConfronto[], duracaoPartidaMin: number) {
+    setTabelaJogos(jogos.map((jogo) => ({ ...jogo, tempo: duracaoPartidaMin })));
+    setTabelaPersonalizada(true);
   }
 
   async function handlePublicarTimes() {
@@ -1147,7 +1179,7 @@ export default function SorteioInteligenteAdmin() {
                   não pesam no balanceamento.
                   <br />
                   <br />
-                  <b>APÓS O 8o SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posição, e
+                  <b>APÓS O 8º SORTEIO:</b> O algoritmo passa a usar ranking, estrelas e posição, e
                   aplica o anti-panelinha com base no histórico recente para evitar repetição de
                   jogadores no mesmo time. O equilíbrio melhora a cada racha conforme o histórico
                   cresce.
@@ -1470,7 +1502,7 @@ export default function SorteioInteligenteAdmin() {
                   </button>
                   <button
                     className="w-full rounded bg-yellow-400 px-6 py-3 text-lg font-bold text-black shadow transition hover:bg-yellow-500"
-                    onClick={() => mudarEtapa("PUBLICACAO")}
+                    onClick={entrarPublicacaoComTabelaAutomatica}
                     disabled={edicaoTimes.editando || edicaoTimes.invalido}
                   >
                     Continuar para Publicação
@@ -1552,8 +1584,9 @@ export default function SorteioInteligenteAdmin() {
                       timesDisponiveis={timesSelecionadosParaTabela}
                       duracaoGlobal={config?.duracaoPartidaMin ?? 6}
                       duracaoRachaMin={config?.duracaoRachaMin ?? 0}
+                      tabelaPersonalizada={tabelaPersonalizada}
                       onDuracaoGlobalChange={handleDuracaoConfrontosChange}
-                      onSave={setTabelaJogos}
+                      onSave={handleSalvarTabelaPersonalizada}
                       onRestoreAutomatic={handleRestaurarTabelaAutomatica}
                       onEditingStateChange={setEdicaoTabela}
                     />

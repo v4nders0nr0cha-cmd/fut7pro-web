@@ -158,7 +158,7 @@ export default function TimesGerados({
     const usandoSecundaria = posicaoPrincipal && posicaoPrincipal !== posicaoEfetiva;
     const posicaoLabel = usandoSecundaria ? `${posicaoEfetiva} (sec)` : posicaoEfetiva;
     const posicaoTitle = usandoSecundaria
-      ? `Posicao principal: ${posicaoPrincipal}`
+      ? `Posição principal: ${posicaoPrincipal}`
       : posicaoEfetiva;
 
     return (

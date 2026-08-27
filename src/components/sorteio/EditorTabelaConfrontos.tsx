@@ -20,10 +20,18 @@ function totalTempoTabela(jogos: JogoConfronto[]) {
   return jogos.reduce((acc, jogo) => acc + Math.max(0, Number(jogo.tempo || 0)), 0);
 }
 
+function resumoTempo(jogos: JogoConfronto[], duracaoRachaMin: number) {
+  const tempoTotal = Math.max(0, Number(duracaoRachaMin || 0));
+  const tempoConfrontos = totalTempoTabela(jogos);
+  const saldo = tempoTotal - tempoConfrontos;
+
+  return { tempoTotal, tempoConfrontos, saldo };
+}
+
 export function validarTabelaConfrontos(
   jogos: JogoConfronto[],
   timesDisponiveis: Time[],
-  options: ValidacaoTabelaOptions = {}
+  _options: ValidacaoTabelaOptions = {}
 ): ValidacaoTabelaConfrontos {
   const erros: string[] = [];
   const avisos: string[] = [];
@@ -33,12 +41,6 @@ export function validarTabelaConfrontos(
     erros.push("A tabela precisa ter pelo menos um confronto.");
   }
 
-  const tempoUtil = Math.max(0, Number(options.duracaoRachaMin || 0) - 15);
-  if (tempoUtil > 0 && totalTempoTabela(jogos) > tempoUtil) {
-    erros.push(`A tabela ultrapassa o tempo útil disponível de ${tempoUtil} min.`);
-  }
-
-  const confrontos = new Set<string>();
   const jogosPorTime = new Map<string, number>();
 
   jogos.forEach((jogo, index) => {
@@ -58,24 +60,8 @@ export function validarTabelaConfrontos(
       erros.push(`Jogo ${index + 1}: defina um tempo válido.`);
     }
 
-    const key = [jogo.timeA.id, jogo.timeB.id].sort().join("::");
-    if (confrontos.has(key)) {
-      avisos.push(`Jogo ${index + 1}: este confronto já aparece na tabela.`);
-    }
-    confrontos.add(key);
-
     jogosPorTime.set(jogo.timeA.id, (jogosPorTime.get(jogo.timeA.id) ?? 0) + 1);
     jogosPorTime.set(jogo.timeB.id, (jogosPorTime.get(jogo.timeB.id) ?? 0) + 1);
-
-    const anterior = jogos[index - 1];
-    if (
-      anterior &&
-      [anterior.timeA.id, anterior.timeB.id].some(
-        (id) => id === jogo.timeA.id || id === jogo.timeB.id
-      )
-    ) {
-      avisos.push(`Jogo ${index + 1}: há time jogando em rodadas seguidas.`);
-    }
   });
 
   timesDisponiveis.forEach((time) => {
@@ -109,6 +95,7 @@ export default function EditorTabelaConfrontos({
   timesDisponiveis,
   duracaoGlobal,
   duracaoRachaMin,
+  tabelaPersonalizada,
   onDuracaoGlobalChange,
   onSave,
   onRestoreAutomatic,
@@ -118,26 +105,29 @@ export default function EditorTabelaConfrontos({
   timesDisponiveis: Time[];
   duracaoGlobal: number;
   duracaoRachaMin: number;
+  tabelaPersonalizada: boolean;
   onDuracaoGlobalChange: (duracao: number) => void;
-  onSave: (jogos: JogoConfronto[]) => void;
-  onRestoreAutomatic: () => void;
+  onSave: (jogos: JogoConfronto[], duracaoGlobal: number) => void;
+  onRestoreAutomatic: (duracaoGlobal: number) => void;
   onEditingStateChange?: (editando: boolean) => void;
 }) {
   const [editando, setEditando] = useState(false);
   const [draftJogos, setDraftJogos] = useState<JogoConfronto[]>(jogos);
+  const [draftDuracaoGlobal, setDraftDuracaoGlobal] = useState(duracaoGlobal);
   const jogosEmValidacao = editando ? draftJogos : jogos;
   const validacao = useMemo(
     () => validarTabelaConfrontos(jogosEmValidacao, timesDisponiveis, { duracaoRachaMin }),
     [duracaoRachaMin, jogosEmValidacao, timesDisponiveis]
   );
-  const tempoUtil = Math.max(0, duracaoRachaMin - 15);
-  const tempoTotal = totalTempoTabela(jogosEmValidacao);
+  const { tempoTotal, tempoConfrontos, saldo } = resumoTempo(jogosEmValidacao, duracaoRachaMin);
+  const minutosReservaRecomendados = 15;
 
   useEffect(() => {
     if (!editando) {
       setDraftJogos(jogos);
+      setDraftDuracaoGlobal(duracaoGlobal);
     }
-  }, [editando, jogos]);
+  }, [duracaoGlobal, editando, jogos]);
 
   useEffect(() => {
     onEditingStateChange?.(editando);
@@ -177,7 +167,7 @@ export default function EditorTabelaConfrontos({
           ordem: current.length + 1,
           timeA,
           timeB,
-          tempo: duracaoGlobal,
+          tempo: draftDuracaoGlobal,
           turno: "ida",
         },
       ])
@@ -186,17 +176,19 @@ export default function EditorTabelaConfrontos({
 
   const aplicarTempoGlobal = (value: number) => {
     if (!Number.isFinite(value) || value <= 0) return;
-    onDuracaoGlobalChange(value);
+    setDraftDuracaoGlobal(value);
     setDraftJogos((current) => current.map((jogo) => ({ ...jogo, tempo: value })));
   };
 
   const iniciarEdicao = () => {
     setDraftJogos(jogos);
+    setDraftDuracaoGlobal(duracaoGlobal);
     setEditando(true);
   };
 
   const cancelarEdicao = () => {
     setDraftJogos(jogos);
+    setDraftDuracaoGlobal(duracaoGlobal);
     setEditando(false);
   };
 
@@ -204,39 +196,52 @@ export default function EditorTabelaConfrontos({
     const next = normalizeJogos(draftJogos);
     const nextValidacao = validarTabelaConfrontos(next, timesDisponiveis, { duracaoRachaMin });
     if (nextValidacao.erros.length > 0) return;
-    onSave(next);
+    onDuracaoGlobalChange(draftDuracaoGlobal);
+    onSave(next, draftDuracaoGlobal);
     setEditando(false);
   };
 
   const restaurarAutomatica = () => {
-    onRestoreAutomatic();
+    setDraftJogos([]);
+    onRestoreAutomatic(draftDuracaoGlobal);
     setEditando(false);
   };
+
+  const mensagemTempo =
+    saldo >= minutosReservaRecomendados
+      ? "O tempo restante pode ser usado para organização, troca de times e imprevistos."
+      : saldo >= 0
+        ? `Seu racha está configurado para ${tempoTotal} minutos e esta tabela utiliza ${tempoConfrontos} minutos em confrontos, deixando ${saldo} minutos para organização, troca de times e imprevistos. O Fut7Pro recomenda reservar pelo menos 15 minutos, mas você pode manter esta configuração se ela fizer sentido para o seu grupo.`
+        : `Os confrontos somam ${tempoConfrontos} minutos, ${Math.abs(saldo)} minutos a mais que a duração configurada. Se o horário do seu grupo tiver flexibilidade, você pode manter esta tabela. Caso contrário, reduza o tempo dos confrontos ou remova alguns jogos.`;
 
   return (
     <div className="mt-4 space-y-4 rounded-lg border border-zinc-700 bg-[#121212] p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
-          <h4 className="text-sm font-bold text-yellow-300">Tabela automática do Fut7Pro</h4>
+          <h4 className="text-sm font-bold text-yellow-300">
+            {tabelaPersonalizada
+              ? "Tabela personalizada pelo administrador"
+              : "Tabela automática do Fut7Pro"}
+          </h4>
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-zinc-400">
             O Fut7Pro organizou a tabela e a ordem dos confrontos com base na quantidade de times e
             no tempo disponível. Se quiser, personalize antes de publicar.
           </p>
-          <p className="mt-2 text-xs text-zinc-500">
-            Tempo útil: {tempoUtil} min. Tabela atual: {tempoTotal} min.
-          </p>
+          <div className="mt-3 grid gap-2 text-xs text-zinc-200 sm:grid-cols-3">
+            <span className="rounded border border-zinc-800 bg-black/20 px-3 py-2">
+              Tempo total: <strong>{tempoTotal} min</strong>
+            </span>
+            <span className="rounded border border-zinc-800 bg-black/20 px-3 py-2">
+              Tempo dos confrontos: <strong>{tempoConfrontos} min</strong>
+            </span>
+            <span className="rounded border border-zinc-800 bg-black/20 px-3 py-2">
+              {saldo >= 0 ? "Tempo restante" : "Excede o tempo configurado"}:{" "}
+              <strong>{Math.abs(saldo)} min</strong>
+            </span>
+          </div>
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-zinc-400">{mensagemTempo}</p>
         </div>
         <div className="flex flex-col gap-2 md:min-w-48">
-          <label className="text-xs font-semibold text-zinc-300">
-            Tempo dos confrontos
-            <input
-              type="number"
-              min={1}
-              value={duracaoGlobal}
-              onChange={(event) => aplicarTempoGlobal(Number(event.target.value))}
-              className="mt-1 w-full rounded border border-zinc-700 bg-[#181818] px-3 py-2 text-sm text-white outline-none focus:border-yellow-400"
-            />
-          </label>
           {!editando && (
             <button
               type="button"
@@ -251,6 +256,17 @@ export default function EditorTabelaConfrontos({
 
       {editando && (
         <div className="space-y-3">
+          <label className="block max-w-xs text-xs font-semibold text-zinc-300">
+            Tempo por confronto
+            <input
+              type="number"
+              min={1}
+              value={draftDuracaoGlobal}
+              onChange={(event) => aplicarTempoGlobal(Number(event.target.value))}
+              className="mt-1 w-full rounded border border-zinc-700 bg-[#181818] px-3 py-2 text-sm text-white outline-none focus:border-yellow-400"
+            />
+          </label>
+
           {draftJogos.map((jogo, index) => (
             <div
               key={`${jogo.ordem}-${index}`}

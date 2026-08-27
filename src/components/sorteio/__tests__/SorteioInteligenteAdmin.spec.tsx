@@ -430,6 +430,35 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     );
   }
 
+  function quantidadeJogosCriados() {
+    return Number(screen.getByTestId("tabela-jogos").textContent?.match(/\d+/)?.[0] ?? 0);
+  }
+
+  async function sortearEAbrirPublicacao() {
+    await avancarAteParticipantes();
+    await carregarParticipantesEAguardarSorteio();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Sortear Times/i }));
+      jest.runAllTimers();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Publicação/i }));
+    await screen.findByTestId("tabela-jogos");
+  }
+
+  function excluirPrimeiroJogoESalvar() {
+    fireEvent.click(screen.getByRole("button", { name: /Personalizar Tabela/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Excluir/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Salvar edição/i }));
+  }
+
+  function adicionarConfrontoESalvar() {
+    fireEvent.click(screen.getByRole("button", { name: /Personalizar Tabela/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Adicionar confronto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Salvar edição/i }));
+  }
+
   it("gera times, tabela e permite publicar apos o sorteio", async () => {
     jest.useFakeTimers();
     render(<SorteioInteligenteAdmin />);
@@ -449,6 +478,105 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     const publicar = await screen.findByRole("button", { name: /Publicar Times do Dia/i });
     fireEvent.click(publicar);
     expect(await screen.findByText(/Times Publicados!/i)).toBeInTheDocument();
+  });
+
+  it("restaura a tabela automatica recalculada depois de uma edicao", async () => {
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await sortearEAbrirPublicacao();
+    const quantidadeAutomatica = quantidadeJogosCriados();
+
+    excluirPrimeiroJogoESalvar();
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica - 1);
+    expect(screen.getByText(/Tabela personalizada pelo administrador/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Personalizar Tabela/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Restaurar tabela automática/i }));
+
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica);
+    expect(screen.getByText(/Tabela automática do Fut7Pro/i)).toBeInTheDocument();
+  });
+
+  it("restaura a tabela automatica depois de varias edicoes sem usar snapshot intermediario", async () => {
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await sortearEAbrirPublicacao();
+    const quantidadeAutomatica = quantidadeJogosCriados();
+
+    excluirPrimeiroJogoESalvar();
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica - 1);
+    adicionarConfrontoESalvar();
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica);
+
+    fireEvent.click(screen.getByRole("button", { name: /Personalizar Tabela/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Excluir/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Restaurar tabela automática/i }));
+
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica);
+    expect(screen.queryByText(/Tabela personalizada pelo administrador/i)).not.toBeInTheDocument();
+  });
+
+  it("descarta personalizacao ao voltar para Times Sorteados e continuar novamente para Publicacao", async () => {
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await sortearEAbrirPublicacao();
+    const quantidadeAutomatica = quantidadeJogosCriados();
+
+    excluirPrimeiroJogoESalvar();
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica - 1);
+
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Times Sorteados/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continuar para Publicação/i }));
+
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica);
+    expect(screen.getByText(/Tabela automática do Fut7Pro/i)).toBeInTheDocument();
+  });
+
+  it("descarta tabela personalizada depois de sortear novamente", async () => {
+    jest.useFakeTimers();
+    render(<SorteioInteligenteAdmin />);
+
+    await sortearEAbrirPublicacao();
+    const quantidadeAutomatica = quantidadeJogosCriados();
+
+    excluirPrimeiroJogoESalvar();
+    fireEvent.click(screen.getByRole("button", { name: /Voltar para Times Sorteados/i }));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /Sortear Novamente/i }));
+      jest.runAllTimers();
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Publicação/i }));
+
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica);
+    expect(screen.getByText(/Tabela automática do Fut7Pro/i)).toBeInTheDocument();
+  });
+
+  it("preserva tabela personalizada ao atualizar a pagina permanecendo na Etapa 5", async () => {
+    jest.useFakeTimers();
+    const { unmount } = render(<SorteioInteligenteAdmin />);
+
+    await sortearEAbrirPublicacao();
+    const quantidadeAutomatica = quantidadeJogosCriados();
+    excluirPrimeiroJogoESalvar();
+    expect(quantidadeJogosCriados()).toBe(quantidadeAutomatica - 1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+
+    unmount();
+    render(<SorteioInteligenteAdmin />);
+
+    expect(await screen.findByText(/Etapa 5 de 5/i)).toBeInTheDocument();
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent(
+      `${quantidadeAutomatica - 1} jogos criados`
+    );
+    expect(screen.getByText(/Tabela personalizada pelo administrador/i)).toBeInTheDocument();
   });
 
   it("mostra erro de publicacao na Etapa 5 sem perder o resultado", async () => {
@@ -568,7 +696,7 @@ describe("SorteioInteligenteAdmin - fluxo de publicacao", () => {
     expect(await screen.findByText(/Etapa 4 de 5/i)).toBeInTheDocument();
     expect(screen.getByTestId("times-gerados")).toHaveTextContent("2 times gerados");
     fireEvent.click(screen.getByRole("button", { name: /Continuar para Publicação/i }));
-    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent("1 jogos criados");
+    expect(screen.getByTestId("tabela-jogos")).toHaveTextContent("2 jogos criados");
   });
 
   it("preserva 28 participantes e 4 goleiros ao voltar para Participantes apos restaurar a Etapa 4", async () => {

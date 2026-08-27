@@ -58,7 +58,7 @@ export default function ProfileForm({
   function dataUrlToFile(dataUrl: string) {
     const [header, base64Data] = dataUrl.split(",");
     if (!base64Data) {
-      throw new Error("Imagem invalida.");
+      throw new Error("Imagem inválida.");
     }
     const match = header?.match(/data:(.*);base64/);
     const mime = match?.[1] || "image/jpeg";
@@ -88,20 +88,20 @@ export default function ProfileForm({
     const trimmed = firstName.trim();
     if (!trimmed) return "Informe o primeiro nome.";
     if (trimmed.split(" ").length > 1) return "Use apenas o primeiro nome.";
-    if (trimmed.length > 10) return "Maximo de 10 caracteres.";
-    if (nickname.trim().length > 10) return "Apelido com maximo de 10 caracteres.";
-    if (!position) return "Selecione a posicao.";
+    if (trimmed.length > 10) return "Máximo de 10 caracteres.";
+    if (nickname.trim().length > 10) return "Apelido com máximo de 10 caracteres.";
+    if (!position) return "Selecione a posição.";
     if (!isGoalkeeperPosition(position) && !positionSecondary) {
-      return "Informe a posicao secundaria.";
+      return "Informe a posição secundária.";
     }
     if (isGoalkeeperPosition(position) && positionSecondary) {
-      return "Goleiro nao deve ter posicao secundaria.";
+      return "Goleiro não deve ter posição secundária.";
     }
     if (
       positionSecondary &&
       !getValidSecondaryDisplayOptions(position).includes(positionSecondary)
     ) {
-      return "Posicao secundaria invalida para a posicao principal.";
+      return "Posição secundária inválida para a posição principal.";
     }
     return null;
   }
@@ -114,7 +114,7 @@ export default function ProfileForm({
       return;
     }
     if (file.size > MAX_AVATAR_SIZE) {
-      toast.error("Envie uma imagem com ate 2MB.");
+      toast.error("Envie uma imagem com até 2MB.");
       return;
     }
     const reader = new FileReader();
