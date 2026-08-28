@@ -301,7 +301,7 @@ export default function CardsDestaquesDiaV2({
                 checked={isAbsent}
                 onChange={(e) => handleToggle(e.target.checked)}
               />
-              Jogador não compareceu ao racha
+              Corrigir ausência
             </label>
             <div className="h-6"></div>
           </div>
@@ -332,7 +332,7 @@ export default function CardsDestaquesDiaV2({
                 checked={isAbsent}
                 onChange={(e) => handleToggle(e.target.checked)}
               />
-              Jogador não compareceu ao racha
+              Corrigir ausência
             </label>
             <div className="h-6"></div>
           </div>
@@ -391,7 +391,7 @@ export default function CardsDestaquesDiaV2({
                   onChange={(e) => handleToggle(e.target.checked)}
                   disabled={!canToggle}
                 />
-                Jogador não compareceu ao racha
+                Corrigir ausência
               </label>
             )}
             <div className="h-6"></div>

@@ -20,6 +20,20 @@ export type DestaqueDiaResponse = {
       color: string | null;
       logoUrl: string | null;
     } | null;
+    atletas?: Array<{
+      id: string;
+      athleteId: string;
+      positionPrincipal: string | null;
+      positionEfetiva: string | null;
+      presenceStatus: "TITULAR" | "SUBSTITUTO" | "AUSENTE";
+      athlete: {
+        id: string;
+        name: string;
+        nickname: string | null;
+        photoUrl: string | null;
+        position: string | null;
+      };
+    }>;
   } | null;
   publication?: {
     scope: "historical" | "public_spotlight";

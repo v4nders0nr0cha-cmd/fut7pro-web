@@ -84,6 +84,8 @@ export type PublicMatchPresence = {
   tenantId: string | null;
   athleteId: string;
   teamId: string | null;
+  effectivePosition?: string | null;
+  posicaoEfetivaSorteio?: string | null;
   status: "TITULAR" | "SUBSTITUTO" | "AUSENTE";
   goals: number;
   assists: number;
@@ -96,8 +98,10 @@ export type PublicMatchPresence = {
     name: string;
     nickname: string | null;
     position: string | null;
+    positionSecondary?: string | null;
     photoUrl: string | null;
     avatarUrl?: string | null;
+    isBot?: boolean | null;
   } | null;
   team: PublicMatchTeam | null;
 };
