@@ -9,13 +9,15 @@ import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
 import BannerUpload from "@/components/admin/BannerUpload";
 import { buildDestaquesDoDia, getTimeCampeao, type JogadorDestaque } from "@/utils/destaquesDoDia";
-import type { DestaqueDiaResponse } from "@/types/destaques";
+import type { DestaqueDiaFaltou, DestaqueDiaResponse } from "@/types/destaques";
 
 type SaveDestaquePayload = Partial<DestaqueDiaResponse> & {
   timeCampeaoTeamId?: string | null;
   timeCampeaoSource?: "manual" | "calculated";
   timeCampeaoStatus?: "draft" | "published";
 };
+type RoleKey = "atacante" | "meia" | "goleiro" | "zagueiro";
+type PresenceStatus = "TITULAR" | "SUBSTITUTO" | "AUSENTE";
 
 function isValidDateKey(value?: string | null) {
   return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value));
@@ -34,6 +36,74 @@ function formatDatePtBr(value?: string | null) {
   const [year, month, day] = value.split("-");
   if (!year || !month || !day) return value;
   return `${day}/${month}/${year}`;
+}
+
+function findOriginalPresenceStatus(partidas: any[], dateKey: string, athleteId: string) {
+  for (const partida of partidas) {
+    if (resolveMatchDateKey(partida) !== dateKey) continue;
+    const presence = (partida?.presences ?? []).find(
+      (item: any) =>
+        item?.athleteId === athleteId &&
+        (item?.status === "TITULAR" || item?.status === "SUBSTITUTO")
+    );
+    if (presence?.status === "SUBSTITUTO") return "SUBSTITUTO";
+    if (presence?.status === "TITULAR") return "TITULAR";
+  }
+  return "TITULAR";
+}
+
+function updatePresenceStatusForAthlete(
+  partidas: any[] | undefined,
+  dateKey: string,
+  athleteId: string,
+  status: PresenceStatus
+) {
+  if (!Array.isArray(partidas)) return partidas;
+  return partidas.map((partida) => {
+    if (resolveMatchDateKey(partida) !== dateKey || !Array.isArray(partida?.presences)) {
+      return partida;
+    }
+    return {
+      ...partida,
+      presences: partida.presences.map((presence: any) =>
+        presence?.athleteId === athleteId ? { ...presence, status } : presence
+      ),
+    };
+  });
+}
+
+function getPersistedAusenciaTargets(faltou?: DestaqueDiaFaltou | null) {
+  const roles: RoleKey[] = ["atacante", "meia", "goleiro", "zagueiro"];
+  return roles.reduce(
+    (acc, role) => {
+      const target = faltou?.targets?.[role];
+      if (faltou?.[role] && target?.athleteId) {
+        acc[role] = target.athleteId;
+      }
+      return acc;
+    },
+    {} as Partial<Record<RoleKey, string>>
+  );
+}
+
+function getPersistedPresenceStatusBeforeAbsence(faltou?: DestaqueDiaFaltou | null) {
+  const roles: RoleKey[] = ["atacante", "meia", "goleiro", "zagueiro"];
+  return roles.reduce(
+    (acc, role) => {
+      const target = faltou?.targets?.[role];
+      if (
+        faltou?.[role] &&
+        target?.athleteId &&
+        (target.presenceStatus === "TITULAR" || target.presenceStatus === "SUBSTITUTO")
+      ) {
+        acc[role] = { athleteId: target.athleteId, status: target.presenceStatus };
+      }
+      return acc;
+    },
+    {} as Partial<
+      Record<RoleKey, { athleteId: string; status: Exclude<PresenceStatus, "AUSENTE"> }>
+    >
+  );
 }
 
 function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
@@ -135,6 +205,10 @@ export default function TimeCampeaoDoDiaPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [showHistoricalDate, setShowHistoricalDate] = useState(false);
+  const [ausenciaTargets, setAusenciaTargets] = useState<Partial<Record<RoleKey, string>>>({});
+  const [presenceStatusBeforeAbsence, setPresenceStatusBeforeAbsence] = useState<
+    Partial<Record<RoleKey, { athleteId: string; status: Exclude<PresenceStatus, "AUSENTE"> }>>
+  >({});
 
   const selectedDateKey = isValidDateKey(selectedDateParam) ? selectedDateParam : "";
   const scopedPartidas = useMemo(() => {
@@ -158,6 +232,22 @@ export default function TimeCampeaoDoDiaPage() {
   }, [dataReferencia]);
 
   const destaqueDiaAtual = destaqueDiaDateKey === dataKey ? destaqueDia : null;
+  const persistedAusenciaTargets = useMemo(
+    () => getPersistedAusenciaTargets(destaqueDiaAtual?.faltou),
+    [destaqueDiaAtual?.faltou]
+  );
+  const persistedPresenceStatusBeforeAbsence = useMemo(
+    () => getPersistedPresenceStatusBeforeAbsence(destaqueDiaAtual?.faltou),
+    [destaqueDiaAtual?.faltou]
+  );
+  const effectiveAusenciaTargets = useMemo(
+    () => ({ ...persistedAusenciaTargets, ...ausenciaTargets }),
+    [persistedAusenciaTargets, ausenciaTargets]
+  );
+  const effectivePresenceStatusBeforeAbsence = useMemo(
+    () => ({ ...persistedPresenceStatusBeforeAbsence, ...presenceStatusBeforeAbsence }),
+    [persistedPresenceStatusBeforeAbsence, presenceStatusBeforeAbsence]
+  );
   const bannerUrl = destaqueDiaAtual?.bannerUrl ?? null;
   const destaqueAtualizadoEm = destaqueDiaAtual?.updatedAt
     ? new Date(destaqueDiaAtual.updatedAt).toLocaleString("pt-BR")
@@ -234,6 +324,8 @@ export default function TimeCampeaoDoDiaPage() {
     setPublishMessage(null);
     setPublishError(null);
     setCurrentStep(1);
+    setAusenciaTargets({});
+    setPresenceStatusBeforeAbsence({});
   }, [dataKey, selectedDateKey]);
 
   const handleDateChange = (value: string) => {
@@ -323,29 +415,62 @@ export default function TimeCampeaoDoDiaPage() {
     await saveDestaque({ zagueiroId: athleteId || null });
   };
 
-  const handleAusencia = async (
-    role: "atacante" | "meia" | "goleiro" | "zagueiro",
-    athleteId: string,
-    ausente: boolean
-  ) => {
-    if (!dataKey || !athleteId) return;
+  const handleAusencia = async (role: RoleKey, athleteId: string, ausente: boolean) => {
+    const targetAthleteId = ausente ? athleteId : effectiveAusenciaTargets[role];
+    if (!dataKey || !targetAthleteId) return;
+    const statusToRestore =
+      effectivePresenceStatusBeforeAbsence[role]?.athleteId === targetAthleteId
+        ? effectivePresenceStatusBeforeAbsence[role]?.status
+        : "TITULAR";
     setIsSaving(true);
     setActionError(null);
     try {
+      const originalStatus = findOriginalPresenceStatus(
+        partidas as any[],
+        dataKey,
+        targetAthleteId
+      );
       const response = await fetch("/api/admin/destaques-do-dia/ausencia", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: dataKey, athleteId, role, ausente }),
+        body: JSON.stringify({ date: dataKey, athleteId: targetAthleteId, role, ausente }),
       });
       const body = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(body?.error || "Falha ao atualizar ausência.");
       }
+      if (ausente) {
+        setAusenciaTargets((prev) => ({ ...prev, [role]: targetAthleteId }));
+        setPresenceStatusBeforeAbsence((prev) => ({
+          ...prev,
+          [role]: { athleteId: targetAthleteId, status: originalStatus },
+        }));
+      } else {
+        setAusenciaTargets((prev) => {
+          const next = { ...prev };
+          delete next[role];
+          return next;
+        });
+        setPresenceStatusBeforeAbsence((prev) => {
+          const next = { ...prev };
+          delete next[role];
+          return next;
+        });
+      }
       if (body?.destaque) {
         setDestaqueDia(body.destaque as DestaqueDiaResponse);
         setDestaqueDiaDateKey(dataKey);
       }
-      await mutate();
+      await mutate(
+        (current: any[] | undefined) =>
+          updatePresenceStatusForAthlete(
+            current,
+            dataKey,
+            targetAthleteId,
+            ausente ? "AUSENTE" : statusToRestore
+          ),
+        { revalidate: false }
+      );
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Falha ao atualizar ausência.");
     } finally {
@@ -516,30 +641,6 @@ export default function TimeCampeaoDoDiaPage() {
           <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
             {currentStep === 1 && (
               <section className="w-full space-y-5">
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
-                        Campeão do Dia
-                      </p>
-                      <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-                        Confira a rodada antes dos destaques
-                      </h2>
-                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                        O campeão vem das partidas finalizadas. O Zagueiro do Dia é definido
-                        manualmente pelo administrador.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      className="rounded-full border border-yellow-400/50 px-4 py-2 text-sm font-semibold text-yellow-200 hover:bg-yellow-400/10"
-                      onClick={() => setShowModalRegras(true)}
-                    >
-                      Como funcionam os destaques?
-                    </button>
-                  </div>
-                </div>
-
                 <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
                   <div className="rounded-2xl border border-yellow-400/40 bg-gradient-to-br from-zinc-950 to-zinc-900 p-5 shadow-lg">
                     <div className="flex items-center gap-4">
@@ -612,7 +713,14 @@ export default function TimeCampeaoDoDiaPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <button
+                    type="button"
+                    className="self-start text-sm font-semibold text-yellow-200 hover:text-yellow-100"
+                    onClick={() => setShowModalRegras(true)}
+                  >
+                    Como funcionam os destaques?
+                  </button>
                   <button
                     type="button"
                     className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
@@ -645,6 +753,7 @@ export default function TimeCampeaoDoDiaPage() {
                   times={times}
                   zagueiroId={destaqueDiaAtual?.zagueiroId ?? null}
                   faltou={destaqueDiaAtual?.faltou ?? null}
+                  ausenciaTargets={effectiveAusenciaTargets}
                   onSelectZagueiro={handleZagueiroChange}
                   onToggleAusencia={handleAusencia}
                 />

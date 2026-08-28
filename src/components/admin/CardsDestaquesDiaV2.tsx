@@ -11,6 +11,7 @@ import {
   type EventoGolV2,
 } from "@/utils/destaquesDoDia";
 import type { PublicMatch } from "@/types/partida";
+import type { DestaqueDiaFaltou } from "@/types/destaques";
 
 const BOT_PLAYER_IMAGE = "/images/jogadores/Jogador-Reserva.png";
 const BOT_GOALKEEPER_IMAGE = "/images/jogadores/Goleiro-Reserva.png";
@@ -53,13 +54,14 @@ type Props = {
   slug?: string;
   isLoading?: boolean;
   zagueiroId?: string | null;
-  faltou?: Partial<Record<"atacante" | "meia" | "goleiro" | "zagueiro", boolean>> | null;
+  faltou?: DestaqueDiaFaltou | null;
+  ausenciaTargets?: Partial<Record<"atacante" | "meia" | "goleiro" | "zagueiro", string>>;
   onSelectZagueiro?: (athleteId: string) => void;
   onToggleAusencia?: (
     role: "atacante" | "meia" | "goleiro" | "zagueiro",
     athleteId: string,
     ausente: boolean
-  ) => void;
+  ) => void | Promise<void>;
 };
 
 type Jogador = { id: string; nome: string; apelido: string; pos: string; foto?: string | null };
@@ -83,12 +85,14 @@ export default function CardsDestaquesDiaV2({
   isLoading,
   zagueiroId,
   faltou,
+  ausenciaTargets,
   onSelectZagueiro,
   onToggleAusencia,
 }: Props) {
   const { tenantSlug } = useRacha();
   const [zagueiroSelecionado, setZagueiroSelecionado] = useState<string>("");
-  const [faltouState, setFaltouState] = useState<Record<string, boolean>>({});
+  const [faltouState, setFaltouState] = useState<Partial<Record<RoleKey, boolean>>>({});
+  const [pendingRole, setPendingRole] = useState<RoleKey | null>(null);
 
   const slugFinal = (slug ?? tenantSlug ?? "").trim();
   const shouldFetchMatches =
@@ -120,7 +124,12 @@ export default function CardsDestaquesDiaV2({
       setFaltouState({});
       return;
     }
-    setFaltouState({ ...faltou });
+    setFaltouState({
+      atacante: Boolean(faltou.atacante),
+      meia: Boolean(faltou.meia),
+      goleiro: Boolean(faltou.goleiro),
+      zagueiro: Boolean(faltou.zagueiro),
+    });
   }, [faltou]);
 
   const {
@@ -270,15 +279,24 @@ export default function CardsDestaquesDiaV2({
     selected?: string;
   }) {
     const isAbsent = roleKey ? Boolean(faltouState[roleKey]) : false;
-    const canToggle = Boolean(roleKey && athleteId && onToggleAusencia);
+    const persistedAbsenceTargetId = roleKey ? faltou?.targets?.[roleKey]?.athleteId : undefined;
+    const absenceTargetId = roleKey
+      ? (ausenciaTargets?.[roleKey] ?? persistedAbsenceTargetId)
+      : undefined;
+    const toggleAthleteId = isAbsent ? absenceTargetId : athleteId;
+    const canToggle = Boolean(roleKey && toggleAthleteId && onToggleAusencia);
+    const isPending = Boolean(roleKey && pendingRole === roleKey);
     const botImage = roleKey === "goleiro" ? BOT_GOALKEEPER_IMAGE : BOT_PLAYER_IMAGE;
     const botLabel = roleKey === "goleiro" ? "Goleiro Reserva BOT" : "Jogador Reserva BOT";
 
-    const handleToggle = (checked: boolean) => {
-      if (!roleKey) return;
-      setFaltouState((prev) => ({ ...prev, [roleKey]: checked }));
-      if (canToggle && athleteId) {
-        onToggleAusencia?.(roleKey, athleteId, checked);
+    const handleToggle = async (checked: boolean) => {
+      if (!roleKey || !canToggle || !toggleAthleteId || isPending) return;
+      setPendingRole(roleKey);
+      try {
+        await onToggleAusencia?.(roleKey, toggleAthleteId, checked);
+        setFaltouState((prev) => ({ ...prev, [roleKey]: checked }));
+      } finally {
+        setPendingRole(null);
       }
     };
 
@@ -296,7 +314,7 @@ export default function CardsDestaquesDiaV2({
               .join(" · ");
 
         return (
-          <div className="flex min-h-[220px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+          <div className="flex min-h-[176px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3.5 shadow-lg sm:p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
@@ -309,20 +327,23 @@ export default function CardsDestaquesDiaV2({
               <img
                 src={displayFoto}
                 alt={displayNome || titulo}
-                className="h-16 w-16 rounded-full border-2 border-yellow-400/70 object-cover"
+                className="h-14 w-14 rounded-full border-2 border-yellow-400/70 object-cover"
               />
             </div>
-            <div className="mt-4 min-w-0 flex-1">
-              <div className="text-lg font-bold leading-snug text-white">{displayNome}</div>
+            <div className="mt-3 min-w-0 flex-1">
+              <div className="text-base font-bold leading-snug text-white sm:text-lg">
+                {displayNome}
+              </div>
               {displayInfo && <div className="mt-1 text-sm text-yellow-100">{displayInfo}</div>}
             </div>
             {canToggle && (
               <button
                 type="button"
-                className="mt-3 self-start text-xs font-semibold text-yellow-300 hover:text-yellow-200"
+                className="mt-2 self-start text-xs font-semibold text-yellow-300 hover:text-yellow-200 disabled:text-zinc-500"
                 onClick={() => handleToggle(!isAbsent)}
+                disabled={isPending}
               >
-                {isAbsent ? "Restaurar presença" : "Corrigir ausência"}
+                {isAbsent ? "Restaurar presença" : "Marcar como ausente"}
               </button>
             )}
           </div>
@@ -330,7 +351,7 @@ export default function CardsDestaquesDiaV2({
       }
 
       return (
-        <div className="flex min-h-[220px] flex-col justify-center rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+        <div className="flex min-h-[176px] flex-col justify-center rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3.5 shadow-lg sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
               {titulo}
@@ -360,7 +381,7 @@ export default function CardsDestaquesDiaV2({
     const displayInfo = isAbsent ? "" : infoExtra;
 
     return (
-      <div className="flex min-h-[220px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+      <div className="flex min-h-[176px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-3.5 shadow-lg sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
@@ -375,12 +396,14 @@ export default function CardsDestaquesDiaV2({
           <img
             src={displayFoto}
             alt={displayNome || titulo}
-            className="h-16 w-16 rounded-full border-2 border-yellow-400/70 object-cover"
+            className="h-14 w-14 rounded-full border-2 border-yellow-400/70 object-cover"
           />
         </div>
         {displayNome ? (
           <>
-            <div className="mt-4 text-lg font-bold leading-snug text-white">{displayNome}</div>
+            <div className="mt-3 text-base font-bold leading-snug text-white sm:text-lg">
+              {displayNome}
+            </div>
             {!isAbsent && (
               <div className="mt-1 text-sm text-yellow-100">
                 {[apelido, pos].filter(Boolean).join(" · ")}
@@ -392,11 +415,11 @@ export default function CardsDestaquesDiaV2({
             {roleKey && canToggle && (
               <button
                 type="button"
-                className="mt-auto pt-4 text-left text-xs font-semibold text-yellow-300 hover:text-yellow-200 disabled:text-zinc-500"
+                className="mt-auto pt-3 text-left text-xs font-semibold text-yellow-300 hover:text-yellow-200 disabled:text-zinc-500"
                 onClick={() => handleToggle(!isAbsent)}
-                disabled={!canToggle}
+                disabled={!canToggle || isPending}
               >
-                {isAbsent ? "Restaurar presença" : "Corrigir ausência"}
+                {isAbsent ? "Restaurar presença" : "Marcar como ausente"}
               </button>
             )}
           </>

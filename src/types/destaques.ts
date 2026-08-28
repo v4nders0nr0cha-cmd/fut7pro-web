@@ -1,6 +1,16 @@
-export type DestaqueDiaFaltou = Partial<
-  Record<"atacante" | "meia" | "goleiro" | "zagueiro", boolean>
->;
+export type DestaqueDiaRole = "atacante" | "meia" | "goleiro" | "zagueiro";
+
+export type DestaqueDiaFaltou = Partial<Record<DestaqueDiaRole, boolean>> & {
+  targets?: Partial<
+    Record<
+      DestaqueDiaRole,
+      {
+        athleteId: string;
+        presenceStatus?: "TITULAR" | "SUBSTITUTO" | "AUSENTE";
+      }
+    >
+  >;
+};
 
 export type DestaqueDiaResponse = {
   id?: string;
