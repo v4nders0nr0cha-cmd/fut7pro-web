@@ -29,6 +29,13 @@ function resolveMatchDateKey(match: any) {
   return format(date, "yyyy-MM-dd");
 }
 
+function formatDatePtBr(value?: string | null) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  if (!year || !month || !day) return value;
+  return `${day}/${month}/${year}`;
+}
+
 function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   const steps = [
     { id: 1, label: "Campeão do Dia" },
@@ -37,35 +44,35 @@ function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 }) {
   ] as const;
 
   return (
-    <div className="w-full max-w-5xl">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="w-full">
+      <div className="grid grid-cols-3 gap-2 rounded-2xl border border-zinc-800 bg-zinc-950/80 p-2">
         {steps.map((step) => {
           const active = step.id === currentStep;
           const done = step.id < currentStep;
           return (
             <div
               key={step.id}
-              className={`rounded-xl border px-4 py-3 ${
+              className={`rounded-xl px-2 py-2.5 transition sm:px-4 ${
                 active
-                  ? "border-yellow-400 bg-yellow-400/10 text-yellow-100"
+                  ? "bg-yellow-400 text-black"
                   : done
-                    ? "border-green-500/50 bg-green-500/10 text-green-100"
-                    : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                    ? "bg-green-400/12 text-green-100"
+                    : "text-zinc-400"
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center justify-center gap-2 sm:justify-start">
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold sm:h-7 sm:w-7 ${
                     done
                       ? "bg-green-400 text-black"
                       : active
-                        ? "bg-yellow-400 text-black"
-                        : "bg-zinc-700"
+                        ? "bg-black text-yellow-300"
+                        : "bg-zinc-800 text-zinc-300"
                   }`}
                 >
                   {done ? "✓" : step.id}
                 </span>
-                <span className="text-sm font-semibold">{step.label}</span>
+                <span className="truncate text-[11px] font-semibold sm:text-sm">{step.label}</span>
               </div>
             </div>
           );
@@ -84,7 +91,7 @@ function AthleteChampionCard({ jogador }: { jogador: JogadorDestaque }) {
 
   return (
     <div
-      className="flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900/80 p-3"
+      className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/70 p-3"
       title={
         showHint
           ? `Posição principal: ${jogador.posicaoPrincipal}. Atuou como ${jogador.posicaoEfetiva} nesta rodada.`
@@ -97,10 +104,12 @@ function AthleteChampionCard({ jogador }: { jogador: JogadorDestaque }) {
         className="h-11 w-11 rounded-full border border-yellow-400/50 object-cover"
       />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-white">
+        <div className="line-clamp-2 text-sm font-semibold leading-snug text-white">
           {jogador.apelido || jogador.nome}
         </div>
-        {jogador.apelido && <div className="truncate text-xs text-zinc-400">{jogador.nome}</div>}
+        {jogador.apelido && (
+          <div className="line-clamp-2 text-xs leading-snug text-zinc-400">{jogador.nome}</div>
+        )}
       </div>
       <span className="rounded-full bg-yellow-400/10 px-2 py-1 text-xs font-bold text-yellow-200">
         {positionLabel}
@@ -125,6 +134,7 @@ export default function TimeCampeaoDoDiaPage() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [showHistoricalDate, setShowHistoricalDate] = useState(false);
 
   const selectedDateKey = isValidDateKey(selectedDateParam) ? selectedDateParam : "";
   const scopedPartidas = useMemo(() => {
@@ -405,51 +415,75 @@ export default function TimeCampeaoDoDiaPage() {
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
-        <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 text-center drop-shadow">
-          Time Campeão do Dia
-        </h1>
-        <p className="text-gray-300 mb-6 text-center text-lg max-w-2xl">
-          Os dados abaixo são calculados automaticamente com base nas partidas finalizadas em
-          Resultados do Dia. Zagueiro do Dia tem que ser escolhido manualmente.
-        </p>
-
-        <div className="mb-6 w-full max-w-2xl rounded-2xl border border-yellow-500/20 bg-black/20 p-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-yellow-300">
-                Data do Campeão do Dia
-              </label>
-              <input
-                type="date"
-                value={selectedDateKey}
-                onChange={(event) => handleDateChange(event.target.value)}
-                className="w-full rounded-xl border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-              />
-              <p className="mt-2 text-xs leading-relaxed text-zinc-400">
-                Datas antigas podem ser registradas no histórico para rankings, perfil premium e
-                Card Lendário. O banner e os destaques da vitrine pública só mudam quando esta for a
-                data mais recente finalizada.
+        <div className="w-full max-w-5xl">
+          <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold text-yellow-300 sm:text-3xl">
+                Time Campeão do Dia
+              </h1>
+              <p className="mt-1 max-w-2xl text-sm text-zinc-300 sm:text-base">
+                Confira o campeão da rodada, revise os destaques e publique no site do seu grupo.
               </p>
+              {destaqueAtualizadoEm && (
+                <p className="mt-2 text-xs text-zinc-500">
+                  Dados salvos atualizados em {destaqueAtualizadoEm}
+                </p>
+              )}
             </div>
-            {selectedDateKey && (
+            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center md:justify-end">
               <button
                 type="button"
-                onClick={() => handleDateChange("")}
-                className="rounded-xl border border-neutral-700 px-4 py-2 text-xs font-semibold text-neutral-200 hover:bg-neutral-800"
+                onClick={() => setShowHistoricalDate((value) => !value)}
+                className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
               >
-                Usar mais recente
+                Registrar campeões antigos
               </button>
-            )}
+              {selectedDateKey && (
+                <button
+                  type="button"
+                  onClick={() => handleDateChange("")}
+                  className="rounded-xl bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-700"
+                >
+                  Usar rodada mais recente
+                </button>
+              )}
+            </div>
           </div>
+
+          {showHistoricalDate && (
+            <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+              <div className="grid gap-3 md:grid-cols-[260px_1fr] md:items-center">
+                <div>
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-yellow-300">
+                    Data da rodada
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedDateKey}
+                    onChange={(event) => handleDateChange(event.target.value)}
+                    className="w-full rounded-xl border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
+                  />
+                </div>
+                <p className="text-sm leading-relaxed text-zinc-400">
+                  Use esta opção para registrar campeões de rodadas passadas. O banner e os
+                  destaques do site só mudam quando a data publicada for a mais recente.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {selectedDateKey && !showHistoricalDate && (
+            <div className="mb-4 rounded-xl border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 text-sm text-yellow-100">
+              Rodada selecionada: {formatDatePtBr(selectedDateKey)}
+            </div>
+          )}
+
+          <Stepper currentStep={currentStep} />
+          {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
         </div>
 
         {isFetchingDestaque && (
           <div className="text-xs text-yellow-300 mb-3">Carregando dados salvos do dia...</div>
-        )}
-        {destaqueAtualizadoEm && (
-          <div className="text-xs text-zinc-400 mb-4">
-            Última atualização: {destaqueAtualizadoEm}
-          </div>
         )}
         {actionError && (
           <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg max-w-xl text-center mb-6">
@@ -479,23 +513,21 @@ export default function TimeCampeaoDoDiaPage() {
         )}
 
         {!isLoading && !isError && hasDados && (
-          <div className="mt-6 flex w-full max-w-5xl flex-col items-center gap-6">
-            <Stepper currentStep={currentStep} />
-            {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
-
+          <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
             {currentStep === 1 && (
-              <section className="w-full space-y-6">
-                <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+              <section className="w-full space-y-5">
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
                   <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                     <div>
                       <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
-                        Confira o resultado da rodada
+                        Campeão do Dia
                       </p>
-                      <h2 className="mt-1 text-2xl font-bold text-white">Campeão do Dia</h2>
-                      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
-                        O Fut7Pro calcula automaticamente o Time Campeão do Dia com base nas
-                        partidas finalizadas. Confira o time vencedor e os atletas que receberão o
-                        título antes de revisar os destaques individuais.
+                      <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+                        Confira a rodada antes dos destaques
+                      </h2>
+                      <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                        O campeão vem das partidas finalizadas. O Zagueiro do Dia é definido
+                        manualmente pelo administrador.
                       </p>
                     </div>
                     <button
@@ -552,7 +584,9 @@ export default function TimeCampeaoDoDiaPage() {
                       </div>
                     </div>
                     {dataKey && (
-                      <div className="mt-4 text-sm text-zinc-400">Rodada de {dataKey}</div>
+                      <div className="mt-4 text-sm text-zinc-400">
+                        Rodada de {formatDatePtBr(dataKey)}
+                      </div>
                     )}
                   </div>
 
@@ -563,8 +597,7 @@ export default function TimeCampeaoDoDiaPage() {
                           Elenco Campeão — {elencoCampeao.length} atletas
                         </h3>
                         <p className="text-sm text-zinc-400">
-                          Titulares e substitutos reais do time campeão. Ausentes e BOTs não recebem
-                          crédito.
+                          Atletas confirmados no time campeão. Ausentes e BOTs não recebem crédito.
                         </p>
                       </div>
                       <span className="rounded-full bg-green-400/10 px-3 py-1 text-xs font-semibold text-green-200">
@@ -576,24 +609,6 @@ export default function TimeCampeaoDoDiaPage() {
                         <AthleteChampionCard key={jogador.id || jogador.nome} jogador={jogador} />
                       ))}
                     </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 text-sm text-zinc-300 md:grid-cols-3">
-                  <div>
-                    <span className="font-semibold text-yellow-200">1. Campeão do Dia</span>
-                    <br />
-                    Confira o time vencedor e os atletas que receberão o título.
-                  </div>
-                  <div>
-                    <span className="font-semibold text-yellow-200">2. Destaques</span>
-                    <br />
-                    Revise os automáticos e escolha o Zagueiro do Dia.
-                  </div>
-                  <div>
-                    <span className="font-semibold text-yellow-200">3. Publicação</span>
-                    <br />
-                    Adicione o banner, revise tudo e publique no site.
                   </div>
                 </div>
 
@@ -611,16 +626,17 @@ export default function TimeCampeaoDoDiaPage() {
             )}
 
             {currentStep === 2 && (
-              <section className="w-full space-y-6">
-                <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+              <section className="w-full space-y-5">
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
                   <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
-                    Revise os Destaques do Dia
+                    Destaques
                   </p>
-                  <h2 className="mt-1 text-2xl font-bold text-white">Destaques</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
-                    O Fut7Pro calcula automaticamente os destaques com critérios objetivos. Revise
-                    as escolhas e informe manualmente apenas o que depende da avaliação do
-                    administrador.
+                  <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+                    Revise os destaques individuais
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Atacante, Meia, Goleiro, Artilheiro e Maestro são automáticos. Escolha
+                    manualmente o Zagueiro do Dia quando houver opção.
                   </p>
                 </div>
 
@@ -661,16 +677,15 @@ export default function TimeCampeaoDoDiaPage() {
             )}
 
             {currentStep === 3 && (
-              <section className="w-full space-y-6">
-                <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+              <section className="w-full space-y-5">
+                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
                   <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
                     Revisão final
                   </p>
-                  <h2 className="mt-1 text-2xl font-bold text-white">Publicação</h2>
-                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-zinc-300">
-                    Ao publicar, o Time Campeão do Dia, os atletas campeões e os destaques ficam
-                    disponíveis no site público do grupo e passam a compor os registros oficiais da
-                    rodada.
+                  <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">Publicação</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                    Revise o resumo, envie o banner se quiser e publique o resultado no site do
+                    grupo.
                   </p>
                 </div>
 

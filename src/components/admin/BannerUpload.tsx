@@ -141,9 +141,17 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
   };
 
   return (
-    <div className="bg-zinc-900 border-2 border-yellow-400 rounded-xl p-6 mt-2 flex flex-col gap-4 items-center justify-center w-full max-w-2xl">
-      <div className="w-full text-center text-yellow-300 font-bold text-lg mb-2">
-        Banner do Campeão do Dia
+    <div className="flex w-full flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-lg font-bold text-white">Banner do Campeão do Dia</h3>
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-zinc-400">
+            Envie a foto do time vencedor. Essa imagem aparece na página inicial do site do grupo.
+          </p>
+        </div>
+        <span className="w-fit rounded-full bg-zinc-800 px-3 py-1 text-xs font-semibold text-zinc-300">
+          Opcional
+        </span>
       </div>
       <input
         ref={inputRef}
@@ -154,7 +162,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
         disabled={isSaving}
       />
       {displayUrl ? (
-        <div className="flex flex-col items-center gap-2 w-full">
+        <div className="flex w-full flex-col items-center gap-3">
           {isCropping && previewUrl ? (
             <div className="w-full max-w-xl flex flex-col gap-3">
               <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-yellow-400/40 bg-zinc-950">
@@ -210,7 +218,7 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
             <img
               src={displayUrl}
               alt="Banner do Time Campeão do Dia"
-              className="rounded-xl object-cover w-full max-w-xl"
+              className="aspect-video w-full max-w-xl rounded-xl border border-zinc-800 object-cover"
               onError={() => setLoadError(true)}
               loading="lazy"
             />
@@ -219,25 +227,25 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
               Não foi possível carregar a imagem. Tente selecionar outra foto.
             </div>
           )}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             {hasPending ? (
               <>
                 <button
-                  className="mt-2 px-5 py-1 rounded bg-yellow-500 text-black hover:bg-yellow-400 font-semibold disabled:opacity-60"
+                  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
                   Salvar banner
                 </button>
                 <button
-                  className="mt-2 px-5 py-1 rounded bg-zinc-700 text-white hover:bg-zinc-600 font-semibold disabled:opacity-60"
+                  className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-800 disabled:opacity-60"
                   onClick={handleSelect}
                   disabled={isSaving}
                 >
                   Ajustar banner
                 </button>
                 <button
-                  className="mt-2 px-5 py-1 rounded bg-zinc-800 text-white hover:bg-zinc-700 font-semibold disabled:opacity-60"
+                  className="rounded-xl px-4 py-2 text-sm font-semibold text-zinc-400 hover:text-zinc-100 disabled:opacity-60"
                   onClick={handleCancel}
                   disabled={isSaving}
                 >
@@ -247,14 +255,14 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
             ) : (
               <>
                 <button
-                  className="mt-2 px-5 py-1 rounded bg-yellow-500 text-black hover:bg-yellow-400 font-semibold disabled:opacity-60"
+                  className="rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
                   onClick={handleSelect}
                   disabled={isSaving}
                 >
                   Ajustar banner
                 </button>
                 <button
-                  className="mt-2 px-5 py-1 rounded bg-red-600 text-white hover:bg-red-500 font-semibold disabled:opacity-60"
+                  className="rounded-xl border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-500/10 disabled:opacity-60"
                   onClick={handleRemove}
                   disabled={isSaving}
                 >
@@ -266,14 +274,17 @@ export default function BannerUpload({ bannerUrl, isSaving = false, onUpload, on
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          className="cursor-pointer bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-2 rounded-lg shadow disabled:opacity-60"
-          onClick={handleSelect}
-          disabled={isSaving}
-        >
-          {isSaving ? "Enviando banner..." : "Fazer upload do banner"}
-        </button>
+        <div className="flex min-h-[190px] flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/60 px-4 py-8 text-center">
+          <p className="text-sm text-zinc-400">Nenhum banner enviado para esta rodada.</p>
+          <button
+            type="button"
+            className="mt-4 cursor-pointer rounded-xl bg-yellow-400 px-5 py-2.5 text-sm font-bold text-black shadow hover:bg-yellow-300 disabled:opacity-60"
+            onClick={handleSelect}
+            disabled={isSaving}
+          >
+            {isSaving ? "Enviando banner..." : "Enviar banner"}
+          </button>
+        </div>
       )}
     </div>
   );
