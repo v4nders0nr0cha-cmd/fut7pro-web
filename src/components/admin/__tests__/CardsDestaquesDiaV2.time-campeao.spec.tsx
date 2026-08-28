@@ -89,6 +89,24 @@ function makeMatch() {
           isBot: false,
         },
       },
+      {
+        id: "presence-bot-legado",
+        status: "TITULAR",
+        teamId: "team-1",
+        goals: 4,
+        assists: 4,
+        effectivePosition: "ZAGUEIRO",
+        athlete: {
+          id: "bot-legado",
+          name: "BOT Legado",
+          nickname: null,
+          position: "ZAGUEIRO",
+          photoUrl: null,
+          isBot: false,
+          bot: true,
+          tipo: "BOT",
+        },
+      },
     ],
   };
 }
@@ -110,5 +128,7 @@ describe("CardsDestaquesDiaV2 - posicao efetiva", () => {
     expect(screen.getAllByText("Zagueiro Meia").length).toBeGreaterThan(0);
     expect(screen.getByRole("option", { name: /Meia Zagueiro/i })).toBeInTheDocument();
     expect(screen.queryByRole("option", { name: /Zagueiro Meia/i })).not.toBeInTheDocument();
+    expect(screen.queryByText("BOT Legado")).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /BOT Legado/i })).not.toBeInTheDocument();
   });
 });

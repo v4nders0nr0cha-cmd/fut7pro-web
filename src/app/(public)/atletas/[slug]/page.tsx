@@ -197,8 +197,8 @@ export default function PerfilAtletaPage() {
   );
   const campeaoDiaOficial =
     statsPeriod === "all" ? athlete?.championOfDayAll : athlete?.championOfDayCurrent;
-  const campeaoDia =
-    typeof campeaoDiaOficial === "number" ? campeaoDiaOficial : campeaoDiaCalculado;
+  const hasCampeaoDiaOficial = typeof campeaoDiaOficial === "number";
+  const campeaoDia = hasCampeaoDiaOficial ? campeaoDiaOficial : campeaoDiaCalculado;
 
   if (isLoadingAthlete && !athlete) {
     return (
@@ -222,7 +222,8 @@ export default function PerfilAtletaPage() {
   const vitorias = atletaRanking?.vitorias ?? 0;
   const mediaVitorias = jogos > 0 ? (vitorias / jogos).toFixed(2) : "0.00";
   const nivelAssiduidade = resolveAssiduidadeLevel(jogos);
-  const campeaoDiaLabel = isLoadingMatches || isErrorMatches ? "-" : campeaoDia;
+  const campeaoDiaLabel =
+    hasCampeaoDiaOficial || (!isLoadingMatches && !isErrorMatches) ? campeaoDia : "-";
 
   return (
     <>

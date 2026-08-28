@@ -57,6 +57,9 @@ type BackendAthlete = {
   positionSecondary?: string | null;
   photoUrl?: string | null;
   isBot?: boolean | null;
+  bot?: boolean | null;
+  tipo?: string | null;
+  type?: string | null;
 };
 
 type BackendPresence = {
@@ -96,6 +99,11 @@ function normalizePosicao(pos?: string | null): string {
   if (value.includes("ata")) return "ATA";
   if (value.includes("mei")) return "MEIA";
   return "";
+}
+
+function isBotAthlete(athlete?: BackendAthlete | null): boolean {
+  const tipo = (athlete?.tipo ?? athlete?.type ?? "").toString().trim().toUpperCase();
+  return Boolean(athlete?.isBot || athlete?.bot || tipo === "BOT");
 }
 
 function parseMatchDate(match: BackendMatchLike): Date | null {
@@ -206,7 +214,7 @@ export function buildDestaquesDoDia(
       if (!teamEntry) return;
       const athlete = presence.athlete;
       if (!athlete || !athlete.name) return;
-      if (athlete.isBot) return;
+      if (isBotAthlete(athlete)) return;
       const jogadorId = (athlete.id ?? `${athlete.name}-${teamKey}`).toString();
       if (teamEntry.jogadores.has(jogadorId)) return;
       teamEntry.jogadores.set(jogadorId, {
@@ -258,7 +266,7 @@ export function buildDestaquesDoDia(
       const athleteName = presence.athlete?.name ?? "";
       const athleteId = presence.athlete?.id ?? "";
       if (!athleteName) return;
-      if (presence.athlete?.isBot) return;
+      if (isBotAthlete(presence.athlete)) return;
       const teamKey = resolveTeamKey(presence.team, presence.teamId, presence.team?.name);
       const timeLabel: "a" | "b" = teamKey && teamKey === teamBKey ? "b" : "a";
 

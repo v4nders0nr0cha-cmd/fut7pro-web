@@ -116,6 +116,7 @@ export default function TimeCampeaoDoDiaPage() {
   const searchParams = useSearchParams();
   const selectedDateParam = searchParams?.get("data") ?? "";
   const [destaqueDia, setDestaqueDia] = useState<DestaqueDiaResponse | null>(null);
+  const [destaqueDiaDateKey, setDestaqueDiaDateKey] = useState<string | null>(null);
   const [isFetchingDestaque, setIsFetchingDestaque] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -146,9 +147,10 @@ export default function TimeCampeaoDoDiaPage() {
     return format(date, "yyyy-MM-dd");
   }, [dataReferencia]);
 
-  const bannerUrl = destaqueDia?.bannerUrl ?? null;
-  const destaqueAtualizadoEm = destaqueDia?.updatedAt
-    ? new Date(destaqueDia.updatedAt).toLocaleString("pt-BR")
+  const destaqueDiaAtual = destaqueDiaDateKey === dataKey ? destaqueDia : null;
+  const bannerUrl = destaqueDiaAtual?.bannerUrl ?? null;
+  const destaqueAtualizadoEm = destaqueDiaAtual?.updatedAt
+    ? new Date(destaqueDiaAtual.updatedAt).toLocaleString("pt-BR")
     : null;
   const campeaoInfo = useMemo(() => getTimeCampeao(confrontos, times), [confrontos, times]);
   const timeCampeao = campeaoInfo?.time ?? null;
@@ -175,16 +177,19 @@ export default function TimeCampeaoDoDiaPage() {
   const zagueirosDoDia = elencoCampeao.filter((jogador) => jogador.pos === "ZAG");
   const canGoDestaques = Boolean(timeCampeao && elencoCampeao.length > 0);
   const canGoPublicacao =
-    canGoDestaques && (!zagueirosDoDia.length || Boolean(destaqueDia?.zagueiroId));
+    canGoDestaques && (!zagueirosDoDia.length || Boolean(destaqueDiaAtual?.zagueiroId));
 
   useEffect(() => {
     if (!dataKey) {
       setDestaqueDia(null);
+      setDestaqueDiaDateKey(null);
       setIsFetchingDestaque(false);
       return;
     }
 
     let active = true;
+    setDestaqueDia(null);
+    setDestaqueDiaDateKey(null);
     setIsFetchingDestaque(true);
     setActionError(null);
 
@@ -199,6 +204,7 @@ export default function TimeCampeaoDoDiaPage() {
       .then((body) => {
         if (!active) return;
         setDestaqueDia(body);
+        setDestaqueDiaDateKey(dataKey);
       })
       .catch((err) => {
         if (!active) return;
@@ -263,6 +269,7 @@ export default function TimeCampeaoDoDiaPage() {
         throw new Error(resolveErrorMessage(bodyText, "Falha ao salvar destaques."));
       }
       setDestaqueDia(body);
+      setDestaqueDiaDateKey(dataKey);
       return body as DestaqueDiaResponse;
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Falha ao salvar destaques.");
@@ -326,6 +333,7 @@ export default function TimeCampeaoDoDiaPage() {
       }
       if (body?.destaque) {
         setDestaqueDia(body.destaque as DestaqueDiaResponse);
+        setDestaqueDiaDateKey(dataKey);
       }
       await mutate();
     } catch (err) {
@@ -360,6 +368,7 @@ export default function TimeCampeaoDoDiaPage() {
       }
 
       setDestaqueDia(saved);
+      setDestaqueDiaDateKey(dataKey);
 
       if (saved?.publication?.shouldUpdatePublicSpotlight !== false) {
         const response = await fetch("/api/admin/destaques-do-dia/publicar", {
@@ -618,8 +627,8 @@ export default function TimeCampeaoDoDiaPage() {
                 <CardsDestaquesDiaV2
                   confrontos={confrontos}
                   times={times}
-                  zagueiroId={destaqueDia?.zagueiroId ?? null}
-                  faltou={destaqueDia?.faltou ?? null}
+                  zagueiroId={destaqueDiaAtual?.zagueiroId ?? null}
+                  faltou={destaqueDiaAtual?.faltou ?? null}
                   onSelectZagueiro={handleZagueiroChange}
                   onToggleAusencia={handleAusencia}
                 />
@@ -713,11 +722,11 @@ export default function TimeCampeaoDoDiaPage() {
                 </div>
 
                 <div className="rounded-2xl border border-yellow-400/40 bg-zinc-950 p-5">
-                  {destaqueDia?.timeCampeaoDoDia?.status === "published" && (
+                  {destaqueDiaAtual?.timeCampeaoDoDia?.status === "published" && (
                     <div className="mb-3 text-sm text-green-300">
                       Time Campeão oficial salvo:{" "}
-                      {destaqueDia.timeCampeaoDoDia.team?.name ||
-                        destaqueDia.timeCampeaoDoDia.teamId}
+                      {destaqueDiaAtual.timeCampeaoDoDia.team?.name ||
+                        destaqueDiaAtual.timeCampeaoDoDia.teamId}
                     </div>
                   )}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

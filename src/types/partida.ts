@@ -102,6 +102,9 @@ export type PublicMatchPresence = {
     photoUrl: string | null;
     avatarUrl?: string | null;
     isBot?: boolean | null;
+    bot?: boolean | null;
+    tipo?: string | null;
+    type?: string | null;
   } | null;
   team: PublicMatchTeam | null;
 };
