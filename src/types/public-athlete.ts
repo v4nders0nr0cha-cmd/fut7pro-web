@@ -11,6 +11,8 @@ export type PublicAthleteProfile = {
   status?: string | null;
   mensalista?: boolean | null;
   adminRole?: string | null;
+  championOfDayCurrent?: number | null;
+  championOfDayAll?: number | null;
 };
 
 export type PublicAthleteResponse = {

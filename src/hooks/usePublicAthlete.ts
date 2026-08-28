@@ -27,6 +27,8 @@ type PublicAthleteListEntry = {
   avatarUrl?: string | null;
   status?: string | null;
   mensalista?: boolean | null;
+  championOfDayCurrent?: number | null;
+  championOfDayAll?: number | null;
 };
 
 type PublicAthletesResponse = {
@@ -89,6 +91,8 @@ export function usePublicAthlete(options: {
         status: fallbackEntry.status ?? null,
         mensalista: fallbackEntry.mensalista ?? null,
         adminRole: null,
+        championOfDayCurrent: fallbackEntry.championOfDayCurrent ?? null,
+        championOfDayAll: fallbackEntry.championOfDayAll ?? null,
       }
     : null;
 

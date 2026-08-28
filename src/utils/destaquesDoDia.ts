@@ -8,6 +8,8 @@ export type JogadorDestaque = {
   nome: string;
   apelido?: string;
   pos: string;
+  posicaoPrincipal?: string;
+  posicaoEfetiva?: string;
   foto?: string | null;
 };
 
@@ -52,13 +54,20 @@ type BackendAthlete = {
   name?: string;
   nickname?: string | null;
   position?: string | null;
+  positionSecondary?: string | null;
   photoUrl?: string | null;
+  isBot?: boolean | null;
+  bot?: boolean | null;
+  tipo?: string | null;
+  type?: string | null;
 };
 
 type BackendPresence = {
   id?: string;
   status?: string | null;
   teamId?: string | null;
+  effectivePosition?: string | null;
+  posicaoEfetivaSorteio?: string | null;
   team?: BackendTeam | null;
   athlete?: BackendAthlete | null;
   goals?: number | null;
@@ -90,6 +99,11 @@ function normalizePosicao(pos?: string | null): string {
   if (value.includes("ata")) return "ATA";
   if (value.includes("mei")) return "MEIA";
   return "";
+}
+
+function isBotAthlete(athlete?: BackendAthlete | null): boolean {
+  const tipo = (athlete?.tipo ?? athlete?.type ?? "").toString().trim().toUpperCase();
+  return Boolean(athlete?.isBot || athlete?.bot || tipo === "BOT");
 }
 
 function parseMatchDate(match: BackendMatchLike): Date | null {
@@ -200,6 +214,7 @@ export function buildDestaquesDoDia(
       if (!teamEntry) return;
       const athlete = presence.athlete;
       if (!athlete || !athlete.name) return;
+      if (isBotAthlete(athlete)) return;
       const jogadorId = (athlete.id ?? `${athlete.name}-${teamKey}`).toString();
       if (teamEntry.jogadores.has(jogadorId)) return;
       teamEntry.jogadores.set(jogadorId, {
@@ -207,7 +222,13 @@ export function buildDestaquesDoDia(
         timeId: teamEntry.key,
         nome: athlete.name,
         apelido: athlete.nickname ?? "",
-        pos: normalizePosicao(athlete.position),
+        pos: normalizePosicao(
+          presence.posicaoEfetivaSorteio ?? presence.effectivePosition ?? athlete.position
+        ),
+        posicaoPrincipal: normalizePosicao(athlete.position),
+        posicaoEfetiva: normalizePosicao(
+          presence.posicaoEfetivaSorteio ?? presence.effectivePosition
+        ),
         foto: athlete.photoUrl ?? null,
       });
     });
@@ -245,6 +266,7 @@ export function buildDestaquesDoDia(
       const athleteName = presence.athlete?.name ?? "";
       const athleteId = presence.athlete?.id ?? "";
       if (!athleteName) return;
+      if (isBotAthlete(presence.athlete)) return;
       const teamKey = resolveTeamKey(presence.team, presence.teamId, presence.team?.name);
       const timeLabel: "a" | "b" = teamKey && teamKey === teamBKey ? "b" : "a";
 

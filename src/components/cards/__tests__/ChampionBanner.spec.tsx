@@ -52,4 +52,21 @@ describe("ChampionBanner", () => {
     ).toBeInTheDocument();
     expect(screen.queryByAltText(/Imagem do Time Campeão do Dia/i)).not.toBeInTheDocument();
   });
+
+  it.each([5, 7, 11])("exibe todos os %i nomes do elenco campeao", (count) => {
+    const players = Array.from({ length: count }, (_, index) => `Atleta ${index + 1}`);
+
+    render(
+      <ChampionBanner
+        image={null}
+        date="sexta-feira, 28 de agosto de 2026"
+        players={players}
+        href="/ruimdebola/partidas/times-do-dia"
+      />
+    );
+
+    players.forEach((player) => {
+      expect(screen.getByText(player)).toBeInTheDocument();
+    });
+  });
 });

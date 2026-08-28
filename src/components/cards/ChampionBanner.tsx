@@ -21,6 +21,7 @@ const ChampionBanner = ({
   isImageLoading = false,
 }: ChampionBannerProps) => {
   const bannerImage = image?.trim() || null;
+  const compactPlayers = players.length > 7;
 
   const altText = `Imagem do Time Campeão do Dia - ${date}`;
 
@@ -65,11 +66,26 @@ const ChampionBanner = ({
             Time Campeão do Dia
           </p>
           <p className="text-white text-base sm:text-lg md:text-xl font-semibold mb-2">{date}</p>
-          <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
-            {players.length
-              ? players.join(", ")
-              : "O time campeão aparecerá após o registro dos resultados."}
-          </p>
+          {players.length ? (
+            <div
+              className={`flex flex-wrap justify-center gap-1.5 md:justify-start ${
+                compactPlayers ? "text-xs sm:text-sm" : "text-sm sm:text-base"
+              }`}
+            >
+              {players.map((player, index) => (
+                <span
+                  key={`${player}-${index}`}
+                  className="max-w-full rounded-full border border-white/10 bg-white/5 px-2 py-1 text-gray-200"
+                >
+                  {player}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
+              O time campeão aparecerá após o registro dos resultados.
+            </p>
+          )}
         </div>
       </div>
     </Link>
