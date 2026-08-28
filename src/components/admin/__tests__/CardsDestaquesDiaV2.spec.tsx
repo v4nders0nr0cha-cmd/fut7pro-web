@@ -84,11 +84,13 @@ const matches: PublicMatch[] = [
 ];
 
 describe("CardsDestaquesDiaV2", () => {
-  it("renderiza destaques a partir das partidas reais", () => {
+  it("renderiza apenas destaques individuais a partir das partidas reais", () => {
     render(<CardsDestaquesDiaV2 matches={matches} />);
 
-    expect(screen.getByText(/Time Campeão do Dia/i)).toBeInTheDocument();
-    expect(screen.getByText(/Time Azul/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Time Campeão do Dia/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Atacante do Dia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Meia do Dia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Goleiro do Dia/i)).toBeInTheDocument();
     expect(screen.getAllByText(/Artilheiro Azul/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Maestro Azul/i).length).toBeGreaterThan(0);
   });

@@ -5,7 +5,6 @@ import { usePublicMatches } from "@/hooks/usePublicMatches";
 import {
   buildDestaquesDoDia,
   getEventosDoDia,
-  getPontosPorTime,
   getTimeCampeao,
   type ConfrontoV2,
   type TimeDestaque,
@@ -24,6 +23,10 @@ function normalizeKey(value?: string | null) {
 function orderIndex(list: string[], id: string) {
   const idx = list.indexOf(id);
   return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+}
+
+function plural(value: number, singular: string, pluralLabel: string) {
+  return `${value} ${value === 1 ? singular : pluralLabel}`;
 }
 
 function pickPlayer(
@@ -136,7 +139,6 @@ export default function CardsDestaquesDiaV2({
     [fonteMatches, confrontos, times]
   );
 
-  const pontosPorTime = useMemo(() => getPontosPorTime(baseConfrontos), [baseConfrontos]);
   const campeaoInfo = useMemo(
     () => getTimeCampeao(baseConfrontos, baseTimes),
     [baseConfrontos, baseTimes]
@@ -282,74 +284,67 @@ export default function CardsDestaquesDiaV2({
 
     if (zagueiroManual) {
       const zagueiroSelecionadoInfo = options.find((jogador) => jogador.id === selected);
-      if (isAbsent) {
-        return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-            <img
-              src={botImage}
-              alt={botLabel}
-              className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
-            />
-            <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">
-              {titulo}
-            </div>
-            <div className="text-white text-lg font-bold text-center">{botLabel}</div>
-            <div className="text-yellow-200 text-xs">Ausente na rodada</div>
-            <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isAbsent}
-                onChange={(e) => handleToggle(e.target.checked)}
-              />
-              Corrigir ausência
-            </label>
-            <div className="h-6"></div>
-          </div>
-        );
-      }
+      if (isAbsent || (selected && zagueiroSelecionadoInfo)) {
+        const displayFoto = isAbsent
+          ? botImage
+          : zagueiroSelecionadoInfo?.foto || DEFAULT_PLAYER_IMAGE;
+        const displayNome = isAbsent ? botLabel : zagueiroSelecionadoInfo?.nome || "";
+        const displayInfo = isAbsent
+          ? "Ausente na rodada"
+          : [zagueiroSelecionadoInfo?.apelido, zagueiroSelecionadoInfo?.pos]
+              .filter(Boolean)
+              .join(" · ");
 
-      if (selected && zagueiroSelecionadoInfo) {
         return (
-          <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-            <img
-              src={zagueiroSelecionadoInfo.foto || DEFAULT_PLAYER_IMAGE}
-              alt={zagueiroSelecionadoInfo.nome}
-              className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
-            />
-            <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">
-              {titulo}
-            </div>
-            <div className="text-white text-lg font-bold text-center">
-              {zagueiroSelecionadoInfo.nome}
-            </div>
-            <div className="text-yellow-200 text-xs">
-              {zagueiroSelecionadoInfo.apelido}{" "}
-              {zagueiroSelecionadoInfo.pos ? `| ${zagueiroSelecionadoInfo.pos}` : ""}
-            </div>
-            <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={isAbsent}
-                onChange={(e) => handleToggle(e.target.checked)}
+          <div className="flex min-h-[220px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
+                  {titulo}
+                </div>
+                <span className="mt-2 inline-flex rounded-full bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-zinc-300">
+                  Manual
+                </span>
+              </div>
+              <img
+                src={displayFoto}
+                alt={displayNome || titulo}
+                className="h-16 w-16 rounded-full border-2 border-yellow-400/70 object-cover"
               />
-              Corrigir ausência
-            </label>
-            <div className="h-6"></div>
+            </div>
+            <div className="mt-4 min-w-0 flex-1">
+              <div className="text-lg font-bold leading-snug text-white">{displayNome}</div>
+              {displayInfo && <div className="mt-1 text-sm text-yellow-100">{displayInfo}</div>}
+            </div>
+            {canToggle && (
+              <button
+                type="button"
+                className="mt-3 self-start text-xs font-semibold text-yellow-300 hover:text-yellow-200"
+                onClick={() => handleToggle(!isAbsent)}
+              >
+                {isAbsent ? "Restaurar presença" : "Corrigir ausência"}
+              </button>
+            )}
           </div>
         );
       }
 
       return (
-        <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-center relative">
-          <div className="text-yellow-400 font-bold text-sm text-center mb-3 uppercase">
-            {titulo}
+        <div className="flex min-h-[220px] flex-col justify-center rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
+              {titulo}
+            </div>
+            <span className="rounded-full bg-zinc-800 px-2 py-1 text-[11px] font-semibold text-zinc-300">
+              Manual
+            </span>
           </div>
           <select
-            className="px-2 py-1 bg-zinc-900 text-yellow-200 rounded w-full"
+            className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-yellow-100"
             value={selected}
             onChange={(e) => onZagueiroChange?.(e.target.value)}
           >
-            <option value="">Selecione zagueiro...</option>
+            <option value="">Selecione o zagueiro</option>
             {(options ?? []).map((jogador, idx) => (
               <option key={jogador.id || idx} value={jogador.id}>
                 {jogador.nome} {jogador.apelido ? `(${jogador.apelido})` : ""}
@@ -365,36 +360,45 @@ export default function CardsDestaquesDiaV2({
     const displayInfo = isAbsent ? "" : infoExtra;
 
     return (
-      <div className="flex flex-col items-center bg-zinc-800 rounded-xl shadow-lg px-5 py-4 min-w-[185px] max-w-xs min-h-[260px] justify-between relative">
-        <img
-          src={displayFoto}
-          alt={displayNome || titulo}
-          className="w-20 h-20 rounded-full mb-2 object-cover border-4 border-yellow-400"
-        />
-        <div className="text-yellow-400 font-bold text-sm text-center mb-1 uppercase">{titulo}</div>
+      <div className="flex min-h-[220px] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4 shadow-lg">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
+              {titulo}
+            </div>
+            {roleKey && (
+              <span className="mt-2 inline-flex rounded-full bg-green-400/10 px-2 py-1 text-[11px] font-semibold text-green-200">
+                Automático
+              </span>
+            )}
+          </div>
+          <img
+            src={displayFoto}
+            alt={displayNome || titulo}
+            className="h-16 w-16 rounded-full border-2 border-yellow-400/70 object-cover"
+          />
+        </div>
         {displayNome ? (
           <>
-            <div className="text-white text-lg font-bold text-center">{displayNome}</div>
+            <div className="mt-4 text-lg font-bold leading-snug text-white">{displayNome}</div>
             {!isAbsent && (
-              <div className="text-yellow-200 text-xs">
-                {apelido ? apelido : ""} {pos ? `| ${pos}` : ""}
+              <div className="mt-1 text-sm text-yellow-100">
+                {[apelido, pos].filter(Boolean).join(" · ")}
               </div>
             )}
             {displayInfo && (
-              <div className="mt-1 text-yellow-400 text-sm font-bold">{displayInfo}</div>
+              <div className="mt-2 text-sm font-bold text-yellow-300">{displayInfo}</div>
             )}
-            {roleKey && (
-              <label className="flex items-center gap-1 mt-2 text-xs text-yellow-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isAbsent}
-                  onChange={(e) => handleToggle(e.target.checked)}
-                  disabled={!canToggle}
-                />
-                Corrigir ausência
-              </label>
+            {roleKey && canToggle && (
+              <button
+                type="button"
+                className="mt-auto pt-4 text-left text-xs font-semibold text-yellow-300 hover:text-yellow-200 disabled:text-zinc-500"
+                onClick={() => handleToggle(!isAbsent)}
+                disabled={!canToggle}
+              >
+                {isAbsent ? "Restaurar presença" : "Corrigir ausência"}
+              </button>
             )}
-            <div className="h-6"></div>
           </>
         ) : (
           <div className="text-zinc-400 mt-4 text-center">Aguardando resultado...</div>
@@ -416,20 +420,20 @@ export default function CardsDestaquesDiaV2({
   }
 
   return (
-    <div className="w-full flex flex-col items-center gap-8">
+    <div className="w-full flex flex-col gap-5">
       {dataReferencia && (
-        <span className="text-xs uppercase tracking-wide text-yellow-400">
+        <span className="self-start text-xs uppercase tracking-wide text-yellow-400">
           Referência: {new Date(dataReferencia).toLocaleDateString("pt-BR")}
         </span>
       )}
-      <div className="flex flex-wrap gap-5 justify-center">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <CardDestaque
           titulo="ATACANTE DO DIA"
           nome={atacante?.nome ?? ""}
           apelido={atacante?.apelido ?? ""}
           pos={atacante?.pos ?? ""}
           foto={atacante?.foto ?? ""}
-          infoExtra={atacante?.nome ? `${golsAtacante} gols` : ""}
+          infoExtra={atacante?.nome ? plural(golsAtacante, "gol", "gols") : ""}
           roleKey="atacante"
           athleteId={atacante?.id}
         />
@@ -439,7 +443,7 @@ export default function CardsDestaquesDiaV2({
           apelido={meia?.apelido ?? ""}
           pos={meia?.pos ?? ""}
           foto={meia?.foto ?? ""}
-          infoExtra={meia?.nome ? `${assistenciasMeia} assistências` : ""}
+          infoExtra={meia?.nome ? plural(assistenciasMeia, "assistência", "assistências") : ""}
           roleKey="meia"
           athleteId={meia?.id}
         />
@@ -462,33 +466,20 @@ export default function CardsDestaquesDiaV2({
           athleteId={goleiro?.id}
         />
       </div>
-      <div className="flex flex-wrap gap-5 justify-center mt-2">
-        <CardDestaque
-          titulo="TIME CAMPEÃO DO DIA"
-          nome={timeCampeao?.nome ?? ""}
-          apelido=""
-          foto={timeCampeao?.logoUrl || "/images/logos/logo_fut7pro.png"}
-          infoExtra={
-            timeCampeao && campeaoInfo?.pontos !== undefined
-              ? `${campeaoInfo.pontos} pontos`
-              : pontosPorTime && Object.keys(pontosPorTime).length
-                ? `${Math.max(...Object.values(pontosPorTime))} pontos`
-                : ""
-          }
-        />
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
         <CardDestaque
           titulo="ARTILHEIRO DO DIA"
           nome={artilheiro?.nome ?? ""}
           apelido=""
           foto={artilheiro?.foto ?? ""}
-          infoExtra={artilheiro?.goals ? `${artilheiro.goals} gols` : ""}
+          infoExtra={artilheiro?.goals ? plural(artilheiro.goals, "gol", "gols") : ""}
         />
         <CardDestaque
           titulo="MAESTRO DO DIA"
           nome={maestro?.nome ?? ""}
           apelido=""
           foto={maestro?.foto ?? ""}
-          infoExtra={maestro?.assists ? `${maestro.assists} assistências` : ""}
+          infoExtra={maestro?.assists ? plural(maestro.assists, "assistência", "assistências") : ""}
         />
       </div>
       {(eventosDia?.length ?? 0) === 0 && aguardando}
