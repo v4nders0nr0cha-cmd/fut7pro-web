@@ -217,6 +217,7 @@ function CadastroRachaPageContent() {
   const [showExistingSenha, setShowExistingSenha] = useState(false);
   const [existingGlobalAuthMode, setExistingGlobalAuthMode] =
     useState<ExistingGlobalAuthMode>("none");
+  const [existingAccountNeedsProfileStep, setExistingAccountNeedsProfileStep] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
@@ -566,10 +567,12 @@ function CadastroRachaPageContent() {
         setAdminNome(fallbackName);
       }
       if (identity?.profilePosition) {
+        setExistingAccountNeedsProfileStep(false);
         setStep(2);
         setSucesso("Conta global conectada com Google. Continue com os dados do grupo de futebol.");
         return;
       }
+      setExistingAccountNeedsProfileStep(true);
       setStep(1);
       setSucesso("Conta Google conectada. Escolha sua posição principal para continuar.");
     });
@@ -950,6 +953,7 @@ function CadastroRachaPageContent() {
     setAdminSenha("");
     setAdminConfirmSenha("");
     setShowExistingSenha(false);
+    setExistingAccountNeedsProfileStep(false);
     requestAnimationFrame(() => {
       lookupEmailInputRef.current?.focus();
     });
@@ -1142,6 +1146,7 @@ function CadastroRachaPageContent() {
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
+      setExistingAccountNeedsProfileStep(!identity?.profilePosition);
       setStep(identity?.profilePosition ? 2 : 1);
       setErrors({});
       setAccessFlow("wizard");
@@ -1215,6 +1220,7 @@ function CadastroRachaPageContent() {
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
+      setExistingAccountNeedsProfileStep(!identity?.profilePosition);
       setStep(identity?.profilePosition ? 2 : 1);
       setErrors({});
       setAccessFlow("wizard");
@@ -1543,7 +1549,7 @@ function CadastroRachaPageContent() {
       return;
     }
     if (step === 2) {
-      if (useExistingGlobalAccount) {
+      if (useExistingGlobalAccount && !existingAccountNeedsProfileStep) {
         setAccessFlow("existing-password");
         return;
       }
