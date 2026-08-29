@@ -20,6 +20,7 @@ import TurnstileWidget, {
 } from "@/components/security/TurnstileWidget";
 
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
+const DEFAULT_ONBOARDING_PLAN_KEY = "monthly_essential";
 const POSITION_LABEL_BY_VALUE: Record<string, (typeof POSICOES)[number]> = {
   goleiro: "Goleiro",
   zagueiro: "Zagueiro",
@@ -29,66 +30,22 @@ const POSITION_LABEL_BY_VALUE: Record<string, (typeof POSICOES)[number]> = {
 
 const BENEFITS = [
   {
-    title: "100% multi-tenant",
-    description: "Site público exclusivo por racha via slug.",
+    title: "Site exclusivo para seu grupo",
+    description: "Seu grupo ganha seu próprio espaço público no Fut7Pro.",
   },
   {
-    title: "Logo dinâmica",
-    description: "Aplicada no painel e no site público.",
+    title: "Painel completo de gestão",
+    description: "Organize atletas, partidas, rankings, mensalistas e muito mais.",
   },
   {
-    title: "Perfil pronto",
-    description: "Presidente com posição e apelido.",
+    title: "Perfil dos atletas",
+    description: "Cada jogador acompanha seu desempenho, conquistas e evolução.",
   },
   {
-    title: "Slug público",
-    description: "https://app.fut7pro.com.br/<slug>",
+    title: "Tudo conectado",
+    description: "Painel administrativo e site do grupo sempre sincronizados.",
   },
 ];
-
-const PLAN_MICRO_COPY: Record<
-  string,
-  { title?: string; blurb: string; bullets: string[]; marketingNote?: string }
-> = {
-  monthly_essential: {
-    title: "Mensal Essencial",
-    blurb: "Controle total do racha, com menos esforço e mais organização.",
-    bullets: [
-      "Sorteio inteligente e rankings automáticos",
-      "Finanças e patrocínios organizados no site",
-      "Painel completo para administrar o racha",
-    ],
-  },
-  monthly_marketing: {
-    title: "Mensal + Marketing",
-    blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
-    bullets: [
-      "Tudo do Essencial",
-      "Designers Fut7Pro para artes e kit patrocinador",
-      "Apoio profissional para Instagram e identidade visual",
-    ],
-    marketingNote: "Serviços de marketing começam após o primeiro pagamento.",
-  },
-  yearly_essential: {
-    title: "Anual Essencial",
-    blurb: "Controle total do racha, com menos esforço e mais organização.",
-    bullets: [
-      "Sorteio inteligente e rankings automáticos",
-      "Finanças e patrocínios organizados no site",
-      "Painel completo para administrar o racha",
-    ],
-  },
-  yearly_marketing: {
-    title: "Anual + Marketing",
-    blurb: "Para rachas que querem crescer e monetizar com apoio profissional.",
-    bullets: [
-      "Tudo do Essencial",
-      "Designers Fut7Pro para artes e kit patrocinador",
-      "Apoio profissional para Instagram e identidade visual",
-    ],
-    marketingNote: "Serviços de marketing começam após o primeiro pagamento.",
-  },
-};
 
 const SLUG_REGEX = /^[a-z0-9-]{3,30}$/;
 const RESERVED_SLUGS = new Set([
@@ -128,7 +85,6 @@ type SlugStatus =
   | "invalid"
   | "error"
   | "rate_limited";
-type BillingInterval = "month" | "year";
 type CouponStatus = "idle" | "loading" | "valid" | "invalid" | "error" | "rate_limited" | "timeout";
 type FunnelEventName =
   | "email_submit"
@@ -256,7 +212,7 @@ function CadastroRachaPageContent() {
   const [adminNome, setAdminNome] = useState("");
   const [adminNomeTouched, setAdminNomeTouched] = useState(false);
   const [adminApelido, setAdminApelido] = useState("");
-  const [adminPosicao, setAdminPosicao] = useState<string>(POSICOES[0]);
+  const [adminPosicao, setAdminPosicao] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminSenha, setAdminSenha] = useState("");
   const [adminConfirmSenha, setAdminConfirmSenha] = useState("");
@@ -273,7 +229,6 @@ function CadastroRachaPageContent() {
   const [showConfirmSenha, setShowConfirmSenha] = useState(false);
   const [defineSenha, setDefineSenha] = useState(false);
   const [showAdminUploads, setShowAdminUploads] = useState(false);
-  const [showRachaUploads, setShowRachaUploads] = useState(false);
 
   const [cropImage, setCropImage] = useState<string>();
   const [cropTarget, setCropTarget] = useState<UploadTarget | null>(null);
@@ -281,8 +236,7 @@ function CadastroRachaPageContent() {
   const [slugStatus, setSlugStatus] = useState<SlugStatus>("idle");
 
   const [planCatalog, setPlanCatalog] = useState<PlanCatalog | null>(null);
-  const [planInterval, setPlanInterval] = useState<BillingInterval>("month");
-  const [selectedPlanKey, setSelectedPlanKey] = useState("");
+  const [selectedPlanKey, setSelectedPlanKey] = useState(DEFAULT_ONBOARDING_PLAN_KEY);
   const [planLoading, setPlanLoading] = useState(false);
   const [planError, setPlanError] = useState("");
   const [couponCode, setCouponCode] = useState("");
@@ -298,6 +252,7 @@ function CadastroRachaPageContent() {
   const [cidadeOptions, setCidadeOptions] = useState<CityOption[]>([]);
   const [cidadeFilter, setCidadeFilter] = useState("");
   const [cidadeLoading, setCidadeLoading] = useState(false);
+  const [isCityPickerOpen, setIsCityPickerOpen] = useState(false);
 
   const resetTurnstile = () => {
     setTurnstileToken(null);
@@ -387,6 +342,7 @@ function CadastroRachaPageContent() {
     setCidadeNome("");
     setCidadeIbgeCode("");
     setCidadeFilter("");
+    setIsCityPickerOpen(false);
     setCidadeOptions([]);
 
     const uf = estadoUf.trim().toUpperCase();
@@ -472,17 +428,26 @@ function CadastroRachaPageContent() {
         if (!res.ok) {
           const text = await res.text();
           if (active) {
-            setPlanError(text || "Nao foi possivel carregar os planos.");
+            setPlanError(text || "Nao foi possivel preparar o teste.");
           }
           return;
         }
         const data = (await res.json()) as PlanCatalog;
         if (active) {
+          const defaultPlan = data.plans?.find(
+            (plan) =>
+              plan.key === DEFAULT_ONBOARDING_PLAN_KEY &&
+              plan.active !== false &&
+              plan.ctaType !== "contact"
+          );
           setPlanCatalog(data);
+          if (!defaultPlan) {
+            setPlanError("Nao foi possivel preparar o teste.");
+          }
         }
       } catch {
         if (active) {
-          setPlanError("Nao foi possivel carregar os planos.");
+          setPlanError("Nao foi possivel preparar o teste.");
         }
       } finally {
         if (active) {
@@ -572,7 +537,7 @@ function CadastroRachaPageContent() {
     setExistingCodeSent(false);
     setExistingCodeCooldown(0);
     setFormError("");
-    setSucesso("Conta global conectada com Google. Continue com os dados do racha.");
+    setSucesso("Conta global conectada com Google. Continue com os dados do grupo de futebol.");
     setUseExistingGlobalAccount(true);
     setExistingGlobalAuthMode("google");
     setAdminEmail(sessionEmail);
@@ -581,16 +546,18 @@ function CadastroRachaPageContent() {
       if (!identity?.profileName && !adminNome) {
         setAdminNome(fallbackName);
       }
-      if (!identity?.profilePosition && !adminPosicao) {
-        setAdminPosicao(POSICOES[0]);
+      if (identity?.profilePosition) {
+        setStep(2);
+        setSucesso("Conta global conectada com Google. Continue com os dados do grupo de futebol.");
+        return;
       }
+      setStep(1);
+      setSucesso("Conta Google conectada. Escolha sua posição principal para continuar.");
     });
-    setStep(2);
     setAccessFlow("wizard");
     router.replace("/cadastrar-racha");
   }, [
     adminNome,
-    adminPosicao,
     googleIntent,
     hydrateAdminIdentityFromGlobalProfile,
     isGoogle,
@@ -627,32 +594,21 @@ function CadastroRachaPageContent() {
     return { text: "", tone: "muted" };
   }, [rachaSlug, slugStatus]);
 
-  const priceFormatter = useMemo(
-    () =>
-      new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-        maximumFractionDigits: 0,
-      }),
-    []
-  );
-
-  const availablePlans = useMemo(() => {
-    if (!planCatalog?.plans?.length) return [];
-    return planCatalog.plans
-      .filter((plan) => plan.interval === planInterval)
-      .filter((plan) => plan.active !== false && plan.ctaType !== "contact")
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }, [planCatalog, planInterval]);
-
   const selectedPlan = useMemo(() => {
-    if (!availablePlans.length) return null;
-    return availablePlans.find((plan) => plan.key === selectedPlanKey) ?? availablePlans[0];
-  }, [availablePlans, selectedPlanKey]);
+    if (!planCatalog?.plans?.length) return null;
+    return (
+      planCatalog.plans.find(
+        (plan) =>
+          plan.key === DEFAULT_ONBOARDING_PLAN_KEY &&
+          plan.active !== false &&
+          plan.ctaType !== "contact"
+      ) ?? null
+    );
+  }, [planCatalog]);
 
   const baseTrialDays = useMemo(() => {
     if (selectedPlan?.trialDays !== undefined) return selectedPlan.trialDays;
-    return planCatalog?.meta?.trialDaysDefault ?? 20;
+    return planCatalog?.meta?.trialDaysDefault ?? 0;
   }, [planCatalog, selectedPlan]);
 
   const totalTrialDays = useMemo(() => {
@@ -661,20 +617,13 @@ function CadastroRachaPageContent() {
   }, [baseTrialDays, couponBenefits]);
 
   const bonusTrialDays = couponBenefits?.extraTrialDays ?? 0;
-  const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
   const hasAppliedCoupon = couponStatus === "valid" && Boolean(couponBenefits);
-  const ambassadorDisplayName = (couponBenefits?.ambassadorName || "").trim() || "Fut7Pro";
-  const discountPercentLabel = discountPercent.toLocaleString("pt-BR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
+  const citySearchValue = cidadeFilter || cidadeNome;
+  const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
 
   useEffect(() => {
-    if (!availablePlans.length) return;
-    if (availablePlans.some((plan) => plan.key === selectedPlanKey)) return;
-    const preferred = availablePlans.find((plan) => plan.highlight) ?? availablePlans[0];
-    setSelectedPlanKey(preferred.key);
-  }, [availablePlans, selectedPlanKey]);
+    setSelectedPlanKey(DEFAULT_ONBOARDING_PLAN_KEY);
+  }, []);
 
   async function toBase64(file: File) {
     return new Promise<string>((resolve, reject) => {
@@ -787,7 +736,7 @@ function CadastroRachaPageContent() {
       if (reason === "plan_not_allowed") {
         setCouponStatus("invalid");
         setCouponBenefits(null);
-        setCouponErrorMessage("Este cupom não é válido para o plano selecionado.");
+        setCouponErrorMessage("Este cupom não está disponível para este cadastro.");
         trackCadastroFunnelEvent("coupon_apply_fail", { reason: "plan_not_allowed" });
         return;
       }
@@ -1073,16 +1022,13 @@ function CadastroRachaPageContent() {
       if (!identity?.profileName && !adminNome) {
         setAdminNome(fallbackName);
       }
-      if (!identity?.profilePosition && !adminPosicao) {
-        setAdminPosicao(POSICOES[0]);
-      }
 
       setUseExistingGlobalAccount(true);
       setExistingGlobalAuthMode("code");
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
-      setStep(2);
+      setStep(identity?.profilePosition ? 2 : 1);
       setErrors({});
       setAccessFlow("wizard");
       trackCadastroFunnelEvent("code_verified_ok", {
@@ -1095,8 +1041,10 @@ function CadastroRachaPageContent() {
       }
       setSucesso(
         isNewUser
-          ? "Primeiro acesso, vamos criar sua conta global Fut7Pro agora e seguir para o cadastro do racha."
-          : "Bem-vindo de volta. Continue com os dados do racha."
+          ? "Primeiro acesso criado. Escolha sua posição principal para continuar."
+          : identity?.profilePosition
+            ? "Bem-vindo de volta. Continue com os dados do grupo de futebol."
+            : "Bem-vindo de volta. Escolha sua posição principal para continuar."
       );
     } catch {
       trackCadastroFunnelEvent("code_verified_fail", {
@@ -1148,18 +1096,19 @@ function CadastroRachaPageContent() {
       if (!identity?.profileName && !adminNome) {
         setAdminNome(fallbackName);
       }
-      if (!identity?.profilePosition && !adminPosicao) {
-        setAdminPosicao(POSICOES[0]);
-      }
       setUseExistingGlobalAccount(true);
       setExistingGlobalAuthMode("password");
       setAdminSenha("");
       setAdminConfirmSenha("");
       setShowExistingSenha(false);
-      setStep(2);
+      setStep(identity?.profilePosition ? 2 : 1);
       setErrors({});
       setAccessFlow("wizard");
-      setSucesso("Conta global reconhecida. Continue com os dados do racha.");
+      setSucesso(
+        identity?.profilePosition
+          ? "Conta global reconhecida. Continue com os dados do grupo de futebol."
+          : "Conta global reconhecida. Escolha sua posição principal para continuar."
+      );
     } catch {
       setExistingLoginError("Não foi possível entrar agora. Tente novamente.");
     } finally {
@@ -1171,8 +1120,6 @@ function CadastroRachaPageContent() {
   }
 
   function buildStep1Errors(): FieldErrors {
-    if (useExistingGlobalAccount) return {};
-
     const nextErrors: FieldErrors = {};
     const nome = adminNome.trim();
     if (!nome) nextErrors.adminNome = "Informe o primeiro nome.";
@@ -1181,7 +1128,8 @@ function CadastroRachaPageContent() {
     if (adminApelido.trim().length > 10) nextErrors.adminApelido = "Maximo de 10 caracteres.";
     if (!adminPosicao) nextErrors.adminPosicao = "Selecione a posição.";
     if (!adminEmail.trim()) nextErrors.adminEmail = "Informe o e-mail.";
-    const wantsPassword = !isGoogle || defineSenha || adminSenha || adminConfirmSenha;
+    const wantsPassword =
+      !useExistingGlobalAccount && (!isGoogle || defineSenha || adminSenha || adminConfirmSenha);
     if (wantsPassword) {
       if (!adminSenha || adminSenha.length < 6) nextErrors.adminSenha = "Minimo de 6 caracteres.";
       if (adminSenha !== adminConfirmSenha)
@@ -1232,7 +1180,7 @@ function CadastroRachaPageContent() {
         resolveFirstName(adminNome) ||
         resolveFirstName((session?.user as any)?.name as string | undefined) ||
         resolveFirstNameFromEmail(normalizedEmail);
-      const normalizedPosition = adminPosicao || POSICOES[0];
+      const normalizedPosition = adminPosicao;
       const normalizedPassword = adminSenha || undefined;
 
       if (!normalizedEmail) {
@@ -1243,9 +1191,14 @@ function CadastroRachaPageContent() {
         setFormError("Não foi possível identificar o primeiro nome do administrador.");
         return;
       }
+      if (!normalizedPosition) {
+        setStep(1);
+        setFormError("Selecione sua posição principal para continuar.");
+        return;
+      }
       if (useExistingGlobalAccount && existingGlobalAuthMode === "none") {
         setAccessFlow("existing-password");
-        setFormError("Valide sua conta antes de concluir o cadastro do racha.");
+        setFormError("Valide sua conta antes de concluir o cadastro do grupo de futebol.");
         return;
       }
 
@@ -1315,7 +1268,7 @@ function CadastroRachaPageContent() {
       const requiresEmailVerification = body?.requiresEmailVerification ?? !isGoogle;
 
       if (useExistingGlobalAccount) {
-        setSucesso("Racha cadastrado com conta global. Redirecionando para o painel.");
+        setSucesso("Grupo cadastrado com conta global. Redirecionando para o painel.");
         const accessToken = body?.accessToken;
         const refreshToken = body?.refreshToken;
 
@@ -1331,7 +1284,7 @@ function CadastroRachaPageContent() {
 
           if (signInResult?.error) {
             setFormError(
-              "Racha cadastrado, mas não foi possível entrar automaticamente. Faça login para continuar."
+              "Grupo cadastrado, mas não foi possível entrar automaticamente. Faça login para continuar."
             );
             setTimeout(() => router.push("/admin/login"), 1200);
             return;
@@ -1387,12 +1340,6 @@ function CadastroRachaPageContent() {
     }
 
     if (step === 1) {
-      if (useExistingGlobalAccount) {
-        setErrors({});
-        setStep(2);
-        return;
-      }
-
       const stepErrors = buildStep1Errors();
       if (Object.keys(stepErrors).length > 0) {
         setErrors(stepErrors);
@@ -1414,7 +1361,7 @@ function CadastroRachaPageContent() {
       return;
     }
 
-    const step1Errors = useExistingGlobalAccount ? {} : buildStep1Errors();
+    const step1Errors = buildStep1Errors();
     const step2Errors = buildStep2Errors();
     const nextErrors = { ...step1Errors, ...step2Errors };
     if (Object.keys(nextErrors).length > 0) {
@@ -1424,17 +1371,23 @@ function CadastroRachaPageContent() {
     }
 
     if (planLoading) {
-      setFormError("Aguarde carregar os planos.");
+      setFormError("Aguarde preparar seu teste.");
       return;
     }
 
     if (planError) {
-      setFormError(planError);
+      setFormError("Não foi possível preparar seu teste agora.");
       return;
     }
 
     if (!selectedPlanKey) {
-      setFormError("Selecione um plano para continuar.");
+      setFormError(
+        "Não foi possível preparar o teste grátis. Atualize a página e tente novamente."
+      );
+      return;
+    }
+    if (!selectedPlan) {
+      setFormError("Não foi possível preparar seu teste agora.");
       return;
     }
 
@@ -1485,7 +1438,7 @@ function CadastroRachaPageContent() {
         : step === 3
           ? isLoading
             ? "Finalizando..."
-            : "Começar teste grátis"
+            : "Criar meu grupo e começar"
           : "Continuar";
 
   const requiresTurnstileForCurrentAction =
@@ -1520,17 +1473,24 @@ function CadastroRachaPageContent() {
         : slugInfo.tone === "warning"
           ? "text-yellow-300"
           : "text-gray-400";
+  const wizardSteps: Array<{ number: Step; label: string }> = [
+    { number: 1, label: "Sua conta" },
+    { number: 2, label: "Seu grupo" },
+    { number: 3, label: "Teste grátis" },
+  ];
 
   return (
-    <main className="w-full max-w-6xl mx-auto flex flex-col gap-6 lg:flex-row lg:gap-10 pb-24 sm:pb-10">
+    <main className="w-full max-w-6xl mx-auto flex flex-col gap-6 px-4 py-6 lg:flex-row lg:gap-10 lg:py-10 pb-24 sm:pb-10">
       <section className="order-1 w-full lg:order-2 lg:w-[460px]">
-        <div className="rounded-2xl bg-[#0f1118] border border-[#1c2030] shadow-2xl p-6 sm:p-8">
+        <div className="rounded-2xl bg-[#0f1118] border border-white/10 shadow-2xl shadow-black/30 p-5 sm:p-8">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <div className="text-xs uppercase tracking-[0.25em] text-yellow-300 font-semibold">
-                {accessFlow === "wizard" ? `Etapa ${step} de 3` : "Acesso Fut7Pro"}
+              <div className="text-xs uppercase text-yellow-300 font-semibold">
+                {accessFlow === "wizard" ? wizardSteps[step - 1].label : "Acesso Fut7Pro"}
               </div>
-              <h1 className="text-2xl font-bold text-white lg:hidden">Cadastre seu racha</h1>
+              <h1 className="text-2xl font-bold text-white lg:hidden">
+                Cadastre seu grupo de futebol
+              </h1>
               <p className="text-sm text-gray-400 lg:hidden">Leva menos de 2 min.</p>
             </div>
             {showWizardBackButton && (
@@ -1545,12 +1505,37 @@ function CadastroRachaPageContent() {
           </div>
 
           {accessFlow === "wizard" && (
-            <div className="mt-4 h-1 w-full rounded-full bg-white/10">
-              <div
-                className={`h-full rounded-full bg-yellow-400 transition-all ${
-                  step === 1 ? "w-1/3" : step === 2 ? "w-2/3" : "w-full"
-                }`}
-              />
+            <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Progresso do cadastro">
+              {wizardSteps.map((item) => {
+                const isCurrent = step === item.number;
+                const isComplete = step > item.number;
+
+                return (
+                  <div
+                    key={item.number}
+                    className={`rounded-xl border px-2.5 py-2.5 text-center transition ${
+                      isCurrent
+                        ? "border-yellow-400 bg-yellow-400/10 text-white"
+                        : isComplete
+                          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100"
+                          : "border-white/10 bg-white/[0.03] text-gray-400"
+                    }`}
+                  >
+                    <div
+                      className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                        isComplete
+                          ? "bg-emerald-400 text-black"
+                          : isCurrent
+                            ? "bg-yellow-400 text-black"
+                            : "bg-white/10 text-gray-400"
+                      }`}
+                    >
+                      {isComplete ? "✓" : item.number}
+                    </div>
+                    <div className="text-[11px] font-semibold leading-tight">{item.label}</div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -1785,7 +1770,12 @@ function CadastroRachaPageContent() {
             {accessFlow === "wizard" && step === 1 && (
               <>
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-white">Conta do presidente</h2>
+                  <div>
+                    <h2 className="text-lg font-semibold text-white">Sua conta</h2>
+                    <p className="mt-1 text-sm text-gray-400">
+                      Complete apenas os dados necessários para seu perfil de presidente.
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className="text-xs text-gray-400">
                       Primeiro nome *
@@ -1826,7 +1816,7 @@ function CadastroRachaPageContent() {
                       )}
                     </label>
                     <label className="text-xs text-gray-400">
-                      Posicao *
+                      Posição principal *
                       <select
                         value={adminPosicao}
                         onChange={(e) => {
@@ -1836,6 +1826,7 @@ function CadastroRachaPageContent() {
                         className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
                         required
                       >
+                        <option value="">Selecione sua posição</option>
                         {POSICOES.map((p) => (
                           <option key={p} value={p}>
                             {p}
@@ -1857,12 +1848,12 @@ function CadastroRachaPageContent() {
                           setAdminEmail(e.target.value);
                           clearError("adminEmail");
                         }}
-                        readOnly={isGoogle}
+                        readOnly={useExistingGlobalAccount || isGoogle}
                         autoCapitalize="none"
                         autoComplete="email"
                         inputMode="email"
                         spellCheck={false}
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 read-only:cursor-not-allowed read-only:opacity-80"
                         required
                       />
                       {errors.adminEmail && (
@@ -1870,7 +1861,11 @@ function CadastroRachaPageContent() {
                       )}
                     </label>
                   </div>
-                  {isGoogle && !defineSenha ? (
+                  {useExistingGlobalAccount ? (
+                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
+                      Usaremos a Conta Fut7Pro já validada para criar seu grupo.
+                    </div>
+                  ) : isGoogle && !defineSenha ? (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
                       <div className="flex items-center justify-between gap-3">
                         <span>Senha opcional para login por e-mail.</span>
@@ -1992,9 +1987,9 @@ function CadastroRachaPageContent() {
             {accessFlow === "wizard" && step === 2 && (
               <>
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-white">Dados do racha</h2>
+                  <h2 className="text-sm font-semibold text-white">Dados do grupo de futebol</h2>
                   <label className="text-xs text-gray-400">
-                    Nome do racha *
+                    Nome do grupo *
                     <input
                       type="text"
                       value={rachaNome}
@@ -2070,49 +2065,82 @@ function CadastroRachaPageContent() {
                     </label>
                     <label className="text-xs text-gray-400">
                       Cidade *
-                      <div className="mt-2 space-y-2">
+                      <div className="relative mt-2">
                         <input
                           type="text"
-                          value={cidadeFilter}
-                          onChange={(e) => setCidadeFilter(e.target.value)}
-                          placeholder={
-                            estadoUf ? "Buscar cidade..." : "Selecione o estado primeiro"
-                          }
-                          disabled={!estadoUf}
-                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
-                        />
-                        <select
-                          value={cidadeNome}
+                          value={citySearchValue}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            setCidadeNome(value);
-                            const found = cidadeOptions.find((city) => city.nome === value);
-                            setCidadeIbgeCode(found?.ibge ?? "");
+                            setCidadeFilter(e.target.value);
+                            setCidadeNome("");
+                            setCidadeIbgeCode("");
+                            setIsCityPickerOpen(true);
                             clearError("cidade");
                           }}
-                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
-                          required
-                          disabled={!estadoUf || cidadeLoading}
-                        >
-                          <option value="">
-                            {!estadoUf
-                              ? "Selecione o estado primeiro"
-                              : cidadeLoading
-                                ? "Carregando cidades..."
-                                : "Selecione a cidade"}
-                          </option>
-                          {filteredCities.length === 0 && estadoUf && !cidadeLoading ? (
-                            <option value="" disabled>
-                              Nenhuma cidade encontrada
-                            </option>
-                          ) : null}
-                          {filteredCities.map((city) => (
-                            <option key={city.ibge} value={city.nome}>
-                              {city.nome}
-                            </option>
-                          ))}
-                        </select>
+                          onFocus={() => {
+                            if (estadoUf && !cidadeLoading) setIsCityPickerOpen(true);
+                          }}
+                          placeholder={
+                            estadoUf
+                              ? "Buscar e selecionar cidade..."
+                              : "Selecione o estado primeiro"
+                          }
+                          disabled={!estadoUf}
+                          role="combobox"
+                          aria-controls="cidade-options"
+                          aria-expanded={isCityPickerOpen ? "true" : "false"}
+                          aria-autocomplete="list"
+                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+                        />
+                        {cidadeNome && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCidadeNome("");
+                              setCidadeIbgeCode("");
+                              setCidadeFilter("");
+                              setIsCityPickerOpen(true);
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-[11px] text-gray-400 hover:text-white"
+                          >
+                            Trocar
+                          </button>
+                        )}
+                        {isCityPickerOpen && estadoUf && !cidadeLoading && (
+                          <div
+                            id="cidade-options"
+                            className="absolute z-30 mt-2 max-h-56 w-full overflow-auto rounded-lg border border-[#2a3044] bg-[#111522] p-1 shadow-xl"
+                          >
+                            {filteredCities.length === 0 ? (
+                              <div className="px-3 py-2 text-xs text-gray-400">
+                                Nenhuma cidade encontrada
+                              </div>
+                            ) : (
+                              filteredCities.slice(0, 80).map((city) => (
+                                <button
+                                  key={city.ibge}
+                                  type="button"
+                                  onMouseDown={(event) => event.preventDefault()}
+                                  onClick={() => {
+                                    setCidadeNome(city.nome);
+                                    setCidadeIbgeCode(city.ibge);
+                                    setCidadeFilter("");
+                                    setIsCityPickerOpen(false);
+                                    clearError("cidade");
+                                  }}
+                                  className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-100 hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none"
+                                >
+                                  {city.nome}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
                       </div>
+                      {cidadeLoading && (
+                        <span className="mt-1 block text-xs text-gray-400">
+                          Carregando cidades...
+                        </span>
+                      )}
                       {errors.cidade && (
                         <span className="mt-1 block text-xs text-red-300">{errors.cidade}</span>
                       )}
@@ -2120,31 +2148,39 @@ function CadastroRachaPageContent() {
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
-                  <button
-                    type="button"
-                    onClick={() => setShowRachaUploads((prev) => !prev)}
-                    className="text-yellow-300 underline"
-                  >
-                    {showRachaUploads ? "Ocultar logo do racha" : "Adicionar logo (opcional)"}
-                  </button>
-                  {showRachaUploads && (
-                    <div className="mt-3 flex items-center gap-3">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={(e) => handleUpload(e, "logo")}
-                        className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
+                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-gray-300">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {rachaLogo && (
+                      <img
+                        src={rachaLogo}
+                        alt="Preview do logo"
+                        className="h-14 w-14 rounded-lg border border-white/10 object-cover"
                       />
-                      {rachaLogo && (
-                        <img
-                          src={rachaLogo}
-                          alt="Preview do logo"
-                          className="h-10 w-10 rounded-md object-cover"
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <p className="font-semibold text-white">Logo do grupo (opcional)</p>
+                        <p className="mt-1 text-[11px] text-gray-400">PNG ou JPG • até 1 MB</p>
+                      </div>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          onChange={(e) => handleUpload(e, "logo")}
+                          className="w-full text-xs text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-yellow-400 file:px-3 file:py-2 file:text-black hover:file:bg-yellow-300 cursor-pointer"
                         />
-                      )}
+                        {rachaLogo && (
+                          <button
+                            type="button"
+                            onClick={() => setRachaLogo(undefined)}
+                            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20 hover:text-white"
+                          >
+                            Remover
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  </div>
                 </div>
               </>
             )}
@@ -2152,150 +2188,42 @@ function CadastroRachaPageContent() {
             {accessFlow === "wizard" && step === 3 && (
               <>
                 <div className="space-y-3">
-                  <div className="rounded-xl border border-white/10 bg-[#12151f] p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h2 className="text-sm font-semibold text-white">Escolha seu plano</h2>
-                      <span className="rounded-full bg-yellow-400/20 px-3 py-1 text-[11px] font-semibold text-yellow-300">
-                        {baseTrialDays} dias grátis
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs text-gray-300">
-                      Teste grátis por {baseTrialDays} dias. O plano escolhido define apenas o valor
-                      após o teste.
+                  <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-5 text-center">
+                    <p className="text-xs font-semibold uppercase text-yellow-300">
+                      Tudo pronto para começar
                     </p>
-                    <p className="mt-2 text-[11px] text-gray-400">
-                      Após o período grátis, será solicitada a confirmação da assinatura para manter
-                      o painel do racha ativo.
+                    <h2 className="mt-3 text-2xl font-bold text-white">
+                      Você terá {totalTrialDays} dias para experimentar o Fut7Pro
+                    </h2>
+                    <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                      Conheça os recursos, organize seu grupo e veja na prática como o Fut7Pro
+                      funciona.
                     </p>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-2 rounded-full border border-[#23283a] bg-[#10131b] p-1 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setPlanInterval("month")}
-                      className={`rounded-full px-4 py-2 font-semibold transition ${
-                        planInterval === "month"
-                          ? "bg-yellow-400 text-black"
-                          : "text-gray-300 hover:text-white"
-                      }`}
-                    >
-                      Mensal
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPlanInterval("year")}
-                      className={`rounded-full px-4 py-2 font-semibold transition ${
-                        planInterval === "year"
-                          ? "bg-yellow-400 text-black"
-                          : "text-gray-300 hover:text-white"
-                      }`}
-                    >
-                      Anual (2 meses grátis)
-                    </button>
+                    {bonusTrialDays > 0 && (
+                      <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+                        Seu período inclui {baseTrialDays} dias iniciais + {bonusTrialDays} dias
+                        extras do cupom.
+                      </div>
+                    )}
                   </div>
 
                   {planLoading && (
                     <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
-                      Carregando planos...
+                      Preparando seu teste...
                     </div>
                   )}
                   {planError && (
                     <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-xs text-red-200">
-                      {planError}
-                    </div>
-                  )}
-
-                  <div
-                    role="radiogroup"
-                    aria-label="Escolha do plano"
-                    className="grid grid-cols-1 sm:grid-cols-2 gap-3"
-                  >
-                    {availablePlans.map((plan) => {
-                      const isSelected = plan.key === selectedPlanKey;
-                      const copy = PLAN_MICRO_COPY[plan.key] ?? {
-                        title: plan.label,
-                        blurb: "Plano Fut7Pro para o seu racha.",
-                        bullets: [],
-                      };
-                      const priceSuffix = plan.interval === "month" ? "mes" : "ano";
-
-                      return (
-                        <button
-                          key={plan.key}
-                          type="button"
-                          role="radio"
-                          aria-checked={isSelected}
-                          onClick={() => setSelectedPlanKey(plan.key)}
-                          className={`rounded-xl border p-4 text-left transition focus:outline-none focus:ring-2 focus:ring-yellow-400 ${
-                            isSelected
-                              ? "border-yellow-400 bg-[#1a1d2a] shadow-lg"
-                              : "border-[#23283a] bg-[#151821] hover:border-yellow-400/60"
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="text-sm font-semibold text-white">
-                                {copy.title ?? plan.label}
-                              </div>
-                              <p className="mt-1 text-[11px] text-gray-400">{copy.blurb}</p>
-                            </div>
-                            {plan.badge && (
-                              <span className="rounded-full bg-yellow-400/20 px-2 py-1 text-[10px] font-semibold text-yellow-300">
-                                {plan.badge}
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="mt-3 text-[11px] text-gray-400">
-                            Após o teste: {priceFormatter.format(plan.amount)}/{priceSuffix}
-                          </div>
-
-                          {copy.bullets.length > 0 && (
-                            <ul className="mt-3 list-disc list-inside space-y-1 text-[11px] text-gray-300">
-                              {copy.bullets.slice(0, 3).map((item, index) => (
-                                <li key={`${plan.key}-${index}`}>{item}</li>
-                              ))}
-                            </ul>
-                          )}
-
-                          {(copy.marketingNote || plan.marketingStartsAfterFirstPayment) && (
-                            <p className="mt-3 text-[11px] text-gray-400">
-                              {copy.marketingNote ||
-                                "Serviços de marketing começam após o primeiro pagamento."}
-                            </p>
-                          )}
-
-                          <div className="mt-4 flex items-center justify-end">
-                            <span
-                              className={`rounded-full px-3 py-1 text-[10px] font-semibold ${
-                                isSelected
-                                  ? "bg-yellow-400 text-black"
-                                  : "bg-white/10 text-gray-200"
-                              }`}
-                            >
-                              {isSelected ? "Selecionado" : "Selecionar"}
-                            </span>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {!planLoading && availablePlans.length === 0 && !planError && (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
-                      Nenhum plano disponivel no momento.
+                      Não foi possível preparar seu teste agora.
                     </div>
                   )}
                 </div>
 
                 <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
                   <div className="space-y-1">
-                    <p className="text-xs font-semibold text-white">
-                      Cupom de embaixador ou influencer (opcional)
-                    </p>
+                    <p className="text-xs font-semibold text-white">Possui um cupom? (opcional)</p>
                     <p className="text-[11px] text-gray-400">
-                      Se você recebeu um cupom, aplique aqui para ganhar benefícios no teste e no
-                      primeiro pagamento.
+                      Aplique seu cupom para verificar descontos e dias extras para o seu grupo.
                     </p>
                   </div>
 
@@ -2347,11 +2275,16 @@ function CadastroRachaPageContent() {
                   )}
                   {hasAppliedCoupon && (
                     <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-                      <p>Cupom aplicado com sucesso. Embaixador: {ambassadorDisplayName}.</p>
-                      <p className="mt-1">
-                        Agora você tem {totalTrialDays} dias de teste grátis e{" "}
-                        {discountPercentLabel}% de desconto na primeira cobrança.
-                      </p>
+                      <p className="font-semibold">Cupom aplicado com sucesso</p>
+                      {bonusTrialDays > 0 && (
+                        <p className="mt-1">
+                          +{bonusTrialDays} dias extras. Seu período de teste agora é de{" "}
+                          {totalTrialDays} dias.
+                        </p>
+                      )}
+                      {discountPercent > 0 && (
+                        <p className="mt-1">Desconto confirmado: {discountPercent}%.</p>
+                      )}
                       <button
                         type="button"
                         onClick={handleRemoveCoupon}
@@ -2375,21 +2308,16 @@ function CadastroRachaPageContent() {
                 <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
                   {hasAppliedCoupon ? (
                     <div className="space-y-1">
-                      <p className="font-semibold text-emerald-200">
-                        Parabéns. O cupom do embaixador {ambassadorDisplayName} foi aplicado com
-                        sucesso.
-                      </p>
+                      <p className="font-semibold text-emerald-200">Cupom ativo neste cadastro.</p>
                       <p className="text-[11px] text-emerald-100">
-                        Você ganhou {bonusTrialDays} dias extras, totalizando {totalTrialDays} dias
-                        de teste grátis, e {discountPercentLabel}% de desconto na primeira cobrança.
+                        O benefício real validado pelo Fut7Pro será aplicado ao seu grupo.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-1">
-                      <p>Seu teste grátis: {baseTrialDays} dias.</p>
+                      <p>Seu período de teste: {baseTrialDays} dias.</p>
                       <p className="text-[11px] text-gray-400">
-                        Você pode aplicar um cupom acima para aumentar seu teste e receber desconto
-                        no primeiro pagamento.
+                        O cupom é opcional e pode ser aplicado antes de concluir.
                       </p>
                     </div>
                   )}
@@ -2454,10 +2382,10 @@ function CadastroRachaPageContent() {
             <div className="text-xs uppercase tracking-[0.25em] text-yellow-400 font-semibold">
               Experimente o Fut7Pro
             </div>
-            <h1 className="text-3xl font-bold text-white">Cadastre seu racha</h1>
+            <h1 className="text-3xl font-bold text-white">Cadastre seu grupo de futebol</h1>
             <p className="text-sm text-gray-300 leading-relaxed">
-              Crie seu racha e complete seu perfil. Em minutos você entra como presidente com painel
-              e site público sincronizados.
+              Crie seu grupo de futebol e complete seu perfil. Em minutos você entra como presidente
+              com painel e site público sincronizados.
             </p>
           </div>
 
@@ -2503,7 +2431,7 @@ function CadastroRachaPageContent() {
         imageSrc={cropImage || ""}
         aspect={1}
         shape={cropTarget === "avatar" ? "round" : "rect"}
-        title={cropTarget === "logo" ? "Ajustar logo do racha" : "Ajustar foto do presidente"}
+        title={cropTarget === "logo" ? "Ajustar logo do grupo" : "Ajustar foto do presidente"}
         onCancel={() => {
           setCropImage(undefined);
           setCropTarget(null);
@@ -2525,7 +2453,7 @@ export default function CadastroRachaPage() {
       fallback={
         <main className="w-full max-w-6xl mx-auto px-4 py-10">
           <div className="rounded-2xl bg-[#0f1118] border border-[#1c2030] p-6 text-sm text-gray-300">
-            Carregando cadastro do racha...
+            Carregando cadastro do grupo de futebol...
           </div>
         </main>
       }
