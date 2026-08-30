@@ -1625,277 +1625,88 @@ function CadastroRachaPageContent() {
   ];
 
   return (
-    <main className="w-full max-w-6xl mx-auto flex flex-col gap-6 px-4 py-6 lg:flex-row lg:gap-10 lg:py-10 pb-24 sm:pb-10">
-      <section className="order-1 w-full lg:order-2 lg:w-[460px]">
-        <div className="rounded-2xl bg-[#0f1118] border border-white/10 shadow-2xl shadow-black/30 p-5 sm:p-8">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="text-xs uppercase text-yellow-300 font-semibold">
-                {accessFlow === "wizard" ? wizardSteps[step - 1].label : "Acesso Fut7Pro"}
-              </div>
-              <h1 className="text-2xl font-bold text-white lg:hidden">
-                Cadastre seu grupo de futebol
-              </h1>
-              <p className="text-sm text-gray-400 lg:hidden">Leva menos de 2 min.</p>
-            </div>
-            {showWizardBackButton && (
-              <button
-                type="button"
-                onClick={handleWizardBack}
-                className="text-xs text-yellow-300 underline"
-              >
-                Voltar
-              </button>
-            )}
-          </div>
+    <main className="relative isolate min-h-screen w-full">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(24,151,80,0.20),transparent_34%),radial-gradient(circle_at_82%_8%,rgba(248,198,74,0.14),transparent_30%),linear-gradient(135deg,#07100c_0%,#090b0f_46%,#050607_100%)]" />
+        <div className="absolute inset-0 opacity-65 [background-image:linear-gradient(115deg,rgba(255,255,255,0.05)_0_1px,transparent_1px_72px),linear-gradient(25deg,rgba(34,197,94,0.08)_0_1px,transparent_1px_96px)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right_top,rgba(248,198,74,0.10),transparent_44%),radial-gradient(ellipse_at_left_bottom,rgba(16,185,129,0.11),transparent_48%)]" />
+        <div className="absolute left-1/2 top-24 h-[460px] w-[900px] -translate-x-1/2 rotate-[-9deg] rounded-[48px] border border-emerald-300/10 bg-emerald-400/[0.03] blur-[0.2px] [mask-image:linear-gradient(90deg,transparent,black_22%,black_78%,transparent)]" />
+      </div>
 
-          {accessFlow === "wizard" && (
-            <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Progresso do cadastro">
-              {wizardSteps.map((item) => {
-                const isCurrent = step === item.number;
-                const isComplete = step > item.number;
-
-                return (
-                  <div
-                    key={item.number}
-                    className={`rounded-xl border px-2.5 py-2.5 text-center transition ${
-                      isCurrent
-                        ? "border-yellow-400 bg-yellow-400/10 text-white"
-                        : isComplete
-                          ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100"
-                          : "border-white/10 bg-white/[0.03] text-gray-400"
-                    }`}
-                  >
-                    <div
-                      className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                        isComplete
-                          ? "bg-emerald-400 text-black"
-                          : isCurrent
-                            ? "bg-yellow-400 text-black"
-                            : "bg-white/10 text-gray-400"
-                      }`}
-                    >
-                      {isComplete ? "✓" : item.number}
-                    </div>
-                    <div className="text-[11px] font-semibold leading-tight">{item.label}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            {accessFlow === "identify" && (
-              <div className="space-y-4">
-                <div className="mb-5 flex flex-col items-center gap-2 text-center">
-                  <Image
-                    src="/images/logos/logo_fut7pro.png"
-                    alt="Fut7Pro"
-                    width={52}
-                    height={52}
-                  />
-                  <h2 className="text-2xl font-bold text-white">Entrar no Fut7Pro</h2>
-                  <p className="text-sm text-gray-300">
-                    Informe seu e-mail para receber um código de acesso e continuar.
-                  </p>
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col gap-6 px-4 py-6 lg:flex-row lg:gap-10 lg:py-10 pb-24 sm:pb-10">
+        <section className="order-1 w-full lg:order-2 lg:w-[460px]">
+          <div className="rounded-2xl border border-white/12 bg-[#0d1016]/95 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.48),0_0_0_1px_rgba(248,198,74,0.06)] backdrop-blur-xl sm:p-8">
+            <div className="flex items-start justify-between">
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-yellow-300 font-semibold">
+                  {accessFlow === "wizard" ? wizardSteps[step - 1].label : "Acesso Fut7Pro"}
                 </div>
-
+                <h1 className="text-2xl font-bold text-white lg:hidden">
+                  Cadastre seu grupo de futebol
+                </h1>
+                <p className="text-sm text-gray-400 lg:hidden">Leva menos de 2 min.</p>
+              </div>
+              {showWizardBackButton && (
                 <button
                   type="button"
-                  onClick={() => signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })}
-                  disabled={sessionStatus === "loading"}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-70"
+                  onClick={handleWizardBack}
+                  className="text-xs text-yellow-300 underline"
                 >
-                  <span className="flex items-center justify-center gap-2">
-                    <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
-                    Continuar com Google
-                  </span>
+                  Voltar
                 </button>
+              )}
+            </div>
 
-                <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-gray-500">
-                  <span className="h-px flex-1 bg-white/10" />
-                  ou
-                  <span className="h-px flex-1 bg-white/10" />
-                </div>
+            {accessFlow === "wizard" && (
+              <div className="mt-5 grid grid-cols-3 gap-2" aria-label="Progresso do cadastro">
+                {wizardSteps.map((item) => {
+                  const isCurrent = step === item.number;
+                  const isComplete = step > item.number;
 
-                <label className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                  Seu e-mail
-                </label>
-                <input
-                  ref={lookupEmailInputRef}
-                  type="email"
-                  value={lookupEmail}
-                  onChange={(event) => {
-                    setLookupEmail(event.target.value);
-                    setLookupError("");
-                  }}
-                  placeholder="ex: seuemail@dominio.com"
-                  autoCapitalize="none"
-                  autoComplete="off"
-                  autoFocus
-                  inputMode="email"
-                  spellCheck={false}
-                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                />
-
-                {lookupError && (
-                  <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-                    {lookupError}
-                  </div>
-                )}
-
-                <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
-                  Ao continuar, vamos enviar um código para o e-mail informado. Digite o código na
-                  próxima etapa para seguir.
-                </div>
+                  return (
+                    <div
+                      key={item.number}
+                      className={`rounded-xl border px-2.5 py-2.5 text-center transition ${
+                        isCurrent
+                          ? "border-yellow-400 bg-yellow-400/10 text-white"
+                          : isComplete
+                            ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-100"
+                            : "border-white/10 bg-white/[0.03] text-gray-400"
+                      }`}
+                    >
+                      <div
+                        className={`mx-auto mb-1 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                          isComplete
+                            ? "bg-emerald-400 text-black"
+                            : isCurrent
+                              ? "bg-yellow-400 text-black"
+                              : "bg-white/10 text-gray-400"
+                        }`}
+                      >
+                        {isComplete ? "✓" : item.number}
+                      </div>
+                      <div className="text-[11px] font-semibold leading-tight">{item.label}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            {accessFlow === "existing-password" && (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4 space-y-4">
-                  <div>
-                    <h2 className="text-sm font-semibold text-white">Continuar acesso</h2>
-                    <p className="mt-1 text-xs text-gray-300">
-                      E-mail informado:{" "}
-                      <span className="font-semibold text-white break-all">{adminEmail}</span>
-                    </p>
-                    <p className="mt-2 text-xs text-gray-400">
-                      Enviamos um código para {adminEmail}. Digite abaixo para continuar.
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              {accessFlow === "identify" && (
+                <div className="space-y-4">
+                  <div className="mb-5 flex flex-col items-center gap-2 text-center">
+                    <Image
+                      src="/images/logos/logo_fut7pro.png"
+                      alt="Fut7Pro"
+                      width={52}
+                      height={52}
+                    />
+                    <h2 className="text-2xl font-bold text-white">Entrar no Fut7Pro</h2>
+                    <p className="text-sm text-gray-300">
+                      Informe seu e-mail para receber um código de acesso e continuar.
                     </p>
                   </div>
-
-                  <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#111522] p-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExistingAuthMethod("code");
-                        setExistingLoginError("");
-                      }}
-                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
-                        existingAuthMethod === "code"
-                          ? "bg-yellow-400 text-black"
-                          : "text-gray-300 hover:text-white"
-                      }`}
-                    >
-                      Código por e-mail
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setExistingAuthMethod("password");
-                        setExistingLoginError("");
-                      }}
-                      className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
-                        existingAuthMethod === "password"
-                          ? "bg-yellow-400 text-black"
-                          : "text-gray-300 hover:text-white"
-                      }`}
-                    >
-                      Entrar com senha
-                    </button>
-                  </div>
-
-                  {existingAuthMethod === "code" ? (
-                    <div className="space-y-3">
-                      <label className="text-xs text-gray-300">
-                        Código de acesso (6 dígitos)
-                        <input
-                          ref={existingCodeInputRef}
-                          type="text"
-                          value={existingCode}
-                          onChange={(event) => {
-                            setExistingCode(event.target.value.replace(/\D+/g, "").slice(0, 6));
-                            setExistingLoginError("");
-                          }}
-                          inputMode="numeric"
-                          autoComplete="one-time-code"
-                          placeholder="Digite os 6 dígitos"
-                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        />
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleRequestPasswordlessCode(true)}
-                        disabled={existingLoginLoading || existingCodeCooldown > 0}
-                        className="text-xs text-yellow-300 underline disabled:opacity-60 disabled:no-underline"
-                      >
-                        {existingCodeCooldown > 0
-                          ? `Não chegou? Reenviar em ${existingCodeCooldown}s.`
-                          : "Não chegou? Reenviar código."}
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="text-xs text-gray-300">
-                      Senha da conta global
-                      <div className="relative mt-2">
-                        <input
-                          type={showExistingSenha ? "text" : "password"}
-                          value={adminSenha}
-                          onChange={(e) => {
-                            setAdminSenha(e.target.value);
-                            setExistingLoginError("");
-                          }}
-                          autoComplete="current-password"
-                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                          placeholder="Digite sua senha"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowExistingSenha((prev) => !prev)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
-                        >
-                          {showExistingSenha ? "Ocultar" : "Mostrar"}
-                        </button>
-                      </div>
-                    </label>
-                  )}
-
-                  {existingAuthMethod === "code" && existingCodeInfo && (
-                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
-                      {existingCodeInfo}
-                    </div>
-                  )}
-                  {existingLoginError && (
-                    <div className="rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-xs text-red-200">
-                      {existingLoginError}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (existingAuthMethod === "password") {
-                        void handleExistingGlobalLogin();
-                        return;
-                      }
-                      if (!existingCodeSent) {
-                        void handleRequestPasswordlessCode(false);
-                        return;
-                      }
-                      void handleExistingCodeLogin();
-                    }}
-                    disabled={isPrimaryDisabled}
-                    className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {primaryActionLabel}
-                  </button>
-                </div>
-
-                <div className="rounded-xl border border-[#23283a] bg-[#131724] p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-white">Entrar com outra conta</h3>
-                  <p className="text-xs text-gray-400">
-                    Troque o e-mail atual ou continue com outro login para não misturar contas.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={handleBackToIdentify}
-                    className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
-                  >
-                    Usar outro e-mail
-                  </button>
 
                   <button
                     type="button"
@@ -1905,703 +1716,912 @@ function CadastroRachaPageContent() {
                   >
                     <span className="flex items-center justify-center gap-2">
                       <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
-                      Entrar com Google
+                      Continuar com Google
                     </span>
                   </button>
-                </div>
-              </div>
-            )}
 
-            {accessFlow === "wizard" && step === 1 && (
-              <>
-                <div className="space-y-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-white">Sua conta</h2>
-                    <p className="mt-1 text-sm text-gray-400">
-                      Complete apenas os dados necessários para seu perfil de presidente.
-                    </p>
+                  <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.3em] text-gray-500">
+                    <span className="h-px flex-1 bg-white/10" />
+                    ou
+                    <span className="h-px flex-1 bg-white/10" />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="text-xs text-gray-400">
-                      Primeiro nome *
-                      <input
-                        type="text"
-                        value={adminNome}
-                        onChange={(e) => {
-                          setAdminNomeTouched(true);
-                          setAdminNome(e.target.value);
-                          clearError("adminNome");
-                        }}
-                        maxLength={10}
-                        autoComplete="given-name"
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        required
-                      />
-                      {errors.adminNome && (
-                        <span className="mt-1 block text-xs text-red-300">{errors.adminNome}</span>
-                      )}
-                    </label>
-                    <label className="text-xs text-gray-400">
-                      Apelido (opcional)
-                      <input
-                        type="text"
-                        value={adminApelido}
-                        onChange={(e) => {
-                          setAdminApelido(e.target.value);
-                          clearError("adminApelido");
-                        }}
-                        maxLength={10}
-                        autoComplete="nickname"
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      />
-                      {errors.adminApelido && (
-                        <span className="mt-1 block text-xs text-red-300">
-                          {errors.adminApelido}
-                        </span>
-                      )}
-                    </label>
-                    <label className="text-xs text-gray-400">
-                      Posição principal *
-                      <select
-                        value={adminPosicao}
-                        onChange={(e) => {
-                          const nextPosition = e.target.value;
-                          setAdminPosicao(nextPosition);
-                          if (
-                            nextPosition &&
-                            existingGlobalAuthMode === "google" &&
-                            sucesso ===
-                              "Conta Google conectada. Escolha sua posição principal para continuar."
-                          ) {
-                            setSucesso("");
-                          }
-                          clearError("adminPosicao");
-                        }}
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        required
-                      >
-                        <option value="">Selecione sua posição</option>
-                        {POSICOES.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.adminPosicao && (
-                        <span className="mt-1 block text-xs text-red-300">
-                          {errors.adminPosicao}
-                        </span>
-                      )}
-                    </label>
-                    <label className="text-xs text-gray-400">
-                      E-mail *
-                      <input
-                        type="email"
-                        value={adminEmail}
-                        onChange={(e) => {
-                          setAdminEmail(e.target.value);
-                          clearError("adminEmail");
-                        }}
-                        readOnly={useExistingGlobalAccount || isGoogle}
-                        autoCapitalize="none"
-                        autoComplete="email"
-                        inputMode="email"
-                        spellCheck={false}
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 read-only:cursor-not-allowed read-only:opacity-80"
-                        required
-                      />
-                      {errors.adminEmail && (
-                        <span className="mt-1 block text-xs text-red-300">{errors.adminEmail}</span>
-                      )}
-                    </label>
-                  </div>
-                  {useExistingGlobalAccount ? (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
-                      Usaremos a Conta Fut7Pro já validada para criar seu grupo.
+
+                  <label className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                    Seu e-mail
+                  </label>
+                  <input
+                    ref={lookupEmailInputRef}
+                    type="email"
+                    value={lookupEmail}
+                    onChange={(event) => {
+                      setLookupEmail(event.target.value);
+                      setLookupError("");
+                    }}
+                    placeholder="ex: seuemail@dominio.com"
+                    autoCapitalize="none"
+                    autoComplete="off"
+                    autoFocus
+                    inputMode="email"
+                    spellCheck={false}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+
+                  {lookupError && (
+                    <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                      {lookupError}
                     </div>
-                  ) : isGoogle && !defineSenha ? (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
-                      <div className="flex items-center justify-between gap-3">
-                        <span>Senha opcional para login por e-mail.</span>
-                        <button
-                          type="button"
-                          onClick={() => setDefineSenha(true)}
-                          className="text-yellow-300 underline"
-                        >
-                          Definir senha agora
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      {isGoogle && (
-                        <div className="flex items-center justify-between text-xs text-gray-400">
-                          <span>Senha opcional para login por e-mail.</span>
-                          <button
-                            type="button"
-                            onClick={() => setDefineSenha(false)}
-                            className="text-yellow-300 underline"
-                          >
-                            Remover senha
-                          </button>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label className="text-xs text-gray-400">
-                          Senha {isGoogle ? "(opcional)" : "*"}
-                          <div className="relative mt-2">
-                            <input
-                              type={showSenha ? "text" : "password"}
-                              value={adminSenha}
-                              onChange={(e) => {
-                                setAdminSenha(e.target.value);
-                                clearError("adminSenha");
-                                clearError("adminConfirmSenha");
-                              }}
-                              autoComplete="new-password"
-                              className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                              required={!isGoogle || defineSenha}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowSenha((prev) => !prev)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
-                            >
-                              {showSenha ? "Ocultar" : "Mostrar"}
-                            </button>
-                          </div>
-                          {errors.adminSenha && (
-                            <span className="mt-1 block text-xs text-red-300">
-                              {errors.adminSenha}
-                            </span>
-                          )}
-                        </label>
-                        <label className="text-xs text-gray-400">
-                          Confirmar senha {isGoogle ? "(opcional)" : "*"}
-                          <div className="relative mt-2">
-                            <input
-                              type={showConfirmSenha ? "text" : "password"}
-                              value={adminConfirmSenha}
-                              onChange={(e) => {
-                                setAdminConfirmSenha(e.target.value);
-                                clearError("adminConfirmSenha");
-                              }}
-                              autoComplete="new-password"
-                              className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                              required={!isGoogle || defineSenha}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowConfirmSenha((prev) => !prev)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
-                            >
-                              {showConfirmSenha ? "Ocultar" : "Mostrar"}
-                            </button>
-                          </div>
-                          {errors.adminConfirmSenha && (
-                            <span className="mt-1 block text-xs text-red-300">
-                              {errors.adminConfirmSenha}
-                            </span>
-                          )}
-                        </label>
-                      </div>
-                    </>
                   )}
-                </div>
 
-                <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
-                  {showGoogleAvatarPreview ? (
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={adminAvatar}
-                        alt="Foto da sua Conta Google"
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-white">Foto da sua Conta Google</p>
-                        <p className="mt-1 text-[11px] text-gray-400">
-                          Você poderá alterar essa foto depois no perfil.
-                        </p>
-                      </div>
+                  <div className="rounded-xl border border-white/10 bg-[#141824] p-4 text-sm text-gray-200">
+                    Ao continuar, vamos enviar um código para o e-mail informado. Digite o código na
+                    próxima etapa para seguir.
+                  </div>
+                </div>
+              )}
+
+              {accessFlow === "existing-password" && (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-[#23283a] bg-[#151821] p-4 space-y-4">
+                    <div>
+                      <h2 className="text-sm font-semibold text-white">Continuar acesso</h2>
+                      <p className="mt-1 text-xs text-gray-300">
+                        E-mail informado:{" "}
+                        <span className="font-semibold text-white break-all">{adminEmail}</span>
+                      </p>
+                      <p className="mt-2 text-xs text-gray-400">
+                        Enviamos um código para {adminEmail}. Digite abaixo para continuar.
+                      </p>
                     </div>
-                  ) : (
-                    <>
+
+                    <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#111522] p-1">
                       <button
                         type="button"
-                        onClick={() => setShowAdminUploads((prev) => !prev)}
-                        className="text-yellow-300 underline"
-                      >
-                        {showAdminUploads
-                          ? "Ocultar foto de perfil"
-                          : "Adicionar foto de perfil (opcional)"}
-                      </button>
-                      {showAdminUploads && (
-                        <div className="mt-3 flex items-center gap-3">
-                          <input
-                            type="file"
-                            accept="image/png,image/jpeg"
-                            onChange={(e) => handleUpload(e, "avatar")}
-                            className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
-                          />
-                          {adminAvatar && (
-                            <img
-                              src={adminAvatar}
-                              alt="Preview do presidente"
-                              className="h-10 w-10 rounded-full object-cover"
-                            />
-                          )}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </>
-            )}
-
-            {accessFlow === "wizard" && step === 2 && (
-              <>
-                <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-white">Dados do grupo de futebol</h2>
-                  <label className="text-xs text-gray-400">
-                    Nome do grupo *
-                    <input
-                      type="text"
-                      value={rachaNome}
-                      onChange={(e) => {
-                        setRachaNome(e.target.value);
-                        clearError("rachaNome");
-                      }}
-                      maxLength={50}
-                      className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      required
-                    />
-                    {errors.rachaNome && (
-                      <span className="mt-1 block text-xs text-red-300">{errors.rachaNome}</span>
-                    )}
-                  </label>
-
-                  <label className="text-xs text-gray-400">
-                    Slug (ex: quarta-fc) *
-                    <input
-                      type="text"
-                      value={rachaSlug}
-                      onChange={(e) => {
-                        const nextValue = e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9-]/g, "")
-                          .replace(/--+/g, "-")
-                          .slice(0, 30);
-                        setRachaSlug(nextValue);
-                        setSlugEdited(nextValue.length > 0);
-                        clearError("rachaSlug");
-                      }}
-                      autoCapitalize="none"
-                      pattern="[a-z0-9-]{3,30}"
-                      spellCheck={false}
-                      className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                      required
-                    />
-                    {errors.rachaSlug ? (
-                      <span className="mt-1 block text-xs text-red-300">{errors.rachaSlug}</span>
-                    ) : (
-                      <span className={`mt-1 block text-xs ${slugToneClass}`}>{slugInfo.text}</span>
-                    )}
-                  </label>
-
-                  <div className="text-xs text-gray-400">
-                    Link público: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="text-xs text-gray-400">
-                      Estado *
-                      <select
-                        value={estadoUf}
-                        onChange={(e) => {
-                          const nextUf = e.target.value.toUpperCase();
-                          setEstadoUf(nextUf);
-                          clearError("estado");
-                          clearError("cidade");
+                        onClick={() => {
+                          setExistingAuthMethod("code");
+                          setExistingLoginError("");
                         }}
-                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                        required
+                        className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
+                          existingAuthMethod === "code"
+                            ? "bg-yellow-400 text-black"
+                            : "text-gray-300 hover:text-white"
+                        }`}
                       >
-                        <option value="">Selecione o estado</option>
-                        {UF_LIST.map((estado) => (
-                          <option key={estado.uf} value={estado.uf}>
-                            {estado.nome} ({estado.uf})
-                          </option>
-                        ))}
-                      </select>
-                      {errors.estado && (
-                        <span className="mt-1 block text-xs text-red-300">{errors.estado}</span>
-                      )}
-                    </label>
-                    <label className="text-xs text-gray-400">
-                      Cidade *
-                      <div className="relative mt-2">
-                        <input
-                          type="text"
-                          value={citySearchValue}
-                          onChange={(e) => {
-                            setCidadeFilter(e.target.value);
-                            setCidadeNome("");
-                            setCidadeIbgeCode("");
-                            setIsCityPickerOpen(true);
-                            clearError("cidade");
-                          }}
-                          onFocus={() => {
-                            if (estadoUf && !cidadeLoading) setIsCityPickerOpen(true);
-                          }}
-                          placeholder={
-                            estadoUf
-                              ? "Buscar e selecionar cidade..."
-                              : "Selecione o estado primeiro"
-                          }
-                          disabled={!estadoUf}
-                          role="combobox"
-                          aria-controls="cidade-options"
-                          aria-expanded={isCityPickerOpen ? "true" : "false"}
-                          aria-autocomplete="list"
-                          className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
-                        />
-                        {cidadeNome && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCidadeNome("");
-                              setCidadeIbgeCode("");
-                              setCidadeFilter("");
-                              setIsCityPickerOpen(true);
+                        Código por e-mail
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExistingAuthMethod("password");
+                          setExistingLoginError("");
+                        }}
+                        className={`flex-1 rounded-md px-3 py-2 text-xs font-semibold transition ${
+                          existingAuthMethod === "password"
+                            ? "bg-yellow-400 text-black"
+                            : "text-gray-300 hover:text-white"
+                        }`}
+                      >
+                        Entrar com senha
+                      </button>
+                    </div>
+
+                    {existingAuthMethod === "code" ? (
+                      <div className="space-y-3">
+                        <label className="text-xs text-gray-300">
+                          Código de acesso (6 dígitos)
+                          <input
+                            ref={existingCodeInputRef}
+                            type="text"
+                            value={existingCode}
+                            onChange={(event) => {
+                              setExistingCode(event.target.value.replace(/\D+/g, "").slice(0, 6));
+                              setExistingLoginError("");
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-[11px] text-gray-400 hover:text-white"
-                          >
-                            Trocar
-                          </button>
-                        )}
-                        {isCityPickerOpen && estadoUf && !cidadeLoading && (
-                          <div
-                            id="cidade-options"
-                            className="absolute z-30 mt-2 max-h-56 w-full overflow-auto rounded-lg border border-[#2a3044] bg-[#111522] p-1 shadow-xl"
-                          >
-                            {filteredCities.length === 0 ? (
-                              <div className="px-3 py-2 text-xs text-gray-400">
-                                Nenhuma cidade encontrada
-                              </div>
-                            ) : (
-                              filteredCities.slice(0, 80).map((city) => (
-                                <button
-                                  key={city.ibge}
-                                  type="button"
-                                  onMouseDown={(event) => event.preventDefault()}
-                                  onClick={() => {
-                                    setCidadeNome(city.nome);
-                                    setCidadeIbgeCode(city.ibge);
-                                    setCidadeFilter("");
-                                    setIsCityPickerOpen(false);
-                                    clearError("cidade");
-                                  }}
-                                  className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-100 hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none"
-                                >
-                                  {city.nome}
-                                </button>
-                              ))
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {cidadeLoading && (
-                        <span className="mt-1 block text-xs text-gray-400">
-                          Carregando cidades...
-                        </span>
-                      )}
-                      {errors.cidade && (
-                        <span className="mt-1 block text-xs text-red-300">{errors.cidade}</span>
-                      )}
-                    </label>
-                  </div>
-                </div>
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            placeholder="Digite os 6 dígitos"
+                            className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          />
+                        </label>
 
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-gray-300">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    {rachaLogo && (
-                      <img
-                        src={rachaLogo}
-                        alt="Preview do logo"
-                        className="h-14 w-14 rounded-lg border border-white/10 object-cover"
-                      />
-                    )}
-                    <div className="flex-1 space-y-2">
-                      <div>
-                        <p className="font-semibold text-white">Logo do grupo (opcional)</p>
-                        <p className="mt-1 text-[11px] text-gray-400">PNG ou JPG • até 1 MB</p>
+                        <button
+                          type="button"
+                          onClick={() => void handleRequestPasswordlessCode(true)}
+                          disabled={existingLoginLoading || existingCodeCooldown > 0}
+                          className="text-xs text-yellow-300 underline disabled:opacity-60 disabled:no-underline"
+                        >
+                          {existingCodeCooldown > 0
+                            ? `Não chegou? Reenviar em ${existingCodeCooldown}s.`
+                            : "Não chegou? Reenviar código."}
+                        </button>
                       </div>
-                      <div className="flex flex-col gap-2 sm:flex-row">
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg"
-                          onChange={(e) => handleUpload(e, "logo")}
-                          className="w-full text-xs text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-yellow-400 file:px-3 file:py-2 file:text-black hover:file:bg-yellow-300 cursor-pointer"
-                        />
-                        {rachaLogo && (
+                    ) : (
+                      <label className="text-xs text-gray-300">
+                        Senha da conta global
+                        <div className="relative mt-2">
+                          <input
+                            type={showExistingSenha ? "text" : "password"}
+                            value={adminSenha}
+                            onChange={(e) => {
+                              setAdminSenha(e.target.value);
+                              setExistingLoginError("");
+                            }}
+                            autoComplete="current-password"
+                            className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                            placeholder="Digite sua senha"
+                          />
                           <button
                             type="button"
-                            onClick={() => setRachaLogo(undefined)}
-                            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20 hover:text-white"
+                            onClick={() => setShowExistingSenha((prev) => !prev)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
                           >
-                            Remover
+                            {showExistingSenha ? "Ocultar" : "Mostrar"}
                           </button>
-                        )}
+                        </div>
+                      </label>
+                    )}
+
+                    {existingAuthMethod === "code" && existingCodeInfo && (
+                      <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+                        {existingCodeInfo}
                       </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+                    )}
+                    {existingLoginError && (
+                      <div className="rounded-lg border border-red-500/50 bg-red-600/20 px-3 py-2 text-xs text-red-200">
+                        {existingLoginError}
+                      </div>
+                    )}
 
-            {accessFlow === "wizard" && step === 3 && (
-              <>
-                <div className="space-y-3">
-                  <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-5 text-center">
-                    <p className="text-xs font-semibold uppercase text-yellow-300">
-                      Tudo pronto para começar
-                    </p>
-                    <h2 className="mt-3 text-2xl font-bold text-white">
-                      Você terá {totalTrialDays} dias para experimentar o Fut7Pro
-                    </h2>
-                    <p className="mt-3 text-sm leading-relaxed text-gray-300">
-                      Conheça os recursos, organize seu grupo e veja na prática como o Fut7Pro
-                      funciona.
-                    </p>
-                  </div>
-
-                  {planLoading && (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
-                      Preparando seu teste...
-                    </div>
-                  )}
-                  {planError && (
-                    <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-xs text-red-200">
-                      Não foi possível preparar seu teste agora.
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
-                  <div className="space-y-1">
-                    <p className="text-xs font-semibold text-white">Possui um cupom? (opcional)</p>
-                    <p className="text-[11px] text-gray-400">
-                      Aplique seu cupom para verificar descontos ou dias extras para o seu grupo.
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => {
-                        couponEditedManuallyRef.current = true;
-                        const rawValue = e.target.value;
-                        const normalizedValue = normalizeCouponInput(rawValue);
-                        setCouponCode(normalizedValue);
-                        setCouponInputHint(
-                          /[^A-Z0-9]/.test(rawValue.toUpperCase())
-                            ? "Use apenas letras e números, sem espaços."
-                            : ""
-                        );
-                        if (couponStatus !== "idle") {
-                          setCouponStatus("idle");
-                          setCouponBenefits(null);
-                          setCouponErrorMessage("");
-                        }
-                      }}
-                      placeholder="Digite seu cupom (ex: FUT7PROVR7)"
-                      className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                    />
                     <button
                       type="button"
-                      onClick={() => void handleApplyCoupon()}
-                      disabled={
-                        couponStatus === "loading" ||
-                        normalizeCouponInput(couponCode).length < COUPON_CODE_MIN_LENGTH
-                      }
-                      className="rounded-lg bg-[#23283a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c3146] disabled:opacity-70"
+                      onClick={() => {
+                        if (existingAuthMethod === "password") {
+                          void handleExistingGlobalLogin();
+                          return;
+                        }
+                        if (!existingCodeSent) {
+                          void handleRequestPasswordlessCode(false);
+                          return;
+                        }
+                        void handleExistingCodeLogin();
+                      }}
+                      disabled={isPrimaryDisabled}
+                      className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
                     >
-                      {couponStatus === "loading" ? "Aplicando..." : "Aplicar"}
+                      {primaryActionLabel}
                     </button>
                   </div>
 
-                  {!!couponInputHint && (
-                    <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
-                      {couponInputHint}
+                  <div className="rounded-xl border border-[#23283a] bg-[#131724] p-4 space-y-3">
+                    <h3 className="text-sm font-semibold text-white">Entrar com outra conta</h3>
+                    <p className="text-xs text-gray-400">
+                      Troque o e-mail atual ou continue com outro login para não misturar contas.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={handleBackToIdentify}
+                      className="w-full rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20"
+                    >
+                      Usar outro e-mail
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => signIn("google", { callbackUrl: "/cadastrar-racha?google=1" })}
+                      disabled={sessionStatus === "loading"}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <Image src="/images/Google-Logo.png" alt="Google" width={20} height={20} />
+                        Entrar com Google
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {accessFlow === "wizard" && step === 1 && (
+                <>
+                  <div className="space-y-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Sua conta</h2>
+                      <p className="mt-1 text-sm text-gray-400">
+                        Complete apenas os dados necessários para seu perfil de presidente.
+                      </p>
                     </div>
-                  )}
-                  {couponStatus === "loading" && (
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
-                      <span className="mr-2 inline-block h-2 w-2 rounded-full bg-yellow-300 animate-pulse" />
-                      Validando cupom...
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label className="text-xs text-gray-400">
+                        Primeiro nome *
+                        <input
+                          type="text"
+                          value={adminNome}
+                          onChange={(e) => {
+                            setAdminNomeTouched(true);
+                            setAdminNome(e.target.value);
+                            clearError("adminNome");
+                          }}
+                          maxLength={10}
+                          autoComplete="given-name"
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          required
+                        />
+                        {errors.adminNome && (
+                          <span className="mt-1 block text-xs text-red-300">
+                            {errors.adminNome}
+                          </span>
+                        )}
+                      </label>
+                      <label className="text-xs text-gray-400">
+                        Apelido (opcional)
+                        <input
+                          type="text"
+                          value={adminApelido}
+                          onChange={(e) => {
+                            setAdminApelido(e.target.value);
+                            clearError("adminApelido");
+                          }}
+                          maxLength={10}
+                          autoComplete="nickname"
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        />
+                        {errors.adminApelido && (
+                          <span className="mt-1 block text-xs text-red-300">
+                            {errors.adminApelido}
+                          </span>
+                        )}
+                      </label>
+                      <label className="text-xs text-gray-400">
+                        Posição principal *
+                        <select
+                          value={adminPosicao}
+                          onChange={(e) => {
+                            const nextPosition = e.target.value;
+                            setAdminPosicao(nextPosition);
+                            if (
+                              nextPosition &&
+                              existingGlobalAuthMode === "google" &&
+                              sucesso ===
+                                "Conta Google conectada. Escolha sua posição principal para continuar."
+                            ) {
+                              setSucesso("");
+                            }
+                            clearError("adminPosicao");
+                          }}
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          required
+                        >
+                          <option value="">Selecione sua posição</option>
+                          {POSICOES.map((p) => (
+                            <option key={p} value={p}>
+                              {p}
+                            </option>
+                          ))}
+                        </select>
+                        {errors.adminPosicao && (
+                          <span className="mt-1 block text-xs text-red-300">
+                            {errors.adminPosicao}
+                          </span>
+                        )}
+                      </label>
+                      <label className="text-xs text-gray-400">
+                        E-mail *
+                        <input
+                          type="email"
+                          value={adminEmail}
+                          onChange={(e) => {
+                            setAdminEmail(e.target.value);
+                            clearError("adminEmail");
+                          }}
+                          readOnly={useExistingGlobalAccount || isGoogle}
+                          autoCapitalize="none"
+                          autoComplete="email"
+                          inputMode="email"
+                          spellCheck={false}
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 read-only:cursor-not-allowed read-only:opacity-80"
+                          required
+                        />
+                        {errors.adminEmail && (
+                          <span className="mt-1 block text-xs text-red-300">
+                            {errors.adminEmail}
+                          </span>
+                        )}
+                      </label>
                     </div>
-                  )}
-                  {hasAppliedCoupon && (
-                    <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
-                      <p className="font-semibold">Cupom aplicado com sucesso</p>
-                      {bonusTrialDays > 0 && (
-                        <p className="mt-1">
-                          +{bonusTrialDays} dias extras ao seu teste grátis. Seu período de teste
-                          agora é de {totalTrialDays} dias.
-                        </p>
+                    {useExistingGlobalAccount ? null : isGoogle && !defineSenha ? (
+                      <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
+                        <div className="flex items-center justify-between gap-3">
+                          <span>Senha opcional para login por e-mail.</span>
+                          <button
+                            type="button"
+                            onClick={() => setDefineSenha(true)}
+                            className="text-yellow-300 underline"
+                          >
+                            Definir senha agora
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {isGoogle && (
+                          <div className="flex items-center justify-between text-xs text-gray-400">
+                            <span>Senha opcional para login por e-mail.</span>
+                            <button
+                              type="button"
+                              onClick={() => setDefineSenha(false)}
+                              className="text-yellow-300 underline"
+                            >
+                              Remover senha
+                            </button>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label className="text-xs text-gray-400">
+                            Senha {isGoogle ? "(opcional)" : "*"}
+                            <div className="relative mt-2">
+                              <input
+                                type={showSenha ? "text" : "password"}
+                                value={adminSenha}
+                                onChange={(e) => {
+                                  setAdminSenha(e.target.value);
+                                  clearError("adminSenha");
+                                  clearError("adminConfirmSenha");
+                                }}
+                                autoComplete="new-password"
+                                className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                required={!isGoogle || defineSenha}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowSenha((prev) => !prev)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                              >
+                                {showSenha ? "Ocultar" : "Mostrar"}
+                              </button>
+                            </div>
+                            {errors.adminSenha && (
+                              <span className="mt-1 block text-xs text-red-300">
+                                {errors.adminSenha}
+                              </span>
+                            )}
+                          </label>
+                          <label className="text-xs text-gray-400">
+                            Confirmar senha {isGoogle ? "(opcional)" : "*"}
+                            <div className="relative mt-2">
+                              <input
+                                type={showConfirmSenha ? "text" : "password"}
+                                value={adminConfirmSenha}
+                                onChange={(e) => {
+                                  setAdminConfirmSenha(e.target.value);
+                                  clearError("adminConfirmSenha");
+                                }}
+                                autoComplete="new-password"
+                                className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 pr-16 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                required={!isGoogle || defineSenha}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirmSenha((prev) => !prev)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400"
+                              >
+                                {showConfirmSenha ? "Ocultar" : "Mostrar"}
+                              </button>
+                            </div>
+                            {errors.adminConfirmSenha && (
+                              <span className="mt-1 block text-xs text-red-300">
+                                {errors.adminConfirmSenha}
+                              </span>
+                            )}
+                          </label>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
+                    {showGoogleAvatarPreview ? (
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={adminAvatar}
+                          alt="Foto da sua Conta Google"
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <p className="font-semibold text-white">Foto da sua Conta Google</p>
+                          <p className="mt-1 text-[11px] text-gray-400">
+                            Você poderá alterar essa foto depois no perfil.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminUploads((prev) => !prev)}
+                          className="text-yellow-300 underline"
+                        >
+                          {showAdminUploads
+                            ? "Ocultar foto de perfil"
+                            : "Adicionar foto de perfil (opcional)"}
+                        </button>
+                        {showAdminUploads && (
+                          <div className="mt-3 flex items-center gap-3">
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg"
+                              onChange={(e) => handleUpload(e, "avatar")}
+                              className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
+                            />
+                            {adminAvatar && (
+                              <img
+                                src={adminAvatar}
+                                alt="Preview do presidente"
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {accessFlow === "wizard" && step === 2 && (
+                <>
+                  <div className="space-y-3">
+                    <h2 className="text-sm font-semibold text-white">Dados do grupo de futebol</h2>
+                    <label className="text-xs text-gray-400">
+                      Nome do grupo *
+                      <input
+                        type="text"
+                        value={rachaNome}
+                        onChange={(e) => {
+                          setRachaNome(e.target.value);
+                          clearError("rachaNome");
+                        }}
+                        maxLength={50}
+                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      />
+                      {errors.rachaNome && (
+                        <span className="mt-1 block text-xs text-red-300">{errors.rachaNome}</span>
                       )}
-                      {discountPercent > 0 && (
-                        <p className="mt-1">
-                          Este cupom {bonusTrialDays > 0 ? "também " : ""}garante{" "}
-                          {discountPercentLabel}% de desconto.
-                        </p>
+                    </label>
+
+                    <label className="text-xs text-gray-400">
+                      Slug (ex: quarta-fc) *
+                      <input
+                        type="text"
+                        value={rachaSlug}
+                        onChange={(e) => {
+                          const nextValue = e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9-]/g, "")
+                            .replace(/--+/g, "-")
+                            .slice(0, 30);
+                          setRachaSlug(nextValue);
+                          setSlugEdited(nextValue.length > 0);
+                          clearError("rachaSlug");
+                        }}
+                        autoCapitalize="none"
+                        pattern="[a-z0-9-]{3,30}"
+                        spellCheck={false}
+                        className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                        required
+                      />
+                      {errors.rachaSlug ? (
+                        <span className="mt-1 block text-xs text-red-300">{errors.rachaSlug}</span>
+                      ) : (
+                        <span className={`mt-1 block text-xs ${slugToneClass}`}>
+                          {slugInfo.text}
+                        </span>
                       )}
-                      {bonusTrialDays <= 0 && discountPercent <= 0 && (
-                        <p className="mt-1">O benefício do cupom foi aplicado ao cadastro.</p>
+                    </label>
+
+                    <div className="text-xs text-gray-400">
+                      Link público: https://app.fut7pro.com.br/{rachaSlug || "<slug>"}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <label className="text-xs text-gray-400">
+                        Estado *
+                        <select
+                          value={estadoUf}
+                          onChange={(e) => {
+                            const nextUf = e.target.value.toUpperCase();
+                            setEstadoUf(nextUf);
+                            clearError("estado");
+                            clearError("cidade");
+                          }}
+                          className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                          required
+                        >
+                          <option value="">Selecione o estado</option>
+                          {UF_LIST.map((estado) => (
+                            <option key={estado.uf} value={estado.uf}>
+                              {estado.nome} ({estado.uf})
+                            </option>
+                          ))}
+                        </select>
+                        {errors.estado && (
+                          <span className="mt-1 block text-xs text-red-300">{errors.estado}</span>
+                        )}
+                      </label>
+                      <label className="text-xs text-gray-400">
+                        Cidade *
+                        <div className="relative mt-2">
+                          <input
+                            type="text"
+                            value={citySearchValue}
+                            onChange={(e) => {
+                              setCidadeFilter(e.target.value);
+                              setCidadeNome("");
+                              setCidadeIbgeCode("");
+                              setIsCityPickerOpen(true);
+                              clearError("cidade");
+                            }}
+                            onFocus={() => {
+                              if (estadoUf && !cidadeLoading) setIsCityPickerOpen(true);
+                            }}
+                            placeholder={
+                              estadoUf
+                                ? "Buscar e selecionar cidade..."
+                                : "Selecione o estado primeiro"
+                            }
+                            disabled={!estadoUf}
+                            role="combobox"
+                            aria-controls="cidade-options"
+                            aria-expanded={isCityPickerOpen ? "true" : "false"}
+                            aria-autocomplete="list"
+                            className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 disabled:cursor-not-allowed disabled:opacity-70"
+                          />
+                          {cidadeNome && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCidadeNome("");
+                                setCidadeIbgeCode("");
+                                setCidadeFilter("");
+                                setIsCityPickerOpen(true);
+                              }}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-[11px] text-gray-400 hover:text-white"
+                            >
+                              Trocar
+                            </button>
+                          )}
+                          {isCityPickerOpen && estadoUf && !cidadeLoading && (
+                            <div
+                              id="cidade-options"
+                              className="absolute z-30 mt-2 max-h-56 w-full overflow-auto rounded-lg border border-[#2a3044] bg-[#111522] p-1 shadow-xl"
+                            >
+                              {filteredCities.length === 0 ? (
+                                <div className="px-3 py-2 text-xs text-gray-400">
+                                  Nenhuma cidade encontrada
+                                </div>
+                              ) : (
+                                filteredCities.slice(0, 80).map((city) => (
+                                  <button
+                                    key={city.ibge}
+                                    type="button"
+                                    onMouseDown={(event) => event.preventDefault()}
+                                    onClick={() => {
+                                      setCidadeNome(city.nome);
+                                      setCidadeIbgeCode(city.ibge);
+                                      setCidadeFilter("");
+                                      setIsCityPickerOpen(false);
+                                      clearError("cidade");
+                                    }}
+                                    className="block w-full rounded-md px-3 py-2 text-left text-sm text-gray-100 hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none"
+                                  >
+                                    {city.nome}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {cidadeLoading && (
+                          <span className="mt-1 block text-xs text-gray-400">
+                            Carregando cidades...
+                          </span>
+                        )}
+                        {errors.cidade && (
+                          <span className="mt-1 block text-xs text-red-300">{errors.cidade}</span>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-xs text-gray-300">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      {rachaLogo && (
+                        <img
+                          src={rachaLogo}
+                          alt="Preview do logo"
+                          className="h-14 w-14 rounded-lg border border-white/10 object-cover"
+                        />
                       )}
+                      <div className="flex-1 space-y-2">
+                        <div>
+                          <p className="font-semibold text-white">Logo do grupo (opcional)</p>
+                          <p className="mt-1 text-[11px] text-gray-400">PNG ou JPG • até 1 MB</p>
+                        </div>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg"
+                            onChange={(e) => handleUpload(e, "logo")}
+                            className="w-full text-xs text-gray-200 file:mr-3 file:rounded-md file:border-0 file:bg-yellow-400 file:px-3 file:py-2 file:text-black hover:file:bg-yellow-300 cursor-pointer"
+                          />
+                          {rachaLogo && (
+                            <button
+                              type="button"
+                              onClick={() => setRachaLogo(undefined)}
+                              className="rounded-lg border border-white/10 px-3 py-2 text-xs text-gray-200 hover:border-white/20 hover:text-white"
+                            >
+                              Remover
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {accessFlow === "wizard" && step === 3 && (
+                <>
+                  <div className="space-y-3">
+                    <div className="rounded-2xl border border-yellow-400/20 bg-yellow-400/10 p-5 text-center">
+                      <p className="text-xs font-semibold uppercase text-yellow-300">
+                        Tudo pronto para começar
+                      </p>
+                      <h2 className="mt-3 text-2xl font-bold text-white">
+                        Você terá {totalTrialDays} dias para experimentar o Fut7Pro
+                      </h2>
+                      <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                        Conheça os recursos, organize seu grupo e veja na prática como o Fut7Pro
+                        funciona.
+                      </p>
+                    </div>
+
+                    {planLoading && (
+                      <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-400">
+                        Preparando seu teste...
+                      </div>
+                    )}
+                    {planError && (
+                      <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-xs text-red-200">
+                        Não foi possível preparar seu teste agora.
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-xs font-semibold text-white">
+                        Possui um cupom? (opcional)
+                      </p>
+                      <p className="text-[11px] text-gray-400">
+                        Aplique seu cupom para verificar descontos ou dias extras para o seu grupo.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => {
+                          couponEditedManuallyRef.current = true;
+                          const rawValue = e.target.value;
+                          const normalizedValue = normalizeCouponInput(rawValue);
+                          setCouponCode(normalizedValue);
+                          setCouponInputHint(
+                            /[^A-Z0-9]/.test(rawValue.toUpperCase())
+                              ? "Use apenas letras e números, sem espaços."
+                              : ""
+                          );
+                          if (couponStatus !== "idle") {
+                            setCouponStatus("idle");
+                            setCouponBenefits(null);
+                            setCouponErrorMessage("");
+                          }
+                        }}
+                        placeholder="Digite seu cupom (ex: FUT7PROVR7)"
+                        className="w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                      />
                       <button
                         type="button"
-                        onClick={handleRemoveCoupon}
-                        className="mt-2 text-[11px] font-semibold text-emerald-100 underline hover:text-white"
+                        onClick={() => void handleApplyCoupon()}
+                        disabled={
+                          couponStatus === "loading" ||
+                          normalizeCouponInput(couponCode).length < COUPON_CODE_MIN_LENGTH
+                        }
+                        className="rounded-lg bg-[#23283a] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c3146] disabled:opacity-70"
                       >
-                        Remover cupom
+                        {couponStatus === "loading" ? "Aplicando..." : "Aplicar"}
                       </button>
                     </div>
-                  )}
-                  {(couponStatus === "invalid" ||
-                    couponStatus === "error" ||
-                    couponStatus === "rate_limited" ||
-                    couponStatus === "timeout") && (
-                    <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
-                      {couponErrorMessage ||
-                        "Não encontramos esse cupom. Confira o código e tente novamente."}
-                    </div>
-                  )}
+
+                    {!!couponInputHint && (
+                      <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-xs text-yellow-200">
+                        {couponInputHint}
+                      </div>
+                    )}
+                    {couponStatus === "loading" && (
+                      <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-gray-300">
+                        <span className="mr-2 inline-block h-2 w-2 rounded-full bg-yellow-300 animate-pulse" />
+                        Validando cupom...
+                      </div>
+                    )}
+                    {hasAppliedCoupon && (
+                      <div className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
+                        <p className="font-semibold">Cupom aplicado com sucesso</p>
+                        {bonusTrialDays > 0 && (
+                          <p className="mt-1">
+                            +{bonusTrialDays} dias extras ao seu teste grátis. Seu período de teste
+                            agora é de {totalTrialDays} dias.
+                          </p>
+                        )}
+                        {discountPercent > 0 && (
+                          <p className="mt-1">
+                            Este cupom {bonusTrialDays > 0 ? "também " : ""}garante{" "}
+                            {discountPercentLabel}% de desconto.
+                          </p>
+                        )}
+                        {bonusTrialDays <= 0 && discountPercent <= 0 && (
+                          <p className="mt-1">O benefício do cupom foi aplicado ao cadastro.</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="mt-2 text-[11px] font-semibold text-emerald-100 underline hover:text-white"
+                        >
+                          Remover cupom
+                        </button>
+                      </div>
+                    )}
+                    {(couponStatus === "invalid" ||
+                      couponStatus === "error" ||
+                      couponStatus === "rate_limited" ||
+                      couponStatus === "timeout") && (
+                      <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+                        {couponErrorMessage ||
+                          "Não encontramos esse cupom. Confira o código e tente novamente."}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {requiresTurnstileForCurrentAction && (
+                <TurnstileWidget
+                  enabled={turnstileEnabled}
+                  siteKey={turnstileSiteKey}
+                  onTokenChange={setTurnstileToken}
+                  resetSignal={turnstileResetSignal}
+                />
+              )}
+
+              {formError && !showInlineExistingActions && (
+                <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-sm text-red-200">
+                  {formError}
                 </div>
-              </>
-            )}
+              )}
+              {sucesso && !showInlineExistingActions && (
+                <div className="rounded-lg border border-emerald-500/60 bg-emerald-600/20 px-3 py-2 text-sm text-emerald-200">
+                  {sucesso}
+                </div>
+              )}
 
-            {requiresTurnstileForCurrentAction && (
-              <TurnstileWidget
-                enabled={turnstileEnabled}
-                siteKey={turnstileSiteKey}
-                onTokenChange={setTurnstileToken}
-                resetSignal={turnstileResetSignal}
-              />
-            )}
-
-            {formError && !showInlineExistingActions && (
-              <div className="rounded-lg border border-red-500/60 bg-red-600/20 px-3 py-2 text-sm text-red-200">
-                {formError}
-              </div>
-            )}
-            {sucesso && !showInlineExistingActions && (
-              <div className="rounded-lg border border-emerald-500/60 bg-emerald-600/20 px-3 py-2 text-sm text-emerald-200">
-                {sucesso}
-              </div>
-            )}
-
-            {showFooterActions && (
-              <div className="hidden sm:flex items-center gap-3">
-                {showWizardBackButton && (
+              {showFooterActions && (
+                <div className="hidden sm:flex items-center gap-3">
+                  {showWizardBackButton && (
+                    <button
+                      type="button"
+                      onClick={handleWizardBack}
+                      className="flex-1 rounded-lg border border-white/10 px-4 py-3 text-sm text-gray-300 hover:text-white"
+                    >
+                      Voltar
+                    </button>
+                  )}
                   <button
-                    type="button"
-                    onClick={handleWizardBack}
-                    className="flex-1 rounded-lg border border-white/10 px-4 py-3 text-sm text-gray-300 hover:text-white"
+                    type="submit"
+                    disabled={isPrimaryDisabled}
+                    className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Voltar
+                    {primaryActionLabel}
                   </button>
-                )}
-                <button
-                  type="submit"
-                  disabled={isPrimaryDisabled}
-                  className="flex-1 rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {primaryActionLabel}
-                </button>
-              </div>
-            )}
+                </div>
+              )}
 
-            {accessFlow !== "wizard" && (
-              <div className="text-center text-sm text-gray-300">
-                Já tem cadastro?{" "}
-                <a href="/admin/login" className="text-yellow-300 underline hover:text-yellow-200">
-                  Entrar
-                </a>
-              </div>
-            )}
-          </form>
-        </div>
-      </section>
-
-      <section className="order-2 w-full lg:order-1 lg:w-1/2">
-        <div className="lg:sticky lg:top-8 space-y-5">
-          <div className="hidden lg:block space-y-3">
-            <div className="text-xs uppercase tracking-[0.25em] text-yellow-400 font-semibold">
-              Experimente o Fut7Pro
-            </div>
-            <h1 className="text-3xl font-bold text-white">Cadastre seu grupo de futebol</h1>
-            <p className="text-sm text-gray-300 leading-relaxed">
-              Crie seu grupo de futebol e complete seu perfil. Em minutos você entra como presidente
-              com painel e site público sincronizados.
-            </p>
+              {accessFlow !== "wizard" && (
+                <div className="text-center text-sm text-gray-300">
+                  Já tem cadastro?{" "}
+                  <a
+                    href="/admin/login"
+                    className="text-yellow-300 underline hover:text-yellow-200"
+                  >
+                    Entrar
+                  </a>
+                </div>
+              )}
+            </form>
           </div>
+        </section>
 
-          <details className="lg:hidden rounded-xl border border-[#1f2230] bg-[#151821] p-4 text-sm text-gray-300">
-            <summary className="cursor-pointer font-semibold text-white">
-              Por que usar o Fut7Pro?
-            </summary>
-            <div className="mt-3 space-y-2 text-xs">
+        <section className="order-2 w-full lg:order-1 lg:w-1/2">
+          <div className="lg:sticky lg:top-8 space-y-5">
+            <div className="hidden lg:block space-y-3">
+              <div className="text-xs uppercase tracking-[0.25em] text-yellow-400 font-semibold">
+                Experimente o Fut7Pro
+              </div>
+              <h1 className="text-3xl font-bold text-white">Cadastre seu grupo de futebol</h1>
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Crie seu grupo de futebol e complete seu perfil. Em minutos você entra como
+                presidente com painel e site público sincronizados.
+              </p>
+            </div>
+
+            <details className="lg:hidden rounded-xl border border-white/10 bg-[#10151b]/85 p-4 text-sm text-gray-300 shadow-lg shadow-black/20 backdrop-blur">
+              <summary className="cursor-pointer font-semibold text-white">
+                Por que usar o Fut7Pro?
+              </summary>
+              <div className="mt-3 space-y-2 text-xs">
+                {BENEFITS.map((item) => (
+                  <div key={item.title}>
+                    <span className="font-semibold text-white">{item.title}:</span>{" "}
+                    {item.description}
+                  </div>
+                ))}
+              </div>
+            </details>
+
+            <div className="hidden lg:grid grid-cols-2 gap-3 text-sm text-gray-300">
               {BENEFITS.map((item) => (
-                <div key={item.title}>
-                  <span className="font-semibold text-white">{item.title}:</span> {item.description}
+                <div
+                  key={item.title}
+                  className="rounded-lg border border-white/10 bg-white/[0.055] p-3 shadow-lg shadow-black/15 backdrop-blur transition hover:border-yellow-300/25 hover:bg-white/[0.075]"
+                >
+                  <div className="text-yellow-300 font-semibold text-sm">{item.title}</div>
+                  <div className="text-xs text-gray-400 mt-1">{item.description}</div>
                 </div>
               ))}
             </div>
-          </details>
-
-          <div className="hidden lg:grid grid-cols-2 gap-3 text-sm text-gray-300">
-            {BENEFITS.map((item) => (
-              <div key={item.title} className="bg-[#1b1e29] border border-[#24283a] rounded-lg p-3">
-                <div className="text-yellow-300 font-semibold text-sm">{item.title}</div>
-                <div className="text-xs text-gray-400 mt-1">{item.description}</div>
-              </div>
-            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {showFooterActions && (
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0f1118]/95 px-4 py-3 backdrop-blur sm:hidden">
-          <button
-            type="button"
-            onClick={() => void handlePrimaryAction()}
-            disabled={isPrimaryDisabled}
-            className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {primaryActionLabel}
-          </button>
-        </div>
-      )}
+        {showFooterActions && (
+          <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-white/10 bg-[#0b0f12]/95 px-4 py-3 backdrop-blur sm:hidden">
+            <button
+              type="button"
+              onClick={() => void handlePrimaryAction()}
+              disabled={isPrimaryDisabled}
+              className="w-full rounded-lg bg-yellow-400 px-4 py-3 text-sm font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {primaryActionLabel}
+            </button>
+          </div>
+        )}
 
-      <ImageCropperModal
-        open={!!cropImage && !!cropTarget}
-        imageSrc={cropImage || ""}
-        aspect={1}
-        shape={cropTarget === "avatar" ? "round" : "rect"}
-        title={cropTarget === "logo" ? "Ajustar logo do grupo" : "Ajustar foto do presidente"}
-        onCancel={() => {
-          setCropImage(undefined);
-          setCropTarget(null);
-        }}
-        onApply={(cropped) => {
-          if (cropTarget === "logo") setRachaLogo(cropped);
-          if (cropTarget === "avatar") setAdminAvatar(cropped);
-          setCropImage(undefined);
-          setCropTarget(null);
-        }}
-      />
+        <ImageCropperModal
+          open={!!cropImage && !!cropTarget}
+          imageSrc={cropImage || ""}
+          aspect={1}
+          shape={cropTarget === "avatar" ? "round" : "rect"}
+          title={cropTarget === "logo" ? "Ajustar logo do grupo" : "Ajustar foto do presidente"}
+          onCancel={() => {
+            setCropImage(undefined);
+            setCropTarget(null);
+          }}
+          onApply={(cropped) => {
+            if (cropTarget === "logo") setRachaLogo(cropped);
+            if (cropTarget === "avatar") setAdminAvatar(cropped);
+            setCropImage(undefined);
+            setCropTarget(null);
+          }}
+        />
+      </div>
     </main>
   );
 }
