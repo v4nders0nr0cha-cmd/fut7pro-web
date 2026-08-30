@@ -642,6 +642,12 @@ function CadastroRachaPageContent() {
   const hasAppliedCoupon = couponStatus === "valid" && Boolean(couponBenefits);
   const citySearchValue = cidadeFilter || cidadeNome;
   const discountPercent = couponBenefits?.firstPaymentDiscountPercent ?? 0;
+  const discountPercentLabel = discountPercent.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  const showGoogleAvatarPreview =
+    isGoogle && existingGlobalAuthMode === "google" && Boolean(adminAvatar);
 
   useEffect(() => {
     if (couponStatus !== "valid" || !couponBenefits || !selectedPlanKey) return;
@@ -1959,7 +1965,16 @@ function CadastroRachaPageContent() {
                       <select
                         value={adminPosicao}
                         onChange={(e) => {
-                          setAdminPosicao(e.target.value);
+                          const nextPosition = e.target.value;
+                          setAdminPosicao(nextPosition);
+                          if (
+                            nextPosition &&
+                            existingGlobalAuthMode === "google" &&
+                            sucesso ===
+                              "Conta Google conectada. Escolha sua posição principal para continuar."
+                          ) {
+                            setSucesso("");
+                          }
                           clearError("adminPosicao");
                         }}
                         className="mt-2 w-full rounded-lg bg-[#161822] border border-[#23283a] px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
@@ -2095,29 +2110,49 @@ function CadastroRachaPageContent() {
                 </div>
 
                 <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-gray-300">
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminUploads((prev) => !prev)}
-                    className="text-yellow-300 underline"
-                  >
-                    {showAdminUploads ? "Ocultar foto do presidente" : "Adicionar foto (opcional)"}
-                  </button>
-                  {showAdminUploads && (
-                    <div className="mt-3 flex items-center gap-3">
-                      <input
-                        type="file"
-                        accept="image/png,image/jpeg"
-                        onChange={(e) => handleUpload(e, "avatar")}
-                        className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
+                  {showGoogleAvatarPreview ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={adminAvatar}
+                        alt="Foto da sua Conta Google"
+                        className="h-10 w-10 rounded-full object-cover"
                       />
-                      {adminAvatar && (
-                        <img
-                          src={adminAvatar}
-                          alt="Preview do presidente"
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      )}
+                      <div>
+                        <p className="font-semibold text-white">Foto da sua Conta Google</p>
+                        <p className="mt-1 text-[11px] text-gray-400">
+                          Você poderá alterar essa foto depois no perfil.
+                        </p>
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdminUploads((prev) => !prev)}
+                        className="text-yellow-300 underline"
+                      >
+                        {showAdminUploads
+                          ? "Ocultar foto de perfil"
+                          : "Adicionar foto de perfil (opcional)"}
+                      </button>
+                      {showAdminUploads && (
+                        <div className="mt-3 flex items-center gap-3">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg"
+                            onChange={(e) => handleUpload(e, "avatar")}
+                            className="w-full text-xs text-gray-200 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-yellow-400 file:text-black hover:file:bg-yellow-300 cursor-pointer"
+                          />
+                          {adminAvatar && (
+                            <img
+                              src={adminAvatar}
+                              alt="Preview do presidente"
+                              className="h-10 w-10 rounded-full object-cover"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </>
@@ -2338,12 +2373,6 @@ function CadastroRachaPageContent() {
                       Conheça os recursos, organize seu grupo e veja na prática como o Fut7Pro
                       funciona.
                     </p>
-                    {bonusTrialDays > 0 && (
-                      <div className="mt-4 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-                        Seu período inclui {baseTrialDays} dias iniciais + {bonusTrialDays} dias
-                        extras do cupom.
-                      </div>
-                    )}
                   </div>
 
                   {planLoading && (
@@ -2362,7 +2391,7 @@ function CadastroRachaPageContent() {
                   <div className="space-y-1">
                     <p className="text-xs font-semibold text-white">Possui um cupom? (opcional)</p>
                     <p className="text-[11px] text-gray-400">
-                      Aplique seu cupom para verificar descontos e dias extras para o seu grupo.
+                      Aplique seu cupom para verificar descontos ou dias extras para o seu grupo.
                     </p>
                   </div>
 
@@ -2418,12 +2447,18 @@ function CadastroRachaPageContent() {
                       <p className="font-semibold">Cupom aplicado com sucesso</p>
                       {bonusTrialDays > 0 && (
                         <p className="mt-1">
-                          +{bonusTrialDays} dias extras. Seu período de teste agora é de{" "}
-                          {totalTrialDays} dias.
+                          +{bonusTrialDays} dias extras ao seu teste grátis. Seu período de teste
+                          agora é de {totalTrialDays} dias.
                         </p>
                       )}
                       {discountPercent > 0 && (
-                        <p className="mt-1">Desconto confirmado: {discountPercent}%.</p>
+                        <p className="mt-1">
+                          Este cupom {bonusTrialDays > 0 ? "também " : ""}garante{" "}
+                          {discountPercentLabel}% de desconto.
+                        </p>
+                      )}
+                      {bonusTrialDays <= 0 && discountPercent <= 0 && (
+                        <p className="mt-1">O benefício do cupom foi aplicado ao cadastro.</p>
                       )}
                       <button
                         type="button"
@@ -2441,24 +2476,6 @@ function CadastroRachaPageContent() {
                     <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                       {couponErrorMessage ||
                         "Não encontramos esse cupom. Confira o código e tente novamente."}
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-xs text-gray-300">
-                  {hasAppliedCoupon ? (
-                    <div className="space-y-1">
-                      <p className="font-semibold text-emerald-200">Cupom ativo neste cadastro.</p>
-                      <p className="text-[11px] text-emerald-100">
-                        O benefício real validado pelo Fut7Pro será aplicado ao seu grupo.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      <p>Seu período de teste: {baseTrialDays} dias.</p>
-                      <p className="text-[11px] text-gray-400">
-                        O cupom é opcional e pode ser aplicado antes de concluir.
-                      </p>
                     </div>
                   )}
                 </div>
@@ -2506,12 +2523,14 @@ function CadastroRachaPageContent() {
               </div>
             )}
 
-            <div className="text-center text-sm text-gray-300">
-              Já tem cadastro?{" "}
-              <a href="/admin/login" className="text-yellow-300 underline hover:text-yellow-200">
-                Entrar
-              </a>
-            </div>
+            {accessFlow !== "wizard" && (
+              <div className="text-center text-sm text-gray-300">
+                Já tem cadastro?{" "}
+                <a href="/admin/login" className="text-yellow-300 underline hover:text-yellow-200">
+                  Entrar
+                </a>
+              </div>
+            )}
           </form>
         </div>
       </section>
