@@ -1625,11 +1625,13 @@ function CadastroRachaPageContent() {
   ];
 
   return (
-    <main className="relative isolate min-h-screen w-full overflow-hidden">
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_16%_14%,rgba(24,151,80,0.20),transparent_34%),radial-gradient(circle_at_82%_8%,rgba(248,198,74,0.14),transparent_30%),linear-gradient(135deg,#07100c_0%,#090b0f_46%,#050607_100%)]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-65 [background-image:linear-gradient(115deg,rgba(255,255,255,0.05)_0_1px,transparent_1px_72px),linear-gradient(25deg,rgba(34,197,94,0.08)_0_1px,transparent_1px_96px)]" />
-      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_right_top,rgba(248,198,74,0.10),transparent_44%),radial-gradient(ellipse_at_left_bottom,rgba(16,185,129,0.11),transparent_48%)]" />
-      <div className="pointer-events-none fixed left-1/2 top-24 -z-10 h-[460px] w-[900px] -translate-x-1/2 rotate-[-9deg] rounded-[48px] border border-emerald-300/10 bg-emerald-400/[0.03] blur-[0.2px] [mask-image:linear-gradient(90deg,transparent,black_22%,black_78%,transparent)]" />
+    <main className="relative isolate min-h-screen w-full">
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_14%,rgba(24,151,80,0.20),transparent_34%),radial-gradient(circle_at_82%_8%,rgba(248,198,74,0.14),transparent_30%),linear-gradient(135deg,#07100c_0%,#090b0f_46%,#050607_100%)]" />
+        <div className="absolute inset-0 opacity-65 [background-image:linear-gradient(115deg,rgba(255,255,255,0.05)_0_1px,transparent_1px_72px),linear-gradient(25deg,rgba(34,197,94,0.08)_0_1px,transparent_1px_96px)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_right_top,rgba(248,198,74,0.10),transparent_44%),radial-gradient(ellipse_at_left_bottom,rgba(16,185,129,0.11),transparent_48%)]" />
+        <div className="absolute left-1/2 top-24 h-[460px] w-[900px] -translate-x-1/2 rotate-[-9deg] rounded-[48px] border border-emerald-300/10 bg-emerald-400/[0.03] blur-[0.2px] [mask-image:linear-gradient(90deg,transparent,black_22%,black_78%,transparent)]" />
+      </div>
 
       <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col gap-6 px-4 py-6 lg:flex-row lg:gap-10 lg:py-10 pb-24 sm:pb-10">
         <section className="order-1 w-full lg:order-2 lg:w-[460px]">
