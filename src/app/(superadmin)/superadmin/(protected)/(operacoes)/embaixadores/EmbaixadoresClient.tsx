@@ -4,12 +4,13 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
-type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO";
+type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO" | "EXCLUIDO";
 type CouponStatus = "ATIVO" | "PAUSADO" | "EXPIRADO";
 type ReferralStatus = "TESTE" | "PRIMEIRA_COMPRA" | "ATIVO" | "CANCELADO";
 type CommissionType = "UNICA" | "RECORRENTE";
 type CommissionStatus = "PENDENTE" | "PAGA" | "BLOQUEADA";
 type ApplicationStatus = "PENDENTE" | "EM_ANALISE" | "APROVADA" | "REJEITADA";
+type CreatorLevel = 1 | 2 | 3 | 4;
 
 interface DashboardResponse {
   kpis: {
@@ -27,7 +28,10 @@ interface DashboardResponse {
     id: string;
     name: string;
     cpfMasked: string;
-    level: 1 | 2 | 3;
+    level: CreatorLevel;
+    autoLevel?: CreatorLevel;
+    manualMinimumLevel?: CreatorLevel | null;
+    effectiveLevel?: CreatorLevel;
     status: AmbassadorStatus;
     sales: number;
     couponCode: string;
@@ -93,8 +97,8 @@ interface DashboardResponse {
   }>;
   settings: {
     oneTimePayoutCents: number;
-    recurringLevel2Cents: number;
     recurringLevel3Cents: number;
+    recurringLevel4Cents: number;
     qualificationWindowDays: number;
     payoutDay: number;
     minimumPayoutCents: number;
@@ -155,6 +159,13 @@ function normalizeCouponInput(value: string): string {
   return value.toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+function creatorLevelLabel(level: CreatorLevel | null | undefined): string {
+  if (level === 4) return "Creator VIP";
+  if (level === 3) return "Creator Pro";
+  if (level === 2) return "Creator Embaixador";
+  return "Creator";
+}
+
 export default function EmbaixadoresClient() {
   const { data, error, isLoading, mutate, isValidating } = useSWR<DashboardResponse>(
     "/api/superadmin/embaixadores",
@@ -168,6 +179,7 @@ export default function EmbaixadoresClient() {
   const [selectedApplicationId, setSelectedApplicationId] = useState<string>("");
   const [reviewNote, setReviewNote] = useState("");
   const [reviewCoupon, setReviewCoupon] = useState("");
+  const [reviewInitialLevel, setReviewInitialLevel] = useState<CreatorLevel>(1);
   const [actionError, setActionError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -195,6 +207,7 @@ export default function EmbaixadoresClient() {
     setSelectedApplicationId(prioritized.id);
     setReviewNote(prioritized.reviewNotes || "");
     setReviewCoupon(prioritized.couponRequested || "");
+    setReviewInitialLevel(1);
   }, [pendingApplications, selectedApplicationId]);
 
   const selectedApplication = useMemo(
@@ -206,6 +219,7 @@ export default function EmbaixadoresClient() {
     if (!selectedApplication) return;
     setReviewNote(selectedApplication.reviewNotes || "");
     setReviewCoupon(selectedApplication.couponRequested || "");
+    setReviewInitialLevel(1);
   }, [selectedApplication]);
 
   const handleUpdateApplication = async (nextStatus: ApplicationStatus) => {
@@ -228,6 +242,7 @@ export default function EmbaixadoresClient() {
             status: nextStatus,
             note: reviewNote.trim() || undefined,
             coupon: nextStatus === "APROVADA" && normalizedCoupon ? normalizedCoupon : undefined,
+            initialLevel: nextStatus === "APROVADA" ? reviewInitialLevel : undefined,
           }),
         }
       );
@@ -252,7 +267,7 @@ export default function EmbaixadoresClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl bg-zinc-900/80 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Programa de Embaixadores</h1>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Creators Fut7Pro</h1>
           <p className="mt-2 text-zinc-400">Carregando dados reais do programa...</p>
         </section>
       </main>
@@ -263,7 +278,7 @@ export default function EmbaixadoresClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl border border-red-500/40 bg-red-950/20 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Programa de Embaixadores</h1>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Creators Fut7Pro</h1>
           <p className="mt-2 text-red-200">
             {error instanceof Error
               ? error.message
@@ -281,7 +296,7 @@ export default function EmbaixadoresClient() {
       <section className="mb-6 rounded-xl bg-zinc-900/80 p-5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-white md:text-3xl">Programa de Embaixadores</h1>
+            <h1 className="text-2xl font-bold text-white md:text-3xl">Creators Fut7Pro</h1>
             <p className="mt-1 text-zinc-400">
               Visao geral operacional do programa: solicitacoes, conversoes, cupons, indicacoes e
               comissoes.
@@ -305,7 +320,7 @@ export default function EmbaixadoresClient() {
         <article className="rounded-xl bg-gradient-to-tr from-yellow-400 to-yellow-600 p-4 text-black shadow-lg">
           <p className="text-xs font-semibold uppercase">Total</p>
           <p className="mt-1 text-2xl font-bold">{kpis.totalAmbassadors}</p>
-          <p className="text-xs">Embaixadores</p>
+          <p className="text-xs">Creators</p>
         </article>
         <article className="rounded-xl bg-gradient-to-tr from-emerald-400 to-emerald-600 p-4 text-white shadow-lg">
           <p className="text-xs font-semibold uppercase">Ativos</p>
@@ -490,6 +505,32 @@ export default function EmbaixadoresClient() {
 
               <div>
                 <label
+                  htmlFor="initial-level"
+                  className="mb-2 block text-xs uppercase tracking-wide text-zinc-500"
+                >
+                  Nivel inicial
+                </label>
+                <select
+                  id="initial-level"
+                  value={reviewInitialLevel}
+                  onChange={(event) =>
+                    setReviewInitialLevel(Number(event.target.value) as CreatorLevel)
+                  }
+                  className="h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950/50 px-3 text-sm text-zinc-100 outline-none focus:border-yellow-500"
+                >
+                  <option value={1}>Creator</option>
+                  <option value={2}>Creator Embaixador</option>
+                  <option value={3}>Creator Pro</option>
+                  <option value={4}>Creator VIP</option>
+                </select>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Define o piso minimo manual. A progressao automatica por conversoes continua
+                  funcionando.
+                </p>
+              </div>
+
+              <div>
+                <label
                   htmlFor="review-note"
                   className="mb-2 block text-xs uppercase tracking-wide text-zinc-500"
                 >
@@ -540,7 +581,7 @@ export default function EmbaixadoresClient() {
                   onClick={() => handleUpdateApplication("APROVADA")}
                   className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Aprovar e criar embaixador
+                  Aprovar e criar Creator
                 </button>
                 <button
                   type="button"
@@ -564,7 +605,7 @@ export default function EmbaixadoresClient() {
                 href="/superadmin/embaixadores/gestao"
                 className="underline decoration-yellow-500/60 underline-offset-4 hover:text-yellow-300"
               >
-                Embaixadores
+                Creators
               </Link>
             </h2>
             <span className="text-xs text-zinc-400">Total: {ambassadors.length}</span>
@@ -575,7 +616,8 @@ export default function EmbaixadoresClient() {
                 <tr className="border-b border-zinc-700 text-zinc-400">
                   <th className="px-2 py-2 font-medium">Nome</th>
                   <th className="px-2 py-2 font-medium">CPF</th>
-                  <th className="px-2 py-2 font-medium">Nivel</th>
+                  <th className="px-2 py-2 font-medium">Nivel atual</th>
+                  <th className="px-2 py-2 font-medium">Auto/manual</th>
                   <th className="px-2 py-2 font-medium">Vendas</th>
                   <th className="px-2 py-2 font-medium">Status</th>
                 </tr>
@@ -592,7 +634,15 @@ export default function EmbaixadoresClient() {
                       </Link>
                     </td>
                     <td className="px-2 py-2 text-zinc-300">{row.cpfMasked}</td>
-                    <td className="px-2 py-2 text-zinc-300">{row.level}</td>
+                    <td className="px-2 py-2 text-zinc-300">
+                      {creatorLevelLabel(row.effectiveLevel ?? row.level)}
+                    </td>
+                    <td className="px-2 py-2 text-xs text-zinc-400">
+                      Auto: {creatorLevelLabel(row.autoLevel ?? row.level)}
+                      <br />
+                      Manual:{" "}
+                      {row.manualMinimumLevel ? creatorLevelLabel(row.manualMinimumLevel) : "-"}
+                    </td>
                     <td className="px-2 py-2 text-zinc-300">{row.sales}</td>
                     <td className="px-2 py-2">
                       <span
@@ -734,13 +784,19 @@ export default function EmbaixadoresClient() {
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 2</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.recurringLevel2Cents)} por racha/mes
+              {formatCurrency(settings.oneTimePayoutCents)} por venda valida + Kit Fut7Pro
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
             <p className="text-xs uppercase text-zinc-500">Comissao nivel 3</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.recurringLevel3Cents)} por racha/mes
+              {formatCurrency(settings.recurringLevel3Cents)} por racha/mês
+            </p>
+          </div>
+          <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
+            <p className="text-xs uppercase text-zinc-500">Comissao nivel 4</p>
+            <p className="mt-1 text-base font-semibold text-yellow-300">
+              {formatCurrency(settings.recurringLevel4Cents)} por racha/mês
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
