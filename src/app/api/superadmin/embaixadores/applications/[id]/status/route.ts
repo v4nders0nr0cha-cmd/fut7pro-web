@@ -27,6 +27,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
     status?: string;
     note?: string;
     coupon?: string;
+    initialLevel?: number;
   };
 
   if (!payload.status) {
@@ -42,6 +43,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
         status: payload.status,
         note: payload.note,
         coupon: payload.coupon,
+        initialLevel: payload.initialLevel,
       }),
       cache: "no-store",
     }
