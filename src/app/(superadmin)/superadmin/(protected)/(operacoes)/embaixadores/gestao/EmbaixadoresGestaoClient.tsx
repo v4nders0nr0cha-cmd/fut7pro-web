@@ -442,7 +442,7 @@ export default function EmbaixadoresGestaoClient() {
             reason,
             category: "NIVEL_CREATOR",
           }),
-        },
+        }
       );
       const body = (await response.json().catch(() => ({}))) as { error?: string };
       if (!response.ok) {
@@ -456,7 +456,7 @@ export default function EmbaixadoresGestaoClient() {
       setActionMessage(
         requestError instanceof Error
           ? requestError.message
-          : "Não foi possível alterar o nível mínimo manual.",
+          : "Não foi possível alterar o nível mínimo manual."
       );
     } finally {
       setManualLevelLoading(false);
