@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
   if (reason.length < 20) {
     return jsonResponse(
       { error: "Motivo obrigatorio com no minimo 20 caracteres." },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
@@ -85,7 +85,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
         ...resolveAuditContext(request),
       }),
       cache: "no-store",
-    },
+    }
   );
 
   return forwardResponse(response.status, body);
