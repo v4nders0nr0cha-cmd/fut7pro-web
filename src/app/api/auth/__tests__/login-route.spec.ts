@@ -82,4 +82,23 @@ describe("POST /api/auth/login", () => {
     expect(body.code).toBe("INVALID_CREDENTIALS");
     expect(body.message).toBe("Credenciais invalidas.");
   });
+
+  it("preserva 503 estruturado do Turnstile", async () => {
+    const { POST } = await loadLoginRouteModule();
+    (global.fetch as jest.Mock).mockResolvedValue(
+      mockBackendResponse(503, {
+        code: "TURNSTILE_UNAVAILABLE",
+        message: "A verificacao de seguranca esta indisponivel.",
+      })
+    );
+
+    const response = await POST(
+      makeLoginRequest({ email: "admin@fut7pro.com.br", password: "SenhaCorreta123!" })
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.code).toBe("TURNSTILE_UNAVAILABLE");
+    expect(body.message).toBe("A verificacao de seguranca esta indisponivel.");
+  });
 });

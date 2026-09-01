@@ -9,6 +9,13 @@ const backendBase = getApiBase().replace(/\/+$/, "");
 const loginPath = process.env.AUTH_LOGIN_PATH || "/auth/login";
 const AUTH_SERVICE_UNAVAILABLE_MESSAGE =
   "Nao foi possivel acessar o servico de autenticacao agora. Tente novamente em alguns instantes.";
+const STRUCTURED_AUTH_ERROR_CODES = new Set([
+  "TURNSTILE_REQUIRED",
+  "TURNSTILE_INVALID",
+  "TURNSTILE_UNAVAILABLE",
+  "EMAIL_NOT_VERIFIED",
+  "INVALID_CREDENTIALS",
+]);
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
@@ -27,6 +34,12 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function isServiceUnavailableStatus(status: number) {
   return status === 502 || status === 503 || status === 504;
+}
+
+function isStructuredAuthError(value: unknown) {
+  const record = asRecord(value);
+  const code = typeof record.code === "string" ? record.code.trim() : "";
+  return STRUCTURED_AUTH_ERROR_CODES.has(code);
 }
 
 export async function POST(req: NextRequest) {
@@ -75,6 +88,10 @@ export async function POST(req: NextRequest) {
 
     const parsed = await response.json().catch(() => null);
     if (!response.ok) {
+      if (isStructuredAuthError(parsed)) {
+        return json(parsed, { status: response.status || 400 });
+      }
+
       if (isServiceUnavailableStatus(response.status)) {
         return json(
           { code: "AUTH_SERVICE_UNAVAILABLE", message: AUTH_SERVICE_UNAVAILABLE_MESSAGE },
