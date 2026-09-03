@@ -9,12 +9,14 @@ type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO" | "EXCLUIDO";
 type ReferralStatus = "TESTE" | "PRIMEIRA_COMPRA" | "ATIVO" | "CANCELADO";
 type CommissionStatus = "PENDENTE" | "PAGA" | "BLOQUEADA";
 type ActionModalType = "STATUS" | "DELETE";
+type CreatorLevel = 1 | 2 | 3 | 4;
 type ActionCategory =
   | "FRAUDE_SPAM"
   | "VIOLACAO_REGRAS"
   | "AUTOINDICACAO"
   | "SOLICITACAO_EMBAIXADOR"
   | "DADOS_INVALIDOS"
+  | "NIVEL_CREATOR"
   | "OUTROS";
 type ManagedStatus = "ATIVO" | "BLOQUEADO";
 
@@ -45,7 +47,10 @@ interface DashboardResponse {
     name: string;
     cpfMasked: string;
     emailMasked?: string | null;
-    level: 1 | 2 | 3;
+    level: CreatorLevel;
+    autoLevel?: CreatorLevel;
+    manualMinimumLevel?: CreatorLevel | null;
+    effectiveLevel?: CreatorLevel;
     status: AmbassadorStatus;
     sales: number;
     couponCode: string;
@@ -86,7 +91,10 @@ interface AmbassadorMetrics {
   couponCode: string;
   city: string;
   state: string;
-  level: 1 | 2 | 3;
+  level: CreatorLevel;
+  autoLevel: CreatorLevel;
+  manualMinimumLevel: CreatorLevel | null;
+  effectiveLevel: CreatorLevel;
   status: AmbassadorStatus;
   sales: number;
   pendingCents: number;
@@ -148,6 +156,13 @@ function referralStatusBadge(status: ReferralStatus): string {
   return "border-red-500/40 bg-red-500/20 text-red-300";
 }
 
+function creatorLevelLabel(level: CreatorLevel | null | undefined): string {
+  if (level === 4) return "Creator VIP";
+  if (level === 3) return "Creator Pro";
+  if (level === 2) return "Creator Embaixador";
+  return "Creator";
+}
+
 function isErrorFeedback(message: string): boolean {
   return /(erro|falha|inválido|invalido|não foi possível|nao foi possivel)/i.test(message);
 }
@@ -177,6 +192,9 @@ export default function EmbaixadoresGestaoClient() {
   const [actionCategory, setActionCategory] = useState<"" | ActionCategory>("");
   const [deleteConfirmation, setDeleteConfirmation] = useState(false);
   const [actionFormError, setActionFormError] = useState<string | null>(null);
+  const [manualLevel, setManualLevel] = useState<CreatorLevel>(1);
+  const [manualLevelReason, setManualLevelReason] = useState("");
+  const [manualLevelLoading, setManualLevelLoading] = useState(false);
 
   const ambassadorMetrics = useMemo<AmbassadorMetrics[]>(() => {
     if (!data) return [];
@@ -191,7 +209,10 @@ export default function EmbaixadoresGestaoClient() {
         couponCode: ambassador.couponCode,
         city: ambassador.city || "-",
         state: ambassador.state || "-",
-        level: ambassador.level,
+        level: ambassador.effectiveLevel ?? ambassador.level,
+        autoLevel: ambassador.autoLevel ?? ambassador.level,
+        manualMinimumLevel: ambassador.manualMinimumLevel ?? null,
+        effectiveLevel: ambassador.effectiveLevel ?? ambassador.level,
         status: ambassador.status,
         sales: ambassador.sales,
         pendingCents: ambassador.pendingCents,
@@ -331,6 +352,12 @@ export default function EmbaixadoresGestaoClient() {
     [ambassadorMetrics, selectedAmbassadorId]
   );
 
+  useEffect(() => {
+    if (!selectedAmbassador) return;
+    setManualLevel(selectedAmbassador.manualMinimumLevel ?? selectedAmbassador.effectiveLevel);
+    setManualLevelReason("");
+  }, [selectedAmbassador]);
+
   const selectedReferrals = useMemo(() => {
     if (!selectedAmbassadorId || !data) return [];
     return data.referrals
@@ -391,6 +418,49 @@ export default function EmbaixadoresGestaoClient() {
     setActionModal(null);
     setActionFormError(null);
     setDeleteConfirmation(false);
+  };
+
+  const submitManualLevel = async () => {
+    if (!selectedAmbassador) return;
+
+    const reason = manualLevelReason.trim();
+    if (reason.length < MIN_REASON_LENGTH) {
+      setActionMessage(`Informe um motivo com no mínimo ${MIN_REASON_LENGTH} caracteres.`);
+      return;
+    }
+
+    setManualLevelLoading(true);
+    setActionMessage(null);
+    try {
+      const response = await fetch(
+        `/api/superadmin/embaixadores/${encodeURIComponent(selectedAmbassador.id)}/manual-level`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            manualMinimumLevel: manualLevel,
+            reason,
+            category: "NIVEL_CREATOR",
+          }),
+        }
+      );
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      if (!response.ok) {
+        throw new Error(body.error || "Não foi possível alterar o nível mínimo manual.");
+      }
+
+      setActionMessage("Nível mínimo manual atualizado e auditado com sucesso.");
+      setManualLevelReason("");
+      await mutate();
+    } catch (requestError) {
+      setActionMessage(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível alterar o nível mínimo manual."
+      );
+    } finally {
+      setManualLevelLoading(false);
+    }
   };
 
   const handleConfirmModalAction = async () => {
@@ -480,8 +550,8 @@ export default function EmbaixadoresGestaoClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl bg-zinc-900/80 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
-          <p className="mt-2 text-zinc-400">Carregando dados dos embaixadores...</p>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Creators</h1>
+          <p className="mt-2 text-zinc-400">Carregando dados dos Creators...</p>
         </section>
       </main>
     );
@@ -491,11 +561,11 @@ export default function EmbaixadoresGestaoClient() {
     return (
       <main className="min-h-screen w-full bg-[#101826] px-2 py-6 md:px-8">
         <section className="rounded-xl border border-red-500/40 bg-red-950/20 p-5 shadow-lg">
-          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
+          <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Creators</h1>
           <p className="mt-2 text-red-200">
             {error instanceof Error
               ? error.message
-              : "Não foi possível carregar os dados dos embaixadores."}
+              : "Não foi possível carregar os dados dos Creators."}
           </p>
         </section>
       </main>
@@ -507,7 +577,7 @@ export default function EmbaixadoresGestaoClient() {
       <section className="mb-6 rounded-xl bg-zinc-900/80 p-5 shadow-lg">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Embaixadores</h1>
+            <h1 className="text-2xl font-bold text-white md:text-3xl">Gestão de Creators</h1>
             <p className="mt-1 text-zinc-400">
               Operação completa do programa com busca, distribuição geográfica e desempenho de
               conversão por cupom.
@@ -543,7 +613,7 @@ export default function EmbaixadoresGestaoClient() {
 
       <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <article className="rounded-xl bg-gradient-to-tr from-yellow-400 to-yellow-600 p-4 text-black shadow-lg">
-          <p className="text-xs font-semibold uppercase">Embaixadores</p>
+          <p className="text-xs font-semibold uppercase">Creators</p>
           <p className="mt-1 text-2xl font-bold">{ambassadorMetrics.length}</p>
           <p className="text-xs">Total cadastrado</p>
         </article>
@@ -649,7 +719,7 @@ export default function EmbaixadoresGestaoClient() {
       <section className="grid gap-4 xl:grid-cols-[1.2fr_1fr]">
         <article className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Lista de Embaixadores</h2>
+            <h2 className="text-lg font-semibold text-white">Lista de Creators</h2>
             <span className="text-xs text-zinc-400">Filtrados: {filteredAmbassadors.length}</span>
           </div>
           <div className="overflow-x-auto">
@@ -659,6 +729,7 @@ export default function EmbaixadoresGestaoClient() {
                   <th className="px-2 py-2 font-medium">Nome</th>
                   <th className="px-2 py-2 font-medium">Cupom</th>
                   <th className="px-2 py-2 font-medium">Cidade/UF</th>
+                  <th className="px-2 py-2 font-medium">Nível atual</th>
                   <th className="px-2 py-2 font-medium">Rachas</th>
                   <th className="px-2 py-2 font-medium">Conversao</th>
                   <th className="px-2 py-2 font-medium">Status</th>
@@ -680,6 +751,9 @@ export default function EmbaixadoresGestaoClient() {
                       <td className="px-2 py-2 text-zinc-300">
                         {item.city}/{item.state}
                       </td>
+                      <td className="px-2 py-2 text-zinc-300">
+                        {creatorLevelLabel(item.effectiveLevel)}
+                      </td>
                       <td className="px-2 py-2 text-zinc-300">{item.totalReferrals}</td>
                       <td className="px-2 py-2 text-zinc-300">
                         {Math.round(item.conversionRate)}%
@@ -696,8 +770,8 @@ export default function EmbaixadoresGestaoClient() {
                 })}
                 {filteredAmbassadors.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-2 py-4 text-center text-zinc-400">
-                      Nenhum embaixador encontrado com os filtros atuais.
+                    <td colSpan={7} className="px-2 py-4 text-center text-zinc-400">
+                      Nenhum Creator encontrado com os filtros atuais.
                     </td>
                   </tr>
                 ) : null}
@@ -707,10 +781,10 @@ export default function EmbaixadoresGestaoClient() {
         </article>
 
         <article className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
-          <h2 className="mb-3 text-lg font-semibold text-white">Detalhes do Embaixador</h2>
+          <h2 className="mb-3 text-lg font-semibold text-white">Detalhes do Creator</h2>
           {!selectedAmbassador ? (
             <p className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3 text-sm text-zinc-400">
-              Selecione um embaixador para visualizar indicadores detalhados.
+              Selecione um Creator para visualizar indicadores detalhados.
             </p>
           ) : (
             <div className="space-y-4">
@@ -726,6 +800,9 @@ export default function EmbaixadoresGestaoClient() {
                       Cidade/UF: {selectedAmbassador.city}/{selectedAmbassador.state}
                     </p>
                     <p className="text-sm text-zinc-300">Cupom: {selectedAmbassador.couponCode}</p>
+                    <p className="text-sm text-zinc-300">
+                      Nível atual: {creatorLevelLabel(selectedAmbassador.effectiveLevel)}
+                    </p>
                   </div>
                   <span
                     className={`inline-flex rounded-full border px-2 py-1 text-xs ${ambassadorStatusBadge(selectedAmbassador.status)}`}
@@ -747,7 +824,7 @@ export default function EmbaixadoresGestaoClient() {
                     {actionLoading === "status"
                       ? "Processando..."
                       : selectedAmbassador.status === "BLOQUEADO"
-                        ? "Reativar embaixador"
+                        ? "Reativar Creator"
                         : "Bloquear temporariamente"}
                   </button>
                   <button
@@ -764,6 +841,65 @@ export default function EmbaixadoresGestaoClient() {
                     Conta excluída. Esta ação é irreversível no painel.
                   </p>
                 ) : null}
+              </div>
+
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+                <p className="mb-2 text-xs uppercase tracking-wide text-zinc-500">
+                  Níveis do Creator
+                </p>
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <MetricCard
+                    label="Nível automático"
+                    value={creatorLevelLabel(selectedAmbassador.autoLevel)}
+                  />
+                  <MetricCard
+                    label="Nível mínimo manual"
+                    value={
+                      selectedAmbassador.manualMinimumLevel
+                        ? creatorLevelLabel(selectedAmbassador.manualMinimumLevel)
+                        : "-"
+                    }
+                  />
+                  <MetricCard
+                    label="Nível atual"
+                    value={creatorLevelLabel(selectedAmbassador.effectiveLevel)}
+                  />
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-[220px_1fr]">
+                  <label className="text-xs uppercase tracking-wide text-zinc-500">
+                    Alterar piso mínimo
+                    <select
+                      value={manualLevel}
+                      onChange={(event) =>
+                        setManualLevel(Number(event.target.value) as CreatorLevel)
+                      }
+                      className="mt-2 h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950/50 px-3 text-sm normal-case text-zinc-100 outline-none focus:border-yellow-500"
+                    >
+                      <option value={1}>Creator</option>
+                      <option value={2}>Creator Embaixador</option>
+                      <option value={3}>Creator Pro</option>
+                      <option value={4}>Creator VIP</option>
+                    </select>
+                  </label>
+                  <label className="text-xs uppercase tracking-wide text-zinc-500">
+                    Motivo obrigatório
+                    <textarea
+                      value={manualLevelReason}
+                      onChange={(event) => setManualLevelReason(event.target.value)}
+                      rows={2}
+                      className="mt-2 w-full rounded-lg border border-zinc-700 bg-zinc-950/50 px-3 py-2 text-sm normal-case text-zinc-100 outline-none focus:border-yellow-500"
+                      placeholder="Explique a concessão administrativa deste nível."
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void submitManualLevel()}
+                  disabled={manualLevelLoading}
+                  className="mt-3 rounded-md border border-yellow-500/50 bg-yellow-500/15 px-3 py-1.5 text-xs font-semibold text-yellow-200 transition hover:bg-yellow-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {manualLevelLoading ? "Salvando..." : "Salvar nível mínimo"}
+                </button>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
