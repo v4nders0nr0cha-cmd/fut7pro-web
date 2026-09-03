@@ -1,10 +1,12 @@
 "use client";
 
 import Head from "next/head";
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { usePartidas } from "@/hooks/usePartidas";
+import { useAdminDestaquesRodadas } from "@/hooks/useAdminDestaquesRodadas";
 import CardsDestaquesDiaV2 from "@/components/admin/CardsDestaquesDiaV2";
 import ModalRegrasDestaques from "@/components/admin/ModalRegrasDestaques";
 import BannerUpload from "@/components/admin/BannerUpload";
@@ -190,6 +192,12 @@ function AthleteChampionCard({ jogador }: { jogador: JogadorDestaque }) {
 
 export default function TimeCampeaoDoDiaPage() {
   const { partidas, isLoading, isError, error, mutate } = usePartidas();
+  const {
+    queue,
+    isLoading: isLoadingQueue,
+    isError: isQueueError,
+    error: queueError,
+  } = useAdminDestaquesRodadas();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -200,7 +208,10 @@ export default function TimeCampeaoDoDiaPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [showModalRegras, setShowModalRegras] = useState(false);
-  const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [publishFeedback, setPublishFeedback] = useState<{
+    title: string;
+    body: string;
+  } | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -210,7 +221,27 @@ export default function TimeCampeaoDoDiaPage() {
     Partial<Record<RoleKey, { athleteId: string; status: Exclude<PresenceStatus, "AUSENTE"> }>>
   >({});
 
-  const selectedDateKey = isValidDateKey(selectedDateParam) ? selectedDateParam : "";
+  const selectedDateKey = useMemo(() => {
+    const aguardando = queue.rodadasAguardandoCampeao;
+    if (!aguardando.length) return "";
+    if (
+      isValidDateKey(selectedDateParam) &&
+      aguardando.some((round) => round.date === selectedDateParam)
+    ) {
+      return selectedDateParam;
+    }
+    return aguardando[0]?.date ?? "";
+  }, [queue.rodadasAguardandoCampeao, selectedDateParam]);
+  const selectedRound = useMemo(
+    () => queue.rodadasAguardandoCampeao.find((round) => round.date === selectedDateKey) ?? null,
+    [queue.rodadasAguardandoCampeao, selectedDateKey]
+  );
+  const currentPublicSpotlightDateKey = useMemo(() => {
+    if (!queue.currentPublicSpotlightDate) return null;
+    const date = new Date(queue.currentPublicSpotlightDate);
+    if (Number.isNaN(date.getTime())) return null;
+    return format(date, "yyyy-MM-dd");
+  }, [queue.currentPublicSpotlightDate]);
   const scopedPartidas = useMemo(() => {
     if (!selectedDateKey) return partidas;
     return (partidas as any[]).filter(
@@ -224,12 +255,16 @@ export default function TimeCampeaoDoDiaPage() {
   );
 
   const hasDados = confrontos.length > 0 && times.length > 0;
-  const dataKey = useMemo(() => {
+  const computedDateKey = useMemo(() => {
     if (!dataReferencia) return null;
     const date = new Date(dataReferencia);
     if (Number.isNaN(date.getTime())) return null;
     return format(date, "yyyy-MM-dd");
   }, [dataReferencia]);
+  const dataKey = selectedRound?.date ?? computedDateKey;
+  const isHistoricalRound =
+    Boolean(dataKey && currentPublicSpotlightDateKey) &&
+    (currentPublicSpotlightDateKey as string) > (dataKey as string);
 
   const destaqueDiaAtual = destaqueDiaDateKey === dataKey ? destaqueDia : null;
   const persistedAusenciaTargets = useMemo(
@@ -321,7 +356,7 @@ export default function TimeCampeaoDoDiaPage() {
   }, [dataKey]);
 
   useEffect(() => {
-    setPublishMessage(null);
+    setPublishFeedback(null);
     setPublishError(null);
     setCurrentStep(1);
     setAusenciaTargets({});
@@ -482,7 +517,7 @@ export default function TimeCampeaoDoDiaPage() {
     if (!dataKey) return;
     setIsPublishing(true);
     setPublishError(null);
-    setPublishMessage(null);
+    setPublishFeedback(null);
     try {
       const publishResponse = await fetch("/api/admin/destaques-do-dia/time-campeao/publicar", {
         method: "POST",
@@ -514,9 +549,22 @@ export default function TimeCampeaoDoDiaPage() {
           throw new Error(resolveErrorMessage(bodyText, "Falha ao publicar no site."));
         }
       }
-      setPublishMessage(
-        saved?.publication?.message ||
-          "Time Campeão do Dia oficializado e publicado no site público."
+      setPublishFeedback(
+        saved?.publication?.shouldUpdatePublicSpotlight === false
+          ? {
+              title: "Campeão registrado com sucesso",
+              body: `A rodada de ${formatDatePtBr(
+                dataKey
+              )} foi registrada no histórico e será considerada nos rankings e perfis dos atletas. A página inicial não foi alterada porque já existe uma publicação mais recente${
+                currentPublicSpotlightDateKey
+                  ? `, de ${formatDatePtBr(currentPublicSpotlightDateKey)}`
+                  : ""
+              }.`,
+            }
+          : {
+              title: "Publicado no site com sucesso",
+              body: "O Time Campeão, o banner e os Destaques do Dia desta rodada agora estão disponíveis na página pública do seu grupo.",
+            }
       );
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
@@ -540,6 +588,21 @@ export default function TimeCampeaoDoDiaPage() {
       </Head>
 
       <main className="pt-20 pb-24 md:pt-6 md:pb-8 px-4 min-h-screen bg-zinc-900 flex flex-col items-center">
+        {publishFeedback && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+            <div className="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-950 p-6 shadow-2xl">
+              <h2 className="text-xl font-bold text-white">{publishFeedback.title}</h2>
+              <p className="mt-3 text-sm leading-relaxed text-zinc-300">{publishFeedback.body}</p>
+              <button
+                type="button"
+                onClick={() => setPublishFeedback(null)}
+                className="mt-5 w-full rounded-xl bg-yellow-400 px-4 py-3 text-sm font-bold text-black"
+              >
+                Entendi
+              </button>
+            </div>
+          </div>
+        )}
         <div className="w-full max-w-5xl">
           <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
@@ -617,268 +680,360 @@ export default function TimeCampeaoDoDiaPage() {
           </div>
         )}
 
-        {isLoading && (
+        {(isLoading || isLoadingQueue) && (
           <div className="text-gray-300 py-10 text-center">
-            Carregando partidas para calcular o Time Campeão do Dia...
+            Carregando rodadas prontas para registrar...
           </div>
         )}
 
-        {isError && !isLoading && (
+        {(isError || isQueueError) && !isLoading && !isLoadingQueue && (
           <div className="bg-red-500/10 border border-red-500/40 text-red-200 px-4 py-3 rounded-lg max-w-xl text-center">
             <p className="font-semibold mb-1">Erro ao carregar partidas do dia.</p>
-            {error && <p className="text-sm">{String(error)}</p>}
+            {(error || queueError) && <p className="text-sm">{String(error || queueError)}</p>}
           </div>
         )}
 
-        {!isLoading && !isError && !hasDados && (
-          <div className="text-gray-300 py-10 text-center">
-            Nenhuma partida finalizada encontrada para o dia selecionado. Registre partidas no
-            painel para habilitar o cálculo do Time Campeão do Dia.
+        {!isLoading && !isLoadingQueue && !isError && !isQueueError && !selectedRound && (
+          <div className="mt-6 w-full max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
+            <h2 className="text-xl font-bold text-white">Nenhuma rodada pronta para registrar</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-400">
+              Quando todos os resultados de uma rodada forem concluídos, ela aparecerá aqui para
+              você registrar o Time Campeão e os Destaques do Dia.
+            </p>
+            {queue.rodadasIncompletas.length > 0 && (
+              <div className="mt-5 rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-4 text-left">
+                <p className="text-sm font-semibold text-yellow-100">
+                  Você possui {queue.rodadasIncompletas.length}{" "}
+                  {queue.rodadasIncompletas.length === 1 ? "rodada" : "rodadas"} com resultados
+                  pendentes.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {queue.rodadasIncompletas.slice(0, 6).map((round) => (
+                    <span
+                      key={round.date}
+                      className="rounded-full bg-zinc-900 px-3 py-1 text-xs text-zinc-200"
+                    >
+                      {formatDatePtBr(round.date)} · {round.completedMatches}/{round.totalMatches}
+                    </span>
+                  ))}
+                </div>
+                <Link
+                  href="/admin/partidas/historico"
+                  className="mt-4 inline-flex rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-black"
+                >
+                  Concluir resultados
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
-        {!isLoading && !isError && hasDados && (
-          <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
-            {currentStep === 1 && (
-              <section className="w-full space-y-5">
-                <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
-                  <div className="rounded-2xl border border-yellow-400/40 bg-gradient-to-br from-zinc-950 to-zinc-900 p-5 shadow-lg">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={timeCampeao?.logoUrl || "/images/logos/logo_fut7pro.png"}
-                        alt={timeCampeao?.nome || "Time Campeão do Dia"}
-                        className="h-16 w-16 rounded-2xl border border-yellow-400/50 object-cover"
-                      />
-                      <div>
-                        <p className="text-xs font-bold uppercase text-yellow-300">
-                          Time Campeão do Dia
-                        </p>
-                        <h3 className="text-2xl font-extrabold text-white">
-                          {timeCampeao?.nome || "A definir"}
-                        </h3>
+        {!isLoading &&
+          !isLoadingQueue &&
+          !isError &&
+          !isQueueError &&
+          selectedRound &&
+          !hasDados && (
+            <div className="text-gray-300 py-10 text-center">
+              Não foi possível montar os dados da rodada selecionada. Revise os resultados no
+              histórico.
+            </div>
+          )}
+
+        {!isLoading &&
+          !isLoadingQueue &&
+          !isError &&
+          !isQueueError &&
+          selectedRound &&
+          hasDados && (
+            <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
+              {queue.rodadasAguardandoCampeao.length > 1 && (
+                <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
+                  <label className="mb-2 block text-sm font-semibold text-yellow-200">
+                    Rodadas aguardando registro
+                  </label>
+                  <select
+                    value={selectedDateKey}
+                    onChange={(event) => handleDateChange(event.target.value)}
+                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
+                  >
+                    {queue.rodadasAguardandoCampeao.map((round) => (
+                      <option key={round.date} value={round.date}>
+                        {formatDatePtBr(round.date)} · {round.completedMatches}/{round.totalMatches}{" "}
+                        partidas finalizadas
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {currentStep === 1 && (
+                <section className="w-full space-y-5">
+                  <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
+                    <div className="rounded-2xl border border-yellow-400/40 bg-gradient-to-br from-zinc-950 to-zinc-900 p-5 shadow-lg">
+                      <div className="flex items-center gap-4">
+                        <img
+                          src={timeCampeao?.logoUrl || "/images/logos/logo_fut7pro.png"}
+                          alt={timeCampeao?.nome || "Time Campeão do Dia"}
+                          className="h-16 w-16 rounded-2xl border border-yellow-400/50 object-cover"
+                        />
+                        <div>
+                          <p className="text-xs font-bold uppercase text-yellow-300">
+                            Time Campeão do Dia
+                          </p>
+                          <h3 className="text-2xl font-extrabold text-white">
+                            {timeCampeao?.nome || "A definir"}
+                          </h3>
+                        </div>
+                      </div>
+                      <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
+                        <div className="rounded-xl bg-zinc-900 p-3">
+                          <div className="text-2xl font-bold text-yellow-300">
+                            {campeaoInfo?.pontos ?? 0}
+                          </div>
+                          <div className="text-zinc-400">pontos</div>
+                        </div>
+                        <div className="rounded-xl bg-zinc-900 p-3">
+                          <div className="text-2xl font-bold text-white">
+                            {desempenhoCampeao.vitorias}
+                          </div>
+                          <div className="text-zinc-400">vitórias</div>
+                        </div>
+                        <div className="rounded-xl bg-zinc-900 p-3">
+                          <div className="text-2xl font-bold text-white">
+                            {desempenhoCampeao.empates}
+                          </div>
+                          <div className="text-zinc-400">empates</div>
+                        </div>
+                        <div className="rounded-xl bg-zinc-900 p-3">
+                          <div className="text-2xl font-bold text-white">
+                            {desempenhoCampeao.derrotas}
+                          </div>
+                          <div className="text-zinc-400">derrotas</div>
+                        </div>
+                      </div>
+                      {dataKey && (
+                        <div className="mt-4 text-sm text-zinc-400">
+                          Rodada de {formatDatePtBr(dataKey)}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+                      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-white">
+                            Elenco Campeão — {elencoCampeao.length} atletas
+                          </h3>
+                          <p className="text-sm text-zinc-400">
+                            Atletas confirmados no time campeão. Ausentes e BOTs não recebem
+                            crédito.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-green-400/10 px-3 py-1 text-xs font-semibold text-green-200">
+                          {canGoDestaques ? "Concluído" : "Pendente"}
+                        </span>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {elencoCampeao.map((jogador) => (
+                          <AthleteChampionCard key={jogador.id || jogador.nome} jogador={jogador} />
+                        ))}
                       </div>
                     </div>
-                    <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-xl bg-zinc-900 p-3">
-                        <div className="text-2xl font-bold text-yellow-300">
-                          {campeaoInfo?.pontos ?? 0}
-                        </div>
-                        <div className="text-zinc-400">pontos</div>
-                      </div>
-                      <div className="rounded-xl bg-zinc-900 p-3">
-                        <div className="text-2xl font-bold text-white">
-                          {desempenhoCampeao.vitorias}
-                        </div>
-                        <div className="text-zinc-400">vitórias</div>
-                      </div>
-                      <div className="rounded-xl bg-zinc-900 p-3">
-                        <div className="text-2xl font-bold text-white">
-                          {desempenhoCampeao.empates}
-                        </div>
-                        <div className="text-zinc-400">empates</div>
-                      </div>
-                      <div className="rounded-xl bg-zinc-900 p-3">
-                        <div className="text-2xl font-bold text-white">
-                          {desempenhoCampeao.derrotas}
-                        </div>
-                        <div className="text-zinc-400">derrotas</div>
-                      </div>
-                    </div>
-                    {dataKey && (
-                      <div className="mt-4 text-sm text-zinc-400">
-                        Rodada de {formatDatePtBr(dataKey)}
-                      </div>
-                    )}
                   </div>
 
-                  <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
-                    <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-white">
-                          Elenco Campeão — {elencoCampeao.length} atletas
-                        </h3>
-                        <p className="text-sm text-zinc-400">
-                          Atletas confirmados no time campeão. Ausentes e BOTs não recebem crédito.
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-green-400/10 px-3 py-1 text-xs font-semibold text-green-200">
-                        {canGoDestaques ? "Concluído" : "Pendente"}
-                      </span>
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      {elencoCampeao.map((jogador) => (
-                        <AthleteChampionCard key={jogador.id || jogador.nome} jogador={jogador} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <button
-                    type="button"
-                    className="self-start text-sm font-semibold text-yellow-200 hover:text-yellow-100"
-                    onClick={() => setShowModalRegras(true)}
-                  >
-                    Como funcionam os destaques?
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
-                    disabled={!canGoDestaques}
-                    onClick={() => setCurrentStep(2)}
-                  >
-                    Continuar para Destaques
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {currentStep === 2 && (
-              <section className="w-full space-y-5">
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
-                  <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
-                    Destaques
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
-                    Revise os destaques individuais
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Atacante, Meia, Goleiro, Artilheiro e Maestro são automáticos. Escolha
-                    manualmente o Zagueiro do Dia quando houver opção.
-                  </p>
-                </div>
-
-                <CardsDestaquesDiaV2
-                  confrontos={confrontos}
-                  times={times}
-                  zagueiroId={destaqueDiaAtual?.zagueiroId ?? null}
-                  faltou={destaqueDiaAtual?.faltou ?? null}
-                  ausenciaTargets={effectiveAusenciaTargets}
-                  onSelectZagueiro={handleZagueiroChange}
-                  onToggleAusencia={handleAusencia}
-                />
-
-                {!canGoPublicacao && (
-                  <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
-                    Escolha o Zagueiro do Dia para continuar. Se não houver atleta que atuou como
-                    zagueiro, a etapa de publicação fica liberada automaticamente.
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-                  <button
-                    type="button"
-                    className="rounded-xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    Voltar para Campeão
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
-                    disabled={!canGoPublicacao}
-                    onClick={() => setCurrentStep(3)}
-                  >
-                    Continuar para Publicação
-                  </button>
-                </div>
-              </section>
-            )}
-
-            {currentStep === 3 && (
-              <section className="w-full space-y-5">
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
-                  <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
-                    Revisão final
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">Publicação</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
-                    Revise o resumo, envie o banner se quiser e publique o resultado no site do
-                    grupo.
-                  </p>
-                </div>
-
-                <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-                  <BannerUpload
-                    bannerUrl={bannerUrl}
-                    isSaving={isSaving}
-                    onUpload={handleBannerUpload}
-                    onRemove={handleBannerRemove}
-                  />
-
-                  <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
-                    <h3 className="text-lg font-bold text-white">Checklist</h3>
-                    <div className="mt-4 space-y-3 text-sm">
-                      <div className="flex items-center gap-2 text-green-200">
-                        ✓ Time Campeão definido
-                      </div>
-                      <div className="flex items-center gap-2 text-green-200">
-                        ✓ {elencoCampeao.length} atletas campeões
-                      </div>
-                      <div className="flex items-center gap-2 text-green-200">
-                        ✓ Destaques revisados
-                      </div>
-                      <div
-                        className={
-                          canGoPublicacao
-                            ? "flex items-center gap-2 text-green-200"
-                            : "flex items-center gap-2 text-yellow-200"
-                        }
-                      >
-                        {canGoPublicacao ? "✓" : "○"} Zagueiro do Dia escolhido
-                      </div>
-                      <div
-                        className={
-                          bannerUrl
-                            ? "flex items-center gap-2 text-green-200"
-                            : "flex items-center gap-2 text-zinc-400"
-                        }
-                      >
-                        {bannerUrl ? "✓" : "○"} Banner {bannerUrl ? "enviado" : "opcional"}
-                      </div>
-                    </div>
-                    <div className="mt-5 rounded-xl bg-zinc-900 p-4 text-sm text-zinc-300">
-                      <div className="font-semibold text-white">{timeCampeao?.nome}</div>
-                      <div>{elencoCampeao.length} campeões do dia</div>
-                      <div>{campeaoInfo?.pontos ?? 0} pontos na rodada</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-yellow-400/40 bg-zinc-950 p-5">
-                  {destaqueDiaAtual?.timeCampeaoDoDia?.status === "published" && (
-                    <div className="mb-3 text-sm text-green-300">
-                      Time Campeão oficial salvo:{" "}
-                      {destaqueDiaAtual.timeCampeaoDoDia.team?.name ||
-                        destaqueDiaAtual.timeCampeaoDoDia.teamId}
-                    </div>
-                  )}
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <button
                       type="button"
-                      className="rounded-xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
-                      onClick={() => setCurrentStep(2)}
+                      className="self-start text-sm font-semibold text-yellow-200 hover:text-yellow-100"
+                      onClick={() => setShowModalRegras(true)}
                     >
-                      Voltar para Destaques
+                      Como funcionam os destaques?
                     </button>
                     <button
                       type="button"
-                      className="rounded-xl bg-yellow-400 px-6 py-3 text-sm font-bold text-black shadow disabled:opacity-60"
-                      onClick={handlePublish}
-                      disabled={isSaving || isPublishing || !canGoPublicacao}
+                      className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
+                      disabled={!canGoDestaques}
+                      onClick={() => setCurrentStep(2)}
                     >
-                      {isPublishing ? "Publicando no site..." : "Salvar e Publicar no Site"}
+                      Continuar para Destaques
                     </button>
                   </div>
-                  {publishMessage && (
-                    <div className="mt-3 text-sm text-green-300">{publishMessage}</div>
+                </section>
+              )}
+
+              {currentStep === 2 && (
+                <section className="w-full space-y-5">
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
+                      Destaques
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">
+                      Revise os destaques individuais
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                      Atacante, Meia, Goleiro, Artilheiro e Maestro são automáticos. Escolha
+                      manualmente o Zagueiro do Dia quando houver opção.
+                    </p>
+                  </div>
+
+                  <CardsDestaquesDiaV2
+                    confrontos={confrontos}
+                    times={times}
+                    zagueiroId={destaqueDiaAtual?.zagueiroId ?? null}
+                    faltou={destaqueDiaAtual?.faltou ?? null}
+                    ausenciaTargets={effectiveAusenciaTargets}
+                    onSelectZagueiro={handleZagueiroChange}
+                    onToggleAusencia={handleAusencia}
+                  />
+
+                  {!canGoPublicacao && (
+                    <div className="rounded-xl border border-yellow-400/40 bg-yellow-400/10 px-4 py-3 text-sm text-yellow-100">
+                      Escolha o Zagueiro do Dia para continuar. Se não houver atleta que atuou como
+                      zagueiro, a etapa de publicação fica liberada automaticamente.
+                    </div>
                   )}
-                  {publishError && <div className="mt-3 text-sm text-red-200">{publishError}</div>}
-                </div>
-              </section>
-            )}
-          </div>
-        )}
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+                    <button
+                      type="button"
+                      className="rounded-xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
+                      onClick={() => setCurrentStep(1)}
+                    >
+                      Voltar para Campeão
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black disabled:opacity-50"
+                      disabled={!canGoPublicacao}
+                      onClick={() => setCurrentStep(3)}
+                    >
+                      Continuar para Publicação
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              {currentStep === 3 && (
+                <section className="w-full space-y-5">
+                  <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
+                      Revisão final
+                    </p>
+                    <h2 className="mt-1 text-xl font-bold text-white sm:text-2xl">Publicação</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                      Revise o resumo, envie o banner se quiser e publique o resultado no site do
+                      grupo.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+                    {isHistoricalRound ? (
+                      <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+                        <h3 className="text-lg font-bold text-white">
+                          Banner não disponível para esta rodada
+                        </h3>
+                        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                          Esta rodada é anterior à publicação atualmente exibida no site. Os dados
+                          esportivos serão registrados normalmente, mas o banner e os Destaques do
+                          Dia da página inicial continuarão sendo os da publicação mais recente.
+                        </p>
+                        {currentPublicSpotlightDateKey && (
+                          <p className="mt-4 text-sm font-semibold text-yellow-200">
+                            Publicação atual: {formatDatePtBr(currentPublicSpotlightDateKey)}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <BannerUpload
+                        bannerUrl={bannerUrl}
+                        isSaving={isSaving}
+                        onUpload={handleBannerUpload}
+                        onRemove={handleBannerRemove}
+                      />
+                    )}
+
+                    <div className="rounded-2xl border border-zinc-700 bg-zinc-950 p-5">
+                      <h3 className="text-lg font-bold text-white">Checklist</h3>
+                      <div className="mt-4 space-y-3 text-sm">
+                        <div className="flex items-center gap-2 text-green-200">
+                          ✓ Time Campeão definido
+                        </div>
+                        <div className="flex items-center gap-2 text-green-200">
+                          ✓ {elencoCampeao.length} atletas campeões
+                        </div>
+                        <div className="flex items-center gap-2 text-green-200">
+                          ✓ Destaques revisados
+                        </div>
+                        <div
+                          className={
+                            canGoPublicacao
+                              ? "flex items-center gap-2 text-green-200"
+                              : "flex items-center gap-2 text-yellow-200"
+                          }
+                        >
+                          {canGoPublicacao ? "✓" : "○"} Zagueiro do Dia escolhido
+                        </div>
+                        <div
+                          className={
+                            bannerUrl
+                              ? "flex items-center gap-2 text-green-200"
+                              : "flex items-center gap-2 text-zinc-400"
+                          }
+                        >
+                          {isHistoricalRound
+                            ? "○ Banner não altera a vitrine"
+                            : `${bannerUrl ? "✓" : "○"} Banner ${
+                                bannerUrl ? "enviado" : "opcional"
+                              }`}
+                        </div>
+                      </div>
+                      <div className="mt-5 rounded-xl bg-zinc-900 p-4 text-sm text-zinc-300">
+                        <div className="font-semibold text-white">{timeCampeao?.nome}</div>
+                        <div>{elencoCampeao.length} campeões do dia</div>
+                        <div>{campeaoInfo?.pontos ?? 0} pontos na rodada</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-yellow-400/40 bg-zinc-950 p-5">
+                    {destaqueDiaAtual?.timeCampeaoDoDia?.status === "published" && (
+                      <div className="mb-3 text-sm text-green-300">
+                        Time Campeão oficial salvo:{" "}
+                        {destaqueDiaAtual.timeCampeaoDoDia.team?.name ||
+                          destaqueDiaAtual.timeCampeaoDoDia.teamId}
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <button
+                        type="button"
+                        className="rounded-xl border border-zinc-700 px-5 py-3 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
+                        onClick={() => setCurrentStep(2)}
+                      >
+                        Voltar para Destaques
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-xl bg-yellow-400 px-6 py-3 text-sm font-bold text-black shadow disabled:opacity-60"
+                        onClick={handlePublish}
+                        disabled={isSaving || isPublishing || !canGoPublicacao}
+                      >
+                        {isPublishing
+                          ? isHistoricalRound
+                            ? "Registrando..."
+                            : "Publicando no site..."
+                          : isHistoricalRound
+                            ? "Registrar Time Campeão"
+                            : "Salvar e Publicar no Site"}
+                      </button>
+                    </div>
+                    {publishError && (
+                      <div className="mt-3 text-sm text-red-200">{publishError}</div>
+                    )}
+                  </div>
+                </section>
+              )}
+            </div>
+          )}
       </main>
     </>
   );

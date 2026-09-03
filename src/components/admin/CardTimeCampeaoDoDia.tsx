@@ -1,25 +1,18 @@
 // src/components/admin/CardTimeCampeaoDoDia.tsx
 "use client";
 
-import { useMemo } from "react";
 import Image from "next/image";
 import { FaCamera, FaUserEdit } from "react-icons/fa";
 import Link from "next/link";
 import { useRacha } from "@/context/RachaContext";
-import { usePublicMatches } from "@/hooks/usePublicMatches";
-import {
-  buildDestaquesDoDia,
-  getTimeCampeao,
-  type ConfrontoV2,
-  type TimeDestaque,
-} from "@/utils/destaquesDoDia";
+import { usePublicDestaquesDoDia } from "@/hooks/usePublicDestaquesDoDia";
 import type { PublicMatch } from "@/types/partida";
 
 type Props = {
   editLink?: string;
   matches?: PublicMatch[];
-  confrontos?: ConfrontoV2[];
-  times?: TimeDestaque[];
+  confrontos?: unknown[];
+  times?: unknown[];
   slug?: string;
   isLoading?: boolean;
 };
@@ -28,54 +21,26 @@ const DEFAULT_TIME_CAMPEAO_CARD_IMAGE = "/images/Timecampeao.jpg";
 
 export default function CardTimeCampeaoDoDia({
   editLink = "/admin/partidas/time-campeao-do-dia",
-  matches,
-  confrontos,
-  times,
   slug,
   isLoading,
 }: Props) {
   const { tenantSlug } = useRacha();
   const slugFinal = (slug ?? tenantSlug ?? "").trim();
-
-  const shouldFetchMatches =
-    Boolean(slugFinal) && !matches && (!confrontos || confrontos.length === 0);
   const {
-    matches: fetchedMatches,
-    isLoading: loadingMatches,
+    destaque,
+    isLoading: loadingDestaque,
     isError,
-  } = usePublicMatches({
+  } = usePublicDestaquesDoDia({
     slug: slugFinal,
-    scope: "recent",
-    limit: 4,
-    enabled: shouldFetchMatches,
+    enabled: Boolean(slugFinal),
   });
 
-  const {
-    confrontos: computedConfrontos,
-    times: computedTimes,
-    dataReferencia,
-  } = useMemo(
-    () =>
-      (matches ?? fetchedMatches)?.length
-        ? buildDestaquesDoDia(matches ?? fetchedMatches)
-        : {
-            confrontos: confrontos ?? [],
-            times: times ?? [],
-            dataReferencia: null as string | null,
-          },
-    [matches, fetchedMatches, confrontos, times]
-  );
-
-  const campeao = useMemo(
-    () => getTimeCampeao(computedConfrontos, computedTimes),
-    [computedConfrontos, computedTimes]
-  );
-
-  const loading = isLoading || (shouldFetchMatches && loadingMatches);
+  const campeao = destaque?.timeCampeaoDoDia ?? null;
+  const loading = isLoading || loadingDestaque;
   const foto = DEFAULT_TIME_CAMPEAO_CARD_IMAGE;
   const titulo = "Time Campeão do Dia";
   const labelData =
-    dataReferencia != null ? new Date(dataReferencia).toLocaleDateString("pt-BR") : undefined;
+    destaque?.date != null ? new Date(destaque.date).toLocaleDateString("pt-BR") : undefined;
 
   if (loading) {
     return (

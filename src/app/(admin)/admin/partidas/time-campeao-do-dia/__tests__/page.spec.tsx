@@ -5,6 +5,10 @@ jest.mock("@/hooks/usePartidas", () => ({
   usePartidas: jest.fn(),
 }));
 
+jest.mock("@/hooks/useAdminDestaquesRodadas", () => ({
+  useAdminDestaquesRodadas: jest.fn(),
+}));
+
 jest.mock("@/context/RachaContext", () => ({
   useRacha: () => ({ tenantSlug: "racha-teste", rachaId: "racha-1" }),
 }));
@@ -18,6 +22,22 @@ jest.mock("@/hooks/usePublicMatches", () => ({
 }));
 
 const usePartidasMock = require("@/hooks/usePartidas").usePartidas as jest.Mock;
+const useAdminDestaquesRodadasMock = require("@/hooks/useAdminDestaquesRodadas")
+  .useAdminDestaquesRodadas as jest.Mock;
+
+const roundQueue = {
+  rodadasIncompletas: [],
+  rodadasAguardandoCampeao: [
+    {
+      date: "2026-08-18",
+      totalMatches: 1,
+      completedMatches: 1,
+      status: "COMPLETA",
+    },
+  ],
+  rodadasRegistradas: [],
+  currentPublicSpotlightDate: null,
+};
 
 function makePresence({
   id,
@@ -80,6 +100,13 @@ describe("TimeCampeaoDoDiaPage - ausencia", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     global.fetch = jest.fn() as any;
+    useAdminDestaquesRodadasMock.mockReturnValue({
+      queue: roundQueue,
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
   });
 
   it("marca ausencia e recalcula a pagina sem erro ao atualizar partidas", async () => {
@@ -267,5 +294,69 @@ describe("TimeCampeaoDoDiaPage - ausencia", () => {
     );
     expect(cleivan.status).toBe("SUBSTITUTO");
     expect(screen.queryByText("Erro ao carregar partidas do dia.")).not.toBeInTheDocument();
+  });
+
+  it("oculta upload de banner e usa CTA historico quando existe publicacao posterior", async () => {
+    useAdminDestaquesRodadasMock.mockReturnValue({
+      queue: {
+        ...roundQueue,
+        currentPublicSpotlightDate: "2026-08-30T03:00:00.000Z",
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    usePartidasMock.mockReturnValue({
+      partidas: [
+        makeMatch([
+          makePresence({
+            id: "p-ata",
+            athleteId: "ata",
+            name: "Atacante",
+            position: "ATA",
+            goals: 1,
+          }),
+          makePresence({
+            id: "p-zag",
+            athleteId: "zag",
+            name: "Zagueiro",
+            position: "ZAG",
+          }),
+          makePresence({
+            id: "p-gol",
+            athleteId: "gol",
+            name: "Goleiro",
+            position: "GOL",
+          }),
+        ]),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        date: "2026-08-18T03:00:00.000Z",
+        bannerUrl: null,
+        zagueiroId: "zag",
+        faltou: null,
+        updatedAt: "2026-08-18T21:10:00.000Z",
+      }),
+    });
+
+    render(<TimeCampeaoDoDiaPage />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Continuar para Destaques/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Continuar para Publicação/i }));
+
+    expect(screen.getByText(/Banner não disponível para esta rodada/i)).toBeInTheDocument();
+    expect(screen.getByText(/Publicação atual: 30\/08\/2026/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Registrar Time Campeão/i })).toBeInTheDocument();
+    expect(screen.queryByText(/Salvar banner/i)).not.toBeInTheDocument();
   });
 });
