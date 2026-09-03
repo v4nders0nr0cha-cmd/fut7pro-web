@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { useAdminMatches } from "@/hooks/useAdminMatches";
+import { useAdminDestaquesRodadas } from "@/hooks/useAdminDestaquesRodadas";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
 import type { SorteioHistoricoItem } from "@/types/sorteio";
@@ -798,6 +799,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 export default function HistoricoPartidasAdmin() {
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
+  const { queue } = useAdminDestaquesRodadas();
   const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
   const [search, setSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
@@ -853,6 +855,14 @@ export default function HistoricoPartidasAdmin() {
   }, [search, quickFilter, statusFilter, originFilter, rangeStart, rangeEnd]);
 
   const sorteioMap = useMemo(() => buildSorteioMap(sorteioHistorico), [sorteioHistorico]);
+  const roundStatusByDate = useMemo(() => {
+    const entries = [
+      ...queue.rodadasIncompletas,
+      ...queue.rodadasAguardandoCampeao,
+      ...queue.rodadasRegistradas,
+    ];
+    return new Map(entries.map((round) => [round.date, round]));
+  }, [queue.rodadasAguardandoCampeao, queue.rodadasIncompletas, queue.rodadasRegistradas]);
 
   const matchEntries = useMemo(() => {
     return matches
@@ -876,7 +886,18 @@ export default function HistoricoPartidasAdmin() {
       const sortedMatches = [...matchesOfDay].sort((a, b) => a.date.getTime() - b.date.getTime());
       const total = sortedMatches.length;
       const done = sortedMatches.filter((item) => item.hasResult).length;
-      const status: DayStatus = done === 0 ? "pending" : done === total ? "complete" : "partial";
+      const backendStatus = roundStatusByDate.get(key);
+      const status: DayStatus = backendStatus
+        ? backendStatus.status === "COMPLETA"
+          ? "complete"
+          : backendStatus.status === "PARCIAL"
+            ? "partial"
+            : "pending"
+        : done === 0
+          ? "pending"
+          : done === total
+            ? "complete"
+            : "partial";
       const origin = resolveDayOrigin(key, total, sorteioMap);
       const date = startOfDay(sortedMatches[0].date);
       const firstMatch = sortedMatches[0].match;
@@ -893,8 +914,8 @@ export default function HistoricoPartidasAdmin() {
         key,
         date,
         matches: sortedMatches,
-        total,
-        done,
+        total: backendStatus?.totalMatches ?? total,
+        done: backendStatus?.completedMatches ?? done,
         status,
         origin,
         location,
@@ -1044,7 +1065,11 @@ export default function HistoricoPartidasAdmin() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-            <p className="text-xs text-neutral-400">Time campeão do dia</p>
+            <p className="text-xs text-neutral-400">
+              {selectedDay.status === "complete"
+                ? "Time campeão do dia"
+                : "Time campeão provisório"}
+            </p>
             <p className="text-base font-semibold text-yellow-300">
               {selectedDay.highlights.campeao || "Não definido"}
             </p>
@@ -1056,13 +1081,17 @@ export default function HistoricoPartidasAdmin() {
             )}
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-            <p className="text-xs text-neutral-400">Artilheiro do dia</p>
+            <p className="text-xs text-neutral-400">
+              {selectedDay.status === "complete" ? "Artilheiro do dia" : "Artilheiro provisório"}
+            </p>
             <p className="text-base font-semibold text-yellow-300">
               {selectedDay.highlights.artilheiro || "Não definido"}
             </p>
           </div>
           <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-4">
-            <p className="text-xs text-neutral-400">Maestro do dia</p>
+            <p className="text-xs text-neutral-400">
+              {selectedDay.status === "complete" ? "Maestro do dia" : "Maestro provisório"}
+            </p>
             <p className="text-base font-semibold text-yellow-300">
               {selectedDay.highlights.maestro || "Não definido"}
             </p>

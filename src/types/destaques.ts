@@ -54,6 +54,27 @@ export type DestaqueDiaResponse = {
   updatedAt?: string | null;
 };
 
+export type RoundStatus = "PENDENTE" | "PARCIAL" | "COMPLETA";
+
+export type RoundStatusSummary = {
+  date: string;
+  totalMatches: number;
+  completedMatches: number;
+  status: RoundStatus;
+};
+
+export type RegisteredRoundSummary = RoundStatusSummary & {
+  timeCampeaoTeamId?: string | null;
+  registeredAt?: string | null;
+};
+
+export type DestaquesDiaRoundQueueResponse = {
+  rodadasIncompletas: RoundStatusSummary[];
+  rodadasAguardandoCampeao: RoundStatusSummary[];
+  rodadasRegistradas: RegisteredRoundSummary[];
+  currentPublicSpotlightDate: string | null;
+};
+
 export type PublicDestaquesDoDiaResponse = {
   slug: string;
   destaque: DestaqueDiaResponse | null;

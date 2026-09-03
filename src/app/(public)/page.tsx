@@ -15,7 +15,7 @@ import { usePublicDestaquesDoDia } from "@/hooks/usePublicDestaquesDoDia";
 import { useRacha } from "@/context/RachaContext";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
-import { buildDestaquesDoDia, getTimeCampeao } from "@/utils/destaquesDoDia";
+import { resolveChampionBannerImage } from "@/utils/championBannerImage";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import type { PublicDestaquesDoDiaResponse } from "@/types/destaques";
 import type { PublicMatch, PublicMatchesResponse } from "@/types/partida";
@@ -138,12 +138,10 @@ function parseMatchDate(value?: string | null) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
-function isSameDay(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
+function toDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
 }
 
 function hasValidScore(match: PublicMatch) {
@@ -266,11 +264,6 @@ type HomeProps = {
   initialDestaqueData?: PublicDestaquesDoDiaResponse;
 };
 
-function normalizeImageUrl(value?: string | null) {
-  const trimmed = value?.trim() || "";
-  return trimmed || null;
-}
-
 export default function Home({
   initialSlug = null,
   initialMatchesData,
@@ -300,43 +293,57 @@ export default function Home({
     isError: isErrorJogos,
   } = useJogosDoDia(slug);
 
-  const {
-    matches,
-    isLoading: isLoadingHighlights,
-    isError: isErrorHighlights,
-  } = usePublicMatches({
-    slug,
-    scope: "recent",
-    limit: 20,
-    fallbackData: initialMatchesData,
-  });
   const { destaque: destaqueDia, isLoading: isLoadingDestaque } = usePublicDestaquesDoDia({
     slug,
     fallbackData: initialDestaqueData,
   });
 
-  const { confrontos, times, dataReferencia } = useMemo(
-    () => buildDestaquesDoDia(matches),
-    [matches]
+  const officialDestaqueDate = useMemo(
+    () => (destaqueDia?.date ? parseMatchDate(destaqueDia.date) : null),
+    [destaqueDia?.date]
   );
-
-  const campeaoInfo = useMemo(() => getTimeCampeao(confrontos, times), [confrontos, times]);
+  const officialDestaqueDateKey = useMemo(
+    () => (officialDestaqueDate ? toDateKey(officialDestaqueDate) : null),
+    [officialDestaqueDate]
+  );
+  const {
+    matches,
+    isLoading: isLoadingOfficialMatches,
+    isError: isErrorHighlights,
+  } = usePublicMatches({
+    slug,
+    date: officialDestaqueDateKey ?? undefined,
+    enabled: Boolean(slug && officialDestaqueDateKey),
+    fallbackData: officialDestaqueDateKey ? initialMatchesData : undefined,
+  });
+  const isLoadingHighlights = isLoadingDestaque || isLoadingOfficialMatches;
   const matchesDoDia = useMemo(() => {
-    if (!dataReferencia) return [];
-    const reference = parseMatchDate(dataReferencia);
-    if (!reference) return [];
+    if (!officialDestaqueDateKey) return [];
     return matches.filter((match) => {
       if (!hasValidScore(match)) return false;
       const date = parseMatchDate(match.date);
-      return date ? isSameDay(date, reference) : false;
+      return date ? toDateKey(date) === officialDestaqueDateKey : false;
     });
-  }, [matches, dataReferencia]);
+  }, [matches, officialDestaqueDateKey]);
 
   const stats = useMemo(() => buildDayStats(matchesDoDia), [matchesDoDia]);
   const destaqueFaltou = destaqueDia?.faltou ?? null;
+  const officialChampionPlayers = useMemo(
+    () =>
+      destaqueDia?.timeCampeaoDoDia?.atletas?.map((row) => ({
+        id: row.athleteId,
+        nome: row.athlete.name,
+        apelido: row.athlete.nickname ?? undefined,
+        pos: normalizePosition(
+          row.positionEfetiva ?? row.positionPrincipal ?? row.athlete.position
+        ),
+        foto: row.athlete.photoUrl ?? null,
+      })) ?? [],
+    [destaqueDia?.timeCampeaoDoDia?.atletas]
+  );
 
   const highlights = useMemo(() => {
-    const championPlayers = campeaoInfo?.time?.jogadores ?? [];
+    const championPlayers = officialChampionPlayers;
     const statsByName = new Map(stats.map((stat) => [stat.name, stat]));
     const statsById = new Map(stats.map((stat) => [stat.id, stat]));
     const manualZagueiroId = destaqueDia?.zagueiroId ?? null;
@@ -411,39 +418,30 @@ export default function Home({
       artilheiro,
       maestro,
     };
-  }, [campeaoInfo, stats, destaqueDia?.zagueiroId]);
+  }, [officialChampionPlayers, stats, destaqueDia?.zagueiroId]);
 
   const destaqueDate = destaqueDia?.date ? parseMatchDate(destaqueDia.date) : null;
-  const championDate = dataReferencia
-    ? new Date(dataReferencia).toLocaleDateString("pt-BR", {
+  const championDate = destaqueDate
+    ? destaqueDate.toLocaleDateString("pt-BR", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
       })
-    : destaqueDate
-      ? destaqueDate.toLocaleDateString("pt-BR", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-          year: "numeric",
-        })
-      : isLoadingHighlights
-        ? "Carregando..."
-        : "A bola ainda vai rolar por aqui ⚽";
+    : isLoadingHighlights
+      ? "Carregando..."
+      : "A bola ainda vai rolar por aqui ⚽";
 
   const championPlayers =
-    campeaoInfo?.time?.jogadores?.map((player) => player.nome).filter(Boolean) ?? [];
+    officialChampionPlayers.map((player) => player.nome).filter(Boolean) ?? [];
   const championBanner = useMemo(() => {
-    const realBannerImage = normalizeImageUrl(destaqueDia?.bannerUrl);
-    const fallbackTeamImage = normalizeImageUrl(campeaoInfo?.time?.logoUrl);
-    const isImageLoading = !realBannerImage && !fallbackTeamImage && isLoadingDestaque;
-
-    return {
-      image: realBannerImage || fallbackTeamImage || (!isImageLoading ? DEFAULT_TEAM_IMAGE : null),
-      isImageLoading,
-    };
-  }, [campeaoInfo?.time?.logoUrl, destaqueDia?.bannerUrl, isLoadingDestaque]);
+    return resolveChampionBannerImage({
+      bannerUrl: destaqueDia?.bannerUrl,
+      logoUrl: destaqueDia?.timeCampeaoDoDia?.team?.logoUrl,
+      defaultImage: DEFAULT_TEAM_IMAGE,
+      isLoading: isLoadingDestaque,
+    });
+  }, [destaqueDia?.bannerUrl, destaqueDia?.timeCampeaoDoDia?.team?.logoUrl, isLoadingDestaque]);
 
   const highlightCards = [
     destaqueFaltou?.atacante
