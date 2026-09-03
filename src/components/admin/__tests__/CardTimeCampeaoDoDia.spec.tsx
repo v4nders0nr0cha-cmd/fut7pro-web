@@ -20,10 +20,10 @@ describe("CardTimeCampeaoDoDia", () => {
     });
   });
 
-  it("mostra o campeao oficial publicado", () => {
+  it("abre a edicao do campeao publicado com a data oficial", () => {
     usePublicDestaquesDoDiaMock.mockReturnValue({
       destaque: {
-        date: "2025-12-14T03:00:00.000Z",
+        date: "2026-08-24T03:00:00.000Z",
         bannerUrl: null,
         zagueiroId: null,
         timeCampeaoDoDia: {
@@ -40,13 +40,13 @@ describe("CardTimeCampeaoDoDia", () => {
       isError: false,
     });
 
-    render(<CardTimeCampeaoDoDia editLink="/admin/partidas" />);
+    render(<CardTimeCampeaoDoDia />);
 
     expect(screen.getByText(/Time Campeão do Dia/i)).toBeInTheDocument();
     expect(screen.getByText(/Campeão definido em/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Editar Time Campeão do Dia/i })).toHaveAttribute(
       "href",
-      "/admin/partidas"
+      "/admin/partidas/time-campeao-do-dia?data=2026-08-24"
     );
     expect(screen.getByAltText(/Foto do Time Campeão do Dia/i)).toHaveAttribute(
       "src",

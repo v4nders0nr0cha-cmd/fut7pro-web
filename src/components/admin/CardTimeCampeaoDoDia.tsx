@@ -19,6 +19,30 @@ type Props = {
 
 const DEFAULT_TIME_CAMPEAO_CARD_IMAGE = "/images/Timecampeao.jpg";
 
+function getOfficialDateKey(date?: string | null) {
+  if (!date) return null;
+  const isoDate = date.match(/^\d{4}-\d{2}-\d{2}/)?.[0];
+  if (isoDate) return isoDate;
+
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  return parsedDate.toISOString().slice(0, 10);
+}
+
+function buildChampionDayEditLink(editLink: string, officialDateKey?: string | null) {
+  if (!officialDateKey) return editLink;
+
+  const [pathWithQuery, hash = ""] = editLink.split("#");
+  const [path, query = ""] = pathWithQuery.split("?");
+  const params = new URLSearchParams(query);
+  params.delete("date");
+  params.set("data", officialDateKey);
+
+  const queryString = params.toString();
+  return `${path}${queryString ? `?${queryString}` : ""}${hash ? `#${hash}` : ""}`;
+}
+
 export default function CardTimeCampeaoDoDia({
   editLink = "/admin/partidas/time-campeao-do-dia",
   slug,
@@ -41,6 +65,8 @@ export default function CardTimeCampeaoDoDia({
   const titulo = "Time Campeão do Dia";
   const labelData =
     destaque?.date != null ? new Date(destaque.date).toLocaleDateString("pt-BR") : undefined;
+  const officialDateKey = getOfficialDateKey(destaque?.date);
+  const href = campeao ? buildChampionDayEditLink(editLink, officialDateKey) : editLink;
 
   if (loading) {
     return (
@@ -54,7 +80,7 @@ export default function CardTimeCampeaoDoDia({
 
   return (
     <Link
-      href={editLink}
+      href={href}
       className="relative flex flex-col items-center justify-center bg-[#23272F] rounded-xl shadow-lg px-6 py-7 h-full transition hover:scale-[1.025] hover:ring-2 hover:ring-[#ffd600] cursor-pointer group outline-none"
       tabIndex={0}
       aria-label={`Editar ${titulo}`}
