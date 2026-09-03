@@ -223,18 +223,22 @@ export default function TimeCampeaoDoDiaPage() {
 
   const selectedDateKey = useMemo(() => {
     const aguardando = queue.rodadasAguardandoCampeao;
-    if (!aguardando.length) return "";
-    if (
-      isValidDateKey(selectedDateParam) &&
-      aguardando.some((round) => round.date === selectedDateParam)
-    ) {
-      return selectedDateParam;
+    const registradas = queue.rodadasRegistradas;
+    const rodadaExplicitamenteSelecionada = [...aguardando, ...registradas].find(
+      (round) => round.date === selectedDateParam
+    );
+    if (isValidDateKey(selectedDateParam) && rodadaExplicitamenteSelecionada) {
+      return rodadaExplicitamenteSelecionada.date;
     }
+    if (!aguardando.length) return "";
     return aguardando[0]?.date ?? "";
-  }, [queue.rodadasAguardandoCampeao, selectedDateParam]);
+  }, [queue.rodadasAguardandoCampeao, queue.rodadasRegistradas, selectedDateParam]);
   const selectedRound = useMemo(
-    () => queue.rodadasAguardandoCampeao.find((round) => round.date === selectedDateKey) ?? null,
-    [queue.rodadasAguardandoCampeao, selectedDateKey]
+    () =>
+      [...queue.rodadasAguardandoCampeao, ...queue.rodadasRegistradas].find(
+        (round) => round.date === selectedDateKey
+      ) ?? null,
+    [queue.rodadasAguardandoCampeao, queue.rodadasRegistradas, selectedDateKey]
   );
   const currentPublicSpotlightDateKey = useMemo(() => {
     if (!queue.currentPublicSpotlightDate) return null;
