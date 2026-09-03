@@ -84,8 +84,27 @@ export default function BannerNotificacoes() {
       });
     }
 
+    if (queue.rodadasPrecisandoRevisao.length > 0) {
+      const firstRound = queue.rodadasPrecisandoRevisao[0];
+      items.push({
+        id: "champion-day-review-required",
+        message: `Atenção: você possui ${queue.rodadasPrecisandoRevisao.length} ${
+          queue.rodadasPrecisandoRevisao.length === 1
+            ? "rodada publicada com resultados alterados"
+            : "rodadas publicadas com resultados alterados"
+        }. Revise o Time Campeão e os destaques.`,
+        href: firstRound?.reviewUrl || "/admin/partidas/time-campeao-do-dia",
+        actionLabel: "Revisar publicação",
+      });
+    }
+
     return items;
-  }, [feriadoRacha, queue.rodadasAguardandoCampeao.length, queue.rodadasIncompletas.length]);
+  }, [
+    feriadoRacha,
+    queue.rodadasAguardandoCampeao.length,
+    queue.rodadasIncompletas.length,
+    queue.rodadasPrecisandoRevisao,
+  ]);
 
   useEffect(() => {
     setActiveIndex(0);

@@ -5,6 +5,7 @@ const EMPTY_QUEUE: DestaquesDiaRoundQueueResponse = {
   rodadasIncompletas: [],
   rodadasAguardandoCampeao: [],
   rodadasRegistradas: [],
+  rodadasPrecisandoRevisao: [],
   currentPublicSpotlightDate: null,
 };
 
@@ -14,7 +15,19 @@ const fetcher = async (url: string): Promise<DestaquesDiaRoundQueueResponse> => 
     const body = await response.text().catch(() => "");
     throw new Error(body || "Falha ao carregar rodadas de pós-jogo.");
   }
-  return response.json();
+  const body = await response.json();
+  return {
+    ...EMPTY_QUEUE,
+    ...body,
+    rodadasIncompletas: Array.isArray(body?.rodadasIncompletas) ? body.rodadasIncompletas : [],
+    rodadasAguardandoCampeao: Array.isArray(body?.rodadasAguardandoCampeao)
+      ? body.rodadasAguardandoCampeao
+      : [],
+    rodadasRegistradas: Array.isArray(body?.rodadasRegistradas) ? body.rodadasRegistradas : [],
+    rodadasPrecisandoRevisao: Array.isArray(body?.rodadasPrecisandoRevisao)
+      ? body.rodadasPrecisandoRevisao
+      : [],
+  };
 };
 
 export function useAdminDestaquesRodadas() {

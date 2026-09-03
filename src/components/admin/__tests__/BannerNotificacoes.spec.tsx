@@ -23,6 +23,7 @@ describe("BannerNotificacoes", () => {
           { date: "2026-08-27", totalMatches: 12, completedMatches: 12, status: "COMPLETA" },
         ],
         rodadasRegistradas: [],
+        rodadasPrecisandoRevisao: [],
         currentPublicSpotlightDate: null,
       },
     });
@@ -38,6 +39,44 @@ describe("BannerNotificacoes", () => {
     expect(screen.getByRole("link", { name: /Registrar campeões/i })).toHaveAttribute(
       "href",
       "/admin/partidas/time-campeao-do-dia"
+    );
+  });
+
+  it("exibe alerta para publicacoes que precisam de revisao", () => {
+    useAdminDestaquesRodadasMock.mockReturnValue({
+      queue: {
+        rodadasIncompletas: [],
+        rodadasAguardandoCampeao: [],
+        rodadasRegistradas: [
+          {
+            date: "2026-08-24",
+            totalMatches: 12,
+            completedMatches: 12,
+            status: "COMPLETA",
+            needsReview: true,
+            reviewUrl: "/admin/partidas/time-campeao-do-dia?data=2026-08-24",
+          },
+        ],
+        rodadasPrecisandoRevisao: [
+          {
+            date: "2026-08-24",
+            totalMatches: 12,
+            completedMatches: 12,
+            status: "COMPLETA",
+            needsReview: true,
+            reviewUrl: "/admin/partidas/time-campeao-do-dia?data=2026-08-24",
+          },
+        ],
+        currentPublicSpotlightDate: null,
+      },
+    });
+
+    render(<BannerNotificacoes />);
+
+    expect(screen.getByText(/1 rodada publicada com resultados alterados/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Revisar publicação/i })).toHaveAttribute(
+      "href",
+      "/admin/partidas/time-campeao-do-dia?data=2026-08-24"
     );
   });
 });

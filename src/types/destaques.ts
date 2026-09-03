@@ -66,12 +66,17 @@ export type RoundStatusSummary = {
 export type RegisteredRoundSummary = RoundStatusSummary & {
   timeCampeaoTeamId?: string | null;
   registeredAt?: string | null;
+  needsReview?: boolean;
+  reviewUrl?: string | null;
+  resultsChangedAt?: string | null;
+  championDayUpdatedAt?: string | null;
 };
 
 export type DestaquesDiaRoundQueueResponse = {
   rodadasIncompletas: RoundStatusSummary[];
   rodadasAguardandoCampeao: RoundStatusSummary[];
   rodadasRegistradas: RegisteredRoundSummary[];
+  rodadasPrecisandoRevisao: RegisteredRoundSummary[];
   currentPublicSpotlightDate: string | null;
 };
 
