@@ -201,7 +201,7 @@ export default function TimeCampeaoDoDiaPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const selectedDateParam = searchParams?.get("data") ?? "";
+  const selectedDateParam = searchParams?.get("data") ?? searchParams?.get("date") ?? "";
   const [destaqueDia, setDestaqueDia] = useState<DestaqueDiaResponse | null>(null);
   const [destaqueDiaDateKey, setDestaqueDiaDateKey] = useState<string | null>(null);
   const [isFetchingDestaque, setIsFetchingDestaque] = useState(false);
@@ -215,7 +215,6 @@ export default function TimeCampeaoDoDiaPage() {
   const [publishError, setPublishError] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
-  const [showHistoricalDate, setShowHistoricalDate] = useState(false);
   const [ausenciaTargets, setAusenciaTargets] = useState<Partial<Record<RoleKey, string>>>({});
   const [presenceStatusBeforeAbsence, setPresenceStatusBeforeAbsence] = useState<
     Partial<Record<RoleKey, { athleteId: string; status: Exclude<PresenceStatus, "AUSENTE"> }>>
@@ -230,8 +229,7 @@ export default function TimeCampeaoDoDiaPage() {
     if (isValidDateKey(selectedDateParam) && rodadaExplicitamenteSelecionada) {
       return rodadaExplicitamenteSelecionada.date;
     }
-    if (!aguardando.length) return "";
-    return aguardando[0]?.date ?? "";
+    return "";
   }, [queue.rodadasAguardandoCampeao, queue.rodadasRegistradas, selectedDateParam]);
   const selectedRound = useMemo(
     () =>
@@ -253,19 +251,13 @@ export default function TimeCampeaoDoDiaPage() {
     );
   }, [partidas, selectedDateKey]);
 
-  const { confrontos, times, dataReferencia } = useMemo(
+  const { confrontos, times } = useMemo(
     () => buildDestaquesDoDia(scopedPartidas as any),
     [scopedPartidas]
   );
 
   const hasDados = confrontos.length > 0 && times.length > 0;
-  const computedDateKey = useMemo(() => {
-    if (!dataReferencia) return null;
-    const date = new Date(dataReferencia);
-    if (Number.isNaN(date.getTime())) return null;
-    return format(date, "yyyy-MM-dd");
-  }, [dataReferencia]);
-  const dataKey = selectedRound?.date ?? computedDateKey;
+  const dataKey = selectedRound?.date ?? null;
   const isHistoricalRound =
     Boolean(dataKey && currentPublicSpotlightDateKey) &&
     (currentPublicSpotlightDateKey as string) > (dataKey as string);
@@ -367,13 +359,10 @@ export default function TimeCampeaoDoDiaPage() {
     setPresenceStatusBeforeAbsence({});
   }, [dataKey, selectedDateKey]);
 
-  const handleDateChange = (value: string) => {
+  const handleRoundSelect = (value: string) => {
     const params = new URLSearchParams(searchParams?.toString());
-    if (value) {
-      params.set("data", value);
-    } else {
-      params.delete("data");
-    }
+    params.set("data", value);
+    params.delete("date");
     const query = params.toString();
     router.push(query ? `${pathname}?${query}` : pathname);
   };
@@ -608,7 +597,7 @@ export default function TimeCampeaoDoDiaPage() {
           </div>
         )}
         <div className="w-full max-w-5xl">
-          <div className="mb-4 flex flex-col gap-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-4 sm:px-5 md:flex-row md:items-center md:justify-between">
+          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950/80 px-4 py-4 sm:px-5">
             <div className="min-w-0">
               <h1 className="text-2xl font-bold text-yellow-300 sm:text-3xl">
                 Time Campeão do Dia
@@ -622,55 +611,9 @@ export default function TimeCampeaoDoDiaPage() {
                 </p>
               )}
             </div>
-            <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center md:justify-end">
-              <button
-                type="button"
-                onClick={() => setShowHistoricalDate((value) => !value)}
-                className="rounded-xl border border-zinc-700 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800"
-              >
-                Registrar campeões antigos
-              </button>
-              {selectedDateKey && (
-                <button
-                  type="button"
-                  onClick={() => handleDateChange("")}
-                  className="rounded-xl bg-zinc-800 px-4 py-2 text-sm font-semibold text-zinc-100 hover:bg-zinc-700"
-                >
-                  Usar rodada mais recente
-                </button>
-              )}
-            </div>
           </div>
 
-          {showHistoricalDate && (
-            <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-              <div className="grid gap-3 md:grid-cols-[260px_1fr] md:items-center">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-yellow-300">
-                    Data da rodada
-                  </label>
-                  <input
-                    type="date"
-                    value={selectedDateKey}
-                    onChange={(event) => handleDateChange(event.target.value)}
-                    className="w-full rounded-xl border border-neutral-700 bg-[#111] px-3 py-2 text-sm text-neutral-100"
-                  />
-                </div>
-                <p className="text-sm leading-relaxed text-zinc-400">
-                  Use esta opção para registrar campeões de rodadas passadas. O banner e os
-                  destaques do site só mudam quando a data publicada for a mais recente.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {selectedDateKey && !showHistoricalDate && (
-            <div className="mb-4 rounded-xl border border-yellow-400/20 bg-yellow-400/5 px-4 py-2 text-sm text-yellow-100">
-              Rodada selecionada: {formatDatePtBr(selectedDateKey)}
-            </div>
-          )}
-
-          <Stepper currentStep={currentStep} />
+          {selectedRound && hasDados && <Stepper currentStep={currentStep} />}
           {showModalRegras && <ModalRegrasDestaques onClose={() => setShowModalRegras(false)} />}
         </div>
 
@@ -698,36 +641,112 @@ export default function TimeCampeaoDoDiaPage() {
         )}
 
         {!isLoading && !isLoadingQueue && !isError && !isQueueError && !selectedRound && (
-          <div className="mt-6 w-full max-w-3xl rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
-            <h2 className="text-xl font-bold text-white">Nenhuma rodada pronta para registrar</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-400">
-              Quando todos os resultados de uma rodada forem concluídos, ela aparecerá aqui para
-              você registrar o Time Campeão e os Destaques do Dia.
-            </p>
-            {queue.rodadasIncompletas.length > 0 && (
-              <div className="mt-5 rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-4 text-left">
-                <p className="text-sm font-semibold text-yellow-100">
-                  Você possui {queue.rodadasIncompletas.length}{" "}
-                  {queue.rodadasIncompletas.length === 1 ? "rodada" : "rodadas"} com resultados
-                  pendentes.
+          <div className="mt-6 w-full max-w-4xl space-y-4">
+            {queue.rodadasAguardandoCampeao.length > 0 ? (
+              <section className="rounded-2xl border border-yellow-400/30 bg-zinc-950 p-5 shadow-xl sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-wide text-yellow-300">
+                      Pendência de pós-jogo
+                    </p>
+                    <h2 className="mt-1 text-2xl font-bold text-white">
+                      {queue.rodadasAguardandoCampeao.length === 1
+                        ? "Você tem uma rodada concluída aguardando o Time Campeão"
+                        : `${queue.rodadasAguardandoCampeao.length} rodadas aguardando o Time Campeão`}
+                    </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-400">
+                      Todos os resultados já foram registrados. Escolha uma rodada para finalizar o
+                      Time Campeão do Dia e os destaques.
+                    </p>
+                    {queue.rodadasAguardandoCampeao.length === 1 && (
+                      <p className="mt-3 text-sm font-semibold text-zinc-200">
+                        {formatDatePtBr(queue.rodadasAguardandoCampeao[0].date)} ·{" "}
+                        {queue.rodadasAguardandoCampeao[0].completedMatches} de{" "}
+                        {queue.rodadasAguardandoCampeao[0].totalMatches} partidas finalizadas
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRoundSelect(queue.rodadasAguardandoCampeao[0].date)}
+                    className="rounded-xl bg-yellow-400 px-5 py-3 text-sm font-bold text-black hover:bg-yellow-300"
+                  >
+                    Registrar agora
+                  </button>
+                </div>
+
+                {queue.rodadasAguardandoCampeao.length > 1 && (
+                  <div className="mt-5 divide-y divide-zinc-800 rounded-xl border border-zinc-800 bg-zinc-900/60">
+                    {queue.rodadasAguardandoCampeao.map((round) => (
+                      <div
+                        key={round.date}
+                        className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div>
+                          <p className="font-semibold text-white">{formatDatePtBr(round.date)}</p>
+                          <p className="text-xs text-zinc-400">
+                            {round.completedMatches} de {round.totalMatches} partidas finalizadas
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRoundSelect(round.date)}
+                          className="self-start rounded-lg border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-100 hover:bg-zinc-800 sm:self-auto"
+                        >
+                          Registrar
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : (
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-6 text-center">
+                <h2 className="text-xl font-bold text-white">Nenhuma rodada aguardando registro</h2>
+                <p className="mx-auto mt-2 max-w-xl text-sm text-zinc-400">
+                  Quando todos os resultados de uma nova rodada forem concluídos, o Time Campeão e
+                  os Destaques do Dia aparecerão aqui para você revisar.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2">
+              </section>
+            )}
+
+            {queue.rodadasIncompletas.length > 0 && (
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      {queue.rodadasIncompletas.length}{" "}
+                      {queue.rodadasIncompletas.length === 1
+                        ? "rodada ainda possui resultados pendentes"
+                        : "rodadas ainda possuem resultados pendentes"}
+                    </h3>
+                    <p className="mt-1 max-w-2xl text-sm text-zinc-400">
+                      Essas rodadas ainda não podem gerar Time Campeão do Dia. Finalize os
+                      confrontos pendentes para liberá-las.
+                    </p>
+                  </div>
+                  <Link
+                    href="/admin/partidas/historico"
+                    className="rounded-xl border border-yellow-400/50 px-4 py-2 text-sm font-bold text-yellow-200 hover:bg-yellow-400/10"
+                  >
+                    Ver resultados pendentes
+                  </Link>
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   {queue.rodadasIncompletas.slice(0, 6).map((round) => (
-                    <span
+                    <div
                       key={round.date}
-                      className="rounded-full bg-zinc-900 px-3 py-1 text-xs text-zinc-200"
+                      className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200"
                     >
-                      {formatDatePtBr(round.date)} · {round.completedMatches}/{round.totalMatches}
-                    </span>
+                      <span className="font-semibold">{formatDatePtBr(round.date)}</span>
+                      <span className="text-zinc-500"> — </span>
+                      <span className="text-zinc-400">
+                        {round.completedMatches} de {round.totalMatches}
+                      </span>
+                    </div>
                   ))}
                 </div>
-                <Link
-                  href="/admin/partidas/historico"
-                  className="mt-4 inline-flex rounded-xl bg-yellow-400 px-4 py-2 text-sm font-bold text-black"
-                >
-                  Concluir resultados
-                </Link>
-              </div>
+              </section>
             )}
           </div>
         )}
@@ -751,25 +770,6 @@ export default function TimeCampeaoDoDiaPage() {
           selectedRound &&
           hasDados && (
             <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
-              {queue.rodadasAguardandoCampeao.length > 1 && (
-                <div className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 p-4">
-                  <label className="mb-2 block text-sm font-semibold text-yellow-200">
-                    Rodadas aguardando registro
-                  </label>
-                  <select
-                    value={selectedDateKey}
-                    onChange={(event) => handleDateChange(event.target.value)}
-                    className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white"
-                  >
-                    {queue.rodadasAguardandoCampeao.map((round) => (
-                      <option key={round.date} value={round.date}>
-                        {formatDatePtBr(round.date)} · {round.completedMatches}/{round.totalMatches}{" "}
-                        partidas finalizadas
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
               {currentStep === 1 && (
                 <section className="w-full space-y-5">
                   <div className="grid gap-5 lg:grid-cols-[320px_1fr]">
