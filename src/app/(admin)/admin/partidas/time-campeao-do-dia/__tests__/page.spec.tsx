@@ -1,6 +1,15 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import TimeCampeaoDoDiaPage from "../page";
 
+const mockPush = jest.fn();
+let mockSearchParams = new URLSearchParams("data=2026-08-18");
+
+jest.mock("next/navigation", () => ({
+  usePathname: () => "/admin/partidas/time-campeao-do-dia",
+  useRouter: () => ({ push: mockPush }),
+  useSearchParams: () => mockSearchParams,
+}));
+
 jest.mock("@/hooks/usePartidas", () => ({
   usePartidas: jest.fn(),
 }));
@@ -81,10 +90,10 @@ function makePresence({
   };
 }
 
-function makeMatch(presences: any[]) {
+function makeMatch(presences: any[], date = "2026-08-18T21:00:00.000Z") {
   return {
     id: "match-1",
-    date: "2026-08-18T21:00:00.000Z",
+    date,
     scoreA: 2,
     scoreB: 0,
     score: { teamA: 2, teamB: 0 },
@@ -99,6 +108,7 @@ function makeMatch(presences: any[]) {
 describe("TimeCampeaoDoDiaPage - ausencia", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSearchParams = new URLSearchParams("data=2026-08-18");
     global.fetch = jest.fn() as any;
     useAdminDestaquesRodadasMock.mockReturnValue({
       queue: roundQueue,
@@ -359,4 +369,166 @@ describe("TimeCampeaoDoDiaPage - ausencia", () => {
     expect(screen.getByRole("button", { name: /Registrar Time Campeão/i })).toBeInTheDocument();
     expect(screen.queryByText(/Salvar banner/i)).not.toBeInTheDocument();
   });
+
+  it("mostra triagem ao entrar manualmente sem data selecionada", async () => {
+    mockSearchParams = new URLSearchParams();
+
+    usePartidasMock.mockReturnValue({
+      partidas: [
+        makeMatch([
+          makePresence({
+            id: "p-ata",
+            athleteId: "ata",
+            name: "Atacante",
+            position: "ATA",
+            goals: 1,
+          }),
+        ]),
+      ],
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => null,
+    });
+
+    render(<TimeCampeaoDoDiaPage />);
+
+    expect(
+      screen.getByText("Você tem uma rodada concluída aguardando o Time Campeão")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Campeão do Dia")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Registrar agora/i }));
+
+    expect(mockPush).toHaveBeenCalledWith("/admin/partidas/time-campeao-do-dia?data=2026-08-18");
+  });
+
+  it("lista rodadas incompletas sem permitir seleção para Time Campeão", () => {
+    mockSearchParams = new URLSearchParams();
+    useAdminDestaquesRodadasMock.mockReturnValue({
+      queue: {
+        rodadasAguardandoCampeao: [],
+        rodadasRegistradas: [],
+        currentPublicSpotlightDate: null,
+        rodadasIncompletas: [
+          {
+            date: "2026-08-24",
+            totalMatches: 12,
+            completedMatches: 11,
+            status: "PARCIAL",
+          },
+          {
+            date: "2026-08-22",
+            totalMatches: 12,
+            completedMatches: 0,
+            status: "PENDENTE",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    usePartidasMock.mockReturnValue({
+      partidas: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    render(<TimeCampeaoDoDiaPage />);
+
+    expect(screen.getByText("Nenhuma rodada aguardando registro")).toBeInTheDocument();
+    expect(screen.getByText("2 rodadas ainda possuem resultados pendentes")).toBeInTheDocument();
+    expect(screen.getByText("24/08/2026")).toBeInTheDocument();
+    expect(screen.getByText("22/08/2026")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Ver resultados pendentes/i })).toHaveAttribute(
+      "href",
+      "/admin/partidas/historico"
+    );
+    expect(screen.queryByRole("button", { name: /^Registrar$/i })).not.toBeInTheDocument();
+  });
+
+  it.each(["data", "date"])(
+    "abre diretamente a rodada da URL com ?%s= mesmo quando existe pendencia historica anterior",
+    async (paramName) => {
+      mockSearchParams = new URLSearchParams(`${paramName}=2026-08-24`);
+      useAdminDestaquesRodadasMock.mockReturnValue({
+        queue: {
+          rodadasIncompletas: [],
+          rodadasAguardandoCampeao: [
+            {
+              date: "2026-04-13",
+              totalMatches: 12,
+              completedMatches: 12,
+              status: "COMPLETA",
+            },
+            {
+              date: "2026-08-24",
+              totalMatches: 12,
+              completedMatches: 12,
+              status: "COMPLETA",
+            },
+          ],
+          rodadasRegistradas: [],
+          currentPublicSpotlightDate: null,
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+        mutate: jest.fn(),
+      });
+
+      usePartidasMock.mockReturnValue({
+        partidas: [
+          makeMatch(
+            [
+              makePresence({
+                id: "p-ata",
+                athleteId: "ata",
+                name: "Atacante",
+                position: "ATA",
+                goals: 1,
+              }),
+              makePresence({
+                id: "p-gol",
+                athleteId: "gol",
+                name: "Goleiro",
+                position: "GOL",
+              }),
+            ],
+            "2026-08-24T22:00:00.000Z"
+          ),
+        ],
+        isLoading: false,
+        isError: false,
+        error: null,
+        mutate: jest.fn(),
+      });
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => null,
+      });
+
+      render(<TimeCampeaoDoDiaPage />);
+
+      expect(screen.queryByText("2 rodadas aguardando o Time Campeão")).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Registrar agora/i })).not.toBeInTheDocument();
+      expect(await screen.findByText("Rodada de 24/08/2026")).toBeInTheDocument();
+      expect(screen.queryByText("Rodada de 13/04/2026")).not.toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Continuar para Destaques/i })).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledWith("/api/admin/destaques-do-dia?date=2026-08-24", {
+        cache: "no-store",
+      });
+    }
+  );
 });
