@@ -18,22 +18,33 @@ async function fetchPublicJson<T>(url: string) {
   }
 }
 
+function toDateParam(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate()
+  ).padStart(2, "0")}`;
+}
+
 export default async function RachaPublicPage({ params }: { params: { slug: string } }) {
   const slug = params?.slug?.trim().toLowerCase() || "";
   const base = getApiBase().replace(/\/+$/, "");
 
-  const [initialMatchesData, initialDestaqueData] = await Promise.all([
-    slug
-      ? fetchPublicJson<PublicMatchesResponse>(
-          `${base}/public/${encodeURIComponent(slug)}/matches?scope=recent&limit=20`
+  const initialDestaqueData = slug
+    ? await fetchPublicJson<PublicDestaquesDoDiaResponse>(
+        `${base}/public/${encodeURIComponent(slug)}/destaques-do-dia`
+      )
+    : undefined;
+  const destaqueDate = toDateParam(initialDestaqueData?.destaque?.date);
+  const initialMatchesData =
+    slug && destaqueDate
+      ? await fetchPublicJson<PublicMatchesResponse>(
+          `${base}/public/${encodeURIComponent(slug)}/matches?date=${encodeURIComponent(
+            destaqueDate
+          )}`
         )
-      : undefined,
-    slug
-      ? fetchPublicJson<PublicDestaquesDoDiaResponse>(
-          `${base}/public/${encodeURIComponent(slug)}/destaques-do-dia`
-        )
-      : undefined,
-  ]);
+      : undefined;
 
   return (
     <Home

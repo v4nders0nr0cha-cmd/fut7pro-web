@@ -293,31 +293,38 @@ export default function Home({
     isError: isErrorJogos,
   } = useJogosDoDia(slug);
 
-  const {
-    matches,
-    isLoading: isLoadingHighlights,
-    isError: isErrorHighlights,
-  } = usePublicMatches({
-    slug,
-    scope: "recent",
-    limit: 20,
-    fallbackData: initialMatchesData,
-  });
   const { destaque: destaqueDia, isLoading: isLoadingDestaque } = usePublicDestaquesDoDia({
     slug,
     fallbackData: initialDestaqueData,
   });
 
-  const officialDestaqueDate = destaqueDia?.date ? parseMatchDate(destaqueDia.date) : null;
+  const officialDestaqueDate = useMemo(
+    () => (destaqueDia?.date ? parseMatchDate(destaqueDia.date) : null),
+    [destaqueDia?.date]
+  );
+  const officialDestaqueDateKey = useMemo(
+    () => (officialDestaqueDate ? toDateKey(officialDestaqueDate) : null),
+    [officialDestaqueDate]
+  );
+  const {
+    matches,
+    isLoading: isLoadingOfficialMatches,
+    isError: isErrorHighlights,
+  } = usePublicMatches({
+    slug,
+    date: officialDestaqueDateKey ?? undefined,
+    enabled: Boolean(slug && officialDestaqueDateKey),
+    fallbackData: officialDestaqueDateKey ? initialMatchesData : undefined,
+  });
+  const isLoadingHighlights = isLoadingDestaque || isLoadingOfficialMatches;
   const matchesDoDia = useMemo(() => {
-    if (!officialDestaqueDate) return [];
-    const officialDateKey = toDateKey(officialDestaqueDate);
+    if (!officialDestaqueDateKey) return [];
     return matches.filter((match) => {
       if (!hasValidScore(match)) return false;
       const date = parseMatchDate(match.date);
-      return date ? toDateKey(date) === officialDateKey : false;
+      return date ? toDateKey(date) === officialDestaqueDateKey : false;
     });
-  }, [matches, officialDestaqueDate]);
+  }, [matches, officialDestaqueDateKey]);
 
   const stats = useMemo(() => buildDayStats(matchesDoDia), [matchesDoDia]);
   const destaqueFaltou = destaqueDia?.faltou ?? null;
