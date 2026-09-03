@@ -45,6 +45,7 @@ const roundQueue = {
     },
   ],
   rodadasRegistradas: [],
+  rodadasPrecisandoRevisao: [],
   currentPublicSpotlightDate: null,
 };
 
@@ -414,6 +415,7 @@ describe("TimeCampeaoDoDiaPage - ausencia", () => {
       queue: {
         rodadasAguardandoCampeao: [],
         rodadasRegistradas: [],
+        rodadasPrecisandoRevisao: [],
         currentPublicSpotlightDate: null,
         rodadasIncompletas: [
           {
@@ -479,6 +481,7 @@ describe("TimeCampeaoDoDiaPage - ausencia", () => {
             },
           ],
           rodadasRegistradas: [],
+          rodadasPrecisandoRevisao: [],
           currentPublicSpotlightDate: null,
         },
         isLoading: false,

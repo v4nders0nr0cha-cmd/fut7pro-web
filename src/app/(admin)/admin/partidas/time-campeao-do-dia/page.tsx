@@ -197,6 +197,7 @@ export default function TimeCampeaoDoDiaPage() {
     isLoading: isLoadingQueue,
     isError: isQueueError,
     error: queueError,
+    mutate: mutateRoundQueue,
   } = useAdminDestaquesRodadas();
   const router = useRouter();
   const pathname = usePathname();
@@ -261,6 +262,9 @@ export default function TimeCampeaoDoDiaPage() {
   const isHistoricalRound =
     Boolean(dataKey && currentPublicSpotlightDateKey) &&
     (currentPublicSpotlightDateKey as string) > (dataKey as string);
+  const selectedRoundNeedsReview = Boolean(
+    selectedRound && "needsReview" in selectedRound && selectedRound.needsReview
+  );
 
   const destaqueDiaAtual = destaqueDiaDateKey === dataKey ? destaqueDia : null;
   const persistedAusenciaTargets = useMemo(
@@ -559,6 +563,7 @@ export default function TimeCampeaoDoDiaPage() {
               body: "O Time Campeão, o banner e os Destaques do Dia desta rodada agora estão disponíveis na página pública do seu grupo.",
             }
       );
+      await mutateRoundQueue();
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
     } finally {
@@ -770,6 +775,12 @@ export default function TimeCampeaoDoDiaPage() {
           selectedRound &&
           hasDados && (
             <div className="mt-5 flex w-full max-w-5xl flex-col items-center gap-5">
+              {selectedRoundNeedsReview && (
+                <div className="w-full rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4 text-sm text-yellow-100">
+                  Os resultados desta rodada foram alterados depois da publicação. Revise os dados
+                  abaixo e republique para atualizar o Time Campeão e os destaques.
+                </div>
+              )}
               {currentStep === 1 && (
                 <section className="w-full space-y-5">
                   <div className="grid gap-5 lg:grid-cols-[320px_1fr]">

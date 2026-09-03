@@ -9,6 +9,7 @@ import { useAdminMatches } from "@/hooks/useAdminMatches";
 import { useAdminDestaquesRodadas } from "@/hooks/useAdminDestaquesRodadas";
 import { useSorteioHistorico } from "@/hooks/useSorteioHistorico";
 import type { PublicMatch, PublicMatchPresence, PublicMatchTeam } from "@/types/partida";
+import type { RegisteredRoundSummary } from "@/types/destaques";
 import type { SorteioHistoricoItem } from "@/types/sorteio";
 
 const FALLBACK_LOGO = "/images/times/time_padrao_01.png";
@@ -77,6 +78,13 @@ type DaySummary = {
   highlights: DayHighlights;
   lastUpdateLabel: string | null;
   searchLabel: string;
+  review: RegisteredRoundSummary | null;
+};
+
+type ChampionDayReviewAlert = {
+  championDayReviewRequired: true;
+  championDayDate: string;
+  reviewUrl: string;
 };
 
 type GoalEvent = {
@@ -458,7 +466,7 @@ function scoreByTeam(events: GoalEvent[], teamId: string) {
 type MatchResultModalProps = {
   match: PublicMatch;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (reviewAlert?: ChampionDayReviewAlert | null) => void;
 };
 
 function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
@@ -548,7 +556,18 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
         throw new Error(body || "Falha ao salvar resultado");
       }
 
-      onSaved();
+      const payload = await response.json().catch(() => null);
+      onSaved(
+        payload?.championDayReviewRequired
+          ? {
+              championDayReviewRequired: true,
+              championDayDate: payload.championDayDate,
+              reviewUrl:
+                payload.reviewUrl ||
+                `/admin/partidas/time-campeao-do-dia?data=${payload.championDayDate}`,
+            }
+          : null
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao salvar resultado";
       setError(message);
@@ -799,7 +818,7 @@ function MatchResultModal({ match, onClose, onSaved }: MatchResultModalProps) {
 export default function HistoricoPartidasAdmin() {
   const searchParams = useSearchParams();
   const { matches, isLoading, isError, error, mutate } = useAdminMatches();
-  const { queue } = useAdminDestaquesRodadas();
+  const { queue, mutate: mutateRoundQueue } = useAdminDestaquesRodadas();
   const { historico: sorteioHistorico } = useSorteioHistorico(HISTORICO_LIMIT);
   const [search, setSearch] = useState("");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
@@ -808,6 +827,7 @@ export default function HistoricoPartidasAdmin() {
   const [rangeStart, setRangeStart] = useState("");
   const [rangeEnd, setRangeEnd] = useState("");
   const [selectedMatch, setSelectedMatch] = useState<PublicMatch | null>(null);
+  const [saveReviewAlert, setSaveReviewAlert] = useState<ChampionDayReviewAlert | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
@@ -860,9 +880,15 @@ export default function HistoricoPartidasAdmin() {
       ...queue.rodadasIncompletas,
       ...queue.rodadasAguardandoCampeao,
       ...queue.rodadasRegistradas,
+      ...queue.rodadasPrecisandoRevisao,
     ];
     return new Map(entries.map((round) => [round.date, round]));
-  }, [queue.rodadasAguardandoCampeao, queue.rodadasIncompletas, queue.rodadasRegistradas]);
+  }, [
+    queue.rodadasAguardandoCampeao,
+    queue.rodadasIncompletas,
+    queue.rodadasPrecisandoRevisao,
+    queue.rodadasRegistradas,
+  ]);
 
   const matchEntries = useMemo(() => {
     return matches
@@ -923,11 +949,15 @@ export default function HistoricoPartidasAdmin() {
         highlights,
         lastUpdateLabel,
         searchLabel,
+        review:
+          backendStatus && "needsReview" in backendStatus && backendStatus.needsReview
+            ? (backendStatus as RegisteredRoundSummary)
+            : null,
       });
     });
 
     return summaries.sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [matchEntries, sorteioMap]);
+  }, [matchEntries, roundStatusByDate, sorteioMap]);
 
   const filteredDays = useMemo(() => {
     const searchValue = normalizeKey(search);
@@ -958,6 +988,10 @@ export default function HistoricoPartidasAdmin() {
     ? (daySummaries.find((day) => day.key === selectedDayKey) ?? null)
     : null;
 
+  useEffect(() => {
+    setSaveReviewAlert(null);
+  }, [selectedDayKey]);
+
   const buildHistoricoLink = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams?.toString());
     Object.entries(updates).forEach(([key, value]) => {
@@ -974,6 +1008,33 @@ export default function HistoricoPartidasAdmin() {
   const renderEmptyState = (message: string) => (
     <div className="rounded-xl border border-neutral-800 bg-[#1a1a1a] p-6 text-center text-sm text-neutral-300">
       {message}
+    </div>
+  );
+
+  const renderReviewAlert = ({
+    title,
+    body,
+    href,
+    label,
+  }: {
+    title: string;
+    body: string;
+    href: string;
+    label: string;
+  }) => (
+    <div className="rounded-2xl border border-yellow-400/40 bg-yellow-400/10 p-4 text-yellow-100">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-sm font-bold">{title}</h3>
+          <p className="mt-1 max-w-3xl text-sm text-yellow-100/80">{body}</p>
+        </div>
+        <Link
+          href={href}
+          className="self-start rounded-xl bg-yellow-400 px-4 py-2 text-xs font-bold text-black hover:bg-yellow-300"
+        >
+          {label}
+        </Link>
+      </div>
     </div>
   );
 
@@ -1005,9 +1066,28 @@ export default function HistoricoPartidasAdmin() {
     const statusLabel = DAY_STATUS_LABELS[selectedDay.status];
     const originLabel = ORIGIN_LABELS[selectedDay.origin];
     const statusBadge = DAY_STATUS_BADGES[selectedDay.status];
+    const persistentReviewUrl =
+      selectedDay.review?.reviewUrl ||
+      `/admin/partidas/time-campeao-do-dia?data=${selectedDay.key}`;
 
     return (
       <div className="space-y-6">
+        {saveReviewAlert &&
+          renderReviewAlert({
+            title: "Resultado atualizado",
+            body: "O Time Campeão do Dia e os destaques desta rodada precisam ser revisados porque os resultados foram alterados após a publicação.",
+            href: saveReviewAlert.reviewUrl,
+            label: "Revisar e republicar",
+          })}
+
+        {selectedDay.review &&
+          renderReviewAlert({
+            title: "Publicação desatualizada",
+            body: "Os resultados desta rodada foram alterados depois da publicação do Time Campeão. Revise e republique para atualizar campeão, destaques e registros dos atletas.",
+            href: persistentReviewUrl,
+            label: "Revisar publicação",
+          })}
+
         <div className="rounded-2xl border border-neutral-800 bg-[#1a1a1a] p-5">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -1189,9 +1269,11 @@ export default function HistoricoPartidasAdmin() {
           <MatchResultModal
             match={selectedMatch}
             onClose={() => setSelectedMatch(null)}
-            onSaved={() => {
+            onSaved={(reviewAlert) => {
+              setSaveReviewAlert(reviewAlert ?? null);
               setSelectedMatch(null);
               mutate();
+              mutateRoundQueue();
             }}
           />
         )}
@@ -1388,6 +1470,24 @@ export default function HistoricoPartidasAdmin() {
                     {day.done} de {day.total} partidas finalizadas
                   </span>
                 </div>
+
+                {day.review && (
+                  <div className="mt-4 rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-3">
+                    <p className="text-xs font-bold text-yellow-200">Publicação desatualizada</p>
+                    <p className="mt-1 text-xs leading-relaxed text-yellow-100/75">
+                      Resultados alterados depois da publicação do Time Campeão.
+                    </p>
+                    <Link
+                      href={
+                        day.review.reviewUrl ||
+                        `/admin/partidas/time-campeao-do-dia?data=${day.key}`
+                      }
+                      className="mt-3 inline-flex rounded-lg bg-yellow-400 px-3 py-2 text-xs font-bold text-black hover:bg-yellow-300"
+                    >
+                      Revisar publicação
+                    </Link>
+                  </div>
+                )}
 
                 <div className="mt-4 space-y-1 text-xs text-neutral-400">
                   <p>
