@@ -957,7 +957,7 @@ export default function HistoricoPartidasAdmin() {
     });
 
     return summaries.sort((a, b) => b.date.getTime() - a.date.getTime());
-  }, [matchEntries, sorteioMap]);
+  }, [matchEntries, roundStatusByDate, sorteioMap]);
 
   const filteredDays = useMemo(() => {
     const searchValue = normalizeKey(search);

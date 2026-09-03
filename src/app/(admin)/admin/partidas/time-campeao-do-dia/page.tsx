@@ -197,6 +197,7 @@ export default function TimeCampeaoDoDiaPage() {
     isLoading: isLoadingQueue,
     isError: isQueueError,
     error: queueError,
+    mutate: mutateRoundQueue,
   } = useAdminDestaquesRodadas();
   const router = useRouter();
   const pathname = usePathname();
@@ -562,6 +563,7 @@ export default function TimeCampeaoDoDiaPage() {
               body: "O Time Campeão, o banner e os Destaques do Dia desta rodada agora estão disponíveis na página pública do seu grupo.",
             }
       );
+      await mutateRoundQueue();
     } catch (err) {
       setPublishError(err instanceof Error ? err.message : "Falha ao publicar no site.");
     } finally {
