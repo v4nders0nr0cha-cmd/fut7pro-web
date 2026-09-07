@@ -219,9 +219,13 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
   if (!open) return null;
 
   return (
-    <div className="fixed z-50 inset-0 flex items-center justify-center bg-black/80 px-2">
+    <div
+      className="fixed inset-0 z-[80] flex h-[100dvh] items-center justify-center bg-black/80 px-2 py-3 sm:py-6"
+      data-testid="sponsor-modal-overlay"
+    >
       <div
-        className="bg-[#1a1a1a] rounded-2xl p-6 max-w-md w-full shadow-xl relative overflow-y-auto max-h-screen custom-scrollbar"
+        className="relative flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-[#1a1a1a] shadow-xl sm:max-h-[calc(100dvh-3rem)]"
+        data-testid="sponsor-modal-panel"
         style={{
           scrollbarColor: "#444 #191919",
           scrollbarWidth: "thin",
@@ -237,17 +241,19 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
         >
           <FaTimes size={22} />
         </button>
-        <h2 className="text-xl font-bold text-yellow-400 mb-4 pt-3 pr-8">
-          {form.id ? "Editar Patrocinador" : "Novo Patrocinador"}
-        </h2>
-        {form.id && isExpired && (
-          <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Este plano está vencido. A logo continua no site público. Confirme o recebimento quando
-            renovar o ciclo ou exclua manualmente.
-          </div>
-        )}
+        <div className="flex-none px-6 pb-4 pt-6">
+          <h2 className="pr-8 text-xl font-bold text-yellow-400">
+            {form.id ? "Editar Patrocinador" : "Novo Patrocinador"}
+          </h2>
+          {form.id && isExpired && (
+            <div className="mt-4 rounded-lg border border-red-500/50 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+              Este plano está vencido. A logo continua no site público. Confirme o recebimento
+              quando renovar o ciclo ou exclua manualmente.
+            </div>
+          )}
+        </div>
         <form
-          className="flex flex-col gap-3"
+          className="flex min-h-0 flex-1 flex-col"
           onInvalidCapture={handleFormInvalidPtBr}
           onInputCapture={handleFormInputValidationReset}
           onSubmit={(e) => {
@@ -289,254 +295,269 @@ export default function ModalPatrocinador({ open, onClose, onSave, initial }: Pr
             onSave(result);
           }}
         >
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-nome">
-            Nome *
-          </label>
-          <input
-            id="patrocinador-nome"
-            type="text"
-            value={form.nome || ""}
-            required
-            maxLength={40}
-            autoFocus
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-          />
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-ramo">
-            Subtítulo/Categoria
-          </label>
-          <input
-            id="patrocinador-ramo"
-            type="text"
-            value={form.ramo || ""}
-            maxLength={80}
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            onChange={(e) => setForm((f) => ({ ...f, ramo: e.target.value }))}
-          />
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-plan">
-            Plano do Patrocinador *
-          </label>
-          <select
-            id="patrocinador-plan"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.billingPlan ?? ""}
-            required
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                billingPlan: e.target.value ? (e.target.value as any) : undefined,
-              }))
-            }
+          <div
+            className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-6 pb-4"
+            data-testid="sponsor-modal-scroll-region"
           >
-            <option value="" disabled>
-              Selecione
-            </option>
-            {billingPlanOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-nome">
+              Nome *
+            </label>
+            <input
+              id="patrocinador-nome"
+              type="text"
+              value={form.nome || ""}
+              required
+              maxLength={40}
+              autoFocus
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+            />
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-ramo">
+              Subtítulo/Categoria
+            </label>
+            <input
+              id="patrocinador-ramo"
+              type="text"
+              value={form.ramo || ""}
+              maxLength={80}
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              onChange={(e) => setForm((f) => ({ ...f, ramo: e.target.value }))}
+            />
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-plan">
+              Plano do Patrocinador *
+            </label>
+            <select
+              id="patrocinador-plan"
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              value={form.billingPlan ?? ""}
+              required
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  billingPlan: e.target.value ? (e.target.value as any) : undefined,
+                }))
+              }
+            >
+              <option value="" disabled>
+                Selecione
               </option>
-            ))}
-          </select>
-          <span className="text-xs text-gray-400">
-            Define a frequência do ciclo e dos alertas. O lançamento no caixa só ocorre após a
-            confirmação do recebimento.
-          </span>
-          {shouldShowValue && (
-            <>
-              <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-valor">
-                {planValueLabel}
-              </label>
-              <input
-                id="patrocinador-valor"
-                type="number"
-                value={form.valor ?? ""}
-                required
-                min={0}
-                className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    valor: e.target.value === "" ? undefined : parseFloat(e.target.value),
-                  }))
-                }
-              />
-            </>
-          )}
-          {shouldShowFirstPayment && (
-            <div className="rounded-lg border border-gray-700 bg-[#151515] p-3">
-              <p className="text-sm font-semibold text-gray-100">Primeiro recebimento</p>
-              <p className="text-xs text-gray-400 mt-1">{questionText}</p>
-              <div className="mt-3 flex gap-2">
-                <label
-                  className={`flex-1 text-center text-xs font-semibold rounded px-2 py-2 cursor-pointer border transition ${
-                    firstPaymentStatus === "received"
-                      ? "bg-yellow-500 text-black border-yellow-500"
-                      : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
-                  }`}
-                  onClick={() => {
-                    setFirstPaymentTouched(true);
-                    setFirstPaymentError(null);
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="first-payment-status"
-                    value="received"
-                    className="hidden"
-                    checked={firstPaymentStatus === "received"}
-                    onChange={() => {
-                      const today = new Date().toISOString().slice(0, 10);
-                      setFirstPaymentStatus("received");
-                      setFirstPaymentError(null);
-                      if (!firstPaymentDate) setFirstPaymentDate(today);
-                    }}
-                  />
-                  Já recebi
+              {billingPlanOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-400">
+              Define a frequência do ciclo e dos alertas. O lançamento no caixa só ocorre após a
+              confirmação do recebimento.
+            </span>
+            {shouldShowValue && (
+              <>
+                <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-valor">
+                  {planValueLabel}
                 </label>
-                <label
-                  className={`flex-1 text-center text-xs font-semibold rounded px-2 py-2 cursor-pointer border transition ${
-                    firstPaymentStatus === "pending"
-                      ? "bg-yellow-500 text-black border-yellow-500"
-                      : "bg-[#111] text-gray-200 border-gray-600 hover:border-yellow-500"
-                  }`}
-                  onClick={() => {
-                    setFirstPaymentTouched(true);
-                    setFirstPaymentError(null);
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="first-payment-status"
-                    value="pending"
-                    className="hidden"
-                    checked={firstPaymentStatus === "pending"}
-                    onChange={() => {
-                      const today = new Date().toISOString().slice(0, 10);
-                      setFirstPaymentStatus("pending");
+                <input
+                  id="patrocinador-valor"
+                  type="number"
+                  value={form.valor ?? ""}
+                  required
+                  min={0}
+                  className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      valor: e.target.value === "" ? undefined : parseFloat(e.target.value),
+                    }))
+                  }
+                />
+              </>
+            )}
+            {shouldShowFirstPayment && (
+              <div className="rounded-lg border border-gray-700 bg-[#151515] p-3">
+                <p className="text-sm font-semibold text-gray-100">Primeiro recebimento</p>
+                <p className="mt-1 text-xs text-gray-400">{questionText}</p>
+                <div className="mt-3 flex gap-2">
+                  <label
+                    className={`flex-1 cursor-pointer rounded border px-2 py-2 text-center text-xs font-semibold transition ${
+                      firstPaymentStatus === "received"
+                        ? "border-yellow-500 bg-yellow-500 text-black"
+                        : "border-gray-600 bg-[#111] text-gray-200 hover:border-yellow-500"
+                    }`}
+                    onClick={() => {
+                      setFirstPaymentTouched(true);
                       setFirstPaymentError(null);
-                      if (!firstPaymentDate) setFirstPaymentDate(today);
                     }}
-                  />
-                  Ainda não
-                </label>
+                  >
+                    <input
+                      type="radio"
+                      name="first-payment-status"
+                      value="received"
+                      className="hidden"
+                      checked={firstPaymentStatus === "received"}
+                      onChange={() => {
+                        const today = new Date().toISOString().slice(0, 10);
+                        setFirstPaymentStatus("received");
+                        setFirstPaymentError(null);
+                        if (!firstPaymentDate) setFirstPaymentDate(today);
+                      }}
+                    />
+                    Já recebi
+                  </label>
+                  <label
+                    className={`flex-1 cursor-pointer rounded border px-2 py-2 text-center text-xs font-semibold transition ${
+                      firstPaymentStatus === "pending"
+                        ? "border-yellow-500 bg-yellow-500 text-black"
+                        : "border-gray-600 bg-[#111] text-gray-200 hover:border-yellow-500"
+                    }`}
+                    onClick={() => {
+                      setFirstPaymentTouched(true);
+                      setFirstPaymentError(null);
+                    }}
+                  >
+                    <input
+                      type="radio"
+                      name="first-payment-status"
+                      value="pending"
+                      className="hidden"
+                      checked={firstPaymentStatus === "pending"}
+                      onChange={() => {
+                        const today = new Date().toISOString().slice(0, 10);
+                        setFirstPaymentStatus("pending");
+                        setFirstPaymentError(null);
+                        if (!firstPaymentDate) setFirstPaymentDate(today);
+                      }}
+                    />
+                    Ainda não
+                  </label>
+                </div>
+                {firstPaymentStatus === "received" && (
+                  <div className="mt-3">
+                    <label className="text-xs font-semibold text-gray-200" htmlFor="first-paid-at">
+                      Data do recebimento *
+                    </label>
+                    <input
+                      id="first-paid-at"
+                      type="date"
+                      value={firstPaymentDate}
+                      className="input input-bordered mt-1 w-full rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+                      onChange={(e) => {
+                        setFirstPaymentDate(e.target.value);
+                        setFirstPaymentTouched(true);
+                        setFirstPaymentError(null);
+                      }}
+                      required={!form.id}
+                    />
+                  </div>
+                )}
+                {firstPaymentStatus === "pending" && (
+                  <div className="mt-3">
+                    <label className="text-xs font-semibold text-gray-200" htmlFor="first-due-at">
+                      Data combinada para o 1o pagamento *
+                    </label>
+                    <input
+                      id="first-due-at"
+                      type="date"
+                      value={firstPaymentDate}
+                      className="input input-bordered mt-1 w-full rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+                      onChange={(e) => {
+                        setFirstPaymentDate(e.target.value);
+                        setFirstPaymentTouched(true);
+                        setFirstPaymentError(null);
+                      }}
+                      required={!form.id}
+                    />
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      O sistema só vai lançar na Prestação de Contas quando esta data chegar.
+                    </p>
+                  </div>
+                )}
+                {firstPaymentError && (
+                  <div className="mt-2 text-xs text-red-400">{firstPaymentError}</div>
+                )}
               </div>
-              {firstPaymentStatus === "received" && (
-                <div className="mt-3">
-                  <label className="text-xs text-gray-200 font-semibold" htmlFor="first-paid-at">
-                    Data do recebimento *
-                  </label>
-                  <input
-                    id="first-paid-at"
-                    type="date"
-                    value={firstPaymentDate}
-                    className="mt-1 w-full input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-                    onChange={(e) => {
-                      setFirstPaymentDate(e.target.value);
-                      setFirstPaymentTouched(true);
-                      setFirstPaymentError(null);
-                    }}
-                    required={!form.id}
-                  />
-                </div>
-              )}
-              {firstPaymentStatus === "pending" && (
-                <div className="mt-3">
-                  <label className="text-xs text-gray-200 font-semibold" htmlFor="first-due-at">
-                    Data combinada para o 1o pagamento *
-                  </label>
-                  <input
-                    id="first-due-at"
-                    type="date"
-                    value={firstPaymentDate}
-                    className="mt-1 w-full input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-                    onChange={(e) => {
-                      setFirstPaymentDate(e.target.value);
-                      setFirstPaymentTouched(true);
-                      setFirstPaymentError(null);
-                    }}
-                    required={!form.id}
-                  />
-                  <p className="text-[11px] text-gray-400 mt-1">
-                    O sistema só vai lançar na Prestação de Contas quando esta data chegar.
-                  </p>
-                </div>
-              )}
-              {firstPaymentError && (
-                <div className="mt-2 text-xs text-red-400">{firstPaymentError}</div>
+            )}
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-status">
+              Status *
+            </label>
+            <select
+              id="patrocinador-status"
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              value={form.status || "ativo"}
+              onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
+            >
+              {statusOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <label className="text-sm font-semibold text-gray-200">Logo *</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                ref={fileLogoRef}
+                className="hidden"
+                onChange={handleLogoChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileLogoRef.current?.click()}
+                className="flex items-center gap-1 text-yellow-400 hover:text-yellow-300"
+              >
+                <FaUpload /> Selecionar
+              </button>
+              {logoUploading && <span className="text-xs text-gray-400">Enviando...</span>}
+              {logoPreview && (
+                <Image
+                  src={logoPreview}
+                  alt="Logo patrocinador"
+                  width={40}
+                  height={40}
+                  className="rounded border border-gray-700 bg-[#222]"
+                />
               )}
             </div>
-          )}
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-status">
-            Status *
-          </label>
-          <select
-            id="patrocinador-status"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.status || "ativo"}
-            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as any }))}
-          >
-            {statusOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <label className="text-sm text-gray-200 font-semibold">Logo *</label>
-          <div className="flex items-center gap-3">
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              ref={fileLogoRef}
-              className="hidden"
-              onChange={handleLogoChange}
+            {logoError && <div className="text-xs text-red-400">{logoError}</div>}
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-descricao">
+              Descrição/Observações
+            </label>
+            <textarea
+              id="patrocinador-descricao"
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              rows={2}
+              value={form.observacoes || ""}
+              onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
             />
+            <label className="text-sm font-semibold text-gray-200" htmlFor="patrocinador-link">
+              Link (opcional)
+            </label>
+            <input
+              id="patrocinador-link"
+              type="text"
+              inputMode="url"
+              className="input input-bordered rounded border-gray-600 bg-[#111] px-3 py-2 text-white"
+              value={form.link || ""}
+              onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+            />
+          </div>
+          <div
+            className="sticky bottom-0 z-10 flex flex-none flex-col-reverse gap-2 border-t border-gray-800 bg-[#1a1a1a] px-6 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:flex-row sm:justify-end"
+            data-testid="sponsor-modal-actions"
+          >
             <button
               type="button"
-              onClick={() => fileLogoRef.current?.click()}
-              className="text-yellow-400 hover:text-yellow-300 flex items-center gap-1"
+              className="rounded-xl border border-gray-700 px-6 py-2 font-bold text-gray-200 hover:border-gray-500 hover:text-white"
+              onClick={onClose}
             >
-              <FaUpload /> Selecionar
+              Cancelar
             </button>
-            {logoUploading && <span className="text-xs text-gray-400">Enviando...</span>}
-            {logoPreview && (
-              <Image
-                src={logoPreview}
-                alt="Logo patrocinador"
-                width={40}
-                height={40}
-                className="rounded border border-gray-700 bg-[#222]"
-              />
-            )}
-          </div>
-          {logoError && <div className="text-xs text-red-400">{logoError}</div>}
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-descricao">
-            Descrição/Observações
-          </label>
-          <textarea
-            id="patrocinador-descricao"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            rows={2}
-            value={form.observacoes || ""}
-            onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
-          />
-          <label className="text-sm text-gray-200 font-semibold" htmlFor="patrocinador-link">
-            Link (opcional)
-          </label>
-          <input
-            id="patrocinador-link"
-            type="text"
-            inputMode="url"
-            className="input input-bordered bg-[#111] border-gray-600 rounded px-3 py-2 text-white"
-            value={form.link || ""}
-            onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
-          />
-          <div className="flex justify-end mt-4">
             <button
               type="submit"
               className="bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-2 px-6 rounded-xl disabled:opacity-60 disabled:pointer-events-none"
               disabled={logoUploading || !form.logo}
             >
-              Salvar
+              Salvar patrocinador
             </button>
           </div>
         </form>
