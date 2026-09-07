@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getVitrineDestaquesDoDiaResponse, isPublicVitrineSlug } from "@/lib/public-vitrine-demo";
+import { getVitrineMatchdayLiveResponse, isPublicVitrineSlug } from "@/lib/public-vitrine-demo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   if (isPublicVitrineSlug(params.slug)) {
-    return json(getVitrineDestaquesDoDiaResponse(req.nextUrl.searchParams.get("date")));
+    return json(getVitrineMatchdayLiveResponse());
   }
 
   if (!backendBase) {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   }
 
   const url = new URL(
-    `${backendBase.replace(/\/+$/, "")}/public/${encodeURIComponent(params.slug)}/destaques-do-dia`
+    `${backendBase.replace(/\/+$/, "")}/public/${encodeURIComponent(params.slug)}/matchday-live`
   );
 
   req.nextUrl.searchParams.forEach((value, key) => {
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
     if (!res.ok) {
       return json(
-        { error: "Falha ao consultar destaques do dia", status: res.status, body },
+        { error: "Falha ao consultar placar ao vivo", status: res.status, body },
         { status: res.status }
       );
     }
@@ -52,9 +52,6 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro desconhecido";
-    return json(
-      { error: "Falha ao consultar destaques do dia", details: message },
-      { status: 500 }
-    );
+    return json({ error: "Falha ao consultar placar ao vivo", details: message }, { status: 500 });
   }
 }

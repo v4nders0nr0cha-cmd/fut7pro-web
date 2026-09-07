@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getVitrineTorneioResponse, isPublicVitrineSlug } from "@/lib/public-vitrine-demo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,8 +19,13 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: { slug: string; torneioSlug: string } }
 ) {
+  if (isPublicVitrineSlug(params.slug)) {
+    const body = getVitrineTorneioResponse(params.torneioSlug);
+    return body ? json(body) : json({ error: "Torneio nao encontrado" }, { status: 404 });
+  }
+
   if (!backendBase) {
-    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
+    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }
 
   const url = `${backendBase}/public/${encodeURIComponent(params.slug)}/torneios/${encodeURIComponent(params.torneioSlug)}`;
