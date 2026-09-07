@@ -17,7 +17,7 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   if (isPublicVitrineSlug(params.slug)) {
-    return json(getVitrineTeamRankingsResponse());
+    return json(getVitrineTeamRankingsResponse(req.nextUrl.searchParams));
   }
 
   if (!backendBase) {

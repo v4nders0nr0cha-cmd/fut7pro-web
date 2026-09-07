@@ -20,6 +20,7 @@ export const VITRINE_DEMO_PUBLICATION_DATE = "2026-08-29T22:30:00.000Z";
 const TENANT_ID = "vitrine-tenant";
 const LOCAL = "Arena Fut7Pro";
 const DEFAULT_PLAYER_IMAGE = "/images/jogadores/jogador_padrao_01.jpg";
+const VITRINE_LOGO = "/images/logos/logo_fut7pro.png";
 
 type DemoPosition = "Goleiro" | "Zagueiro" | "Meia" | "Atacante";
 
@@ -452,7 +453,7 @@ function selectMatches(searchParams?: URLSearchParams | null) {
   return applyLimit(results, searchParams);
 }
 
-function buildPlayerTotals() {
+function buildPlayerTotals(matches: DemoMatchConfig[] = demoMatches) {
   const totals = new Map<
     string,
     {
@@ -465,7 +466,7 @@ function buildPlayerTotals() {
     }
   >();
 
-  demoMatches.forEach((match) => {
+  matches.forEach((match) => {
     const add = (athleteId: string, result: "vitoria" | "empate" | "derrota") => {
       const current = totals.get(athleteId) ?? {
         jogos: 0,
@@ -503,7 +504,7 @@ function buildPlayerTotals() {
   return totals;
 }
 
-function buildTeamTotals() {
+function buildTeamTotals(matches: DemoMatchConfig[] = demoMatches) {
   const totals = new Map<
     string,
     {
@@ -541,7 +542,7 @@ function buildTeamTotals() {
     totals.set(teamId, current);
   };
 
-  demoMatches.forEach((match) => {
+  matches.forEach((match) => {
     add(match.teamA, match.scoreA, match.scoreB);
     add(match.teamB, match.scoreB, match.scoreA);
   });
@@ -549,12 +550,59 @@ function buildTeamTotals() {
   return totals;
 }
 
-function periodPayload() {
+function getQuadrimestre(date: Date) {
+  const month = date.getUTCMonth() + 1;
+  if (month <= 4) return 1;
+  if (month <= 8) return 2;
+  return 3;
+}
+
+function parseValidYear(value?: string | null) {
+  const year = Number(value);
+  return Number.isFinite(year) && year > 0 ? year : 2026;
+}
+
+function parseValidQuadrimestre(value?: string | null) {
+  const quadrimestre = Number(value);
+  return Number.isFinite(quadrimestre) && quadrimestre >= 1 && quadrimestre <= 3 ? quadrimestre : 2;
+}
+
+function selectRankingMatches(searchParams?: URLSearchParams | null) {
+  const period = searchParams?.get("period") ?? "all";
+  const year = parseValidYear(searchParams?.get("year"));
+  const quadrimestre = parseValidQuadrimestre(searchParams?.get("quarter"));
+  const from = searchParams?.get("from");
+  const to = searchParams?.get("to");
+
+  return demoMatches.filter((match) => {
+    const day = match.date.slice(0, 10);
+    const date = new Date(match.date);
+    const matchYear = date.getUTCFullYear();
+
+    if (period === "year") return matchYear === year;
+    if (period === "quarter") return matchYear === year && getQuadrimestre(date) === quadrimestre;
+    if (period === "custom") {
+      return (!from || day >= from.slice(0, 10)) && (!to || day <= to.slice(0, 10));
+    }
+
+    return true;
+  });
+}
+
+function periodPayload(searchParams?: URLSearchParams | null) {
+  const period = searchParams?.get("period") ?? "all";
+  const year = parseValidYear(searchParams?.get("year"));
+  const quadrimestre = parseValidQuadrimestre(searchParams?.get("quarter"));
+  const from = searchParams?.get("from")?.slice(0, 10) ?? "2026-08-08";
+  const to = searchParams?.get("to")?.slice(0, 10) ?? VITRINE_DEMO_DAY;
+
   return {
-    mode: "demo",
-    day: VITRINE_DEMO_DAY,
-    from: "2026-08-08",
-    to: VITRINE_DEMO_DAY,
+    mode: period,
+    year,
+    quarter: quadrimestre,
+    day: period === "custom" ? undefined : VITRINE_DEMO_DAY,
+    from: period === "custom" ? from : "2026-08-08",
+    to: period === "custom" ? to : VITRINE_DEMO_DAY,
   };
 }
 
@@ -564,18 +612,17 @@ export function isPublicVitrineSlug(slug?: string | null) {
 
 export function getVitrineTenantResponse() {
   return {
+    id: TENANT_ID,
     slug: VITRINE_SLUG,
-    result: {
-      id: TENANT_ID,
-      slug: VITRINE_SLUG,
-      nome: "Racha Vitrine Fut7Pro",
-      name: "Racha Vitrine Fut7Pro",
-      descricao: "Demonstracao oficial de uma pelada usando o Fut7Pro.",
-      logoUrl: "/images/logo-fut7pro.png",
-      bannerUrl: VITRINE_CHAMPION_BANNER,
-      isVitrine: true,
-      status: "ACTIVE",
-    },
+    nome: "Racha Vitrine Fut7Pro",
+    name: "Racha Vitrine Fut7Pro",
+    descricao: "Demonstracao oficial de uma pelada usando o Fut7Pro.",
+    logoUrl: VITRINE_LOGO,
+    bannerUrl: VITRINE_CHAMPION_BANNER,
+    isVitrine: true,
+    status: "ACTIVE",
+    createdAt: VITRINE_DEMO_PUBLICATION_DATE,
+    updatedAt: VITRINE_DEMO_PUBLICATION_DATE,
   };
 }
 
@@ -855,8 +902,18 @@ export function getVitrineTimesDoDiaResponse() {
   };
 }
 
-export function getVitrineTeamRankingsResponse() {
-  const totals = buildTeamTotals();
+export function getVitrineTimesDoDiaLikeResponse() {
+  const timesDoDia = getVitrineTimesDoDiaResponse();
+  return {
+    id: timesDoDia.id,
+    slug: VITRINE_SLUG,
+    curtidas: timesDoDia.curtidas + 1,
+  };
+}
+
+export function getVitrineTeamRankingsResponse(searchParams?: URLSearchParams | null) {
+  const rankingMatches = selectRankingMatches(searchParams);
+  const totals = buildTeamTotals(rankingMatches);
   const results = Array.from(totals.entries())
     .map(([teamId, stats]) => {
       const team = byId(teams, teamId);
@@ -885,15 +942,18 @@ export function getVitrineTeamRankingsResponse() {
   return {
     slug: VITRINE_SLUG,
     results,
+    total: results.length,
     updatedAt: VITRINE_DEMO_PUBLICATION_DATE,
     availableYears: [2026],
+    appliedPeriod: periodPayload(searchParams),
   };
 }
 
 export function getVitrinePlayerRankingsResponse(searchParams?: URLSearchParams | null) {
   const type = searchParams?.get("type") || "geral";
   const position = searchParams?.get("position")?.toLowerCase();
-  const totals = buildPlayerTotals();
+  const rankingMatches = selectRankingMatches(searchParams);
+  const totals = buildPlayerTotals(rankingMatches);
   let results: RankingAtleta[] = Array.from(totals.entries()).map(([athleteId, stats]) => {
     const player = byId(athletes, athleteId);
     return {
@@ -934,7 +994,7 @@ export function getVitrinePlayerRankingsResponse(searchParams?: URLSearchParams 
     results: limited,
     total: limited.length,
     availableYears: [2026],
-    appliedPeriod: periodPayload(),
+    appliedPeriod: periodPayload(searchParams),
   };
 }
 
@@ -1007,31 +1067,20 @@ export function getVitrineMatchdayLiveResponse(): MatchdayLiveResponse {
     goals: buildLiveEvents(match),
   }));
   const timeline = liveMatches.flatMap((match) => match.goals);
-  const teamRows = getVitrineTeamRankingsResponse()
-    .results.filter((row) =>
-      [
-        "Vanguarda",
-        "Leoes do Norte",
-        "Trovao 7",
-        "Rota 7",
-        "Bravos do Sul",
-        "Estrelas do Campo",
-      ].includes(row.nome)
-    )
-    .map((row) => ({
-      teamId: row.id,
-      team: row.nome,
-      logoUrl: row.logo,
-      color: row.cor,
-      pts: row.pontos,
-      j: row.jogos,
-      v: row.vitorias,
-      e: row.empates,
-      d: row.derrotas,
-      gp: row.golsPro,
-      gc: row.golsContra,
-      sg: row.saldoGols,
-    }));
+  const teamRows = buildLiveStandings(matches).map((row) => ({
+    teamId: row.id,
+    team: row.nome,
+    logoUrl: row.logo,
+    color: row.cor,
+    pts: row.pontos,
+    j: row.jogos,
+    v: row.vitorias,
+    e: row.empates,
+    d: row.derrotas,
+    gp: row.golsPro,
+    gc: row.golsContra,
+    sg: row.saldoGols,
+  }));
   const playerRankings = getVitrinePlayerRankingsResponse().results;
   const byPosition = (position: string) =>
     playerRankings.find((entry) => entry.position === position) ?? null;
@@ -1082,6 +1131,70 @@ export function getVitrineMatchdayLiveResponse(): MatchdayLiveResponse {
     },
     timeline,
   };
+}
+
+function buildLiveStandings(matches: PublicMatch[]) {
+  const totals = new Map<
+    string,
+    {
+      id: string;
+      nome: string;
+      logo: string;
+      cor: string;
+      pontos: number;
+      jogos: number;
+      vitorias: number;
+      empates: number;
+      derrotas: number;
+      golsPro: number;
+      golsContra: number;
+      saldoGols: number;
+    }
+  >();
+
+  const add = (team: PublicMatch["teamA"], golsPro: number, golsContra: number) => {
+    const teamId = team.id ?? team.name;
+    const current = totals.get(teamId) ?? {
+      id: teamId,
+      nome: team.name,
+      logo: team.logoUrl ?? "",
+      cor: team.color ?? "#22c55e",
+      pontos: 0,
+      jogos: 0,
+      vitorias: 0,
+      empates: 0,
+      derrotas: 0,
+      golsPro: 0,
+      golsContra: 0,
+      saldoGols: 0,
+    };
+
+    current.jogos += 1;
+    current.golsPro += golsPro;
+    current.golsContra += golsContra;
+    current.saldoGols = current.golsPro - current.golsContra;
+
+    if (golsPro > golsContra) {
+      current.vitorias += 1;
+      current.pontos += 3;
+    } else if (golsPro === golsContra) {
+      current.empates += 1;
+      current.pontos += 1;
+    } else {
+      current.derrotas += 1;
+    }
+
+    totals.set(teamId, current);
+  };
+
+  matches.forEach((match) => {
+    add(match.teamA, match.scoreA ?? 0, match.scoreB ?? 0);
+    add(match.teamB, match.scoreB ?? 0, match.scoreA ?? 0);
+  });
+
+  return Array.from(totals.values()).sort(
+    (a, b) => b.pontos - a.pontos || b.saldoGols - a.saldoGols || b.golsPro - a.golsPro
+  );
 }
 
 function toLiveAthlete(athleteId?: string | null) {

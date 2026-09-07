@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getVitrineTimesDoDiaLikeResponse, isPublicVitrineSlug } from "@/lib/public-vitrine-demo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,6 +16,10 @@ function json(body: unknown, init?: ResponseInit) {
 }
 
 export async function POST(_req: NextRequest, { params }: { params: { slug: string } }) {
+  if (isPublicVitrineSlug(params.slug)) {
+    return json(getVitrineTimesDoDiaLikeResponse());
+  }
+
   if (!backendBase) {
     return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
