@@ -14,6 +14,35 @@ const baseProps = {
 };
 
 describe("ModalPatrocinador", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("mantem o rodape de acoes fora da regiao rolavel no mobile", () => {
+    render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
+
+    expect(screen.getByTestId("sponsor-modal-overlay")).toHaveClass("z-[80]", "h-[100dvh]");
+    expect(screen.getByTestId("sponsor-modal-panel")).toHaveClass(
+      "flex",
+      "flex-col",
+      "overflow-hidden",
+      "max-h-[calc(100dvh-1.5rem)]"
+    );
+    expect(screen.getByTestId("sponsor-modal-scroll-region")).toHaveClass(
+      "min-h-0",
+      "flex-1",
+      "overflow-y-auto"
+    );
+    expect(screen.getByTestId("sponsor-modal-actions")).toHaveClass(
+      "sticky",
+      "bottom-0",
+      "flex-none",
+      "pb-[calc(1rem+env(safe-area-inset-bottom))]"
+    );
+    expect(screen.getByRole("button", { name: /Cancelar/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Salvar patrocinador/i })).toBeInTheDocument();
+  });
+
   it("preenche campos obrigatorios e envia dados via onSave", () => {
     render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
 
@@ -39,7 +68,7 @@ describe("ModalPatrocinador", () => {
       target: { value: "https://exemplo.com" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Salvar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Salvar patrocinador/i }));
 
     expect(baseProps.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -81,5 +110,13 @@ describe("ModalPatrocinador", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Fechar modal/i }));
     expect(baseProps.onClose).toHaveBeenCalled();
+  });
+
+  it("fecha no botao cancelar", () => {
+    render(<ModalPatrocinador {...baseProps} initial={{ logo: "/logo.png" }} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /Cancelar/i }));
+
+    expect(baseProps.onClose).toHaveBeenCalledTimes(1);
   });
 });
