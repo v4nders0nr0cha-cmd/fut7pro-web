@@ -1,5 +1,10 @@
 import Home from "../page";
 import { getApiBase } from "@/lib/get-api-base";
+import {
+  getVitrineDestaquesDoDiaResponse,
+  getVitrineMatchesResponse,
+  isPublicVitrineSlug,
+} from "@/lib/public-vitrine-demo";
 import type { PublicDestaquesDoDiaResponse } from "@/types/destaques";
 import type { PublicMatchesResponse } from "@/types/partida";
 
@@ -29,6 +34,17 @@ function toDateParam(value?: string | null) {
 
 export default async function RachaPublicPage({ params }: { params: { slug: string } }) {
   const slug = params?.slug?.trim().toLowerCase() || "";
+
+  if (isPublicVitrineSlug(slug)) {
+    return (
+      <Home
+        initialSlug={slug}
+        initialMatchesData={getVitrineMatchesResponse(new URLSearchParams("scope=recent&limit=20"))}
+        initialDestaqueData={getVitrineDestaquesDoDiaResponse()}
+      />
+    );
+  }
+
   const base = getApiBase().replace(/\/+$/, "");
 
   const initialDestaqueData = slug

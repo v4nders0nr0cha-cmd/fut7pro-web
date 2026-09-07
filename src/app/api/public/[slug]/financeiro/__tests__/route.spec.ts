@@ -1,5 +1,7 @@
 type RouteModule = typeof import("../route");
 
+export {};
+
 jest.mock("next/server", () => ({
   NextResponse: {
     json: (body: unknown, init?: { status?: number; headers?: HeadersInit }) => ({
