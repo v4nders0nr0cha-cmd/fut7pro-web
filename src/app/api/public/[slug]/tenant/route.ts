@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getVitrineTenantResponse, isPublicVitrineSlug } from "@/lib/public-vitrine-demo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -57,8 +58,17 @@ function tenantResponse(entry: TenantCacheEntry, cacheState: "hit" | "miss" | "s
 }
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+  if (isPublicVitrineSlug(params.slug)) {
+    return json(getVitrineTenantResponse(), {
+      headers: {
+        "Cache-Control": PUBLIC_TENANT_CACHE_CONTROL,
+        "X-Fut7Pro-Cache": "vitrine-demo",
+      },
+    });
+  }
+
   if (!backendBase) {
-    return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
+    return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }
 
   const cacheKey = toCacheKey(params.slug);
