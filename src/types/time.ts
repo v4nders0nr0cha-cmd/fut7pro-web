@@ -16,4 +16,8 @@ export interface Time {
   atualizadoEm?: string;
   createdAt?: string;
   updatedAt?: string;
+  archivedAt?: string | null;
+  matchCount?: number;
+  hasHistoricalUsage?: boolean;
+  canDelete?: boolean;
 }

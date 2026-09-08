@@ -55,10 +55,10 @@ export default function SelecionarTimesDia({
     : !hasTimes
       ? "Cadastre os times do racha para habilitar o sorteio."
       : faltamTimes
-        ? `Voce configurou ${maxTimes} times, mas existem apenas ${timesDisponiveis.length} disponiveis. Cadastre mais ${quantidadeFaltante} time${quantidadeFaltante > 1 ? "s" : ""} para continuar.`
+        ? `Você configurou ${maxTimes} times, mas existem apenas ${timesDisponiveis.length} disponíveis. Cadastre mais ${quantidadeFaltante} time${quantidadeFaltante > 1 ? "s" : ""} para continuar.`
         : !limiteExato
           ? `Selecione exatamente ${limiteAlvo} time${limiteAlvo > 1 ? "s" : ""} para o racha.`
-          : `Pronto! Voce selecionou todos os times necessarios.`;
+          : `Pronto! Você selecionou todos os times necessários.`;
 
   // Estado interno para shake, sincroniza quando o pai muda a prop "shake"
   const [avisoShake, setAvisoShake] = useState(false);
@@ -120,7 +120,8 @@ export default function SelecionarTimesDia({
       </div>
       {!loading && !hasTimes && (
         <p className="text-sm text-center text-gray-400 mt-2">
-          Nenhum time cadastrado. Use &quot;Criar Times&quot; para adicionar e habilitar o sorteio.
+          Nenhum time cadastrado. Use &quot;Gerenciar Times&quot; para adicionar e habilitar o
+          sorteio.
         </p>
       )}
       {loading && <p className="text-sm text-center text-gray-400 mt-2">Carregando times...</p>}
