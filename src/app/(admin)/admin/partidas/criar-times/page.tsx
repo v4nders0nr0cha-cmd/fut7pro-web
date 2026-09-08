@@ -399,29 +399,37 @@ function TeamFormModal({
     >
       <div className="fixed inset-0 bg-black/75" aria-hidden="true" />
       <div className="fixed inset-0 flex h-[100dvh] items-center justify-center p-3 sm:p-6">
-        <Dialog.Panel className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-[#151515] shadow-2xl sm:max-h-[calc(100dvh-3rem)]">
-          <div className="flex items-start justify-between gap-4 border-b border-zinc-800 px-5 py-4 sm:px-6">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-300/80">
-                {isEdit ? "Editar time" : "Novo time"}
-              </p>
-              <Dialog.Title className="mt-1 text-xl font-extrabold text-white">
-                {isEdit ? `Editando: ${state?.team?.nome || "time"}` : "Adicionar time"}
-              </Dialog.Title>
+        <Dialog.Panel
+          className="flex h-[calc(100dvh-1.5rem)] max-h-[calc(100dvh-1.5rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-zinc-800 bg-[#151515] shadow-2xl sm:h-[min(680px,calc(100dvh-3rem))] sm:max-h-[calc(100dvh-3rem)]"
+          data-testid="team-modal-panel"
+        >
+          <div className="shrink-0 border-b border-zinc-800 px-5 py-4 sm:px-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-yellow-300/80">
+                  {isEdit ? "Editar time" : "Novo time"}
+                </p>
+                <Dialog.Title className="mt-1 text-xl font-extrabold text-white">
+                  {isEdit ? `Editando: ${state?.team?.nome || "time"}` : "Adicionar time"}
+                </Dialog.Title>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving || uploading}
+                className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-200 disabled:opacity-50"
+                aria-label="Fechar modal de time"
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={saving || uploading}
-              className="rounded-full p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-yellow-200 disabled:opacity-50"
-              aria-label="Fechar modal de time"
-            >
-              <X size={20} aria-hidden="true" />
-            </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+          <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div
+              className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6"
+              data-testid="team-modal-scroll-region"
+            >
               {hasHistoricalUsage && (
                 <Fut7InlineFeedback tone="warning" title="Time com histórico">
                   Este time possui histórico no racha. Alterações de nome, logo ou cor também podem
@@ -534,23 +542,28 @@ function TeamFormModal({
               </div>
             </div>
 
-            <div className="flex flex-col-reverse gap-2 border-t border-zinc-800 bg-[#151515] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:flex-row sm:justify-end sm:px-6">
-              <button
-                type="button"
-                onClick={onClose}
-                disabled={saving || uploading}
-                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm font-bold text-zinc-200 transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-yellow-200 disabled:opacity-60"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={saving || uploading}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-extrabold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-2 focus:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                {isEdit ? "Salvar alterações" : "Adicionar time"}
-              </button>
+            <div
+              className="shrink-0 border-t border-zinc-800 bg-[#151515] px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-4 sm:px-6"
+              data-testid="team-modal-footer"
+            >
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={saving || uploading}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 px-5 py-3 text-sm font-bold text-zinc-200 transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-yellow-200 disabled:opacity-60"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving || uploading}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-yellow-400 px-5 py-3 text-sm font-extrabold text-black transition hover:bg-yellow-300 focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:ring-offset-2 focus:ring-offset-black disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                  {isEdit ? "Salvar alterações" : "Adicionar time"}
+                </button>
+              </div>
             </div>
           </form>
         </Dialog.Panel>

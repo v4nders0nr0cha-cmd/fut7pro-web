@@ -183,6 +183,18 @@ describe("GerenciarTimesPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("mantém regiões separadas para scroll interno do modal de time", () => {
+    render(<GerenciarTimesPage />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Editar Casa do Gamer" }));
+
+    expect(screen.getByTestId("team-modal-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("team-modal-scroll-region")).toBeInTheDocument();
+    expect(screen.getByTestId("team-modal-footer")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Cancelar" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Salvar alterações" })).toBeInTheDocument();
+  });
+
   it("confirma arquivamento com copy de preservação de histórico", async () => {
     render(<GerenciarTimesPage />);
 
