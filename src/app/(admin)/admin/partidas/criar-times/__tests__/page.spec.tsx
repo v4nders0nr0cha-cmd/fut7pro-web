@@ -57,7 +57,7 @@ const activeWithHistory = {
   id: "team-1",
   nome: "Casa do Gamer",
   cor: "#22c55e",
-  logo: "/casa.png",
+  logo: "/images/times/time_padrao_01.png",
   archivedAt: null,
   matchCount: 23,
   hasHistoricalUsage: true,
@@ -68,9 +68,9 @@ const activeWithoutHistory = {
   id: "team-2",
   nome: "Academia Performance Sobral",
   cor: "#facc15",
-  logo: "/academia.png",
+  logo: "/images/times/time_padrao_02.png",
   archivedAt: null,
-  matchCount: 1,
+  matchCount: 0,
   hasHistoricalUsage: false,
   canDelete: true,
 };
@@ -79,7 +79,7 @@ const archivedTeam = {
   id: "team-3",
   nome: "Falcões",
   cor: "#f97316",
-  logo: "/falcoes.png",
+  logo: "/images/times/time_padrao_03.png",
   archivedAt: "2026-09-07T12:00:00.000Z",
   matchCount: 0,
   hasHistoricalUsage: true,
@@ -117,7 +117,7 @@ describe("GerenciarTimesPage", () => {
     expect(screen.getByText("Casa do Gamer")).toBeInTheDocument();
     expect(screen.getByText("23 partidas registradas")).toBeInTheDocument();
     expect(screen.getByText("Academia Performance Sobral")).toBeInTheDocument();
-    expect(screen.getByText("1 partida registrada")).toBeInTheDocument();
+    expect(screen.getByText("0 partidas registradas")).toBeInTheDocument();
     expect(screen.queryByText("URL da Logo (opcional)")).not.toBeInTheDocument();
     expect(screen.queryByText("Plano Básico")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Excluir Casa do Gamer" })).not.toBeInTheDocument();
@@ -219,6 +219,53 @@ describe("GerenciarTimesPage", () => {
         )
       ).toBeInTheDocument()
     );
+  });
+
+  it("só mostra Excluir quando canDelete, histórico e partidas são coerentes", () => {
+    mockedTimes = [
+      {
+        ...activeWithoutHistory,
+        id: "sem-can-delete",
+        nome: "Sem permissão explícita",
+        canDelete: undefined,
+      },
+      {
+        ...activeWithoutHistory,
+        id: "historico-contraditorio",
+        nome: "Histórico contraditório",
+        hasHistoricalUsage: true,
+        canDelete: true,
+      },
+      {
+        ...activeWithoutHistory,
+        id: "partida-contraditoria",
+        nome: "Partida contraditória",
+        matchCount: 1,
+        hasHistoricalUsage: false,
+        canDelete: true,
+      },
+      {
+        ...activeWithoutHistory,
+        id: "delete-coerente",
+        nome: "Delete coerente",
+        matchCount: 0,
+        hasHistoricalUsage: false,
+        canDelete: true,
+      },
+    ];
+
+    render(<GerenciarTimesPage />);
+
+    expect(
+      screen.queryByRole("button", { name: "Excluir Sem permissão explícita" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Excluir Histórico contraditório" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Excluir Partida contraditória" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Excluir Delete coerente" })).toBeInTheDocument();
   });
 
   it("mostra empty states de ativos e arquivados", () => {

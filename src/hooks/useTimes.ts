@@ -72,7 +72,7 @@ function normalizeTime(raw: any): Time {
     archivedAt: raw?.archivedAt ?? null,
     matchCount: Number.isFinite(Number(raw?.matchCount)) ? Number(raw.matchCount) : 0,
     hasHistoricalUsage: Boolean(raw?.hasHistoricalUsage),
-    canDelete: raw?.canDelete !== undefined ? Boolean(raw.canDelete) : true,
+    canDelete: raw?.canDelete === true,
   };
 }
 

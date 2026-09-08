@@ -122,7 +122,8 @@ function TeamCard({
   onRestore: (time: Time) => void;
   onDelete: (time: Time) => void;
 }) {
-  const canDelete = time.canDelete !== false;
+  const matchCount = Number.isFinite(Number(time.matchCount)) ? Number(time.matchCount) : 0;
+  const canDelete = time.canDelete === true && time.hasHistoricalUsage !== true && matchCount === 0;
   const color = time.cor || time.color || DEFAULT_COLOR;
 
   return (
@@ -149,7 +150,7 @@ function TeamCard({
             />
             <span className="min-w-0 truncate">{color}</span>
           </div>
-          <p className="mt-2 text-sm text-zinc-400">{matchCountLabel(time.matchCount)}</p>
+          <p className="mt-2 text-sm text-zinc-400">{matchCountLabel(matchCount)}</p>
         </div>
       </div>
 
@@ -674,7 +675,7 @@ export default function CriarTimesPage() {
 
   return (
     <>
-      <main className="min-h-screen px-4 py-5 text-white sm:px-6 lg:px-8">
+      <main className="min-h-screen px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 text-white sm:px-6 sm:pb-8 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <header className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-950 via-zinc-950 to-zinc-900 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.24)] sm:p-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
