@@ -6,6 +6,28 @@ import type { Time } from "@/types/time";
 const DEFAULT_LOGO = "/images/times/time_padrao_01.png";
 const DEFAULT_COR = "#FFD700";
 
+type TeamStatusFilter = "active" | "archived" | "all";
+
+type UseTimesOptions = {
+  status?: TeamStatusFilter;
+};
+
+type ApiErrorPayload = {
+  error?: string;
+  message?: string;
+  code?: string;
+};
+
+export class TimesApiError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "TimesApiError";
+    this.code = code;
+  }
+}
+
 const fetcher = async (url: string) => {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) {
@@ -47,12 +69,27 @@ function normalizeTime(raw: any): Time {
     atualizadoEm: raw?.atualizadoEm || raw?.updatedAt,
     createdAt: raw?.createdAt,
     updatedAt: raw?.updatedAt,
+    archivedAt: raw?.archivedAt ?? null,
+    matchCount: Number.isFinite(Number(raw?.matchCount)) ? Number(raw.matchCount) : 0,
+    hasHistoricalUsage: Boolean(raw?.hasHistoricalUsage),
+    canDelete: raw?.canDelete !== undefined ? Boolean(raw.canDelete) : true,
   };
 }
 
-export function useTimes(tenantSlug?: string) {
+async function readApiError(res: Response, fallback: string): Promise<TimesApiError> {
+  const payload = (await res.json().catch(() => null)) as ApiErrorPayload | null;
+  const code = payload?.code || payload?.error;
+  const message = payload?.message || payload?.error || fallback;
+  return new TimesApiError(message, code);
+}
+
+export function useTimes(tenantSlug?: string, options?: UseTimesOptions) {
   const slug = tenantSlug?.trim();
-  const search = slug ? `?slug=${encodeURIComponent(slug)}` : "";
+  const status = options?.status ?? "active";
+  const params = new URLSearchParams();
+  if (slug) params.set("slug", slug);
+  if (status) params.set("status", status);
+  const search = params.toString() ? `?${params.toString()}` : "";
   const key = slug ? `/api/times${search}` : null;
 
   const { data, error, mutate, isLoading } = useSWR<Time[]>(
@@ -82,7 +119,7 @@ export function useTimes(tenantSlug?: string) {
     });
 
     if (!res.ok) {
-      throw new Error("Falha ao criar time");
+      throw await readApiError(res, "Falha ao criar time");
     }
 
     await mutate();
@@ -105,7 +142,37 @@ export function useTimes(tenantSlug?: string) {
     });
 
     if (!res.ok) {
-      throw new Error("Falha ao atualizar time");
+      throw await readApiError(res, "Falha ao atualizar time");
+    }
+
+    await mutate();
+  }
+
+  async function archiveTime(id: string) {
+    if (!slug) {
+      throw new Error("Selecione o racha ativo antes de arquivar um time.");
+    }
+    const res = await fetch(`/api/times/${id}/archive${search}`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      throw await readApiError(res, "Falha ao arquivar time");
+    }
+
+    await mutate();
+  }
+
+  async function restoreTime(id: string) {
+    if (!slug) {
+      throw new Error("Selecione o racha ativo antes de reativar um time.");
+    }
+    const res = await fetch(`/api/times/${id}/restore${search}`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      throw await readApiError(res, "Falha ao reativar time");
     }
 
     await mutate();
@@ -120,7 +187,7 @@ export function useTimes(tenantSlug?: string) {
     });
 
     if (!res.ok) {
-      throw new Error("Falha ao remover time");
+      throw await readApiError(res, "Falha ao remover time");
     }
 
     await mutate();
@@ -133,6 +200,8 @@ export function useTimes(tenantSlug?: string) {
     addTime,
     updateTime,
     deleteTime,
+    archiveTime,
+    restoreTime,
     mutate,
   };
 }

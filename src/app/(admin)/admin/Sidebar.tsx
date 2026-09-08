@@ -35,7 +35,7 @@ const menu = [
     children: [
       { label: "PRÉ-JOGO", isSection: true },
       { label: "Dias e Horários", href: "/admin/partidas/proximos-rachas" },
-      { label: "Criar Times", href: "/admin/partidas/criar-times" },
+      { label: "Gerenciar Times", href: "/admin/partidas/criar-times" },
       { label: "Criar Partidas", href: "/admin/partidas/criar" },
       { label: "Times do Dia", href: "/admin/partidas/times-do-dia" },
       { label: "PÓS-JOGO", isSection: true },

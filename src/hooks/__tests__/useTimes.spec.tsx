@@ -42,21 +42,31 @@ describe("useTimes", () => {
     await act(async () => {
       await result.current.addTime({ nome: "Novo Time" });
       await result.current.updateTime({ id: "t1", nome: "Time 1" } as any);
+      await result.current.archiveTime("t1");
+      await result.current.restoreTime("t1");
       await result.current.deleteTime("t1");
     });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/times?slug=r1",
+      "/api/times?slug=r1&status=active",
       expect.objectContaining({ method: "POST" })
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/times/t1?slug=r1",
+      "/api/times/t1?slug=r1&status=active",
       expect.objectContaining({ method: "PUT" })
     );
     expect(global.fetch).toHaveBeenCalledWith(
-      "/api/times/t1?slug=r1",
+      "/api/times/t1/archive?slug=r1&status=active",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/times/t1/restore?slug=r1&status=active",
+      expect.objectContaining({ method: "POST" })
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/times/t1?slug=r1&status=active",
       expect.objectContaining({ method: "DELETE" })
     );
-    expect(mutate).toHaveBeenCalledTimes(3);
+    expect(mutate).toHaveBeenCalledTimes(5);
   });
 });
