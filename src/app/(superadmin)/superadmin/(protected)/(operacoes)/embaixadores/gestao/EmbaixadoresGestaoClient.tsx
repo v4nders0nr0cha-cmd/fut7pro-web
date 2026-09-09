@@ -425,7 +425,9 @@ export default function EmbaixadoresGestaoClient() {
 
     const reason = manualLevelReason.trim();
     if (reason.length < MIN_REASON_LENGTH) {
-      setActionMessage(`Informe um motivo com no mínimo ${MIN_REASON_LENGTH} caracteres.`);
+      setActionMessage(
+        `Motivo inválido: informe um motivo com no mínimo ${MIN_REASON_LENGTH} caracteres.`
+      );
       return;
     }
 
