@@ -45,7 +45,11 @@ describe("ambassadors operational guards", () => {
       "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/EmbaixadoresClient.tsx"
     );
 
-    expect(source).toContain("level: 1 | 2 | 3 | 4");
+    expect(source).toContain("type CreatorLevel = 1 | 2 | 3 | 4");
+    expect(source).toContain("level: CreatorLevel");
+    expect(source).toContain("autoLevel?: CreatorLevel");
+    expect(source).toContain("manualMinimumLevel?: CreatorLevel | null");
+    expect(source).toContain("effectiveLevel?: CreatorLevel");
     expect(source).toContain("Comissao nivel 1");
     expect(source).toContain("Comissao nivel 2");
     expect(source).toContain("Comissao nivel 3");
