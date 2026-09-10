@@ -85,6 +85,7 @@ interface DashboardResponse {
     facebookPage: string | null;
     couponRequested: string | null;
     niche: string | null;
+    creatorMotivation: string | null;
     pixKeyMasked: string;
     photoUrl: string | null;
     status: ApplicationStatus;
@@ -436,7 +437,9 @@ export default function EmbaixadoresClient() {
                       {selectedApplication.couponRequested || "-"}
                     </span>
                   </p>
-                  <p className="text-sm text-zinc-300">Nicho: {selectedApplication.niche || "-"}</p>
+                  <p className="text-sm text-zinc-300">
+                    Perfil de atuação: {selectedApplication.niche || "-"}
+                  </p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <span
@@ -480,6 +483,13 @@ export default function EmbaixadoresClient() {
                     {selectedApplication.facebookPage || "-"}
                   </p>
                 </div>
+              </div>
+
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
+                <p className="text-xs uppercase text-zinc-500">Motivação para ser Creator</p>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-zinc-200">
+                  {selectedApplication.creatorMotivation?.trim() || "Não informado"}
+                </p>
               </div>
 
               <div>
