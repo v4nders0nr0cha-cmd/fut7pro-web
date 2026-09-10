@@ -58,4 +58,17 @@ describe("ambassadors operational guards", () => {
     expect(source).toContain("recurringLevel3Cents");
     expect(source).toContain("recurringLevel4Cents");
   });
+
+  it("shows application profile and creator motivation as read-only review data", () => {
+    const source = read(
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/EmbaixadoresClient.tsx"
+    );
+
+    expect(source).toContain("creatorMotivation: string | null");
+    expect(source).toContain("Perfil de atuação");
+    expect(source).toContain("Motivação para ser Creator");
+    expect(source).toContain('|| "Não informado"');
+    expect(source).not.toContain("Nicho:");
+    expect(source).not.toContain("setCreatorMotivation");
+  });
 });
