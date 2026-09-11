@@ -60,7 +60,7 @@ const sections: Array<{ title: string; items: MenuItem[] }> = [
     title: "Marketing",
     items: [
       { label: "Blog", href: "/superadmin/blog", icon: FaNewspaper },
-      { label: "Embaixadores", href: "/superadmin/embaixadores", icon: FaBullhorn },
+      { label: "Creators", href: "/superadmin/embaixadores", icon: FaBullhorn },
       { label: "Leads Newsletter", href: "/superadmin/newsletter", icon: FaEnvelope },
     ],
   },

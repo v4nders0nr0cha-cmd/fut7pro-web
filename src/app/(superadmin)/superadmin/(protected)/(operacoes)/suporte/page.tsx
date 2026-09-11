@@ -97,7 +97,7 @@ type PatchResponse = {
 const ambassadorStatusLabels: Record<AmbassadorSupportStatus, string> = {
   ABERTO: "Aberto",
   EM_ANALISE: "Em análise",
-  AGUARDANDO_RETORNO_EMBAIXADOR: "Aguardando embaixador",
+  AGUARDANDO_RETORNO_EMBAIXADOR: "Aguardando retorno do Creator",
   RESOLVIDO: "Resolvido",
   ENCERRADO: "Encerrado",
 };
@@ -195,7 +195,7 @@ function messageAuthorLabel(message: UnifiedSupportMessage): string {
   if (message.authorType === "ADMIN_RACHA")
     return message.authorDisplay?.trim() || "Admin do racha";
   if (message.authorType === "SISTEMA") return "Sistema";
-  return message.authorDisplay?.trim() || "Embaixador";
+  return message.authorDisplay?.trim() || "Creator";
 }
 
 function truncate(value: string, max = 135): string {
@@ -329,7 +329,7 @@ export default function SuperAdminSuportePage() {
       }
       if (!ambassadorResponse.ok) {
         throw new Error(
-          extractError(ambassadorPayload, "Não foi possível carregar chamados dos embaixadores.")
+          extractError(ambassadorPayload, "Não foi possível carregar chamados dos Creators.")
         );
       }
 
@@ -634,8 +634,8 @@ export default function SuperAdminSuportePage() {
           Central de suporte Fut7Pro
         </h1>
         <p className="text-sm text-zinc-300">
-          Fila única multi-origem com chamados de embaixadores e admins dos rachas, mantendo
-          atendimento centralizado no SuperAdmin.
+          Fila única multi-origem com chamados de Creators e admins dos rachas, mantendo atendimento
+          centralizado no SuperAdmin.
         </p>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -675,7 +675,7 @@ export default function SuperAdminSuportePage() {
             className="rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"
           >
             <option value="ALL">Origem: Todas</option>
-            <option value="EMBAIXADOR">Origem: Embaixador</option>
+            <option value="EMBAIXADOR">Origem: Creator</option>
             <option value="ADMIN_RACHA">Origem: Admin do racha</option>
           </select>
 
@@ -704,7 +704,7 @@ export default function SuperAdminSuportePage() {
                 </option>
               ))}
             </optgroup>
-            <optgroup label="Embaixador">
+            <optgroup label="Creator">
               {ambassadorStatusValues.map((status) => (
                 <option key={status} value={status}>
                   {ambassadorStatusLabels[status]}
@@ -812,7 +812,7 @@ export default function SuperAdminSuportePage() {
                     </div>
 
                     <p className="mt-1 text-xs text-zinc-400">
-                      Origem: {ticket.origin === "EMBAIXADOR" ? "Embaixador" : "Admin do racha"}
+                      Origem: {ticket.origin === "EMBAIXADOR" ? "Creator" : "Admin do racha"}
                       {ticket.influencerName ? ` • ${ticket.influencerName}` : ""}
                       {ticket.influencerCoupon ? ` • Cupom ${ticket.influencerCoupon}` : ""}
                       {ticket.tenantSlug
@@ -863,7 +863,7 @@ export default function SuperAdminSuportePage() {
                     </h3>
                     <p className="text-xs text-zinc-400">
                       Origem:{" "}
-                      {selectedTicket.origin === "EMBAIXADOR" ? "Embaixador" : "Admin do racha"}
+                      {selectedTicket.origin === "EMBAIXADOR" ? "Creator" : "Admin do racha"}
                       {selectedTicket.influencerName ? ` • ${selectedTicket.influencerName}` : ""}
                       {selectedTicket.influencerCoupon
                         ? ` • Cupom ${selectedTicket.influencerCoupon}`
@@ -1059,7 +1059,7 @@ export default function SuperAdminSuportePage() {
                       maxLength={4000}
                       placeholder={
                         selectedTicket.origin === "EMBAIXADOR"
-                          ? "Digite a orientação da equipe Fut7Pro para o embaixador..."
+                          ? "Digite a orientação da equipe Fut7Pro para o Creator..."
                           : "Digite a orientação da equipe Fut7Pro para o admin do racha..."
                       }
                       className="min-h-[120px] w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-yellow-400"

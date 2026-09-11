@@ -149,7 +149,7 @@ export default function Header() {
         })),
         ...ambassadorPending.slice(0, 4).map((ticket) => ({
           id: `amb-${ticket.id}`,
-          title: "Chamado de embaixador pendente",
+          title: "Chamado de Creator pendente",
           description: `${ticket.title} • ${ticket.influencerName}${ticket.influencerCoupon ? ` (${ticket.influencerCoupon})` : ""}`,
           href: "/superadmin/suporte",
           createdAt: ticket.lastMessageAt,

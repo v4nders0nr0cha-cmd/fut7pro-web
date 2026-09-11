@@ -5,12 +5,10 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
   title: "Cadastre seu grupo de futebol no Fut7Pro",
-  description:
-    "Use um cupom de embaixador e ganhe mais dias grátis e desconto especial para começar.",
+  description: "Use um Cupom Creator e ganhe mais dias grátis e desconto especial para começar.",
   openGraph: {
     title: "Cadastre seu grupo de futebol no Fut7Pro",
-    description:
-      "Use um cupom de embaixador e ganhe mais dias grátis e desconto especial para começar.",
+    description: "Use um Cupom Creator e ganhe mais dias grátis e desconto especial para começar.",
     url: "/cadastrar-racha",
   },
   robots: { index: false, follow: false, nocache: true },

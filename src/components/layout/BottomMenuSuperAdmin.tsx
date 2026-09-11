@@ -26,7 +26,7 @@ const menu = [
   { label: "Compens.", icon: FaShieldAlt, href: "/superadmin/compensacoes-acesso" },
   { label: "Cancel.", icon: FaUserSlash, href: "/superadmin/cancelamentos" },
   { label: "Blog", icon: FaNewspaper, href: "/superadmin/blog" },
-  { label: "Embaix.", icon: FaBullhorn, href: "/superadmin/embaixadores" },
+  { label: "Creators", icon: FaBullhorn, href: "/superadmin/embaixadores" },
   { label: "Config", icon: FaCogs, href: "/superadmin/config" },
 ];
 
