@@ -113,7 +113,7 @@ const fetcher = async (url: string): Promise<DashboardResponse> => {
   } & Partial<DashboardResponse>;
 
   if (!response.ok) {
-    throw new Error(body.error || "Nao foi possivel carregar os dados de embaixadores.");
+    throw new Error(body.error || "Nao foi possivel carregar os dados de Creators.");
   }
 
   return body as DashboardResponse;
@@ -283,7 +283,7 @@ export default function EmbaixadoresClient() {
           <p className="mt-2 text-red-200">
             {error instanceof Error
               ? error.message
-              : "Nao foi possivel carregar os dados dos embaixadores."}
+              : "Nao foi possivel carregar os dados dos Creators."}
           </p>
         </section>
       </main>
@@ -308,7 +308,7 @@ export default function EmbaixadoresClient() {
               href="/superadmin/embaixadores/gestao"
               className="inline-flex rounded-md border border-yellow-500/40 bg-yellow-500/10 px-3 py-1.5 text-xs font-semibold text-yellow-200 transition hover:bg-yellow-500/20"
             >
-              Abrir gestao de embaixadores
+              Abrir gestao de Creators
             </Link>
             <span className="rounded-full border border-zinc-700 bg-zinc-950/40 px-3 py-1 text-xs text-zinc-400">
               {isValidating ? "Atualizando..." : "Dados em tempo real"}
@@ -368,7 +368,7 @@ export default function EmbaixadoresClient() {
       <section className="mb-6 grid gap-4 xl:grid-cols-[0.9fr_1.3fr]">
         <article className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Solicitacoes de Embaixador</h2>
+            <h2 className="text-lg font-semibold text-white">Solicitacoes de Creator</h2>
             <span className="text-xs text-zinc-400">Pendentes: {pendingApplications.length}</span>
           </div>
 
@@ -678,7 +678,7 @@ export default function EmbaixadoresClient() {
               <thead>
                 <tr className="border-b border-zinc-700 text-zinc-400">
                   <th className="px-2 py-2 font-medium">Codigo</th>
-                  <th className="px-2 py-2 font-medium">Embaixador</th>
+                  <th className="px-2 py-2 font-medium">Creator</th>
                   <th className="px-2 py-2 font-medium">Status</th>
                   <th className="px-2 py-2 font-medium">Validade</th>
                 </tr>
@@ -715,7 +715,7 @@ export default function EmbaixadoresClient() {
               <thead>
                 <tr className="border-b border-zinc-700 text-zinc-400">
                   <th className="px-2 py-2 font-medium">Racha</th>
-                  <th className="px-2 py-2 font-medium">Embaixador</th>
+                  <th className="px-2 py-2 font-medium">Creator</th>
                   <th className="px-2 py-2 font-medium">Status</th>
                   <th className="px-2 py-2 font-medium">Data</th>
                 </tr>
@@ -749,7 +749,7 @@ export default function EmbaixadoresClient() {
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-zinc-700 text-zinc-400">
-                  <th className="px-2 py-2 font-medium">Embaixador</th>
+                  <th className="px-2 py-2 font-medium">Creator</th>
                   <th className="px-2 py-2 font-medium">Tipo</th>
                   <th className="px-2 py-2 font-medium">Valor</th>
                   <th className="px-2 py-2 font-medium">Status</th>
@@ -786,25 +786,26 @@ export default function EmbaixadoresClient() {
         <h2 className="text-lg font-semibold text-white">Configuracoes do Programa</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
-            <p className="text-xs uppercase text-zinc-500">Comissao nivel 1</p>
+            <p className="text-xs uppercase text-zinc-500">Comissao Creator</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
               {formatCurrency(settings.oneTimePayoutCents)} por venda valida
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
-            <p className="text-xs uppercase text-zinc-500">Comissao nivel 2</p>
+            <p className="text-xs uppercase text-zinc-500">Comissao Creator Embaixador</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
-              {formatCurrency(settings.oneTimePayoutCents)} por venda valida + Kit Fut7Pro
+              {formatCurrency(settings.oneTimePayoutCents)} por venda valida + Kit Creator
+              Embaixador
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
-            <p className="text-xs uppercase text-zinc-500">Comissao nivel 3</p>
+            <p className="text-xs uppercase text-zinc-500">Comissao Creator Pro</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
               {formatCurrency(settings.recurringLevel3Cents)} por racha/mês
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">
-            <p className="text-xs uppercase text-zinc-500">Comissao nivel 4</p>
+            <p className="text-xs uppercase text-zinc-500">Comissao Creator VIP</p>
             <p className="mt-1 text-base font-semibold text-yellow-300">
               {formatCurrency(settings.recurringLevel4Cents)} por racha/mês
             </p>
@@ -814,13 +815,13 @@ export default function EmbaixadoresClient() {
             <button
               type="button"
               disabled
-              title="Indisponível durante a validação operacional do programa de embaixadores."
+              title="Indisponível durante a validação operacional do programa Creators Fut7Pro."
               className="mt-2 w-full cursor-not-allowed rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-left text-sm font-semibold text-amber-100 opacity-80"
             >
               Materializar ledger recorrente
             </button>
             <p className="mt-2 text-xs text-amber-100/80">
-              Indisponível durante a validação operacional do programa de embaixadores.
+              Indisponível durante a validação operacional do programa Creators Fut7Pro.
             </p>
           </div>
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-3">

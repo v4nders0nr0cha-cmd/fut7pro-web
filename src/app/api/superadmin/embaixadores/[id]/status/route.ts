@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, context: { params: { id: strin
 
   const influencerId = String(context?.params?.id || "").trim();
   if (!influencerId) {
-    return jsonResponse({ error: "Embaixador invalido" }, { status: 400 });
+    return jsonResponse({ error: "Creator invalido" }, { status: 400 });
   }
 
   const payload = (await request.json().catch(() => ({}))) as {

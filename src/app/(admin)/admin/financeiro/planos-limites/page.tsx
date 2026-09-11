@@ -13,7 +13,6 @@ import useSubscription from "@/hooks/useSubscription";
 import { useRacha } from "@/context/RachaContext";
 import {
   FUT7PRO_OFFICIAL_COMMERCIAL_EMAIL,
-  FUT7PRO_OFFICIAL_INSTAGRAM_URL,
   FUT7PRO_OFFICIAL_WHATSAPP_DISPLAY,
   buildFut7ProOfficialWhatsAppUrl,
 } from "@/config/fut7pro-contact";
@@ -908,16 +907,16 @@ export default function PlanosLimitesPage() {
                     </button>
                   </div>
                   <p className="mt-3 text-xs leading-relaxed text-gray-400">
-                    Ainda não possui cupom? Siga o Fut7Pro no{" "}
+                    Ainda não possui cupom?{" "}
                     <a
-                      href={FUT7PRO_OFFICIAL_INSTAGRAM_URL}
+                      href="https://www.fut7pro.com.br/creators"
                       target="_blank"
                       rel="noreferrer"
                       className="font-semibold text-yellow-300 underline-offset-4 hover:underline"
                     >
-                      Instagram
+                      Encontre um Creator Fut7Pro
                     </a>{" "}
-                    e peça um cupom ao seu embaixador favorito.
+                    e solicite um Cupom Creator.
                   </p>
                 </div>
               )}
@@ -1105,9 +1104,7 @@ export default function PlanosLimitesPage() {
                           <p
                             className={`mt-1 text-sm font-semibold ${isHighlight ? "text-black/75" : "text-emerald-300"}`}
                           >
-                            {showRecurringCouponPrice
-                              ? "Cupom aplicado: "
-                              : "Com cupom de embaixador: "}
+                            {showRecurringCouponPrice ? "Cupom aplicado: " : "Com Cupom Creator: "}
                             <span className="font-black">
                               {formatCurrencyFromCents(displayCouponPriceCents)}/{intervalSuffix}
                             </span>
@@ -1117,7 +1114,7 @@ export default function PlanosLimitesPage() {
                           <p
                             className={`mt-1 text-xs ${isHighlight ? "text-black/65" : "text-neutral-400"}`}
                           >
-                            Cupom de embaixador é exclusivo do Essencial.
+                            Cupom Creator é exclusivo do Essencial.
                           </p>
                         )}
                         {plan.requiresUpfront && typeof plan.upfrontAmount === "number" && (
@@ -1220,7 +1217,7 @@ export default function PlanosLimitesPage() {
             {hasCouponBenefits && paymentPricing && (
               <div className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-xs text-emerald-100">
                 <p className="font-semibold text-emerald-200">
-                  Cupom de embaixador aplicado no seu racha.
+                  Cupom Creator aplicado no seu racha.
                 </p>
                 {hasRecurringCoupon ? (
                   <p className="mt-1">
@@ -1309,14 +1306,14 @@ export default function PlanosLimitesPage() {
                 {paymentPricing.firstPaymentDiscountApplied && (
                   <div className="mt-1 flex items-center justify-between text-emerald-300">
                     <span>
-                      Desconto cupom embaixador ({formatPercent(paymentPricing.discountPct)})
+                      Desconto Cupom Creator ({formatPercent(paymentPricing.discountPct)})
                     </span>
                     <span>-{formatCurrencyFromCents(paymentPricing.discountCents)}</span>
                   </div>
                 )}
                 {hasRecurringCoupon && (
                   <div className="mt-1 flex items-center justify-between text-emerald-300">
-                    <span>Desconto recorrente cupom embaixador</span>
+                    <span>Desconto recorrente Cupom Creator</span>
                     <span>-{formatCurrencyFromCents(recurringDiscountCents)}</span>
                   </div>
                 )}
@@ -1412,13 +1409,13 @@ export default function PlanosLimitesPage() {
                 </div>
                 {pixPricing.firstPaymentDiscountApplied && (
                   <div className="mt-1 flex items-center justify-between text-emerald-300">
-                    <span>Desconto cupom embaixador ({formatPercent(pixPricing.discountPct)})</span>
+                    <span>Desconto Cupom Creator ({formatPercent(pixPricing.discountPct)})</span>
                     <span>-{formatCurrencyFromCents(pixPricing.discountCents)}</span>
                   </div>
                 )}
                 {pixHasRecurringCoupon && (
                   <div className="mt-1 flex items-center justify-between text-emerald-300">
-                    <span>Desconto recorrente cupom embaixador</span>
+                    <span>Desconto recorrente Cupom Creator</span>
                     <span>-{formatCurrencyFromCents(pixRecurringDiscountCents)}</span>
                   </div>
                 )}

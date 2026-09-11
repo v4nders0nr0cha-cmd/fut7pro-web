@@ -35,7 +35,7 @@ describe("ambassadors operational guards", () => {
 
     expect(source).toContain("Materializar ledger recorrente");
     expect(source).toContain(
-      "Indisponível durante a validação operacional do programa de embaixadores."
+      "Indisponível durante a validação operacional do programa Creators Fut7Pro."
     );
     expect(source).toContain("disabled");
   });
@@ -50,10 +50,10 @@ describe("ambassadors operational guards", () => {
     expect(source).toContain("autoLevel?: CreatorLevel");
     expect(source).toContain("manualMinimumLevel?: CreatorLevel | null");
     expect(source).toContain("effectiveLevel?: CreatorLevel");
-    expect(source).toContain("Comissao nivel 1");
-    expect(source).toContain("Comissao nivel 2");
-    expect(source).toContain("Comissao nivel 3");
-    expect(source).toContain("Comissao nivel 4");
+    expect(source).toContain("Comissao Creator");
+    expect(source).toContain("Comissao Creator Embaixador");
+    expect(source).toContain("Comissao Creator Pro");
+    expect(source).toContain("Comissao Creator VIP");
     expect(source).not.toContain("recurringLevel2Cents");
     expect(source).toContain("recurringLevel3Cents");
     expect(source).toContain("recurringLevel4Cents");
@@ -70,5 +70,52 @@ describe("ambassadors operational guards", () => {
     expect(source).toContain('|| "Não informado"');
     expect(source).not.toContain("Nicho:");
     expect(source).not.toContain("setCreatorMotivation");
+  });
+
+  it("uses Creators Fut7Pro naming on visible web surfaces while preserving technical routes", () => {
+    const visibleSources = [
+      "src/app/(superadmin)/superadmin/Sidebar.tsx",
+      "src/components/layout/BottomMenuSuperAdmin.tsx",
+      "src/app/(superadmin)/superadmin/Header.tsx",
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/suporte/page.tsx",
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/page.tsx",
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/gestao/page.tsx",
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/EmbaixadoresClient.tsx",
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/gestao/EmbaixadoresGestaoClient.tsx",
+      "src/app/cadastrar-racha/layout.tsx",
+      "src/app/cadastrar-racha/page.tsx",
+      "src/app/(admin)/admin/financeiro/planos-limites/page.tsx",
+    ]
+      .map(read)
+      .join("\n");
+
+    expect(visibleSources).toContain("Creators Fut7Pro");
+    expect(visibleSources).toContain("Creator Embaixador");
+    expect(visibleSources).toContain("Cupom Creator");
+    expect(visibleSources).toContain("Vínculo Creator/racha");
+    expect(visibleSources).toContain("Aguardando retorno do Creator");
+
+    const forbiddenVisibleLabels = [
+      "Solicitações de Embaixador",
+      "Solicitacoes de Embaixador",
+      "Gestão de Embaixadores",
+      "Gestao de Embaixadores",
+      "Excluir Embaixador",
+      "Excluir embaixador",
+      "Suspender Embaixador",
+      "Reativar Embaixador",
+      "Área do Embaixador",
+      "Painel do Embaixador",
+      "cupom de embaixador",
+      "Cupom de embaixador",
+      "cupom do embaixador",
+      "Cupom do link de embaixador",
+      "seu embaixador",
+      "Autoindicação",
+    ];
+
+    for (const forbidden of forbiddenVisibleLabels) {
+      expect(visibleSources).not.toContain(forbidden);
+    }
   });
 });

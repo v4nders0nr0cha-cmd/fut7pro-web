@@ -24,8 +24,8 @@ const MIN_REASON_LENGTH = 20;
 const ACTION_CATEGORY_OPTIONS: Array<{ value: ActionCategory; label: string }> = [
   { value: "FRAUDE_SPAM", label: "Fraude/Spam" },
   { value: "VIOLACAO_REGRAS", label: "Violação de regras" },
-  { value: "AUTOINDICACAO", label: "Autoindicação" },
-  { value: "SOLICITACAO_EMBAIXADOR", label: "Solicitação do embaixador" },
+  { value: "AUTOINDICACAO", label: "Vínculo Creator/racha" },
+  { value: "SOLICITACAO_EMBAIXADOR", label: "Solicitação do Creator" },
   { value: "DADOS_INVALIDOS", label: "Dados inválidos" },
   { value: "OUTROS", label: "Outros" },
 ];
@@ -120,7 +120,7 @@ const fetcher = async (url: string): Promise<DashboardResponse> => {
     error?: string;
   } & Partial<DashboardResponse>;
   if (!response.ok) {
-    throw new Error(body.error || "Não foi possível carregar os dados de embaixadores.");
+    throw new Error(body.error || "Não foi possível carregar os dados de Creators.");
   }
   return body as DashboardResponse;
 };
@@ -379,7 +379,7 @@ export default function EmbaixadoresGestaoClient() {
   const openStatusActionModal = () => {
     if (!selectedAmbassador) return;
     if (selectedAmbassador.status === "EXCLUIDO") {
-      setActionMessage("Esse embaixador já foi excluído e não pode ser reativado pelo painel.");
+      setActionMessage("Esse Creator já foi excluído e não pode ser reativado pelo painel.");
       return;
     }
 
@@ -399,7 +399,7 @@ export default function EmbaixadoresGestaoClient() {
   const openDeleteActionModal = () => {
     if (!selectedAmbassador) return;
     if (selectedAmbassador.status === "EXCLUIDO") {
-      setActionMessage("Esse embaixador já está excluído.");
+      setActionMessage("Esse Creator já está excluído.");
       return;
     }
 
@@ -475,7 +475,7 @@ export default function EmbaixadoresGestaoClient() {
     }
 
     if (actionModal.type === "DELETE" && !deleteConfirmation) {
-      setActionFormError("Confirme que entendeu o impacto antes de excluir o embaixador.");
+      setActionFormError("Confirme que entendeu o impacto antes de excluir o Creator.");
       return;
     }
 
@@ -503,13 +503,13 @@ export default function EmbaixadoresGestaoClient() {
         );
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (!response.ok) {
-          throw new Error(body.error || "Não foi possível atualizar o status do embaixador.");
+          throw new Error(body.error || "Não foi possível atualizar o status do Creator.");
         }
 
         setActionMessage(
           actionModal.nextStatus === "BLOQUEADO"
-            ? "Embaixador suspenso com sucesso. E-mail de notificação enviado."
-            : "Embaixador reativado com sucesso."
+            ? "Creator suspenso com sucesso. E-mail de notificação enviado."
+            : "Creator reativado com sucesso."
         );
       } else {
         const response = await fetch(
@@ -525,10 +525,10 @@ export default function EmbaixadoresGestaoClient() {
         );
         const body = (await response.json().catch(() => ({}))) as { error?: string };
         if (!response.ok) {
-          throw new Error(body.error || "Não foi possível excluir o embaixador.");
+          throw new Error(body.error || "Não foi possível excluir o Creator.");
         }
 
-        setActionMessage("Embaixador excluído com sucesso. E-mail de notificação enviado.");
+        setActionMessage("Creator excluído com sucesso. E-mail de notificação enviado.");
       }
 
       setActionModal(null);
@@ -540,7 +540,7 @@ export default function EmbaixadoresGestaoClient() {
       const message =
         requestError instanceof Error
           ? requestError.message
-          : "Erro ao processar a ação do embaixador.";
+          : "Erro ao processar a ação do Creator.";
       setActionFormError(message);
       setActionMessage(message);
     } finally {
@@ -635,7 +635,7 @@ export default function EmbaixadoresGestaoClient() {
           <p className="text-xs">Teste para pago</p>
         </article>
         <article className="rounded-xl bg-gradient-to-tr from-cyan-400 to-cyan-600 p-4 text-white shadow-lg">
-          <p className="text-xs font-semibold uppercase">Media por embaixador</p>
+          <p className="text-xs font-semibold uppercase">Media por Creator</p>
           <p className="mt-1 text-2xl font-bold">{averageReferrals.toFixed(1)}</p>
           <p className="text-xs">Rachas por cupom</p>
         </article>
@@ -643,7 +643,7 @@ export default function EmbaixadoresGestaoClient() {
 
       <section className="mb-6 grid gap-4 lg:grid-cols-2">
         <article className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
-          <h2 className="text-lg font-semibold text-white">Estados com mais embaixadores</h2>
+          <h2 className="text-lg font-semibold text-white">Estados com mais Creators</h2>
           {stateRanking.length === 0 ? (
             <p className="mt-3 text-sm text-zinc-400">Sem dados de estado.</p>
           ) : (
@@ -661,7 +661,7 @@ export default function EmbaixadoresGestaoClient() {
           )}
         </article>
         <article className="rounded-xl bg-zinc-900/80 p-4 shadow-lg">
-          <h2 className="text-lg font-semibold text-white">Cidades com mais embaixadores</h2>
+          <h2 className="text-lg font-semibold text-white">Cidades com mais Creators</h2>
           {cityRanking.length === 0 ? (
             <p className="mt-3 text-sm text-zinc-400">Sem dados de cidade.</p>
           ) : (
@@ -835,7 +835,7 @@ export default function EmbaixadoresGestaoClient() {
                     disabled={actionLoading !== null || selectedAmbassador.status === "EXCLUIDO"}
                     className="rounded-md border border-red-500/50 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-300 transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {actionLoading === "delete" ? "Processando..." : "Excluir embaixador"}
+                    {actionLoading === "delete" ? "Processando..." : "Excluir Creator"}
                   </button>
                 </div>
                 {selectedAmbassador.status === "EXCLUIDO" ? (
@@ -1035,11 +1035,7 @@ function AmbassadorActionModal({
 }) {
   const isDelete = actionModal.type === "DELETE";
   const isBlock = actionModal.type === "STATUS" && actionModal.nextStatus === "BLOQUEADO";
-  const title = isDelete
-    ? "Excluir Embaixador"
-    : isBlock
-      ? "Suspender Embaixador"
-      : "Reativar Embaixador";
+  const title = isDelete ? "Excluir Creator" : isBlock ? "Suspender Creator" : "Reativar Creator";
   const confirmText = isDelete
     ? "Confirmar exclusão"
     : isBlock
@@ -1060,7 +1056,7 @@ function AmbassadorActionModal({
           <h3 className={`text-lg font-semibold ${titleStyle}`}>{title}</h3>
           <p className="mt-1 text-sm text-zinc-400">
             Registre um motivo objetivo. Esse texto será salvo na auditoria e enviado por e-mail ao
-            embaixador.
+            Creator.
           </p>
         </div>
 
@@ -1131,8 +1127,8 @@ function AmbassadorActionModal({
                 onChange={(event) => onDeleteConfirmationChange(event.target.checked)}
               />
               <span>
-                Entendo que essa ação desativa o embaixador e o cupom, e não pode ser desfeita no
-                painel.
+                Entendo que essa ação desativa o Creator e o Cupom Creator, e não pode ser desfeita
+                no painel.
               </span>
             </label>
           ) : null}

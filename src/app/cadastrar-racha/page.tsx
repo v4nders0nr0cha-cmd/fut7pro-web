@@ -722,7 +722,7 @@ function CadastroRachaPageContent() {
 
     couponAttributionValidatedRef.current = true;
     setCouponCode(attributedCoupon);
-    setCouponInputHint("Cupom do link de embaixador preenchido automaticamente.");
+    setCouponInputHint("Cupom Creator do link preenchido automaticamente.");
     void validateCoupon(attributedCoupon, "auto");
   }, [searchParams, selectedPlanKey, couponStatus]);
 
