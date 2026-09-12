@@ -146,6 +146,7 @@ export default function GlobalPerfilClient() {
     birthDay: "",
     birthMonth: "",
     birthYear: "",
+    birthPublic: true,
   });
   const [avatarPreview, setAvatarPreview] = useState(DEFAULT_AVATAR);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -171,6 +172,13 @@ export default function GlobalPerfilClient() {
   }, [publicAuthContext?.slug, searchParams]);
   const isRequestJoinFlow =
     searchParams?.get("intent") === "request-join" && Boolean(requestJoinSlug);
+  const requestJoinRedirectTo = useMemo(() => {
+    const fromQuery = searchParams?.get("callbackUrl")?.trim() || "";
+    if (fromQuery.startsWith("/")) return fromQuery;
+    const fromContext = publicAuthContext?.redirectTo?.trim() || "";
+    if (fromContext.startsWith("/")) return fromContext;
+    return requestJoinSlug ? `/${requestJoinSlug}` : "/";
+  }, [publicAuthContext?.redirectTo, requestJoinSlug, searchParams]);
   const { me } = useMe({
     enabled: true,
     tenantSlug: currentSlug || undefined,
@@ -199,6 +207,10 @@ export default function GlobalPerfilClient() {
       birthDay: resolvedBirthDay ? String(resolvedBirthDay) : "",
       birthMonth: resolvedBirthMonth ? String(resolvedBirthMonth) : "",
       birthYear: resolvedBirthYear ? String(resolvedBirthYear) : "",
+      birthPublic:
+        typeof profile.user.birthPublic === "boolean"
+          ? profile.user.birthPublic
+          : me?.athlete?.birthPublic !== false,
     });
     setAvatarPreview(profile.user.avatarUrl || fallbackAthlete?.avatarUrl || DEFAULT_AVATAR);
     setAvatarFile(null);
@@ -408,6 +420,7 @@ export default function GlobalPerfilClient() {
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
+        birthPublic: form.birthPublic,
       });
       setSuccess(true);
       setHasEditedForm(false);
@@ -422,6 +435,11 @@ export default function GlobalPerfilClient() {
         const body = await response.json().catch(() => null);
         if (!response.ok) {
           const code = String(body?.code || body?.error?.code || "").toUpperCase();
+          if (code === "ALREADY_MEMBER") {
+            clearPublicAuthContext();
+            router.replace(requestJoinRedirectTo);
+            return;
+          }
           if (code === "REQUEST_PENDING") {
             clearPublicAuthContext();
             router.replace(`/${requestJoinSlug}/aguardando-aprovacao`);
@@ -433,7 +451,7 @@ export default function GlobalPerfilClient() {
         const status = String(body?.status || "").toUpperCase();
         const membershipStatus = String(body?.membershipStatus || "").toUpperCase();
         if (status === "APROVADO" || membershipStatus === "ACTIVE") {
-          router.replace(`/${requestJoinSlug}`);
+          router.replace(requestJoinRedirectTo);
           return;
         }
         router.replace(`/${requestJoinSlug}/aguardando-aprovacao`);
@@ -785,6 +803,20 @@ export default function GlobalPerfilClient() {
                   />
                 </label>
               </div>
+              <label className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-white/10 bg-zinc-800/70 px-3 py-3 text-sm text-zinc-200">
+                <input
+                  type="checkbox"
+                  checked={form.birthPublic}
+                  onChange={(event) => updateFormField("birthPublic", event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-brand"
+                />
+                <span>
+                  Mostrar meu aniversário nos grupos em que participo
+                  <span className="block text-xs text-zinc-400">
+                    Quando ativo, seu aniversário pode aparecer nos avisos públicos dos seus rachas.
+                  </span>
+                </span>
+              </label>
             </div>
           </div>
 

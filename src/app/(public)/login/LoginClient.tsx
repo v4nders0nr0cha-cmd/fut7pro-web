@@ -198,18 +198,20 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         params.set("intent", "request-join");
         params.set("racha", publicSlug);
       }
+      params.set("callbackUrl", redirectTo);
       const normalizedEmail = emailValue?.trim().toLowerCase();
       if (normalizedEmail && publicSlug) {
         persistPublicAuthContext({
           email: normalizedEmail,
           slug: publicSlug,
           joinMessage: normalizedJoinMessage || null,
+          redirectTo,
         });
       }
       const queryString = params.toString();
       return queryString ? `/perfil?${queryString}` : "/perfil";
     },
-    [normalizedJoinMessage, publicSlug]
+    [normalizedJoinMessage, publicSlug, redirectTo]
   );
 
   const resetTurnstile = () => {

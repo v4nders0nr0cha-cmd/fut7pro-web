@@ -1,11 +1,13 @@
 const AUTH_EMAIL_STORAGE_KEY = "fut7pro_auth_email";
 const AUTH_SLUG_STORAGE_KEY = "fut7pro_auth_slug";
 const AUTH_JOIN_MESSAGE_STORAGE_KEY = "fut7pro_auth_join_message";
+const AUTH_REDIRECT_TO_STORAGE_KEY = "fut7pro_auth_redirect_to";
 
 type PublicAuthContext = {
   email: string;
   slug: string;
   joinMessage?: string | null;
+  redirectTo?: string | null;
 };
 
 function getStorage() {
@@ -30,6 +32,13 @@ export function persistPublicAuthContext(context: PublicAuthContext) {
   } else {
     storage.removeItem(AUTH_JOIN_MESSAGE_STORAGE_KEY);
   }
+
+  const redirectTo = context.redirectTo?.trim();
+  if (redirectTo?.startsWith("/")) {
+    storage.setItem(AUTH_REDIRECT_TO_STORAGE_KEY, redirectTo);
+  } else {
+    storage.removeItem(AUTH_REDIRECT_TO_STORAGE_KEY);
+  }
 }
 
 export function readPublicAuthContext(currentSlug?: string | null): PublicAuthContext | null {
@@ -46,7 +55,8 @@ export function readPublicAuthContext(currentSlug?: string | null): PublicAuthCo
   }
 
   const joinMessage = storage.getItem(AUTH_JOIN_MESSAGE_STORAGE_KEY)?.trim() || null;
-  return { email, slug, joinMessage };
+  const redirectTo = storage.getItem(AUTH_REDIRECT_TO_STORAGE_KEY)?.trim() || null;
+  return { email, slug, joinMessage, redirectTo };
 }
 
 export function clearPublicAuthContext() {
@@ -56,6 +66,7 @@ export function clearPublicAuthContext() {
   storage.removeItem(AUTH_EMAIL_STORAGE_KEY);
   storage.removeItem(AUTH_SLUG_STORAGE_KEY);
   storage.removeItem(AUTH_JOIN_MESSAGE_STORAGE_KEY);
+  storage.removeItem(AUTH_REDIRECT_TO_STORAGE_KEY);
 }
 
 type Fut7ProAccountProfile = {

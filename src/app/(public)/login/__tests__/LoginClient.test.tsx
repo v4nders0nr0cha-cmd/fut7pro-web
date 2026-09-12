@@ -285,7 +285,9 @@ describe("LoginClient", () => {
     render(<LoginClient />);
 
     await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith("/perfil?intent=request-join&racha=casa-do-gamer");
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/perfil?intent=request-join&racha=casa-do-gamer&callbackUrl=%2Fcasa-do-gamer%2F"
+      );
     });
   });
 
