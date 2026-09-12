@@ -18,7 +18,8 @@ import {
 } from "@/utils/public-auth-flow";
 import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
-  queuePublicAuthSuccessFeedback,
+  getHumanAuthErrorMessage,
+  showPublicAuthSuccessToast,
 } from "@/utils/public-auth-feedback";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import TurnstileWidget, {
@@ -30,12 +31,26 @@ import TurnstileWidget, {
   resolveTurnstileErrorMessage,
 } from "@/components/security/TurnstileWidget";
 
+type LoginClientProps = {
+  entryPath?: "/login" | "/entrar";
+  variant?: "login" | "entry";
+};
+
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
   /\/+$/,
   ""
 );
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Racha vitrine é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
+  "Este ambiente de demonstração é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
+const MAX_JOIN_MESSAGE_LENGTH = 500;
+
+function normalizeJoinMessage(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, MAX_JOIN_MESSAGE_LENGTH);
+}
 
 function resolveRedirect(target: string | null, fallback: string) {
   if (!target) return fallback;
@@ -51,37 +66,12 @@ function resolveRedirect(target: string | null, fallback: string) {
   return fallback;
 }
 
-function resolveAuthErrorCode(body: any) {
-  return typeof body?.code === "string"
-    ? body.code
-    : typeof body?.error?.code === "string"
-      ? body.error.code
-      : typeof body?.message?.code === "string"
-        ? body.message.code
-        : null;
-}
-
-type LoginClientProps = {
-  entryPath?: "/login" | "/entrar";
-  variant?: "login" | "entry";
-};
-
-function isApprovedMembershipStatus(status: string) {
-  return status === "APROVADO" || status === "ACTIVE";
-}
-
-function isPendingMembershipStatus(status: string) {
-  return status === "PENDENTE" || status === "PENDING";
-}
-
-function isBlockedMembershipStatus(status: string) {
-  return (
-    status === "SUSPENSO" ||
-    status === "REJEITADO" ||
-    status === "BLOQUEADO" ||
-    status === "BLOCKED" ||
-    status === "REJECTED"
-  );
+function maskEmail(value: string) {
+  const normalized = value.trim().toLowerCase();
+  const [localPart, domain] = normalized.split("@");
+  if (!localPart || !domain) return normalized;
+  const visibleStart = localPart.slice(0, Math.min(2, localPart.length));
+  return `${visibleStart}***@${domain}`;
 }
 
 export default function LoginClient({ entryPath = "/login", variant = "login" }: LoginClientProps) {
@@ -89,13 +79,9 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const nomeDoRacha = nome?.trim() || "seu grupo";
   const { publicHref, publicSlug } = usePublicLinks();
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
+  const isEntryVariant = variant === "entry";
 
   const { data: session, status, update } = useSession();
-  const sessionUser = session?.user as {
-    email?: string | null;
-    authProvider?: string | null;
-    tenantSlug?: string | null;
-  } | null;
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestJoinIntent = searchParams.get("intent") === "request-join";
@@ -104,7 +90,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
-  const processedGoogleCallbackRef = useRef<string | null>(null);
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -119,25 +104,17 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
   const [requestJoinLoading, setRequestJoinLoading] = useState(false);
+  const [joinMessage, setJoinMessage] = useState("");
   const [notMemberMessage, setNotMemberMessage] = useState("");
   const [canRequestJoin, setCanRequestJoin] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
-  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
   const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
-  const [turnstileProofExpiresAt, setTurnstileProofExpiresAt] = useState<number | null>(null);
-  const [turnstileProofEmail, setTurnstileProofEmail] = useState<string | null>(null);
+  const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+  const [resendCooldownSeconds, setResendCooldownSeconds] = useState(60);
+  const [resendRemainingSeconds, setResendRemainingSeconds] = useState(0);
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
-  const normalizedEmail = email.trim().toLowerCase();
-  const hasTurnstileProof =
-    turnstileEnabled &&
-    Boolean(
-      turnstileProof &&
-        turnstileProofExpiresAt &&
-        turnstileProofExpiresAt > Date.now() &&
-        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
-    );
-  const hasMainSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
+
   const redirectTo = useMemo(
     () => resolveRedirect(searchParams.get("callbackUrl"), publicHref("/")),
     [searchParams, publicHref]
@@ -149,9 +126,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     return `${publicHref(entryPath)}?${params.toString()}`;
   }, [entryPath, publicHref, redirectTo]);
 
-  const sessionRole = String((session?.user as any)?.role || "").toUpperCase();
-  const isAthleteSession = sessionRole === "ATLETA";
-  const shouldLoadMe = status === "authenticated" && isAthleteSession && Boolean(publicSlug);
+  const shouldLoadMe = status === "authenticated" && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
@@ -165,26 +140,17 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     profile: globalProfile,
     isLoading: isLoadingGlobalProfile,
     isError: isErrorGlobalProfile,
-  } = useGlobalProfile({
-    enabled: status === "authenticated",
-  });
-  const globalAccountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
+  } = useGlobalProfile({ enabled: status === "authenticated" });
+  const accountComplete =
+    isFut7ProAccountComplete(me?.athlete) || isFut7ProAccountComplete(globalProfile?.user);
+  const accountStateResolved =
+    status !== "authenticated" ||
+    Boolean(globalProfile) ||
+    isErrorGlobalProfile ||
+    !isLoadingGlobalProfile;
 
   const navigateWithRefresh = useCallback(
     (href: string) => {
-      router.replace(href);
-      router.refresh();
-    },
-    [router]
-  );
-
-  const navigateWithDocumentRedirect = useCallback(
-    (href: string) => {
-      if (typeof window !== "undefined") {
-        window.location.replace(href);
-        return;
-      }
-
       router.replace(href);
       router.refresh();
     },
@@ -206,111 +172,46 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
 
       clearPublicAuthContext();
-      queuePublicAuthSuccessFeedback(successMessage);
-      navigateWithDocumentRedirect(targetHref);
+      showPublicAuthSuccessToast(successMessage);
+      navigateWithRefresh(targetHref);
     },
-    [navigateWithDocumentRedirect, publicSlug, update]
+    [navigateWithRefresh, publicSlug, update]
   );
 
   const buildRegisterHref = useCallback(
-    (nextEmail?: string | null) => {
+    (emailValue?: string | null) => {
       const params = new URLSearchParams();
       params.set("callbackUrl", redirectTo);
-      const emailForRegister = String(nextEmail || "")
-        .trim()
-        .toLowerCase();
-      if (emailForRegister) {
-        params.set("email", emailForRegister);
+      const normalizedEmail = emailValue?.trim().toLowerCase();
+      if (normalizedEmail) {
+        params.set("email", normalizedEmail);
       }
       return `${publicHref("/register")}?${params.toString()}`;
     },
     [publicHref, redirectTo]
   );
-
-  const signInWithScopedTokens = useCallback(
-    async (body: any, authProvider: "credentials" | "passwordless" | "google") => {
-      const accessToken = body?.accessToken;
-      const refreshToken = body?.refreshToken;
-      if (!accessToken || !refreshToken) {
-        return false;
+  const normalizedJoinMessage = useMemo(() => normalizeJoinMessage(joinMessage), [joinMessage]);
+  const buildCompleteProfileHref = useCallback(
+    (emailValue?: string | null) => {
+      const params = new URLSearchParams();
+      if (publicSlug) {
+        params.set("intent", "request-join");
+        params.set("racha", publicSlug);
       }
-
-      const signInResult = await signIn("credentials", {
-        redirect: false,
-        accessToken,
-        refreshToken,
-        authProvider,
-        role: body?.role || undefined,
-        tenantSlug: body?.tenantSlug || undefined,
-        tenantId: body?.tenantId,
-      });
-
-      return !signInResult?.error;
+      params.set("callbackUrl", redirectTo);
+      const normalizedEmail = emailValue?.trim().toLowerCase();
+      if (normalizedEmail && publicSlug) {
+        persistPublicAuthContext({
+          email: normalizedEmail,
+          slug: publicSlug,
+          joinMessage: normalizedJoinMessage || null,
+          redirectTo,
+        });
+      }
+      const queryString = params.toString();
+      return queryString ? `/perfil?${queryString}` : "/perfil";
     },
-    []
-  );
-
-  const requestJoinForAuthenticatedUser = useCallback(
-    async (authProvider: "credentials" | "passwordless" | "google" = "credentials") => {
-      if (!publicSlug) {
-        throw new Error("Slug do grupo não encontrado.");
-      }
-
-      const requestJoin = async () => {
-        const controller = new AbortController();
-        const timeoutId = window.setTimeout(() => controller.abort(), 15000);
-        try {
-          return await fetch(`/api/public/${publicSlug}/auth/request-join`, {
-            method: "POST",
-            signal: controller.signal,
-          });
-        } finally {
-          window.clearTimeout(timeoutId);
-        }
-      };
-
-      let response = await requestJoin();
-      if (response.status === 401) {
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        response = await requestJoin();
-      }
-
-      const body = await response.json().catch(() => null);
-      if (!response.ok) {
-        const code = resolveAuthErrorCode(body);
-        if (code === "PROFILE_INCOMPLETE") {
-          return { isActive: false, isPending: false, needsProfile: true };
-        }
-        if (code === "REQUEST_PENDING") {
-          return { isActive: false, isPending: true, needsProfile: false };
-        }
-        const message = Array.isArray(body?.message)
-          ? body.message.join(" ")
-          : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
-        throw new Error(message);
-      }
-
-      const joinStatus = String(body?.status || "").toUpperCase();
-      const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
-      const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
-      const isPending =
-        joinStatus === "PENDENTE" ||
-        joinStatus === "PENDING" ||
-        joinMembershipStatus === "PENDENTE" ||
-        joinMembershipStatus === "PENDING";
-      if (isActive && (!body?.accessToken || !body?.refreshToken)) {
-        throw new Error("Não foi possível finalizar o acesso neste grupo.");
-      }
-      if (isActive) {
-        const scoped = await signInWithScopedTokens(body, authProvider);
-        if (!scoped) {
-          throw new Error("Não foi possível finalizar o acesso neste grupo.");
-        }
-      }
-
-      return { isActive, isPending, needsProfile: false };
-    },
-    [publicSlug, signInWithScopedTokens]
+    [normalizedJoinMessage, publicSlug, redirectTo]
   );
 
   const resetTurnstile = () => {
@@ -318,76 +219,8 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     setTurnstileResetSignal((value) => value + 1);
   };
 
-  const persistJourneyContext = useCallback(
-    (nextEmail: string, proof?: string | null, proofExpiresAt?: number | null) => {
-      if (!publicSlug) return;
-      const sanitizedEmail = nextEmail.trim().toLowerCase();
-      if (!sanitizedEmail) return;
-
-      persistPublicAuthContext({
-        email: sanitizedEmail,
-        slug: publicSlug,
-        ...(proof && proofExpiresAt
-          ? {
-              turnstileProof: proof,
-              turnstileProofExpiresAt: proofExpiresAt,
-            }
-          : {}),
-      });
-    },
-    [publicSlug]
-  );
-
-  const clearJourneyProof = useCallback(
-    (nextEmail?: string | null) => {
-      const emailForContext = String(nextEmail || normalizedEmail || turnstileProofEmail || "")
-        .trim()
-        .toLowerCase();
-      setTurnstileProof(null);
-      setTurnstileProofExpiresAt(null);
-      setTurnstileProofEmail(null);
-      if (emailForContext) {
-        persistJourneyContext(emailForContext);
-      }
-    },
-    [normalizedEmail, persistJourneyContext, turnstileProofEmail]
-  );
-
-  const applyJourneyProof = useCallback(
-    (proofValue: unknown, proofExpiresAtValue: unknown, nextEmail?: string | null) => {
-      const nextProof = typeof proofValue === "string" ? proofValue.trim() : "";
-      const nextProofExpiresAt =
-        typeof proofExpiresAtValue === "number" && Number.isFinite(proofExpiresAtValue)
-          ? proofExpiresAtValue
-          : null;
-      const emailForContext = String(nextEmail || normalizedEmail || "")
-        .trim()
-        .toLowerCase();
-
-      if (!nextProof || !nextProofExpiresAt || nextProofExpiresAt <= Date.now()) {
-        clearJourneyProof(emailForContext);
-        return false;
-      }
-
-      setTurnstileProof(nextProof);
-      setTurnstileProofExpiresAt(nextProofExpiresAt);
-      setTurnstileProofEmail(emailForContext || null);
-      setTurnstileToken(null);
-      if (emailForContext) {
-        persistJourneyContext(emailForContext, nextProof, nextProofExpiresAt);
-      }
-      return true;
-    },
-    [clearJourneyProof, normalizedEmail, persistJourneyContext]
-  );
-
-  const requireTurnstile = (
-    token: string | null,
-    setMessage: (message: string) => void,
-    proof?: string | null
-  ) => {
+  const requireTurnstile = (token: string | null, setMessage: (message: string) => void) => {
     if (!turnstileEnabled) return true;
-    if (proof) return true;
     if (!turnstileSiteKey) {
       setMessage(TURNSTILE_UNAVAILABLE_MESSAGE);
       return false;
@@ -401,6 +234,10 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
   useEffect(() => {
     if (prefillAppliedRef.current) return;
+    const context = publicSlug ? readPublicAuthContext(publicSlug) : null;
+    if (context?.joinMessage) {
+      setJoinMessage((previous) => previous || context.joinMessage || "");
+    }
     if (emailFromQuery) {
       setEmail(emailFromQuery);
       prefillAppliedRef.current = true;
@@ -408,176 +245,120 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       return;
     }
     if (!publicSlug) return;
-    const context = readPublicAuthContext(publicSlug);
     if (!context?.email) return;
 
     setEmail((previous) => previous || context.email);
-    if (context.turnstileProof && context.turnstileProofExpiresAt) {
-      applyJourneyProof(context.turnstileProof, context.turnstileProofExpiresAt, context.email);
-    }
+    setJoinMessage((previous) => previous || context.joinMessage || "");
     prefillAppliedRef.current = true;
     requestAnimationFrame(() => passwordInputRef.current?.focus());
-  }, [applyJourneyProof, emailFromQuery, publicSlug]);
-
-  useEffect(() => {
-    const sessionEmail = String(sessionUser?.email || "")
-      .trim()
-      .toLowerCase();
-    if (status !== "authenticated" || !sessionEmail) return;
-    setEmail((previous) => previous || sessionEmail);
-  }, [sessionUser?.email, status]);
+  }, [emailFromQuery, publicSlug]);
 
   useEffect(() => {
     setCodigo("");
     setCodigoEnviado(false);
     setInfoMessage("");
     setCanRequestJoin(false);
+    setTurnstileProof(null);
+    setResendRemainingSeconds(0);
   }, [email]);
 
   useEffect(() => {
-    if (!turnstileProof || !turnstileProofExpiresAt) return;
-
-    const msUntilExpiration = turnstileProofExpiresAt - Date.now();
-    if (msUntilExpiration <= 0) {
-      clearJourneyProof();
-      return;
-    }
-
+    if (resendRemainingSeconds <= 0) return;
     const timer = window.setTimeout(() => {
-      clearJourneyProof();
-    }, msUntilExpiration + 100);
-
+      setResendRemainingSeconds((value) => Math.max(0, value - 1));
+    }, 1000);
     return () => window.clearTimeout(timer);
-  }, [clearJourneyProof, turnstileProof, turnstileProofExpiresAt]);
-
-  useEffect(() => {
-    if (!turnstileProof || !turnstileProofEmail) return;
-    if (!normalizedEmail || normalizedEmail === turnstileProofEmail) return;
-    clearJourneyProof(normalizedEmail);
-  }, [clearJourneyProof, normalizedEmail, turnstileProof, turnstileProofEmail]);
-
-  useEffect(() => {
-    if (requestJoinIntent) {
-      setUsarSenha(true);
-    }
-  }, [requestJoinIntent]);
+  }, [resendRemainingSeconds]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
     if (requestJoinInProgress) return;
     if (completedNavigationRef.current) return;
-    if (isLoadingGlobalProfile) return;
 
-    if (!globalAccountComplete && !isErrorGlobalProfile) {
-      navigateWithRefresh(buildRegisterHref());
+    if (!publicSlug) {
+      navigateWithRefresh(buildCompleteProfileHref(session?.user?.email || email));
       return;
     }
 
-    if (returningFromGoogleLogin) {
-      if (!publicSlug) {
-        navigateWithRefresh(buildRegisterHref());
-        return;
-      }
+    if (shouldLoadMe && isLoadingMe) return;
+    if (!accountStateResolved || isLoadingGlobalProfile) return;
 
-      const sessionEmail = String(sessionUser?.email || "")
-        .trim()
-        .toLowerCase();
-      const googleCallbackKey = `${publicSlug}:${sessionEmail || "unknown"}`;
-      if (processedGoogleCallbackRef.current === googleCallbackKey) return;
-      processedGoogleCallbackRef.current = googleCallbackKey;
-
-      setRequestJoinInProgress(true);
-      void (async () => {
-        try {
-          const outcome = await requestJoinForAuthenticatedUser("google");
-          if (outcome.isActive) {
-            await finalizeSuccessfulLogin(redirectTo);
-            return;
-          }
-          if (outcome.needsProfile) {
-            navigateWithRefresh(buildRegisterHref(sessionEmail));
-            return;
-          }
-
-          clearPublicAuthContext();
-          navigateWithRefresh(publicHref("/aguardando-aprovacao"));
-        } catch (error) {
-          setErro(
-            error instanceof Error
-              ? error.message
-              : "Não foi possível continuar com Google neste grupo."
-          );
-        } finally {
-          setRequestJoinInProgress(false);
-        }
-      })();
+    if (!accountComplete) {
+      navigateWithRefresh(buildCompleteProfileHref(session?.user?.email || email));
       return;
     }
-
-    if (!isAthleteSession) return;
 
     if (shouldLoadMe && isLoadingMe) return;
 
-    const athleteContext = me as
-      | (NonNullable<typeof me> & {
-          membershipStatus?: string | null;
-          status?: string | null;
-          nextAction?: string | null;
-        })
-      | null;
-    const membershipStatus = String(
-      athleteContext?.membershipStatus ||
-        athleteContext?.membership?.status ||
-        athleteContext?.status ||
-        ""
-    ).toUpperCase();
-    const nextAction = String(athleteContext?.nextAction || "").toUpperCase();
-
-    if (isApprovedMembershipStatus(membershipStatus)) {
-      void finalizeSuccessfulLogin(redirectTo);
+    const membershipStatus = String(me?.membership?.status || "").toUpperCase();
+    if (requestJoinIntent) {
+      if (membershipStatus === "APROVADO") {
+        void finalizeSuccessfulLogin(redirectTo);
+        return;
+      }
+      if (membershipStatus === "PENDENTE") {
+        navigateWithRefresh(publicHref("/aguardando-aprovacao"));
+        return;
+      }
+      setCanRequestJoin(true);
+      setNotMemberModalOpen(true);
       return;
     }
 
-    if (isPendingMembershipStatus(membershipStatus) || nextAction === "WAIT_APPROVAL") {
+    if (membershipStatus === "PENDENTE") {
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
 
-    if (isBlockedMembershipStatus(membershipStatus) || nextAction === "BLOCKED_MESSAGE") {
-      setErro("Seu acesso a este grupo não está disponível. Fale com o administrador.");
+    if (membershipStatus === "APROVADO") {
+      void finalizeSuccessfulLogin(redirectTo);
       return;
     }
 
-    if (
-      isErrorMe ||
-      membershipStatus === "NONE" ||
-      nextAction === "REQUEST_JOIN" ||
-      nextAction === "REGISTER"
-    ) {
-      setCanRequestJoin(true);
-      setNotMemberMessage("");
-      setNotMemberModalOpen(true);
+    if (membershipStatus === "SUSPENSO" || membershipStatus === "REJEITADO") {
+      setErro(`Seu acesso a ${nomeDoRacha} não está liberado. Fale com o administrador.`);
+      return;
     }
+
+    if (isErrorMe) {
+      setCanRequestJoin(true);
+      setNotMemberModalOpen(true);
+      setNotMemberMessage("");
+      return;
+    }
+
+    if (returningFromGoogleLogin || !membershipStatus || membershipStatus === "NONE") {
+      setCanRequestJoin(true);
+      setNotMemberModalOpen(true);
+      setNotMemberMessage("");
+      return;
+    }
+
+    setCanRequestJoin(true);
+    setNotMemberModalOpen(true);
+    setNotMemberMessage("");
   }, [
     status,
-    isAthleteSession,
-    sessionUser,
     redirectTo,
     publicHref,
     publicSlug,
-    buildRegisterHref,
-    globalAccountComplete,
-    isErrorGlobalProfile,
-    isLoadingGlobalProfile,
     shouldLoadMe,
     isLoadingMe,
     isErrorMe,
     me,
+    nomeDoRacha,
+    accountComplete,
+    accountStateResolved,
+    isLoadingGlobalProfile,
+    requestJoinIntent,
     requestJoinInProgress,
     returningFromGoogleLogin,
     finalizeSuccessfulLogin,
     navigateWithRefresh,
-    requestJoinForAuthenticatedUser,
+    buildRegisterHref,
+    buildCompleteProfileHref,
+    session?.user?.email,
+    email,
   ]);
 
   const handleRequestJoin = async () => {
@@ -590,62 +371,80 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     }
 
     if (!publicSlug) {
-      setNotMemberMessage("Slug do grupo não encontrado.");
+      setNotMemberMessage("Não encontramos este grupo. Confira o link e tente novamente.");
       return;
     }
 
-    const normalizedEmail = (email || sessionUser?.email || "").trim().toLowerCase();
-    if (!normalizedEmail) {
-      setNotMemberMessage("Informe e-mail para solicitar entrada.");
+    if (status !== "authenticated" && !canRequestJoin) {
+      setNotMemberMessage(
+        `Entre com código enviado por e-mail ou com sua senha para solicitar entrada em ${nomeDoRacha}.`
+      );
       return;
     }
-    const hasAuthenticatedAccount =
-      canRequestJoin || (status === "authenticated" && Boolean(session?.user));
+
     setRequestJoinLoading(true);
     setRequestJoinInProgress(true);
 
     try {
-      if (!hasAuthenticatedAccount) {
-        if (!senha.trim()) {
-          setNotMemberMessage(
-            "Entre com código enviado por e-mail ou com sua senha antes de solicitar entrada neste grupo."
-          );
-          setRequestJoinInProgress(false);
-          return;
+      const requestJoin = async () => {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 15000);
+        try {
+          return await fetch(`/api/public/${publicSlug}/auth/request-join`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(normalizedJoinMessage ? { mensagem: normalizedJoinMessage } : {}),
+            signal: controller.signal,
+          });
+        } finally {
+          window.clearTimeout(timeout);
         }
+      };
 
-        const signInResult = await signIn("credentials", {
-          redirect: false,
-          email: normalizedEmail,
-          password: senha,
-          turnstileToken:
-            turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
-          turnstileProof:
-            turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
-        });
-
-        if (signInResult?.error) {
-          setNotMemberMessage("Não foi possível validar sua Conta Fut7Pro. Tente novamente.");
-          setRequestJoinInProgress(false);
-          return;
-        }
+      let response = await requestJoin();
+      if (response.status === 401) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        response = await requestJoin();
       }
 
-      const outcome = await requestJoinForAuthenticatedUser();
-      setNotMemberModalOpen(false);
-      if (outcome.isActive) {
-        await finalizeSuccessfulLogin(redirectTo);
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        const code = String(body?.code || body?.error?.code || "").toUpperCase();
+        if (code === "PROFILE_INCOMPLETE") {
+          navigateWithRefresh(buildCompleteProfileHref(session?.user?.email || email));
+          return;
+        }
+        if (code === "REQUEST_PENDING") {
+          clearPublicAuthContext();
+          navigateWithRefresh(publicHref("/aguardando-aprovacao"));
+          return;
+        }
+        const message = Array.isArray(body?.message)
+          ? body.message.join(" ")
+          : body?.message || body?.error || "Não foi possível solicitar entrada neste grupo.";
+        setNotMemberMessage(getHumanAuthErrorMessage(message));
+        setRequestJoinInProgress(false);
         return;
       }
-      if (outcome.needsProfile) {
-        navigateWithRefresh(buildRegisterHref(normalizedEmail));
+
+      const joinStatus = String(body?.status || "").toUpperCase();
+      const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
+      const isActive = joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE";
+
+      setNotMemberModalOpen(false);
+      if (isActive) {
+        await finalizeSuccessfulLogin(redirectTo);
         return;
       }
 
       clearPublicAuthContext();
       navigateWithRefresh(publicHref("/aguardando-aprovacao"));
-    } catch {
-      setNotMemberMessage("Falha ao solicitar entrada. Tente novamente.");
+    } catch (error) {
+      const message =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "Tempo esgotado ao solicitar entrada. Tente novamente."
+          : getHumanAuthErrorMessage(error, "Falha ao solicitar entrada. Tente novamente.");
+      setNotMemberMessage(message);
       setRequestJoinInProgress(false);
     } finally {
       setRequestJoinLoading(false);
@@ -653,7 +452,14 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   };
 
   const handleAuthFailure = (body: any) => {
-    const code = resolveAuthErrorCode(body);
+    const code =
+      typeof body?.code === "string"
+        ? body.code
+        : typeof body?.error?.code === "string"
+          ? body.error.code
+          : typeof body?.message?.code === "string"
+            ? body.message.code
+            : null;
     const message =
       typeof body?.message === "string"
         ? body.message
@@ -667,7 +473,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
     if (isTurnstileErrorCode(code)) {
       setErro(resolveTurnstileErrorMessage(body));
-      clearJourneyProof();
       resetTurnstile();
       return true;
     }
@@ -689,13 +494,13 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
     if (code === "USER_NOT_FOUND") {
       setErro(
-        "Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
+        `Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada em ${nomeDoRacha}.`
       );
       return true;
     }
 
     if (code === "PROFILE_INCOMPLETE") {
-      router.replace(buildRegisterHref(email));
+      router.replace(buildCompleteProfileHref(email));
       return true;
     }
 
@@ -713,13 +518,26 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       return true;
     }
 
-    setErro(message);
+    setErro(getHumanAuthErrorMessage(message, "Não foi possível autenticar."));
     return true;
   };
 
   const loginWithTokens = async (body: any, authProvider: "credentials" | "passwordless") => {
-    const signedIn = await signInWithScopedTokens(body, authProvider);
-    if (!signedIn) {
+    const accessToken = body?.accessToken;
+    const refreshToken = body?.refreshToken;
+    if (!accessToken || !refreshToken) {
+      setErro("Não foi possível concluir o login.");
+      return;
+    }
+
+    const signInResult = await signIn("credentials", {
+      redirect: false,
+      accessToken,
+      refreshToken,
+      authProvider,
+    });
+
+    if (signInResult?.error) {
       setErro("Não foi possível concluir o login.");
       return;
     }
@@ -730,8 +548,8 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     ).toUpperCase();
     if (nextAction === "REQUEST_JOIN" || membershipStatus === "NONE") {
       setCanRequestJoin(true);
-      setNotMemberMessage("");
       setNotMemberModalOpen(true);
+      setNotMemberMessage("");
       return;
     }
 
@@ -745,21 +563,13 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       body: JSON.stringify({
         email,
         password: senha,
-        turnstileToken:
-          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
-        turnstileProof:
-          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
       }),
     });
 
     const body = await response.json().catch(() => null);
     if (!response.ok) {
-      const handled = handleAuthFailure(body);
-      const errorCode = resolveAuthErrorCode(body);
-      if (!handled || !["NOT_MEMBER", "REQUEST_PENDING"].includes(String(errorCode || ""))) {
-        clearJourneyProof(normalizedEmail);
-        resetTurnstile();
-      }
+      handleAuthFailure(body);
       return;
     }
 
@@ -778,10 +588,8 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email: normalizedEmail,
-        turnstileToken:
-          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
-        turnstileProof:
-          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
+        turnstileProof: turnstileProof || undefined,
+        turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
@@ -789,32 +597,33 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     if (!response.ok) {
       if (isTurnstileErrorCode(body?.code)) {
         setErro(resolveTurnstileErrorMessage(body));
-        clearJourneyProof(normalizedEmail);
         resetTurnstile();
         return;
       }
       if (body?.code === "USER_NOT_FOUND") {
         setErro(
-          "Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada neste grupo."
+          `Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada em ${nomeDoRacha}.`
         );
         return;
       }
-      clearJourneyProof(normalizedEmail);
-      resetTurnstile();
-      setErro(body?.message || body?.error || "Não foi possível enviar o código.");
+      setErro(getHumanAuthErrorMessage(body, "Não foi possível enviar o código."));
       return;
     }
 
-    const proofApplied = applyJourneyProof(
-      body?.turnstileProof,
-      body?.turnstileProofExpiresAt,
-      normalizedEmail
-    );
-    if (turnstileEnabled && !proofApplied) {
-      resetTurnstile();
-    }
+    const nextCooldown =
+      typeof body?.resendCooldownSeconds === "number" && Number.isFinite(body.resendCooldownSeconds)
+        ? Math.max(0, Math.floor(body.resendCooldownSeconds))
+        : resendCooldownSeconds;
+    const nextProof =
+      typeof body?.turnstileProof === "string" && body.turnstileProof.trim()
+        ? body.turnstileProof.trim()
+        : null;
+
+    setTurnstileProof(nextProof);
+    setResendCooldownSeconds(nextCooldown);
+    setResendRemainingSeconds(nextCooldown);
     setCodigoEnviado(true);
-    setInfoMessage("Enviamos o código para a Conta Fut7Pro informada.");
+    setInfoMessage(`Enviamos um código para ${maskEmail(normalizedEmail)}.`);
   };
 
   const loginWithPasswordlessCode = async () => {
@@ -835,31 +644,15 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       body: JSON.stringify({
         email: normalizedEmail,
         code: normalizedCode,
+        turnstileProof: turnstileProof || undefined,
         turnstileToken:
-          turnstileEnabled && !hasTurnstileProof ? turnstileToken || undefined : undefined,
-        turnstileProof:
-          turnstileEnabled && hasTurnstileProof ? turnstileProof || undefined : undefined,
-        intent: requestJoinIntent ? "request-join" : undefined,
+          turnstileEnabled && !turnstileProof ? turnstileToken || undefined : undefined,
       }),
     });
     const body = await response.json().catch(() => null);
 
     if (!response.ok) {
       handleAuthFailure(body);
-      clearJourneyProof(normalizedEmail);
-      resetTurnstile();
-      return;
-    }
-
-    const nextAction = String(body?.nextAction || "").toUpperCase();
-    const membershipStatus = String(body?.membershipStatus || body?.status || "").toUpperCase();
-    if (
-      nextAction === "WAIT_APPROVAL" ||
-      membershipStatus === "PENDING" ||
-      membershipStatus === "PENDENTE"
-    ) {
-      clearPublicAuthContext();
-      navigateWithRefresh(publicHref("/aguardando-aprovacao"));
       return;
     }
 
@@ -881,11 +674,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
 
       if (!publicSlug) {
-        setErro("Slug do grupo não encontrado.");
+        setErro("Não encontramos este grupo. Confira o link e tente novamente.");
         return;
       }
 
-      if (!requireTurnstile(turnstileToken, setErro, hasTurnstileProof ? turnstileProof : null)) {
+      const verifyingCodeWithProof = !usarSenha && codigoEnviado && Boolean(turnstileProof);
+      if (!verifyingCodeWithProof && !requireTurnstile(turnstileToken, setErro)) {
         return;
       }
 
@@ -903,6 +697,9 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
       await loginWithPasswordlessCode();
     } finally {
+      if (turnstileEnabled && (usarSenha || !codigoEnviado || !turnstileProof)) {
+        resetTurnstile();
+      }
       setIsSubmitting(false);
     }
   };
@@ -912,12 +709,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       <section className="w-full px-4">
         <div className="mx-auto w-full max-w-lg rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 shadow-2xl">
           <div className="mb-4 rounded-lg border border-amber-400/30 bg-[#141824] px-3 py-3 text-center">
-            <p className="text-sm font-semibold text-amber-200">Racha Vitrine</p>
+            <p className="text-sm font-semibold text-amber-200">Vitrine Fut7Pro</p>
             <p className="mt-1 text-sm text-amber-100">{VITRINE_AUTH_BLOCKED_MESSAGE}</p>
           </div>
           <h1 className="text-xl font-bold text-white text-center">Acesso desabilitado</h1>
           <p className="mt-2 text-center text-sm text-gray-300">
-            Para criar seu ambiente real no Fut7Pro, use o cadastro de racha.
+            Para criar seu ambiente real no Fut7Pro, use o cadastro de grupo de futebol.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <a
@@ -938,20 +735,44 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     );
   }
 
+  const renderedMembershipStatus = String(me?.membership?.status || "").toUpperCase();
+  const resolvingExistingSession =
+    status === "loading" ||
+    (status === "authenticated" &&
+      !isErrorMe &&
+      (!accountStateResolved ||
+        isLoadingGlobalProfile ||
+        (shouldLoadMe && isLoadingMe) ||
+        renderedMembershipStatus === "APROVADO" ||
+        renderedMembershipStatus === "PENDENTE"));
+
+  if (resolvingExistingSession) {
+    return (
+      <section className="w-full px-4">
+        <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 text-center shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-soft">
+            Acesso do atleta
+          </p>
+          <h1 className="mt-2 text-xl font-bold text-white">Acesse seu perfil</h1>
+          <p className="mt-2 text-sm text-gray-300">Verificando seu acesso a {nomeDoRacha}...</p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="w-full px-4">
       <div className="mx-auto w-full max-w-lg rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
         <div className="mb-4 rounded-lg border border-brand/30 bg-[#141824] px-3 py-2 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-soft">
-            Acesso do atleta
+            {isEntryVariant ? "Acesso do atleta" : "Acesso exclusivo"}
           </p>
           <p className="text-sm text-gray-200">
-            Login do Atleta - <span className="font-semibold text-brand">{nomeDoRacha}</span>
+            Login do Atleta no <span className="font-semibold text-brand">{nomeDoRacha}</span>
           </p>
           <p className="mt-1 text-xs text-gray-400">
-            {variant === "entry"
-              ? "Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil."
-              : "Esta etapa é para atletas que já possuem Conta Fut7Pro."}
+            Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil no{" "}
+            <span className="font-semibold text-gray-300">{nomeDoRacha}</span>.
           </p>
         </div>
 
@@ -966,12 +787,35 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
         {requestJoinIntent ? (
           <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-500/10 px-3 py-3 text-left text-sm text-amber-100">
-            <p className="font-semibold text-amber-200">Você ainda não faz parte deste grupo</p>
-            <p className="mt-1">
-              Grupo: <span className="font-semibold text-amber-50">{nomeDoRacha}</span>. Entre com
-              código enviado por e-mail ou com sua senha para solicitar entrada. Assim que o
-              administrador aprovar, você entra nos rankings, estatísticas e comunicação.
+            <p className="font-semibold text-amber-200">
+              Você ainda não faz parte de {nomeDoRacha}
             </p>
+            <p className="mt-1">
+              Entre com código enviado por e-mail ou com sua senha para solicitar entrada. Assim que
+              o administrador aprovar, você entra nos rankings, estatísticas e comunicação do grupo.
+            </p>
+            <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.16em] text-amber-200">
+              Mensagem para o administrador, opcional
+              <textarea
+                value={joinMessage}
+                onChange={(event) =>
+                  setJoinMessage(event.target.value.slice(0, MAX_JOIN_MESSAGE_LENGTH))
+                }
+                placeholder="Ex: Olá, sou aqui da cidade, ouvi falar muito bem do grupo de futebol de vocês e gostaria de participar quando tiver vaga."
+                maxLength={MAX_JOIN_MESSAGE_LENGTH}
+                rows={4}
+                className="mt-2 w-full resize-none rounded-lg border border-amber-300/20 bg-black/20 px-3 py-2 text-sm normal-case tracking-normal text-white placeholder:text-amber-100/45 focus:outline-none focus:ring-2 focus:ring-brand"
+              />
+            </label>
+            <div className="mt-1 flex items-start justify-between gap-3 text-xs text-amber-100/75">
+              <span>
+                Use este espaço para se apresentar rapidamente. Essa mensagem será enviada junto com
+                sua solicitação de entrada.
+              </span>
+              <span className="shrink-0">
+                {joinMessage.length}/{MAX_JOIN_MESSAGE_LENGTH}
+              </span>
+            </div>
           </div>
         ) : null}
 
@@ -1039,7 +883,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                 </label>
               ) : (
                 <div className="rounded-lg border border-brand/20 bg-brand/10 px-3 py-2 text-xs text-brand-soft">
-                  Enviaremos um código para a Conta Fut7Pro informada.
+                  Vamos enviar um código para seu e-mail.
                 </div>
               )}
             </>
@@ -1076,15 +920,22 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
               {infoMessage}
             </div>
           )}
-          <TurnstileWidget
-            enabled={turnstileEnabled && !hasTurnstileProof}
-            siteKey={turnstileSiteKey}
-            onTokenChange={setTurnstileToken}
-            resetSignal={turnstileResetSignal}
-          />
+          {(usarSenha || !codigoEnviado || !turnstileProof) && (
+            <TurnstileWidget
+              enabled={turnstileEnabled}
+              siteKey={turnstileSiteKey}
+              onTokenChange={setTurnstileToken}
+              resetSignal={turnstileResetSignal}
+            />
+          )}
           <button
             type="submit"
-            disabled={isSubmitting || (turnstileEnabled && !hasMainSecurityCheck)}
+            disabled={
+              isSubmitting ||
+              (turnstileEnabled &&
+                (usarSenha || !codigoEnviado || !turnstileProof) &&
+                !turnstileToken)
+            }
             className="w-full rounded-lg bg-brand py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting
@@ -1095,11 +946,48 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   ? "Acessar perfil"
                   : "Enviar código de acesso"}
           </button>
+          {!usarSenha && codigoEnviado ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setCodigo("");
+                  setCodigoEnviado(false);
+                  setInfoMessage("");
+                  setTurnstileProof(null);
+                  setResendRemainingSeconds(0);
+                  resetTurnstile();
+                }}
+                className="rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
+              >
+                Trocar e-mail
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (resendRemainingSeconds > 0 || isSubmitting) return;
+                  setErro("");
+                  setCodigo("");
+                  void requestPasswordlessCode();
+                }}
+                disabled={resendRemainingSeconds > 0 || isSubmitting}
+                className="rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {resendRemainingSeconds > 0
+                  ? `Reenviar em ${resendRemainingSeconds}s`
+                  : "Reenviar código"}
+              </button>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => {
               setUsarSenha((prev) => !prev);
               setErro("");
+              setCodigoEnviado(false);
+              setCodigo("");
+              setInfoMessage("");
+              setTurnstileProof(null);
             }}
             className="w-full rounded-lg border border-white/15 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-200 hover:border-white/30"
           >
@@ -1119,7 +1007,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         <div className="mt-5 text-center text-sm text-gray-300">
           Ainda não tem conta?{" "}
           <a
-            href={`${publicHref("/register")}${email.trim() ? `?email=${encodeURIComponent(email.trim().toLowerCase())}` : ""}`}
+            href={buildRegisterHref(email)}
             className="text-brand-soft underline hover:text-brand-soft"
           >
             Criar Conta Fut7Pro
@@ -1155,9 +1043,9 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitação pendente
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua entrada está aguardando aprovação.
-                  <br />
-                  Grupo: <span className="font-semibold text-brand">{nomeDoRacha}</span>.
+                  Sua entrada em <span className="font-semibold text-brand">{nomeDoRacha}</span>{" "}
+                  ainda está aguardando aprovação. Assim que os administradores aprovarem, você
+                  poderá acessar normalmente.
                 </p>
                 <p className="mt-2 text-xs text-gray-400">
                   Entre em contato com os administradores e solicite sua aprovação.
@@ -1211,13 +1099,36 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                   Solicitar entrada
                 </Dialog.Title>
                 <p className="mt-2 text-sm text-gray-300">
-                  Sua Conta Fut7Pro está pronta. Agora envie sua solicitação para entrar em{" "}
+                  Sua Conta Fut7Pro está pronta. Agora envie sua solicitação para participar de{" "}
                   <span className="font-semibold text-brand">{nomeDoRacha}</span>.
-                  <br />
                 </p>
                 <p className="mt-2 text-sm text-gray-300">
-                  O administrador poderá aprovar ou recusar seu pedido.
+                  Criar sua conta no Fut7Pro não aprova automaticamente sua entrada em{" "}
+                  <span className="font-semibold text-brand">{nomeDoRacha}</span>. O administrador
+                  poderá aprovar ou recusar seu pedido.
                 </p>
+                <label className="mt-4 block text-xs font-semibold uppercase tracking-[0.16em] text-gray-300">
+                  Mensagem para o administrador, opcional
+                  <textarea
+                    value={joinMessage}
+                    onChange={(event) =>
+                      setJoinMessage(event.target.value.slice(0, MAX_JOIN_MESSAGE_LENGTH))
+                    }
+                    placeholder="Ex: Olá, sou aqui da cidade, ouvi falar muito bem do grupo de futebol de vocês e gostaria de participar quando tiver vaga."
+                    maxLength={MAX_JOIN_MESSAGE_LENGTH}
+                    rows={4}
+                    className="mt-2 w-full resize-none rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm normal-case tracking-normal text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-brand"
+                  />
+                </label>
+                <div className="mt-1 flex items-start justify-between gap-3 text-xs text-gray-400">
+                  <span>
+                    Use este espaço para se apresentar rapidamente. Essa mensagem será enviada junto
+                    com sua solicitação de entrada.
+                  </span>
+                  <span className="shrink-0">
+                    {joinMessage.length}/{MAX_JOIN_MESSAGE_LENGTH}
+                  </span>
+                </div>
                 {notMemberMessage ? (
                   <div className="mt-3 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-200">
                     {notMemberMessage}
@@ -1237,7 +1148,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
                     disabled={requestJoinLoading}
                     className="rounded-lg bg-brand px-4 py-2 text-center text-sm font-semibold text-black disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {requestJoinLoading ? "Solicitando..." : "Solicitar entrada"}
+                    {requestJoinLoading ? "Solicitando..." : `Solicitar entrada em ${nomeDoRacha}`}
                   </button>
                 </div>
               </Dialog.Panel>

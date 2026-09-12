@@ -17,21 +17,21 @@ function json(body: unknown, init?: ResponseInit) {
 
 function normalizePasswordlessStartResponse(payload: unknown) {
   const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
+  const resendCooldownSeconds =
+    typeof body.resendCooldownSeconds === "number" && Number.isFinite(body.resendCooldownSeconds)
+      ? Math.max(0, Math.floor(body.resendCooldownSeconds))
+      : 60;
   const turnstileProof =
     typeof body.turnstileProof === "string" && body.turnstileProof.trim()
       ? body.turnstileProof.trim()
       : null;
-  const turnstileProofExpiresAt =
-    typeof body.turnstileProofExpiresAt === "number" &&
-    Number.isFinite(body.turnstileProofExpiresAt)
-      ? body.turnstileProofExpiresAt
-      : null;
+
   return {
     ok: true,
     message: UNIFORM_AUTH_MESSAGE,
     ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
+    resendCooldownSeconds,
     ...(turnstileProof ? { turnstileProof } : {}),
-    ...(turnstileProofExpiresAt ? { turnstileProofExpiresAt } : {}),
   };
 }
 

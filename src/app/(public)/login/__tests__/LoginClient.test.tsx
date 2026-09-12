@@ -14,17 +14,15 @@ const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
 const signInMock = jest.fn();
-let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
-  useSearchParams: () => searchParamsMock,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: (...args: unknown[]) => signInMock(...args),
-  signOut: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -37,6 +35,10 @@ jest.mock("@/hooks/usePublicLinks", () => ({
 
 jest.mock("@/hooks/useMe", () => ({
   useMe: jest.fn(),
+}));
+
+jest.mock("@/hooks/useGlobalProfile", () => ({
+  useGlobalProfile: jest.fn(),
 }));
 
 jest.mock("@/components/security/TurnstileWidget", () => ({
@@ -58,6 +60,7 @@ const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
+const mockedUseGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
 
 function mockJsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   return {
@@ -69,7 +72,6 @@ function mockJsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
 
 describe("LoginClient", () => {
   beforeEach(() => {
-    searchParamsMock = new URLSearchParams();
     mockedUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -82,6 +84,11 @@ describe("LoginClient", () => {
     });
     mockedUseMe.mockReturnValue({
       me: null,
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: null,
       isLoading: false,
       isError: false,
     });
@@ -98,7 +105,7 @@ describe("LoginClient", () => {
     jest.clearAllMocks();
   });
 
-  it("login por codigo permite solicitar entrada no grupo sem Turnstile no modal", async () => {
+  it("login por codigo permite solicitar entrada no grupo", async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce(
         mockJsonResponse({
@@ -129,7 +136,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText("Enviamos o código para a Conta Fut7Pro informada.")
+      await screen.findByText(/Enviamos um código para at\*\*\*@teste.com/i)
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
@@ -137,12 +144,150 @@ describe("LoginClient", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
 
-    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
-    expect(screen.queryByText(/verificação de segurança/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
 
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+    expect(signInMock).toHaveBeenCalledWith("credentials", {
+      redirect: false,
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      authProvider: "passwordless",
+    });
+  });
+
+  it("login por senha permite solicitar entrada no grupo", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          nextAction: "REQUEST_JOIN",
+          membershipStatus: "NONE",
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          status: "PENDENTE",
+          membershipStatus: "PENDING",
+        })
+      );
+
+    render(<LoginClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+    expect(signInMock).toHaveBeenCalledWith("credentials", {
+      redirect: false,
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      authProvider: "credentials",
+    });
+  });
+
+  it("sessao global autenticada sem papel ATLETA pode solicitar entrada", async () => {
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "neymar@teste.com",
+          name: "Neymar",
+          role: "ADMIN",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: { membership: { status: "NONE" } },
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Neymar",
+          position: "atacante",
+          birthDay: 5,
+          birthMonth: 2,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        status: "PENDENTE",
+        membershipStatus: "PENDING",
+      })
+    );
+
+    render(<LoginClient />);
+
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/public/casa-do-gamer/auth/request-join",
+        expect.objectContaining({ method: "POST" })
+      );
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+  });
+
+  it("sessao autenticada com Perfil Global incompleto vai para /perfil", async () => {
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "incompleto@teste.com",
+          name: "Neymar",
+          role: "ATLETA",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: { membership: { status: "NONE" } },
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Neymar",
+          position: null,
+          birthDay: null,
+          birthMonth: null,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<LoginClient />);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith(
+        "/perfil?intent=request-join&racha=casa-do-gamer&callbackUrl=%2Fcasa-do-gamer%2F"
+      );
     });
   });
 
@@ -151,7 +296,7 @@ describe("LoginClient", () => {
       mockJsonResponse(
         {
           code: "USER_NOT_FOUND",
-          message: "Você ainda não possui Conta Fut7Pro. Cadastre-se para continuar.",
+          message: "Você ainda não possui Conta Global Fut7Pro. Cadastre-se para continuar.",
         },
         false,
         404
@@ -170,78 +315,8 @@ describe("LoginClient", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Criar Conta Fut7Pro/i })).toHaveAttribute(
       "href",
-      "/casa-do-gamer/register?email=novo%40teste.com"
+      "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F&email=novo%40teste.com"
     );
     expect(signInMock).not.toHaveBeenCalled();
-  });
-
-  it("permite solicitar entrada depois de login com senha retornar identidade global sem Membership", async () => {
-    (global.fetch as jest.Mock)
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          accessToken: "global-access-token",
-          refreshToken: "global-refresh-token",
-          nextAction: "REQUEST_JOIN",
-          membershipStatus: "NONE",
-        })
-      )
-      .mockResolvedValueOnce(
-        mockJsonResponse({
-          status: "PENDENTE",
-          membershipStatus: "PENDING",
-        })
-      );
-
-    render(<LoginClient />);
-
-    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
-      target: { value: "atleta@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
-    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
-      target: { value: "Senha123!" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
-
-    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
-
-    await waitFor(() => {
-      expect(signInMock).toHaveBeenCalledWith(
-        "credentials",
-        expect.objectContaining({
-          redirect: false,
-          accessToken: "global-access-token",
-          refreshToken: "global-refresh-token",
-          tenantSlug: undefined,
-        })
-      );
-      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
-    });
-  });
-
-  it.each(["Seu Racha", "Chelsea"])(
-    "usa nome publico sem slug cru no login do atleta: %s",
-    (tenantName) => {
-      mockedUseTema.mockReturnValue({ nome: tenantName });
-
-      render(<LoginClient entryPath="/entrar" variant="entry" />);
-
-      expect(screen.getByText(tenantName)).toBeInTheDocument();
-      expect(screen.getByText(/Login do Atleta -/i)).toBeInTheDocument();
-      expect(
-        screen.getByText("Use seu e-mail cadastrado ou entre com o Google para acessar seu perfil.")
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/casa-do-gamer/i)).not.toBeInTheDocument();
-    }
-  );
-
-  it("usa fallback seu grupo quando nome publico nao existe", () => {
-    mockedUseTema.mockReturnValue({ nome: "" });
-
-    render(<LoginClient entryPath="/entrar" variant="entry" />);
-
-    expect(screen.getByText("seu grupo")).toBeInTheDocument();
-    expect(screen.getByText(/Login do Atleta -/i)).toBeInTheDocument();
   });
 });

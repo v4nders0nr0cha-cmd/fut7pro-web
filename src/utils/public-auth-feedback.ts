@@ -1,10 +1,13 @@
 "use client";
 
+import { toast } from "react-hot-toast";
+export { getHumanAuthErrorMessage } from "@/utils/public-auth-errors";
+
 const PUBLIC_AUTH_SUCCESS_STORAGE_KEY = "fut7pro_public_auth_success";
 const PUBLIC_AUTH_SUCCESS_MAX_AGE_MS = 15000;
 export const PUBLIC_AUTH_SUCCESS_TITLE = "Login realizado com sucesso";
 export const PUBLIC_AUTH_SUCCESS_MESSAGE =
-  "Seu perfil e os atalhos do atleta já estão prontos neste racha.";
+  "Login realizado com sucesso. Seu perfil já está disponível.";
 
 export type PublicAuthSuccessFeedback = {
   title: string;
@@ -64,4 +67,21 @@ export function consumePublicAuthSuccessFeedback() {
   } catch {
     return null;
   }
+}
+
+export function showPublicAuthSuccessToast(message = PUBLIC_AUTH_SUCCESS_MESSAGE) {
+  toast.success(message, {
+    duration: 3200,
+    style: {
+      border: "1px solid rgba(250, 204, 21, 0.22)",
+      background: "#0f1118",
+      color: "#f8fafc",
+      boxShadow: "0 18px 50px rgba(0, 0, 0, 0.35)",
+      padding: "12px 14px",
+    },
+    iconTheme: {
+      primary: "#facc15",
+      secondary: "#0f1118",
+    },
+  });
 }

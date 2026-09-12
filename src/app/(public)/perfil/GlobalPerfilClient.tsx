@@ -10,7 +10,7 @@ import SecurityRecoveryPanel from "@/components/profile/SecurityRecoveryPanel";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
-import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
+import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -94,6 +94,12 @@ function normalizePositionLabel(value?: string | null): Posicao {
   return POSITION_LABELS[key] ?? "";
 }
 
+function normalizeSlug(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
 function renderConquistaItem(item: GlobalTitle) {
   const quadrimestre = typeof item.quadrimestre === "number" ? `Q${item.quadrimestre}` : null;
   return (
@@ -155,6 +161,24 @@ export default function GlobalPerfilClient() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const publicAuthContext = useMemo(() => readPublicAuthContext(), [searchParams]);
+  const requestJoinSlug = useMemo(() => {
+    return (
+      normalizeSlug(searchParams?.get("racha")) ||
+      normalizeSlug(searchParams?.get("tenant")) ||
+      normalizeSlug(searchParams?.get("slug")) ||
+      normalizeSlug(publicAuthContext?.slug)
+    );
+  }, [publicAuthContext?.slug, searchParams]);
+  const isRequestJoinFlow =
+    searchParams?.get("intent") === "request-join" && Boolean(requestJoinSlug);
+  const requestJoinRedirectTo = useMemo(() => {
+    const fromQuery = searchParams?.get("callbackUrl")?.trim() || "";
+    if (fromQuery.startsWith("/")) return fromQuery;
+    const fromContext = publicAuthContext?.redirectTo?.trim() || "";
+    if (fromContext.startsWith("/")) return fromContext;
+    return requestJoinSlug ? `/${requestJoinSlug}` : "/";
+  }, [publicAuthContext?.redirectTo, requestJoinSlug, searchParams]);
   const { me } = useMe({
     enabled: true,
     tenantSlug: currentSlug || undefined,
@@ -223,16 +247,42 @@ export default function GlobalPerfilClient() {
   }, [isError, errorStatus, profile, mutate]);
 
   useEffect(() => {
+    if (requestJoinSlug) {
+      setCurrentSlug(requestJoinSlug);
+      return;
+    }
     const stored = getStoredTenantSlug();
     if (stored) {
       setCurrentSlug(stored);
     }
-  }, []);
+  }, [requestJoinSlug]);
 
   const stats = profile?.stats;
   const totalTitulos = profile?.totalTitulos ?? 0;
   const membershipList = profile?.memberships ?? [];
   const user = profile?.user;
+  const requestJoinRachaName = useMemo(() => {
+    const membership = membershipList.find((item) => item.tenantSlug === requestJoinSlug);
+    return membership?.tenantName || requestJoinSlug || "este racha";
+  }, [membershipList, requestJoinSlug]);
+  const missingRequiredFields = useMemo(() => {
+    const missing: Array<{ key: string; label: string }> = [];
+    if (!form.firstName.trim()) missing.push({ key: "firstName", label: "nome" });
+    if (!form.position) missing.push({ key: "position", label: "posição principal" });
+    if (!form.birthDay) missing.push({ key: "birthDay", label: "dia de nascimento" });
+    if (!form.birthMonth) missing.push({ key: "birthMonth", label: "mês de nascimento" });
+    return missing;
+  }, [form.birthDay, form.birthMonth, form.firstName, form.position]);
+  const missingFieldKeys = useMemo(
+    () => new Set(missingRequiredFields.map((field) => field.key)),
+    [missingRequiredFields]
+  );
+  const fieldClass = (field: string) =>
+    `mt-1 w-full rounded-lg border bg-zinc-800 px-3 py-2 text-white ${
+      isRequestJoinFlow && missingFieldKeys.has(field)
+        ? "border-amber-300 ring-1 ring-amber-300/70"
+        : "border-white/10"
+    }`;
 
   function updateFormField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
     setHasEditedForm(true);
@@ -323,19 +373,14 @@ export default function GlobalPerfilClient() {
       setFormError("Selecione a posição principal.");
       return;
     }
-    if (!isGoalkeeperPosition(resolvedPosition) && !form.positionSecondary) {
-      setFormError("Informe a posição secundária.");
+    if (form.positionSecondary && form.positionSecondary === resolvedPosition) {
+      setFormError("A posição secundária não pode ser igual à principal.");
       return;
     }
-    if (isGoalkeeperPosition(resolvedPosition) && form.positionSecondary) {
-      setFormError("Goleiro não deve ter posição secundária.");
-      return;
-    }
-    if (
-      form.positionSecondary &&
-      !getValidSecondaryDisplayOptions(resolvedPosition).includes(form.positionSecondary as any)
-    ) {
-      setFormError("Posição secundária inválida para a posição principal.");
+    if (isRequestJoinFlow && missingRequiredFields.length > 0) {
+      setFormError(
+        `Falta preencher: ${missingRequiredFields.map((field) => field.label).join(", ")}.`
+      );
       return;
     }
 
@@ -371,9 +416,7 @@ export default function GlobalPerfilClient() {
         nickname: form.nickname.trim() || null,
         avatarUrl,
         position: resolvedPosition,
-        positionSecondary: isGoalkeeperPosition(resolvedPosition)
-          ? null
-          : form.positionSecondary || null,
+        positionSecondary: form.positionSecondary || null,
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
@@ -381,6 +424,39 @@ export default function GlobalPerfilClient() {
       });
       setSuccess(true);
       setHasEditedForm(false);
+      if (isRequestJoinFlow && requestJoinSlug) {
+        const response = await fetch(`/api/public/${requestJoinSlug}/auth/request-join`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            publicAuthContext?.joinMessage ? { mensagem: publicAuthContext.joinMessage } : {}
+          ),
+        });
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          const code = String(body?.code || body?.error?.code || "").toUpperCase();
+          if (code === "ALREADY_MEMBER") {
+            clearPublicAuthContext();
+            router.replace(requestJoinRedirectTo);
+            return;
+          }
+          if (code === "REQUEST_PENDING") {
+            clearPublicAuthContext();
+            router.replace(`/${requestJoinSlug}/aguardando-aprovacao`);
+            return;
+          }
+          throw new Error(body?.message || body?.error || "Não foi possível solicitar entrada.");
+        }
+        clearPublicAuthContext();
+        const status = String(body?.status || "").toUpperCase();
+        const membershipStatus = String(body?.membershipStatus || "").toUpperCase();
+        if (status === "APROVADO" || membershipStatus === "ACTIVE") {
+          router.replace(requestJoinRedirectTo);
+          return;
+        }
+        router.replace(`/${requestJoinSlug}/aguardando-aprovacao`);
+        return;
+      }
       setTimeout(() => setSuccess(false), 1600);
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Erro ao salvar perfil.");
@@ -470,6 +546,29 @@ export default function GlobalPerfilClient() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 pb-20">
       <h1 className="sr-only">Perfil Global Fut7Pro</h1>
+
+      {isRequestJoinFlow ? (
+        <section className="mb-6 rounded-2xl border border-amber-300/40 bg-amber-300/10 p-5 text-amber-50">
+          <h2 className="text-lg font-bold text-white">
+            Complete seu Perfil Fut7Pro para continuar
+          </h2>
+          <p className="mt-1 text-sm text-amber-100">
+            Antes de solicitar entrada no <strong>{requestJoinRachaName}</strong>, precisamos de
+            algumas informações do seu Perfil Global.
+          </p>
+          {missingRequiredFields.length ? (
+            <p className="mt-3 rounded-lg border border-amber-300/30 bg-black/15 px-3 py-2 text-sm font-semibold">
+              Falta{missingRequiredFields.length > 1 ? "m" : ""} {missingRequiredFields.length}{" "}
+              informaç{missingRequiredFields.length > 1 ? "ões" : "ão"} para concluir seu Perfil
+              Fut7Pro: {missingRequiredFields.map((field) => field.label).join(", ")}.
+            </p>
+          ) : (
+            <p className="mt-3 rounded-lg border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-100">
+              Perfil completo. Salve para enviar sua solicitação de entrada.
+            </p>
+          )}
+        </section>
+      ) : null}
 
       <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 p-8 shadow-xl">
         <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-center">
@@ -629,7 +728,7 @@ export default function GlobalPerfilClient() {
                   value={form.firstName}
                   onChange={(event) => updateFormField("firstName", event.target.value)}
                   maxLength={10}
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                  className={fieldClass("firstName")}
                 />
               </label>
               <label className="text-sm text-zinc-300">
@@ -639,29 +738,15 @@ export default function GlobalPerfilClient() {
                   value={form.nickname}
                   onChange={(event) => updateFormField("nickname", event.target.value)}
                   maxLength={10}
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                  className={fieldClass("nickname")}
                 />
               </label>
               <label className="text-sm text-zinc-300">
                 Posição principal *
                 <select
                   value={form.position}
-                  onChange={(event) => {
-                    const next = event.target.value as Posicao;
-                    setHasEditedForm(true);
-                    setForm((prev) => ({
-                      ...prev,
-                      position: next,
-                      positionSecondary:
-                        isGoalkeeperPosition(next) ||
-                        !getValidSecondaryDisplayOptions(next).includes(
-                          prev.positionSecondary as any
-                        )
-                          ? ""
-                          : prev.positionSecondary,
-                    }));
-                  }}
-                  className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                  onChange={(event) => updateFormField("position", event.target.value as Posicao)}
+                  className={fieldClass("position")}
                 >
                   <option value="">Selecione</option>
                   {POSICOES.map((item) => (
@@ -671,31 +756,24 @@ export default function GlobalPerfilClient() {
                   ))}
                 </select>
               </label>
-              {!isGoalkeeperPosition(form.position) && (
-                <label className="text-sm text-zinc-300">
-                  Posição secundária
-                  <select
-                    value={form.positionSecondary}
-                    onChange={(event) =>
-                      updateFormField("positionSecondary", event.target.value as Posicao)
-                    }
-                    required={!isGoalkeeperPosition(form.position)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
-                  >
-                    <option value="">Selecione</option>
-                    {getValidSecondaryDisplayOptions(form.position).map((item) => (
-                      <option key={item} value={item}>
-                        {item}
-                      </option>
-                    ))}
-                  </select>
-                  <SecondaryPositionHint className="text-zinc-400">
-                    Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
-                    posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente
-                    a equilibrar melhor os times.
-                  </SecondaryPositionHint>
-                </label>
-              )}
+              <label className="text-sm text-zinc-300">
+                Posição secundária
+                <select
+                  value={form.positionSecondary}
+                  onChange={(event) =>
+                    updateFormField("positionSecondary", event.target.value as Posicao)
+                  }
+                  className={fieldClass("positionSecondary")}
+                >
+                  <option value="">Nenhuma</option>
+                  {POSICOES.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+                <SecondaryPositionHint className="text-zinc-400" />
+              </label>
               <div className="grid grid-cols-3 gap-3 sm:col-span-2">
                 <label className="text-sm text-zinc-300">
                   Dia
@@ -703,7 +781,7 @@ export default function GlobalPerfilClient() {
                     type="number"
                     value={form.birthDay}
                     onChange={(event) => updateFormField("birthDay", event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                    className={fieldClass("birthDay")}
                   />
                 </label>
                 <label className="text-sm text-zinc-300">
@@ -712,7 +790,7 @@ export default function GlobalPerfilClient() {
                     type="number"
                     value={form.birthMonth}
                     onChange={(event) => updateFormField("birthMonth", event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                    className={fieldClass("birthMonth")}
                   />
                 </label>
                 <label className="text-sm text-zinc-300">
@@ -721,7 +799,7 @@ export default function GlobalPerfilClient() {
                     type="number"
                     value={form.birthYear}
                     onChange={(event) => updateFormField("birthYear", event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-white/10 bg-zinc-800 px-3 py-2 text-white"
+                    className={fieldClass("birthYear")}
                   />
                 </label>
               </div>
@@ -733,9 +811,9 @@ export default function GlobalPerfilClient() {
                   className="mt-1 h-4 w-4 rounded border-white/20 bg-zinc-900 text-brand"
                 />
                 <span>
-                  Mostrar meu aniversario nos grupos em que participo
+                  Mostrar meu aniversário nos grupos em que participo
                   <span className="block text-xs text-zinc-400">
-                    Quando desmarcado, seu nome nao aparece nos cards e listas de aniversariantes.
+                    Quando ativo, seu aniversário pode aparecer nos avisos públicos dos seus rachas.
                   </span>
                 </span>
               </label>
@@ -749,7 +827,13 @@ export default function GlobalPerfilClient() {
             disabled={saving}
             className="mt-6 rounded-full bg-brand text-black font-semibold px-6 py-2 disabled:opacity-60"
           >
-            {saving ? "Salvando..." : "Salvar dados globais"}
+            {saving
+              ? isRequestJoinFlow
+                ? "Salvando e solicitando..."
+                : "Salvando..."
+              : isRequestJoinFlow
+                ? "Salvar e solicitar entrada"
+                : "Salvar dados globais"}
           </button>
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 space-y-4">

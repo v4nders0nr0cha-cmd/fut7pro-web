@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Fragment,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ChangeEvent,
-  type FormEvent,
-} from "react";
+import { Fragment, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
@@ -17,21 +9,20 @@ import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 import { useMe } from "@/hooks/useMe";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import { Switch } from "@/components/ui/Switch";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
-import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 import {
   clearPublicAuthContext,
   isFut7ProAccountComplete,
-  persistPublicAuthContext,
   readPublicAuthContext,
 } from "@/utils/public-auth-flow";
+import { getHumanAuthErrorMessage } from "@/utils/public-auth-feedback";
 import {
   handleFormInputValidationReset,
   handleFormInvalidPtBr,
 } from "@/lib/forms/native-ptbr-validation";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
   AUTH_APP_TURNSTILE_SITE_KEY,
@@ -67,7 +58,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 const VITRINE_AUTH_BLOCKED_MESSAGE =
-  "Este ambiente de demonstração é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
+  "Este ambiente de demonstração está com login e cadastro de atletas desabilitados.";
 
 type SessionUser = {
   name?: string | null;
@@ -128,16 +119,20 @@ export default function RegisterClient() {
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
 
-  const isAthleteAuthenticated = status === "authenticated" && isAthleteRealm(session as any);
+  const isAuthenticated = status === "authenticated";
   const isGoogleSession = sessionUser?.authProvider === "google";
   const hasPublicSlug = Boolean(publicSlug);
   const isRegistrationBlocked = publicSlug?.toLowerCase() === "vitrine";
-  const shouldLoadMe = isAthleteAuthenticated && hasPublicSlug;
+  const shouldLoadMe = isAuthenticated && hasPublicSlug;
   const { me, isLoading: isLoadingMe } = useMe({
     enabled: shouldLoadMe,
     tenantSlug: publicSlug,
     context: "athlete",
   });
+  const { profile: globalProfile, isLoading: isLoadingGlobalProfile } = useGlobalProfile({
+    enabled: isAuthenticated,
+  });
+  const globalProfileUser = globalProfile?.user;
 
   const [nomeCompleto, setNomeCompleto] = useState("");
   const [nomeTouched, setNomeTouched] = useState(false);
@@ -160,102 +155,36 @@ export default function RegisterClient() {
   const [accountModalMessage, setAccountModalMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prefilledFromEntrar, setPrefilledFromEntrar] = useState(false);
+  const [requestingJoinFromExistingAccount, setRequestingJoinFromExistingAccount] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
-  const [turnstileProof, setTurnstileProof] = useState<string | null>(null);
-  const [turnstileProofExpiresAt, setTurnstileProofExpiresAt] = useState<number | null>(null);
-  const [turnstileProofEmail, setTurnstileProofEmail] = useState<string | null>(null);
   const turnstileEnabled = AUTH_APP_TURNSTILE_ENABLED;
   const turnstileSiteKey = AUTH_APP_TURNSTILE_SITE_KEY;
-  const normalizedEmail = email.trim().toLowerCase();
-  const hasTurnstileProof =
-    turnstileEnabled &&
-    Boolean(
-      turnstileProof &&
-        turnstileProofExpiresAt &&
-        turnstileProofExpiresAt > Date.now() &&
-        (!turnstileProofEmail || !normalizedEmail || turnstileProofEmail === normalizedEmail)
-    );
-  const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
   const membershipStatus = String(me?.membership?.status || "").toUpperCase();
   const isPendingMembership = membershipStatus === "PENDENTE";
   const isApprovedMembership = membershipStatus === "APROVADO";
 
-  const profileComplete = isFut7ProAccountComplete(me?.athlete);
-  const shouldUseCompleteEndpoint = isAthleteAuthenticated;
+  const profileComplete =
+    isFut7ProAccountComplete(me?.athlete) || isFut7ProAccountComplete(globalProfileUser);
+  const shouldUseCompleteEndpoint = isAuthenticated;
+  const completeProfileHref = useMemo(() => {
+    const params = new URLSearchParams();
+    if (publicSlug) {
+      params.set("intent", "request-join");
+      params.set("racha", publicSlug);
+    }
+    const queryString = params.toString();
+    return queryString ? `/perfil?${queryString}` : "/perfil";
+  }, [publicSlug]);
 
   const resetTurnstile = () => {
     setTurnstileToken(null);
     setTurnstileResetSignal((value) => value + 1);
   };
 
-  const persistJourneyContext = useCallback(
-    (nextEmail: string, proof?: string | null, proofExpiresAt?: number | null) => {
-      if (!publicSlug) return;
-      const sanitizedEmail = nextEmail.trim().toLowerCase();
-      if (!sanitizedEmail) return;
-
-      persistPublicAuthContext({
-        email: sanitizedEmail,
-        slug: publicSlug,
-        ...(proof && proofExpiresAt
-          ? {
-              turnstileProof: proof,
-              turnstileProofExpiresAt: proofExpiresAt,
-            }
-          : {}),
-      });
-    },
-    [publicSlug]
-  );
-
-  const clearJourneyProof = useCallback(
-    (nextEmail?: string | null) => {
-      const emailForContext = String(nextEmail || normalizedEmail || turnstileProofEmail || "")
-        .trim()
-        .toLowerCase();
-      setTurnstileProof(null);
-      setTurnstileProofExpiresAt(null);
-      setTurnstileProofEmail(null);
-      if (emailForContext) {
-        persistJourneyContext(emailForContext);
-      }
-    },
-    [normalizedEmail, persistJourneyContext, turnstileProofEmail]
-  );
-
-  const applyJourneyProof = useCallback(
-    (proofValue: unknown, proofExpiresAtValue: unknown, nextEmail?: string | null) => {
-      const nextProof = typeof proofValue === "string" ? proofValue.trim() : "";
-      const nextProofExpiresAt =
-        typeof proofExpiresAtValue === "number" && Number.isFinite(proofExpiresAtValue)
-          ? proofExpiresAtValue
-          : null;
-      const emailForContext = String(nextEmail || normalizedEmail || "")
-        .trim()
-        .toLowerCase();
-
-      if (!nextProof || !nextProofExpiresAt || nextProofExpiresAt <= Date.now()) {
-        clearJourneyProof(emailForContext);
-        return false;
-      }
-
-      setTurnstileProof(nextProof);
-      setTurnstileProofExpiresAt(nextProofExpiresAt);
-      setTurnstileProofEmail(emailForContext || null);
-      setTurnstileToken(null);
-      if (emailForContext) {
-        persistJourneyContext(emailForContext, nextProof, nextProofExpiresAt);
-      }
-      return true;
-    },
-    [clearJourneyProof, normalizedEmail, persistJourneyContext]
-  );
-
   const requireTurnstile = () => {
     if (!turnstileEnabled) return true;
-    if (hasTurnstileProof) return true;
     if (!turnstileSiteKey) {
       setErro(TURNSTILE_UNAVAILABLE_MESSAGE);
       return false;
@@ -268,8 +197,9 @@ export default function RegisterClient() {
   };
 
   useEffect(() => {
-    if (!isAthleteAuthenticated || !hasPublicSlug) return;
+    if (!isAuthenticated || !hasPublicSlug) return;
     if (shouldLoadMe && isLoadingMe) return;
+    if (isLoadingGlobalProfile) return;
 
     if (isPendingMembership) {
       router.replace(publicHref("/aguardando-aprovacao"));
@@ -277,102 +207,115 @@ export default function RegisterClient() {
     }
 
     if (isApprovedMembership) {
-      if (isGoogleSession && !profileComplete) {
-        return;
-      }
       router.replace(redirectTo);
+      return;
     }
+
+    if (!profileComplete) {
+      router.replace(completeProfileHref);
+      return;
+    }
+
+    if (requestingJoinFromExistingAccount) return;
+    setRequestingJoinFromExistingAccount(true);
+    fetch(`/api/public/${publicSlug}/auth/request-join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    })
+      .then(async (response) => {
+        const body = await response.json().catch(() => null);
+        if (!response.ok) {
+          const code = String(body?.code || body?.error?.code || "").toUpperCase();
+          if (code === "PROFILE_INCOMPLETE") {
+            router.replace(completeProfileHref);
+            return;
+          }
+          if (code === "REQUEST_PENDING") {
+            router.replace(publicHref("/aguardando-aprovacao"));
+            return;
+          }
+          throw new Error(body?.message || body?.error || "Não foi possível solicitar entrada.");
+        }
+        const joinStatus = String(body?.status || "").toUpperCase();
+        const joinMembershipStatus = String(body?.membershipStatus || "").toUpperCase();
+        if (joinStatus === "APROVADO" || joinMembershipStatus === "ACTIVE") {
+          router.replace(redirectTo);
+          return;
+        }
+        router.replace(publicHref("/aguardando-aprovacao"));
+      })
+      .catch((error) => {
+        setErro(getHumanAuthErrorMessage(error, "Não foi possível solicitar entrada."));
+        setRequestingJoinFromExistingAccount(false);
+      });
   }, [
-    isAthleteAuthenticated,
+    isAuthenticated,
     hasPublicSlug,
     shouldLoadMe,
     isLoadingMe,
+    isLoadingGlobalProfile,
     isPendingMembership,
     isApprovedMembership,
-    isGoogleSession,
     profileComplete,
+    completeProfileHref,
+    requestingJoinFromExistingAccount,
     redirectTo,
+    publicSlug,
     publicHref,
     router,
   ]);
 
-  const shouldPrefill = isAthleteAuthenticated && hasPublicSlug;
+  const shouldPrefill = isAuthenticated && hasPublicSlug;
 
   useEffect(() => {
-    if (isAthleteAuthenticated || !publicSlug) {
+    if (isAuthenticated || !publicSlug) {
       setPrefilledFromEntrar(false);
       return;
     }
+    const context = readPublicAuthContext(publicSlug);
     if (emailFromQuery) {
       setEmail((previous) => previous || emailFromQuery);
       setPrefilledFromEntrar(true);
       return;
     }
-    const context = readPublicAuthContext(publicSlug);
     if (!context?.email) {
       setPrefilledFromEntrar(false);
       return;
     }
     setEmail((previous) => previous || context.email);
-    if (context.turnstileProof && context.turnstileProofExpiresAt) {
-      applyJourneyProof(context.turnstileProof, context.turnstileProofExpiresAt, context.email);
-    }
     setPrefilledFromEntrar(true);
-  }, [applyJourneyProof, emailFromQuery, isAthleteAuthenticated, publicSlug]);
-
-  useEffect(() => {
-    if (!turnstileProof || !turnstileProofExpiresAt) return;
-
-    const msUntilExpiration = turnstileProofExpiresAt - Date.now();
-    if (msUntilExpiration <= 0) {
-      clearJourneyProof();
-      return;
-    }
-
-    const timer = window.setTimeout(() => {
-      clearJourneyProof();
-    }, msUntilExpiration + 100);
-
-    return () => window.clearTimeout(timer);
-  }, [clearJourneyProof, turnstileProof, turnstileProofExpiresAt]);
-
-  useEffect(() => {
-    if (!turnstileProof || !turnstileProofEmail) return;
-    if (!normalizedEmail || normalizedEmail === turnstileProofEmail) return;
-    clearJourneyProof(normalizedEmail);
-  }, [clearJourneyProof, normalizedEmail, turnstileProof, turnstileProofEmail]);
+  }, [emailFromQuery, isAuthenticated, publicSlug]);
 
   useEffect(() => {
     if (!shouldPrefill) return;
 
     if (!nomeTouched && !nomeCompleto) {
-      const nextNome = me?.athlete?.firstName || sessionUser?.name || "";
+      const nextNome = me?.athlete?.firstName || globalProfileUser?.name || sessionUser?.name || "";
       if (nextNome) setNomeCompleto(nextNome);
     }
-    if (!apelido && me?.athlete?.nickname) {
-      setApelido(me.athlete.nickname);
+    if (!apelido && (me?.athlete?.nickname || globalProfileUser?.nickname)) {
+      setApelido(me?.athlete?.nickname || globalProfileUser?.nickname || "");
     }
-    if (!posicao && me?.athlete?.position) {
-      setPosicao(String(me.athlete.position));
+    if (!posicao && (me?.athlete?.position || globalProfileUser?.position)) {
+      setPosicao(String(me?.athlete?.position || globalProfileUser?.position));
     }
-    if (!posicaoSecundaria && me?.athlete?.positionSecondary) {
-      const secundaria = String(me.athlete.positionSecondary);
-      if (
-        getValidSecondaryDisplayOptions(posicao || me?.athlete?.position).includes(
-          secundaria as any
-        )
-      ) {
-        setPosicaoSecundaria(secundaria);
-      }
+    if (
+      !posicaoSecundaria &&
+      (me?.athlete?.positionSecondary || globalProfileUser?.positionSecondary)
+    ) {
+      setPosicaoSecundaria(
+        String(me?.athlete?.positionSecondary || globalProfileUser?.positionSecondary)
+      );
     }
-    if (!dia && me?.athlete?.birthDay) {
-      setDia(String(me.athlete.birthDay));
+    if (!dia && (me?.athlete?.birthDay || globalProfileUser?.birthDay)) {
+      setDia(String(me?.athlete?.birthDay || globalProfileUser?.birthDay));
     }
-    if (!mes && me?.athlete?.birthMonth) {
-      setMes(String(me.athlete.birthMonth));
+    if (!mes && (me?.athlete?.birthMonth || globalProfileUser?.birthMonth)) {
+      setMes(String(me?.athlete?.birthMonth || globalProfileUser?.birthMonth));
     }
-    if (!ano && me?.athlete?.birthYear) {
-      setAno(String(me.athlete.birthYear));
+    if (!ano && (me?.athlete?.birthYear || globalProfileUser?.birthYear)) {
+      setAno(String(me?.athlete?.birthYear || globalProfileUser?.birthYear));
     }
     if (me?.athlete?.birthPublic === false) {
       setOcultarNascimento(true);
@@ -380,6 +323,7 @@ export default function RegisterClient() {
   }, [
     shouldPrefill,
     me?.athlete,
+    globalProfileUser,
     sessionUser?.name,
     nomeCompleto,
     nomeTouched,
@@ -404,9 +348,8 @@ export default function RegisterClient() {
       return;
     }
     const params = new URLSearchParams();
-    params.set("google", "1");
     params.set("callbackUrl", redirectTo);
-    await signIn("google", { callbackUrl: `${publicHref("/entrar")}?${params.toString()}` });
+    await signIn("google", { callbackUrl: `${publicHref("/register")}?${params.toString()}` });
   };
 
   const validateBaseFields = () => {
@@ -420,31 +363,22 @@ export default function RegisterClient() {
       return "Use apenas o primeiro nome.";
     }
     if (trimmedNome.length > 10) {
-      return "Nome com máximo de 10 letras.";
+      return "Nome com maximo de 10 letras.";
     }
     if (trimmedApelido.length > 10) {
-      return "Apelido com máximo de 10 letras.";
+      return "Apelido com maximo de 10 letras.";
     }
     if (!posicao) {
-      return "Selecione a posição principal.";
+      return "Selecione a posicao principal.";
     }
-    if (!isGoalkeeperPosition(posicao) && !posicaoSecundaria) {
-      return "Informe a posição secundária.";
-    }
-    if (isGoalkeeperPosition(posicao) && posicaoSecundaria) {
-      return "Goleiro não deve ter posição secundária.";
-    }
-    if (
-      posicaoSecundaria &&
-      !getValidSecondaryDisplayOptions(posicao).includes(posicaoSecundaria as any)
-    ) {
-      return "Posição secundária inválida para a posição principal.";
+    if (posicaoSecundaria && posicaoSecundaria === posicao) {
+      return "A posição secundária não pode ser igual à principal.";
     }
     if (!dia || !mes) {
-      return "Informe o dia e o mês de nascimento.";
+      return "Informe o dia e o mes de nascimento.";
     }
     if (!isYearValid(ano)) {
-      return "Ano de nascimento inválido.";
+      return "Informe um ano de nascimento válido.";
     }
 
     return null;
@@ -459,7 +393,7 @@ export default function RegisterClient() {
       return;
     }
     if (file.size > MAX_AVATAR_SIZE) {
-      setAvatarError("Envie uma imagem com até 2MB.");
+      setAvatarError("Envie uma imagem com ate 2MB.");
       return;
     }
     const reader = new FileReader();
@@ -525,7 +459,7 @@ export default function RegisterClient() {
       name: trimmedNome,
       nickname: trimmedApelido ? trimmedApelido : undefined,
       position: posicao,
-      positionSecondary: isGoalkeeperPosition(posicao) ? null : posicaoSecundaria || null,
+      positionSecondary: posicaoSecundaria || null,
       birthDay: Number(dia),
       birthMonth: Number(mes),
       birthYear: toNumberOrNull(ano),
@@ -545,7 +479,6 @@ export default function RegisterClient() {
     const payloadWithSecurity = {
       ...payload,
       turnstileToken: turnstileEnabled ? turnstileToken || undefined : undefined,
-      turnstileProof: turnstileEnabled ? turnstileProof || undefined : undefined,
     };
 
     const endpoint = shouldUseCompleteEndpoint
@@ -572,7 +505,6 @@ export default function RegisterClient() {
               : null;
         if (isTurnstileErrorCode(errorCode)) {
           setErro(resolveTurnstileErrorMessage(body));
-          clearJourneyProof(normalizedEmail);
           resetTurnstile();
           return;
         }
@@ -582,13 +514,13 @@ export default function RegisterClient() {
           return;
         }
         if (errorCode === "ALREADY_MEMBER") {
-          setAccountModalMessage(`Você já faz parte deste grupo. Grupo: ${nomeDoRacha}.`);
+          setAccountModalMessage(`Você já faz parte de ${nomeDoRacha}. Entre para acessar.`);
           setAccountModalOpen(true);
           return;
         }
         if (errorCode === "ATHLETE_ALREADY_REGISTERED") {
           setAccountModalMessage(
-            `Já existe um perfil de atleta com este e-mail neste grupo. Grupo: ${nomeDoRacha}. Entre com sua conta para solicitar entrada.`
+            `Já existe um perfil de atleta com este e-mail em ${nomeDoRacha}. Entre com sua conta para solicitar entrada.`
           );
           setAccountModalOpen(true);
           return;
@@ -596,12 +528,12 @@ export default function RegisterClient() {
         if (errorCode === "ACCOUNT_EXISTS") {
           setAccountModalMessage(
             message ||
-              `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: ${nomeDoRacha}.`
+              `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada em ${nomeDoRacha}.`
           );
           setAccountModalOpen(true);
           return;
         }
-        setErro(message);
+        setErro(getHumanAuthErrorMessage(message, "Não foi possível concluir o cadastro."));
         return;
       }
 
@@ -658,21 +590,22 @@ export default function RegisterClient() {
         return;
       }
 
-      if (!isApprovedMembership) {
+      if (!isApprovedMembership && rawStatus !== "APROVADO") {
         clearPublicAuthContext();
         router.replace(publicHref("/aguardando-aprovacao"));
         return;
       }
 
       clearPublicAuthContext();
-      setSucesso("Cadastro concluido com sucesso.");
+      setSucesso(
+        `Solicitação enviada. Seu pedido para entrar em ${nomeDoRacha} foi enviado aos administradores.`
+      );
       router.replace(redirectTo);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao concluir cadastro.";
-      setErro(message);
+      setErro(getHumanAuthErrorMessage(error, "Erro ao concluir cadastro."));
       setAccountModalOpen(false);
     } finally {
-      if (turnstileEnabled && !hasTurnstileProof) {
+      if (turnstileEnabled) {
         resetTurnstile();
       }
       setIsSubmitting(false);
@@ -692,7 +625,7 @@ export default function RegisterClient() {
           </h1>
           <p className="mt-2 text-center text-sm text-gray-300">
             Este ambiente é apenas de demonstração. Para usar o Fut7Pro de verdade, crie seu próprio
-            grupo.
+            grupo de futebol.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <a
@@ -743,15 +676,15 @@ export default function RegisterClient() {
 
         <h1 className="text-xl font-bold text-white text-center">Crie sua Conta Fut7Pro</h1>
         <p className="mt-2 text-center text-sm text-gray-300">
-          Complete seus dados para continuar. Seu pedido para entrar em {nomeDoRacha} será enviado
-          aos administradores.
+          Complete seus dados para continuar. Ao finalizar, seu pedido para entrar em {nomeDoRacha}{" "}
+          será enviado aos administradores.
         </p>
 
-        {!isAthleteAuthenticated && prefilledFromEntrar ? (
+        {!isAuthenticated && prefilledFromEntrar ? (
           <div className="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-3 py-3 text-sm text-emerald-100">
             <p className="font-semibold text-emerald-200">Você ainda não possui Conta Fut7Pro</p>
             <p className="mt-1">
-              Primeiro criamos sua conta. Em seguida enviaremos seu pedido de entrada para os
+              Primeiro criamos sua conta. Em seguida, enviaremos sua solicitação de entrada para os
               administradores.
             </p>
           </div>
@@ -777,10 +710,10 @@ export default function RegisterClient() {
           </div>
         ) : null}
 
-        {isAthleteAuthenticated ? (
+        {isAuthenticated ? (
           <div className="mt-5 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-200">
             {isGoogleSession
-              ? "Complete sua Conta Fut7Pro para continuar."
+              ? `Complete sua Conta Fut7Pro para continuar em ${nomeDoRacha}.`
               : "Preencha os dados mínimos da sua Conta Fut7Pro."}
             {sessionUser?.email ? (
               <div className="mt-1 text-xs text-gray-400">Conta: {sessionUser.email}</div>
@@ -808,7 +741,7 @@ export default function RegisterClient() {
           </div>
         )}
 
-        {isAthleteAuthenticated && isLoadingMe ? (
+        {isAuthenticated && isLoadingMe ? (
           <div className="mt-6 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-gray-300">
             Carregando seus dados...
           </div>
@@ -865,7 +798,7 @@ export default function RegisterClient() {
                   />
                   <div>
                     <p className="text-sm font-semibold text-white">Foto do atleta (opcional)</p>
-                    <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WebP, até 2MB.</p>
+                    <p className="mt-1 text-xs text-gray-400">PNG, JPG ou WebP, ate 2MB.</p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -894,7 +827,7 @@ export default function RegisterClient() {
             </div>
           )}
 
-          {!isAthleteAuthenticated && (
+          {!isAuthenticated && (
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
                 E-mail
@@ -928,16 +861,7 @@ export default function RegisterClient() {
               Posição principal
               <select
                 value={posicao}
-                onChange={(event) => {
-                  const next = event.target.value;
-                  setPosicao(next);
-                  if (
-                    isGoalkeeperPosition(next) ||
-                    !getValidSecondaryDisplayOptions(next).includes(posicaoSecundaria as any)
-                  ) {
-                    setPosicaoSecundaria("");
-                  }
-                }}
+                onChange={(event) => setPosicao(event.target.value)}
                 required
                 className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
               >
@@ -949,29 +873,22 @@ export default function RegisterClient() {
                 ))}
               </select>
             </label>
-            {!isGoalkeeperPosition(posicao) && (
-              <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                Posição secundária
-                <select
-                  value={posicaoSecundaria}
-                  onChange={(event) => setPosicaoSecundaria(event.target.value)}
-                  required={!isGoalkeeperPosition(posicao)}
-                  className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
-                >
-                  <option value="">Selecione</option>
-                  {getValidSecondaryDisplayOptions(posicao).map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-                <SecondaryPositionHint className="normal-case tracking-normal font-normal text-gray-400">
-                  Se no dia do jogo houver muitos atletas na sua posição principal, em qual outra
-                  posição você consegue atuar melhor? Essa informação ajuda o Sorteio Inteligente a
-                  equilibrar melhor os times.
-                </SecondaryPositionHint>
-              </label>
-            )}
+            <label className="block text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+              Posição secundária
+              <select
+                value={posicaoSecundaria}
+                onChange={(event) => setPosicaoSecundaria(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400 [color-scheme:dark] [&>option]:bg-[#0f1118] [&>option]:text-white"
+              >
+                <option value="">Nenhuma</option>
+                {POSICOES.map((item) => (
+                  <option key={item} value={item}>
+                    {item}
+                  </option>
+                ))}
+              </select>
+              <SecondaryPositionHint className="normal-case tracking-normal font-normal text-gray-400" />
+            </label>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
@@ -1044,7 +961,7 @@ export default function RegisterClient() {
           </div>
 
           <TurnstileWidget
-            enabled={turnstileEnabled && !hasTurnstileProof}
+            enabled={turnstileEnabled}
             siteKey={turnstileSiteKey}
             onTokenChange={setTurnstileToken}
             resetSignal={turnstileResetSignal}
@@ -1053,13 +970,13 @@ export default function RegisterClient() {
           <button
             type="submit"
             disabled={
-              isSubmitting || isRegistrationBlocked || (turnstileEnabled && !hasSecurityCheck)
+              isSubmitting || isRegistrationBlocked || (turnstileEnabled && !turnstileToken)
             }
             className="w-full rounded-lg bg-yellow-400 py-2.5 font-bold text-black shadow-lg transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting
               ? "Enviando..."
-              : isAthleteAuthenticated
+              : isAuthenticated
                 ? isGoogleSession
                   ? "Concluir Conta Fut7Pro"
                   : "Atualizar Conta Fut7Pro"
@@ -1067,7 +984,7 @@ export default function RegisterClient() {
           </button>
         </form>
 
-        {!isAthleteAuthenticated && (
+        {!isAuthenticated && (
           <div className="mt-5 text-center text-sm text-gray-300">
             Ja tem conta?{" "}
             <a
@@ -1120,7 +1037,7 @@ export default function RegisterClient() {
                 </Dialog.Title>
                 <p className="mt-3 text-sm text-gray-200">
                   {accountModalMessage ||
-                    `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: ${nomeDoRacha}.`}
+                    `Sua conta Fut7Pro já existe. Falta apenas solicitar entrada em ${nomeDoRacha}.`}
                 </p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
