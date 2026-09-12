@@ -9,15 +9,15 @@ type SecurityRecoveryPanelProps = {
   initialStatus?: SecurityRecoveryData | null;
 };
 
-function formatDatetime(value?: string | null) {
+function normalizeCode(value: string) {
+  return value.replace(/\D+/g, "").slice(0, 6);
+}
+
+function formatDatetime(value: string | null | undefined) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
   return date.toLocaleString("pt-BR");
-}
-
-function normalizeCode(value: string) {
-  return value.replace(/\D+/g, "").slice(0, 6);
 }
 
 export default function SecurityRecoveryPanel({ initialStatus }: SecurityRecoveryPanelProps) {
@@ -234,14 +234,11 @@ export default function SecurityRecoveryPanel({ initialStatus }: SecurityRecover
       </div>
 
       {status ? (
-        <div className="text-xs text-zinc-400 space-y-1">
-          <p>
-            Conformidade:{" "}
-            <span className={status.enabled ? "text-green-300" : "text-amber-300"}>
-              {status.enabled ? "Ativa" : "Pendente"}
-            </span>
+        <div className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-zinc-300">
+          <p className="font-semibold text-brand-soft">Opcional</p>
+          <p className="mt-1 text-zinc-400">
+            Adicione um método de recuperação para aumentar a segurança da sua conta.
           </p>
-          <p>Prazo de obrigatoriedade: {formatDatetime(status.requiredAt)}</p>
         </div>
       ) : (
         <p className="text-xs text-zinc-400">Carregue o status para configurar os metodos.</p>
