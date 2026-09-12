@@ -10,32 +10,25 @@ jest.mock("next/image", () => ({
   },
 }));
 
+jest.mock("next/script", () => ({
+  __esModule: true,
+  default: () => null,
+}));
+
 const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
 const signInMock = jest.fn();
-let mockedSearchParams = new URLSearchParams();
+let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
-  useSearchParams: () => mockedSearchParams,
+  useSearchParams: () => searchParamsMock,
 }));
 
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: (...args: unknown[]) => signInMock(...args),
-  signOut: jest.fn(() => Promise.resolve()),
-}));
-
-jest.mock("@/components/security/TurnstileWidget", () => ({
-  __esModule: true,
-  default: () => null,
-  AUTH_APP_TURNSTILE_ENABLED: false,
-  AUTH_APP_TURNSTILE_SITE_KEY: "",
-  TURNSTILE_REQUIRED_MESSAGE: "Confirme que você não é um robô para continuar.",
-  TURNSTILE_UNAVAILABLE_MESSAGE: "Não foi possível carregar a verificação de segurança.",
-  isTurnstileErrorCode: () => false,
-  resolveTurnstileErrorMessage: () => "Não foi possível validar a verificação de segurança.",
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -52,6 +45,21 @@ jest.mock("@/hooks/useMe", () => ({
 
 jest.mock("@/hooks/useGlobalProfile", () => ({
   useGlobalProfile: jest.fn(),
+}));
+
+jest.mock("@/components/security/TurnstileWidget", () => ({
+  __esModule: true,
+  default: ({ onTokenChange }: { onTokenChange: (token: string | null) => void }) => (
+    <button type="button" onClick={() => onTokenChange("turnstile-token")}>
+      Resolver verificação
+    </button>
+  ),
+  AUTH_APP_TURNSTILE_ENABLED: true,
+  AUTH_APP_TURNSTILE_SITE_KEY: "site-key",
+  TURNSTILE_REQUIRED_MESSAGE: "Confirme a verificação de segurança para continuar.",
+  TURNSTILE_UNAVAILABLE_MESSAGE: "A verificação de segurança está indisponível.",
+  isTurnstileErrorCode: (code: unknown) => String(code || "").startsWith("TURNSTILE_"),
+  resolveTurnstileErrorMessage: () => "Não foi possível validar a segurança.",
 }));
 
 jest.mock("@/utils/public-session-sync", () => ({
@@ -72,9 +80,9 @@ function mockJsonResponse(body: unknown, ok = true, status = ok ? 200 : 400) {
   };
 }
 
-describe("EntrarClient", () => {
+describe("EntrarClient unified athlete auth", () => {
   beforeEach(() => {
-    mockedSearchParams = new URLSearchParams();
+    searchParamsMock = new URLSearchParams();
     mockedUseSession.mockReturnValue({
       data: null,
       status: "unauthenticated",
@@ -85,13 +93,16 @@ describe("EntrarClient", () => {
       publicSlug: "casa-do-gamer",
       publicHref: (path: string) => `/casa-do-gamer${path}`,
     });
-    mockedUseMe.mockReturnValue({
-      me: null,
-      isLoading: false,
-      isError: false,
-    });
+    mockedUseMe.mockReturnValue({ me: null, isLoading: false, isError: false });
     mockedUseGlobalProfile.mockReturnValue({
-      profile: null,
+      profile: {
+        user: {
+          name: "Atleta",
+          position: "atacante",
+          birthDay: 1,
+          birthMonth: 1,
+        },
+      },
       isLoading: false,
       isError: false,
     });
@@ -104,90 +115,63 @@ describe("EntrarClient", () => {
     sessionStorage.clear();
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it("usa /entrar como fluxo principal e solicita codigo sem lookup nem redirect para /login", async () => {
-    (global.fetch as jest.Mock).mockResolvedValueOnce(
-      mockJsonResponse({
-        ok: true,
-        message: "Se estiver tudo certo, enviamos seu código.",
-      })
-    );
-
-    render(<EntrarClient />);
-
-    expect(screen.getByRole("heading", { name: "Acesse seu perfil" })).toBeInTheDocument();
-    expect(screen.getByText("Casa do Gamer")).toBeInTheDocument();
-
-    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
-      target: { value: "atleta@teste.com" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "/api/public/casa-do-gamer/auth/passwordless/request",
-        expect.objectContaining({
-          method: "POST",
-          body: JSON.stringify({
-            email: "atleta@teste.com",
-          }),
-        })
-      );
-    });
-    expect(global.fetch).not.toHaveBeenCalledWith("/api/auth/lookup-email", expect.anything());
-    expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/login"));
-  });
-
-  it("mantem Google retornando para /entrar com callback seguro", async () => {
-    render(<EntrarClient />);
-
-    fireEvent.click(screen.getByRole("button", { name: /Continuar com Google/i }));
-
-    await waitFor(() => {
-      expect(signInMock).toHaveBeenCalledWith("google", {
-        callbackUrl: "/casa-do-gamer/entrar?callbackUrl=%2Fcasa-do-gamer%2F&oauth=google",
-        login_hint: undefined,
-      });
-    });
-  });
-
-  it("sessao global sem Membership abre solicitacao de entrada sem pedir login novamente", async () => {
+  it("entra direto quando ja existe sessao global com membership aprovada", async () => {
     mockedUseSession.mockReturnValue({
-      data: { user: { email: "atleta@teste.com", role: "ATLETA" } },
+      data: { user: { role: "ATLETA", accessToken: "access-token" } },
       status: "authenticated",
       update: updateSessionMock,
     });
     mockedUseMe.mockReturnValue({
-      me: { membershipStatus: "NONE", nextAction: "REQUEST_JOIN" },
-      isLoading: false,
-      isError: false,
-    });
-    mockedUseGlobalProfile.mockReturnValue({
-      profile: {
-        user: {
-          name: "Atleta",
-          position: "meia",
-          birthDay: 10,
-          birthMonth: 5,
-        },
+      me: {
+        membership: { status: "APROVADO" },
+        athlete: { birthDay: 1, birthMonth: 1, position: "atacante" },
       },
       isLoading: false,
       isError: false,
     });
+
+    render(<EntrarClient />);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(screen.queryByPlaceholderText("email@exemplo.com")).not.toBeInTheDocument();
+  });
+
+  it("envia sessao pendente para aguardando aprovacao sem pedir login novamente", async () => {
+    mockedUseSession.mockReturnValue({
+      data: { user: { role: "ATLETA", accessToken: "access-token" } },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: { membership: { status: "PENDENTE" } },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<EntrarClient />);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
+    });
+  });
+
+  it("oferece solicitar entrada quando a sessao global nao tem membership no slug", async () => {
+    mockedUseSession.mockReturnValue({
+      data: { user: { role: "ATLETA", accessToken: "access-token" } },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({ me: null, isLoading: false, isError: true });
     (global.fetch as jest.Mock).mockResolvedValueOnce(
-      mockJsonResponse({
-        status: "PENDENTE",
-        membershipStatus: "PENDING",
-      })
+      mockJsonResponse({ status: "PENDENTE", membershipStatus: "PENDING" })
     );
 
     render(<EntrarClient />);
 
-    expect(await screen.findByRole("heading", { name: "Solicitar entrada" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada" }));
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -196,5 +180,141 @@ describe("EntrarClient", () => {
       );
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
+  });
+
+  it("retorno do Google sem membership nao finaliza acesso ao grupo", async () => {
+    searchParamsMock = new URLSearchParams("oauth=google");
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          role: "ATLETA",
+          authProvider: "google",
+          accessToken: "global-access-token",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        athlete: { birthDay: 1, birthMonth: 1, position: "atacante" },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<EntrarClient />);
+
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalledWith("/casa-do-gamer/");
+  });
+
+  it("envia codigo e verifica na mesma rota sem redirecionar para login", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          ok: true,
+          message: "Se estiver tudo certo, enviamos seu código.",
+          turnstileProof: "proof",
+          resendCooldownSeconds: 60,
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          membershipStatus: "ACTIVE",
+        })
+      );
+    signInMock.mockResolvedValue({ ok: true });
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Resolver verificação" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
+
+    expect(
+      await screen.findByText(/Enviamos um código para at\*\*\*@teste.com/i)
+    ).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
+
+    await waitFor(() => {
+      expect(signInMock).toHaveBeenCalledWith("credentials", {
+        redirect: false,
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        authProvider: "passwordless",
+      });
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/login"));
+  });
+
+  it("bloqueia callback externo e nao coloca email na URL no fluxo passwordless", async () => {
+    searchParamsMock = new URLSearchParams("callbackUrl=https%3A%2F%2Fevil.test%2F");
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(
+        mockJsonResponse({ turnstileProof: "proof", resendCooldownSeconds: 60 })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          membershipStatus: "ACTIVE",
+        })
+      );
+    signInMock.mockResolvedValue({ ok: true });
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Resolver verificação" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
+    await screen.findByPlaceholderText("Digite os 6 dígitos");
+    fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("email="));
+  });
+
+  it("conta inexistente direciona para cadastro sem segundo clique de lookup", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse(
+        {
+          code: "USER_NOT_FOUND",
+          message: "Você ainda não possui Conta Global Fut7Pro. Cadastre-se para continuar.",
+        },
+        false,
+        404
+      )
+    );
+
+    render(<EntrarClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "novo@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Resolver verificação" }));
+    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
+
+    expect(await screen.findByText(/Crie sua conta para solicitar entrada/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Criar Conta Fut7Pro/i })).toHaveAttribute(
+      "href",
+      "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F&email=novo%40teste.com"
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });

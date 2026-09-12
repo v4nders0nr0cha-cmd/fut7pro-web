@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterClient from "../RegisterClient";
 
 const replaceMock = jest.fn();
@@ -35,6 +35,10 @@ jest.mock("@/hooks/useMe", () => ({
   useMe: jest.fn(),
 }));
 
+jest.mock("@/hooks/useGlobalProfile", () => ({
+  useGlobalProfile: jest.fn(),
+}));
+
 jest.mock("@/components/ImageCropperModal", () => ({
   __esModule: true,
   default: () => null,
@@ -44,6 +48,7 @@ const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
+const mockedUseGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
 
 describe("RegisterClient", () => {
   beforeEach(() => {
@@ -56,6 +61,10 @@ describe("RegisterClient", () => {
       publicHref: (path: string) => `/ruimdebola${path}`,
     });
     mockedUseMe.mockReturnValue({ me: null, isLoading: false });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: null,
+      isLoading: false,
+    });
   });
 
   afterEach(() => {
@@ -67,7 +76,7 @@ describe("RegisterClient", () => {
       ok: false,
       json: async () => ({
         code: "ACCOUNT_EXISTS",
-        message: "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada. Grupo: Racha Teste.",
+        message: "Sua conta Fut7Pro já existe. Falta apenas solicitar entrada em Racha Teste.",
       }),
     });
     global.fetch = fetchMock as any;
@@ -86,9 +95,6 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
-    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
-      target: { value: "Meia" },
-    });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "5" } });
 
@@ -97,9 +103,7 @@ describe("RegisterClient", () => {
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeInTheDocument();
     expect(screen.getByText(/Sua conta Fut7Pro já existe/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/Falta apenas solicitar entrada\. Grupo: Racha Teste/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Falta apenas solicitar entrada em Racha Teste/i)).toBeInTheDocument();
 
     const loginCta = screen.getByRole("link", { name: /Entrar e solicitar/i });
     expect(loginCta.getAttribute("href")).toBe(
@@ -135,9 +139,6 @@ describe("RegisterClient", () => {
     fireEvent.change(screen.getByLabelText("Posição principal"), {
       target: { value: "Atacante" },
     });
-    fireEvent.change(screen.getAllByRole("combobox")[1]!, {
-      target: { value: "Meia" },
-    });
     fireEvent.change(screen.getByLabelText("Dia"), { target: { value: "12" } });
     fireEvent.change(screen.getByLabelText("Mes"), { target: { value: "7" } });
 
@@ -150,7 +151,7 @@ describe("RegisterClient", () => {
     });
   });
 
-  it("preenche e-mail pela query e usa copy de Conta Fut7Pro", () => {
+  it("preenche e-mail pela query e usa copy de Conta Global", () => {
     searchParamsMock = new URLSearchParams("email=novo%40teste.com");
 
     render(<RegisterClient />);
@@ -160,40 +161,31 @@ describe("RegisterClient", () => {
     expect(screen.queryByRole("heading", { name: "Solicitar entrada" })).not.toBeInTheDocument();
   });
 
-  it("exibe posicao secundaria sem valor inicial e filtra opcoes pela posicao principal", () => {
-    render(<RegisterClient />);
-
-    const secundaria = screen.getAllByRole("combobox")[1] as HTMLSelectElement;
-    expect(secundaria).toHaveValue("");
-    expect(within(secundaria).getByRole("option", { name: "Selecione" })).toBeInTheDocument();
-    expect(within(secundaria).queryByRole("option", { name: "Goleiro" })).not.toBeInTheDocument();
-
-    fireEvent.change(screen.getAllByRole("combobox")[0]!, {
-      target: { value: "Meia" },
+  it("conta autenticada com Perfil Global incompleto sai do register para /perfil", async () => {
+    mockedUseSession.mockReturnValue({
+      data: { user: { email: "neymar@teste.com", name: "Neymar" } },
+      status: "authenticated",
+    });
+    mockedUseMe.mockReturnValue({
+      me: { membership: { status: "NONE" } },
+      isLoading: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Neymar",
+          position: null,
+          birthDay: null,
+          birthMonth: null,
+        },
+      },
+      isLoading: false,
     });
 
-    const secundariaAtualizada = screen.getAllByRole("combobox")[1]!;
-    expect(
-      within(secundariaAtualizada).getByRole("option", { name: "Zagueiro" })
-    ).toBeInTheDocument();
-    expect(
-      within(secundariaAtualizada).getByRole("option", { name: "Atacante" })
-    ).toBeInTheDocument();
-    expect(
-      within(secundariaAtualizada).queryByRole("option", { name: "Meia" })
-    ).not.toBeInTheDocument();
-    expect(
-      within(secundariaAtualizada).queryByRole("option", { name: "Goleiro" })
-    ).not.toBeInTheDocument();
-  });
-
-  it("nao solicita posicao secundaria para goleiro", () => {
     render(<RegisterClient />);
 
-    fireEvent.change(screen.getByLabelText("Posição principal"), {
-      target: { value: "Goleiro" },
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/perfil?intent=request-join&racha=ruimdebola");
     });
-
-    expect(screen.queryByLabelText("Posição secundária")).not.toBeInTheDocument();
   });
 });

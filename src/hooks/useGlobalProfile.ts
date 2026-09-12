@@ -37,7 +37,6 @@ type UpdateGlobalProfilePayload = {
   birthDay?: number | null;
   birthMonth?: number | null;
   birthYear?: number | null;
-  birthPublic?: boolean | null;
 };
 
 export function useGlobalProfile(options?: { enabled?: boolean }) {
