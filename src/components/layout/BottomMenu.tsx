@@ -143,12 +143,13 @@ export default function BottomMenu() {
   if (!hasApprovedTenantProfile) {
     const label = accountComplete ? "Solicitar entrada" : "Completar Perfil Fut7Pro";
     const href = accountComplete ? "/entrar" : `/perfil?intent=request-join&racha=${tenantSlug}`;
+    const targetHref = accountComplete ? publicHref(href) : href;
 
     return (
       <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
         <button
           type="button"
-          onClick={() => router.push(publicHref(href))}
+          onClick={() => router.push(targetHref)}
           className="w-full flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
           style={{ letterSpacing: 0.7 }}
           title={label}
