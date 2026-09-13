@@ -82,4 +82,18 @@ describe("GlobalPerfilClient reauthentication", () => {
       "/vitrine/entrar?intent=request-join&callbackUrl=%2Fseu-racha"
     );
   });
+
+  it("nao usa vitrine como fallback quando nao ha racha explicito nem tenant real", async () => {
+    searchParamsMock = new URLSearchParams();
+
+    render(<GlobalPerfilClient />);
+
+    const button = await screen.findByRole("button", { name: "Entrar novamente" });
+
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/Não foi possível identificar o racha/i)).toBeInTheDocument();
+    expect(signOutMock).not.toHaveBeenCalled();
+    expect(replaceMock).not.toHaveBeenCalledWith("/vitrine/entrar?callbackUrl=%2F");
+    expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/vitrine/entrar"));
+  });
 });
