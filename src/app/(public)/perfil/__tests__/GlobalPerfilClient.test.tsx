@@ -42,6 +42,44 @@ jest.mock("@/components/profile/SecurityRecoveryPanel", () => ({
 }));
 
 const mockedUseGlobalProfile = require("@/hooks/useGlobalProfile").useGlobalProfile as jest.Mock;
+const mockedUseMe = require("@/hooks/useMe").useMe as jest.Mock;
+
+const baseProfile = {
+  user: {
+    id: "user-1",
+    email: "neymar@example.com",
+    name: "Neymar",
+    nickname: "Ney",
+    avatarUrl: null,
+    position: "Atacante",
+    positionSecondary: "Meia",
+    birthDay: 5,
+    birthMonth: 2,
+    birthYear: 1992,
+    birthPublic: true,
+    hasPassword: false,
+    emailVerified: true,
+    authProvider: "google",
+  },
+  stats: {
+    jogos: 0,
+    vitorias: 0,
+    empates: 0,
+    derrotas: 0,
+    pontos: 0,
+    gols: 0,
+    assistencias: 0,
+  },
+  totalTitulos: 0,
+  accountNotifications: [],
+  securityRecovery: undefined,
+  conquistas: {
+    titulosGrandesTorneios: [],
+    titulosAnuais: [],
+    titulosQuadrimestrais: [],
+  },
+  memberships: [],
+};
 
 describe("GlobalPerfilClient reauthentication", () => {
   beforeEach(() => {
@@ -63,6 +101,7 @@ describe("GlobalPerfilClient reauthentication", () => {
     window.localStorage.clear();
     window.localStorage.setItem("fut7pro_last_tenant_slug", "vitrine");
     document.cookie = "f7_active_slug=vitrine; path=/";
+    mockedUseMe.mockReturnValue({ me: null });
   });
 
   it("limpa sessao invalida e navega para login tenant-scoped do racha explicito", async () => {
@@ -91,7 +130,7 @@ describe("GlobalPerfilClient reauthentication", () => {
     const button = await screen.findByRole("button", { name: "Entrar novamente" });
 
     expect(button).toBeDisabled();
-    expect(screen.getByText(/Não foi possível identificar o racha/i)).toBeInTheDocument();
+    expect(screen.getByText(/Não foi possível identificar o grupo/i)).toBeInTheDocument();
     expect(signOutMock).not.toHaveBeenCalled();
     expect(replaceMock).not.toHaveBeenCalledWith("/vitrine/entrar?callbackUrl=%2F");
     expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/vitrine/entrar"));
@@ -111,5 +150,85 @@ describe("GlobalPerfilClient reauthentication", () => {
       expect(replaceMock).toHaveBeenCalledWith("/seu-racha/entrar?callbackUrl=%2Fseu-racha");
     });
     expect(replaceMock).not.toHaveBeenCalledWith("/seu-racha/entrar?callbackUrl=%2F");
+  });
+});
+
+describe("GlobalPerfilClient request-join status", () => {
+  const updateProfileMock = jest.fn();
+
+  beforeEach(() => {
+    searchParamsMock = new URLSearchParams(
+      "intent=request-join&racha=seu-racha&callbackUrl=%2Fseu-racha"
+    );
+    updateProfileMock.mockResolvedValue(baseProfile);
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        memberships: [
+          {
+            tenantId: "tenant-1",
+            tenantSlug: "seu-racha",
+            tenantName: "Seu Racha",
+            role: "ATLETA",
+            status: "PENDENTE",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: jest.fn(),
+    });
+    mockedUseMe.mockReturnValue({ me: null });
+    replaceMock.mockReset();
+    signOutMock.mockClear();
+    window.localStorage.clear();
+    global.fetch = jest.fn();
+  });
+
+  it("salva apenas o perfil quando a solicitacao ja esta pendente", async () => {
+    render(<GlobalPerfilClient />);
+
+    expect(screen.getByText("Sua solicitação já está em análise")).toBeInTheDocument();
+    const button = screen.getByRole("button", { name: "Salvar Perfil Fut7Pro" });
+    fireEvent.click(button);
+
+    await waitFor(() => expect(updateProfileMock).toHaveBeenCalled());
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/auth/request-join"),
+      expect.anything()
+    );
+    expect(replaceMock).not.toHaveBeenCalledWith("/seu-racha/aguardando-aprovacao");
+  });
+
+  it("nao mostra salvar e solicitar entrada quando o membership ja esta aprovado", () => {
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        memberships: [
+          {
+            tenantId: "tenant-1",
+            tenantSlug: "seu-racha",
+            tenantName: "Seu Racha",
+            role: "ATLETA",
+            status: "APROVADO",
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: jest.fn(),
+    });
+
+    render(<GlobalPerfilClient />);
+
+    expect(screen.getByText("Você já faz parte deste grupo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Salvar e solicitar entrada" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Salvar Perfil Fut7Pro" })).toBeInTheDocument();
   });
 });

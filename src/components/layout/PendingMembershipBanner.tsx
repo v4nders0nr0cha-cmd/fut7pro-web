@@ -35,17 +35,21 @@ export default function PendingMembershipBanner() {
   }
 
   const tenantName =
-    profile?.memberships?.find((item) => item.tenantSlug === tenantSlug)?.tenantName ||
-    "este racha";
+    profile?.memberships?.find((item) => item.tenantSlug === tenantSlug)?.tenantName || "";
 
   return (
     <section className="mx-auto mt-3 w-[min(1120px,calc(100%-24px))] rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-3 text-amber-50 shadow-lg">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wide">Solicitação em análise</h2>
+          {tenantName ? (
+            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-amber-100/80">
+              {tenantName}
+            </p>
+          ) : null}
           <p className="mt-1 text-sm text-amber-50/90">
-            Seu pedido para entrar no {tenantName} ainda aguarda aprovação. Enquanto isso, você pode
-            continuar navegando pelo site e acessar sua Conta Fut7Pro normalmente.
+            Sua solicitação para participar deste grupo ainda está em análise. Enquanto isso, você
+            pode continuar navegando pelo site e acessar sua Conta Fut7Pro normalmente.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
