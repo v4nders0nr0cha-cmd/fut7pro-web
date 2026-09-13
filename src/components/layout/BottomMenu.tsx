@@ -8,6 +8,7 @@ import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 import { useMe } from "@/hooks/useMe";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 const menu = [
   { label: "Início", icon: FaHome, href: "/" },
@@ -45,7 +46,7 @@ export default function BottomMenu() {
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
   const isVitrineSlug = tenantSlug.toLowerCase() === "vitrine";
-  const isLoggedIn = status === "authenticated" && Boolean(session?.user);
+  const isLoggedIn = hasUsableFut7ProSession(session, status);
   const { me, isError: isMeError } = useMe({
     enabled: isLoggedIn && Boolean(tenantSlug),
     tenantSlug,
@@ -57,7 +58,13 @@ export default function BottomMenu() {
       (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
       ""
   ).toUpperCase();
-  const isPendingMembership = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
+  const globalMembership = globalProfile?.memberships?.find(
+    (item) => item.tenantSlug === tenantSlug
+  );
+  const globalMembershipStatus = String(globalMembership?.status || "").toUpperCase();
+  const resolvedMembershipStatus = membershipStatus || globalMembershipStatus;
+  const isPendingMembership =
+    resolvedMembershipStatus === "PENDENTE" || resolvedMembershipStatus === "PENDING";
   const hasApprovedTenantProfile = Boolean(
     isLoggedIn && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
@@ -116,18 +123,33 @@ export default function BottomMenu() {
   }
 
   if (isPendingMembership) {
-    return null;
+    return (
+      <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
+        <button
+          type="button"
+          onClick={() => router.push(publicHref("/aguardando-aprovacao"))}
+          className="w-full flex items-center justify-center gap-2 rounded-full border border-amber-300/50 bg-amber-300/10 px-3 py-2 font-bold text-[13px] uppercase text-amber-100"
+          style={{ letterSpacing: 0.7 }}
+          title="Solicitação em análise"
+          aria-label="Solicitação em análise"
+        >
+          <FaUser size={18} />
+          Solicitação em análise
+        </button>
+      </nav>
+    );
   }
 
   if (!hasApprovedTenantProfile) {
-    const label = accountComplete ? "Solicitar entrada" : "Completar conta";
-    const href = accountComplete ? "/entrar" : "/register";
+    const label = accountComplete ? "Solicitar entrada" : "Completar Perfil Fut7Pro";
+    const href = accountComplete ? "/entrar" : `/perfil?intent=request-join&racha=${tenantSlug}`;
+    const targetHref = accountComplete ? publicHref(href) : href;
 
     return (
       <nav className="fixed z-50 bottom-0 left-0 w-full bg-zinc-900 border-t border-zinc-800 flex items-center px-2 py-2 md:hidden animate-slide-down">
         <button
           type="button"
-          onClick={() => router.push(publicHref(href))}
+          onClick={() => router.push(targetHref)}
           className="w-full flex items-center justify-center gap-2 rounded-full border border-brand bg-[#222] px-3 py-2 font-bold text-[13px] uppercase text-brand transition-all hover:bg-brand hover:text-black"
           style={{ letterSpacing: 0.7 }}
           title={label}

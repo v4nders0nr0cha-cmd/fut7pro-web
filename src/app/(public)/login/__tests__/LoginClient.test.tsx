@@ -208,6 +208,7 @@ describe("LoginClient", () => {
           email: "neymar@teste.com",
           name: "Neymar",
           role: "ADMIN",
+          accessToken: "access-token",
         },
       },
       status: "authenticated",
@@ -223,6 +224,7 @@ describe("LoginClient", () => {
         user: {
           name: "Neymar",
           position: "atacante",
+          positionSecondary: "meia",
           birthDay: 5,
           birthMonth: 2,
         },
@@ -259,6 +261,7 @@ describe("LoginClient", () => {
           email: "incompleto@teste.com",
           name: "Neymar",
           role: "ATLETA",
+          accessToken: "access-token",
         },
       },
       status: "authenticated",

@@ -9,6 +9,7 @@ import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
 import PublicAuthSuccessDialog from "@/components/layout/PublicAuthSuccessDialog";
+import PendingMembershipBanner from "@/components/layout/PendingMembershipBanner";
 import ComunicadosLoginGate from "@/components/comunicacao/ComunicadosLoginGate";
 import ToasterProvider from "@/components/ToasterProvider";
 import { useRacha } from "@/context/RachaContext";
@@ -62,6 +63,7 @@ export default function LayoutClient({
 
       {/* ESPAÇAMENTO PARA O TOPNAVMENU */}
       <div className="hidden md:block h-3 w-full" />
+      <PendingMembershipBanner />
 
       {/* CONTEÚDO PRINCIPAL SEM WRAPPER GLOBAL */}
       <main className="min-h-screen flex flex-col w-full pt-10 md:pt-5 pb-20 md:pb-8">

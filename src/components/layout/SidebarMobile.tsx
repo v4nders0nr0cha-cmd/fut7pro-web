@@ -23,6 +23,7 @@ import { resolveActiveTenantSlug } from "@/utils/active-tenant";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
 import { isFut7ProAccountComplete } from "@/utils/public-auth-flow";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 type SidebarMobileProps = {
   open: boolean;
@@ -37,8 +38,10 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
   const activeSlug = resolveActiveTenantSlug(pathname);
   const { publicHref } = usePublicLinks();
   const tenantSlug = activeSlug || "";
-  const hasGlobalSession = status === "authenticated" && Boolean(session?.user);
+  const hasGlobalSession = hasUsableFut7ProSession(session, status);
   const shouldCheckMe = hasGlobalSession && Boolean(tenantSlug);
+  const showUserMenu = hasGlobalSession;
+  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const { me, isError: isMeError } = useMe({
     enabled: shouldCheckMe,
     tenantSlug,
@@ -49,12 +52,16 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
       (me as { membershipStatus?: string | null } | null)?.membershipStatus ||
       ""
   ).toUpperCase();
-  const isPendingMembership = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
+  const globalMembership = globalProfile?.memberships?.find(
+    (item) => item.tenantSlug === tenantSlug
+  );
+  const globalMembershipStatus = String(globalMembership?.status || "").toUpperCase();
+  const resolvedMembershipStatus = membershipStatus || globalMembershipStatus;
+  const isPendingMembership =
+    resolvedMembershipStatus === "PENDENTE" || resolvedMembershipStatus === "PENDING";
   const hasApprovedTenantProfile = Boolean(
     hasGlobalSession && !isMeError && me?.athlete && membershipStatus === "APROVADO"
   );
-  const showUserMenu = hasGlobalSession;
-  const { profile: globalProfile } = useGlobalProfile({ enabled: showUserMenu });
   const accountComplete = isFut7ProAccountComplete(globalProfile?.user || me?.athlete);
   const canSwitchRacha = (globalProfile?.memberships?.length ?? 0) > 1;
   const profileUser = globalProfile?.user;
@@ -77,7 +84,8 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
     hasApprovedTenantProfile && resolvedSlug ? buildPublicHref("/perfil", resolvedSlug) : null;
   const globalProfileHref = "/perfil";
   const switchRachaHref = "/perfil#meus-rachas";
-  const completeAccountHref = publicHref("/register");
+  const completeProfileHref =
+    tenantSlug && !accountComplete ? `/perfil?intent=request-join&racha=${tenantSlug}` : "/perfil";
   const pendingApprovalHref = publicHref("/aguardando-aprovacao");
   const homeHref = publicHref("/");
 
@@ -198,11 +206,11 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
               )}
               {!isPendingMembership && !accountComplete && (
                 <Link
-                  href={completeAccountHref}
+                  href={completeProfileHref}
                   onClick={onClose}
                   className="hover:text-brand-soft"
                 >
-                  Completar conta
+                  Completar Perfil Fut7Pro
                 </Link>
               )}
               {canSwitchRacha && (

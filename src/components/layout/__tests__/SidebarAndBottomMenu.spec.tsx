@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 import BottomMenu from "../BottomMenu";
 
+const routerPushMock = jest.fn();
+
 jest.mock("next/navigation", () => ({
   usePathname: jest.fn(() => "/"),
-  useRouter: jest.fn(() => ({ push: jest.fn() })),
+  useRouter: jest.fn(() => ({ push: routerPushMock })),
   useSearchParams: jest.fn(() => ({ get: () => null })),
   redirect: jest.fn(),
 }));
@@ -51,6 +53,7 @@ describe("BottomMenu", () => {
     useComunicacao.mockReturnValue({ badge: 0, badgeMensagem: 0, badgeSugestoes: 0 });
     useMe.mockReturnValue({ me: null, isLoading: false, isError: false });
     useGlobalProfile.mockReturnValue({ profile: null, isLoading: false, isError: false });
+    routerPushMock.mockReset();
   });
 
   it("mostra CTA de login quando não autenticado", () => {
@@ -73,7 +76,7 @@ describe("BottomMenu", () => {
 
   it("mostra itens do menu e badges quando autenticado e aprovado no grupo", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola");
@@ -111,9 +114,9 @@ describe("BottomMenu", () => {
     expect(screen.getAllByText("2").length).toBeGreaterThan(0);
   });
 
-  it("mantem CTA de completar conta quando ha sessao sem perfil completo aprovado", () => {
+  it("mantem CTA de completar perfil quando ha sessao sem perfil completo aprovado", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola");
@@ -121,13 +124,37 @@ describe("BottomMenu", () => {
     render(<BottomMenu />);
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Completar conta")).toBeInTheDocument();
+    expect(screen.getByLabelText("Completar Perfil Fut7Pro")).toBeInTheDocument();
     expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
+  });
+
+  it("leva o CTA de completar perfil mobile para o Perfil Global sem prefixo do racha", () => {
+    useSession.mockReturnValue({
+      data: { user: { id: "u1", name: "User", tenantSlug: "seu-racha", accessToken: "token" } },
+      status: "authenticated",
+    });
+    usePathname.mockReturnValue("/seu-racha");
+    useGlobalProfile.mockReturnValue({
+      profile: {
+        user: { name: "User", position: "atacante", birthDay: 10, birthMonth: 5 },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<BottomMenu />);
+
+    fireEvent.click(screen.getByLabelText("Completar Perfil Fut7Pro"));
+
+    expect(routerPushMock).toHaveBeenCalledWith("/perfil?intent=request-join&racha=seu-racha");
+    expect(routerPushMock).not.toHaveBeenCalledWith(
+      "/seu-racha/perfil?intent=request-join&racha=seu-racha"
+    );
   });
 
   it("não mostra CTA de completar conta quando a solicitação está pendente", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola/aguardando-aprovacao");
@@ -142,8 +169,29 @@ describe("BottomMenu", () => {
 
     render(<BottomMenu />);
 
-    expect(screen.queryByText(/Completar conta/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Completar Perfil Fut7Pro/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Solicitar entrada/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Solicitação em análise")).toBeInTheDocument();
+  });
+
+  it("trata erro terminal de token como sessão não utilizável", () => {
+    useSession.mockReturnValue({
+      data: {
+        user: {
+          id: "u1",
+          name: "User",
+          tenantSlug: "ruimdebola",
+          accessToken: "",
+          tokenError: "RefreshAccessTokenError",
+        },
+      },
+      status: "authenticated",
+    });
+    usePathname.mockReturnValue("/ruimdebola");
+
+    render(<BottomMenu />);
+
+    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
   });
 });

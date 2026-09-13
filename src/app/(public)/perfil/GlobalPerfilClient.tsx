@@ -137,7 +137,6 @@ export default function GlobalPerfilClient() {
   const [formError, setFormError] = useState("");
   const [success, setSuccess] = useState(false);
   const [switchingSlug, setSwitchingSlug] = useState<string | null>(null);
-  const [authFallbackReady, setAuthFallbackReady] = useState(false);
 
   const [form, setForm] = useState({
     firstName: "",
@@ -181,8 +180,9 @@ export default function GlobalPerfilClient() {
     return requestJoinSlug ? `/${requestJoinSlug}` : "/";
   }, [publicAuthContext?.redirectTo, requestJoinSlug, searchParams]);
   const { me } = useMe({
-    enabled: true,
+    enabled: Boolean(profile?.user && currentSlug),
     tenantSlug: currentSlug || undefined,
+    context: "athlete",
   });
 
   useEffect(() => {
@@ -234,24 +234,6 @@ export default function GlobalPerfilClient() {
       }
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    const waitingAuth = Boolean(isError && errorStatus === 401 && !profile);
-    if (!waitingAuth) {
-      setAuthFallbackReady(false);
-      return;
-    }
-    const timeout = window.setTimeout(() => setAuthFallbackReady(true), 10000);
-    const retry = window.setInterval(() => {
-      mutate().catch(() => {
-        // no-op
-      });
-    }, 2000);
-    return () => {
-      window.clearTimeout(timeout);
-      window.clearInterval(retry);
-    };
-  }, [isError, errorStatus, profile, mutate]);
 
   useEffect(() => {
     if (requestJoinSlug) {
@@ -510,9 +492,7 @@ export default function GlobalPerfilClient() {
     }
   };
 
-  const waitingAuth = Boolean(isError && errorStatus === 401 && !profile && !authFallbackReady);
-
-  if (isLoading || waitingAuth) {
+  if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-5xl px-6 py-16 text-gray-300">
         Carregando perfil global...
@@ -525,21 +505,34 @@ export default function GlobalPerfilClient() {
       <div className="mx-auto w-full max-w-4xl px-6 py-16 text-gray-200">
         <h1 className="sr-only">Perfil Global Fut7Pro</h1>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-8 text-center">
-          <p className="text-lg font-semibold text-white mb-3">Voce precisa entrar.</p>
+          <p className="text-lg font-semibold text-white mb-3">Sua sessão expirou.</p>
           <p className="text-sm text-zinc-400 mb-6">
-            Acesse sua conta Fut7Pro pelo painel admin ou pelo link do seu grupo.
+            Entre novamente para acessar sua Conta Fut7Pro.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a
-              href="/admin/login"
-              className="px-5 py-2 rounded-full bg-brand text-black font-semibold"
-            >
-              Entrar como admin
-            </a>
-            <span className="text-xs text-zinc-400 sm:self-center">
-              Use /{`{slug}`}/login para entrar como atleta
-            </span>
-          </div>
+          <a href="/entrar" className="px-5 py-2 rounded-full bg-brand text-black font-semibold">
+            Entrar novamente
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError && errorStatus === 429 && !profile) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-6 py-16 text-gray-200">
+        <h1 className="sr-only">Perfil Global Fut7Pro</h1>
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-8 text-center">
+          <p className="text-lg font-semibold text-white mb-3">Muitas tentativas em pouco tempo.</p>
+          <p className="text-sm text-zinc-400 mb-6">
+            Aguarde um instante e tente carregar sua Conta Fut7Pro novamente.
+          </p>
+          <button
+            type="button"
+            onClick={() => mutate()}
+            className="px-5 py-2 rounded-full bg-brand text-black font-semibold"
+          >
+            Tentar novamente
+          </button>
         </div>
       </div>
     );
@@ -567,6 +560,28 @@ export default function GlobalPerfilClient() {
   return (
     <div className="mx-auto w-full max-w-6xl px-6 pb-20">
       <h1 className="sr-only">Perfil Global Fut7Pro</h1>
+
+      {profile.accountNotifications?.length ? (
+        <section className="mb-6 space-y-3">
+          {profile.accountNotifications.map((notification) => (
+            <div
+              key={notification.id}
+              className="rounded-2xl border border-brand/30 bg-brand/10 p-5 text-white"
+            >
+              <h2 className="text-lg font-bold">{notification.title}</h2>
+              <p className="mt-1 text-sm text-zinc-200">{notification.body}</p>
+              {notification.href ? (
+                <a
+                  href={notification.href}
+                  className="mt-3 inline-flex rounded-full bg-brand px-4 py-2 text-sm font-bold text-black"
+                >
+                  Ver detalhes
+                </a>
+              ) : null}
+            </div>
+          ))}
+        </section>
+      ) : null}
 
       {isRequestJoinFlow ? (
         <section className="mb-6 rounded-2xl border border-amber-300/40 bg-amber-300/10 p-5 text-amber-50">

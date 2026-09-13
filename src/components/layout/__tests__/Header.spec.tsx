@@ -76,6 +76,7 @@ describe("Header", () => {
           name: "Pele",
           email: "pele@teste.com",
           image: "https://cdn.fut7/avatar-pele.png",
+          accessToken: "token",
         },
       },
       status: "authenticated",
@@ -91,6 +92,25 @@ describe("Header", () => {
     expect(screen.queryByText("Meu perfil")).not.toBeInTheDocument();
   });
 
+  it("não mostra a conta como autenticada quando o token tem erro terminal", () => {
+    useSession.mockReturnValue({
+      data: {
+        user: {
+          id: "u1",
+          name: "Pele",
+          email: "pele@teste.com",
+          tokenError: "AccessTokenExpired",
+        },
+      },
+      status: "authenticated",
+    });
+
+    render(<Header />);
+
+    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Pele/i })).not.toBeInTheDocument();
+  });
+
   it("troca o CTA por perfil quando a sessao tem atleta aprovado no grupo atual", () => {
     useSession.mockReturnValue({
       data: {
@@ -99,6 +119,7 @@ describe("Header", () => {
           name: "Pele",
           email: "pele@teste.com",
           image: "https://cdn.fut7/avatar-global.png",
+          accessToken: "token",
         },
       },
       status: "authenticated",
