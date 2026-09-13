@@ -4,6 +4,25 @@ import useSWR from "swr";
 import type { GlobalProfileResponse } from "@/types/global-profile";
 
 const PROFILE_TIMEOUT_MS = 12000;
+const NO_AUTO_RETRY_STATUSES = new Set([401, 403, 429]);
+
+function parseErrorMessage(status: number, body: unknown) {
+  const message =
+    (body as { message?: string; error?: string } | null)?.message ||
+    (body as { message?: string; error?: string } | null)?.error ||
+    (typeof body === "string" ? body : "");
+
+  if (status === 401) {
+    return "Sua sessão expirou. Entre novamente para acessar sua Conta Fut7Pro.";
+  }
+  if (status === 403) {
+    return "Você não tem permissão para acessar estes dados.";
+  }
+  if (status === 429) {
+    return "Muitas tentativas em pouco tempo. Aguarde um instante e tente novamente.";
+  }
+  return message || "Falha ao carregar perfil global";
+}
 
 const fetcher = async (url: string): Promise<GlobalProfileResponse> => {
   const controller = new AbortController();
@@ -20,9 +39,19 @@ const fetcher = async (url: string): Promise<GlobalProfileResponse> => {
     window.clearTimeout(timeout);
   }
   if (!res.ok) {
-    const body = await res.text();
-    const err = new Error(body || "Falha ao carregar perfil global") as Error & { status?: number };
+    const text = await res.text();
+    let body: unknown = text;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      body = text;
+    }
+    const err = new Error(parseErrorMessage(res.status, body)) as Error & {
+      status?: number;
+      retryAfter?: string | null;
+    };
     err.status = res.status;
+    err.retryAfter = res.headers.get("retry-after");
     throw err;
   }
   return res.json();
@@ -47,6 +76,11 @@ export function useGlobalProfile(options?: { enabled?: boolean }) {
     fetcher,
     {
       revalidateOnFocus: false,
+      shouldRetryOnError: (err) => {
+        const status = (err as { status?: number } | undefined)?.status;
+        return !status || !NO_AUTO_RETRY_STATUSES.has(status);
+      },
+      errorRetryCount: 1,
     }
   );
 

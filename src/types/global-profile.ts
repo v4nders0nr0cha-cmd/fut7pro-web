@@ -63,6 +63,15 @@ export type GlobalProfileResponse = {
   user: GlobalProfileUser;
   stats: GlobalProfileStats;
   totalTitulos?: number;
+  accountNotifications?: Array<{
+    id: string;
+    title: string;
+    body: string;
+    href?: string | null;
+    readAt?: string | null;
+    createdAt: string;
+    metadata?: unknown;
+  }>;
   securityRecovery?: {
     enabled: boolean;
     hasMinimumMethod: boolean;

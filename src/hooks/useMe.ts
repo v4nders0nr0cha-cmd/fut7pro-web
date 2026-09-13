@@ -5,6 +5,7 @@ import type { MeResponse } from "@/types/me";
 
 const ME_TIMEOUT_MS = 12000;
 const ME_DEDUPE_MS = 15000;
+const NO_AUTO_RETRY_STATUSES = new Set([401, 403, 429]);
 
 const fetcher = async (url: string): Promise<MeResponse> => {
   const controller = new AbortController();
@@ -29,7 +30,9 @@ const fetcher = async (url: string): Promise<MeResponse> => {
         (body as { message?: string; error?: string } | null)?.error ||
         (typeof body === "string" ? body : "") ||
         "Falha ao carregar perfil";
-      throw new Error(message);
+      const error = new Error(message) as Error & { status?: number };
+      error.status = res.status;
+      throw error;
     }
 
     return (body as MeResponse) ?? ({} as MeResponse);
@@ -64,12 +67,18 @@ export function useMe(options?: {
     revalidateOnFocus: false,
     revalidateIfStale: false,
     dedupingInterval: ME_DEDUPE_MS,
+    shouldRetryOnError: (err) => {
+      const status = (err as { status?: number } | undefined)?.status;
+      return !status || !NO_AUTO_RETRY_STATUSES.has(status);
+    },
+    errorRetryCount: 1,
   });
 
   return {
     me: data ?? null,
     isLoading,
     isError: Boolean(error),
+    errorStatus: (error as (Error & { status?: number }) | undefined)?.status ?? null,
     error: error instanceof Error ? error.message : null,
     mutate,
   };

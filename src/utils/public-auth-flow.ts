@@ -73,13 +73,27 @@ type Fut7ProAccountProfile = {
   firstName?: string | null;
   name?: string | null;
   position?: string | null;
+  positionSecondary?: string | null;
   birthDay?: number | null;
   birthMonth?: number | null;
 };
+
+function normalizePosition(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
 
 export function isFut7ProAccountComplete(profile?: Fut7ProAccountProfile | null) {
   if (!profile) return false;
 
   const name = (profile.firstName || profile.name || "").trim();
-  return Boolean(name && profile.position && profile.birthDay && profile.birthMonth);
+  const primary = normalizePosition(profile.position);
+  const secondary = normalizePosition(profile.positionSecondary);
+  const hasBaseProfile = Boolean(name && primary && profile.birthDay && profile.birthMonth);
+  if (!hasBaseProfile) return false;
+  if (primary.startsWith("gol")) return true;
+  return Boolean(secondary && secondary !== primary);
 }

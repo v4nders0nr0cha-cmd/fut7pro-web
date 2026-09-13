@@ -73,7 +73,7 @@ describe("BottomMenu", () => {
 
   it("mostra itens do menu e badges quando autenticado e aprovado no grupo", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola");
@@ -113,7 +113,7 @@ describe("BottomMenu", () => {
 
   it("mantem CTA de completar conta quando ha sessao sem perfil completo aprovado", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola");
@@ -121,13 +121,13 @@ describe("BottomMenu", () => {
     render(<BottomMenu />);
 
     expect(screen.queryByText(/^Entrar$/i)).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Completar conta")).toBeInTheDocument();
+    expect(screen.getByLabelText("Completar Perfil Fut7Pro")).toBeInTheDocument();
     expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
   });
 
   it("não mostra CTA de completar conta quando a solicitação está pendente", () => {
     useSession.mockReturnValue({
-      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola" } },
+      data: { user: { id: "u1", name: "User", tenantSlug: "ruimdebola", accessToken: "token" } },
       status: "authenticated",
     });
     usePathname.mockReturnValue("/ruimdebola/aguardando-aprovacao");
@@ -142,8 +142,29 @@ describe("BottomMenu", () => {
 
     render(<BottomMenu />);
 
-    expect(screen.queryByText(/Completar conta/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Completar Perfil Fut7Pro/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Solicitar entrada/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Perfil")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Solicitação em análise")).toBeInTheDocument();
+  });
+
+  it("trata erro terminal de token como sessão não utilizável", () => {
+    useSession.mockReturnValue({
+      data: {
+        user: {
+          id: "u1",
+          name: "User",
+          tenantSlug: "ruimdebola",
+          accessToken: "",
+          tokenError: "RefreshAccessTokenError",
+        },
+      },
+      status: "authenticated",
+    });
+    usePathname.mockReturnValue("/ruimdebola");
+
+    render(<BottomMenu />);
+
+    expect(screen.getByText(/^Entrar$/i)).toBeInTheDocument();
   });
 });

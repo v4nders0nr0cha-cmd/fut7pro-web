@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 import { Role } from "@/common/enums";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 export interface AuthUser {
   id: string;
@@ -123,7 +124,7 @@ export function useAuth(): UseAuthReturn {
 
   const user = session?.user as AuthUser | null;
   const isLoading = status === "loading";
-  const isAuthenticated = status === "authenticated" && !!user;
+  const isAuthenticated = hasUsableFut7ProSession(session, status);
 
   const login = useCallback(async (email: string, password: string): Promise<boolean> => {
     try {
