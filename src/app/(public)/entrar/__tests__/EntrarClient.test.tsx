@@ -99,6 +99,7 @@ describe("EntrarClient unified athlete auth", () => {
         user: {
           name: "Atleta",
           position: "atacante",
+          positionSecondary: "meia",
           birthDay: 1,
           birthMonth: 1,
         },
