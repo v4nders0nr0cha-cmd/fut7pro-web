@@ -67,6 +67,13 @@ export type GlobalProfileResponse = {
     enabled: boolean;
     hasMinimumMethod: boolean;
     requiredAt: string | null;
+    warningAt?: string | null;
+    requiredNow?: boolean;
+    stage?: string | null;
+    policy?: string | null;
+    graceDays?: number | null;
+    warningDays?: number | null;
+    daysUntilRequired?: number | null;
     checkedAt: string | null;
     methods: {
       recoveryEmail: {

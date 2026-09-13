@@ -41,6 +41,17 @@ describe("SecurityRecoveryPanel", () => {
     delete (globalThis as any).fetch;
   });
 
+  it("mostra recuperacao como opcional sem prazo ou conformidade", () => {
+    render(<SecurityRecoveryPanel initialStatus={baseStatus as any} />);
+
+    expect(screen.getByText("Opcional")).toBeInTheDocument();
+    expect(
+      screen.getByText("Adicione um método de recuperação para aumentar a segurança da sua conta.")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Conformidade/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Prazo de obrigatoriedade/i)).not.toBeInTheDocument();
+  });
+
   it("solicita codigo de e-mail de recuperacao", async () => {
     fetchMock
       .mockResolvedValueOnce({

@@ -11,6 +11,7 @@ import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
+import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
 const POSICOES = ["Goleiro", "Zagueiro", "Meia", "Atacante"] as const;
@@ -196,14 +197,20 @@ export default function GlobalPerfilClient() {
     const resolvedBirthDay = pickNumber(profile.user.birthDay, fallbackAthlete?.birthDay);
     const resolvedBirthMonth = pickNumber(profile.user.birthMonth, fallbackAthlete?.birthMonth);
     const resolvedBirthYear = pickNumber(profile.user.birthYear, fallbackAthlete?.birthYear);
+    const resolvedPosition = normalizePositionLabel(
+      profile.user.position || fallbackAthlete?.position
+    );
+    const resolvedPositionSecondary = isGoalkeeperPosition(resolvedPosition)
+      ? ""
+      : normalizePositionLabel(
+          profile.user.positionSecondary || fallbackAthlete?.positionSecondary
+        );
 
     setForm({
       firstName: profile.user.name || fallbackAthlete?.firstName || "",
       nickname: profile.user.nickname || fallbackAthlete?.nickname || "",
-      position: normalizePositionLabel(profile.user.position || fallbackAthlete?.position),
-      positionSecondary: normalizePositionLabel(
-        profile.user.positionSecondary || fallbackAthlete?.positionSecondary
-      ),
+      position: resolvedPosition,
+      positionSecondary: resolvedPositionSecondary,
       birthDay: resolvedBirthDay ? String(resolvedBirthDay) : "",
       birthMonth: resolvedBirthMonth ? String(resolvedBirthMonth) : "",
       birthYear: resolvedBirthYear ? String(resolvedBirthYear) : "",
@@ -257,6 +264,11 @@ export default function GlobalPerfilClient() {
     }
   }, [requestJoinSlug]);
 
+  useEffect(() => {
+    if (!isGoalkeeperPosition(form.position) || !form.positionSecondary) return;
+    setForm((prev) => ({ ...prev, positionSecondary: "" }));
+  }, [form.position, form.positionSecondary]);
+
   const stats = profile?.stats;
   const totalTitulos = profile?.totalTitulos ?? 0;
   const membershipList = profile?.memberships ?? [];
@@ -269,10 +281,13 @@ export default function GlobalPerfilClient() {
     const missing: Array<{ key: string; label: string }> = [];
     if (!form.firstName.trim()) missing.push({ key: "firstName", label: "nome" });
     if (!form.position) missing.push({ key: "position", label: "posição principal" });
+    if (form.position && !isGoalkeeperPosition(form.position) && !form.positionSecondary) {
+      missing.push({ key: "positionSecondary", label: "posição secundária" });
+    }
     if (!form.birthDay) missing.push({ key: "birthDay", label: "dia de nascimento" });
     if (!form.birthMonth) missing.push({ key: "birthMonth", label: "mês de nascimento" });
     return missing;
-  }, [form.birthDay, form.birthMonth, form.firstName, form.position]);
+  }, [form.birthDay, form.birthMonth, form.firstName, form.position, form.positionSecondary]);
   const missingFieldKeys = useMemo(
     () => new Set(missingRequiredFields.map((field) => field.key)),
     [missingRequiredFields]
@@ -377,6 +392,10 @@ export default function GlobalPerfilClient() {
       setFormError("A posição secundária não pode ser igual à principal.");
       return;
     }
+    if (!isGoalkeeperPosition(resolvedPosition) && !form.positionSecondary) {
+      setFormError("Informe a posição secundária.");
+      return;
+    }
     if (isRequestJoinFlow && missingRequiredFields.length > 0) {
       setFormError(
         `Falta preencher: ${missingRequiredFields.map((field) => field.label).join(", ")}.`
@@ -416,7 +435,9 @@ export default function GlobalPerfilClient() {
         nickname: form.nickname.trim() || null,
         avatarUrl,
         position: resolvedPosition,
-        positionSecondary: form.positionSecondary || null,
+        positionSecondary: isGoalkeeperPosition(resolvedPosition)
+          ? null
+          : form.positionSecondary || null,
         birthDay: toOptionalInt(form.birthDay),
         birthMonth: toOptionalInt(form.birthMonth),
         birthYear: toOptionalInt(form.birthYear),
@@ -745,7 +766,21 @@ export default function GlobalPerfilClient() {
                 Posição principal *
                 <select
                   value={form.position}
-                  onChange={(event) => updateFormField("position", event.target.value as Posicao)}
+                  onChange={(event) => {
+                    const next = event.target.value as Posicao;
+                    setHasEditedForm(true);
+                    setForm((prev) => ({
+                      ...prev,
+                      position: next,
+                      positionSecondary:
+                        isGoalkeeperPosition(next) ||
+                        !getValidSecondaryDisplayOptions(next).includes(
+                          prev.positionSecondary as any
+                        )
+                          ? ""
+                          : prev.positionSecondary,
+                    }));
+                  }}
                   className={fieldClass("position")}
                 >
                   <option value="">Selecione</option>
@@ -756,24 +791,27 @@ export default function GlobalPerfilClient() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm text-zinc-300">
-                Posição secundária
-                <select
-                  value={form.positionSecondary}
-                  onChange={(event) =>
-                    updateFormField("positionSecondary", event.target.value as Posicao)
-                  }
-                  className={fieldClass("positionSecondary")}
-                >
-                  <option value="">Nenhuma</option>
-                  {POSICOES.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-                <SecondaryPositionHint className="text-zinc-400" />
-              </label>
+              {!isGoalkeeperPosition(form.position) ? (
+                <label className="text-sm text-zinc-300">
+                  Posição secundária
+                  <select
+                    value={form.positionSecondary}
+                    onChange={(event) =>
+                      updateFormField("positionSecondary", event.target.value as Posicao)
+                    }
+                    required
+                    className={fieldClass("positionSecondary")}
+                  >
+                    <option value="">Selecione</option>
+                    {getValidSecondaryDisplayOptions(form.position).map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                  <SecondaryPositionHint className="text-zinc-400" />
+                </label>
+              ) : null}
               <div className="grid grid-cols-3 gap-3 sm:col-span-2">
                 <label className="text-sm text-zinc-300">
                   Dia
