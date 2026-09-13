@@ -96,4 +96,20 @@ describe("GlobalPerfilClient reauthentication", () => {
     expect(replaceMock).not.toHaveBeenCalledWith("/vitrine/entrar?callbackUrl=%2F");
     expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("/vitrine/entrar"));
   });
+
+  it("usa tenant armazenado real como callback quando nao ha racha explicito", async () => {
+    searchParamsMock = new URLSearchParams();
+    window.localStorage.setItem("fut7pro_last_tenant_slug", "seu-racha");
+    document.cookie = "f7_active_slug=seu-racha; path=/";
+
+    render(<GlobalPerfilClient />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Entrar novamente" }));
+
+    await waitFor(() => {
+      expect(signOutMock).toHaveBeenCalledWith({ redirect: false });
+      expect(replaceMock).toHaveBeenCalledWith("/seu-racha/entrar?callbackUrl=%2Fseu-racha");
+    });
+    expect(replaceMock).not.toHaveBeenCalledWith("/seu-racha/entrar?callbackUrl=%2F");
+  });
 });

@@ -203,7 +203,9 @@ export default function GlobalPerfilClient() {
     if (isRequestJoinFlow && requestJoinSlug) {
       params.set("intent", "request-join");
     }
-    params.set("callbackUrl", requestJoinRedirectTo);
+    const callbackUrl =
+      requestJoinRedirectTo !== "/" ? requestJoinRedirectTo : `/${reauthenticationSlug}`;
+    params.set("callbackUrl", callbackUrl);
     return `/${reauthenticationSlug}/entrar?${params.toString()}`;
   }, [isRequestJoinFlow, reauthenticationSlug, requestJoinRedirectTo, requestJoinSlug]);
   const { me } = useMe({
