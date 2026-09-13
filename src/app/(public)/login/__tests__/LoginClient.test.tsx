@@ -294,6 +294,34 @@ describe("LoginClient", () => {
     });
   });
 
+  it("sessao NextAuth autenticada mas expirada nao executa redirect automatico", async () => {
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "expirada@teste.com",
+          name: "Neymar",
+          role: "ATLETA",
+          accessToken: "expired-token",
+          tokenError: "AccessTokenExpired",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+
+    render(<LoginClient />);
+
+    expect(await screen.findByPlaceholderText("email@exemplo.com")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(mockedUseMe).toHaveBeenCalledWith(
+      expect.objectContaining({
+        enabled: false,
+      })
+    );
+    expect(mockedUseGlobalProfile).toHaveBeenCalledWith({ enabled: false });
+  });
+
   it("mostra cadastro necessario quando OTP recebe USER_NOT_FOUND", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse(

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
@@ -11,6 +12,7 @@ import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
+import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { getValidSecondaryDisplayOptions, isGoalkeeperPosition } from "@/utils/position-secondary";
 
 const DEFAULT_AVATAR = "/images/jogadores/jogador_padrao_01.jpg";
@@ -101,6 +103,12 @@ function normalizeSlug(value?: string | null) {
     .toLowerCase();
 }
 
+function normalizeAuthSlug(value?: string | null) {
+  const slug = normalizeSlug(value);
+  if (!slug || slug === "vitrine") return "";
+  return slug;
+}
+
 function renderConquistaItem(item: GlobalTitle) {
   const quadrimestre = typeof item.quadrimestre === "number" ? `Q${item.quadrimestre}` : null;
   return (
@@ -158,6 +166,8 @@ export default function GlobalPerfilClient() {
   const [securityError, setSecurityError] = useState("");
   const [securitySuccess, setSecuritySuccess] = useState("");
   const [securityExpanded, setSecurityExpanded] = useState(false);
+  const [reauthenticating, setReauthenticating] = useState(false);
+  const [reauthenticationError, setReauthenticationError] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -179,6 +189,25 @@ export default function GlobalPerfilClient() {
     if (fromContext.startsWith("/")) return fromContext;
     return requestJoinSlug ? `/${requestJoinSlug}` : "/";
   }, [publicAuthContext?.redirectTo, requestJoinSlug, searchParams]);
+  const reauthenticationSlug = useMemo(() => {
+    return (
+      normalizeAuthSlug(requestJoinSlug) ||
+      normalizeAuthSlug(resolvePublicTenantSlug(requestJoinRedirectTo)) ||
+      normalizeAuthSlug(currentSlug) ||
+      normalizeAuthSlug(getStoredTenantSlug())
+    );
+  }, [currentSlug, requestJoinRedirectTo, requestJoinSlug]);
+  const reauthenticationHref = useMemo(() => {
+    if (!reauthenticationSlug) return null;
+    const params = new URLSearchParams();
+    if (isRequestJoinFlow && requestJoinSlug) {
+      params.set("intent", "request-join");
+    }
+    const callbackUrl =
+      requestJoinRedirectTo !== "/" ? requestJoinRedirectTo : `/${reauthenticationSlug}`;
+    params.set("callbackUrl", callbackUrl);
+    return `/${reauthenticationSlug}/entrar?${params.toString()}`;
+  }, [isRequestJoinFlow, reauthenticationSlug, requestJoinRedirectTo, requestJoinSlug]);
   const { me } = useMe({
     enabled: Boolean(profile?.user && currentSlug),
     tenantSlug: currentSlug || undefined,
@@ -238,6 +267,9 @@ export default function GlobalPerfilClient() {
   useEffect(() => {
     if (requestJoinSlug) {
       setCurrentSlug(requestJoinSlug);
+      if (normalizeAuthSlug(requestJoinSlug)) {
+        setStoredTenantSlug(requestJoinSlug);
+      }
       return;
     }
     const stored = getStoredTenantSlug();
@@ -245,6 +277,21 @@ export default function GlobalPerfilClient() {
       setCurrentSlug(stored);
     }
   }, [requestJoinSlug]);
+
+  const handleReauthenticate = async () => {
+    if (!reauthenticationHref) {
+      setReauthenticationError(
+        "Não foi possível identificar o racha para reabrir o login. Volte ao site do seu racha e tente entrar novamente."
+      );
+      return;
+    }
+    setReauthenticating(true);
+    try {
+      await signOut({ redirect: false });
+    } finally {
+      router.replace(reauthenticationHref);
+    }
+  };
 
   useEffect(() => {
     if (!isGoalkeeperPosition(form.position) || !form.positionSecondary) return;
@@ -509,9 +556,23 @@ export default function GlobalPerfilClient() {
           <p className="text-sm text-zinc-400 mb-6">
             Entre novamente para acessar sua Conta Fut7Pro.
           </p>
-          <a href="/entrar" className="px-5 py-2 rounded-full bg-brand text-black font-semibold">
+          <button
+            type="button"
+            onClick={handleReauthenticate}
+            disabled={reauthenticating || !reauthenticationHref}
+            className="px-5 py-2 rounded-full bg-brand text-black font-semibold disabled:opacity-70"
+          >
             Entrar novamente
-          </a>
+          </button>
+          {reauthenticationError ? (
+            <p className="mt-4 text-sm text-amber-200">{reauthenticationError}</p>
+          ) : null}
+          {!reauthenticationHref && !reauthenticationError ? (
+            <p className="mt-4 text-sm text-amber-200">
+              Não foi possível identificar o racha para reabrir o login. Volte ao site do seu racha
+              e tente entrar novamente.
+            </p>
+          ) : null}
         </div>
       </div>
     );
