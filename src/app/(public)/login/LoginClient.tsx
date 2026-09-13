@@ -22,6 +22,7 @@ import {
   showPublicAuthSuccessToast,
 } from "@/utils/public-auth-feedback";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
   AUTH_APP_TURNSTILE_SITE_KEY,
@@ -82,6 +83,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const isEntryVariant = variant === "entry";
 
   const { data: session, status, update } = useSession();
+  const hasUsableSession = hasUsableFut7ProSession(session, status);
   const router = useRouter();
   const searchParams = useSearchParams();
   const requestJoinIntent = searchParams.get("intent") === "request-join";
@@ -126,7 +128,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     return `${publicHref(entryPath)}?${params.toString()}`;
   }, [entryPath, publicHref, redirectTo]);
 
-  const shouldLoadMe = status === "authenticated" && Boolean(publicSlug);
+  const shouldLoadMe = hasUsableSession && Boolean(publicSlug);
   const {
     me,
     isLoading: isLoadingMe,
@@ -140,14 +142,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     profile: globalProfile,
     isLoading: isLoadingGlobalProfile,
     isError: isErrorGlobalProfile,
-  } = useGlobalProfile({ enabled: status === "authenticated" });
+  } = useGlobalProfile({ enabled: hasUsableSession });
   const accountComplete =
     isFut7ProAccountComplete(me?.athlete) || isFut7ProAccountComplete(globalProfile?.user);
   const accountStateResolved =
-    status !== "authenticated" ||
-    Boolean(globalProfile) ||
-    isErrorGlobalProfile ||
-    !isLoadingGlobalProfile;
+    !hasUsableSession || Boolean(globalProfile) || isErrorGlobalProfile || !isLoadingGlobalProfile;
 
   const navigateWithRefresh = useCallback(
     (href: string) => {
@@ -271,7 +270,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   }, [resendRemainingSeconds]);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (!hasUsableSession) return;
     if (requestJoinInProgress) return;
     if (completedNavigationRef.current) return;
 
@@ -339,6 +338,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     setNotMemberMessage("");
   }, [
     status,
+    hasUsableSession,
     redirectTo,
     publicHref,
     publicSlug,
@@ -375,7 +375,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       return;
     }
 
-    if (status !== "authenticated" && !canRequestJoin) {
+    if (!hasUsableSession && !canRequestJoin) {
       setNotMemberMessage(
         `Entre com código enviado por e-mail ou com sua senha para solicitar entrada em ${nomeDoRacha}.`
       );
@@ -738,7 +738,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const renderedMembershipStatus = String(me?.membership?.status || "").toUpperCase();
   const resolvingExistingSession =
     status === "loading" ||
-    (status === "authenticated" &&
+    (hasUsableSession &&
       !isErrorMe &&
       (!accountStateResolved ||
         isLoadingGlobalProfile ||

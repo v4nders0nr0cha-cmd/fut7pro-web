@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { signOut } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
@@ -158,6 +159,7 @@ export default function GlobalPerfilClient() {
   const [securityError, setSecurityError] = useState("");
   const [securitySuccess, setSecuritySuccess] = useState("");
   const [securityExpanded, setSecurityExpanded] = useState(false);
+  const [reauthenticating, setReauthenticating] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -179,6 +181,18 @@ export default function GlobalPerfilClient() {
     if (fromContext.startsWith("/")) return fromContext;
     return requestJoinSlug ? `/${requestJoinSlug}` : "/";
   }, [publicAuthContext?.redirectTo, requestJoinSlug, searchParams]);
+  const reauthenticationSlug = useMemo(() => {
+    return requestJoinSlug || normalizeSlug(currentSlug) || normalizeSlug(getStoredTenantSlug());
+  }, [currentSlug, requestJoinSlug]);
+  const reauthenticationHref = useMemo(() => {
+    const slug = reauthenticationSlug || "vitrine";
+    const params = new URLSearchParams();
+    if (isRequestJoinFlow && requestJoinSlug) {
+      params.set("intent", "request-join");
+    }
+    params.set("callbackUrl", requestJoinRedirectTo);
+    return `/${slug}/entrar?${params.toString()}`;
+  }, [isRequestJoinFlow, reauthenticationSlug, requestJoinRedirectTo, requestJoinSlug]);
   const { me } = useMe({
     enabled: Boolean(profile?.user && currentSlug),
     tenantSlug: currentSlug || undefined,
@@ -238,6 +252,7 @@ export default function GlobalPerfilClient() {
   useEffect(() => {
     if (requestJoinSlug) {
       setCurrentSlug(requestJoinSlug);
+      setStoredTenantSlug(requestJoinSlug);
       return;
     }
     const stored = getStoredTenantSlug();
@@ -245,6 +260,15 @@ export default function GlobalPerfilClient() {
       setCurrentSlug(stored);
     }
   }, [requestJoinSlug]);
+
+  const handleReauthenticate = async () => {
+    setReauthenticating(true);
+    try {
+      await signOut({ redirect: false });
+    } finally {
+      router.replace(reauthenticationHref);
+    }
+  };
 
   useEffect(() => {
     if (!isGoalkeeperPosition(form.position) || !form.positionSecondary) return;
@@ -509,9 +533,14 @@ export default function GlobalPerfilClient() {
           <p className="text-sm text-zinc-400 mb-6">
             Entre novamente para acessar sua Conta Fut7Pro.
           </p>
-          <a href="/entrar" className="px-5 py-2 rounded-full bg-brand text-black font-semibold">
+          <button
+            type="button"
+            onClick={handleReauthenticate}
+            disabled={reauthenticating}
+            className="px-5 py-2 rounded-full bg-brand text-black font-semibold disabled:opacity-70"
+          >
             Entrar novamente
-          </a>
+          </button>
         </div>
       </div>
     );
