@@ -197,14 +197,20 @@ export default function GlobalPerfilClient() {
     const resolvedBirthDay = pickNumber(profile.user.birthDay, fallbackAthlete?.birthDay);
     const resolvedBirthMonth = pickNumber(profile.user.birthMonth, fallbackAthlete?.birthMonth);
     const resolvedBirthYear = pickNumber(profile.user.birthYear, fallbackAthlete?.birthYear);
+    const resolvedPosition = normalizePositionLabel(
+      profile.user.position || fallbackAthlete?.position
+    );
+    const resolvedPositionSecondary = isGoalkeeperPosition(resolvedPosition)
+      ? ""
+      : normalizePositionLabel(
+          profile.user.positionSecondary || fallbackAthlete?.positionSecondary
+        );
 
     setForm({
       firstName: profile.user.name || fallbackAthlete?.firstName || "",
       nickname: profile.user.nickname || fallbackAthlete?.nickname || "",
-      position: normalizePositionLabel(profile.user.position || fallbackAthlete?.position),
-      positionSecondary: normalizePositionLabel(
-        profile.user.positionSecondary || fallbackAthlete?.positionSecondary
-      ),
+      position: resolvedPosition,
+      positionSecondary: resolvedPositionSecondary,
       birthDay: resolvedBirthDay ? String(resolvedBirthDay) : "",
       birthMonth: resolvedBirthMonth ? String(resolvedBirthMonth) : "",
       birthYear: resolvedBirthYear ? String(resolvedBirthYear) : "",
@@ -257,6 +263,11 @@ export default function GlobalPerfilClient() {
       setCurrentSlug(stored);
     }
   }, [requestJoinSlug]);
+
+  useEffect(() => {
+    if (!isGoalkeeperPosition(form.position) || !form.positionSecondary) return;
+    setForm((prev) => ({ ...prev, positionSecondary: "" }));
+  }, [form.position, form.positionSecondary]);
 
   const stats = profile?.stats;
   const totalTitulos = profile?.totalTitulos ?? 0;
@@ -383,10 +394,6 @@ export default function GlobalPerfilClient() {
     }
     if (!isGoalkeeperPosition(resolvedPosition) && !form.positionSecondary) {
       setFormError("Informe a posição secundária.");
-      return;
-    }
-    if (isGoalkeeperPosition(resolvedPosition) && form.positionSecondary) {
-      setFormError("Goleiro não deve ter posição secundária.");
       return;
     }
     if (isRequestJoinFlow && missingRequiredFields.length > 0) {
