@@ -142,6 +142,9 @@ export default function PerfilUsuarioPage() {
     error,
     isAuthenticated,
     isPendingApproval,
+    hasConfirmedNoGroupMembership,
+    isMembershipLookupError,
+    retryMembershipLookup,
   } = usePerfil();
   const router = useRouter();
   const { publicHref, publicSlug } = usePublicLinks();
@@ -165,6 +168,10 @@ export default function PerfilUsuarioPage() {
     normalizedMembershipStatus === "REJEITADO" || normalizedMembershipStatus === "REJECTED";
   const isSuspendedMembership =
     normalizedMembershipStatus === "SUSPENSO" || normalizedMembershipStatus === "SUSPENDED";
+  const isApprovedMembership =
+    normalizedMembershipStatus === "APROVADO" ||
+    normalizedMembershipStatus === "APPROVED" ||
+    normalizedMembershipStatus === "ACTIVE";
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pendingStatsPeriod, setPendingStatsPeriod] = useState<"current" | "all" | null>(null);
   const [periodSwitchStartedAt, setPeriodSwitchStartedAt] = useState<number | null>(null);
@@ -182,7 +189,7 @@ export default function PerfilUsuarioPage() {
     mutate: mutatePremiumProfile,
   } = useOwnerAthletePremiumProfile({
     tenantSlug: publicSlug,
-    enabled: Boolean(publicSlug && isAuthenticated && usuario && !isPendingApproval),
+    enabled: Boolean(publicSlug && isAuthenticated && usuario && isApprovedMembership),
     statsPeriod,
   });
 
@@ -356,22 +363,25 @@ export default function PerfilUsuarioPage() {
   }
 
   if (isError || !usuario) {
-    const hasNoGroupMembership = isError && errorStatus === 403 && !normalizedMembershipStatus;
     const shouldCompleteGlobalProfile = !isError && !normalizedMembershipStatus;
-    const title = hasNoGroupMembership
+    const title = hasConfirmedNoGroupMembership
       ? "Você ainda não participa deste grupo"
-      : shouldCompleteGlobalProfile
-        ? "Complete seu Perfil Fut7Pro"
-        : isError
-          ? "Não foi possível carregar seu desempenho neste grupo"
-          : "Desempenho indisponível neste grupo";
-    const description = hasNoGroupMembership
+      : isMembershipLookupError
+        ? "Não foi possível verificar seu vínculo com este grupo"
+        : shouldCompleteGlobalProfile
+          ? "Complete seu Perfil Fut7Pro"
+          : isError
+            ? "Não foi possível carregar seu desempenho neste grupo"
+            : "Desempenho indisponível neste grupo";
+    const description = hasConfirmedNoGroupMembership
       ? "Para acessar seu desempenho e os recursos dos atletas, solicite sua entrada no grupo."
-      : shouldCompleteGlobalProfile
-        ? "Antes de acessar seu desempenho neste grupo, complete seu Perfil Fut7Pro. Se você já enviou uma solicitação, acompanhe o status no site do grupo."
-        : isError
-          ? "Sua Conta Fut7Pro está ativa, mas não conseguimos carregar os dados esportivos deste grupo agora. Tente novamente em instantes."
-          : "Sua Conta Fut7Pro está ativa, mas ainda não encontramos seu perfil de atleta neste grupo. Se o problema continuar, fale com os administradores.";
+      : isMembershipLookupError
+        ? "Sua Conta Fut7Pro continua ativa, mas não conseguimos confirmar agora se você participa deste grupo."
+        : shouldCompleteGlobalProfile
+          ? "Antes de acessar seu desempenho neste grupo, complete seu Perfil Fut7Pro. Se você já enviou uma solicitação, acompanhe o status no site do grupo."
+          : isError
+            ? "Sua Conta Fut7Pro está ativa, mas não conseguimos carregar os dados esportivos deste grupo agora. Tente novamente em instantes."
+            : "Sua Conta Fut7Pro está ativa, mas ainda não encontramos seu perfil de atleta neste grupo. Se o problema continuar, fale com os administradores.";
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-zinc-100">
         <div className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
@@ -386,11 +396,11 @@ export default function PerfilUsuarioPage() {
               type="button"
               onClick={() => {
                 if (isError) {
-                  if (hasNoGroupMembership) {
+                  if (hasConfirmedNoGroupMembership) {
                     router.push(requestJoinHref);
                     return;
                   }
-                  window.location.reload();
+                  void retryMembershipLookup();
                   return;
                 }
                 router.push(globalProfileHref);
@@ -398,7 +408,7 @@ export default function PerfilUsuarioPage() {
               className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
             >
               {isError
-                ? hasNoGroupMembership
+                ? hasConfirmedNoGroupMembership
                   ? "Solicitar entrada"
                   : "Tentar novamente"
                 : shouldCompleteGlobalProfile

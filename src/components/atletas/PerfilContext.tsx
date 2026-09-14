@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useCallback, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -23,6 +23,9 @@ interface PerfilContextType {
   errorStatus: number | null;
   error: string | null;
   isAuthenticated: boolean;
+  hasConfirmedNoGroupMembership: boolean;
+  isMembershipLookupError: boolean;
+  retryMembershipLookup: () => Promise<void>;
 }
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
@@ -163,12 +166,18 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     isError,
     errorStatus,
     error,
+    mutate: mutateMe,
   } = useMe({
     enabled: shouldLoadTenantProfile,
     tenantSlug: slugFromPath ?? undefined,
     context: "athlete",
   });
-  const { profile: globalProfile, isLoading: isLoadingGlobalProfile } = useGlobalProfile({
+  const {
+    profile: globalProfile,
+    isLoading: isLoadingGlobalProfile,
+    isError: isGlobalProfileError,
+    mutate: mutateGlobalProfile,
+  } = useGlobalProfile({
     enabled: shouldLoadTenantProfile,
   });
 
@@ -185,6 +194,23 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     hasMeError: isError,
   });
   const isPendingApproval = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
+  const hasLoadedGlobalProfile = Boolean(globalProfile) && !isLoadingGlobalProfile;
+  const hasConfirmedNoGroupMembership =
+    isAuthenticated &&
+    isError &&
+    errorStatus === 403 &&
+    hasLoadedGlobalProfile &&
+    !isGlobalProfileError &&
+    !globalMembershipStatus;
+  const isMembershipLookupError =
+    isAuthenticated &&
+    isError &&
+    errorStatus === 403 &&
+    !globalMembershipStatus &&
+    (isGlobalProfileError || (!isLoadingGlobalProfile && !globalProfile));
+  const retryMembershipLookup = useCallback(async () => {
+    await Promise.all([mutateMe(), mutateGlobalProfile()]);
+  }, [mutateGlobalProfile, mutateMe]);
 
   const isLoading =
     status === "loading" ||
@@ -204,6 +230,9 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
         errorStatus: isAuthenticated && isError ? errorStatus : null,
         error: errorMessage,
         isAuthenticated,
+        hasConfirmedNoGroupMembership,
+        isMembershipLookupError,
+        retryMembershipLookup,
       }}
     >
       {children}

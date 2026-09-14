@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import RachaPerfilPage from "../RachaPerfilPage";
 import { usePerfil } from "@/components/atletas/PerfilContext";
 import { useOwnerAthletePremiumProfile } from "@/hooks/useAthletePremiumProfile";
@@ -45,7 +46,15 @@ jest.mock("@/utils/athlete-premium-contract", () => ({
 
 jest.mock("@/components/athlete-premium/AthletePremiumProfileView", () => ({
   __esModule: true,
-  default: () => <div>Desempenho do atleta carregado</div>,
+  default: ({ ownerActions }: { ownerActions?: ReactNode }) => (
+    <div>
+      <div>Desempenho do atleta carregado</div>
+      <div>Card Oficial Fut7Pro</div>
+      <button type="button">Baixar Card Oficial</button>
+      <button type="button">Compartilhar Card Oficial</button>
+      {ownerActions}
+    </div>
+  ),
 }));
 
 jest.mock("@/components/athlete-premium/LegendaryUnlockedModal", () => ({
@@ -65,6 +74,7 @@ jest.mock("@/components/atletas/HistoricoJogos", () => ({
 
 const mockedUsePerfil = usePerfil as jest.Mock;
 const mockedUseOwnerAthletePremiumProfile = useOwnerAthletePremiumProfile as jest.Mock;
+const retryMembershipLookupMock = jest.fn();
 
 const approvedPerfil = {
   usuario: {
@@ -80,6 +90,9 @@ const approvedPerfil = {
   errorStatus: null,
   isAuthenticated: true,
   isPendingApproval: false,
+  hasConfirmedNoGroupMembership: false,
+  isMembershipLookupError: false,
+  retryMembershipLookup: retryMembershipLookupMock,
 };
 
 describe("RachaPerfilPage", () => {
@@ -106,6 +119,14 @@ describe("RachaPerfilPage", () => {
     render(<RachaPerfilPage />);
 
     expect(screen.getByText("Desempenho do atleta carregado")).toBeInTheDocument();
+    expect(screen.getByText("Card Oficial Fut7Pro")).toBeInTheDocument();
+    expect(screen.getByText("Baixar Card Oficial")).toBeInTheDocument();
+    expect(screen.getByText("Compartilhar Card Oficial")).toBeInTheDocument();
+    expect(screen.getByText("Solicitar vaga de mensalista")).toBeInTheDocument();
+    expect(screen.getByText("Conquistas")).toBeInTheDocument();
+    expect(mockedUseOwnerAthletePremiumProfile).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: true })
+    );
     expect(replaceMock).not.toHaveBeenCalledWith(
       "/seu-racha/entrar?callbackUrl=%2Fseu-racha%2Fperfil"
     );
@@ -169,6 +190,23 @@ describe("RachaPerfilPage", () => {
     }
   );
 
+  it.each(["REJEITADO", "SUSPENSO", "PENDENTE"])(
+    "nao requisita perfil premium quando membership esta %s mesmo com usuario stale",
+    (membershipStatus) => {
+      mockedUsePerfil.mockReturnValue({
+        ...approvedPerfil,
+        membershipStatus,
+        isPendingApproval: membershipStatus === "PENDENTE",
+      });
+
+      render(<RachaPerfilPage />);
+
+      expect(mockedUseOwnerAthletePremiumProfile).toHaveBeenCalledWith(
+        expect.objectContaining({ enabled: false })
+      );
+    }
+  );
+
   it("conta existente com perfil incompleto nunca navega para register", () => {
     mockedUsePerfil.mockReturnValue({
       ...approvedPerfil,
@@ -212,6 +250,7 @@ describe("RachaPerfilPage", () => {
       isError: true,
       errorStatus: 403,
       error: "Forbidden",
+      hasConfirmedNoGroupMembership: true,
     });
 
     render(<RachaPerfilPage />);
@@ -226,5 +265,34 @@ describe("RachaPerfilPage", () => {
       "/perfil?intent=request-join&racha=seu-racha&callbackUrl=%2Fseu-racha"
     );
     expect(document.body.textContent).not.toContain("/register");
+  });
+
+  it("nao afirma sem vinculo quando /me da 403 e Perfil Global falha", () => {
+    mockedUsePerfil.mockReturnValue({
+      ...approvedPerfil,
+      usuario: null,
+      membershipStatus: null,
+      isError: true,
+      errorStatus: 403,
+      error: "Forbidden",
+      hasConfirmedNoGroupMembership: false,
+      isMembershipLookupError: true,
+      retryMembershipLookup: retryMembershipLookupMock,
+    });
+
+    render(<RachaPerfilPage />);
+
+    expect(
+      screen.getByText("Não foi possível verificar seu vínculo com este grupo")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Você ainda não participa deste grupo")).not.toBeInTheDocument();
+    expect(screen.queryByText("Solicitar entrada")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("Tentar novamente"));
+
+    expect(retryMembershipLookupMock).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalledWith(
+      "/perfil?intent=request-join&racha=seu-racha&callbackUrl=%2Fseu-racha"
+    );
   });
 });
