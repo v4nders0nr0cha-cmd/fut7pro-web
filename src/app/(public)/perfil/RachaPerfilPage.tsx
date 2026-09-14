@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import ConquistasDoAtleta from "@/components/atletas/ConquistasDoAtleta";
 import HistoricoJogos from "@/components/atletas/HistoricoJogos";
 import AthletePremiumProfileView from "@/components/athlete-premium/AthletePremiumProfileView";
@@ -47,7 +46,7 @@ function MembershipStatusCard({
   const isRequest = variant === "request";
   const title =
     variant === "active"
-      ? "Mensalista neste racha"
+      ? "Mensalista neste grupo"
       : variant === "pending"
         ? "Solicitação em análise"
         : "Solicitar vaga de mensalista";
@@ -96,7 +95,7 @@ function MembershipStatusCard({
               Ao confirmar, seu pedido de mensalista no {rachaName} será enviado ao administrador.
               <br />
               <span className="text-[#ffe08a]">
-                A aprovação depende da disponibilidade de vaga e das regras do racha.
+                A aprovação depende da disponibilidade de vaga e das regras do grupo.
               </span>
               <br />
               Deseja realmente enviar este pedido?
@@ -133,8 +132,15 @@ function MembershipStatusCard({
 
 // --- Página ---
 export default function PerfilUsuarioPage() {
-  const { usuario, roleLabel, isLoading, isError, isAuthenticated, isPendingApproval } =
-    usePerfil();
+  const {
+    usuario,
+    roleLabel,
+    membershipStatus,
+    isLoading,
+    isError,
+    isAuthenticated,
+    isPendingApproval,
+  } = usePerfil();
   const router = useRouter();
   const { publicHref, publicSlug } = usePublicLinks();
   const loginHref = useMemo(() => {
@@ -142,11 +148,12 @@ export default function PerfilUsuarioPage() {
     params.set("callbackUrl", publicHref("/perfil"));
     return `${publicHref("/entrar")}?${params.toString()}`;
   }, [publicHref]);
-  const completeAccountHref = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("callbackUrl", publicHref("/perfil"));
-    return `${publicHref("/register")}?${params.toString()}`;
-  }, [publicHref]);
+  const globalProfileHref = "/perfil";
+  const normalizedMembershipStatus = String(membershipStatus || "").toUpperCase();
+  const isRejectedMembership =
+    normalizedMembershipStatus === "REJEITADO" || normalizedMembershipStatus === "REJECTED";
+  const isSuspendedMembership =
+    normalizedMembershipStatus === "SUSPENSO" || normalizedMembershipStatus === "SUSPENDED";
   const [statsPeriod, setStatsPeriod] = useState<"current" | "all">("current");
   const [pendingStatsPeriod, setPendingStatsPeriod] = useState<"current" | "all" | null>(null);
   const [periodSwitchStartedAt, setPeriodSwitchStartedAt] = useState<number | null>(null);
@@ -170,7 +177,7 @@ export default function PerfilUsuarioPage() {
 
   async function solicitarVagaMensalista() {
     if (!publicSlug) {
-      throw new Error("Não foi possível identificar o racha para enviar sua solicitação.");
+      throw new Error("Não foi possível identificar o grupo para enviar sua solicitação.");
     }
 
     const response = await fetch(
@@ -293,39 +300,43 @@ export default function PerfilUsuarioPage() {
     );
   }
 
-  if (isError || !usuario) {
+  if (isPendingApproval) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">
+        Redirecionando para a tela de solicitação em análise...
+      </div>
+    );
+  }
+
+  if (isRejectedMembership || isSuspendedMembership) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-zinc-100">
         <div className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-soft">
             Perfil do atleta
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-white">Complete sua conta</h1>
+          <h1 className="mt-2 text-2xl font-extrabold text-white">
+            {isRejectedMembership ? "Solicitação não aprovada" : "Acesso suspenso neste grupo"}
+          </h1>
           <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-            Antes de acessar seu perfil neste grupo, complete sua Conta Fut7Pro e aguarde a
-            aprovação dos administradores.
+            {isRejectedMembership
+              ? "Sua solicitação para participar deste grupo não foi aprovada. Sua Conta Fut7Pro continua ativa normalmente."
+              : "Sua Conta Fut7Pro está ativa, mas seu acesso aos recursos de atleta deste grupo está suspenso no momento."}
           </p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={() => router.push(completeAccountHref)}
+              onClick={() => router.push(globalProfileHref)}
               className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
             >
-              Completar conta
+              Minha conta Fut7Pro
             </button>
             <button
               type="button"
-              onClick={() => router.push(publicHref("/entrar"))}
+              onClick={() => router.push(publicHref("/"))}
               className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30"
             >
-              Ir para entrada
-            </button>
-            <button
-              type="button"
-              onClick={() => signOut({ callbackUrl: publicHref("/") })}
-              className="rounded-lg border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-200 transition hover:border-red-400"
-            >
-              Sair da conta
+              Ir para o site do grupo
             </button>
           </div>
         </div>
@@ -333,10 +344,35 @@ export default function PerfilUsuarioPage() {
     );
   }
 
-  if (isPendingApproval) {
+  if (isError || !usuario) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-zinc-200">
-        Redirecionando para a tela de aguardando aprovacao...
+      <div className="mx-auto max-w-3xl px-4 py-16 text-zinc-100">
+        <div className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-soft">
+            Perfil do atleta
+          </p>
+          <h1 className="mt-2 text-2xl font-extrabold text-white">Complete seu Perfil Fut7Pro</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
+            Antes de acessar seu desempenho neste grupo, complete seu Perfil Fut7Pro. Se você já
+            enviou uma solicitação, acompanhe o status no site do grupo.
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => router.push(globalProfileHref)}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
+            >
+              Completar Perfil Fut7Pro
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push(publicHref("/"))}
+              className="rounded-lg border border-white/15 px-4 py-2 text-sm font-semibold text-white transition hover:border-white/30"
+            >
+              Ir para o site do grupo
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -353,7 +389,7 @@ export default function PerfilUsuarioPage() {
         <div className="rounded-xl border border-red-500/40 bg-red-950/25 p-5">
           <h1 className="text-xl font-bold">Perfil premium indisponível</h1>
           <p className="mt-2 text-sm text-red-100/80">
-            Não foi possível carregar o contrato oficial do seu Perfil Premium neste racha. Tente
+            Não foi possível carregar o contrato oficial do seu Perfil Premium neste grupo. Tente
             novamente em instantes.
           </p>
           {premiumError && <p className="mt-3 text-xs text-red-200/70">{premiumError}</p>}
@@ -370,7 +406,7 @@ export default function PerfilUsuarioPage() {
     titulosQuadrimestrais = [],
   } = premiumView.achievementGroups ?? {};
   const rachaName =
-    premiumProfile.tenant.name || premiumProfile.tenant.slug || publicSlug || "racha";
+    premiumProfile.tenant.name || premiumProfile.tenant.slug || publicSlug || "grupo";
   const nivelAssiduidade = premiumProfile.stats.attendancePercent
     ? `${premiumProfile.stats.attendancePercent}%`
     : "Sem dados";

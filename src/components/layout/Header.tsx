@@ -208,7 +208,7 @@ const Header: FC<HeaderProps> = ({ onOpenSidebar }) => {
                       onClick={() => setDropdownOpen(false)}
                       className="block px-4 py-2 text-sm text-white hover:bg-white/5"
                     >
-                      Meu perfil
+                      Meu desempenho
                     </Link>
                   )}
                   {isPendingMembership && (

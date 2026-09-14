@@ -106,7 +106,7 @@ const METRIC_HELP = {
   goals: "Total de gols marcados pelo atleta no período selecionado.",
   assists: "Total de assistências registradas para o atleta no período selecionado.",
   titles:
-    "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações do racha.",
+    "Quantidade de conquistas registradas para o atleta, incluindo torneios e premiações do grupo.",
   winRate: "Percentual médio de vitórias do atleta nas partidas em que participou.",
   points: "Pontuação do atleta no ranking do grupo, calculada com base nos resultados registrados.",
   championOfDay:
@@ -468,7 +468,7 @@ function PremiumAthleteMedallion({
               {tenant?.logoUrl ? (
                 <img
                   src={tenant.logoUrl}
-                  alt={`Logo ${tenant?.name || "do racha"}`}
+                  alt={`Logo ${tenant?.name || "do grupo"}`}
                   className="h-full w-full object-contain p-1.5"
                 />
               ) : (
@@ -677,7 +677,7 @@ function AchievementsSection({ groups }: { groups?: PremiumAchievementGroups }) 
       </div>
       {!hasAny && (
         <p className="mt-4 rounded-lg border border-[#f8c64a]/15 bg-black/30 p-3 text-sm text-zinc-400">
-          As conquistas do atleta aparecerão aqui conforme forem registradas no racha.
+          As conquistas do atleta aparecerão aqui conforme forem registradas no grupo.
         </p>
       )}
     </PremiumPanel>
@@ -1123,13 +1123,13 @@ export default function AthletePremiumProfileView({
       <div className="relative mx-auto max-w-[1280px]">
         <header className="mx-auto mb-3 max-w-3xl text-center">
           <p className="text-[11px] font-black uppercase tracking-[0.32em] text-[#f8c64a]">
-            {mode === "owner" ? "Meu perfil neste racha" : "Perfil do Atleta"}
+            {mode === "owner" ? "Meu desempenho neste grupo" : "Perfil do Atleta"}
           </p>
           <h1 className="mt-1 text-3xl font-black uppercase leading-none text-white md:text-4xl">
             {athleteName}
           </h1>
           <p className="mt-1.5 text-sm text-zinc-300 md:text-base">
-            Status, conquistas e desempenho do atleta dentro do racha.
+            Status, conquistas e desempenho do atleta dentro do grupo.
           </p>
         </header>
 

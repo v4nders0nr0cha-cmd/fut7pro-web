@@ -192,7 +192,7 @@ const SidebarMobile: FC<SidebarMobileProps> = ({ open, onClose }) => {
               </Link>
               {profileHref && (
                 <Link href={profileHref} onClick={onClose} className="hover:text-brand-soft">
-                  Meu perfil
+                  Meu desempenho
                 </Link>
               )}
               {isPendingMembership && (

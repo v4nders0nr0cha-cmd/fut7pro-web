@@ -6,11 +6,12 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import type { Atleta, PosicaoAtleta, StatusAtleta } from "@/types/atletas";
 import type { MeResponse } from "@/types/me";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { slugify } from "@/utils/slugify";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 interface PerfilContextType {
   usuario: Atleta | null;
@@ -91,6 +92,35 @@ function normalizeStatus(value?: string | null): StatusAtleta {
   return "Ativo";
 }
 
+function normalizeMembershipStatus(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toUpperCase();
+}
+
+function resolveMembershipStatus(meStatus?: string | null, profileStatus?: string | null) {
+  const normalizedMeStatus = normalizeMembershipStatus(meStatus);
+  const normalizedProfileStatus = normalizeMembershipStatus(profileStatus);
+  const terminalStatuses = new Set([
+    "APROVADO",
+    "APPROVED",
+    "ACTIVE",
+    "REJEITADO",
+    "REJECTED",
+    "SUSPENSO",
+    "SUSPENDED",
+  ]);
+
+  if (terminalStatuses.has(normalizedProfileStatus)) return normalizedProfileStatus;
+  if (terminalStatuses.has(normalizedMeStatus)) return normalizedMeStatus;
+  if (normalizedMeStatus === "PENDENTE" || normalizedMeStatus === "PENDING")
+    return normalizedMeStatus;
+  if (normalizedProfileStatus === "PENDENTE" || normalizedProfileStatus === "PENDING") {
+    return normalizedProfileStatus;
+  }
+  return normalizedMeStatus || normalizedProfileStatus || null;
+}
+
 function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): Atleta | null {
   if (!me?.athlete) {
     return null;
@@ -138,10 +168,11 @@ export function usePerfil() {
 
 export function PerfilProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
-  const isAuthenticated = status === "authenticated" && isAthleteRealm(session as any);
+  const isAuthenticated = hasUsableFut7ProSession(session, status);
   const sessionUser = session?.user as SessionUser | undefined;
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const shouldLoadTenantProfile = isAuthenticated && Boolean(slugFromPath);
   const {
     me,
     isLoading: isLoadingMe,
@@ -149,9 +180,12 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     error,
     mutate,
   } = useMe({
-    enabled: isAuthenticated,
+    enabled: shouldLoadTenantProfile,
     tenantSlug: slugFromPath ?? undefined,
-    context: slugFromPath ? "athlete" : undefined,
+    context: "athlete",
+  });
+  const { profile: globalProfile, isLoading: isLoadingGlobalProfile } = useGlobalProfile({
+    enabled: shouldLoadTenantProfile,
   });
 
   const usuario = useMemo(() => buildAtletaFromMe(me, sessionUser), [me, sessionUser]);
@@ -160,8 +194,11 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     if (!rawRole || rawRole === "ATLETA") return null;
     return ROLE_LABELS[rawRole] ?? me?.membership?.role ?? null;
   }, [me?.membership?.role]);
-  const membershipStatus = me?.membership?.status ?? null;
-  const isPendingApproval = membershipStatus === "PENDENTE";
+  const globalMembershipStatus = globalProfile?.memberships?.find(
+    (membership) => membership.tenantSlug === slugFromPath
+  )?.status;
+  const membershipStatus = resolveMembershipStatus(me?.membership?.status, globalMembershipStatus);
+  const isPendingApproval = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
 
   const tenantId = me?.tenant?.tenantId ?? null;
   const tenantSlug = me?.tenant?.tenantSlug ?? slugFromPath ?? sessionUser?.tenantSlug ?? null;
@@ -226,7 +263,10 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     [tenantId, tenantSlug, mutate, isPendingApproval]
   );
 
-  const isLoading = status === "loading" || (isAuthenticated && isLoadingMe);
+  const isLoading =
+    status === "loading" ||
+    (shouldLoadTenantProfile && isLoadingMe) ||
+    (shouldLoadTenantProfile && isLoadingGlobalProfile && !me?.membership?.status);
   const errorMessage = isAuthenticated && isError ? error : null;
 
   return (
