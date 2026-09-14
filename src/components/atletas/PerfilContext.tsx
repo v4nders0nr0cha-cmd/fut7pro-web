@@ -98,27 +98,19 @@ function normalizeMembershipStatus(value?: string | null) {
     .toUpperCase();
 }
 
-function resolveMembershipStatus(meStatus?: string | null, profileStatus?: string | null) {
+export function resolveMembershipStatus(
+  meStatus?: string | null,
+  profileStatus?: string | null,
+  options?: { hasMeError?: boolean }
+) {
   const normalizedMeStatus = normalizeMembershipStatus(meStatus);
   const normalizedProfileStatus = normalizeMembershipStatus(profileStatus);
-  const terminalStatuses = new Set([
-    "APROVADO",
-    "APPROVED",
-    "ACTIVE",
-    "REJEITADO",
-    "REJECTED",
-    "SUSPENSO",
-    "SUSPENDED",
-  ]);
 
-  if (terminalStatuses.has(normalizedProfileStatus)) return normalizedProfileStatus;
-  if (terminalStatuses.has(normalizedMeStatus)) return normalizedMeStatus;
-  if (normalizedMeStatus === "PENDENTE" || normalizedMeStatus === "PENDING")
+  if (!options?.hasMeError && normalizedMeStatus) {
     return normalizedMeStatus;
-  if (normalizedProfileStatus === "PENDENTE" || normalizedProfileStatus === "PENDING") {
-    return normalizedProfileStatus;
   }
-  return normalizedMeStatus || normalizedProfileStatus || null;
+
+  return normalizedProfileStatus || normalizedMeStatus || null;
 }
 
 function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): Atleta | null {
@@ -197,7 +189,9 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
   const globalMembershipStatus = globalProfile?.memberships?.find(
     (membership) => membership.tenantSlug === slugFromPath
   )?.status;
-  const membershipStatus = resolveMembershipStatus(me?.membership?.status, globalMembershipStatus);
+  const membershipStatus = resolveMembershipStatus(me?.membership?.status, globalMembershipStatus, {
+    hasMeError: isError,
+  });
   const isPendingApproval = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
 
   const tenantId = me?.tenant?.tenantId ?? null;

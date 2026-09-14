@@ -1,5 +1,10 @@
 import { GET } from "../route";
-import { buildHeaders, forwardResponse, proxyBackend, requireUser } from "@/app/api/_proxy/helpers";
+import {
+  buildHeaders,
+  forwardResponse,
+  proxyBackend,
+  requirePublicAthleteUser,
+} from "@/app/api/_proxy/helpers";
 
 jest.mock("@/lib/get-api-base", () => ({
   getApiBase: () => "https://api.fut7pro.test",
@@ -13,18 +18,23 @@ jest.mock("@/app/api/_proxy/helpers", () => ({
     body,
   })),
   proxyBackend: jest.fn(),
-  requireUser: jest.fn(),
+  requirePublicAthleteUser: jest.fn(),
 }));
 
 describe("public notifications unread-count proxy", () => {
-  const mockedRequireUser = requireUser as jest.Mock;
+  const mockedRequirePublicAthleteUser = requirePublicAthleteUser as jest.Mock;
   const mockedProxyBackend = proxyBackend as jest.Mock;
   const mockedBuildHeaders = buildHeaders as jest.Mock;
   const mockedForwardResponse = forwardResponse as jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedRequireUser.mockResolvedValue({ id: "user-1", accessToken: "token" });
+    mockedRequirePublicAthleteUser.mockResolvedValue({
+      id: "user-1",
+      accessToken: "token",
+      role: "ADMIN",
+      authRealm: "admin",
+    });
     mockedProxyBackend.mockResolvedValue({
       response: { status: 200 },
       body: JSON.stringify({ unreadCount: 2 }),
@@ -36,9 +46,9 @@ describe("public notifications unread-count proxy", () => {
       params: { slug: "seu-racha" },
     });
 
-    expect(mockedRequireUser).toHaveBeenCalledWith({ scope: "any" });
+    expect(mockedRequirePublicAthleteUser).toHaveBeenCalledWith();
     expect(mockedBuildHeaders).toHaveBeenCalledWith(
-      { id: "user-1", accessToken: "token" },
+      { id: "user-1", accessToken: "token", role: "ADMIN", authRealm: "admin" },
       "seu-racha"
     );
     expect(mockedProxyBackend).toHaveBeenCalledWith(
@@ -64,5 +74,19 @@ describe("public notifications unread-count proxy", () => {
     });
 
     expect(mockedForwardResponse).toHaveBeenCalledWith(403, JSON.stringify({ error: "Forbidden" }));
+  });
+
+  it("bloqueia SuperAdmin no proxy publico de atleta sem chamar o backend tenant", async () => {
+    mockedRequirePublicAthleteUser.mockResolvedValue(null);
+
+    const response = await GET({ url: "https://app.fut7pro.test/api" } as any, {
+      params: { slug: "seu-racha" },
+    });
+
+    expect(response).toMatchObject({
+      status: 401,
+      body: { error: "Nao autenticado" },
+    });
+    expect(mockedProxyBackend).not.toHaveBeenCalled();
   });
 });

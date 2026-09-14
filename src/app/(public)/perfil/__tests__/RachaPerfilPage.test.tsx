@@ -172,7 +172,8 @@ describe("RachaPerfilPage", () => {
     mockedUsePerfil.mockReturnValue({
       ...approvedPerfil,
       usuario: null,
-      isError: true,
+      membershipStatus: null,
+      isError: false,
     });
 
     render(<RachaPerfilPage />);
@@ -180,6 +181,24 @@ describe("RachaPerfilPage", () => {
     expect(screen.getByText("Completar Perfil Fut7Pro")).toBeInTheDocument();
     expect(screen.queryByText("Completar conta")).not.toBeInTheDocument();
     expect(screen.queryByText("Complete sua conta")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("/register");
+  });
+
+  it("falha tecnica de /me nao aparece como Perfil Global incompleto", () => {
+    mockedUsePerfil.mockReturnValue({
+      ...approvedPerfil,
+      usuario: null,
+      isError: true,
+      error: "Falha temporaria",
+    });
+
+    render(<RachaPerfilPage />);
+
+    expect(
+      screen.getByText("Não foi possível carregar seu desempenho neste grupo")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Tentar novamente")).toBeInTheDocument();
+    expect(screen.queryByText("Completar Perfil Fut7Pro")).not.toBeInTheDocument();
     expect(document.body.textContent).not.toContain("/register");
   });
 });

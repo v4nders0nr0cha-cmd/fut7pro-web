@@ -5,7 +5,7 @@ import {
   forwardResponse,
   jsonResponse,
   proxyBackend,
-  requireUser,
+  requirePublicAthleteUser,
 } from "@/app/api/_proxy/helpers";
 
 export const runtime = "nodejs";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(_req: NextRequest, context: { params: { slug: string } }) {
-  const user = await requireUser({ scope: "any" });
+  const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
@@ -35,7 +35,7 @@ export async function GET(_req: NextRequest, context: { params: { slug: string }
 }
 
 export async function POST(req: NextRequest, context: { params: { slug: string } }) {
-  const user = await requireUser({ scope: "any" });
+  const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }

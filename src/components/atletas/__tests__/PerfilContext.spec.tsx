@@ -124,6 +124,126 @@ describe("PerfilProvider", () => {
     expect(screen.getByTestId("membership")).toHaveTextContent("REJEITADO");
   });
 
+  it("usa Perfil Global quando /me tem dado stale pendente junto de erro", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      data: {
+        user: {
+          id: "user-1",
+          name: "Neymar",
+          email: "ney@example.com",
+          accessToken: "token",
+        },
+      },
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        user: { id: "user-1", email: "ney@example.com" },
+        tenant: { tenantId: "tenant-1", tenantSlug: "seu-racha" },
+        membership: { role: "ATLETA", status: "PENDENTE" },
+        athlete: null,
+      },
+      isLoading: false,
+      isError: true,
+      error: "Forbidden",
+      mutate: jest.fn(),
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        memberships: [{ tenantSlug: "seu-racha", status: "REJEITADO" }],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <PerfilProvider>
+        <Consumer />
+      </PerfilProvider>
+    );
+
+    expect(screen.getByTestId("membership")).toHaveTextContent("REJEITADO");
+  });
+
+  it("prioriza /me saudavel quando Perfil Global esta stale aprovado", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      data: {
+        user: {
+          id: "user-1",
+          name: "Neymar",
+          email: "ney@example.com",
+          accessToken: "token",
+        },
+      },
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        user: { id: "user-1", email: "ney@example.com" },
+        tenant: { tenantId: "tenant-1", tenantSlug: "seu-racha" },
+        membership: { role: "ATLETA", status: "SUSPENSO" },
+        athlete: { id: "athlete-1", slug: "neymar", firstName: "Neymar" },
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        memberships: [{ tenantSlug: "seu-racha", status: "APROVADO" }],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <PerfilProvider>
+        <Consumer />
+      </PerfilProvider>
+    );
+
+    expect(screen.getByTestId("membership")).toHaveTextContent("SUSPENSO");
+  });
+
+  it("prioriza /me saudavel quando Perfil Global esta stale pendente", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      data: {
+        user: {
+          id: "user-1",
+          name: "Neymar",
+          email: "ney@example.com",
+          accessToken: "token",
+        },
+      },
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        user: { id: "user-1", email: "ney@example.com" },
+        tenant: { tenantId: "tenant-1", tenantSlug: "seu-racha" },
+        membership: { role: "ATLETA", status: "APROVADO" },
+        athlete: { id: "athlete-1", slug: "neymar", firstName: "Neymar" },
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      mutate: jest.fn(),
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        memberships: [{ tenantSlug: "seu-racha", status: "PENDENTE" }],
+      },
+      isLoading: false,
+    });
+
+    render(
+      <PerfilProvider>
+        <Consumer />
+      </PerfilProvider>
+    );
+
+    expect(screen.getByTestId("membership")).toHaveTextContent("APROVADO");
+  });
+
   it("nao consulta /me tenant-specific sem sessao utilizavel", () => {
     mockedUseSession.mockReturnValue({
       status: "authenticated",

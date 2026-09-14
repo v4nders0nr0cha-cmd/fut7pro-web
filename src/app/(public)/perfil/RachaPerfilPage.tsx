@@ -138,6 +138,7 @@ export default function PerfilUsuarioPage() {
     membershipStatus,
     isLoading,
     isError,
+    error,
     isAuthenticated,
     isPendingApproval,
   } = usePerfil();
@@ -345,24 +346,43 @@ export default function PerfilUsuarioPage() {
   }
 
   if (isError || !usuario) {
+    const shouldCompleteGlobalProfile = !isError && !normalizedMembershipStatus;
+    const title = shouldCompleteGlobalProfile
+      ? "Complete seu Perfil Fut7Pro"
+      : isError
+        ? "Não foi possível carregar seu desempenho neste grupo"
+        : "Desempenho indisponível neste grupo";
+    const description = shouldCompleteGlobalProfile
+      ? "Antes de acessar seu desempenho neste grupo, complete seu Perfil Fut7Pro. Se você já enviou uma solicitação, acompanhe o status no site do grupo."
+      : isError
+        ? "Sua Conta Fut7Pro está ativa, mas não conseguimos carregar os dados esportivos deste grupo agora. Tente novamente em instantes."
+        : "Sua Conta Fut7Pro está ativa, mas ainda não encontramos seu perfil de atleta neste grupo. Se o problema continuar, fale com os administradores.";
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-zinc-100">
         <div className="rounded-2xl border border-white/10 bg-[#0f1118] p-6 shadow-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-soft">
             Perfil do atleta
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-white">Complete seu Perfil Fut7Pro</h1>
-          <p className="mt-3 text-sm leading-relaxed text-zinc-300">
-            Antes de acessar seu desempenho neste grupo, complete seu Perfil Fut7Pro. Se você já
-            enviou uma solicitação, acompanhe o status no site do grupo.
-          </p>
+          <h1 className="mt-2 text-2xl font-extrabold text-white">{title}</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-300">{description}</p>
+          {isError && error && <p className="mt-2 text-xs text-zinc-500">{error}</p>}
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <button
               type="button"
-              onClick={() => router.push(globalProfileHref)}
+              onClick={() => {
+                if (isError) {
+                  window.location.reload();
+                  return;
+                }
+                router.push(globalProfileHref);
+              }}
               className="rounded-lg bg-brand px-4 py-2 text-sm font-bold text-black transition hover:brightness-110"
             >
-              Completar Perfil Fut7Pro
+              {isError
+                ? "Tentar novamente"
+                : shouldCompleteGlobalProfile
+                  ? "Completar Perfil Fut7Pro"
+                  : "Minha conta Fut7Pro"}
             </button>
             <button
               type="button"

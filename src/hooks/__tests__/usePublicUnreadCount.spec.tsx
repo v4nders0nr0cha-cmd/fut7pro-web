@@ -1,4 +1,4 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import useSWR from "swr";
 import { usePublicUnreadCount } from "../usePublicUnreadCount";
 
@@ -14,6 +14,7 @@ const mockedUseSWR = useSWR as jest.Mock;
 
 describe("usePublicUnreadCount", () => {
   beforeEach(() => {
+    jest.useRealTimers();
     jest.clearAllMocks();
     mockedUseSWR.mockReturnValue({
       data: null,
@@ -54,6 +55,39 @@ describe("usePublicUnreadCount", () => {
 
     const secondOptions = mockedUseSWR.mock.calls[1][2];
     expect(secondOptions.refreshInterval).toBe(0);
+  });
+
+  it("pausa 429 temporariamente e revalida depois do Retry-After", async () => {
+    jest.useFakeTimers();
+    const mutate = jest.fn();
+    mockedUseSWR.mockReturnValue({
+      data: null,
+      error: null,
+      isLoading: false,
+      mutate,
+    });
+
+    const { rerender, unmount } = renderHook(() => usePublicUnreadCount(true, 30000));
+    const firstOptions = mockedUseSWR.mock.calls[0][2];
+
+    act(() => {
+      firstOptions.onError(
+        Object.assign(new Error("rate limit"), { status: 429, retryAfter: "2" })
+      );
+    });
+    rerender();
+    expect(mockedUseSWR.mock.calls[1][2].refreshInterval).toBe(0);
+
+    act(() => {
+      jest.advanceTimersByTime(2000);
+    });
+    rerender();
+
+    expect(mutate).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(mockedUseSWR.mock.calls.at(-1)?.[2].refreshInterval).toBe(30000);
+    });
+    unmount();
   });
 
   it("inclui status no erro retornado pelo fetcher", async () => {

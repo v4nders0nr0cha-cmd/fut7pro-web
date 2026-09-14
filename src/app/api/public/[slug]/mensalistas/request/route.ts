@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
-import { requireUser } from "@/app/api/_proxy/helpers";
+import { requirePublicAthleteUser } from "@/app/api/_proxy/helpers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function POST(_req: NextRequest, { params }: { params: { slug: stri
     return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }
 
-  const user = await requireUser({ scope: "any" });
+  const user = await requirePublicAthleteUser();
   if (!user?.accessToken) {
     return json({ error: "Nao autenticado" }, { status: 401 });
   }
