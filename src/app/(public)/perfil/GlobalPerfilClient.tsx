@@ -59,6 +59,16 @@ function normalizeStatusLabel(status?: string | null) {
   return STATUS_LABELS[key] ?? status ?? "Pendente";
 }
 
+function normalizeMembershipStatus(status?: string | null) {
+  const key = String(status || "")
+    .trim()
+    .toUpperCase();
+  if (key === "PENDENTE" || key === "PENDING") return "PENDENTE";
+  if (key === "APROVADO" || key === "APPROVED" || key === "ACTIVE") return "APROVADO";
+  if (key === "REJEITADO" || key === "REJECTED") return "REJEITADO";
+  return "";
+}
+
 function normalizePlanLabel(status?: string | null) {
   const key = String(status || "").toUpperCase();
   return PLAN_STATUS_LABELS[key] ?? status ?? "Sem plano";
@@ -281,7 +291,7 @@ export default function GlobalPerfilClient() {
   const handleReauthenticate = async () => {
     if (!reauthenticationHref) {
       setReauthenticationError(
-        "Não foi possível identificar o racha para reabrir o login. Volte ao site do seu racha e tente entrar novamente."
+        "Não foi possível identificar o grupo para reabrir o login. Volte ao site do grupo e tente entrar novamente."
       );
       return;
     }
@@ -302,9 +312,18 @@ export default function GlobalPerfilClient() {
   const totalTitulos = profile?.totalTitulos ?? 0;
   const membershipList = profile?.memberships ?? [];
   const user = profile?.user;
-  const requestJoinRachaName = useMemo(() => {
+  const requestJoinMembership = useMemo(() => {
+    return membershipList.find((item) => item.tenantSlug === requestJoinSlug) || null;
+  }, [membershipList, requestJoinSlug]);
+  const requestJoinMembershipStatus = normalizeMembershipStatus(
+    me?.membership?.status || requestJoinMembership?.status
+  );
+  const shouldSubmitRequestJoin = Boolean(
+    isRequestJoinFlow && requestJoinSlug && !requestJoinMembershipStatus
+  );
+  const requestJoinGroupName = useMemo(() => {
     const membership = membershipList.find((item) => item.tenantSlug === requestJoinSlug);
-    return membership?.tenantName || requestJoinSlug || "este racha";
+    return membership?.tenantName || "este grupo";
   }, [membershipList, requestJoinSlug]);
   const missingRequiredFields = useMemo(() => {
     const missing: Array<{ key: string; label: string }> = [];
@@ -474,7 +493,7 @@ export default function GlobalPerfilClient() {
       });
       setSuccess(true);
       setHasEditedForm(false);
-      if (isRequestJoinFlow && requestJoinSlug) {
+      if (shouldSubmitRequestJoin && requestJoinSlug) {
         const response = await fetch(`/api/public/${requestJoinSlug}/auth/request-join`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -569,8 +588,8 @@ export default function GlobalPerfilClient() {
           ) : null}
           {!reauthenticationHref && !reauthenticationError ? (
             <p className="mt-4 text-sm text-amber-200">
-              Não foi possível identificar o racha para reabrir o login. Volte ao site do seu racha
-              e tente entrar novamente.
+              Não foi possível identificar o grupo para reabrir o login. Volte ao site do grupo e
+              tente entrar novamente.
             </p>
           ) : null}
         </div>
@@ -646,22 +665,52 @@ export default function GlobalPerfilClient() {
 
       {isRequestJoinFlow ? (
         <section className="mb-6 rounded-2xl border border-amber-300/40 bg-amber-300/10 p-5 text-amber-50">
-          <h2 className="text-lg font-bold text-white">
-            Complete seu Perfil Fut7Pro para continuar
-          </h2>
-          <p className="mt-1 text-sm text-amber-100">
-            Antes de solicitar entrada no <strong>{requestJoinRachaName}</strong>, precisamos de
-            algumas informações do seu Perfil Global.
-          </p>
+          {requestJoinMembershipStatus === "PENDENTE" ? (
+            <>
+              <h2 className="text-lg font-bold text-white">Sua solicitação já está em análise</h2>
+              <p className="mt-1 text-sm text-amber-100">
+                Você pode completar ou atualizar seu Perfil Fut7Pro enquanto aguarda a decisão dos
+                administradores.
+              </p>
+            </>
+          ) : requestJoinMembershipStatus === "APROVADO" ? (
+            <>
+              <h2 className="text-lg font-bold text-white">Você já faz parte deste grupo</h2>
+              <p className="mt-1 text-sm text-amber-100">
+                Atualize seus dados quando precisar. O salvamento aqui altera apenas seu Perfil
+                Fut7Pro.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-lg font-bold text-white">
+                Complete seu Perfil Fut7Pro para continuar
+              </h2>
+              <p className="mt-1 text-sm text-amber-100">
+                Complete seu Perfil Fut7Pro para solicitar entrada{" "}
+                <strong>
+                  {requestJoinGroupName === "este grupo"
+                    ? "neste grupo"
+                    : `no ${requestJoinGroupName}`}
+                </strong>
+                .
+              </p>
+            </>
+          )}
           {missingRequiredFields.length ? (
             <p className="mt-3 rounded-lg border border-amber-300/30 bg-black/15 px-3 py-2 text-sm font-semibold">
-              Falta{missingRequiredFields.length > 1 ? "m" : ""} {missingRequiredFields.length}{" "}
-              informaç{missingRequiredFields.length > 1 ? "ões" : "ão"} para concluir seu Perfil
-              Fut7Pro: {missingRequiredFields.map((field) => field.label).join(", ")}.
+              {requestJoinMembershipStatus === "PENDENTE"
+                ? "Seu Perfil Fut7Pro ainda precisa de"
+                : `Falta${missingRequiredFields.length > 1 ? "m" : ""} ${
+                    missingRequiredFields.length
+                  } informaç${missingRequiredFields.length > 1 ? "ões" : "ão"} para concluir seu Perfil Fut7Pro`}
+              : {missingRequiredFields.map((field) => field.label).join(", ")}.
             </p>
           ) : (
             <p className="mt-3 rounded-lg border border-emerald-300/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-100">
-              Perfil completo. Salve para enviar sua solicitação de entrada.
+              {shouldSubmitRequestJoin
+                ? "Perfil completo. Salve para enviar sua solicitação de entrada."
+                : "Perfil completo. Salve para atualizar seus dados."}
             </p>
           )}
         </section>
@@ -693,13 +742,13 @@ export default function GlobalPerfilClient() {
           <div className="flex-1 w-full grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: "Jogos", value: stats?.jogos ?? 0 },
-              { label: "Vitorias", value: stats?.vitorias ?? 0 },
+              { label: "Vitórias", value: stats?.vitorias ?? 0 },
               { label: "Empates", value: stats?.empates ?? 0 },
               { label: "Derrotas", value: stats?.derrotas ?? 0 },
               { label: "Gols", value: stats?.gols ?? 0 },
-              { label: "Assistencias", value: stats?.assistencias ?? 0 },
+              { label: "Assistências", value: stats?.assistencias ?? 0 },
               { label: "Pontos", value: stats?.pontos ?? 0 },
-              { label: "Titulos", value: totalTitulos },
+              { label: "Títulos", value: totalTitulos },
             ].map((item) => (
               <div
                 key={item.label}
@@ -783,9 +832,9 @@ export default function GlobalPerfilClient() {
             titulo="Grandes Torneios"
             items={profile.conquistas.titulosGrandesTorneios}
           />
-          <ConquistasLista titulo="Titulos Anuais" items={profile.conquistas.titulosAnuais} />
+          <ConquistasLista titulo="Títulos Anuais" items={profile.conquistas.titulosAnuais} />
           <ConquistasLista
-            titulo="Titulos Quadrimestrais"
+            titulo="Títulos Quadrimestrais"
             items={profile.conquistas.titulosQuadrimestrais}
           />
         </div>
@@ -899,7 +948,7 @@ export default function GlobalPerfilClient() {
                   />
                 </label>
                 <label className="text-sm text-zinc-300">
-                  Mes
+                  Mês
                   <input
                     type="number"
                     value={form.birthMonth}
@@ -927,7 +976,7 @@ export default function GlobalPerfilClient() {
                 <span>
                   Mostrar meu aniversário nos grupos em que participo
                   <span className="block text-xs text-zinc-400">
-                    Quando ativo, seu aniversário pode aparecer nos avisos públicos dos seus rachas.
+                    Quando ativo, seu aniversário pode aparecer nos avisos públicos dos seus grupos.
                   </span>
                 </span>
               </label>
@@ -942,12 +991,14 @@ export default function GlobalPerfilClient() {
             className="mt-6 rounded-full bg-brand text-black font-semibold px-6 py-2 disabled:opacity-60"
           >
             {saving
-              ? isRequestJoinFlow
+              ? shouldSubmitRequestJoin
                 ? "Salvando e solicitando..."
                 : "Salvando..."
-              : isRequestJoinFlow
+              : shouldSubmitRequestJoin
                 ? "Salvar e solicitar entrada"
-                : "Salvar dados globais"}
+                : isRequestJoinFlow
+                  ? "Salvar Perfil Fut7Pro"
+                  : "Salvar dados globais"}
           </button>
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 space-y-4">
