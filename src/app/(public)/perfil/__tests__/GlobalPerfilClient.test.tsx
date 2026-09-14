@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import GlobalPerfilClient from "../GlobalPerfilClient";
 
 const replaceMock = jest.fn();
+const pushMock = jest.fn();
 const signOutMock = jest.fn();
 let searchParamsMock = new URLSearchParams();
 
@@ -15,7 +16,7 @@ jest.mock("next/image", () => ({
 }));
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: replaceMock, push: jest.fn() }),
+  useRouter: () => ({ replace: replaceMock, push: pushMock }),
   useSearchParams: () => searchParamsMock,
 }));
 
@@ -97,6 +98,7 @@ describe("GlobalPerfilClient reauthentication", () => {
     });
     signOutMock.mockResolvedValue(undefined);
     replaceMock.mockReset();
+    pushMock.mockReset();
     signOutMock.mockClear();
     window.localStorage.clear();
     window.localStorage.setItem("fut7pro_last_tenant_slug", "vitrine");
@@ -183,6 +185,7 @@ describe("GlobalPerfilClient request-join status", () => {
     });
     mockedUseMe.mockReturnValue({ me: null });
     replaceMock.mockReset();
+    pushMock.mockReset();
     signOutMock.mockClear();
     window.localStorage.clear();
     global.fetch = jest.fn();
@@ -230,5 +233,188 @@ describe("GlobalPerfilClient request-join status", () => {
     expect(screen.getByText("Você já faz parte deste grupo")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Salvar e solicitar entrada" })).toBeNull();
     expect(screen.getByRole("button", { name: "Salvar Perfil Fut7Pro" })).toBeInTheDocument();
+  });
+});
+
+describe("GlobalPerfilClient account notifications", () => {
+  const updateProfileMock = jest.fn();
+  const mutateMock = jest.fn();
+
+  beforeEach(() => {
+    searchParamsMock = new URLSearchParams();
+    updateProfileMock.mockResolvedValue(baseProfile);
+    updateProfileMock.mockClear();
+    mutateMock.mockResolvedValue(undefined);
+    mutateMock.mockClear();
+    mockedUseMe.mockReturnValue({ me: null });
+    replaceMock.mockReset();
+    pushMock.mockReset();
+    signOutMock.mockClear();
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  });
+
+  it("marca decisao aprovada como lida antes de navegar para o desempenho", async () => {
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        memberships: [
+          {
+            tenantId: "tenant-1",
+            tenantSlug: "seu-racha",
+            tenantName: "Seu Racha",
+            role: "ATLETA",
+            status: "APROVADO",
+          },
+        ],
+        accountNotifications: [
+          {
+            id: "notification-1",
+            title: "Entrada aprovada!",
+            body: "Aprovado",
+            href: "/seu-racha/perfil",
+            readAt: null,
+            createdAt: "2026-09-14T12:00:00.000Z",
+            metadata: {
+              kind: "ATHLETE_REQUEST_DECISION",
+              tenantSlug: "seu-racha",
+              tenantName: "Seu Racha",
+              decision: "APROVADA",
+            },
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: mutateMock,
+    });
+
+    render(<GlobalPerfilClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Acompanhar meu desempenho" }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/perfil/account-notifications/notification-1/read",
+        expect.objectContaining({ method: "PATCH" })
+      );
+      expect(mutateMock).toHaveBeenCalled();
+      expect(pushMock).toHaveBeenCalledWith("/seu-racha/perfil");
+    });
+  });
+
+  it("navega pelo CTA mesmo quando a marcacao de leitura falha", async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: false, json: async () => ({}) });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        memberships: [
+          {
+            tenantId: "tenant-1",
+            tenantSlug: "seu-racha",
+            tenantName: "Seu Racha",
+            role: "ATLETA",
+            status: "APROVADO",
+          },
+        ],
+        accountNotifications: [
+          {
+            id: "notification-1",
+            title: "Entrada aprovada!",
+            body: "Aprovado",
+            href: "/seu-racha/perfil",
+            readAt: null,
+            createdAt: "2026-09-14T12:00:00.000Z",
+            metadata: {
+              kind: "ATHLETE_REQUEST_DECISION",
+              tenantSlug: "seu-racha",
+              tenantName: "Seu Racha",
+              decision: "APROVADA",
+            },
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: mutateMock,
+    });
+
+    render(<GlobalPerfilClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Acompanhar meu desempenho" }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        "/api/perfil/account-notifications/notification-1/read",
+        expect.objectContaining({ method: "PATCH" })
+      );
+      expect(pushMock).toHaveBeenCalledWith("/seu-racha/perfil");
+    });
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+
+  it("usa tenantName do metadata para rejeicao sem Membership", () => {
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        memberships: [],
+        accountNotifications: [
+          {
+            id: "notification-1",
+            title: "Solicitação não aprovada",
+            body: "Rejeitada",
+            href: "/seu-racha",
+            readAt: null,
+            createdAt: "2026-09-14T12:00:00.000Z",
+            metadata: {
+              kind: "ATHLETE_REQUEST_DECISION",
+              tenantSlug: "seu-racha",
+              tenantName: "Seu Racha",
+              decision: "REJEITADA",
+            },
+          },
+        ],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: mutateMock,
+    });
+
+    render(<GlobalPerfilClient />);
+
+    expect(
+      screen.getByText(
+        "Sua solicitação para participar do Seu Racha não foi aprovada. Sua Conta Fut7Pro continua ativa normalmente."
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/do este grupo/i)).not.toBeInTheDocument();
+  });
+
+  it("some do Perfil Global depois que o backend retorna sem notificacao nao lida", () => {
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        ...baseProfile,
+        accountNotifications: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+      errorStatus: null,
+      updateProfile: updateProfileMock,
+      mutate: mutateMock,
+    });
+
+    render(<GlobalPerfilClient />);
+
+    expect(screen.queryByText("Entrada aprovada!")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Acompanhar meu desempenho" })).toBeNull();
   });
 });
