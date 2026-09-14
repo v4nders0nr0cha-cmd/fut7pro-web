@@ -18,12 +18,16 @@ jest.mock("@/hooks/useGlobalProfile", () => ({
 }));
 
 function Consumer() {
-  const { usuario, isAuthenticated, membershipStatus } = usePerfil();
+  const context = usePerfil() as ReturnType<typeof usePerfil> & {
+    atualizarPerfil?: unknown;
+  };
+  const { usuario, isAuthenticated, membershipStatus } = context;
   return (
     <div>
       <span data-testid="authenticated">{String(isAuthenticated)}</span>
       <span data-testid="name">{usuario?.nome || ""}</span>
       <span data-testid="membership">{membershipStatus || ""}</span>
+      <span data-testid="can-edit">{String(typeof context.atualizarPerfil === "function")}</span>
     </div>
   );
 }
@@ -86,6 +90,41 @@ describe("PerfilProvider", () => {
     expect(screen.getByTestId("authenticated")).toHaveTextContent("true");
     expect(screen.getByTestId("name")).toHaveTextContent("Neymar");
     expect(screen.getByTestId("membership")).toHaveTextContent("APROVADO");
+  });
+
+  it("nao expoe mutator de edicao de dados pessoais tenant-specific", () => {
+    mockedUseSession.mockReturnValue({
+      status: "authenticated",
+      data: {
+        user: {
+          id: "user-1",
+          name: "Neymar",
+          email: "ney@example.com",
+          accessToken: "token",
+        },
+      },
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        user: { id: "user-1", email: "ney@example.com" },
+        tenant: { tenantId: "tenant-1", tenantSlug: "seu-racha" },
+        membership: { role: "ATLETA", status: "APROVADO" },
+        athlete: { id: "athlete-1", slug: "neymar", firstName: "Neymar" },
+      },
+      isLoading: false,
+      isError: false,
+      errorStatus: null,
+      error: null,
+      mutate: jest.fn(),
+    });
+
+    render(
+      <PerfilProvider>
+        <Consumer />
+      </PerfilProvider>
+    );
+
+    expect(screen.getByTestId("can-edit")).toHaveTextContent("false");
   });
 
   it("usa Perfil Global como fallback para status rejeitado quando /me nao retorna atleta", () => {

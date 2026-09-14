@@ -1,6 +1,6 @@
-import { act, renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import useSWR from "swr";
-import { usePublicUnreadCount } from "../usePublicUnreadCount";
+import { resolveRateLimitPauseMs, usePublicUnreadCount } from "../usePublicUnreadCount";
 
 jest.mock("@/hooks/usePublicLinks", () => ({
   usePublicLinks: () => ({ publicSlug: "seu-racha" }),
@@ -22,6 +22,10 @@ describe("usePublicUnreadCount", () => {
       isLoading: false,
       mutate: jest.fn(),
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("nao faz retry automatico para 401/403/429 e limita os demais erros", () => {
@@ -57,9 +61,16 @@ describe("usePublicUnreadCount", () => {
     expect(secondOptions.refreshInterval).toBe(0);
   });
 
-  it("pausa 429 temporariamente e revalida depois do Retry-After", async () => {
-    jest.useFakeTimers();
+  it("pausa 429 temporariamente e revalida depois do Retry-After", () => {
+    const originalSetTimeout = global.setTimeout;
+    const originalClearTimeout = global.clearTimeout;
     const mutate = jest.fn();
+    const scheduled: Array<{ callback: () => void; delay: number }> = [];
+    jest.spyOn(global, "setTimeout").mockImplementation(((callback: () => void, delay?: number) => {
+      scheduled.push({ callback, delay: Number(delay) });
+      return scheduled.length as unknown as ReturnType<typeof setTimeout>;
+    }) as typeof setTimeout);
+    jest.spyOn(global, "clearTimeout").mockImplementation((() => undefined) as typeof clearTimeout);
     mockedUseSWR.mockReturnValue({
       data: null,
       error: null,
@@ -77,17 +88,24 @@ describe("usePublicUnreadCount", () => {
     });
     rerender();
     expect(mockedUseSWR.mock.calls[1][2].refreshInterval).toBe(0);
+    expect(scheduled[0]?.delay).toBe(2000);
 
     act(() => {
-      jest.advanceTimersByTime(2000);
+      scheduled[0]?.callback();
     });
     rerender();
 
     expect(mutate).toHaveBeenCalledTimes(1);
-    await waitFor(() => {
-      expect(mockedUseSWR.mock.calls.at(-1)?.[2].refreshInterval).toBe(30000);
-    });
+    expect(mockedUseSWR.mock.calls.at(-1)?.[2].refreshInterval).toBe(30000);
     unmount();
+    global.setTimeout = originalSetTimeout;
+    global.clearTimeout = originalClearTimeout;
+  });
+
+  it("usa fallback seguro de 60 segundos para 429 sem Retry-After valido", () => {
+    expect(resolveRateLimitPauseMs(null)).toBe(60000);
+    expect(resolveRateLimitPauseMs("abc")).toBe(60000);
+    expect(resolveRateLimitPauseMs("0")).toBe(60000);
   });
 
   it("inclui status no erro retornado pelo fetcher", async () => {

@@ -77,6 +77,7 @@ const approvedPerfil = {
   membershipStatus: "APROVADO",
   isLoading: false,
   isError: false,
+  errorStatus: null,
   isAuthenticated: true,
   isPendingApproval: false,
 };
@@ -189,6 +190,7 @@ describe("RachaPerfilPage", () => {
       ...approvedPerfil,
       usuario: null,
       isError: true,
+      errorStatus: 500,
       error: "Falha temporaria",
     });
 
@@ -199,6 +201,30 @@ describe("RachaPerfilPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Tentar novamente")).toBeInTheDocument();
     expect(screen.queryByText("Completar Perfil Fut7Pro")).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("/register");
+  });
+
+  it("sessao valida sem membership no grupo mostra estado sem vinculo e CTA de entrada", () => {
+    mockedUsePerfil.mockReturnValue({
+      ...approvedPerfil,
+      usuario: null,
+      membershipStatus: null,
+      isError: true,
+      errorStatus: 403,
+      error: "Forbidden",
+    });
+
+    render(<RachaPerfilPage />);
+
+    expect(screen.getByText("Você ainda não participa deste grupo")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Não foi possível carregar seu desempenho neste grupo")
+    ).not.toBeInTheDocument();
+    screen.getByText("Solicitar entrada").click();
+
+    expect(pushMock).toHaveBeenCalledWith(
+      "/perfil?intent=request-join&racha=seu-racha&callbackUrl=%2Fseu-racha"
+    );
     expect(document.body.textContent).not.toContain("/register");
   });
 });

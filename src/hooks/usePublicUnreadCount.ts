@@ -30,6 +30,13 @@ const fetcher = async (url: string) => {
   return body as { unreadCount?: number };
 };
 
+export function resolveRateLimitPauseMs(retryAfter?: string | null) {
+  const retryAfterSeconds = retryAfter ? Number.parseInt(retryAfter, 10) : NaN;
+  return Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
+    ? retryAfterSeconds * 1000
+    : DEFAULT_RATE_LIMIT_PAUSE_MS;
+}
+
 export function usePublicUnreadCount(enabled = true, refreshInterval = 30000) {
   const { publicSlug } = usePublicLinks();
   const { isAuthenticated } = useAuth();
@@ -59,11 +66,7 @@ export function usePublicUnreadCount(enabled = true, refreshInterval = 30000) {
       setPausedByAuthError(Boolean(status && AUTH_PAUSE_STATUSES.has(status)));
       if (status === 429) {
         const retryAfter = (err as FetchError | undefined)?.retryAfter;
-        const retryAfterSeconds = retryAfter ? Number.parseInt(retryAfter, 10) : NaN;
-        const delayMs =
-          Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0
-            ? retryAfterSeconds * 1000
-            : DEFAULT_RATE_LIMIT_PAUSE_MS;
+        const delayMs = resolveRateLimitPauseMs(retryAfter);
 
         setPausedByRateLimit(true);
         if (rateLimitTimeoutRef.current) {

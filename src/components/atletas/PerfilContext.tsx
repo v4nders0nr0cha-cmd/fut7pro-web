@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
 import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -20,18 +20,10 @@ interface PerfilContextType {
   isPendingApproval: boolean;
   isLoading: boolean;
   isError: boolean;
+  errorStatus: number | null;
   error: string | null;
   isAuthenticated: boolean;
-  atualizarPerfil: (dados: PerfilUpdatePayload) => Promise<void>;
 }
-
-type PerfilUpdatePayload = {
-  firstName: string;
-  nickname: string;
-  position: PosicaoAtleta;
-  positionSecondary?: PosicaoAtleta | null;
-  avatarFile?: File | null;
-};
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
 
@@ -169,8 +161,8 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     me,
     isLoading: isLoadingMe,
     isError,
+    errorStatus,
     error,
-    mutate,
   } = useMe({
     enabled: shouldLoadTenantProfile,
     tenantSlug: slugFromPath ?? undefined,
@@ -194,69 +186,6 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
   });
   const isPendingApproval = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
 
-  const tenantId = me?.tenant?.tenantId ?? null;
-  const tenantSlug = me?.tenant?.tenantSlug ?? slugFromPath ?? sessionUser?.tenantSlug ?? null;
-
-  const atualizarPerfil = useCallback(
-    async (dados: PerfilUpdatePayload) => {
-      if (!tenantId) {
-        throw new Error("Perfil nao carregado.");
-      }
-      if (isPendingApproval) {
-        throw new Error("Aguardando aprovacao do admin.");
-      }
-
-      let avatarUrl: string | undefined;
-      if (dados.avatarFile) {
-        const formData = new FormData();
-        formData.append("file", dados.avatarFile);
-        const uploadRes = await fetch("/api/uploads/avatar", {
-          method: "POST",
-          headers: tenantSlug ? { "x-tenant-slug": tenantSlug } : undefined,
-          body: formData,
-        });
-        const uploadBody = await uploadRes.json();
-        if (!uploadRes.ok) {
-          throw new Error(uploadBody?.message || uploadBody?.error || "Erro ao enviar imagem.");
-        }
-        if (!uploadBody?.url) {
-          throw new Error("Upload retornou uma URL invalida.");
-        }
-        avatarUrl = uploadBody.url;
-      }
-
-      const payload: Record<string, unknown> = {
-        firstName: dados.firstName.trim(),
-        nickname: dados.nickname.trim(),
-        position: dados.position,
-      };
-      if (dados.positionSecondary !== undefined) {
-        payload.positionSecondary = dados.positionSecondary ?? null;
-      }
-      if (typeof avatarUrl !== "undefined") {
-        payload.avatarUrl = avatarUrl;
-      }
-
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (tenantSlug) {
-        headers["x-tenant-slug"] = tenantSlug;
-      }
-
-      const res = await fetch(`/api/tenants/${tenantId}/athletes/me`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(payload),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        throw new Error(body?.message || body?.error || "Erro ao salvar perfil.");
-      }
-
-      await mutate();
-    },
-    [tenantId, tenantSlug, mutate, isPendingApproval]
-  );
-
   const isLoading =
     status === "loading" ||
     (shouldLoadTenantProfile && isLoadingMe) ||
@@ -272,9 +201,9 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
         isPendingApproval,
         isLoading,
         isError: Boolean(errorMessage),
+        errorStatus: isAuthenticated && isError ? errorStatus : null,
         error: errorMessage,
         isAuthenticated,
-        atualizarPerfil,
       }}
     >
       {children}
