@@ -3,6 +3,9 @@
 import useSWR from "swr";
 import type { AthletePremiumProfilePayload } from "@/types/athlete-premium-profile";
 
+const NO_AUTO_RETRY_STATUSES = new Set([401, 403, 429]);
+type FetchError = Error & { status?: number; retryAfter?: string | null };
+
 const fetcher = async (url: string): Promise<AthletePremiumProfilePayload> => {
   const res = await fetch(url, { cache: "no-store" });
   const text = await res.text();
@@ -19,7 +22,10 @@ const fetcher = async (url: string): Promise<AthletePremiumProfilePayload> => {
       (body as { message?: string; error?: string } | null)?.error ||
       (typeof body === "string" ? body : "") ||
       "Falha ao carregar perfil premium";
-    throw new Error(message);
+    const error = new Error(message) as FetchError;
+    error.status = res.status;
+    error.retryAfter = res.headers.get("retry-after");
+    throw error;
   }
 
   return body as AthletePremiumProfilePayload;
@@ -52,6 +58,11 @@ export function usePublicAthletePremiumProfile(options: {
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
+      shouldRetryOnError: (err) => {
+        const status = (err as FetchError | undefined)?.status;
+        return !status || !NO_AUTO_RETRY_STATUSES.has(status);
+      },
+      errorRetryCount: 1,
     }
   );
 
@@ -88,6 +99,11 @@ export function useOwnerAthletePremiumProfile(options: {
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
+      shouldRetryOnError: (err) => {
+        const status = (err as FetchError | undefined)?.status;
+        return !status || !NO_AUTO_RETRY_STATUSES.has(status);
+      },
+      errorRetryCount: 1,
     }
   );
 

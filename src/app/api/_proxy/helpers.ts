@@ -258,6 +258,22 @@ export async function requireUser(options?: RequireUserOptions): Promise<UserLik
   return null;
 }
 
+export async function requirePublicAthleteUser(): Promise<UserLike | null> {
+  const user = await requireUser({ scope: "any" });
+  if (!user) return null;
+
+  const realm = resolveAuthRealm({
+    role: user.role,
+    authRealm: user.authRealm,
+  });
+
+  if (realm === "superadmin") {
+    return null;
+  }
+
+  return user;
+}
+
 export async function requireSuperAdminUser(): Promise<UserLike | null> {
   const session = await getServerSession?.(superAdminAuthOptions as any);
   const user =

@@ -6,11 +6,12 @@ import { useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import type { Atleta, PosicaoAtleta, StatusAtleta } from "@/types/atletas";
 import type { MeResponse } from "@/types/me";
+import { useGlobalProfile } from "@/hooks/useGlobalProfile";
 import { useMe } from "@/hooks/useMe";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
 import { slugify } from "@/utils/slugify";
 import { DEFAULT_ATHLETE_AVATAR, getAvatarSrc } from "@/utils/avatar";
-import { isAthleteSession as isAthleteRealm } from "@/lib/auth/realm";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 interface PerfilContextType {
   usuario: Atleta | null;
@@ -19,18 +20,13 @@ interface PerfilContextType {
   isPendingApproval: boolean;
   isLoading: boolean;
   isError: boolean;
+  errorStatus: number | null;
   error: string | null;
   isAuthenticated: boolean;
-  atualizarPerfil: (dados: PerfilUpdatePayload) => Promise<void>;
+  hasConfirmedNoGroupMembership: boolean;
+  isMembershipLookupError: boolean;
+  retryMembershipLookup: () => Promise<void>;
 }
-
-type PerfilUpdatePayload = {
-  firstName: string;
-  nickname: string;
-  position: PosicaoAtleta;
-  positionSecondary?: PosicaoAtleta | null;
-  avatarFile?: File | null;
-};
 
 const PerfilContext = createContext<PerfilContextType | null>(null);
 
@@ -91,6 +87,27 @@ function normalizeStatus(value?: string | null): StatusAtleta {
   return "Ativo";
 }
 
+function normalizeMembershipStatus(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toUpperCase();
+}
+
+export function resolveMembershipStatus(
+  meStatus?: string | null,
+  profileStatus?: string | null,
+  options?: { hasMeError?: boolean }
+) {
+  const normalizedMeStatus = normalizeMembershipStatus(meStatus);
+  const normalizedProfileStatus = normalizeMembershipStatus(profileStatus);
+
+  if (!options?.hasMeError && normalizedMeStatus) {
+    return normalizedMeStatus;
+  }
+
+  return normalizedProfileStatus || normalizedMeStatus || null;
+}
+
 function buildAtletaFromMe(me: MeResponse | null, sessionUser?: SessionUser): Atleta | null {
   if (!me?.athlete) {
     return null;
@@ -138,20 +155,30 @@ export function usePerfil() {
 
 export function PerfilProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
-  const isAuthenticated = status === "authenticated" && isAthleteRealm(session as any);
+  const isAuthenticated = hasUsableFut7ProSession(session, status);
   const sessionUser = session?.user as SessionUser | undefined;
   const pathname = usePathname() ?? "";
   const slugFromPath = resolvePublicTenantSlug(pathname);
+  const shouldLoadTenantProfile = isAuthenticated && Boolean(slugFromPath);
   const {
     me,
     isLoading: isLoadingMe,
     isError,
+    errorStatus,
     error,
-    mutate,
+    mutate: mutateMe,
   } = useMe({
-    enabled: isAuthenticated,
+    enabled: shouldLoadTenantProfile,
     tenantSlug: slugFromPath ?? undefined,
-    context: slugFromPath ? "athlete" : undefined,
+    context: "athlete",
+  });
+  const {
+    profile: globalProfile,
+    isLoading: isLoadingGlobalProfile,
+    isError: isGlobalProfileError,
+    mutate: mutateGlobalProfile,
+  } = useGlobalProfile({
+    enabled: shouldLoadTenantProfile,
   });
 
   const usuario = useMemo(() => buildAtletaFromMe(me, sessionUser), [me, sessionUser]);
@@ -160,73 +187,35 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
     if (!rawRole || rawRole === "ATLETA") return null;
     return ROLE_LABELS[rawRole] ?? me?.membership?.role ?? null;
   }, [me?.membership?.role]);
-  const membershipStatus = me?.membership?.status ?? null;
-  const isPendingApproval = membershipStatus === "PENDENTE";
+  const globalMembershipStatus = globalProfile?.memberships?.find(
+    (membership) => membership.tenantSlug === slugFromPath
+  )?.status;
+  const membershipStatus = resolveMembershipStatus(me?.membership?.status, globalMembershipStatus, {
+    hasMeError: isError,
+  });
+  const isPendingApproval = membershipStatus === "PENDENTE" || membershipStatus === "PENDING";
+  const hasLoadedGlobalProfile = Boolean(globalProfile) && !isLoadingGlobalProfile;
+  const hasConfirmedNoGroupMembership =
+    isAuthenticated &&
+    isError &&
+    errorStatus === 403 &&
+    hasLoadedGlobalProfile &&
+    !isGlobalProfileError &&
+    !globalMembershipStatus;
+  const isMembershipLookupError =
+    isAuthenticated &&
+    isError &&
+    errorStatus === 403 &&
+    !globalMembershipStatus &&
+    (isGlobalProfileError || (!isLoadingGlobalProfile && !globalProfile));
+  const retryMembershipLookup = useCallback(async () => {
+    await Promise.all([mutateMe(), mutateGlobalProfile()]);
+  }, [mutateGlobalProfile, mutateMe]);
 
-  const tenantId = me?.tenant?.tenantId ?? null;
-  const tenantSlug = me?.tenant?.tenantSlug ?? slugFromPath ?? sessionUser?.tenantSlug ?? null;
-
-  const atualizarPerfil = useCallback(
-    async (dados: PerfilUpdatePayload) => {
-      if (!tenantId) {
-        throw new Error("Perfil nao carregado.");
-      }
-      if (isPendingApproval) {
-        throw new Error("Aguardando aprovacao do admin.");
-      }
-
-      let avatarUrl: string | undefined;
-      if (dados.avatarFile) {
-        const formData = new FormData();
-        formData.append("file", dados.avatarFile);
-        const uploadRes = await fetch("/api/uploads/avatar", {
-          method: "POST",
-          headers: tenantSlug ? { "x-tenant-slug": tenantSlug } : undefined,
-          body: formData,
-        });
-        const uploadBody = await uploadRes.json();
-        if (!uploadRes.ok) {
-          throw new Error(uploadBody?.message || uploadBody?.error || "Erro ao enviar imagem.");
-        }
-        if (!uploadBody?.url) {
-          throw new Error("Upload retornou uma URL invalida.");
-        }
-        avatarUrl = uploadBody.url;
-      }
-
-      const payload: Record<string, unknown> = {
-        firstName: dados.firstName.trim(),
-        nickname: dados.nickname.trim(),
-        position: dados.position,
-      };
-      if (dados.positionSecondary !== undefined) {
-        payload.positionSecondary = dados.positionSecondary ?? null;
-      }
-      if (typeof avatarUrl !== "undefined") {
-        payload.avatarUrl = avatarUrl;
-      }
-
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
-      if (tenantSlug) {
-        headers["x-tenant-slug"] = tenantSlug;
-      }
-
-      const res = await fetch(`/api/tenants/${tenantId}/athletes/me`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify(payload),
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        throw new Error(body?.message || body?.error || "Erro ao salvar perfil.");
-      }
-
-      await mutate();
-    },
-    [tenantId, tenantSlug, mutate, isPendingApproval]
-  );
-
-  const isLoading = status === "loading" || (isAuthenticated && isLoadingMe);
+  const isLoading =
+    status === "loading" ||
+    (shouldLoadTenantProfile && isLoadingMe) ||
+    (shouldLoadTenantProfile && isLoadingGlobalProfile && !me?.membership?.status);
   const errorMessage = isAuthenticated && isError ? error : null;
 
   return (
@@ -238,9 +227,12 @@ export function PerfilProvider({ children }: { children: ReactNode }) {
         isPendingApproval,
         isLoading,
         isError: Boolean(errorMessage),
+        errorStatus: isAuthenticated && isError ? errorStatus : null,
         error: errorMessage,
         isAuthenticated,
-        atualizarPerfil,
+        hasConfirmedNoGroupMembership,
+        isMembershipLookupError,
+        retryMembershipLookup,
       }}
     >
       {children}
