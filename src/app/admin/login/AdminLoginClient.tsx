@@ -37,6 +37,11 @@ const HIGHLIGHTS = [
   },
 ];
 
+const INVALID_CREDENTIALS_MESSAGE = "E-mail ou senha inválidos.";
+const AUTH_SERVICE_UNAVAILABLE_MESSAGE =
+  "Não foi possível acessar o serviço de autenticação agora. Tente novamente em alguns instantes.";
+const GENERIC_LOGIN_FAILURE_MESSAGE = "Não foi possível concluir o login. Tente novamente.";
+
 export default function AdminLoginClient() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -203,6 +208,22 @@ export default function AdminLoginClient() {
     return false;
   };
 
+  const resolvePasswordLoginError = (status: number, body: any) => {
+    const errorCode = String(body?.code || body?.error?.code || "").trim();
+    if (
+      status === 502 ||
+      status === 503 ||
+      status === 504 ||
+      errorCode === "AUTH_SERVICE_UNAVAILABLE"
+    ) {
+      return AUTH_SERVICE_UNAVAILABLE_MESSAGE;
+    }
+    if (status === 401 || errorCode === "INVALID_CREDENTIALS") {
+      return INVALID_CREDENTIALS_MESSAGE;
+    }
+    return GENERIC_LOGIN_FAILURE_MESSAGE;
+  };
+
   const loginWithPassword = async () => {
     try {
       const resp = await fetch("/api/auth/login", {
@@ -231,18 +252,27 @@ export default function AdminLoginClient() {
           redirectAfterLogin();
           return;
         }
+
+        clearJourneyProof(normalizedEmail);
+        resetTurnstile();
+        setErro(GENERIC_LOGIN_FAILURE_MESSAGE);
+        return;
       }
 
       if (handleAuthError(body)) {
         return;
       }
-    } catch {
-      // ignore
-    }
 
-    clearJourneyProof(normalizedEmail);
-    resetTurnstile();
-    setErro("E-mail ou senha inválidos.");
+      clearJourneyProof(normalizedEmail);
+      resetTurnstile();
+      setErro(resolvePasswordLoginError(resp.status, body));
+      return;
+    } catch {
+      clearJourneyProof(normalizedEmail);
+      resetTurnstile();
+      setErro(AUTH_SERVICE_UNAVAILABLE_MESSAGE);
+      return;
+    }
   };
 
   const requestPasswordlessCode = async () => {
