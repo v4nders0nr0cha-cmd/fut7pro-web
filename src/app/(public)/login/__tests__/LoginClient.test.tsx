@@ -136,7 +136,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText(/Enviamos um código para at\*\*\*@teste.com/i)
+      await screen.findByText(/Se houver uma Conta Fut7Pro com at\*\*\*@teste.com/i)
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
@@ -322,7 +322,7 @@ describe("LoginClient", () => {
     expect(mockedUseGlobalProfile).toHaveBeenCalledWith({ enabled: false });
   });
 
-  it("mostra cadastro necessario quando OTP recebe USER_NOT_FOUND", async () => {
+  it("mantem mensagem neutra quando OTP recebe USER_NOT_FOUND", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse(
         {
@@ -342,7 +342,7 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText(/Não encontramos uma Conta Fut7Pro com este e-mail/i)
+      await screen.findByText(/Se houver uma Conta Fut7Pro com este e-mail/i)
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Criar Conta Fut7Pro/i })).toHaveAttribute(
       "href",

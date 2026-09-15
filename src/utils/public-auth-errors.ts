@@ -67,7 +67,7 @@ export function getHumanAuthErrorMessage(
     message.includes("não encontramos uma conta global") ||
     message.includes("nao encontramos uma conta global")
   ) {
-    return "Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada no grupo.";
+    return "Se houver uma Conta Fut7Pro com este e-mail, você poderá continuar com o código recebido. Se ainda não tiver conta, use a opção Criar Conta Fut7Pro.";
   }
 
   if (message.includes("unauthorized") || message.includes("não autorizado")) {

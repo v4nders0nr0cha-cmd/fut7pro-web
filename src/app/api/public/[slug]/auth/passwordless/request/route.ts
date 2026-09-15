@@ -1,38 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
+import { normalizePasswordlessStartResponse } from "@/utils/public-auth-normalizers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
-const UNIFORM_AUTH_MESSAGE = "Se estiver tudo certo, enviaremos seu código.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
   return NextResponse.json(body, { ...init, headers });
-}
-
-function normalizePasswordlessStartResponse(payload: unknown) {
-  const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
-  const resendCooldownSeconds =
-    typeof body.resendCooldownSeconds === "number" && Number.isFinite(body.resendCooldownSeconds)
-      ? Math.max(0, Math.floor(body.resendCooldownSeconds))
-      : 60;
-  const turnstileProof =
-    typeof body.turnstileProof === "string" && body.turnstileProof.trim()
-      ? body.turnstileProof.trim()
-      : null;
-
-  return {
-    ok: true,
-    message: UNIFORM_AUTH_MESSAGE,
-    ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
-    resendCooldownSeconds,
-    ...(turnstileProof ? { turnstileProof } : {}),
-  };
 }
 
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
@@ -108,16 +88,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       }
 
       if (code === "USER_NOT_FOUND") {
-        return json(
-          {
-            code,
-            message:
-              typeof parsedRecord?.message === "string"
-                ? parsedRecord.message
-                : "Você ainda não possui Conta Fut7Pro. Cadastre-se para continuar.",
-          },
-          { status: response.status || 404 }
-        );
+        return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
       }
 
       if (response.status >= 500) {
