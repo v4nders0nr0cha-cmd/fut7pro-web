@@ -8,8 +8,13 @@ jest.mock("next-auth/providers/credentials", () => ({
   default: jest.fn((options: any) => ({ id: "credentials", options })),
 }));
 
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
+
 type JwtCallback = NonNullable<
   NonNullable<(typeof import("../admin-options"))["authOptions"]["callbacks"]>["jwt"]
+>;
+type SessionCallback = NonNullable<
+  NonNullable<(typeof import("../admin-options"))["authOptions"]["callbacks"]>["session"]
 >;
 
 const buildJwt = (exp: number) => {
@@ -34,6 +39,17 @@ const loadJwtCallback = async (): Promise<JwtCallback> => {
     throw new Error("JWT callback não encontrado");
   }
   return callback as JwtCallback;
+};
+
+const loadSessionCallback = async (): Promise<SessionCallback> => {
+  jest.resetModules();
+  setupAuthEnv();
+  const mod = await import("../admin-options");
+  const callback = mod.authOptions.callbacks?.session;
+  if (!callback) {
+    throw new Error("Session callback não encontrado");
+  }
+  return callback as SessionCallback;
 };
 
 describe("admin-options jwt refresh flow", () => {
@@ -204,5 +220,47 @@ describe("admin-options jwt refresh flow", () => {
     expect(resultB.accessToken).toBe(nextAccessToken);
     expect(resultA.refreshToken).toBe("refresh-shared-next");
     expect(resultB.refreshToken).toBe("refresh-shared-next");
+  });
+
+  it("persiste tokens Fut7Pro no ciclo JWT sem user e gera sessao utilizavel apos reload", async () => {
+    const jwt = await loadJwtCallback();
+    const sessionCallback = await loadSessionCallback();
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = buildJwt(now + 3600);
+
+    const initialToken = await jwt({
+      token: {},
+      user: {
+        id: "user-1",
+        email: "ney@example.com",
+        name: "Neymar",
+        role: "ADMIN",
+        tenantSlug: "seu-racha",
+        accessToken,
+        refreshToken: "refresh-token",
+        authProvider: "google",
+      },
+    } as any);
+
+    const persistedToken = await jwt({ token: initialToken } as any);
+
+    const session = await sessionCallback({
+      session: {
+        user: {
+          name: "Neymar",
+          email: "ney@example.com",
+        },
+        expires: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      },
+      token: persistedToken,
+    } as any);
+
+    expect((persistedToken as any).accessToken).toBe(accessToken);
+    expect((persistedToken as any).refreshToken).toBe("refresh-token");
+    expect((persistedToken as any).accessTokenExp).toBeGreaterThan(now);
+    expect((session.user as any).accessToken).toBe(accessToken);
+    expect((session.user as any).refreshToken).toBe("refresh-token");
+    expect((session.user as any).accessTokenExp).toBeGreaterThan(now);
+    expect(hasUsableFut7ProSession(session as any, "authenticated")).toBe(true);
   });
 });

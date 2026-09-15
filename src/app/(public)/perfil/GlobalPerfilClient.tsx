@@ -10,6 +10,11 @@ import ImageCropperModal from "@/components/ImageCropperModal";
 import SecurityRecoveryPanel from "@/components/profile/SecurityRecoveryPanel";
 import { SecondaryPositionHint } from "@/components/shared/SecondaryPositionHint";
 import type { GlobalProfileMembership, GlobalTitle } from "@/types/global-profile";
+import {
+  getDecisionGroupReference,
+  getDecisionTenantName,
+  type AthleteRequestDecisionNotification,
+} from "@/utils/account-notifications";
 import { getStoredTenantSlug, setStoredTenantSlug } from "@/utils/active-tenant";
 import { clearPublicAuthContext, readPublicAuthContext } from "@/utils/public-auth-flow";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
@@ -181,6 +186,9 @@ export default function GlobalPerfilClient() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [acknowledgingNotificationIds, setAcknowledgingNotificationIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const publicAuthContext = useMemo(() => readPublicAuthContext(), [searchParams]);
   const requestJoinSlug = useMemo(() => {
     return (
@@ -325,6 +333,14 @@ export default function GlobalPerfilClient() {
     const membership = membershipList.find((item) => item.tenantSlug === requestJoinSlug);
     return membership?.tenantName || "este grupo";
   }, [membershipList, requestJoinSlug]);
+  const decisionNotifications = useMemo(() => {
+    return (profile?.accountNotifications ?? []).filter((notification) => {
+      if (notification.readAt) return false;
+      const metadata = notification.metadata;
+      if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return false;
+      return (metadata as { kind?: string }).kind === "ATHLETE_REQUEST_DECISION";
+    }) as AthleteRequestDecisionNotification[];
+  }, [profile?.accountNotifications]);
   const missingRequiredFields = useMemo(() => {
     const missing: Array<{ key: string; label: string }> = [];
     if (!form.firstName.trim()) missing.push({ key: "firstName", label: "nome" });
@@ -534,6 +550,51 @@ export default function GlobalPerfilClient() {
     }
   };
 
+  const markAccountNotificationRead = async (notification: AthleteRequestDecisionNotification) => {
+    setAcknowledgingNotificationIds((prev) => new Set(prev).add(notification.id));
+    try {
+      const response = await fetch(
+        `/api/perfil/account-notifications/${encodeURIComponent(notification.id)}/read`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({
+            expectedDecision: notification.metadata.decision,
+            expectedRejectionMessage: notification.metadata.rejectionMessage ?? null,
+          }),
+        }
+      );
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        if (response.status === 409 || body?.code === "DECISION_CHANGED") {
+          await mutate();
+          return false;
+        }
+        throw new Error("Não foi possível marcar o aviso como lido.");
+      }
+      await mutate();
+      return true;
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : "Não foi possível marcar o aviso.");
+      return false;
+    } finally {
+      setAcknowledgingNotificationIds((prev) => {
+        const next = new Set(prev);
+        next.delete(notification.id);
+        return next;
+      });
+    }
+  };
+
+  const handleAccountNotificationAction = async (
+    notification: AthleteRequestDecisionNotification,
+    href: string
+  ) => {
+    await markAccountNotificationRead(notification);
+    router.push(href);
+  };
+
   const handleSwitch = async (membership: GlobalProfileMembership) => {
     if (!membership?.tenantSlug) return;
     if (membership.status !== "APROVADO") return;
@@ -641,25 +702,66 @@ export default function GlobalPerfilClient() {
     <div className="mx-auto w-full max-w-6xl px-6 pb-20">
       <h1 className="sr-only">Perfil Global Fut7Pro</h1>
 
-      {profile.accountNotifications?.length ? (
+      {decisionNotifications.length ? (
         <section className="mb-6 space-y-3">
-          {profile.accountNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className="rounded-2xl border border-brand/30 bg-brand/10 p-5 text-white"
-            >
-              <h2 className="text-lg font-bold">{notification.title}</h2>
-              <p className="mt-1 text-sm text-zinc-200">{notification.body}</p>
-              {notification.href ? (
-                <a
-                  href={notification.href}
-                  className="mt-3 inline-flex rounded-full bg-brand px-4 py-2 text-sm font-bold text-black"
-                >
-                  Ver detalhes
-                </a>
-              ) : null}
-            </div>
-          ))}
+          {decisionNotifications.map((notification) => {
+            const decision = notification.metadata.decision;
+            const isApproved = decision === "APROVADA";
+            const tenantSlug = notification.metadata.tenantSlug;
+            const tenantName = getDecisionTenantName(notification, membershipList);
+            const participationReference = getDecisionGroupReference(tenantName, "participation");
+            const primaryHref = isApproved ? `/${tenantSlug}/perfil` : `/${tenantSlug}`;
+            const isAcknowledging = acknowledgingNotificationIds.has(notification.id);
+
+            return (
+              <div
+                key={notification.id}
+                className="rounded-2xl border border-brand/30 bg-brand/10 p-5 text-white"
+              >
+                <h2 className="text-lg font-bold">
+                  {isApproved ? "Entrada aprovada!" : "Solicitação não aprovada"}
+                </h2>
+                <p className="mt-1 text-sm text-zinc-200">
+                  {isApproved
+                    ? `Sua solicitação para ${participationReference} foi aprovada.`
+                    : `Sua solicitação para ${participationReference} não foi aprovada. Sua Conta Fut7Pro continua ativa normalmente.`}
+                </p>
+                {!isApproved && notification.metadata.rejectionMessage ? (
+                  <p className="mt-2 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-zinc-100">
+                    <strong>Motivo informado:</strong> {notification.metadata.rejectionMessage}
+                  </p>
+                ) : null}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isAcknowledging}
+                    onClick={() => handleAccountNotificationAction(notification, primaryHref)}
+                    className="inline-flex rounded-full bg-brand px-4 py-2 text-sm font-bold text-black disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isApproved ? "Acompanhar meu desempenho" : "Continuar no site do grupo"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isAcknowledging}
+                    onClick={() => markAccountNotificationRead(notification)}
+                    className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Entendi
+                  </button>
+                  {isApproved ? null : (
+                    <button
+                      type="button"
+                      disabled={isAcknowledging}
+                      onClick={() => handleAccountNotificationAction(notification, "/perfil")}
+                      className="inline-flex rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Minha conta Fut7Pro
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </section>
       ) : null}
 

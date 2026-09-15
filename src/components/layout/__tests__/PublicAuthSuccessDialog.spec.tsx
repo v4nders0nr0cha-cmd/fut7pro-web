@@ -46,4 +46,13 @@ describe("PublicAuthSuccessDialog", () => {
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+
+  it("nao mostra o modal generico quando uma decisao de entrada tem prioridade", () => {
+    queuePublicAuthSuccessFeedback("Seu perfil já está disponível.");
+
+    render(<PublicAuthSuccessDialog suppress />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
+  });
 });

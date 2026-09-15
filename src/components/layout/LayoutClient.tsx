@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import SidebarMobile from "@/components/layout/SidebarMobile";
 import BottomMenu from "@/components/layout/BottomMenu";
 import TopNavMenu from "@/components/layout/TopNavMenu";
+import AthleteRequestDecisionDialog from "@/components/layout/AthleteRequestDecisionDialog";
 import PublicAuthSuccessDialog from "@/components/layout/PublicAuthSuccessDialog";
 import PendingMembershipBanner from "@/components/layout/PendingMembershipBanner";
 import ComunicadosLoginGate from "@/components/comunicacao/ComunicadosLoginGate";
@@ -24,6 +25,7 @@ export default function LayoutClient({
   initialTenantSlug?: string | null;
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [suppressAuthSuccessDialog, setSuppressAuthSuccessDialog] = useState(true);
   const pathname = usePathname() ?? "";
   const { tenantSlug, setTenantSlug } = useRacha();
   const slugFromPath = resolvePublicTenantSlug(pathname);
@@ -47,7 +49,8 @@ export default function LayoutClient({
   return (
     <>
       <ToasterProvider />
-      <PublicAuthSuccessDialog />
+      <AthleteRequestDecisionDialog onVisibilityChange={setSuppressAuthSuccessDialog} />
+      <PublicAuthSuccessDialog suppress={suppressAuthSuccessDialog} />
       {/* HEADER FIXO NO TOPO */}
       <Header onOpenSidebar={() => setSidebarOpen(true)} />
       <ComunicadosLoginGate />

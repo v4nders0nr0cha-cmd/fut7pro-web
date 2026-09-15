@@ -11,19 +11,26 @@ import {
 
 const AUTO_CLOSE_MS = 2600;
 
-export default function PublicAuthSuccessDialog() {
+export default function PublicAuthSuccessDialog({ suppress = false }: { suppress?: boolean }) {
   const pathname = usePathname();
   const { status } = useSession();
   const [feedback, setFeedback] = useState<PublicAuthSuccessFeedback | null>(null);
 
   useEffect(() => {
+    if (suppress) return;
     if (status !== "authenticated") return;
 
     const nextFeedback = consumePublicAuthSuccessFeedback();
     if (!nextFeedback) return;
 
     setFeedback(nextFeedback);
-  }, [pathname, status]);
+  }, [pathname, status, suppress]);
+
+  useEffect(() => {
+    if (suppress) {
+      setFeedback(null);
+    }
+  }, [suppress]);
 
   useEffect(() => {
     if (!feedback) return;
