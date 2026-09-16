@@ -87,10 +87,6 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         );
       }
 
-      if (code === "USER_NOT_FOUND") {
-        return json(normalizePasswordlessStartResponse(parsed), { status: 200 });
-      }
-
       if (response.status >= 500) {
         return json(
           { error: "Não foi possível enviar o código agora. Tente novamente em instantes." },

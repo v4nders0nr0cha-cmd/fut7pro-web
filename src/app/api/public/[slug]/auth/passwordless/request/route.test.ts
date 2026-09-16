@@ -1,18 +1,47 @@
 import { normalizePasswordlessStartResponse } from "@/utils/public-auth-normalizers";
 
 describe("api/public/[slug]/auth/passwordless/request proxy", () => {
-  it("normaliza resposta legada USER_NOT_FOUND para contrato neutro", () => {
-    const result = normalizePasswordlessStartResponse({
-      code: "USER_NOT_FOUND",
-      message: "Você ainda não possui Conta Global Fut7Pro.",
+  it("mantem o mesmo shape observavel para conta existente e inexistente no contrato atual", () => {
+    const existingAccount = normalizePasswordlessStartResponse({
+      ok: true,
+      message: "Se estiver tudo certo, enviamos seu codigo.",
+      resendCooldownSeconds: 60,
+      turnstileProof: "proof-existing",
+    });
+    const missingAccount = normalizePasswordlessStartResponse({
+      ok: true,
+      message: "Se estiver tudo certo, enviamos seu codigo.",
+      resendCooldownSeconds: 60,
+      turnstileProof: "proof-missing",
     });
 
-    expect(result).toEqual({
+    expect(Object.keys(existingAccount).sort()).toEqual(Object.keys(missingAccount).sort());
+    expect(existingAccount).toMatchObject({
       ok: true,
       message: "Se estiver tudo certo, enviaremos seu código.",
       resendCooldownSeconds: 60,
     });
-    expect(result).not.toHaveProperty("code");
+    expect(missingAccount).toMatchObject({
+      ok: true,
+      message: "Se estiver tudo certo, enviaremos seu código.",
+      resendCooldownSeconds: 60,
+    });
+    expect(typeof existingAccount.turnstileProof).toBe("string");
+    expect(typeof missingAccount.turnstileProof).toBe("string");
+  });
+
+  it("mantem ausencia uniforme de proof quando Turnstile proof nao vem do backend", () => {
+    const existingAccount = normalizePasswordlessStartResponse({
+      ok: true,
+      resendCooldownSeconds: 60,
+    });
+    const missingAccount = normalizePasswordlessStartResponse({
+      ok: true,
+      resendCooldownSeconds: 60,
+    });
+
+    expect(existingAccount).toEqual(missingAccount);
+    expect(existingAccount).not.toHaveProperty("turnstileProof");
   });
 
   it("preserva apenas campos seguros do inicio passwordless", () => {
