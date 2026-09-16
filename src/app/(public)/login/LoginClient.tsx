@@ -492,13 +492,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       return true;
     }
 
-    if (code === "USER_NOT_FOUND") {
-      setErro(
-        `Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada em ${nomeDoRacha}.`
-      );
-      return true;
-    }
-
     if (code === "PROFILE_INCOMPLETE") {
       router.replace(buildCompleteProfileHref(email));
       return true;
@@ -600,12 +593,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         resetTurnstile();
         return;
       }
-      if (body?.code === "USER_NOT_FOUND") {
-        setErro(
-          `Não encontramos uma Conta Fut7Pro com este e-mail. Crie sua conta para solicitar entrada em ${nomeDoRacha}.`
-        );
-        return;
-      }
       setErro(getHumanAuthErrorMessage(body, "Não foi possível enviar o código."));
       return;
     }
@@ -623,7 +610,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     setResendCooldownSeconds(nextCooldown);
     setResendRemainingSeconds(nextCooldown);
     setCodigoEnviado(true);
-    setInfoMessage(`Enviamos um código para ${maskEmail(normalizedEmail)}.`);
+    setInfoMessage(
+      `Se houver uma Conta Fut7Pro com ${maskEmail(
+        normalizedEmail
+      )}, o código chegará em instantes. Se ainda não tiver uma conta, use a opção Criar Conta Fut7Pro abaixo.`
+    );
   };
 
   const loginWithPasswordlessCode = async () => {

@@ -238,7 +238,7 @@ describe("EntrarClient unified athlete auth", () => {
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
     expect(
-      await screen.findByText(/Enviamos um código para at\*\*\*@teste.com/i)
+      await screen.findByText(/Se houver uma Conta Fut7Pro com at\*\*\*@teste.com/i)
     ).toBeInTheDocument();
     fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
       target: { value: "123456" },
@@ -291,7 +291,7 @@ describe("EntrarClient unified athlete auth", () => {
     expect(replaceMock).not.toHaveBeenCalledWith(expect.stringContaining("email="));
   });
 
-  it("conta inexistente direciona para cadastro sem segundo clique de lookup", async () => {
+  it("conta inexistente recebe resposta neutra e mantem CTA de cadastro", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse(
         {
@@ -311,7 +311,9 @@ describe("EntrarClient unified athlete auth", () => {
     fireEvent.click(screen.getByRole("button", { name: "Resolver verificação" }));
     fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
 
-    expect(await screen.findByText(/Crie sua conta para solicitar entrada/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Se houver uma Conta Fut7Pro com este e-mail/i)
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Criar Conta Fut7Pro/i })).toHaveAttribute(
       "href",
       "/casa-do-gamer/register?callbackUrl=%2Fcasa-do-gamer%2F&email=novo%40teste.com"

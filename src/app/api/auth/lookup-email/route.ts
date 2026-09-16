@@ -1,49 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApiBase } from "@/lib/get-api-base";
+import { normalizeLookupSuccess } from "@/utils/public-auth-normalizers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const backendBase = getApiBase().replace(/\/+$/, "");
-const LOOKUP_UNIFORM_MESSAGE = "Se estiver tudo certo, enviamos seu codigo.";
 
 function json(body: unknown, init?: ResponseInit) {
   const headers = new Headers(init?.headers);
   headers.set("Content-Type", "application/json; charset=utf-8");
   headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
   return NextResponse.json(body, { ...init, headers });
-}
-
-function normalizeLookupSuccess(payload: unknown) {
-  const body = typeof payload === "object" && payload ? (payload as Record<string, unknown>) : {};
-  const nextAction =
-    typeof body.nextAction === "string" && body.nextAction.trim()
-      ? body.nextAction.trim().toUpperCase()
-      : null;
-  const membershipStatus =
-    typeof body.membershipStatus === "string" && body.membershipStatus.trim()
-      ? body.membershipStatus.trim().toUpperCase()
-      : null;
-  const turnstileProof =
-    typeof body.turnstileProof === "string" && body.turnstileProof.trim()
-      ? body.turnstileProof.trim()
-      : null;
-  const turnstileProofExpiresAt =
-    typeof body.turnstileProofExpiresAt === "number" &&
-    Number.isFinite(body.turnstileProofExpiresAt)
-      ? body.turnstileProofExpiresAt
-      : null;
-
-  return {
-    ok: true,
-    message: LOOKUP_UNIFORM_MESSAGE,
-    ...(body.requiresCaptcha === true ? { requiresCaptcha: true } : {}),
-    ...(nextAction ? { nextAction } : {}),
-    ...(membershipStatus ? { membershipStatus } : {}),
-    ...(turnstileProof ? { turnstileProof } : {}),
-    ...(turnstileProofExpiresAt ? { turnstileProofExpiresAt } : {}),
-  };
 }
 
 export async function POST(req: NextRequest) {
