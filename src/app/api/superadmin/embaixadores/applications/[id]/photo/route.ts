@@ -20,7 +20,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     );
     if (!upstream.ok)
       return new NextResponse(null, { status: upstream.status === 404 ? 404 : 502 });
-    const type = upstream.headers.get("content-type") || "";
+    const type = (upstream.headers.get("content-type") || "").split(";", 1)[0].trim().toLowerCase();
     if (!["image/jpeg", "image/png", "image/webp"].includes(type))
       return new NextResponse(null, { status: 502 });
     return new NextResponse(upstream.body, {
