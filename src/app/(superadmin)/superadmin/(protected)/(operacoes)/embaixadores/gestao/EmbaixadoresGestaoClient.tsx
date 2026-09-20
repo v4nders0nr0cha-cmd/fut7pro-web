@@ -31,6 +31,18 @@ const ACTION_CATEGORY_OPTIONS: Array<{ value: ActionCategory; label: string }> =
 ];
 
 interface DashboardResponse {
+  excludedCreators?: Array<{
+    id: string;
+    name: string;
+    cpfMasked: string;
+    couponCode: string;
+    deletedAt: string;
+    reason: string | null;
+    category: string | null;
+    operatorId: string | null;
+    hasCommercialHistory: boolean;
+    hasFinancialHistory: boolean;
+  }>;
   kpis: {
     totalAmbassadors: number;
     activeAmbassadors: number;
@@ -523,12 +535,24 @@ export default function EmbaixadoresGestaoClient() {
             }),
           }
         );
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string | string[];
+          notification?: { sent: boolean };
+        };
         if (!response.ok) {
-          throw new Error(body.error || "Não foi possível excluir o Creator.");
+          throw new Error(
+            (Array.isArray(body.message) ? body.message.join("; ") : body.message) ||
+              body.error ||
+              "Não foi possível excluir o Creator."
+          );
         }
 
-        setActionMessage("Creator excluído com sucesso. E-mail de notificação enviado.");
+        setActionMessage(
+          body.notification?.sent === false
+            ? "Creator excluído. Não foi possível enviar a notificação por e-mail."
+            : "Creator excluído com sucesso. E-mail de notificação enviado."
+        );
       }
 
       setActionModal(null);
@@ -612,6 +636,20 @@ export default function EmbaixadoresGestaoClient() {
           </div>
         </section>
       ) : null}
+
+      <details className="mb-6 rounded-xl border border-zinc-700 bg-zinc-900/80 p-4">
+        <summary className="cursor-pointer text-lg font-semibold text-white">
+          Excluídos ({data.excludedCreators?.length || 0})
+        </summary>
+        <div className="mt-4 space-y-3">
+          {(data.excludedCreators || []).map((creator) => (
+            <ExcludedCreator key={creator.id} creator={creator} onDeleted={() => mutate()} />
+          ))}
+          {!data.excludedCreators?.length ? (
+            <p className="text-sm text-zinc-400">Nenhum Creator excluído.</p>
+          ) : null}
+        </div>
+      </details>
 
       <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <article className="rounded-xl bg-gradient-to-tr from-yellow-400 to-yellow-600 p-4 text-black shadow-lg">
@@ -1002,6 +1040,94 @@ function MetricCard({ label, value }: { label: string; value: string | number })
     <div className="rounded-md border border-zinc-800 bg-zinc-950/40 p-2.5">
       <p className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</p>
       <p className="mt-1 text-sm font-semibold text-zinc-100">{value}</p>
+    </div>
+  );
+}
+
+function ExcludedCreator({
+  creator,
+  onDeleted,
+}: {
+  creator: NonNullable<DashboardResponse["excludedCreators"]>[number];
+  onDeleted: () => void;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { data: eligibility } = useSWR<{
+    eligible: boolean;
+    blockers: string[];
+    counts: Record<string, number>;
+  }>(
+    `/api/superadmin/embaixadores/${encodeURIComponent(creator.id)}/permanent-delete-eligibility`,
+    (url: string) => fetch(url).then((res) => res.json())
+  );
+  const expected = `EXCLUIR ${creator.couponCode}`;
+  const execute = async () => {
+    if (!eligibility?.eligible || confirmation !== expected) return;
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/superadmin/embaixadores/${encodeURIComponent(creator.id)}/permanent`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmation }),
+        }
+      );
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        error?: string;
+      };
+      if (!response.ok)
+        throw new Error(body.message || body.error || "Não foi possível excluir permanentemente.");
+      onDeleted();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha na exclusão permanente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-4 text-sm text-zinc-200">
+      <p className="font-semibold text-white">
+        {creator.name} · {creator.cpfMasked} · {creator.couponCode}
+      </p>
+      <p>
+        Excluído em {formatDate(creator.deletedAt)} · Categoria:{" "}
+        {creator.category || "Não informada"} · Operador: {creator.operatorId || "Não informado"}
+      </p>
+      <p>Motivo: {creator.reason || "Não informado"}</p>
+      <p>
+        Histórico comercial: {creator.hasCommercialHistory ? "Sim" : "Não"} · Histórico financeiro:{" "}
+        {creator.hasFinancialHistory ? "Sim" : "Não"}
+      </p>
+      {eligibility && !eligibility.eligible ? (
+        <p className="mt-2 text-amber-200">
+          Exclusão permanente bloqueada: {eligibility.blockers.join(", ")}.
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {eligibility?.eligible ? (
+          <label>
+            Digite <strong>{expected}</strong> para confirmar:{" "}
+            <input
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              className="ml-2 rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
+            />
+          </label>
+        ) : null}
+        <button
+          type="button"
+          onClick={execute}
+          disabled={loading || !eligibility?.eligible || confirmation !== expected}
+          className="rounded border border-red-500/60 bg-red-500/15 px-3 py-1 text-red-200 disabled:opacity-50"
+        >
+          Excluir permanentemente
+        </button>
+      </div>
+      {feedback ? <p className="mt-2 text-red-300">{feedback}</p> : null}
     </div>
   );
 }

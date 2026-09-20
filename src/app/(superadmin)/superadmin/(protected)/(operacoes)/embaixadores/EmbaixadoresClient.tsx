@@ -4,6 +4,27 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
+function ApplicationPhoto({ id, name, hasPhoto }: { id: string; name: string; hasPhoto: boolean }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [id]);
+  if (!hasPhoto || failed) {
+    return (
+      <div className="flex h-20 w-20 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-center text-xs text-zinc-400">
+        {hasPhoto ? "Foto indisponível" : "Foto não cadastrada"}
+      </div>
+    );
+  }
+  // eslint-disable-next-line @next/next/no-img-element
+  return (
+    <img
+      src={`/api/superadmin/embaixadores/applications/${encodeURIComponent(id)}/photo`}
+      alt={`Foto de ${name}`}
+      onError={() => setFailed(true)}
+      className="h-20 w-20 rounded-full border border-zinc-700 object-cover"
+    />
+  );
+}
+
 type AmbassadorStatus = "ATIVO" | "EM_ANALISE" | "BLOQUEADO" | "EXCLUIDO";
 type CouponStatus = "ATIVO" | "PAUSADO" | "EXPIRADO";
 type ReferralStatus = "TESTE" | "PRIMEIRA_COMPRA" | "ATIVO" | "CANCELADO";
@@ -447,18 +468,11 @@ export default function EmbaixadoresClient() {
                   >
                     {statusLabel(selectedApplication.status)}
                   </span>
-                  {selectedApplication.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={selectedApplication.photoUrl}
-                      alt={`Foto de ${selectedApplication.fullName}`}
-                      className="h-20 w-20 rounded-full border border-zinc-700 object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-xs text-zinc-400">
-                      Sem foto
-                    </div>
-                  )}
+                  <ApplicationPhoto
+                    id={selectedApplication.id}
+                    name={selectedApplication.fullName}
+                    hasPhoto={Boolean(selectedApplication.photoUrl)}
+                  />
                 </div>
               </div>
 
