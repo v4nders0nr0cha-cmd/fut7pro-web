@@ -48,6 +48,7 @@ interface DashboardResponse {
   ambassadors: Array<{
     id: string;
     name: string;
+    publicName: string | null;
     cpfMasked: string;
     level: CreatorLevel;
     autoLevel?: CreatorLevel;
@@ -95,6 +96,7 @@ interface DashboardResponse {
   applications: Array<{
     id: string;
     fullName: string;
+    publicName: string | null;
     documentMasked: string;
     email: string;
     whatsapp: string;
@@ -423,6 +425,9 @@ export default function EmbaixadoresClient() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-white">{application.fullName}</p>
+                        <p className="text-xs text-zinc-300">
+                          Nome público: {application.publicName || "Não informado"}
+                        </p>
                         <p className="text-xs text-zinc-400">{application.documentMasked}</p>
                         <p className="mt-1 text-xs text-zinc-500">
                           {application.city}/{application.state} •{" "}
@@ -452,7 +457,12 @@ export default function EmbaixadoresClient() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-[1fr_auto]">
                 <div className="space-y-2">
-                  <p className="text-lg font-semibold text-white">{selectedApplication.fullName}</p>
+                  <p className="text-lg font-semibold text-white">
+                    Nome completo: {selectedApplication.fullName}
+                  </p>
+                  <p className="text-sm text-zinc-300">
+                    Nome público: {selectedApplication.publicName || "Não informado"}
+                  </p>
                   <p className="text-sm text-zinc-300">CPF: {selectedApplication.documentMasked}</p>
                   <p className="text-sm text-zinc-300">E-mail: {selectedApplication.email}</p>
                   <p className="text-sm text-zinc-300">WhatsApp: {selectedApplication.whatsapp}</p>
@@ -663,6 +673,9 @@ export default function EmbaixadoresClient() {
                         className="hover:text-yellow-300"
                       >
                         {row.name}
+                        <span className="block text-xs font-normal text-zinc-400">
+                          Nome público: {row.publicName || "Não informado"}
+                        </span>
                       </Link>
                     </td>
                     <td className="px-2 py-2 text-zinc-300">{row.cpfMasked}</td>

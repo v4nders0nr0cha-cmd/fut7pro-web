@@ -34,6 +34,7 @@ interface DashboardResponse {
   excludedCreators?: Array<{
     id: string;
     name: string;
+    publicName: string | null;
     cpfMasked: string;
     couponCode: string;
     deletedAt: string;
@@ -57,6 +58,7 @@ interface DashboardResponse {
   ambassadors: Array<{
     id: string;
     name: string;
+    publicName: string | null;
     cpfMasked: string;
     emailMasked?: string | null;
     level: CreatorLevel;
@@ -98,6 +100,7 @@ interface DashboardResponse {
 interface AmbassadorMetrics {
   id: string;
   name: string;
+  publicName: string | null;
   cpfMasked: string;
   emailMasked: string | null;
   couponCode: string;
@@ -216,6 +219,7 @@ export default function EmbaixadoresGestaoClient() {
       metricsMap.set(ambassador.id, {
         id: ambassador.id,
         name: ambassador.name,
+        publicName: ambassador.publicName,
         cpfMasked: ambassador.cpfMasked,
         emailMasked: ambassador.emailMasked || null,
         couponCode: ambassador.couponCode,
@@ -327,7 +331,7 @@ export default function EmbaixadoresGestaoClient() {
       if (cityFilter && item.city !== cityFilter) return false;
       if (!normalizedSearch) return true;
       const haystack =
-        `${item.name} ${item.couponCode} ${item.city} ${item.state} ${item.cpfMasked}`.toLowerCase();
+        `${item.name} ${item.publicName || ""} ${item.couponCode} ${item.city} ${item.state} ${item.cpfMasked}`.toLowerCase();
       return haystack.includes(normalizedSearch);
     });
   }, [ambassadorMetrics, cityFilter, searchTerm, stateFilter]);
@@ -786,7 +790,12 @@ export default function EmbaixadoresGestaoClient() {
                       }`}
                       onClick={() => setSelectedAmbassadorId(item.id)}
                     >
-                      <td className="px-2 py-2 font-medium text-white">{item.name}</td>
+                      <td className="px-2 py-2 font-medium text-white">
+                        {item.name}
+                        <span className="block text-xs font-normal text-zinc-400">
+                          Nome público: {item.publicName || "Não informado"}
+                        </span>
+                      </td>
                       <td className="px-2 py-2 font-semibold text-yellow-300">{item.couponCode}</td>
                       <td className="px-2 py-2 text-zinc-300">
                         {item.city}/{item.state}
@@ -831,7 +840,12 @@ export default function EmbaixadoresGestaoClient() {
               <div className="space-y-1 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-semibold text-white">{selectedAmbassador.name}</p>
+                    <p className="text-base font-semibold text-white">
+                      Nome completo: {selectedAmbassador.name}
+                    </p>
+                    <p className="text-sm text-zinc-300">
+                      Nome público: {selectedAmbassador.publicName || "Não informado"}
+                    </p>
                     <p className="text-sm text-zinc-300">CPF: {selectedAmbassador.cpfMasked}</p>
                     <p className="text-sm text-zinc-300">
                       E-mail: {selectedAmbassador.emailMasked || "Não informado"}
@@ -1095,6 +1109,7 @@ function ExcludedCreator({
       <p className="font-semibold text-white">
         {creator.name} · {creator.cpfMasked} · {creator.couponCode}
       </p>
+      <p>Nome público: {creator.publicName || "Não informado"}</p>
       <p>
         Excluído em {formatDate(creator.deletedAt)} · Categoria:{" "}
         {creator.category || "Não informada"} · Operador: {creator.operatorId || "Não informado"}
@@ -1207,7 +1222,11 @@ function AmbassadorActionModal({
         <div className="space-y-4 px-5 py-4">
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/60 p-3 text-sm text-zinc-200">
             <p>
-              <span className="text-zinc-400">Nome:</span> {ambassador.name}
+              <span className="text-zinc-400">Nome completo:</span> {ambassador.name}
+            </p>
+            <p>
+              <span className="text-zinc-400">Nome público:</span>{" "}
+              {ambassador.publicName || "Não informado"}
             </p>
             <p>
               <span className="text-zinc-400">CPF:</span> {ambassador.cpfMasked}

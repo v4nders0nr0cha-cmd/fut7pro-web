@@ -72,6 +72,22 @@ describe("ambassadors operational guards", () => {
     expect(source).not.toContain("setCreatorMotivation");
   });
 
+  it("shows the civil and public names separately on administrative surfaces", () => {
+    const dashboard = read(
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/EmbaixadoresClient.tsx"
+    );
+    const management = read(
+      "src/app/(superadmin)/superadmin/(protected)/(operacoes)/embaixadores/gestao/EmbaixadoresGestaoClient.tsx"
+    );
+
+    expect(dashboard).toContain("publicName: string | null");
+    expect(dashboard).toContain("Nome completo:");
+    expect(dashboard).toContain("Nome público:");
+    expect(management).toContain("publicName: string | null");
+    expect(management).toContain("Nome completo:");
+    expect(management).toContain("Nome público:");
+  });
+
   it("uses Creators Fut7Pro naming on visible web surfaces while preserving technical routes", () => {
     const visibleSources = [
       "src/app/(superadmin)/superadmin/Sidebar.tsx",
