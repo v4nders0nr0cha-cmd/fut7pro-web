@@ -31,6 +31,19 @@ const ACTION_CATEGORY_OPTIONS: Array<{ value: ActionCategory; label: string }> =
 ];
 
 interface DashboardResponse {
+  excludedCreators?: Array<{
+    id: string;
+    name: string;
+    publicName: string | null;
+    cpfMasked: string;
+    couponCode: string;
+    deletedAt: string;
+    reason: string | null;
+    category: string | null;
+    operatorId: string | null;
+    hasCommercialHistory: boolean;
+    hasFinancialHistory: boolean;
+  }>;
   kpis: {
     totalAmbassadors: number;
     activeAmbassadors: number;
@@ -45,6 +58,7 @@ interface DashboardResponse {
   ambassadors: Array<{
     id: string;
     name: string;
+    publicName: string | null;
     cpfMasked: string;
     emailMasked?: string | null;
     level: CreatorLevel;
@@ -86,6 +100,7 @@ interface DashboardResponse {
 interface AmbassadorMetrics {
   id: string;
   name: string;
+  publicName: string | null;
   cpfMasked: string;
   emailMasked: string | null;
   couponCode: string;
@@ -204,6 +219,7 @@ export default function EmbaixadoresGestaoClient() {
       metricsMap.set(ambassador.id, {
         id: ambassador.id,
         name: ambassador.name,
+        publicName: ambassador.publicName,
         cpfMasked: ambassador.cpfMasked,
         emailMasked: ambassador.emailMasked || null,
         couponCode: ambassador.couponCode,
@@ -315,7 +331,7 @@ export default function EmbaixadoresGestaoClient() {
       if (cityFilter && item.city !== cityFilter) return false;
       if (!normalizedSearch) return true;
       const haystack =
-        `${item.name} ${item.couponCode} ${item.city} ${item.state} ${item.cpfMasked}`.toLowerCase();
+        `${item.name} ${item.publicName || ""} ${item.couponCode} ${item.city} ${item.state} ${item.cpfMasked}`.toLowerCase();
       return haystack.includes(normalizedSearch);
     });
   }, [ambassadorMetrics, cityFilter, searchTerm, stateFilter]);
@@ -523,12 +539,24 @@ export default function EmbaixadoresGestaoClient() {
             }),
           }
         );
-        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        const body = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          message?: string | string[];
+          notification?: { sent: boolean };
+        };
         if (!response.ok) {
-          throw new Error(body.error || "Não foi possível excluir o Creator.");
+          throw new Error(
+            (Array.isArray(body.message) ? body.message.join("; ") : body.message) ||
+              body.error ||
+              "Não foi possível excluir o Creator."
+          );
         }
 
-        setActionMessage("Creator excluído com sucesso. E-mail de notificação enviado.");
+        setActionMessage(
+          body.notification?.sent === false
+            ? "Creator excluído. Não foi possível enviar a notificação por e-mail."
+            : "Creator excluído com sucesso. E-mail de notificação enviado."
+        );
       }
 
       setActionModal(null);
@@ -612,6 +640,20 @@ export default function EmbaixadoresGestaoClient() {
           </div>
         </section>
       ) : null}
+
+      <details className="mb-6 rounded-xl border border-zinc-700 bg-zinc-900/80 p-4">
+        <summary className="cursor-pointer text-lg font-semibold text-white">
+          Excluídos ({data.excludedCreators?.length || 0})
+        </summary>
+        <div className="mt-4 space-y-3">
+          {(data.excludedCreators || []).map((creator) => (
+            <ExcludedCreator key={creator.id} creator={creator} onDeleted={() => mutate()} />
+          ))}
+          {!data.excludedCreators?.length ? (
+            <p className="text-sm text-zinc-400">Nenhum Creator excluído.</p>
+          ) : null}
+        </div>
+      </details>
 
       <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
         <article className="rounded-xl bg-gradient-to-tr from-yellow-400 to-yellow-600 p-4 text-black shadow-lg">
@@ -748,7 +790,12 @@ export default function EmbaixadoresGestaoClient() {
                       }`}
                       onClick={() => setSelectedAmbassadorId(item.id)}
                     >
-                      <td className="px-2 py-2 font-medium text-white">{item.name}</td>
+                      <td className="px-2 py-2 font-medium text-white">
+                        {item.name}
+                        <span className="block text-xs font-normal text-zinc-400">
+                          Nome público: {item.publicName || "Não informado"}
+                        </span>
+                      </td>
                       <td className="px-2 py-2 font-semibold text-yellow-300">{item.couponCode}</td>
                       <td className="px-2 py-2 text-zinc-300">
                         {item.city}/{item.state}
@@ -793,7 +840,12 @@ export default function EmbaixadoresGestaoClient() {
               <div className="space-y-1 rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-base font-semibold text-white">{selectedAmbassador.name}</p>
+                    <p className="text-base font-semibold text-white">
+                      Nome completo: {selectedAmbassador.name}
+                    </p>
+                    <p className="text-sm text-zinc-300">
+                      Nome público: {selectedAmbassador.publicName || "Não informado"}
+                    </p>
                     <p className="text-sm text-zinc-300">CPF: {selectedAmbassador.cpfMasked}</p>
                     <p className="text-sm text-zinc-300">
                       E-mail: {selectedAmbassador.emailMasked || "Não informado"}
@@ -1006,6 +1058,113 @@ function MetricCard({ label, value }: { label: string; value: string | number })
   );
 }
 
+function ExcludedCreator({
+  creator,
+  onDeleted,
+}: {
+  creator: NonNullable<DashboardResponse["excludedCreators"]>[number];
+  onDeleted: () => void;
+}) {
+  const [confirmation, setConfirmation] = useState("");
+  const [permanentReason, setPermanentReason] = useState("");
+  const [feedback, setFeedback] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { data: eligibility } = useSWR<{
+    eligible: boolean;
+    blockers: string[];
+    counts: Record<string, number>;
+  }>(
+    `/api/superadmin/embaixadores/${encodeURIComponent(creator.id)}/permanent-delete-eligibility`,
+    (url: string) => fetch(url).then((res) => res.json())
+  );
+  const expected = `EXCLUIR ${creator.couponCode}`;
+  const execute = async () => {
+    if (!eligibility?.eligible || confirmation !== expected || permanentReason.trim().length < 10)
+      return;
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/superadmin/embaixadores/${encodeURIComponent(creator.id)}/permanent`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ confirmation, reason: permanentReason.trim() }),
+        }
+      );
+      const body = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        error?: string;
+      };
+      if (!response.ok)
+        throw new Error(body.message || body.error || "Não foi possível excluir permanentemente.");
+      onDeleted();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Falha na exclusão permanente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="rounded-lg border border-zinc-700 bg-zinc-950/40 p-4 text-sm text-zinc-200">
+      <p className="font-semibold text-white">
+        {creator.name} · {creator.cpfMasked} · {creator.couponCode}
+      </p>
+      <p>Nome público: {creator.publicName || "Não informado"}</p>
+      <p>
+        Excluído em {formatDate(creator.deletedAt)} · Categoria:{" "}
+        {creator.category || "Não informada"} · Operador: {creator.operatorId || "Não informado"}
+      </p>
+      <p>Motivo: {creator.reason || "Não informado"}</p>
+      <p>
+        Histórico comercial: {creator.hasCommercialHistory ? "Sim" : "Não"} · Histórico financeiro:{" "}
+        {creator.hasFinancialHistory ? "Sim" : "Não"}
+      </p>
+      {eligibility && !eligibility.eligible ? (
+        <p className="mt-2 text-amber-200">
+          Exclusão permanente bloqueada: {eligibility.blockers.join(", ")}.
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {eligibility?.eligible ? (
+          <label className="w-full">
+            Motivo da exclusão permanente
+            <input
+              value={permanentReason}
+              onChange={(event) => setPermanentReason(event.target.value)}
+              minLength={10}
+              className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
+            />
+          </label>
+        ) : null}
+        {eligibility?.eligible ? (
+          <label>
+            Digite <strong>{expected}</strong> para confirmar:{" "}
+            <input
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value)}
+              className="ml-2 rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
+            />
+          </label>
+        ) : null}
+        <button
+          type="button"
+          onClick={execute}
+          disabled={
+            loading ||
+            !eligibility?.eligible ||
+            confirmation !== expected ||
+            permanentReason.trim().length < 10
+          }
+          className="rounded border border-red-500/60 bg-red-500/15 px-3 py-1 text-red-200 disabled:opacity-50"
+        >
+          Excluir permanentemente
+        </button>
+      </div>
+      {feedback ? <p className="mt-2 text-red-300">{feedback}</p> : null}
+    </div>
+  );
+}
+
 function AmbassadorActionModal({
   actionModal,
   ambassador,
@@ -1063,7 +1222,11 @@ function AmbassadorActionModal({
         <div className="space-y-4 px-5 py-4">
           <div className="rounded-lg border border-zinc-700 bg-zinc-950/60 p-3 text-sm text-zinc-200">
             <p>
-              <span className="text-zinc-400">Nome:</span> {ambassador.name}
+              <span className="text-zinc-400">Nome completo:</span> {ambassador.name}
+            </p>
+            <p>
+              <span className="text-zinc-400">Nome público:</span>{" "}
+              {ambassador.publicName || "Não informado"}
             </p>
             <p>
               <span className="text-zinc-400">CPF:</span> {ambassador.cpfMasked}
