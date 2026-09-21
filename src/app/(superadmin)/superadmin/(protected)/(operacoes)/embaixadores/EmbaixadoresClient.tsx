@@ -269,12 +269,20 @@ export default function EmbaixadoresClient() {
         }
       );
 
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+        notification?: { sent: boolean };
+      };
       if (!response.ok) {
         throw new Error(body.error || "Falha ao atualizar status da solicitacao");
       }
 
-      setActionMessage(`Solicitacao atualizada para ${statusLabel(nextStatus)}.`);
+      setActionMessage(
+        `Solicitacao atualizada para ${statusLabel(nextStatus)}.` +
+          (body.notification?.sent === false
+            ? " O e-mail não foi entregue; a decisão foi salva."
+            : "")
+      );
       await mutate();
     } catch (updateError) {
       setActionError(

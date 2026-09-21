@@ -1052,6 +1052,7 @@ function ExcludedCreator({
   onDeleted: () => void;
 }) {
   const [confirmation, setConfirmation] = useState("");
+  const [permanentReason, setPermanentReason] = useState("");
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(false);
   const { data: eligibility } = useSWR<{
@@ -1064,7 +1065,8 @@ function ExcludedCreator({
   );
   const expected = `EXCLUIR ${creator.couponCode}`;
   const execute = async () => {
-    if (!eligibility?.eligible || confirmation !== expected) return;
+    if (!eligibility?.eligible || confirmation !== expected || permanentReason.trim().length < 10)
+      return;
     setLoading(true);
     try {
       const response = await fetch(
@@ -1072,7 +1074,7 @@ function ExcludedCreator({
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ confirmation }),
+          body: JSON.stringify({ confirmation, reason: permanentReason.trim() }),
         }
       );
       const body = (await response.json().catch(() => ({}))) as {
@@ -1109,6 +1111,17 @@ function ExcludedCreator({
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         {eligibility?.eligible ? (
+          <label className="w-full">
+            Motivo da exclusão permanente
+            <input
+              value={permanentReason}
+              onChange={(event) => setPermanentReason(event.target.value)}
+              minLength={10}
+              className="mt-1 w-full rounded border border-zinc-600 bg-zinc-900 px-2 py-1"
+            />
+          </label>
+        ) : null}
+        {eligibility?.eligible ? (
           <label>
             Digite <strong>{expected}</strong> para confirmar:{" "}
             <input
@@ -1121,7 +1134,12 @@ function ExcludedCreator({
         <button
           type="button"
           onClick={execute}
-          disabled={loading || !eligibility?.eligible || confirmation !== expected}
+          disabled={
+            loading ||
+            !eligibility?.eligible ||
+            confirmation !== expected ||
+            permanentReason.trim().length < 10
+          }
           className="rounded border border-red-500/60 bg-red-500/15 px-3 py-1 text-red-200 disabled:opacity-50"
         >
           Excluir permanentemente

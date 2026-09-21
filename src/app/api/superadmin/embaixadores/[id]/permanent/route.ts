@@ -10,13 +10,19 @@ import {
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
-  const payload = (await request.json().catch(() => ({}))) as { confirmation?: string };
+  const payload = (await request.json().catch(() => ({}))) as {
+    confirmation?: string;
+    reason?: string;
+  };
   const { response, body } = await proxyBackend(
     `${getApiBase()}/superadmin/influencers/${encodeURIComponent(params.id)}/permanent`,
     {
       method: "DELETE",
       headers: buildHeaders(user, undefined, { includeContentType: true }),
-      body: JSON.stringify({ confirmation: String(payload.confirmation || "") }),
+      body: JSON.stringify({
+        confirmation: String(payload.confirmation || ""),
+        reason: String(payload.reason || ""),
+      }),
       cache: "no-store",
     }
   );
