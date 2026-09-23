@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type React from "react";
 import Page from "../page";
 import type { Jogador } from "@/types/jogador";
@@ -165,7 +165,26 @@ describe("Gerenciar jogadores - lifecycle", () => {
     fireEvent.click(screen.getByRole("button", { name: "Excluir jogador" }));
 
     await waitFor(() => {
-      expect(screen.getByText(/não pode ser excluído.*Arquive-o/i)).toBeInTheDocument();
+      const modal = screen.getByRole("dialog", { name: "Excluir jogador definitivamente" });
+      expect(within(modal).getByText(/não pode ser excluído.*Arquive-o/i)).toBeInTheDocument();
+      expect(within(modal).getByRole("button", { name: "Excluir jogador" })).toBeEnabled();
+    });
+    expect(screen.getByRole("button", { name: "Excluir João" })).toBeInTheDocument();
+  });
+
+  it("mantem o erro e o retry visiveis dentro do modal de arquivamento", async () => {
+    jogadores = [atleta({ hasHistoricalUsage: true, canDelete: false })];
+    archiveJogador.mockRejectedValue(new Error("Não foi possível arquivar este jogador agora."));
+    render(<Page />);
+    fireEvent.click(screen.getByRole("button", { name: "Arquivar João" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arquivar jogador" }));
+
+    await waitFor(() => {
+      const modal = screen.getByRole("dialog", { name: "Arquivar jogador" });
+      expect(
+        within(modal).getByText("Não foi possível arquivar este jogador agora.")
+      ).toBeInTheDocument();
+      expect(within(modal).getByRole("button", { name: "Arquivar jogador" })).toBeEnabled();
     });
   });
 });

@@ -246,20 +246,12 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
   };
 
   const runLifecycleAction = async (id: string, action: "delete" | "archive" | "restore") => {
-    apiState.setLoading(true);
-    try {
-      const path = action === "delete" ? `/api/jogadores/${id}` : `/api/jogadores/${id}/${action}`;
-      const response = await requestJson(path, {
-        method: action === "delete" ? "DELETE" : "POST",
-      });
-      await mutate().catch(() => undefined);
-      apiState.setSuccess(true);
-      return response;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro ao processar jogador";
-      apiState.setError(message);
-      throw error;
-    }
+    const path = action === "delete" ? `/api/jogadores/${id}` : `/api/jogadores/${id}/${action}`;
+    const response = await requestJson(path, {
+      method: action === "delete" ? "DELETE" : "POST",
+    });
+    await mutate().catch(() => undefined);
+    return response;
   };
 
   const deleteJogador = async (id: string) => runLifecycleAction(id, "delete");
@@ -278,9 +270,12 @@ export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
 
   return {
     jogadores: jogadoresNormalizados,
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
+    isLoading,
+    isError: !!error,
+    error: error instanceof Error ? error.message : null,
+    isMutating: apiState.isLoading,
+    isMutationError: apiState.isError,
+    mutationError: apiState.error,
     isSuccess: apiState.isSuccess,
     addJogador,
     updateJogador,

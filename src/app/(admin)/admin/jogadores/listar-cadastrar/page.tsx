@@ -33,6 +33,7 @@ function ModalLifecycleJogador({
   jogador,
   action,
   loading,
+  error,
   onClose,
   onConfirm,
 }: {
@@ -40,13 +41,19 @@ function ModalLifecycleJogador({
   jogador?: Jogador;
   action: AthleteLifecycleAction;
   loading: boolean;
+  error?: string | null;
   onClose: () => void;
   onConfirm: () => Promise<void>;
 }) {
   if (!open || !jogador) return null;
   const archiving = action === "archive";
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
+    <div
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="athlete-lifecycle-title"
+    >
       <div
         className={`rounded-2xl border-2 shadow-xl p-8 max-w-sm w-full flex flex-col items-center gap-4 ${
           archiving ? "bg-[#201d14] border-yellow-700" : "bg-[#201414] border-red-700"
@@ -58,6 +65,7 @@ function ModalLifecycleJogador({
           <FaExclamationTriangle className="text-4xl text-red-600" />
         )}
         <h2
+          id="athlete-lifecycle-title"
           className={`text-lg font-bold text-center ${archiving ? "text-yellow-400" : "text-red-500"}`}
         >
           {archiving ? "Arquivar jogador" : "Excluir jogador definitivamente"}
@@ -76,6 +84,14 @@ function ModalLifecycleJogador({
             </>
           )}
         </div>
+        {error && (
+          <div
+            role="alert"
+            className="w-full rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-sm text-red-200"
+          >
+            {error}
+          </div>
+        )}
         <div className="flex gap-3 mt-2">
           <button
             onClick={onClose}
@@ -1398,7 +1414,7 @@ export default function Page() {
           ))}
         </div>
 
-        {lifecycleError && (
+        {lifecycleError && !showModalExcluir && (
           <div className="mb-5 rounded-lg border border-red-700 bg-red-950/40 px-4 py-3 text-sm text-red-200">
             {lifecycleError}
           </div>
@@ -1559,6 +1575,7 @@ export default function Page() {
         jogador={excluirJogador}
         action={lifecycleAction}
         loading={lifecycleLoading}
+        error={lifecycleError}
         onClose={() => {
           if (!lifecycleLoading) setShowModalExcluir(false);
         }}
