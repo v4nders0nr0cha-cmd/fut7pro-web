@@ -49,6 +49,22 @@ export type Jogador = {
   rachas?: unknown[];
   createdAt?: string;
   updatedAt?: string;
+  archivedAt?: string | null;
+  hasHistoricalUsage?: boolean;
+  canDelete?: boolean;
+  presenceCount?: number;
+  rankingCount?: number;
+  awardCount?: number;
+  athleteLevelCount?: number;
+  athleteLevelHistoryCount?: number;
+  championDayCount?: number;
+  tournamentChampionCount?: number;
+  mensalistaCompetenciaCount?: number;
+  mensalistaRequestCount?: number;
+  legendaryNotificationCount?: number;
+  financeiroCount?: number;
+  suggestionCount?: number;
+  publishedSorteioCount?: number;
   userId?: string | null;
   user?: {
     id: string;
