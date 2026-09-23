@@ -38,7 +38,8 @@ async function shouldReturnNotFound(slug: string): Promise<boolean> {
   }
 }
 
-export default async function SlugPage({ params }: { params: { slug: string } }) {
+export default async function SlugPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   if (await shouldReturnNotFound(params.slug)) {
     notFound();
   }

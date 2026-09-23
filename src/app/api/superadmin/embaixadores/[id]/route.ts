@@ -37,13 +37,13 @@ function resolveAuditContext(request: NextRequest) {
   };
 }
 
-export async function DELETE(request: NextRequest, context: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const influencerId = String(context?.params?.id || "").trim();
+  const influencerId = String((await context?.params)?.id || "").trim();
   if (!influencerId) {
     return jsonResponse({ error: "Creator invalido" }, { status: 400 });
   }

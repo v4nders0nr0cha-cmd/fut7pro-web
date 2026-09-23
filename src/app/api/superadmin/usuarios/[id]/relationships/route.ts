@@ -29,7 +29,8 @@ function mapRelationship(item: any) {
   };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 

@@ -11,13 +11,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type RouteContext = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export async function GET(_request: Request, context: RouteContext) {
-  const slug = isValidTenantSlug(context.params.slug);
+  const slug = isValidTenantSlug((await context.params).slug);
 
   if (!slug) {
     return new Response("Sitemap de tenant invalido.", {

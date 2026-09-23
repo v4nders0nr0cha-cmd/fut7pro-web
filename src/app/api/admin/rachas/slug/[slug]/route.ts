@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type RouteParams = { params: { slug?: string } };
+type RouteParams = { params: Promise<{ slug?: string }> };
 
 export async function PUT(req: NextRequest, context: RouteParams) {
   const user = await requireUser();
@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest, context: RouteParams) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const currentSlug = context.params.slug || resolveTenantSlug(user);
+  const currentSlug = (await context.params).slug || resolveTenantSlug(user);
   if (!currentSlug) {
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }

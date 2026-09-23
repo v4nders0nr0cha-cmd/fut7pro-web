@@ -13,7 +13,11 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function POST(_req: NextRequest, { params }: { params: { subscriptionId?: string } }) {
+export async function POST(
+  _req: NextRequest,
+  props: { params: Promise<{ subscriptionId?: string }> }
+) {
+  const params = await props.params;
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

@@ -17,8 +17,9 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { slug: string; torneioSlug: string } }
+  props: { params: Promise<{ slug: string; torneioSlug: string }> }
 ) {
+  const params = await props.params;
   if (isPublicVitrineSlug(params.slug)) {
     const body = getVitrineTorneioResponse(params.torneioSlug);
     return body ? json(body) : json({ error: "Torneio nao encontrado" }, { status: 404 });

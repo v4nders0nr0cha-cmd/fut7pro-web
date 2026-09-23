@@ -5,8 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { slug: string; athleteSlug: string } }
+  props: { params: Promise<{ slug: string; athleteSlug: string }> }
 ) {
+  const params = await props.params;
   if (isPublicVitrineSlug(params.slug)) {
     const body = getVitrineAthleteResponse(params.athleteSlug);
     return new Response(JSON.stringify(body), {

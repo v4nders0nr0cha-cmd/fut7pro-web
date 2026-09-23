@@ -9,7 +9,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ tenantId: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   if (!user) {
     return new Response(

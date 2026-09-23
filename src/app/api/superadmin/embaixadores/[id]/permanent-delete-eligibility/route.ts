@@ -7,7 +7,8 @@ import {
   requireSuperAdminUser,
 } from "../../../../_proxy/helpers";
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   const { response, body } = await proxyBackend(

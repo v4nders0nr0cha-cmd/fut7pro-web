@@ -15,7 +15,8 @@ function json(body: unknown, init?: ResponseInit) {
   return NextResponse.json(body, { ...init, headers });
 }
 
-export async function POST(_req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(_req: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   if (!backendBase) {
     return json({ error: "BACKEND_URL nao configurado" }, { status: 500 });
   }

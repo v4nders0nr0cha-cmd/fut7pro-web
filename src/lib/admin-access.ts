@@ -25,9 +25,10 @@ export async function fetchAdminMe(): Promise<MeResponse | null> {
   const headers: Record<string, string> = {
     Authorization: `Bearer ${user.accessToken}`,
   };
+  const cookieStore = await cookies();
   const cookieSlug =
-    cookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
-    cookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
+    cookieStore.get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
+    cookieStore.get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
   const resolvedSlug = cookieSlug || user.tenantSlug || null;
   if (resolvedSlug) {
     headers["x-tenant-slug"] = resolvedSlug;

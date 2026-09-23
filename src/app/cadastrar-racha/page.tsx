@@ -4,6 +4,7 @@ import type { ChangeEvent, FormEvent } from "react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import ImageCropperModal from "@/components/ImageCropperModal";
 import type { PlanCatalog } from "@/lib/api/billing";
@@ -2538,12 +2539,12 @@ function CadastroRachaPageContent() {
               {accessFlow !== "wizard" && (
                 <div className="text-center text-sm text-gray-300">
                   Já tem cadastro?{" "}
-                  <a
+                  <Link
                     href="/admin/login"
                     className="text-yellow-300 underline hover:text-yellow-200"
                   >
                     Entrar
-                  </a>
+                  </Link>
                 </div>
               )}
             </form>

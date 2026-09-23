@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -708,12 +709,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
             Para criar seu ambiente real no Fut7Pro, use o cadastro de grupo de futebol.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <a
+            <Link
               href="/cadastrar-racha"
               className="inline-flex items-center justify-center rounded-lg bg-brand py-2.5 font-bold text-black hover:bg-brand-soft"
             >
               Criar meu grupo
-            </a>
+            </Link>
             <a
               href={publicHref("/")}
               className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"

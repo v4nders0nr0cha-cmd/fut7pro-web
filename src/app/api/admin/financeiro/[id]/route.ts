@@ -26,7 +26,8 @@ function sanitizeFinanceiroPayload(payload: unknown) {
   return safePayload;
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
@@ -52,7 +53,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id?: string 
   return forwardResponse(response.status, body);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

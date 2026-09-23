@@ -9,7 +9,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: { tenantId: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ tenantId: string }> }) {
+  const params = await props.params;
   const user = await requireUser({ scope: "athlete" });
   if (!user) {
     return new Response(JSON.stringify({ message: "Unauthorized" }), { status: 401 });

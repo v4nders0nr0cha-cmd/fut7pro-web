@@ -56,7 +56,7 @@
     "html2canvas": "^1.4.1",
     "json2csv": "^6.0.0-alpha.2",
     "lucide-react": "^0.514.0",
-    "next": "14.2.35",
+    "next": "15.5.24",
     "next-auth": "^4.24.15",
     "postcss": "^8.5.4",
     "qrcode": "^1.5.4",
@@ -90,7 +90,7 @@
     "@typescript-eslint/parser": "^8.34.0",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.2.5",
+    "eslint-config-next": "15.5.24",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-prettier": "^5.4.1",
@@ -108,7 +108,7 @@
     "typescript": "^5.4.5"
   },
   "overrides": {
-    "next": "14.2.35",
+    "next": "15.5.24",
     "glob": "10.5.0",
     "react": "18.2.0",
     "react-dom": "18.2.0"

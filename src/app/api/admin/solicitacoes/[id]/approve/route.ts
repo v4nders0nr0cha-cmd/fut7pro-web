@@ -12,7 +12,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type RouteParams = { params: { id?: string } };
+type RouteParams = { params: Promise<{ id?: string }> };
 
 export async function PUT(_req: Request, context: RouteParams) {
   const user = await requireUser();
@@ -25,7 +25,7 @@ export async function PUT(_req: Request, context: RouteParams) {
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
-  const requestId = context.params.id;
+  const requestId = (await context.params).id;
   if (!requestId) {
     return jsonResponse({ error: "Solicitacao invalida" }, { status: 400 });
   }

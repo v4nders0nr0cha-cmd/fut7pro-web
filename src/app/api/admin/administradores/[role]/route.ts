@@ -42,11 +42,11 @@ async function forwardToBackend(
   return forwardResponse(response.status, body);
 }
 
-export async function PUT(req: NextRequest, context: { params: { role: string } }) {
+export async function PUT(req: NextRequest, context: { params: Promise<{ role: string }> }) {
   const rawBody = await req.text();
   return forwardToBackend(
     req,
-    context.params.role,
+    (await context.params).role,
     {
       method: "PUT",
       body: rawBody,
@@ -55,10 +55,10 @@ export async function PUT(req: NextRequest, context: { params: { role: string } 
   );
 }
 
-export async function DELETE(req: NextRequest, context: { params: { role: string } }) {
+export async function DELETE(req: NextRequest, context: { params: Promise<{ role: string }> }) {
   return forwardToBackend(
     req,
-    context.params.role,
+    (await context.params).role,
     {
       method: "DELETE",
     },

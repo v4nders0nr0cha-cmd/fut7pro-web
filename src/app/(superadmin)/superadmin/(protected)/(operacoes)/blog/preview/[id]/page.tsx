@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import MarkdownRenderer from "@/components/superadmin/blog/MarkdownRenderer";
 import { getBlogErrorMessage, getBlogPost, type BlogPostSummary } from "@/lib/superadmin-blog";
 
-export default function BlogPreviewPage({ params }: { params: { id: string } }) {
+export default function BlogPreviewPage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [post, setPost] = useState<BlogPostSummary | null>(null);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 import TurnstileWidget, {
@@ -576,20 +577,20 @@ export default function AdminLoginClient() {
             </form>
 
             <div className="mt-5 flex flex-col gap-2 text-center text-sm text-gray-300">
-              <a
+              <Link
                 href="/admin/esqueci-senha"
                 className="text-yellow-300 underline hover:text-yellow-200"
               >
                 Esqueci minha senha
-              </a>
+              </Link>
               <div>
                 Não tem conta?{" "}
-                <a
+                <Link
                   href="/cadastrar-racha"
                   className="text-yellow-300 underline hover:text-yellow-200"
                 >
                   Cadastre seu grupo de futebol
-                </a>
+                </Link>
               </div>
               <a
                 href={contactWhatsappUrl}

@@ -13,7 +13,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function PUT(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const blockedResponse = blockLegacySuperAdminApiWhenDisabled();
   if (blockedResponse) {
     return blockedResponse;
