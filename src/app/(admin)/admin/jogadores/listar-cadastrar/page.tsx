@@ -11,6 +11,8 @@ import {
   FaLink,
   FaCheck,
   FaTimes,
+  FaArchive,
+  FaUndo,
 } from "react-icons/fa";
 import { AnimatePresence, motion } from "framer-motion";
 import { useJogadores } from "@/hooks/useJogadores";
@@ -23,49 +25,89 @@ import JogadorForm from "@/components/admin/JogadorForm";
 import { Switch } from "@/components/ui/Switch";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
-// --- MODAL EXCLUSÃO ---
-function ModalExcluirJogador({
+type AthleteLifecycleAction = "delete" | "archive";
+
+// --- MODAL DE EXCLUSÃO/ARQUIVAMENTO ---
+function ModalLifecycleJogador({
   open,
   jogador,
+  action,
+  loading,
+  error,
   onClose,
   onConfirm,
 }: {
   open: boolean;
   jogador?: Jogador;
+  action: AthleteLifecycleAction;
+  loading: boolean;
+  error?: string | null;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>;
 }) {
   if (!open || !jogador) return null;
+  const archiving = action === "archive";
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-      <div className="bg-[#201414] border-2 border-red-700 rounded-2xl shadow-xl p-8 max-w-xs w-full flex flex-col items-center gap-4">
-        <FaExclamationTriangle className="text-4xl text-red-600 animate-pulse" />
-        <h2 className="text-lg text-red-500 font-bold text-center">
-          Atenção! Exclusão definitiva de jogador
+    <div
+      className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="athlete-lifecycle-title"
+    >
+      <div
+        className={`rounded-2xl border-2 shadow-xl p-8 max-w-sm w-full flex flex-col items-center gap-4 ${
+          archiving ? "bg-[#201d14] border-yellow-700" : "bg-[#201414] border-red-700"
+        }`}
+      >
+        {archiving ? (
+          <FaArchive className="text-4xl text-yellow-500" />
+        ) : (
+          <FaExclamationTriangle className="text-4xl text-red-600" />
+        )}
+        <h2
+          id="athlete-lifecycle-title"
+          className={`text-lg font-bold text-center ${archiving ? "text-yellow-400" : "text-red-500"}`}
+        >
+          {archiving ? "Arquivar jogador" : "Excluir jogador definitivamente"}
         </h2>
         <div className="text-sm text-gray-200 text-center">
-          <b>{jogador.nome}</b> será{" "}
-          <span className="text-red-400 font-bold">
-            removido de todos os rankings, históricos e estatísticas
-          </span>{" "}
-          do racha.
-          <br />
-          <span className="text-red-400 font-bold block mt-2">Essa ação é IRREVERSÍVEL!</span>
-          <br />
-          Tem certeza que deseja continuar?
+          {archiving ? (
+            <>
+              <b>{jogador.nome}</b> já possui histórico no racha. Para preservar partidas, rankings,
+              conquistas e estatísticas anteriores, ele será arquivado em vez de excluído. O jogador
+              deixará de aparecer em novas operações e poderá ser restaurado.
+            </>
+          ) : (
+            <>
+              <b>{jogador.nome}</b> nunca possuiu histórico no racha e será excluído
+              definitivamente. Essa ação é irreversível.
+            </>
+          )}
         </div>
+        {error && (
+          <div
+            role="alert"
+            className="w-full rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-sm text-red-200"
+          >
+            {error}
+          </div>
+        )}
         <div className="flex gap-3 mt-2">
           <button
             onClick={onClose}
+            disabled={loading}
             className="bg-gray-700 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded-md"
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
-            className="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-md"
+            onClick={() => void onConfirm()}
+            disabled={loading}
+            className={`text-white font-bold px-4 py-2 rounded-md disabled:opacity-60 ${
+              archiving ? "bg-yellow-700 hover:bg-yellow-800" : "bg-red-700 hover:bg-red-800"
+            }`}
           >
-            Excluir DEFINITIVAMENTE
+            {loading ? "Processando..." : archiving ? "Arquivar jogador" : "Excluir jogador"}
           </button>
         </div>
       </div>
@@ -608,10 +650,12 @@ export default function Page() {
     isError,
     error,
     deleteJogador,
+    archiveJogador,
+    restoreJogador,
     mutate: mutateJogadores,
     addJogador,
     updateJogador,
-  } = useJogadores(resolvedRachaId);
+  } = useJogadores(resolvedRachaId, { status: "all" });
   const {
     solicitacoes,
     isLoading: solicitacoesLoading,
@@ -631,6 +675,10 @@ export default function Page() {
   const [busca, setBusca] = useState("");
   const [showModalExcluir, setShowModalExcluir] = useState(false);
   const [excluirJogador, setExcluirJogador] = useState<Jogador | undefined>();
+  const [lifecycleAction, setLifecycleAction] = useState<AthleteLifecycleAction>("delete");
+  const [lifecycleLoading, setLifecycleLoading] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"active" | "archived">("active");
   const [showModalCadastro, setShowModalCadastro] = useState(false);
   const [cadastroErro, setCadastroErro] = useState<string | null>(null);
   const [cadastroLoading, setCadastroLoading] = useState(false);
@@ -661,7 +709,13 @@ export default function Page() {
   const [vincularSolicitacaoErro, setVincularSolicitacaoErro] = useState<string | null>(null);
   const [vincularSolicitacaoLoading, setVincularSolicitacaoLoading] = useState(false);
 
-  const jogadoresFiltrados = jogadores.filter((j) => {
+  const activeJogadores = useMemo(() => jogadores.filter((j) => !j.archivedAt), [jogadores]);
+  const archivedJogadores = useMemo(
+    () => jogadores.filter((j) => Boolean(j.archivedAt)),
+    [jogadores]
+  );
+  const jogadoresVisiveis = activeTab === "active" ? activeJogadores : archivedJogadores;
+  const jogadoresFiltrados = jogadoresVisiveis.filter((j) => {
     const termo = busca.toLowerCase();
     const nomeOk = j.nome.toLowerCase().includes(termo) || j.apelido.toLowerCase().includes(termo);
     if (!nomeOk) return false;
@@ -679,11 +733,11 @@ export default function Page() {
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
   const npcsDisponiveis = useMemo(
-    () => jogadores.filter((j) => !isGlobalManagedJogador(j) && !j.isBot),
-    [jogadores]
+    () => activeJogadores.filter((j) => !isGlobalManagedJogador(j) && !j.isBot),
+    [activeJogadores]
   );
 
-  const contasComLogin = useMemo(() => jogadores.filter((j) => j.userId), [jogadores]);
+  const contasComLogin = useMemo(() => activeJogadores.filter((j) => j.userId), [activeJogadores]);
   const podeVincular = contasComLogin.length > 0;
 
   const contasFiltradas = useMemo(() => {
@@ -1051,6 +1105,51 @@ export default function Page() {
     }
   };
 
+  const abrirLifecycle = (jogador: Jogador, action: AthleteLifecycleAction) => {
+    setExcluirJogador(jogador);
+    setLifecycleAction(action);
+    setLifecycleError(null);
+    setShowModalExcluir(true);
+  };
+
+  const confirmarLifecycle = async () => {
+    if (!excluirJogador || isAdminManagedJogador(excluirJogador)) return;
+    setLifecycleLoading(true);
+    setLifecycleError(null);
+    try {
+      if (lifecycleAction === "archive") await archiveJogador(excluirJogador.id);
+      else await deleteJogador(excluirJogador.id);
+      setShowModalExcluir(false);
+      setExcluirJogador(undefined);
+      if (lifecycleAction === "archive") setActiveTab("archived");
+    } catch (actionError) {
+      setLifecycleError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Não foi possível concluir a ação com o jogador."
+      );
+    } finally {
+      setLifecycleLoading(false);
+    }
+  };
+
+  const restaurarJogador = async (jogador: Jogador) => {
+    setLifecycleLoading(true);
+    setLifecycleError(null);
+    try {
+      await restoreJogador(jogador.id);
+      setActiveTab("active");
+    } catch (actionError) {
+      setLifecycleError(
+        actionError instanceof Error
+          ? actionError.message
+          : "Não foi possível restaurar o jogador. Tente novamente."
+      );
+    } finally {
+      setLifecycleLoading(false);
+    }
+  };
+
   const cardVariants = {
     hidden: { opacity: 0, y: 18 },
     visible: (i: number) => ({
@@ -1291,6 +1390,36 @@ export default function Page() {
           </button>
         </div>
 
+        <div
+          className="mb-5 grid grid-cols-2 gap-2 rounded-xl border border-gray-700 bg-[#1b1f25] p-1.5 sm:inline-grid sm:min-w-80"
+          role="tablist"
+          aria-label="Filtrar jogadores"
+        >
+          {[
+            { key: "active" as const, label: "Ativos", count: activeJogadores.length },
+            { key: "archived" as const, label: "Arquivados", count: archivedJogadores.length },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                activeTab === tab.key ? "bg-cyan-700 text-white" : "text-gray-300 hover:bg-gray-800"
+              }`}
+            >
+              {tab.label} ({tab.count})
+            </button>
+          ))}
+        </div>
+
+        {lifecycleError && !showModalExcluir && (
+          <div className="mb-5 rounded-lg border border-red-700 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+            {lifecycleError}
+          </div>
+        )}
+
         {/* LISTA DE JOGADORES */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-cyan-400 font-bold text-sm mb-2">
@@ -1310,7 +1439,10 @@ export default function Page() {
                 {jogadoresFiltrados.map((j, i) => {
                   const adminManaged = isAdminManagedJogador(j);
                   const globalManaged = isGlobalManagedJogador(j);
-                  const canEditNpc = !globalManaged;
+                  const archived = Boolean(j.archivedAt);
+                  const canEditNpc = !globalManaged && !archived;
+                  const canHardDelete =
+                    j.canDelete === true && j.hasHistoricalUsage !== true && !archived;
                   const adminRoleLabel = resolveAdminRoleLabel(j.membershipRole);
                   return (
                     <motion.div
@@ -1346,6 +1478,11 @@ export default function Page() {
                                 Mensalista
                               </span>
                             )}
+                            {archived && (
+                              <span className="bg-yellow-800 text-yellow-100 font-bold rounded px-2 py-0.5 text-xs">
+                                Arquivado
+                              </span>
+                            )}
                             {adminManaged && (
                               <span className="bg-amber-700 text-amber-100 font-bold rounded px-2 py-0.5 text-xs">
                                 {adminRoleLabel || "Administrador"}
@@ -1374,7 +1511,7 @@ export default function Page() {
                             Gerenciado pelo módulo de administração
                           </span>
                         )}
-                        {!globalManaged && (
+                        {!globalManaged && !archived && (
                           <button
                             className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
                               podeVincular
@@ -1395,15 +1532,32 @@ export default function Page() {
                             <FaEdit /> Editar
                           </button>
                         )}
-                        {!adminManaged && (
+                        {!adminManaged && canHardDelete && (
                           <button
                             className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                            onClick={() => {
-                              setExcluirJogador(j);
-                              setShowModalExcluir(true);
-                            }}
+                            onClick={() => abrirLifecycle(j, "delete")}
+                            aria-label={`Excluir ${j.nome}`}
                           >
                             <FaTrash /> Excluir
+                          </button>
+                        )}
+                        {!adminManaged && !archived && !canHardDelete && (
+                          <button
+                            className="bg-yellow-700 hover:bg-yellow-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                            onClick={() => abrirLifecycle(j, "archive")}
+                            aria-label={`Arquivar ${j.nome}`}
+                          >
+                            <FaArchive /> Arquivar
+                          </button>
+                        )}
+                        {!adminManaged && archived && (
+                          <button
+                            className="bg-cyan-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-60"
+                            onClick={() => void restaurarJogador(j)}
+                            disabled={lifecycleLoading}
+                            aria-label={`Restaurar ${j.nome}`}
+                          >
+                            <FaUndo /> Restaurar
                           </button>
                         )}
                       </div>
@@ -1416,16 +1570,16 @@ export default function Page() {
         </div>
       </div>
 
-      <ModalExcluirJogador
+      <ModalLifecycleJogador
         open={showModalExcluir}
         jogador={excluirJogador}
-        onClose={() => setShowModalExcluir(false)}
-        onConfirm={() => {
-          if (excluirJogador && !isAdminManagedJogador(excluirJogador)) {
-            deleteJogador(excluirJogador.id);
-          }
-          setShowModalExcluir(false);
+        action={lifecycleAction}
+        loading={lifecycleLoading}
+        error={lifecycleError}
+        onClose={() => {
+          if (!lifecycleLoading) setShowModalExcluir(false);
         }}
+        onConfirm={confirmarLifecycle}
       />
 
       <ModalCadastroJogador

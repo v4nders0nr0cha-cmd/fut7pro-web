@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { act, renderHook } from "@testing-library/react";
 import { useJogadores } from "@/hooks/useJogadores";
 import { usePartidas } from "@/hooks/usePartidas";
 import { useCampeoes } from "@/hooks/useCampeoes";
@@ -7,7 +7,7 @@ import { Role, Permission } from "@/common/enums";
 
 const swrMock = jest.fn((key: string) => {
   const map: Record<string, any> = {
-    "/api/jogadores": {
+    "/api/jogadores?status=active": {
       data: [{ id: "j1", nome: "Jogador 1", timeId: "t1" }],
       isLoading: false,
       error: undefined,
@@ -68,6 +68,36 @@ describe("Data hooks", () => {
     expect(result.current.jogadores).toHaveLength(1);
     expect(result.current.isLoading).toBe(false);
   });
+
+  it.each(["archive", "restore"] as const)(
+    "mantem a lista disponivel quando a acao de %s falha",
+    async (action) => {
+      const originalFetch = global.fetch;
+      const fetchMock = jest.fn().mockResolvedValue({
+        ok: false,
+        statusText: "Conflict",
+        text: async () =>
+          JSON.stringify({
+            message: "Falha de lifecycle retornada pelo backend.",
+          }),
+      } as Response);
+      global.fetch = fetchMock;
+      const { result } = renderHook(() => useJogadores("r1"));
+
+      await act(async () => {
+        await expect(
+          action === "archive"
+            ? result.current.archiveJogador("j1")
+            : result.current.restoreJogador("j1")
+        ).rejects.toThrow("Falha de lifecycle retornada pelo backend.");
+      });
+
+      expect(result.current.jogadores).toHaveLength(1);
+      expect(result.current.isError).toBe(false);
+      expect(result.current.error).toBeNull();
+      global.fetch = originalFetch;
+    }
+  );
 
   it("usePartidas retorna partidas do racha", () => {
     const { result } = renderHook(() => usePartidas());

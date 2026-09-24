@@ -13,9 +13,29 @@ const fetcher = async (url: string) => {
   return response.json();
 };
 
-export function useJogadores(rachaId: string, options?: { includeBots?: boolean }) {
+type AthleteStatusFilter = "active" | "archived" | "all";
+
+type UseJogadoresOptions = {
+  includeBots?: boolean;
+  status?: AthleteStatusFilter;
+};
+
+type ApiErrorPayload = { message?: string; error?: string; code?: string };
+
+export class JogadoresApiError extends Error {
+  code?: string;
+
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "JogadoresApiError";
+    this.code = code;
+  }
+}
+
+export function useJogadores(rachaId: string, options?: UseJogadoresOptions) {
   const apiState = useApiState();
   const includeBots = options?.includeBots ?? false;
+  const status = options?.status ?? "active";
 
   const requestJson = async (input: string, init?: RequestInit) => {
     const response = await fetch(input, {
@@ -36,12 +56,19 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
     }
 
     if (!response.ok) {
+      const payload = body as ApiErrorPayload | undefined;
+      const code = payload?.code || payload?.error;
       const message =
-        (body as { message?: string; error?: string } | undefined)?.message ||
-        (body as { error?: string } | undefined)?.error ||
+        (code === "ATHLETE_HAS_HISTORICAL_USAGE"
+          ? "Este jogador já possui histórico no racha e não pode ser excluído. Arquive-o para preservar partidas, rankings, conquistas e estatísticas anteriores."
+          : payload?.message) ||
+        payload?.error ||
         response.statusText ||
         "Erro ao processar requisicao";
-      throw new Error(typeof message === "string" ? message : "Erro ao processar requisicao");
+      throw new JogadoresApiError(
+        typeof message === "string" ? message : "Erro ao processar requisicao",
+        code
+      );
     }
 
     return body;
@@ -103,8 +130,13 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
     return payload;
   };
 
+  const params = new URLSearchParams();
+  if (includeBots) params.set("includeBots", "true");
+  params.set("status", status);
+  const query = params.toString();
+
   const { data, error, isLoading, mutate } = useSWR<Jogador[]>(
-    rachaId ? `/api/jogadores${includeBots ? "?includeBots=true" : ""}` : null,
+    rachaId ? `/api/jogadores${query ? `?${query}` : ""}` : null,
     fetcher,
     {
       onError: (err) => {
@@ -117,7 +149,7 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
 
   const jogadoresNormalizados = useMemo(() => {
     if (!Array.isArray(data)) return [];
-    return data.map((jogador: any) => {
+    return data.map((jogador) => {
       const nomeRaw = jogador?.nome ?? jogador?.name ?? jogador?.user?.name ?? "";
       const nome = typeof nomeRaw === "string" ? nomeRaw.trim() : "";
       const apelidoRaw = jogador?.apelido ?? jogador?.nickname ?? "";
@@ -147,6 +179,9 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
       const isAdministrativeMember = Boolean(
         jogador?.isAdministrativeMember ?? jogador?.managedByAdmin
       );
+      const archivedAt = jogador?.archivedAt ?? null;
+      const hasHistoricalUsage = Boolean(jogador?.hasHistoricalUsage);
+      const canDelete = jogador?.canDelete === true;
 
       return {
         ...jogador,
@@ -167,6 +202,9 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
         managedByGlobalProfile,
         isAdministrativeMember,
         managedByAdmin: isAdministrativeMember,
+        archivedAt,
+        hasHistoricalUsage,
+        canDelete,
         user: user
           ? {
               id: user.id,
@@ -207,15 +245,23 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
     });
   };
 
-  const deleteJogador = async (id: string) => {
-    return apiState.handleAsync(async () => {
-      const response = await requestJson(`/api/jogadores/${id}`, {
-        method: "DELETE",
-      });
-
-      await mutate().catch(() => undefined);
-      return response;
+  const runLifecycleAction = async (id: string, action: "delete" | "archive" | "restore") => {
+    const path = action === "delete" ? `/api/jogadores/${id}` : `/api/jogadores/${id}/${action}`;
+    const response = await requestJson(path, {
+      method: action === "delete" ? "DELETE" : "POST",
     });
+    await mutate().catch(() => undefined);
+    return response;
+  };
+
+  const deleteJogador = async (id: string) => runLifecycleAction(id, "delete");
+
+  const archiveJogador = async (id: string) => {
+    return runLifecycleAction(id, "archive");
+  };
+
+  const restoreJogador = async (id: string) => {
+    return runLifecycleAction(id, "restore");
   };
 
   const getJogadoresPorTime = (timeId: string) => {
@@ -224,13 +270,18 @@ export function useJogadores(rachaId: string, options?: { includeBots?: boolean 
 
   return {
     jogadores: jogadoresNormalizados,
-    isLoading: isLoading || apiState.isLoading,
-    isError: !!error || apiState.isError,
-    error: apiState.error,
+    isLoading,
+    isError: !!error,
+    error: error instanceof Error ? error.message : null,
+    isMutating: apiState.isLoading,
+    isMutationError: apiState.isError,
+    mutationError: apiState.error,
     isSuccess: apiState.isSuccess,
     addJogador,
     updateJogador,
     deleteJogador,
+    archiveJogador,
+    restoreJogador,
     getJogadoresPorTime,
     mutate,
     reset: apiState.reset,
