@@ -12,13 +12,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function PATCH(request: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const applicationId = String(context?.params?.id || "").trim();
+  const applicationId = String((await context?.params)?.id || "").trim();
   if (!applicationId) {
     return jsonResponse({ error: "Solicitacao invalida" }, { status: 400 });
   }

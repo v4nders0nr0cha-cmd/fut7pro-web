@@ -43,7 +43,7 @@ describe("public notifications unread-count proxy", () => {
 
   it("autentica a Conta Fut7Pro sem exigir realm global athlete", async () => {
     await GET({ url: "https://app.fut7pro.test/api" } as any, {
-      params: { slug: "seu-racha" },
+      params: Promise.resolve({ slug: "seu-racha" }),
     });
 
     expect(mockedRequirePublicAthleteUser).toHaveBeenCalledWith();
@@ -70,7 +70,7 @@ describe("public notifications unread-count proxy", () => {
     });
 
     await GET({ url: "https://app.fut7pro.test/api" } as any, {
-      params: { slug: "seu-racha" },
+      params: Promise.resolve({ slug: "seu-racha" }),
     });
 
     expect(mockedForwardResponse).toHaveBeenCalledWith(403, JSON.stringify({ error: "Forbidden" }));
@@ -80,7 +80,7 @@ describe("public notifications unread-count proxy", () => {
     mockedRequirePublicAthleteUser.mockResolvedValue(null);
 
     const response = await GET({ url: "https://app.fut7pro.test/api" } as any, {
-      params: { slug: "seu-racha" },
+      params: Promise.resolve({ slug: "seu-racha" }),
     });
 
     expect(response).toMatchObject({

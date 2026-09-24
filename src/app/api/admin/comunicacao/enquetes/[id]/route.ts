@@ -13,13 +13,13 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest, context: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "ID inválido" }, { status: 400 });
   }
@@ -39,13 +39,13 @@ export async function GET(req: NextRequest, context: { params: { id: string } })
   return forwardResponse(response.status, body);
 }
 
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "ID inválido" }, { status: 400 });
   }

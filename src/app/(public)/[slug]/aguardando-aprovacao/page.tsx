@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import AguardandoAprovacaoClient from "@/app/(public)/aguardando-aprovacao/AguardandoAprovacaoClient";
 
 type AguardandoPageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
@@ -11,7 +11,8 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 
-export function generateMetadata({ params }: AguardandoPageProps): Metadata {
+export async function generateMetadata(props: AguardandoPageProps): Promise<Metadata> {
+  const params = await props.params;
   const slug = params.slug;
   return {
     title: `Aguardando aprovação | ${slug} | Fut7Pro`,

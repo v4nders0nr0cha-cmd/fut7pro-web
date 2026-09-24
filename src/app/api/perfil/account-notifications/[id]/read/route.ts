@@ -5,13 +5,13 @@ import { getApiBase } from "@/lib/get-api-base";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autorizado" }, { status: 401 });
   }
 
-  const id = context.params.id?.trim();
+  const id = (await context.params).id?.trim();
   if (!id) {
     return jsonResponse({ error: "Notificacao invalida" }, { status: 400 });
   }

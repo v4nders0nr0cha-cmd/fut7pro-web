@@ -29,9 +29,10 @@ async function resolveAdminThemeKey() {
   try {
     const session = (await getServerSession(authOptions as any)) as AdminSession;
     const user = session?.user;
+    const cookieStore = await cookies();
     const cookieSlug =
-      cookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
-      cookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
+      cookieStore.get(ADMIN_ACTIVE_TENANT_COOKIE)?.value ||
+      cookieStore.get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value;
     const tenantSlug = cookieSlug || user?.tenantSlug || null;
     const tenantId = user?.tenantId;
 

@@ -12,13 +12,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(_req: NextRequest, context: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const slug = context.params.slug?.trim().toLowerCase();
+  const slug = (await context.params).slug?.trim().toLowerCase();
   if (!slug) {
     return jsonResponse({ error: "Slug invalido" }, { status: 400 });
   }
@@ -34,13 +34,13 @@ export async function GET(_req: NextRequest, context: { params: { slug: string }
   return forwardResponse(response.status, body);
 }
 
-export async function POST(req: NextRequest, context: { params: { slug: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const slug = context.params.slug?.trim().toLowerCase();
+  const slug = (await context.params).slug?.trim().toLowerCase();
   if (!slug) {
     return jsonResponse({ error: "Slug invalido" }, { status: 400 });
   }

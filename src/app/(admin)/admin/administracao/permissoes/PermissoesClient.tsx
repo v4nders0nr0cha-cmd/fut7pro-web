@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { BadgeCargo } from "@/components/admin/BadgeCargo";
 import { useAdminRoles } from "@/hooks/useAdminRoles";
 import { ADMIN_ROLE_PERMISSION_ROWS } from "@/lib/admin-role-permissions";
@@ -116,18 +117,18 @@ export default function PermissoesClient() {
           administradores e permissões.
         </div>
         <div className="flex flex-wrap gap-2">
-          <a
+          <Link
             href="/admin/administracao/administradores"
             className="px-3 py-2 rounded-lg border border-yellow-500/40 text-yellow-200 text-xs font-semibold hover:bg-yellow-500/10"
           >
             Ir para Administradores
-          </a>
-          <a
+          </Link>
+          <Link
             href="/admin/administracao/logs"
             className="px-3 py-2 rounded-lg border border-zinc-600 text-zinc-300 text-xs font-semibold hover:bg-zinc-700/40"
           >
             Ver Logs/Admin
-          </a>
+          </Link>
         </div>
       </div>
 

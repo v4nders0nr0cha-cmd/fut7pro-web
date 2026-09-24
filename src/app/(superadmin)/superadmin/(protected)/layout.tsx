@@ -1,14 +1,10 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth/next";
-import dynamic from "next/dynamic";
 import AdminLayoutContent from "../SuperAdminLayoutContent";
 import { SuperAdminGuard } from "@/components/superadmin/SuperAdminGuard";
+import SuperAdminProviders from "@/components/superadmin/SuperAdminProviders";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
-
-const SuperAdminProviders = dynamic(() => import("@/components/superadmin/SuperAdminProviders"), {
-  ssr: false,
-});
 
 type SuperAdminSession = {
   user?: {

@@ -3,7 +3,7 @@ import { FaWhatsapp } from "react-icons/fa";
 import TimesDoDiaClient from "@/components/TimesDoDiaClient";
 
 type TimesDoDiaPageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
@@ -11,7 +11,8 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 
-export function generateMetadata({ params }: TimesDoDiaPageProps): Metadata {
+export async function generateMetadata(props: TimesDoDiaPageProps): Promise<Metadata> {
+  const params = await props.params;
   const slug = params.slug;
   const title = `Times do Dia | ${slug} | Fut7Pro`;
   const description =
@@ -48,7 +49,8 @@ export function generateMetadata({ params }: TimesDoDiaPageProps): Metadata {
   };
 }
 
-export default function TimesDoDiaPage({ params }: TimesDoDiaPageProps) {
+export default async function TimesDoDiaPage(props: TimesDoDiaPageProps) {
+  const params = await props.params;
   const slug = params.slug;
   const texto = encodeURIComponent(
     `Confira os Times do Dia do racha ${slug}! Veja a escalação completa no Fut7Pro: `

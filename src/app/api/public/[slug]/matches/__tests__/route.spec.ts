@@ -73,7 +73,7 @@ describe("GET /api/public/[slug]/matches", () => {
     const response = await GET(
       makeRequest("http://localhost/api/public/vitrine/matches?scope=recent&limit=20"),
       {
-        params: { slug: "vitrine" },
+        params: Promise.resolve({ slug: "vitrine" }),
       }
     );
     const body = await response.json();
@@ -93,7 +93,7 @@ describe("GET /api/public/[slug]/matches", () => {
     const { GET } = await loadRouteModule();
     const response = await GET(
       makeRequest("http://localhost/api/public/racha-real/matches?scope=recent&limit=20"),
-      { params: { slug: "racha-real" } }
+      { params: Promise.resolve({ slug: "racha-real" }) }
     );
     const body = await response.json();
 

@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, context: { params: { id: string } 
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "ID invalido" }, { status: 400 });
   }

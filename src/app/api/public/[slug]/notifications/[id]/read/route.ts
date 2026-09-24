@@ -12,14 +12,17 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, context: { params: { slug: string; id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string; id: string }> }
+) {
   const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const slug = context.params.slug;
-  const id = context.params.id;
+  const slug = (await context.params).slug;
+  const id = (await context.params).id;
   if (!slug || !id) {
     return jsonResponse({ error: "Parametros invalidos" }, { status: 400 });
   }

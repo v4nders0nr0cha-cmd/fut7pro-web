@@ -24,7 +24,8 @@ function normalizeJoinMessage(value: unknown) {
   return normalized ? normalized.slice(0, 500) : null;
 }
 
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   if (!backendBase) {
     return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }
