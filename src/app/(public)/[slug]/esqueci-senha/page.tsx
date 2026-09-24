@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import EsqueciSenhaAtletaClient from "@/app/(public)/esqueci-senha/EsqueciSenhaAtletaClient";
 
 type EsqueciSenhaPageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
@@ -10,7 +10,8 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
   ""
 );
 
-export function generateMetadata({ params }: EsqueciSenhaPageProps): Metadata {
+export async function generateMetadata(props: EsqueciSenhaPageProps): Promise<Metadata> {
+  const params = await props.params;
   const slug = params.slug;
   return {
     title: `Esqueci minha senha | ${slug} | Fut7Pro`,

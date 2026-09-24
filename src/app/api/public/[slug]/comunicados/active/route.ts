@@ -12,13 +12,13 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, context: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, context: { params: Promise<{ slug: string }> }) {
   const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const slug = context.params.slug;
+  const slug = (await context.params).slug;
   if (!slug) {
     return jsonResponse({ error: "Slug invalido" }, { status: 400 });
   }

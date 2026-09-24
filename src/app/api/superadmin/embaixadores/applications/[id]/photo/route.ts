@@ -5,7 +5,8 @@ import { buildHeaders, requireSuperAdminUser } from "../../../../../_proxy/helpe
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return new NextResponse(null, { status: 401 });
   const id = String(params.id || "").trim();

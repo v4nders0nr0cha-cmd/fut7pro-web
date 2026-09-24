@@ -129,7 +129,8 @@ function mapUser(user: BackendUser) {
   };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
@@ -149,7 +150,8 @@ export async function GET(_req: NextRequest, { params }: { params: { id?: string
   return jsonResponse(mapUser((body as BackendUser) ?? {}));
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 
@@ -166,7 +168,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id?: string 
   return forwardResponse(response.status, body);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id?: string } }) {
+export async function DELETE(_req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
 

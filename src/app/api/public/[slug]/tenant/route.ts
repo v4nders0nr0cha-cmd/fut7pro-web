@@ -57,7 +57,8 @@ function tenantResponse(entry: TenantCacheEntry, cacheState: "hit" | "miss" | "s
   });
 }
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   if (isPublicVitrineSlug(params.slug)) {
     return json(getVitrineTenantResponse(), {
       headers: {

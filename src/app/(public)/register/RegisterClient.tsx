@@ -628,12 +628,12 @@ export default function RegisterClient() {
             grupo de futebol.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <a
+            <Link
               href="/cadastrar-racha"
               className="inline-flex items-center justify-center rounded-lg bg-yellow-400 py-2.5 font-bold text-black hover:bg-yellow-300"
             >
               Criar meu grupo
-            </a>
+            </Link>
             <a
               href={publicHref("/")}
               className="inline-flex items-center justify-center rounded-lg border border-white/10 py-2.5 font-semibold text-white hover:border-white/30"

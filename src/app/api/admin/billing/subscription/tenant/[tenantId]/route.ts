@@ -13,7 +13,8 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: NextRequest, { params }: { params: { tenantId?: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ tenantId?: string }> }) {
+  const params = await props.params;
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

@@ -15,7 +15,11 @@ function json(body: unknown, init?: ResponseInit) {
   return NextResponse.json(body, { ...init, headers });
 }
 
-export async function GET(_req: NextRequest, { params }: { params: { slug: string; id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  props: { params: Promise<{ slug: string; id: string }> }
+) {
+  const params = await props.params;
   if (isPublicVitrineSlug(params.slug)) {
     const body = getVitrineMatchResponse(params.id);
     return body.result ? json(body) : json(body, { status: 404 });

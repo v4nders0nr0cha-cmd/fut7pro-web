@@ -15,7 +15,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type RouteParams = { params: { id?: string } };
+type RouteParams = { params: Promise<{ id?: string }> };
 
 export async function DELETE(req: NextRequest, context: RouteParams) {
   const user = await requireUser();
@@ -28,7 +28,7 @@ export async function DELETE(req: NextRequest, context: RouteParams) {
     return jsonResponse({ error: "Slug do racha obrigatorio" }, { status: 400 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "Id invalido" }, { status: 400 });
   }

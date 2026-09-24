@@ -13,13 +13,13 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function POST(req: NextRequest, context: { params: { id: string } }) {
+export async function POST(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "Id invalido" }, { status: 400 });
   }

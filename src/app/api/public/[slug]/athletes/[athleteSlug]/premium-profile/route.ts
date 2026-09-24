@@ -16,8 +16,9 @@ function json(body: unknown, init?: ResponseInit) {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { slug: string; athleteSlug: string } }
+  props: { params: Promise<{ slug: string; athleteSlug: string }> }
 ) {
+  const params = await props.params;
   if (!backendBase) {
     return json({ error: "Não foi possível conectar ao Fut7Pro agora." }, { status: 500 });
   }

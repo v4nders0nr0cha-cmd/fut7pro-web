@@ -21,7 +21,8 @@ function resolveAdminRole(body: unknown, fallback?: string) {
   return String(data?.membership?.role || data?.role || fallback || "").toUpperCase();
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { date: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ date: string }> }) {
+  const params = await props.params;
   const user = await requireUser({ scope: "admin" });
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

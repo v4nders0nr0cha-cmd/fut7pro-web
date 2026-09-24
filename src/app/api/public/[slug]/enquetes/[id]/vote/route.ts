@@ -12,14 +12,16 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-async function handleVote(req: NextRequest, context: { params: { slug: string; id: string } }) {
+async function handleVote(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string; id: string }> }
+) {
   const user = await requirePublicAthleteUser();
   if (!user) {
     return jsonResponse({ error: "Não autenticado" }, { status: 401 });
   }
 
-  const slug = context.params.slug;
-  const id = context.params.id;
+  const { slug, id } = await context.params;
   if (!slug) {
     return jsonResponse({ error: "Slug inválido" }, { status: 400 });
   }
@@ -47,10 +49,16 @@ async function handleVote(req: NextRequest, context: { params: { slug: string; i
   return forwardResponse(response.status, body);
 }
 
-export async function POST(req: NextRequest, context: { params: { slug: string; id: string } }) {
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string; id: string }> }
+) {
   return handleVote(req, context);
 }
 
-export async function PATCH(req: NextRequest, context: { params: { slug: string; id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ slug: string; id: string }> }
+) {
   return handleVote(req, context);
 }

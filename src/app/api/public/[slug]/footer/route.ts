@@ -7,7 +7,8 @@ function normalize(body: any) {
   return { data: body ?? null };
 }
 
-export async function GET(_req: Request, { params }: { params: { slug: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const base = getApiBase();
   const slug = params.slug;
 

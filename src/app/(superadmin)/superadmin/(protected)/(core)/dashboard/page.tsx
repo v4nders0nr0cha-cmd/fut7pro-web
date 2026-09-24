@@ -3,6 +3,7 @@
 "use client";
 
 import Head from "next/head";
+import Link from "next/link";
 import useSWR from "swr";
 import {
   FaUserShield,
@@ -231,12 +232,12 @@ export default function DashboardSuperAdminPage() {
             </p>
           </div>
           <div className="w-full md:w-auto flex justify-center md:justify-end">
-            <a
+            <Link
               href="/superadmin/financeiro"
               className="flex items-center gap-2 bg-zinc-900 text-white font-semibold rounded-xl px-4 py-2 shadow hover:scale-105 transition"
             >
               <FaChartBar /> {brandText("Ir para Financeiro")}
-            </a>
+            </Link>
           </div>
         </div>
 
@@ -285,9 +286,9 @@ export default function DashboardSuperAdminPage() {
                 >
                   {alerta.icon} {alerta.text}
                   <span className="ml-auto">
-                    <a href="/superadmin/financeiro" className="underline text-zinc-100">
+                    <Link href="/superadmin/financeiro" className="underline text-zinc-100">
                       Ver
-                    </a>
+                    </Link>
                   </span>
                 </li>
               ))}

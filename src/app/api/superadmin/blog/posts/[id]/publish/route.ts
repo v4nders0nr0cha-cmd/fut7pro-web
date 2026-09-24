@@ -12,9 +12,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type Params = { params: { id?: string } };
+type Params = { params: Promise<{ id?: string }> };
 
-export async function POST(_req: NextRequest, { params }: Params) {
+export async function POST(_req: NextRequest, props: Params) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

@@ -43,7 +43,8 @@ async function forwardWithTenant(
   return forwardResponse(response.status, body);
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   return forwardWithTenant(
     req,
     params,
@@ -55,7 +56,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   );
 }
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const rawBody = await req.text();
   return forwardWithTenant(
     req,
@@ -68,7 +70,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   );
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   return forwardWithTenant(
     req,
     params,

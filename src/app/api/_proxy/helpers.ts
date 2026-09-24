@@ -1,6 +1,10 @@
 import { getServerSession } from "next-auth/next";
 import { getToken } from "next-auth/jwt";
-import { cookies as nextCookies, headers as nextHeaders } from "next/headers";
+import {
+  cookies as nextCookies,
+  headers as nextHeaders,
+  type UnsafeUnwrappedCookies,
+} from "next/headers";
 import { authOptions } from "@/server/auth/admin-options";
 import { superAdminAuthOptions } from "@/server/auth/superadmin-options";
 import { resolveAuthRealm, type AuthRealm } from "@/lib/auth/realm";
@@ -107,8 +111,8 @@ function decodeExp(token?: string | null): number | null {
   }
 }
 
-function resolveRequestMeta() {
-  const headers = nextHeaders();
+async function resolveRequestMeta() {
+  const headers = await nextHeaders();
   const forwardedFor = headers.get("x-forwarded-for") || "";
   const ip = (forwardedFor.split(",")[0] || headers.get("x-real-ip") || "unknown").trim();
   const userAgent = (headers.get("user-agent") || "unknown").slice(0, 160);
@@ -116,8 +120,8 @@ function resolveRequestMeta() {
   return { ip, userAgent, path };
 }
 
-function logSuperAdminUnauthorized(reason: string) {
-  const meta = resolveRequestMeta();
+async function logSuperAdminUnauthorized(reason: string) {
+  const meta = await resolveRequestMeta();
   console.warn(
     `[security][superadmin][unauthorized] reason=${reason} ip=${meta.ip} path=${meta.path} ua="${meta.userAgent}"`
   );
@@ -132,12 +136,13 @@ function resolveCookieCandidates(scope: AuthScope) {
 }
 
 async function resolveTokenFromCookies(scope: AuthScope) {
+  const [cookies, headers] = await Promise.all([await nextCookies(), await nextHeaders()]);
   for (const cookieName of resolveCookieCandidates(scope)) {
     try {
       const token = await getToken({
         req: {
-          cookies: nextCookies(),
-          headers: nextHeaders(),
+          cookies,
+          headers,
         } as any,
         cookieName,
       });
@@ -279,13 +284,13 @@ export async function requireSuperAdminUser(): Promise<UserLike | null> {
   const user =
     (await resolveSessionUser(session, "superadmin")) ?? (await resolveTokenOnlyUser("superadmin"));
   if (!user) {
-    logSuperAdminUnauthorized("missing_session");
+    await logSuperAdminUnauthorized("missing_session");
     return null;
   }
 
   const role = String(user.role || "").toUpperCase();
   if (role !== "SUPERADMIN") {
-    logSuperAdminUnauthorized("invalid_role");
+    await logSuperAdminUnauthorized("invalid_role");
     return null;
   }
 
@@ -293,9 +298,13 @@ export async function requireSuperAdminUser(): Promise<UserLike | null> {
 }
 
 export function resolveTenantSlug(user: UserLike, slug?: string) {
+  // Este helper possui muitos chamadores síncronos dentro de handlers assíncronos.
+  // Next 15 mantém o acesso síncrono como ponte de compatibilidade; a migração
+  // completa para async deve ocorrer antes de um futuro upgrade para Next 16.
+  const cookieStore = nextCookies() as unknown as UnsafeUnwrappedCookies;
   const cookieSlug =
-    nextCookies().get(ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
-    nextCookies().get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim();
+    cookieStore.get(ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim() ||
+    cookieStore.get(LEGACY_ADMIN_ACTIVE_TENANT_COOKIE)?.value?.trim();
   const sessionSlug = String(user.tenantSlug || (user as any).slug || "").trim();
   const tenantId = String(user.tenantId || "").trim();
   const requestedSlug = String(slug || "").trim();

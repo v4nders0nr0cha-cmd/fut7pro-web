@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type RouteParams = { params: { id?: string } };
+type RouteParams = { params: Promise<{ id?: string }> };
 
 async function resolveScopedTenant(
   user: NonNullable<Awaited<ReturnType<typeof requireUser>>>
@@ -58,7 +58,7 @@ export async function GET(_req: NextRequest, context: RouteParams) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
   }
@@ -86,7 +86,7 @@ export async function PUT(req: NextRequest, context: RouteParams) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });
   }
 
-  const id = context.params.id;
+  const id = (await context.params).id;
   if (!id) {
     return jsonResponse({ error: "ID obrigatorio" }, { status: 400 });
   }

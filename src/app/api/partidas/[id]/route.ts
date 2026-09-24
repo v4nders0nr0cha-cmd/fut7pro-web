@@ -45,7 +45,8 @@ async function forwardToBackend(req: NextRequest, init: RequestInit, matchId: st
   return forwardResponse(response.status, body);
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const payload = await req.json().catch(() => null);
   return forwardToBackend(
     req,

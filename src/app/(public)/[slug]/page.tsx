@@ -32,7 +32,8 @@ function toDateParam(value?: string | null) {
   ).padStart(2, "0")}`;
 }
 
-export default async function RachaPublicPage({ params }: { params: { slug: string } }) {
+export default async function RachaPublicPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const slug = params?.slug?.trim().toLowerCase() || "";
 
   if (isPublicVitrineSlug(slug)) {

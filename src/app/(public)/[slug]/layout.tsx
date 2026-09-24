@@ -213,13 +213,14 @@ function resolvePublicPageSeo(canonicalPath: string, tenantName: string) {
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const slug = params?.slug?.trim().toLowerCase() || "";
+  const { slug: rawSlug } = await params;
+  const slug = rawSlug?.trim().toLowerCase() || "";
   const tenant = await fetchPublicTenantLayoutData(slug);
   const tenantName = tenant?.name || slug || "Fut7Pro";
 
-  const hdrs = headers();
+  const hdrs = await headers();
   const canonicalPath = resolveCanonicalPathForPublicSlug(slug, [
     ...PUBLIC_PATH_HEADER_CANDIDATES.map((headerName) => hdrs.get(headerName)),
   ]);
@@ -269,13 +270,14 @@ export default async function PublicSlugLayout({
   params,
 }: {
   children: ReactNode;
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }) {
-  const tenant = await fetchPublicTenantLayoutData(params?.slug ?? null);
+  const { slug } = await params;
+  const tenant = await fetchPublicTenantLayoutData(slug ?? null);
   if (!tenant) {
-    const hdrs = headers();
+    const hdrs = await headers();
     const requestPathname = resolvePathnameFromHeaders(hdrs);
-    const requestedSlug = params?.slug ?? "";
+    const requestedSlug = slug ?? "";
 
     // Permite que a rota de prestação pública trate slug inválido com UX dedicada,
     // em vez de cair no 404 genérico do framework.

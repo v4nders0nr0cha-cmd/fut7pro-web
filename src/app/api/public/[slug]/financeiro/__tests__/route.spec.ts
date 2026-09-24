@@ -56,7 +56,7 @@ describe("GET /api/public/[slug]/financeiro", () => {
       ) as any;
 
     const req = makeRequest("http://localhost/api/public/slug/financeiro");
-    const response = await GET(req, { params: { slug: "slug-inexistente" } });
+    const response = await GET(req, { params: Promise.resolve({ slug: "slug-inexistente" }) });
     const body = await response.json();
 
     expect(response.status).toBe(404);
@@ -79,7 +79,7 @@ describe("GET /api/public/[slug]/financeiro", () => {
     ) as any;
 
     const req = makeRequest("http://localhost/api/public/slug/financeiro");
-    const response = await GET(req, { params: { slug: "nome-do-racha" } });
+    const response = await GET(req, { params: Promise.resolve({ slug: "nome-do-racha" }) });
     const body = await response.json();
 
     expect(response.status).toBe(403);
@@ -101,7 +101,7 @@ describe("GET /api/public/[slug]/financeiro", () => {
       ) as any;
 
     const req = makeRequest("http://localhost/api/public/slug/financeiro");
-    const response = await GET(req, { params: { slug: "nome-do-racha" } });
+    const response = await GET(req, { params: Promise.resolve({ slug: "nome-do-racha" }) });
     const body = await response.json();
 
     expect(response.status).toBe(503);
@@ -124,7 +124,7 @@ describe("GET /api/public/[slug]/financeiro", () => {
       ) as any;
 
     const req = makeRequest("http://localhost/api/public/slug/financeiro");
-    const response = await GET(req, { params: { slug: "nome-do-racha" } });
+    const response = await GET(req, { params: Promise.resolve({ slug: "nome-do-racha" }) });
     const body = await response.json();
 
     expect(response.status).toBe(200);

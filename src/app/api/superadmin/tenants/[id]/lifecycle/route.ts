@@ -12,7 +12,8 @@ export const runtime = "nodejs";
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id?: string } }) {
+export async function PATCH(req: NextRequest, props: { params: Promise<{ id?: string }> }) {
+  const params = await props.params;
   const user = await requireSuperAdminUser();
   if (!user) {
     return jsonResponse({ error: "Nao autenticado" }, { status: 401 });

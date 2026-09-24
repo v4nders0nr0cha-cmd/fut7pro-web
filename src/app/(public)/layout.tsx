@@ -80,8 +80,8 @@ async function resolvePublicThemeKey(slug?: string | null) {
   }
 }
 
-function resolveSlugFromHeaders() {
-  const hdrs = headers();
+async function resolveSlugFromHeaders() {
+  const hdrs = await headers();
   const candidates = [
     hdrs.get("x-public-tenant-slug"),
     hdrs.get("x-fut7pro-pathname"),
@@ -119,23 +119,27 @@ function resolveSlugFromHeaders() {
   return null;
 }
 
-function resolveSlugFromCookie() {
-  const cookieStore = cookies();
+async function resolveSlugFromCookie() {
+  const cookieStore = await cookies();
   const raw = cookieStore.get("f7_active_slug")?.value || null;
   const value = raw?.trim().toLowerCase() || null;
   return value || null;
 }
 
-export default async function PublicLayout({
-  children,
-  params,
-}: {
+export default async function PublicLayout(props: {
   children: ReactNode;
-  params?: { slug?: string };
+  params?: Promise<{ slug?: string }>;
 }) {
-  const slugFromHeaders = resolveSlugFromHeaders();
-  const slugFromCookie = resolveSlugFromCookie();
-  const resolvedSlug = params?.slug ?? slugFromHeaders ?? slugFromCookie ?? null;
+  const params = await props.params;
+
+  const { children } = props;
+
+  const [resolvedParams, slugFromHeaders, slugFromCookie] = await Promise.all([
+    params,
+    resolveSlugFromHeaders(),
+    resolveSlugFromCookie(),
+  ]);
+  const resolvedSlug = resolvedParams?.slug ?? slugFromHeaders ?? slugFromCookie ?? null;
   const themeKey = await resolvePublicThemeKey(resolvedSlug);
   const session = (await getServerSession(authOptions as any)) as AppSession;
 
