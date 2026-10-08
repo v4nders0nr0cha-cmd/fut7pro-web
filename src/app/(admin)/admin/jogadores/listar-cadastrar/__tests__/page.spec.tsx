@@ -198,6 +198,12 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
     jogadores = [
       atleta({ id: "player", nome: "Jogador comum", apelido: "" }),
       atleta({
+        id: "legacy-admin",
+        nome: "Role técnica ADMIN",
+        apelido: "",
+        membershipRole: "ADMIN",
+      }),
+      atleta({
         id: "finance",
         nome: "Diretor financeiro",
         apelido: "",
@@ -225,6 +231,12 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
         membershipRole: "PRESIDENTE",
         isAdministrativeMember: true,
       }),
+      atleta({
+        id: "platform-admin",
+        nome: "Role técnica SUPERADMIN",
+        apelido: "",
+        membershipRole: "SUPERADMIN",
+      }),
     ];
 
     render(<Page />);
@@ -237,6 +249,8 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
       "jogador-card-football",
       "jogador-card-finance",
       "jogador-card-player",
+      "jogador-card-legacy-admin",
+      "jogador-card-platform-admin",
     ]);
   });
 
@@ -287,6 +301,64 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
     expect(within(card).getByText("Mensalista")).toBeInTheDocument();
     expect(within(card).getByText("Com login")).toBeInTheDocument();
   });
+
+  it.each([
+    ["ADMIN", "Administrador"],
+    ["SUPERADMIN", "Superadmin"],
+  ])(
+    "%s não vira cargo visível e continua protegido de ações de gestão do atleta",
+    (membershipRole, cargoInexistente) => {
+      jogadores = [
+        atleta({
+          id: "technical-role",
+          nome: "Pessoa protegida",
+          apelido: "",
+          membershipRole,
+          mensalista: true,
+          canDelete: true,
+          hasHistoricalUsage: false,
+        }),
+      ];
+
+      render(<Page />);
+
+      const card = screen.getByTestId("jogador-card-technical-role");
+      expect(within(card).queryByText(cargoInexistente)).not.toBeInTheDocument();
+      expect(within(card).getByText("Ativo")).toBeInTheDocument();
+      expect(within(card).getByText("Mensalista")).toBeInTheDocument();
+      expect(within(card).getByText("Sem login")).toBeInTheDocument();
+      expect(
+        within(card).queryByRole("button", { name: /Vincular|Editar/ })
+      ).not.toBeInTheDocument();
+      expect(
+        within(card).queryByRole("button", { name: /Excluir|Arquivar|Restaurar/ })
+      ).not.toBeInTheDocument();
+    }
+  );
+
+  it.each(["ADMIN", "SUPERADMIN"])(
+    "%s técnico não recebe ação de restauração quando está arquivado",
+    (membershipRole) => {
+      jogadores = [
+        atleta({
+          id: "technical-role",
+          nome: "Pessoa protegida",
+          membershipRole,
+          archivedAt: "2026-10-08T10:00:00.000Z",
+          canDelete: false,
+          hasHistoricalUsage: true,
+        }),
+      ];
+
+      render(<Page />);
+      fireEvent.click(screen.getByRole("tab", { name: /Arquivados/ }));
+
+      const card = screen.getByTestId("jogador-card-technical-role");
+      expect(
+        within(card).queryByRole("button", { name: /Editar|Restaurar/ })
+      ).not.toBeInTheDocument();
+    }
+  );
 
   it("remove os textos técnicos de gerenciamento da interface", () => {
     jogadores = [

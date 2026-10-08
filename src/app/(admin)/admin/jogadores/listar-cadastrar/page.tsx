@@ -1467,7 +1467,8 @@ export default function Page() {
                   const adminManaged = isAdminManagedJogador(j);
                   const globalManaged = isGlobalManagedJogador(j);
                   const archived = Boolean(j.archivedAt);
-                  const canEditNpc = !globalManaged && !archived;
+                  const canLinkNpc = !adminManaged && !globalManaged && !archived;
+                  const canEditNpc = !adminManaged && !globalManaged && !archived;
                   const canHardDelete =
                     j.canDelete === true && j.hasHistoricalUsage !== true && !archived;
                   const adminRoleLabel = resolveAdminRoleLabel(j.membershipRole);
@@ -1532,7 +1533,7 @@ export default function Page() {
                       </div>
                       {!hasListedAdminRole && (
                         <div className="border-t border-cyan-900/40 mt-4 pt-3 flex flex-wrap gap-2 justify-end">
-                          {!globalManaged && !archived && (
+                          {canLinkNpc && (
                             <button
                               className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
                                 podeVincular
