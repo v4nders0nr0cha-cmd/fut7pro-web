@@ -405,12 +405,23 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
 });
 
 describe("Gerenciar jogadores - ajuda e aprovação automática", () => {
+  const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+
   beforeEach(() => {
     jest.clearAllMocks();
     jogadores = [];
     autoApproveAthletes = false;
     autoApproveAthletesUntil = null;
     toggleAutoApprove.mockResolvedValue(undefined);
+    process.env.NEXT_PUBLIC_APP_URL = "https://preview.fut7pro.test/";
+  });
+
+  afterAll(() => {
+    if (originalAppUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_APP_URL;
+    } else {
+      process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+    }
   });
 
   it("mantém a ajuda fechada por padrão e explica as ações em linguagem de grupo", () => {
@@ -434,10 +445,10 @@ describe("Gerenciar jogadores - ajuda e aprovação automática", () => {
     render(<Page />);
     fireEvent.click(screen.getByRole("button", { name: /Como funciona o cadastro de jogadores/ }));
 
-    expect(screen.getByText("app.fut7pro.com.br/racha-1")).toBeInTheDocument();
+    expect(screen.getByText("preview.fut7pro.test/racha-1")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir site do grupo" })).toHaveAttribute(
       "href",
-      "https://app.fut7pro.com.br/racha-1"
+      "https://preview.fut7pro.test/racha-1"
     );
     expect(screen.getByRole("button", { name: "Copiar link" })).toBeInTheDocument();
   });

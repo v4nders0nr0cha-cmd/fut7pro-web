@@ -747,9 +747,11 @@ export default function Page() {
   const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
-  const groupSiteUrl = resolvedSlug
-    ? `https://app.fut7pro.com.br/${encodeURIComponent(resolvedSlug)}`
-    : "";
+  const appOrigin = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br").replace(
+    /\/+$/,
+    ""
+  );
+  const groupSiteUrl = resolvedSlug ? `${appOrigin}/${encodeURIComponent(resolvedSlug)}` : "";
   const npcsDisponiveis = useMemo(
     () => activeJogadores.filter((j) => !isGlobalManagedJogador(j) && !j.isBot),
     [activeJogadores]
