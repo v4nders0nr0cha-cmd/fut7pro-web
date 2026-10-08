@@ -22,7 +22,6 @@ import { useRacha } from "@/context/RachaContext";
 import type { Jogador } from "@/types/jogador";
 import type { AthleteRequest } from "@/types/athlete-request";
 import JogadorForm from "@/components/admin/JogadorForm";
-import { Switch } from "@/components/ui/Switch";
 import AvatarFut7Pro from "@/components/ui/AvatarFut7Pro";
 
 type AthleteLifecycleAction = "delete" | "archive";
@@ -137,7 +136,7 @@ function ModalCadastroJogador({
           <div>
             <h2 className="text-lg text-cyan-300 font-bold">Cadastrar Jogador</h2>
             <p className="text-sm text-gray-300">
-              Cadastro manual cria um jogador sem login. Use apenas quando necessário.
+              Adicione um jogador ao grupo mesmo que ele ainda não tenha conta no Fut7Pro.
             </p>
           </div>
           <button
@@ -347,10 +346,11 @@ function ModalAutoApproveConfirm({
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center px-3">
       <div className="bg-[#151515] border border-yellow-600 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
-        <h2 className="text-lg text-yellow-400 font-bold">Liberar auto-aceite?</h2>
+        <h2 className="text-lg text-yellow-400 font-bold">Ativar por 24 horas?</h2>
         <p className="text-sm text-gray-200 leading-relaxed">
-          Apito inicial: ao ligar o auto-aceite, todo atleta novo entra no racha sem aprovação
-          manual. Use somente nos primeiros dias.
+          Durante as próximas 24 horas, qualquer pessoa que solicitar entrada pelo site do seu grupo
+          será aprovada automaticamente como jogador. Ative de preferência enquanto estiver
+          compartilhando o site com os jogadores do seu grupo.
         </p>
         <div className="flex gap-3 justify-end">
           <button
@@ -365,7 +365,7 @@ function ModalAutoApproveConfirm({
             className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 py-2 rounded-md"
             disabled={loading}
           >
-            {loading ? "Ativando..." : "Ativar auto-aceite"}
+            {loading ? "Ativando..." : "Ativar por 24 horas"}
           </button>
         </div>
       </div>
@@ -632,21 +632,6 @@ function isGlobalManagedJogador(jogador?: Partial<Jogador> | null) {
   return Boolean(jogador.userId || jogador.managedByGlobalProfile);
 }
 
-// --- BADGE DE STATUS ---
-function StatusBadge({ status }: { status: Jogador["status"] }) {
-  const color =
-    status === "Ativo"
-      ? "bg-green-700 text-green-200"
-      : status === "Suspenso"
-        ? "bg-yellow-700 text-yellow-200"
-        : "bg-gray-600 text-gray-200";
-  return (
-    <span className={`inline-block rounded px-2 py-0.5 text-xs font-bold mr-1 ${color}`}>
-      {status}
-    </span>
-  );
-}
-
 // === COMPONENTE PRINCIPAL ===
 export default function Page() {
   const { rachaId: contextRachaId, tenantSlug } = useRacha();
@@ -678,6 +663,7 @@ export default function Page() {
   } = useAthleteRequests({ status: "PENDENTE", enabled: allowRequests });
   const {
     autoApproveAthletes,
+    autoApproveAthletesUntil,
     isLoading: autoApproveLoading,
     isUpdating: autoApproveUpdating,
     isError: autoApproveError,
@@ -708,6 +694,8 @@ export default function Page() {
   const [vinculando, setVinculando] = useState(false);
   const [autoApproveConfirmOpen, setAutoApproveConfirmOpen] = useState(false);
   const [autoApproveLocalError, setAutoApproveLocalError] = useState<string | null>(null);
+  const [showCadastroHelp, setShowCadastroHelp] = useState(false);
+  const [groupLinkCopied, setGroupLinkCopied] = useState(false);
   const [solicitacaoActionId, setSolicitacaoActionId] = useState<string | null>(null);
   const [solicitacaoActionError, setSolicitacaoActionError] = useState<string | null>(null);
   const [rejeitarSolicitacao, setRejeitarSolicitacao] = useState<AthleteRequest | null>(null);
@@ -759,6 +747,9 @@ export default function Page() {
   const autoApproveBusy = autoApproveLoading || autoApproveUpdating;
   const autoApproveErrorResolved =
     autoApproveLocalError || (autoApproveError ? autoApproveErrorMessage : null);
+  const groupSiteUrl = resolvedSlug
+    ? `https://app.fut7pro.com.br/${encodeURIComponent(resolvedSlug)}`
+    : "";
   const npcsDisponiveis = useMemo(
     () => activeJogadores.filter((j) => !isGlobalManagedJogador(j) && !j.isBot),
     [activeJogadores]
@@ -860,6 +851,16 @@ export default function Page() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao atualizar auto-aceite.";
       setAutoApproveLocalError(message);
+    }
+  };
+
+  const copyGroupSiteUrl = async () => {
+    if (!groupSiteUrl) return;
+    try {
+      await navigator.clipboard.writeText(groupSiteUrl);
+      setGroupLinkCopied(true);
+    } catch {
+      setGroupLinkCopied(false);
     }
   };
 
@@ -1208,52 +1209,132 @@ export default function Page() {
           </div>
         )}
 
-        {/* DESCRIÇÃO ADMIN */}
-        <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4 mb-6 text-sm text-gray-300">
-          <p className="mb-2">
-            <strong className="text-yellow-400">⚠️ Importante:</strong> Todos os atletas do seu
-            racha podem se cadastrar diretamente pelo <strong>site público</strong>.
-          </p>
-          <p className="mb-2">
-            Recomendamos que você incentive os jogadores a realizarem o cadastro por conta própria,
-            garantindo dados corretos e integração automática com os rankings.
-          </p>
-          <p className="mb-2">
-            Utilize o botão <strong>"Cadastrar Jogador"</strong> apenas em casos específicos, como:
-          </p>
-          <ul className="list-disc ml-5 mt-2">
-            <li>Jogadores com dificuldade de acesso à internet;</li>
-            <li>Atletas com pouca familiaridade com tecnologia;</li>
-            <li>Casos excepcionais onde o administrador precisa intervir manualmente.</li>
-          </ul>
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => setShowCadastroHelp((current) => !current)}
+            aria-expanded={showCadastroHelp}
+            aria-controls="cadastro-jogadores-help"
+            className="text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+          >
+            ⓘ Como funciona o cadastro de jogadores?
+          </button>
+          {showCadastroHelp && (
+            <div
+              id="cadastro-jogadores-help"
+              className="mt-3 rounded-lg border border-cyan-800/70 bg-[#1a1a1a] p-4 text-sm text-gray-300"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <h2 className="font-bold text-cyan-300">Cadastro pelo próprio jogador</h2>
+                  <p>
+                    A forma mais completa é cada jogador criar a própria conta pelo site do seu
+                    grupo. Assim ele acessa o perfil, acompanha estatísticas e mantém os próprios
+                    dados atualizados.
+                  </p>
+                </div>
+                <div>
+                  <h2 className="font-bold text-cyan-300">Cadastrar Jogador</h2>
+                  <p>
+                    Adiciona manualmente um jogador ao grupo, mesmo sem conta no Fut7Pro. Ele poderá
+                    ser vinculado a uma conta posteriormente.
+                  </p>
+                </div>
+                <div>
+                  <h2 className="font-bold text-cyan-300">Vincular</h2>
+                  <p>
+                    Conecta um cadastro manual à conta do atleta, mantendo o histórico já existente.
+                  </p>
+                </div>
+                <div>
+                  <h2 className="font-bold text-cyan-300">Arquivar</h2>
+                  <p>
+                    Use quando o jogador não participa mais do grupo. Partidas, rankings, conquistas
+                    e estatísticas anteriores permanecem preservados, e ele poderá ser restaurado.
+                  </p>
+                </div>
+                <div>
+                  <h2 className="font-bold text-cyan-300">Excluir</h2>
+                  <p>
+                    A exclusão definitiva fica disponível somente para jogadores novos que ainda não
+                    possuem histórico no grupo.
+                  </p>
+                </div>
+              </div>
+              {groupSiteUrl && (
+                <div className="mt-4 border-t border-gray-700 pt-4">
+                  <div className="font-bold text-white">Site do seu grupo</div>
+                  <div className="mt-1 break-all text-cyan-300">
+                    {groupSiteUrl.replace(/^https:\/\//, "")}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={groupSiteUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-md bg-cyan-700 px-3 py-2 font-semibold text-white hover:bg-cyan-800"
+                    >
+                      Abrir site do grupo
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => void copyGroupSiteUrl()}
+                      className="rounded-md bg-gray-700 px-3 py-2 font-semibold text-white hover:bg-gray-600"
+                    >
+                      {groupLinkCopied ? "Link copiado" : "Copiar link"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <section id="solicitacoes" className="mb-8 scroll-mt-28">
           <div className="bg-[#1a1a1a] border border-yellow-600 rounded-lg p-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
-                <h2 className="text-base font-bold text-yellow-400">Solicitações de atletas</h2>
+                <h2 className="text-base font-bold text-yellow-400">Solicitações de jogadores</h2>
                 <p className="text-sm text-gray-300">
-                  Cadastros feitos no site público aguardam aprovação para liberar ranking, jogos e
-                  perfil completo.
+                  Jogadores que pedirem entrada pelo site do seu grupo aparecerão aqui para
+                  aprovação.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-xs text-gray-300 font-semibold">
-                  Aceitar solicitações automaticamente
-                </div>
-                <Switch
-                  checked={autoApproveAthletes}
-                  onCheckedChange={handleAutoApproveChange}
-                  ariaLabel="Aceitar solicitações automaticamente"
-                  disabled={autoApproveBusy}
-                />
-              </div>
             </div>
-            <div className="mt-3 text-xs text-gray-400">
-              <span className="text-yellow-300 font-semibold">Ligado:</span> aprova automaticamente.
-              <span className="ml-2 text-gray-300 font-semibold">Desligado:</span> exige aprovação
-              manual.
+            <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="text-sm font-bold text-white">
+                {autoApproveAthletes
+                  ? "Aprovação automática ativa"
+                  : "Aprovação automática de jogadores"}
+              </div>
+              {autoApproveAthletes ? (
+                <p className="mt-1 text-sm text-gray-300">
+                  Novas solicitações serão aprovadas automaticamente até{" "}
+                  <strong className="text-yellow-300">
+                    {formatDateTime(autoApproveAthletesUntil)}
+                  </strong>
+                  . Depois disso, a aprovação manual volta a valer.
+                </p>
+              ) : (
+                <p className="mt-1 max-w-2xl text-sm text-gray-300">
+                  Facilita o cadastro inicial do seu grupo. Ao ativar, novas solicitações feitas
+                  pelo site do grupo serão aprovadas automaticamente durante 24 horas. Ideal para
+                  compartilhar o site no grupo do WhatsApp e permitir a entrada sem aprovar um por
+                  um.
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={() => void handleAutoApproveChange(!autoApproveAthletes)}
+                disabled={autoApproveBusy}
+                className={`mt-3 rounded-md px-3 py-2 text-sm font-bold disabled:opacity-60 ${
+                  autoApproveAthletes
+                    ? "bg-gray-700 text-white hover:bg-gray-600"
+                    : "bg-yellow-500 text-black hover:bg-yellow-600"
+                }`}
+              >
+                {autoApproveAthletes ? "Desativar agora" : "Ativar por 24 horas"}
+              </button>
             </div>
             {autoApproveBusy && (
               <div className="mt-2 text-xs text-gray-400">Atualizando configuração...</div>
@@ -1262,12 +1343,6 @@ export default function Page() {
               <div className="mt-2 text-xs text-red-300">{autoApproveErrorResolved}</div>
             )}
           </div>
-
-          {autoApproveAthletes && !solicitacoesCount && (
-            <div className="mt-3 rounded-lg border border-yellow-500/40 bg-[#1f1a10] px-4 py-3 text-sm text-yellow-200">
-              Auto-aceite ligado: novas solicitações entram aprovadas automaticamente.
-            </div>
-          )}
 
           <div className="mt-5">
             <div className="flex items-center gap-2 text-yellow-400 font-bold text-sm mb-2">
@@ -1507,7 +1582,6 @@ export default function Page() {
                             </div>
                           ) : (
                             <div className="text-xs mt-1 flex flex-wrap gap-1 items-center">
-                              <StatusBadge status={j.status} />
                               {j.mensalista && (
                                 <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
                                   Mensalista

@@ -6,7 +6,10 @@ import type { Jogador } from "@/types/jogador";
 const deleteJogador = jest.fn();
 const archiveJogador = jest.fn();
 const restoreJogador = jest.fn();
+const toggleAutoApprove = jest.fn();
 let jogadores: Jogador[] = [];
+let autoApproveAthletes = false;
+let autoApproveAthletesUntil: string | null = null;
 
 jest.mock(
   "next/head",
@@ -59,12 +62,13 @@ jest.mock("@/hooks/useAthleteRequests", () => ({
 }));
 jest.mock("@/hooks/useAutoApproveAthletes", () => ({
   useAutoApproveAthletes: () => ({
-    autoApproveAthletes: false,
+    autoApproveAthletes,
+    autoApproveAthletesUntil,
     isLoading: false,
     isUpdating: false,
     isError: false,
     error: null,
-    toggleAutoApprove: jest.fn(),
+    toggleAutoApprove,
   }),
 }));
 jest.mock(
@@ -105,6 +109,8 @@ function atleta(overrides: Partial<Jogador> = {}): Jogador {
 describe("Gerenciar jogadores - lifecycle", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    autoApproveAthletes = false;
+    autoApproveAthletesUntil = null;
     deleteJogador.mockResolvedValue({ id: "athlete-1" });
     archiveJogador.mockResolvedValue({ id: "athlete-1" });
     restoreJogador.mockResolvedValue({ id: "athlete-1" });
@@ -192,6 +198,8 @@ describe("Gerenciar jogadores - lifecycle", () => {
 describe("Gerenciar jogadores - apresentação dos cards", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    autoApproveAthletes = false;
+    autoApproveAthletesUntil = null;
   });
 
   it("ordena os quatro cargos pela hierarquia antes dos jogadores comuns", () => {
@@ -297,7 +305,7 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
     render(<Page />);
 
     const card = screen.getByTestId("jogador-card-player");
-    expect(within(card).getByText("Ativo")).toBeInTheDocument();
+    expect(within(card).queryByText("Ativo")).not.toBeInTheDocument();
     expect(within(card).getByText("Mensalista")).toBeInTheDocument();
     expect(within(card).getByText("Com login")).toBeInTheDocument();
   });
@@ -324,7 +332,7 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
 
       const card = screen.getByTestId("jogador-card-technical-role");
       expect(within(card).queryByText(cargoInexistente)).not.toBeInTheDocument();
-      expect(within(card).getByText("Ativo")).toBeInTheDocument();
+      expect(within(card).queryByText("Ativo")).not.toBeInTheDocument();
       expect(within(card).getByText("Mensalista")).toBeInTheDocument();
       expect(within(card).getByText("Sem login")).toBeInTheDocument();
       expect(
@@ -374,5 +382,89 @@ describe("Gerenciar jogadores - apresentação dos cards", () => {
 
     expect(screen.queryByText("Gerenciado pelo Perfil Global")).not.toBeInTheDocument();
     expect(screen.queryByText("Gerenciado pelo módulo de administração")).not.toBeInTheDocument();
+  });
+
+  it("mantém jogador com login sem edição de identidade", () => {
+    jogadores = [
+      atleta({
+        id: "player-with-login",
+        managedByGlobalProfile: true,
+        userId: "user-1",
+        hasHistoricalUsage: true,
+        canDelete: false,
+      }),
+    ];
+
+    render(<Page />);
+
+    const card = screen.getByTestId("jogador-card-player-with-login");
+    expect(within(card).getByText("Com login")).toBeInTheDocument();
+    expect(within(card).queryByRole("button", { name: /Editar/ })).not.toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Arquivar João" })).toBeInTheDocument();
+  });
+});
+
+describe("Gerenciar jogadores - ajuda e aprovação automática", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jogadores = [];
+    autoApproveAthletes = false;
+    autoApproveAthletesUntil = null;
+    toggleAutoApprove.mockResolvedValue(undefined);
+  });
+
+  it("mantém a ajuda fechada por padrão e explica as ações em linguagem de grupo", () => {
+    render(<Page />);
+
+    expect(
+      screen.queryByRole("heading", { name: "Cadastro pelo próprio jogador" })
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Como funciona o cadastro de jogadores/ }));
+
+    const help = document.getElementById("cadastro-jogadores-help")!;
+    expect(within(help).getByRole("heading", { name: "Cadastrar Jogador" })).toBeInTheDocument();
+    expect(within(help).getByRole("heading", { name: "Vincular" })).toBeInTheDocument();
+    expect(within(help).getByRole("heading", { name: "Arquivar" })).toBeInTheDocument();
+    expect(within(help).getByRole("heading", { name: "Excluir" })).toBeInTheDocument();
+    expect(within(help).getByText("Site do seu grupo")).toBeInTheDocument();
+    expect(within(help).queryByText(/seu racha/i)).not.toBeInTheDocument();
+  });
+
+  it("monta e expõe o site clicável do grupo usando tenantSlug", () => {
+    render(<Page />);
+    fireEvent.click(screen.getByRole("button", { name: /Como funciona o cadastro de jogadores/ }));
+
+    expect(screen.getByText("app.fut7pro.com.br/racha-1")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Abrir site do grupo" })).toHaveAttribute(
+      "href",
+      "https://app.fut7pro.com.br/racha-1"
+    );
+    expect(screen.getByRole("button", { name: "Copiar link" })).toBeInTheDocument();
+  });
+
+  it("confirma a ativação por 24 horas", async () => {
+    render(<Page />);
+    fireEvent.click(screen.getByRole("button", { name: "Ativar por 24 horas" }));
+
+    const modalTitle = screen.getByRole("heading", { name: "Ativar por 24 horas?" });
+    expect(modalTitle).toBeInTheDocument();
+    expect(screen.getByText(/Durante as próximas 24 horas/)).toBeInTheDocument();
+    fireEvent.click(
+      within(modalTitle.parentElement!).getByRole("button", { name: "Ativar por 24 horas" })
+    );
+
+    await waitFor(() => expect(toggleAutoApprove).toHaveBeenCalledWith(true));
+  });
+
+  it("mostra a expiração e permite desativar imediatamente", async () => {
+    autoApproveAthletes = true;
+    autoApproveAthletesUntil = "2026-10-09T13:30:00.000Z";
+    render(<Page />);
+
+    expect(screen.getByText("Aprovação automática ativa")).toBeInTheDocument();
+    expect(screen.getByText(/Depois disso, a aprovação manual volta a valer/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Desativar agora" }));
+
+    await waitFor(() => expect(toggleAutoApprove).toHaveBeenCalledWith(false));
   });
 });

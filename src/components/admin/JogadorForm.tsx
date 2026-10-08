@@ -242,19 +242,6 @@ export default function JogadorForm({
       </div>
       <div className="flex gap-4">
         <div className="flex-1">
-          <label className="block font-medium text-yellow-500 mb-1">Status</label>
-          <select
-            name="status"
-            value={form.status}
-            onChange={handleChange}
-            className="border border-[#333] bg-[#111] text-white px-3 py-2 rounded w-full focus:outline-none focus:border-yellow-500"
-          >
-            <option value="Ativo">Ativo</option>
-            <option value="Inativo">Inativo</option>
-            <option value="Suspenso">Suspenso</option>
-          </select>
-        </div>
-        <div className="flex-1">
           <label className="block font-medium text-yellow-500 mb-1">Posição</label>
           <select
             name="posicao"
