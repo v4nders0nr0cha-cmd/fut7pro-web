@@ -30,9 +30,9 @@ describe("JogadorForm", () => {
   it("filtra opcoes invalidas da secundaria pela posicao principal", () => {
     render(<JogadorForm onSave={jest.fn()} />);
 
-    fireEvent.change(screen.getAllByRole("combobox")[1]!, { target: { value: "meia" } });
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, { target: { value: "meia" } });
 
-    const secondary = screen.getAllByRole("combobox")[2]!;
+    const secondary = screen.getAllByRole("combobox")[1]!;
     expect(within(secondary).getByRole("option", { name: "Zagueiro" })).toBeInTheDocument();
     expect(within(secondary).getByRole("option", { name: "Atacante" })).toBeInTheDocument();
     expect(within(secondary).queryByRole("option", { name: "Meia" })).not.toBeInTheDocument();
@@ -46,7 +46,7 @@ describe("JogadorForm", () => {
     fireEvent.change(container.querySelector('input[name="nome"]')!, {
       target: { value: "Goleiro Teste" },
     });
-    fireEvent.change(screen.getAllByRole("combobox")[1]!, { target: { value: "goleiro" } });
+    fireEvent.change(screen.getAllByRole("combobox")[0]!, { target: { value: "goleiro" } });
     expect(screen.queryByLabelText("Posição secundária")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Cadastrar Jogador" }));
@@ -55,5 +55,14 @@ describe("JogadorForm", () => {
       expect.objectContaining({ posicao: "goleiro", posicaoSecundaria: null }),
       null
     );
+  });
+
+  it("não expõe Ativo, Inativo ou Suspenso no formulário", () => {
+    render(<JogadorForm onSave={jest.fn()} />);
+
+    expect(screen.queryByRole("combobox", { name: "Status" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Ativo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Inativo" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: "Suspenso" })).not.toBeInTheDocument();
   });
 });

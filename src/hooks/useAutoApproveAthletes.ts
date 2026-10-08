@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
-type AutoApproveResponse = { autoApproveAthletes: boolean };
+type AutoApproveResponse = {
+  autoApproveAthletes: boolean;
+  autoApproveAthletesUntil: string | null;
+};
 
 const fetcher = async (url: string): Promise<AutoApproveResponse> => {
   const res = await fetch(url, { cache: "no-store" });
@@ -59,6 +62,19 @@ export function useAutoApproveAthletes(options?: { enabled?: boolean }) {
     { revalidateOnFocus: false }
   );
   const [isUpdating, setIsUpdating] = useState(false);
+  const autoApproveAthletesUntil = data?.autoApproveAthletesUntil ?? null;
+  const autoApproveAthletes = Boolean(
+    data?.autoApproveAthletes &&
+      autoApproveAthletesUntil &&
+      Date.parse(autoApproveAthletesUntil) > Date.now()
+  );
+
+  useEffect(() => {
+    if (!autoApproveAthletes || !autoApproveAthletesUntil) return;
+    const remaining = Date.parse(autoApproveAthletesUntil) - Date.now();
+    const timer = window.setTimeout(() => void mutate(), Math.max(remaining + 50, 50));
+    return () => window.clearTimeout(timer);
+  }, [autoApproveAthletes, autoApproveAthletesUntil, mutate]);
 
   const toggleAutoApprove = async (enabledNext: boolean) => {
     setIsUpdating(true);
@@ -74,7 +90,8 @@ export function useAutoApproveAthletes(options?: { enabled?: boolean }) {
   };
 
   return {
-    autoApproveAthletes: Boolean(data?.autoApproveAthletes),
+    autoApproveAthletes,
+    autoApproveAthletesUntil,
     isLoading,
     isUpdating,
     isError: Boolean(error),
