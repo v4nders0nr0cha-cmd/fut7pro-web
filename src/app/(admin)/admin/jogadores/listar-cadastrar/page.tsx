@@ -245,19 +245,18 @@ function ModalVincularJogador({
           <div>
             <h2 className="text-lg text-yellow-400 font-bold">Vincular Jogador</h2>
             <p className="text-sm text-gray-300">
-              Jogador NPC: <span className="text-white font-semibold">{jogador.nome}</span>
+              Jogador sem login: <span className="text-white font-semibold">{jogador.nome}</span>
             </p>
           </div>
         </div>
 
         <div className="text-sm text-gray-300 leading-relaxed">
           <p className="mb-2">
-            Esta ação conecta a conta com login ao jogador NPC selecionado. O atleta passa a usar
-            este jogador, mantendo todo o histórico, rankings e estatísticas do NPC.
+            Esta ação conecta a conta com login ao jogador selecionado. O atleta passa a usar este
+            cadastro, mantendo todo o histórico, rankings e estatísticas.
           </p>
           <p className="mb-2">
-            Os dados pessoais passam a vir do Perfil Global da conta escolhida (nome, apelido, foto
-            e posições).
+            Nome, apelido, foto e posições passam a ser atualizados pela conta do atleta.
           </p>
           <p>
             Se a conta escolhida já tiver histórico no racha, as estatísticas serão mescladas e
@@ -271,7 +270,7 @@ function ModalVincularJogador({
             type="text"
             value={busca}
             onChange={(e) => onBuscaChange(e.target.value)}
-            placeholder="Buscar por nome, apelido ou email..."
+            placeholder="Buscar por nome, apelido ou e-mail..."
             className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
           />
           <select
@@ -283,7 +282,7 @@ function ModalVincularJogador({
             {contas.map((conta) => (
               <option key={conta.id} value={conta.userId || ""}>
                 {conta.nome}
-                {conta.apelido ? ` (${conta.apelido})` : ""} - {conta.email || "sem email"}
+                {conta.apelido ? ` (${conta.apelido})` : ""} - {conta.email || "sem e-mail"}
               </option>
             ))}
           </select>
@@ -399,8 +398,8 @@ function ModalRejeitarSolicitacao({
       <div className="bg-[#151515] border border-red-700 rounded-2xl shadow-xl p-6 w-full max-w-md flex flex-col gap-4">
         <h2 className="text-lg text-red-400 font-bold">Rejeitar solicitação</h2>
         <p className="text-sm text-gray-200">
-          Você está recusando <strong>{solicitacao.name}</strong>. A conta continua global, mas não
-          entra no racha.
+          Você está recusando <strong>{solicitacao.name}</strong>. A conta continua ativa no
+          Fut7Pro, mas não entra no racha.
         </p>
         <div className="flex flex-col gap-2">
           <label className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
@@ -490,8 +489,8 @@ function ModalVincularSolicitacao({
         </div>
 
         <div className="text-sm text-gray-300 leading-relaxed">
-          Este fluxo conecta o atleta pendente a um jogador NPC existente, mantendo histórico,
-          rankings e estatísticas do NPC.
+          Este fluxo conecta o atleta pendente a um jogador já cadastrado, mantendo histórico,
+          rankings e estatísticas.
         </div>
 
         {!solicitacao.userId && (
@@ -501,12 +500,12 @@ function ModalVincularSolicitacao({
         )}
 
         <div className="flex flex-col gap-3">
-          <label className="text-sm text-gray-200 font-semibold">Jogador NPC existente</label>
+          <label className="text-sm text-gray-200 font-semibold">Jogador já cadastrado</label>
           <input
             type="text"
             value={busca}
             onChange={(e) => onBuscaChange(e.target.value)}
-            placeholder="Buscar por nome, apelido ou email..."
+            placeholder="Buscar por nome, apelido ou e-mail..."
             className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
           />
           <select
@@ -514,7 +513,7 @@ function ModalVincularSolicitacao({
             onChange={(e) => onNpcChange(e.target.value)}
             className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full focus:border-cyan-600"
           >
-            <option value="">Selecione o NPC para vincular</option>
+            <option value="">Selecione o jogador para vincular</option>
             {npcs.map((npc) => (
               <option key={npc.id} value={npc.id}>
                 {npc.nome}
@@ -523,7 +522,7 @@ function ModalVincularSolicitacao({
             ))}
           </select>
           {npcs.length === 0 && (
-            <div className="text-xs text-yellow-300">Nenhum jogador NPC disponível.</div>
+            <div className="text-xs text-yellow-300">Nenhum jogador sem login disponível.</div>
           )}
         </div>
 
@@ -576,10 +575,15 @@ const POSICAO_LABEL: Record<string, string> = {
 const ADMIN_ROLE_LABELS: Record<string, string> = {
   PRESIDENTE: "Presidente",
   VICE_PRESIDENTE: "Vice-presidente",
-  DIRETOR_FUTEBOL: "Diretor de futebol",
-  DIRETOR_FINANCEIRO: "Diretor financeiro",
-  ADMIN: "Administrador",
-  SUPERADMIN: "Superadmin",
+  DIRETOR_FUTEBOL: "Diretor de Futebol",
+  DIRETOR_FINANCEIRO: "Diretor Financeiro",
+};
+
+const ADMIN_ROLE_PRIORITY: Record<string, number> = {
+  PRESIDENTE: 0,
+  VICE_PRESIDENTE: 1,
+  DIRETOR_FUTEBOL: 2,
+  DIRETOR_FINANCEIRO: 3,
 };
 
 function formatPosicao(value?: string | null) {
@@ -599,11 +603,19 @@ function formatDateTime(value?: string | Date | null) {
 }
 
 function resolveAdminRoleLabel(role?: string | null) {
-  const normalized = String(role || "")
+  const normalized = normalizeMembershipRole(role);
+  return ADMIN_ROLE_LABELS[normalized] || null;
+}
+
+function normalizeMembershipRole(role?: string | null) {
+  return String(role || "")
     .trim()
     .toUpperCase();
-  if (!normalized) return null;
-  return ADMIN_ROLE_LABELS[normalized] || "Administrador";
+}
+
+function getAdminRolePriority(role?: string | null) {
+  const normalized = normalizeMembershipRole(role);
+  return ADMIN_ROLE_PRIORITY[normalized] ?? Number.MAX_SAFE_INTEGER;
 }
 
 function isAdminManagedJogador(jogador?: Partial<Jogador> | null) {
@@ -715,14 +727,29 @@ export default function Page() {
     [jogadores]
   );
   const jogadoresVisiveis = activeTab === "active" ? activeJogadores : archivedJogadores;
-  const jogadoresFiltrados = jogadoresVisiveis.filter((j) => {
-    const termo = busca.toLowerCase();
-    const nomeOk = j.nome.toLowerCase().includes(termo) || j.apelido.toLowerCase().includes(termo);
-    if (!nomeOk) return false;
-    if (posicaoFiltro === "todas") return true;
-    const posicao = String(j.posicao || j.position || "").toLowerCase();
-    return posicao === posicaoFiltro;
-  });
+  const jogadoresFiltrados = useMemo(
+    () =>
+      jogadoresVisiveis
+        .map((jogador, originalIndex) => ({ jogador, originalIndex }))
+        .filter(({ jogador }) => {
+          const termo = busca.toLowerCase();
+          const nomeOk =
+            jogador.nome.toLowerCase().includes(termo) ||
+            jogador.apelido.toLowerCase().includes(termo);
+          if (!nomeOk) return false;
+          if (posicaoFiltro === "todas") return true;
+          const posicao = String(jogador.posicao || jogador.position || "").toLowerCase();
+          return posicao === posicaoFiltro;
+        })
+        .sort((a, b) => {
+          const roleDiff =
+            getAdminRolePriority(a.jogador.membershipRole) -
+            getAdminRolePriority(b.jogador.membershipRole);
+          return roleDiff || a.originalIndex - b.originalIndex;
+        })
+        .map(({ jogador }) => jogador),
+    [busca, jogadoresVisiveis, posicaoFiltro]
+  );
 
   const solicitacoesPendentes = useMemo(
     () => solicitacoes.filter((item) => String(item.status || "").toUpperCase() === "PENDENTE"),
@@ -1375,7 +1402,7 @@ export default function Page() {
               className="rounded-md bg-[#23272f] border border-gray-700 text-white px-3 py-2 w-full sm:w-52 focus:border-cyan-600"
               aria-label="Filtrar por posição"
             >
-              <option value="todas">Todas as posicoes</option>
+              <option value="todas">Todas as posições</option>
               <option value="goleiro">Goleiro</option>
               <option value="zagueiro">Zagueiro</option>
               <option value="meia">Meia</option>
@@ -1444,6 +1471,7 @@ export default function Page() {
                   const canHardDelete =
                     j.canDelete === true && j.hasHistoricalUsage !== true && !archived;
                   const adminRoleLabel = resolveAdminRoleLabel(j.membershipRole);
+                  const hasListedAdminRole = Boolean(adminRoleLabel);
                   return (
                     <motion.div
                       key={j.id}
@@ -1453,6 +1481,7 @@ export default function Page() {
                       exit="exit"
                       variants={cardVariants}
                       layout
+                      data-testid={`jogador-card-${j.id}`}
                       className="bg-[#23272f] border border-cyan-700 rounded-xl p-4 shadow-xl"
                     >
                       <div className="flex items-center">
@@ -1471,96 +1500,89 @@ export default function Page() {
                             ) : null}
                           </div>
                           <div className="text-sm text-gray-300">{j.posicao}</div>
-                          <div className="text-xs mt-1 flex gap-1 items-center">
-                            <StatusBadge status={j.status} />
-                            {j.mensalista && (
-                              <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
-                                Mensalista
-                              </span>
-                            )}
-                            {archived && (
-                              <span className="bg-yellow-800 text-yellow-100 font-bold rounded px-2 py-0.5 text-xs">
-                                Arquivado
-                              </span>
-                            )}
-                            {adminManaged && (
-                              <span className="bg-amber-700 text-amber-100 font-bold rounded px-2 py-0.5 text-xs">
-                                {adminRoleLabel || "Administrador"}
-                              </span>
-                            )}
-                            {globalManaged ? (
-                              <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
-                                Com login
-                              </span>
-                            ) : (
-                              <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5 text-xs">
-                                Sem login
-                              </span>
-                            )}
-                          </div>
+                          {hasListedAdminRole ? (
+                            <div className="mt-1 text-sm font-semibold text-cyan-300">
+                              {adminRoleLabel}
+                            </div>
+                          ) : (
+                            <div className="text-xs mt-1 flex flex-wrap gap-1 items-center">
+                              <StatusBadge status={j.status} />
+                              {j.mensalista && (
+                                <span className="bg-yellow-700 text-yellow-200 font-bold rounded px-2 py-0.5 text-xs">
+                                  Mensalista
+                                </span>
+                              )}
+                              {archived && (
+                                <span className="bg-yellow-800 text-yellow-100 font-bold rounded px-2 py-0.5 text-xs">
+                                  Arquivado
+                                </span>
+                              )}
+                              {globalManaged ? (
+                                <span className="bg-emerald-700 text-emerald-100 font-bold rounded px-2 py-0.5 text-xs">
+                                  Com login
+                                </span>
+                              ) : (
+                                <span className="bg-zinc-700 text-zinc-200 font-bold rounded px-2 py-0.5 text-xs">
+                                  Sem login
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
-                      <div className="border-t border-cyan-900/40 mt-4 pt-3 flex gap-2 justify-end">
-                        {globalManaged && (
-                          <span className="mr-auto bg-indigo-700 text-indigo-100 rounded px-2 py-1 text-[11px] font-semibold">
-                            Gerenciado pelo Perfil Global
-                          </span>
-                        )}
-                        {adminManaged && (
-                          <span className="bg-zinc-700 text-zinc-200 rounded px-2 py-1 text-[11px] font-semibold">
-                            Gerenciado pelo módulo de administração
-                          </span>
-                        )}
-                        {!globalManaged && !archived && (
-                          <button
-                            className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
-                              podeVincular
-                                ? "bg-indigo-700 hover:bg-indigo-800 text-white"
-                                : "bg-gray-700 text-gray-400 cursor-not-allowed"
-                            }`}
-                            disabled={!podeVincular}
-                            onClick={() => abrirModalVinculo(j)}
-                          >
-                            <FaLink /> Vincular
-                          </button>
-                        )}
-                        {canEditNpc && (
-                          <button
-                            className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                            onClick={() => abrirModalEditar(j)}
-                          >
-                            <FaEdit /> Editar
-                          </button>
-                        )}
-                        {!adminManaged && canHardDelete && (
-                          <button
-                            className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                            onClick={() => abrirLifecycle(j, "delete")}
-                            aria-label={`Excluir ${j.nome}`}
-                          >
-                            <FaTrash /> Excluir
-                          </button>
-                        )}
-                        {!adminManaged && !archived && !canHardDelete && (
-                          <button
-                            className="bg-yellow-700 hover:bg-yellow-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
-                            onClick={() => abrirLifecycle(j, "archive")}
-                            aria-label={`Arquivar ${j.nome}`}
-                          >
-                            <FaArchive /> Arquivar
-                          </button>
-                        )}
-                        {!adminManaged && archived && (
-                          <button
-                            className="bg-cyan-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-60"
-                            onClick={() => void restaurarJogador(j)}
-                            disabled={lifecycleLoading}
-                            aria-label={`Restaurar ${j.nome}`}
-                          >
-                            <FaUndo /> Restaurar
-                          </button>
-                        )}
-                      </div>
+                      {!hasListedAdminRole && (
+                        <div className="border-t border-cyan-900/40 mt-4 pt-3 flex flex-wrap gap-2 justify-end">
+                          {!globalManaged && !archived && (
+                            <button
+                              className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                                podeVincular
+                                  ? "bg-indigo-700 hover:bg-indigo-800 text-white"
+                                  : "bg-gray-700 text-gray-400 cursor-not-allowed"
+                              }`}
+                              disabled={!podeVincular}
+                              onClick={() => abrirModalVinculo(j)}
+                            >
+                              <FaLink /> Vincular
+                            </button>
+                          )}
+                          {canEditNpc && (
+                            <button
+                              className="bg-gray-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                              onClick={() => abrirModalEditar(j)}
+                            >
+                              <FaEdit /> Editar
+                            </button>
+                          )}
+                          {!adminManaged && canHardDelete && (
+                            <button
+                              className="bg-red-700 hover:bg-red-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                              onClick={() => abrirLifecycle(j, "delete")}
+                              aria-label={`Excluir ${j.nome}`}
+                            >
+                              <FaTrash /> Excluir
+                            </button>
+                          )}
+                          {!adminManaged && !archived && !canHardDelete && (
+                            <button
+                              className="bg-yellow-700 hover:bg-yellow-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1"
+                              onClick={() => abrirLifecycle(j, "archive")}
+                              aria-label={`Arquivar ${j.nome}`}
+                            >
+                              <FaArchive /> Arquivar
+                            </button>
+                          )}
+                          {!adminManaged && archived && (
+                            <button
+                              className="bg-cyan-700 hover:bg-cyan-800 text-white px-2 py-1 rounded text-xs flex items-center gap-1 disabled:opacity-60"
+                              onClick={() => void restaurarJogador(j)}
+                              disabled={lifecycleLoading}
+                              aria-label={`Restaurar ${j.nome}`}
+                            >
+                              <FaUndo /> Restaurar
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}
