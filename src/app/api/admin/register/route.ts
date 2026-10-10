@@ -123,10 +123,51 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
   });
 }
 
-async function deleteTenant(baseUrl: string, id: string) {
-  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`), {
-    method: "DELETE",
-  });
+async function cleanupIncompleteTenant(baseUrl: string, id: string, onboardingProof?: string) {
+  const proof = onboardingProof?.trim();
+  if (!proof) {
+    console.warn("[admin/register] onboarding_cleanup_skipped", {
+      tenantId: id,
+      reason: "proof_missing",
+    });
+    return null;
+  }
+
+  console.info("[admin/register] onboarding_cleanup_attempt", { tenantId: id });
+
+  try {
+    const response = await fetch(
+      resolvePath(baseUrl, `/rachas/onboarding/${encodeURIComponent(id)}`),
+      {
+        method: "DELETE",
+        headers: { "x-onboarding-proof": proof },
+      }
+    );
+
+    if (response.ok) {
+      console.info("[admin/register] onboarding_cleanup_completed", { tenantId: id });
+      return response;
+    }
+
+    const body = safeJsonParse(await response.text());
+    const knownCode = ["ONBOARDING_PROOF_INVALID", "TENANT_ONBOARDING_CLEANUP_FORBIDDEN"].includes(
+      body?.code
+    )
+      ? body.code
+      : "UPSTREAM_REJECTED";
+    console.warn("[admin/register] onboarding_cleanup_refused", {
+      tenantId: id,
+      status: response.status,
+      code: knownCode,
+    });
+    return response;
+  } catch (error) {
+    console.error("[admin/register] onboarding_cleanup_transport_failed", {
+      tenantId: id,
+      errorType: error instanceof Error ? error.name : "UnknownError",
+    });
+    throw error;
+  }
 }
 
 async function fetchTenantById(baseUrl: string, id: string, accessToken?: string) {
@@ -358,9 +399,14 @@ export async function POST(req: NextRequest) {
   const adminBodyText = await adminRes.text();
   const adminJson: any = adminBodyText ? safeJsonParse(adminBodyText) : null;
   if (!adminRes.ok) {
+    console.warn("[admin/register] admin_creation_failed", {
+      status: adminRes.status,
+      tenantCreated: Boolean(createdTenantId),
+      tenantId: createdTenantId || undefined,
+    });
     if (createdTenantId) {
       try {
-        await deleteTenant(baseUrl, createdTenantId);
+        await cleanupIncompleteTenant(baseUrl, createdTenantId, tenantInfo?.turnstileProof);
       } catch {
         // ignore cleanup errors
       }
@@ -406,13 +452,17 @@ export async function POST(req: NextRequest) {
     await primeBranding(baseUrl, payload, accessToken);
   }
 
+  const tenantResponse = tenantInfo
+    ? Object.fromEntries(Object.entries(tenantInfo).filter(([key]) => key !== "turnstileProof"))
+    : tenantInfo;
+
   return new Response(
     JSON.stringify({
       ok: true,
       message: useExistingTenant
         ? "Presidente criado para racha existente."
         : "Racha e administrador criados com sucesso.",
-      tenant: tenantInfo,
+      tenant: tenantResponse,
       tenantSlug: tenantSlug || undefined,
       requiresEmailVerification: effectiveRequiresEmailVerification,
       verificationSent,
