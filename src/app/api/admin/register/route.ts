@@ -123,9 +123,13 @@ async function createTenant(baseUrl: string, data: RegisterPayload) {
   });
 }
 
-async function deleteTenant(baseUrl: string, id: string) {
-  return fetch(resolvePath(baseUrl, `/rachas/${encodeURIComponent(id)}`), {
+async function cleanupIncompleteTenant(baseUrl: string, id: string, onboardingProof?: string) {
+  const proof = onboardingProof?.trim();
+  if (!proof) return null;
+
+  return fetch(resolvePath(baseUrl, `/rachas/onboarding/${encodeURIComponent(id)}`), {
     method: "DELETE",
+    headers: { "x-onboarding-proof": proof },
   });
 }
 
@@ -360,7 +364,7 @@ export async function POST(req: NextRequest) {
   if (!adminRes.ok) {
     if (createdTenantId) {
       try {
-        await deleteTenant(baseUrl, createdTenantId);
+        await cleanupIncompleteTenant(baseUrl, createdTenantId, tenantInfo?.turnstileProof);
       } catch {
         // ignore cleanup errors
       }
@@ -406,13 +410,17 @@ export async function POST(req: NextRequest) {
     await primeBranding(baseUrl, payload, accessToken);
   }
 
+  const tenantResponse = tenantInfo
+    ? Object.fromEntries(Object.entries(tenantInfo).filter(([key]) => key !== "turnstileProof"))
+    : tenantInfo;
+
   return new Response(
     JSON.stringify({
       ok: true,
       message: useExistingTenant
         ? "Presidente criado para racha existente."
         : "Racha e administrador criados com sucesso.",
-      tenant: tenantInfo,
+      tenant: tenantResponse,
       tenantSlug: tenantSlug || undefined,
       requiresEmailVerification: effectiveRequiresEmailVerification,
       verificationSent,
