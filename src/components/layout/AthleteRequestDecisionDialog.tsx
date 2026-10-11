@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -14,10 +14,6 @@ import {
 } from "@/utils/account-notifications";
 import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 import { resolvePublicTenantSlug } from "@/utils/public-links";
-
-type Props = {
-  onVisibilityChange?: (visible: boolean) => void;
-};
 
 async function markAccountNotificationRead(notification: AthleteRequestDecisionNotification) {
   const response = await fetch(
@@ -43,13 +39,13 @@ async function markAccountNotificationRead(notification: AthleteRequestDecisionN
   return "read" as const;
 }
 
-export default function AthleteRequestDecisionDialog({ onVisibilityChange }: Props) {
+export default function AthleteRequestDecisionDialog() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const { data: session, status } = useSession();
   const tenantSlug = resolvePublicTenantSlug(pathname);
   const hasSession = hasUsableFut7ProSession(session, status);
-  const { profile, isLoading, mutate } = useGlobalProfile({
+  const { profile, mutate } = useGlobalProfile({
     enabled: hasSession && Boolean(tenantSlug),
   });
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(() => new Set());
@@ -61,13 +57,6 @@ export default function AthleteRequestDecisionDialog({ onVisibilityChange }: Pro
     if (!current || dismissedIds.has(current.id)) return null;
     return current;
   }, [dismissedIds, profile?.accountNotifications, tenantSlug]);
-
-  const visible = Boolean(notification);
-  const shouldSuppressAuthSuccess =
-    status === "loading" || Boolean(hasSession && tenantSlug && (isLoading || visible));
-  useEffect(() => {
-    onVisibilityChange?.(shouldSuppressAuthSuccess);
-  }, [onVisibilityChange, shouldSuppressAuthSuccess]);
 
   const acknowledge = useCallback(
     async (targetHref?: string) => {

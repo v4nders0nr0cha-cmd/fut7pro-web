@@ -69,6 +69,10 @@ export function consumePublicAuthSuccessFeedback() {
   }
 }
 
+export function discardPublicAuthSuccessFeedback() {
+  getStorage()?.removeItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
+}
+
 export function showPublicAuthSuccessToast(message = PUBLIC_AUTH_SUCCESS_MESSAGE) {
   toast.success(message, {
     duration: 3200,

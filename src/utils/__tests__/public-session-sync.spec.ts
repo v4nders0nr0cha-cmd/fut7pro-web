@@ -60,12 +60,35 @@ describe("syncPublicAuthState", () => {
     expect(mockedMutate).not.toHaveBeenCalled();
   });
 
+  it("propaga falha de getSession sem tentar atualizar o provider", async () => {
+    mockedGetSession.mockRejectedValue(new Error("network failure"));
+    const refreshSession = jest.fn();
+
+    await expect(syncPublicAuthState({ publicSlug: "racha", refreshSession })).rejects.toThrow(
+      "network failure"
+    );
+
+    expect(refreshSession).not.toHaveBeenCalled();
+    expect(mockedMutate).not.toHaveBeenCalled();
+  });
+
   it("recusa navegar quando o SessionProvider permanece desatualizado", async () => {
     mockedGetSession.mockResolvedValue(authenticatedSession);
     const refreshSession = jest.fn().mockResolvedValue(null);
 
     await expect(syncPublicAuthState({ publicSlug: "racha", refreshSession })).rejects.toThrow(
       "PUBLIC_SESSION_PROVIDER_NOT_SYNCED"
+    );
+
+    expect(mockedMutate).not.toHaveBeenCalled();
+  });
+
+  it("propaga falha de update sem revalidar dados dependentes", async () => {
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+    const refreshSession = jest.fn().mockRejectedValue(new Error("provider failure"));
+
+    await expect(syncPublicAuthState({ publicSlug: "racha", refreshSession })).rejects.toThrow(
+      "provider failure"
     );
 
     expect(mockedMutate).not.toHaveBeenCalled();

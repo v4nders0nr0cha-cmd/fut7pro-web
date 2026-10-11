@@ -103,6 +103,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSessionSyncing, setIsSessionSyncing] = useState(false);
+  const [sessionSyncRetry, setSessionSyncRetry] = useState<{
+    targetHref: string;
+    successMessage: string;
+  } | null>(null);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
   const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
@@ -161,6 +166,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     async (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
       if (completedNavigationRef.current) return;
       completedNavigationRef.current = true;
+      setIsSessionSyncing(true);
 
       try {
         await syncPublicAuthState({
@@ -168,12 +174,17 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           refreshSession: update,
         });
       } catch {
+        completedNavigationRef.current = false;
+        setSessionSyncRetry({ targetHref, successMessage });
         setErro(
-          "Seu login foi confirmado, mas não foi possível atualizar a sessão da tela. Tente entrar novamente."
+          "Seu login foi confirmado, mas não foi possível atualizar a sessão da tela. Tente sincronizar novamente."
         );
         return;
+      } finally {
+        setIsSessionSyncing(false);
       }
 
+      setSessionSyncRetry(null);
       clearPublicAuthContext();
       queuePublicAuthSuccessFeedback(successMessage);
       router.replace(targetHref);
@@ -276,6 +287,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   useEffect(() => {
     if (!hasUsableSession) return;
     if (requestJoinInProgress) return;
+    if (sessionSyncRetry) return;
     if (completedNavigationRef.current) return;
 
     if (!publicSlug) {
@@ -356,6 +368,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     isLoadingGlobalProfile,
     requestJoinIntent,
     requestJoinInProgress,
+    sessionSyncRetry,
     returningFromGoogleLogin,
     finalizeSuccessfulLogin,
     navigateWithRefresh,
@@ -733,14 +746,15 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
   const renderedMembershipStatus = String(me?.membership?.status || "").toUpperCase();
   const resolvingExistingSession =
-    status === "loading" ||
-    (hasUsableSession &&
-      !isErrorMe &&
-      (!accountStateResolved ||
-        isLoadingGlobalProfile ||
-        (shouldLoadMe && isLoadingMe) ||
-        renderedMembershipStatus === "APROVADO" ||
-        renderedMembershipStatus === "PENDENTE"));
+    !sessionSyncRetry &&
+    (status === "loading" ||
+      (hasUsableSession &&
+        !isErrorMe &&
+        (!accountStateResolved ||
+          isLoadingGlobalProfile ||
+          (shouldLoadMe && isLoadingMe) ||
+          renderedMembershipStatus === "APROVADO" ||
+          renderedMembershipStatus === "PENDENTE")));
 
   if (resolvingExistingSession) {
     return (
@@ -751,6 +765,36 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           </p>
           <h1 className="mt-2 text-xl font-bold text-white">Acesse seu perfil</h1>
           <p className="mt-2 text-sm text-gray-300">Verificando seu acesso a {nomeDoRacha}...</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (sessionSyncRetry) {
+    return (
+      <section className="w-full px-4">
+        <div className="mx-auto w-full max-w-lg rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 text-center shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
+            Login confirmado
+          </p>
+          <h1 className="mt-2 text-xl font-bold text-white">Atualize sua sessão</h1>
+          <p className="mt-3 text-sm text-amber-100" role="alert">
+            {erro}
+          </p>
+          <button
+            type="button"
+            disabled={isSessionSyncing}
+            onClick={() => {
+              setErro("");
+              void finalizeSuccessfulLogin(
+                sessionSyncRetry.targetHref,
+                sessionSyncRetry.successMessage
+              );
+            }}
+            className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-brand px-4 py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSessionSyncing ? "Atualizando sessão..." : "Tentar sincronizar novamente"}
+          </button>
         </div>
       </section>
     );
