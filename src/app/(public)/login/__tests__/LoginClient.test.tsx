@@ -246,6 +246,33 @@ describe("LoginClient", () => {
     );
   });
 
+  it("navega normalmente quando o navegador bloqueia o sessionStorage", async () => {
+    const storageSpy = jest.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new DOMException("Storage blocked", "SecurityError");
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        membershipStatus: "APROVADO",
+      })
+    );
+
+    render(<LoginClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/"));
+    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
+    storageSpy.mockRestore();
+  });
+
   it("restaura o dialogo central apos login aprovado por codigo", async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce(

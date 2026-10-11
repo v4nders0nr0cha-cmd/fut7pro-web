@@ -178,12 +178,14 @@ describe("PublicAuthFeedbackCoordinator", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("preserva o sucesso enquanto o perfil global esta em erro e o exibe apos recuperar", async () => {
+  it("oferece nova tentativa quando o perfil falha e exibe o sucesso apos recuperar", async () => {
     profileState = { profile: null, isLoading: false, isError: true };
     queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
 
     const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(mutateMock).toHaveBeenCalledTimes(1));
 
     profileState = { profile: baseProfile, isLoading: false, isError: false };
     rerender(<PublicAuthFeedbackCoordinator />);
@@ -197,7 +199,7 @@ describe("PublicAuthFeedbackCoordinator", () => {
     queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
 
     const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
 
     profileState = {
       profile: {
@@ -212,5 +214,19 @@ describe("PublicAuthFeedbackCoordinator", () => {
     expect(await screen.findByText("Solicitação não aprovada")).toBeInTheDocument();
     expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("descarta o sucesso ao fechar conscientemente a recuperacao", () => {
+    profileState = { profile: null, isLoading: false, isError: true };
+    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
+
+    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
+    fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
+
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
+    rerender(<PublicAuthFeedbackCoordinator />);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
   });
 });
