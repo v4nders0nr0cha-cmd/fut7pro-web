@@ -20,7 +20,7 @@ import {
 import {
   PUBLIC_AUTH_SUCCESS_MESSAGE,
   getHumanAuthErrorMessage,
-  showPublicAuthSuccessToast,
+  queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
 import { syncPublicAuthState } from "@/utils/public-session-sync";
 import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
@@ -168,14 +168,17 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           refreshSession: update,
         });
       } catch {
-        // Mantem a navegacao mesmo se a revalidacao falhar.
+        setErro(
+          "Seu login foi confirmado, mas não foi possível atualizar a sessão da tela. Tente entrar novamente."
+        );
+        return;
       }
 
       clearPublicAuthContext();
-      showPublicAuthSuccessToast(successMessage);
-      navigateWithRefresh(targetHref);
+      queuePublicAuthSuccessFeedback(successMessage);
+      router.replace(targetHref);
     },
-    [navigateWithRefresh, publicSlug, update]
+    [publicSlug, router, update]
   );
 
   const buildRegisterHref = useCallback(
@@ -653,6 +656,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
   const handleEmailLogin = async (event: FormEvent) => {
     event.preventDefault();
+    completedNavigationRef.current = false;
     setErro("");
     setNotMemberMessage("");
     setRequestJoinInProgress(false);

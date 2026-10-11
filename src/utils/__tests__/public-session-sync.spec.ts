@@ -1,0 +1,87 @@
+import { getSession } from "next-auth/react";
+import { mutate } from "swr";
+import {
+  buildPublicAthleteMeKey,
+  buildPublicUnreadCountKey,
+  syncPublicAuthState,
+} from "@/utils/public-session-sync";
+
+jest.mock("next-auth/react", () => ({
+  getSession: jest.fn(),
+}));
+
+jest.mock("swr", () => ({
+  mutate: jest.fn(),
+}));
+
+const mockedGetSession = getSession as jest.Mock;
+const mockedMutate = mutate as jest.Mock;
+
+const authenticatedSession = {
+  user: {
+    id: "user-1",
+    name: "Pelé",
+    accessToken: "access-token",
+  },
+};
+
+describe("syncPublicAuthState", () => {
+  beforeEach(() => {
+    mockedGetSession.mockReset();
+    mockedMutate.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("confirma a sessao no servidor, atualiza o SessionProvider e revalida o tenant atual", async () => {
+    const refreshSession = jest.fn().mockResolvedValue(authenticatedSession);
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+
+    await expect(
+      syncPublicAuthState({ publicSlug: "Casa-Do-Gamer", refreshSession })
+    ).resolves.toEqual(authenticatedSession);
+
+    expect(mockedGetSession).toHaveBeenCalledTimes(1);
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(mockedMutate.mock.calls.map(([key]) => key)).toEqual([
+      "/api/perfil/global",
+      buildPublicAthleteMeKey("casa-do-gamer"),
+      buildPublicUnreadCountKey("casa-do-gamer"),
+    ]);
+  });
+
+  it("recusa continuar quando o servidor ainda nao confirma uma sessao utilizavel", async () => {
+    mockedGetSession.mockResolvedValue(null);
+    const refreshSession = jest.fn();
+
+    await expect(syncPublicAuthState({ publicSlug: "racha", refreshSession })).rejects.toThrow(
+      "PUBLIC_SESSION_NOT_CONFIRMED"
+    );
+
+    expect(refreshSession).not.toHaveBeenCalled();
+    expect(mockedMutate).not.toHaveBeenCalled();
+  });
+
+  it("recusa navegar quando o SessionProvider permanece desatualizado", async () => {
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+    const refreshSession = jest.fn().mockResolvedValue(null);
+
+    await expect(syncPublicAuthState({ publicSlug: "racha", refreshSession })).rejects.toThrow(
+      "PUBLIC_SESSION_PROVIDER_NOT_SYNCED"
+    );
+
+    expect(mockedMutate).not.toHaveBeenCalled();
+  });
+
+  it("revalida somente as chaves da pelada informada em cada sincronizacao", async () => {
+    const refreshSession = jest.fn().mockResolvedValue(authenticatedSession);
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+
+    await syncPublicAuthState({ publicSlug: "primeira-pelada", refreshSession });
+    mockedMutate.mockClear();
+    await syncPublicAuthState({ publicSlug: "segunda-pelada", refreshSession });
+
+    const revalidatedKeys = mockedMutate.mock.calls.map(([key]) => key);
+    expect(revalidatedKeys).toContain("/api/me?slug=segunda-pelada&context=athlete");
+    expect(revalidatedKeys).toContain("/api/public/segunda-pelada/notifications/unread-count");
+    expect(revalidatedKeys).not.toContain("/api/me?slug=primeira-pelada&context=athlete");
+  });
+});
