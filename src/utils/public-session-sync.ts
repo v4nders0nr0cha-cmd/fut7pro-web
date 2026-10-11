@@ -20,6 +20,7 @@ export function buildPublicUnreadCountKey(slug?: string | null) {
 type SyncPublicAuthStateOptions = {
   publicSlug?: string | null;
   refreshSession?: () => Promise<unknown>;
+  waitForProviderSession?: () => Promise<unknown>;
 };
 
 export async function syncPublicAuthState(options: SyncPublicAuthStateOptions = {}) {
@@ -28,7 +29,11 @@ export async function syncPublicAuthState(options: SyncPublicAuthStateOptions = 
     throw new Error("PUBLIC_SESSION_NOT_CONFIRMED");
   }
 
-  const providerSession = options.refreshSession ? await options.refreshSession() : serverSession;
+  const providerSession = options.refreshSession
+    ? await options.refreshSession()
+    : options.waitForProviderSession
+      ? await options.waitForProviderSession()
+      : serverSession;
   if (!hasUsableFut7ProSession(providerSession as typeof serverSession, "authenticated")) {
     throw new Error("PUBLIC_SESSION_PROVIDER_NOT_SYNCED");
   }

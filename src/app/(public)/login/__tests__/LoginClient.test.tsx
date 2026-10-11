@@ -234,7 +234,8 @@ describe("LoginClient", () => {
 
     expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
       publicSlug: "casa-do-gamer",
-      refreshSession: updateSessionMock,
+      refreshSession: undefined,
+      waitForProviderSession: expect.any(Function),
     });
     expect(refreshMock).not.toHaveBeenCalled();
     expect(consumePublicAuthSuccessFeedback()).toEqual(
@@ -339,6 +340,7 @@ describe("LoginClient", () => {
     expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
       publicSlug: "casa-do-gamer",
       refreshSession: updateSessionMock,
+      waitForProviderSession: expect.any(Function),
     });
     expect(consumePublicAuthSuccessFeedback()).toEqual(
       expect.objectContaining({ title: "Login realizado com sucesso" })

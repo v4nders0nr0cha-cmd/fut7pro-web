@@ -133,7 +133,10 @@ describe("login publico integrado ao Header", () => {
     mockReplace.mockReset();
     mockRefresh.mockReset();
     mockSignIn.mockReset().mockResolvedValue({});
-    mockGetSession.mockReset().mockImplementation(async () => mockConfirmedSession);
+    mockGetSession.mockReset().mockImplementation(async () => {
+      mockEmitSession({ data: mockConfirmedSession, status: "authenticated" });
+      return mockConfirmedSession;
+    });
     mockMutate.mockReset().mockResolvedValue(undefined);
     mockUpdateSession.mockReset().mockImplementation(async () => {
       mockEmitSession({ data: mockConfirmedSession, status: "authenticated" });
@@ -183,7 +186,7 @@ describe("login publico integrado ao Header", () => {
     });
 
     expect(mockGetSession).toHaveBeenCalledTimes(1);
-    expect(mockUpdateSession).toHaveBeenCalledTimes(1);
+    expect(mockUpdateSession).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/casa-do-gamer/");
     expect(mockRefresh).not.toHaveBeenCalled();
   });

@@ -15,7 +15,7 @@ export default function PublicAuthFeedbackCoordinator() {
   const { data: session, status } = useSession();
   const tenantSlug = resolvePublicTenantSlug(pathname);
   const hasSession = hasUsableFut7ProSession(session, status);
-  const { profile, isLoading } = useGlobalProfile({
+  const { profile, isLoading, isError } = useGlobalProfile({
     enabled: hasSession && Boolean(tenantSlug),
   });
 
@@ -25,7 +25,7 @@ export default function PublicAuthFeedbackCoordinator() {
   }, [profile?.accountNotifications, tenantSlug]);
 
   const isResolvingDecision =
-    status === "loading" || Boolean(hasSession && tenantSlug && isLoading);
+    status === "loading" || Boolean(hasSession && tenantSlug && (isLoading || isError || !profile));
   const hasPriorityDecision = Boolean(decision);
 
   return (

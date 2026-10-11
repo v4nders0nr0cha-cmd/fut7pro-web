@@ -6,6 +6,7 @@ let pathnameMock = "/seu-racha";
 let profileState: {
   profile: typeof baseProfile | null;
   isLoading: boolean;
+  isError: boolean;
 };
 const mutateMock = jest.fn();
 
@@ -80,20 +81,20 @@ function decisionNotification(decision: "APROVADA" | "REJEITADA") {
 describe("PublicAuthFeedbackCoordinator", () => {
   beforeEach(() => {
     pathnameMock = "/seu-racha";
-    profileState = { profile: baseProfile, isLoading: false };
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
     mutateMock.mockReset().mockResolvedValue(undefined);
     sessionStorage.clear();
     global.fetch = jest.fn().mockResolvedValue({ ok: true }) as jest.Mock;
   });
 
   it("mostra o sucesso generico somente depois de resolver que nao existe decisao", async () => {
-    profileState = { profile: null, isLoading: true };
+    profileState = { profile: null, isLoading: true, isError: false };
     queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
 
     const { rerender } = render(<PublicAuthFeedbackCoordinator />);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    profileState = { profile: baseProfile, isLoading: false };
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
     rerender(<PublicAuthFeedbackCoordinator />);
 
     expect(await screen.findByText("Login realizado com sucesso")).toBeInTheDocument();
@@ -104,7 +105,7 @@ describe("PublicAuthFeedbackCoordinator", () => {
     ["APROVADA", "Entrada aprovada!"],
     ["REJEITADA", "Solicitação não aprovada"],
   ] as const)("prioriza a decisao %s e descarta o sucesso generico", async (decision, title) => {
-    profileState = { profile: null, isLoading: true };
+    profileState = { profile: null, isLoading: true, isError: false };
     queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
     const { rerender } = render(<PublicAuthFeedbackCoordinator />);
 
@@ -114,6 +115,7 @@ describe("PublicAuthFeedbackCoordinator", () => {
         accountNotifications: [decisionNotification(decision)],
       },
       isLoading: false,
+      isError: false,
     };
     rerender(<PublicAuthFeedbackCoordinator />);
 
@@ -134,6 +136,7 @@ describe("PublicAuthFeedbackCoordinator", () => {
         accountNotifications: [decisionNotification("APROVADA")],
       },
       isLoading: false,
+      isError: false,
     };
     rerender(<PublicAuthFeedbackCoordinator />);
 
@@ -150,13 +153,14 @@ describe("PublicAuthFeedbackCoordinator", () => {
         accountNotifications: [decisionNotification("APROVADA")],
       },
       isLoading: false,
+      isError: false,
     };
     const { rerender } = render(<PublicAuthFeedbackCoordinator />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Continuar no grupo" }));
     await waitFor(() => expect(global.fetch).toHaveBeenCalled());
 
-    profileState = { profile: baseProfile, isLoading: false };
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
     rerender(<PublicAuthFeedbackCoordinator />);
 
     expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
@@ -172,5 +176,41 @@ describe("PublicAuthFeedbackCoordinator", () => {
     rerender(<PublicAuthFeedbackCoordinator />);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("preserva o sucesso enquanto o perfil global esta em erro e o exibe apos recuperar", async () => {
+    profileState = { profile: null, isLoading: false, isError: true };
+    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
+
+    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
+    rerender(<PublicAuthFeedbackCoordinator />);
+
+    expect(await screen.findByText("Login realizado com sucesso")).toBeInTheDocument();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
+
+  it("descarta o sucesso se a recuperacao do perfil revelar uma decisao prioritaria", async () => {
+    profileState = { profile: null, isLoading: false, isError: true };
+    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
+
+    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    profileState = {
+      profile: {
+        ...baseProfile,
+        accountNotifications: [decisionNotification("REJEITADA")],
+      },
+      isLoading: false,
+      isError: false,
+    };
+    rerender(<PublicAuthFeedbackCoordinator />);
+
+    expect(await screen.findByText("Solicitação não aprovada")).toBeInTheDocument();
+    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
 });

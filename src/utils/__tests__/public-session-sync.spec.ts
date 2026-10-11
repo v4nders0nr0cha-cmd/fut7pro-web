@@ -48,6 +48,31 @@ describe("syncPublicAuthState", () => {
     ]);
   });
 
+  it("aguarda a transicao viva do SessionProvider no primeiro login", async () => {
+    const waitForProviderSession = jest.fn().mockResolvedValue(authenticatedSession);
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+
+    await expect(
+      syncPublicAuthState({ publicSlug: "Casa-Do-Gamer", waitForProviderSession })
+    ).resolves.toEqual(authenticatedSession);
+
+    expect(waitForProviderSession).toHaveBeenCalledTimes(1);
+    expect(mockedMutate).toHaveBeenCalledTimes(3);
+  });
+
+  it("recusa navegar quando a transicao viva do SessionProvider falha", async () => {
+    const waitForProviderSession = jest
+      .fn()
+      .mockRejectedValue(new Error("PUBLIC_SESSION_PROVIDER_TIMEOUT"));
+    mockedGetSession.mockResolvedValue(authenticatedSession);
+
+    await expect(
+      syncPublicAuthState({ publicSlug: "racha", waitForProviderSession })
+    ).rejects.toThrow("PUBLIC_SESSION_PROVIDER_TIMEOUT");
+
+    expect(mockedMutate).not.toHaveBeenCalled();
+  });
+
   it("recusa continuar quando o servidor ainda nao confirma uma sessao utilizavel", async () => {
     mockedGetSession.mockResolvedValue(null);
     const refreshSession = jest.fn();

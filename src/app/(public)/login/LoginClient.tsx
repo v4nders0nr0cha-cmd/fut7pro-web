@@ -45,6 +45,13 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 const VITRINE_AUTH_BLOCKED_MESSAGE =
   "Este ambiente de demonstração é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 const MAX_JOIN_MESSAGE_LENGTH = 500;
+const SESSION_PROVIDER_SYNC_TIMEOUT_MS = 8000;
+
+type SessionWaiter = {
+  resolve: (session: unknown) => void;
+  reject: (error: Error) => void;
+  timeoutId: number;
+};
 
 function normalizeJoinMessage(value: string) {
   return value
@@ -93,6 +100,9 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
+  const sessionSnapshotRef = useRef({ session, status });
+  const sessionWaitersRef = useRef(new Set<SessionWaiter>());
+  sessionSnapshotRef.current = { session, status };
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -162,6 +172,46 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     [router]
   );
 
+  useEffect(() => {
+    if (!hasUsableFut7ProSession(session, status)) return;
+
+    sessionWaitersRef.current.forEach((waiter) => {
+      window.clearTimeout(waiter.timeoutId);
+      waiter.resolve(session);
+    });
+    sessionWaitersRef.current.clear();
+  }, [session, status]);
+
+  useEffect(
+    () => () => {
+      sessionWaitersRef.current.forEach((waiter) => {
+        window.clearTimeout(waiter.timeoutId);
+        waiter.reject(new Error("PUBLIC_SESSION_PROVIDER_UNMOUNTED"));
+      });
+      sessionWaitersRef.current.clear();
+    },
+    []
+  );
+
+  const waitForProviderSession = useCallback(() => {
+    const current = sessionSnapshotRef.current;
+    if (hasUsableFut7ProSession(current.session, current.status)) {
+      return Promise.resolve(current.session);
+    }
+
+    return new Promise<unknown>((resolve, reject) => {
+      const waiter: SessionWaiter = {
+        resolve,
+        reject,
+        timeoutId: window.setTimeout(() => {
+          sessionWaitersRef.current.delete(waiter);
+          reject(new Error("PUBLIC_SESSION_PROVIDER_TIMEOUT"));
+        }, SESSION_PROVIDER_SYNC_TIMEOUT_MS),
+      };
+      sessionWaitersRef.current.add(waiter);
+    });
+  }, []);
+
   const finalizeSuccessfulLogin = useCallback(
     async (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
       if (completedNavigationRef.current) return;
@@ -171,7 +221,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       try {
         await syncPublicAuthState({
           publicSlug,
-          refreshSession: update,
+          // NextAuth v4 captures the session in update(). A callback rendered before
+          // credentials login cannot refresh a previously null session, so initial
+          // login waits for SessionProvider's broadcast-driven state transition.
+          refreshSession: hasUsableSession ? update : undefined,
+          waitForProviderSession,
         });
       } catch {
         completedNavigationRef.current = false;
@@ -189,7 +243,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       queuePublicAuthSuccessFeedback(successMessage);
       router.replace(targetHref);
     },
-    [publicSlug, router, update]
+    [hasUsableSession, publicSlug, router, update, waitForProviderSession]
   );
 
   const buildRegisterHref = useCallback(
