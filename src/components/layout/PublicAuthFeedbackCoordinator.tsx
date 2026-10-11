@@ -29,10 +29,10 @@ export default function PublicAuthFeedbackCoordinator() {
   }, [profile?.accountNotifications, tenantSlug]);
 
   const isResolvingDecision =
-    status === "loading" || Boolean(hasSession && tenantSlug && (isLoading || !profile));
-  const hasPriorityDecision = Boolean(decision);
+    status === "loading" || Boolean(hasSession && tenantSlug && (isLoading || isError || !profile));
+  const hasPriorityDecision = Boolean(decision && !isError);
   const showRecovery = Boolean(
-    hasSession && tenantSlug && !profile && isError && dismissedRecoveryForSlug !== tenantSlug
+    hasSession && tenantSlug && isError && dismissedRecoveryForSlug !== tenantSlug
   );
 
   const retryProfile = async () => {
@@ -54,7 +54,7 @@ export default function PublicAuthFeedbackCoordinator() {
 
   return (
     <>
-      <AthleteRequestDecisionDialog />
+      <AthleteRequestDecisionDialog suppress={isError} />
       <PublicAuthSuccessDialog
         suppress={isResolvingDecision || hasPriorityDecision}
         discard={hasPriorityDecision}

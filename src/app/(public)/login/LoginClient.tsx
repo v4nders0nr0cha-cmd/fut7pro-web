@@ -239,9 +239,17 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
       }
 
       setSessionSyncRetry(null);
-      clearPublicAuthContext();
-      queuePublicAuthSuccessFeedback(successMessage);
-      router.replace(targetHref);
+      try {
+        clearPublicAuthContext();
+        queuePublicAuthSuccessFeedback(successMessage);
+      } catch {
+        // O login ja foi confirmado; armazenamento local indisponivel apenas
+        // elimina o feedback entre paginas e nao invalida a sessao.
+      } finally {
+        // O armazenamento do navegador e apenas auxiliar. Uma falha local nao
+        // pode impedir a navegacao depois que a sessao foi confirmada.
+        router.replace(targetHref);
+      }
     },
     [hasUsableSession, publicSlug, router, update, waitForProviderSession]
   );

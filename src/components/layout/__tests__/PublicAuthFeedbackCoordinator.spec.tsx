@@ -229,4 +229,31 @@ describe("PublicAuthFeedbackCoordinator", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
   });
+
+  it("nao confia em notificacoes do cache quando a revalidacao falha", async () => {
+    profileState = {
+      profile: {
+        ...baseProfile,
+        accountNotifications: [decisionNotification("APROVADA")],
+      },
+      isLoading: false,
+      isError: true,
+    };
+    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
+
+    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
+
+    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
+    expect(screen.queryByText("Entrada aprovada!")).not.toBeInTheDocument();
+    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+    await waitFor(() => expect(mutateMock).toHaveBeenCalledTimes(1));
+
+    profileState = { profile: baseProfile, isLoading: false, isError: false };
+    rerender(<PublicAuthFeedbackCoordinator />);
+
+    expect(await screen.findByText("Login realizado com sucesso")).toBeInTheDocument();
+    expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  });
 });
