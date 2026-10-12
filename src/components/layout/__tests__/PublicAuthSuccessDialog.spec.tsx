@@ -50,9 +50,18 @@ describe("PublicAuthSuccessDialog", () => {
   it("nao mostra o modal generico quando uma decisao de entrada tem prioridade", () => {
     queuePublicAuthSuccessFeedback("Seu perfil já está disponível.");
 
-    render(<PublicAuthSuccessDialog suppress />);
+    const { rerender } = render(<PublicAuthSuccessDialog suppress />);
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
+
+    rerender(<PublicAuthSuccessDialog suppress={false} />);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Seu perfil já está disponível.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    rerender(<PublicAuthSuccessDialog suppress={false} />);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

@@ -1,5 +1,6 @@
 import { getSession } from "next-auth/react";
 import { mutate } from "swr";
+import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 
 function normalizeSlug(slug?: string | null) {
   const normalized = slug?.trim().toLowerCase() || "";
@@ -19,19 +20,22 @@ export function buildPublicUnreadCountKey(slug?: string | null) {
 type SyncPublicAuthStateOptions = {
   publicSlug?: string | null;
   refreshSession?: () => Promise<unknown>;
+  waitForProviderSession?: () => Promise<unknown>;
 };
 
 export async function syncPublicAuthState(options: SyncPublicAuthStateOptions = {}) {
-  const refreshSession = options.refreshSession;
+  const serverSession = await getSession();
+  if (!hasUsableFut7ProSession(serverSession, "authenticated")) {
+    throw new Error("PUBLIC_SESSION_NOT_CONFIRMED");
+  }
 
-  try {
-    if (refreshSession) {
-      await refreshSession();
-    } else {
-      await getSession();
-    }
-  } catch {
-    await getSession().catch(() => null);
+  const providerSession = options.refreshSession
+    ? await options.refreshSession()
+    : options.waitForProviderSession
+      ? await options.waitForProviderSession()
+      : serverSession;
+  if (!hasUsableFut7ProSession(providerSession as typeof serverSession, "authenticated")) {
+    throw new Error("PUBLIC_SESSION_PROVIDER_NOT_SYNCED");
   }
 
   const keys = [
@@ -41,4 +45,6 @@ export async function syncPublicAuthState(options: SyncPublicAuthStateOptions = 
   ].filter((key): key is string => Boolean(key));
 
   await Promise.all(keys.map((key) => mutate(key).catch(() => null)));
+
+  return providerSession;
 }

@@ -6,31 +6,37 @@ import { useSession } from "next-auth/react";
 import Fut7SuccessDialog from "@/components/ui/feedback/Fut7SuccessDialog";
 import {
   consumePublicAuthSuccessFeedback,
+  discardPublicAuthSuccessFeedback,
   type PublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
 
 const AUTO_CLOSE_MS = 2600;
 
-export default function PublicAuthSuccessDialog({ suppress = false }: { suppress?: boolean }) {
+export default function PublicAuthSuccessDialog({
+  suppress = false,
+  discard = false,
+}: {
+  suppress?: boolean;
+  discard?: boolean;
+}) {
   const pathname = usePathname();
   const { status } = useSession();
   const [feedback, setFeedback] = useState<PublicAuthSuccessFeedback | null>(null);
 
   useEffect(() => {
-    if (suppress) return;
     if (status !== "authenticated") return;
+    if (discard) {
+      discardPublicAuthSuccessFeedback();
+      setFeedback(null);
+      return;
+    }
+    if (suppress) return;
 
     const nextFeedback = consumePublicAuthSuccessFeedback();
     if (!nextFeedback) return;
 
     setFeedback(nextFeedback);
-  }, [pathname, status, suppress]);
-
-  useEffect(() => {
-    if (suppress) {
-      setFeedback(null);
-    }
-  }, [suppress]);
+  }, [discard, pathname, status, suppress]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -39,7 +45,7 @@ export default function PublicAuthSuccessDialog({ suppress = false }: { suppress
     return () => window.clearTimeout(timer);
   }, [feedback]);
 
-  if (!feedback) return null;
+  if (!feedback || suppress || discard) return null;
 
   return (
     <Fut7SuccessDialog

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import LoginClient from "../LoginClient";
+import { consumePublicAuthSuccessFeedback } from "@/utils/public-auth-feedback";
 
 jest.mock("next/image", () => ({
   __esModule: true,
@@ -14,10 +15,12 @@ const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
 const signInMock = jest.fn();
+const syncPublicAuthStateMock = jest.fn();
+let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock, refresh: refreshMock }),
-  useSearchParams: () => new URLSearchParams(),
+  useSearchParams: () => searchParamsMock,
 }));
 
 jest.mock("next-auth/react", () => ({
@@ -53,7 +56,7 @@ jest.mock("@/components/security/TurnstileWidget", () => ({
 }));
 
 jest.mock("@/utils/public-session-sync", () => ({
-  syncPublicAuthState: jest.fn().mockResolvedValue(undefined),
+  syncPublicAuthState: (...args: unknown[]) => syncPublicAuthStateMock(...args),
 }));
 
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
@@ -98,6 +101,10 @@ describe("LoginClient", () => {
     refreshMock.mockReset();
     updateSessionMock.mockReset();
     signInMock.mockClear();
+    syncPublicAuthStateMock.mockReset().mockResolvedValue({
+      user: { accessToken: "access-token" },
+    });
+    searchParamsMock = new URLSearchParams();
     sessionStorage.clear();
   });
 
@@ -198,6 +205,354 @@ describe("LoginClient", () => {
       refreshToken: "refresh-token",
       authProvider: "credentials",
     });
+    expect(consumePublicAuthSuccessFeedback()).toBeNull();
+  });
+
+  it("sincroniza a sessao, enfileira o dialogo e navega sem reload apos login aprovado", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        membershipStatus: "APROVADO",
+      })
+    );
+
+    render(<LoginClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+
+    expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
+      publicSlug: "casa-do-gamer",
+      refreshSession: undefined,
+      waitForProviderSession: expect.any(Function),
+    });
+    expect(refreshMock).not.toHaveBeenCalled();
+    expect(consumePublicAuthSuccessFeedback()).toEqual(
+      expect.objectContaining({
+        title: "Login realizado com sucesso",
+        message: "Login realizado com sucesso. Seu perfil já está disponível.",
+      })
+    );
+  });
+
+  it("navega normalmente quando o navegador bloqueia o sessionStorage", async () => {
+    const storageSpy = jest.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new DOMException("Storage blocked", "SecurityError");
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        membershipStatus: "APROVADO",
+      })
+    );
+
+    render(<LoginClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/"));
+    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
+    storageSpy.mockRestore();
+  });
+
+  it("navega normalmente quando a limpeza do contexto local falha", async () => {
+    const storageSpy = jest.spyOn(Storage.prototype, "removeItem").mockImplementationOnce(() => {
+      throw new DOMException("Storage blocked", "SecurityError");
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        membershipStatus: "APROVADO",
+      })
+    );
+
+    render(<LoginClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/"));
+    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
+    storageSpy.mockRestore();
+  });
+
+  it("restaura o dialogo central apos login aprovado por codigo", async () => {
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          ok: true,
+          message: "Se estiver tudo certo, enviamos seu código.",
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          accessToken: "access-token",
+          refreshToken: "refresh-token",
+          membershipStatus: "APROVADO",
+        })
+      );
+
+    render(<LoginClient />);
+
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Enviar código de acesso" }));
+    await screen.findByPlaceholderText("Digite os 6 dígitos");
+
+    fireEvent.change(screen.getByPlaceholderText("Digite os 6 dígitos"), {
+      target: { value: "123456" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Acessar perfil" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(signInMock).toHaveBeenCalledWith("credentials", {
+      redirect: false,
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+      authProvider: "passwordless",
+    });
+    expect(consumePublicAuthSuccessFeedback()).toEqual(
+      expect.objectContaining({ title: "Login realizado com sucesso" })
+    );
+  });
+
+  it("sincroniza o retorno do Google antes de navegar e mostrar o sucesso", async () => {
+    const authenticatedSession = {
+      user: {
+        id: "user-1",
+        email: "atleta@teste.com",
+        name: "Atleta",
+        accessToken: "access-token",
+      },
+    };
+    searchParamsMock = new URLSearchParams("oauth=google&callbackUrl=%2Fcasa-do-gamer%2Fperfil");
+    mockedUseSession.mockReturnValue({
+      data: authenticatedSession,
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        athlete: {
+          firstName: "Atleta",
+          position: "atacante",
+          positionSecondary: "meia",
+          birthDay: 1,
+          birthMonth: 1,
+        },
+        membership: { status: "APROVADO" },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Atleta",
+          position: "atacante",
+          positionSecondary: "meia",
+          birthDay: 1,
+          birthMonth: 1,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<LoginClient />);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/perfil");
+    });
+    expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
+      publicSlug: "casa-do-gamer",
+      refreshSession: updateSessionMock,
+      waitForProviderSession: expect.any(Function),
+    });
+    expect(consumePublicAuthSuccessFeedback()).toEqual(
+      expect.objectContaining({ title: "Login realizado com sucesso" })
+    );
+  });
+
+  it("nao enfileira sucesso quando o login falha", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse(
+        { code: "INVALID_CREDENTIALS", message: "Credenciais inválidas." },
+        false,
+        401
+      )
+    );
+
+    render(<LoginClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "incorreta" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(
+      await screen.findByText("E-mail ou senha inválidos. Confira os dados e tente novamente.")
+    ).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(consumePublicAuthSuccessFeedback()).toBeNull();
+  });
+
+  it("oferece nova sincronizacao sem repetir o login apos falha transitoria", async () => {
+    syncPublicAuthStateMock
+      .mockRejectedValueOnce(new Error("session unavailable"))
+      .mockResolvedValueOnce({ user: { accessToken: "access-token" } });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        accessToken: "access-token",
+        refreshToken: "refresh-token",
+        membershipStatus: "APROVADO",
+      })
+    );
+
+    render(<LoginClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(
+      await screen.findByText(/Seu login foi confirmado.*Tente sincronizar novamente/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(signInMock).toHaveBeenCalledTimes(1);
+
+    const retryButton = screen.getByRole("button", { name: "Tentar sincronizar novamente" });
+    fireEvent.click(retryButton);
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(syncPublicAuthStateMock).toHaveBeenCalledTimes(2);
+    expect(signInMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("permite recuperar o retorno do Google apos falha transitoria", async () => {
+    syncPublicAuthStateMock
+      .mockRejectedValueOnce(new Error("session unavailable"))
+      .mockResolvedValueOnce({ user: { accessToken: "access-token" } });
+    searchParamsMock = new URLSearchParams("oauth=google&callbackUrl=%2Fcasa-do-gamer%2F");
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "atleta@teste.com",
+          name: "Atleta",
+          accessToken: "access-token",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: {
+        athlete: {
+          firstName: "Atleta",
+          position: "atacante",
+          positionSecondary: "meia",
+          birthDay: 1,
+          birthMonth: 1,
+        },
+        membership: { status: "APROVADO" },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Atleta",
+          position: "atacante",
+          positionSecondary: "meia",
+          birthDay: 1,
+          birthMonth: 1,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+
+    render(<LoginClient />);
+
+    expect(
+      await screen.findByRole("button", { name: "Tentar sincronizar novamente" })
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Tentar sincronizar novamente" }));
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+    expect(syncPublicAuthStateMock).toHaveBeenCalledTimes(2);
+    expect(signInMock).not.toHaveBeenCalled();
+  });
+
+  it("nao enfileira sucesso quando a solicitacao ainda esta pendente", async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse(
+        { code: "REQUEST_PENDING", message: "Sua solicitação ainda está pendente." },
+        false,
+        403
+      )
+    );
+
+    render(<LoginClient />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
+      target: { value: "atleta@teste.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
+      target: { value: "Senha123!" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
+
+    expect(await screen.findByText("Solicitação pendente")).toBeInTheDocument();
+    expect(replaceMock).not.toHaveBeenCalled();
+    expect(consumePublicAuthSuccessFeedback()).toBeNull();
   });
 
   it("sessao global autenticada sem papel ATLETA pode solicitar entrada", async () => {

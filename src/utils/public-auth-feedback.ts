@@ -17,7 +17,11 @@ export type PublicAuthSuccessFeedback = {
 
 function getStorage() {
   if (typeof window === "undefined") return null;
-  return window.sessionStorage;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 export function queuePublicAuthSuccessFeedback(
@@ -33,19 +37,24 @@ export function queuePublicAuthSuccessFeedback(
     createdAt: Date.now(),
   };
 
-  storage.setItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY, JSON.stringify(payload));
+  try {
+    storage.setItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // O feedback visual e melhor esforco; falhas de armazenamento nao podem
+    // interromper um login que ja foi confirmado.
+  }
 }
 
 export function consumePublicAuthSuccessFeedback() {
   const storage = getStorage();
   if (!storage) return null;
 
-  const raw = storage.getItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
-  if (!raw) return null;
-
-  storage.removeItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
-
   try {
+    const raw = storage.getItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
+    if (!raw) return null;
+
+    storage.removeItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
+
     const payload = JSON.parse(raw) as Partial<PublicAuthSuccessFeedback>;
     const title = String(payload.title || "").trim();
     const message = String(payload.message || "").trim();
@@ -66,6 +75,14 @@ export function consumePublicAuthSuccessFeedback() {
     } satisfies PublicAuthSuccessFeedback;
   } catch {
     return null;
+  }
+}
+
+export function discardPublicAuthSuccessFeedback() {
+  try {
+    getStorage()?.removeItem(PUBLIC_AUTH_SUCCESS_STORAGE_KEY);
+  } catch {
+    // Nada a descartar quando o navegador bloqueia o armazenamento.
   }
 }
 
