@@ -81,36 +81,6 @@ describe("AthleteRequestDecisionDialog", () => {
     });
   });
 
-  it("nao mostra uma decisao em cache quando o coordenador a suprime", () => {
-    useGlobalProfileMock.mockReturnValue({
-      profile: {
-        ...baseProfile,
-        accountNotifications: [
-          {
-            id: "notification-stale",
-            title: "Entrada aprovada!",
-            body: "Aprovado",
-            href: "/seu-racha/perfil",
-            readAt: null,
-            createdAt: "2026-09-14T12:00:00.000Z",
-            metadata: {
-              kind: "ATHLETE_REQUEST_DECISION",
-              tenantSlug: "seu-racha",
-              tenantName: "Seu Racha",
-              decision: "APROVADA",
-            },
-          },
-        ],
-      },
-      mutate: mutateMock,
-    });
-
-    render(<AthleteRequestDecisionDialog suppress />);
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByText("Entrada aprovada!")).not.toBeInTheDocument();
-  });
-
   it("mostra modal de aprovacao somente para a decisao nao lida do tenant atual", () => {
     useGlobalProfileMock.mockReturnValue({
       profile: {

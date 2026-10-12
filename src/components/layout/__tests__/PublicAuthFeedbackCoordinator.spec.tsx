@@ -8,7 +8,6 @@ let profileState: {
   isLoading: boolean;
   isError: boolean;
 };
-const mutateMock = jest.fn();
 
 jest.mock("next/navigation", () => ({
   usePathname: () => pathnameMock,
@@ -28,7 +27,7 @@ jest.mock("next-auth/react", () => ({
 }));
 
 jest.mock("@/hooks/useGlobalProfile", () => ({
-  useGlobalProfile: () => ({ ...profileState, mutate: mutateMock }),
+  useGlobalProfile: () => profileState,
 }));
 
 const baseProfile = {
@@ -82,7 +81,6 @@ describe("PublicAuthFeedbackCoordinator", () => {
   beforeEach(() => {
     pathnameMock = "/seu-racha";
     profileState = { profile: baseProfile, isLoading: false, isError: false };
-    mutateMock.mockReset().mockResolvedValue(undefined);
     sessionStorage.clear();
     global.fetch = jest.fn().mockResolvedValue({ ok: true }) as jest.Mock;
   });
@@ -178,82 +176,30 @@ describe("PublicAuthFeedbackCoordinator", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("oferece nova tentativa quando o perfil falha e exibe o sucesso apos recuperar", async () => {
+  it("nao bloqueia o sucesso generico quando a consulta do perfil falha", async () => {
     profileState = { profile: null, isLoading: false, isError: true };
-    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
-
-    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(mutateMock).toHaveBeenCalledTimes(1));
-
-    profileState = { profile: baseProfile, isLoading: false, isError: false };
-    rerender(<PublicAuthFeedbackCoordinator />);
+    queuePublicAuthSuccessFeedback("Login confirmado.");
+    render(<PublicAuthFeedbackCoordinator />);
 
     expect(await screen.findByText("Login realizado com sucesso")).toBeInTheDocument();
+    expect(screen.getByText("Login confirmado.")).toBeInTheDocument();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
 
-  it("descarta o sucesso se a recuperacao do perfil revelar uma decisao prioritaria", async () => {
-    profileState = { profile: null, isLoading: false, isError: true };
+  it("da prioridade a uma decisao conhecida mesmo se a revalidacao falhar", async () => {
     queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
-
-    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
-
     profileState = {
       profile: {
         ...baseProfile,
         accountNotifications: [decisionNotification("REJEITADA")],
       },
       isLoading: false,
-      isError: false,
+      isError: true,
     };
-    rerender(<PublicAuthFeedbackCoordinator />);
+    render(<PublicAuthFeedbackCoordinator />);
 
     expect(await screen.findByText("Solicitação não aprovada")).toBeInTheDocument();
     expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("dialog")).toHaveLength(1);
-  });
-
-  it("descarta o sucesso ao fechar conscientemente a recuperacao", () => {
-    profileState = { profile: null, isLoading: false, isError: true };
-    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
-
-    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-    fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
-
-    profileState = { profile: baseProfile, isLoading: false, isError: false };
-    rerender(<PublicAuthFeedbackCoordinator />);
-
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
-  });
-
-  it("nao confia em notificacoes do cache quando a revalidacao falha", async () => {
-    profileState = {
-      profile: {
-        ...baseProfile,
-        accountNotifications: [decisionNotification("APROVADA")],
-      },
-      isLoading: false,
-      isError: true,
-    };
-    queuePublicAuthSuccessFeedback("Seu perfil está disponível.");
-
-    const { rerender } = render(<PublicAuthFeedbackCoordinator />);
-
-    expect(screen.getByText("Não foi possível verificar suas notificações")).toBeInTheDocument();
-    expect(screen.queryByText("Entrada aprovada!")).not.toBeInTheDocument();
-    expect(screen.queryByText("Login realizado com sucesso")).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
-    await waitFor(() => expect(mutateMock).toHaveBeenCalledTimes(1));
-
-    profileState = { profile: baseProfile, isLoading: false, isError: false };
-    rerender(<PublicAuthFeedbackCoordinator />);
-
-    expect(await screen.findByText("Login realizado com sucesso")).toBeInTheDocument();
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
   });
 });

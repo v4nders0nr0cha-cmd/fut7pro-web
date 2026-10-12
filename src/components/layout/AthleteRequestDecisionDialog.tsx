@@ -39,7 +39,7 @@ async function markAccountNotificationRead(notification: AthleteRequestDecisionN
   return "read" as const;
 }
 
-export default function AthleteRequestDecisionDialog({ suppress = false }: { suppress?: boolean }) {
+export default function AthleteRequestDecisionDialog() {
   const pathname = usePathname() ?? "";
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -82,7 +82,7 @@ export default function AthleteRequestDecisionDialog({ suppress = false }: { sup
     [mutate, notification, router]
   );
 
-  if (suppress || !notification || !tenantSlug) return null;
+  if (!notification || !tenantSlug) return null;
 
   const tenantName = getDecisionTenantName(notification, profile?.memberships);
   const isApproved = notification.metadata.decision === "APROVADA";
