@@ -15,7 +15,6 @@ const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
 const signInMock = jest.fn();
-const syncPublicAuthStateMock = jest.fn();
 let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
@@ -53,10 +52,6 @@ jest.mock("@/components/security/TurnstileWidget", () => ({
   TURNSTILE_UNAVAILABLE_MESSAGE: "Não foi possível carregar a verificação de segurança.",
   isTurnstileErrorCode: () => false,
   resolveTurnstileErrorMessage: () => "Não foi possível validar a verificação de segurança.",
-}));
-
-jest.mock("@/utils/public-session-sync", () => ({
-  syncPublicAuthState: (...args: unknown[]) => syncPublicAuthStateMock(...args),
 }));
 
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
@@ -101,9 +96,6 @@ describe("LoginClient", () => {
     refreshMock.mockReset();
     updateSessionMock.mockReset();
     signInMock.mockClear();
-    syncPublicAuthStateMock.mockReset().mockResolvedValue({
-      user: { accessToken: "access-token" },
-    });
     searchParamsMock = new URLSearchParams();
     sessionStorage.clear();
   });
@@ -208,7 +200,7 @@ describe("LoginClient", () => {
     expect(consumePublicAuthSuccessFeedback()).toBeNull();
   });
 
-  it("sincroniza a sessao, enfileira o dialogo e navega sem reload apos login aprovado", async () => {
+  it("enfileira o dialogo, revalida o layout e navega sem reload apos login aprovado", async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({
         accessToken: "access-token",
@@ -232,12 +224,7 @@ describe("LoginClient", () => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
     });
 
-    expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
-      publicSlug: "casa-do-gamer",
-      refreshSession: undefined,
-      waitForProviderSession: expect.any(Function),
-    });
-    expect(refreshMock).not.toHaveBeenCalled();
+    expect(refreshMock).toHaveBeenCalledTimes(1);
     expect(consumePublicAuthSuccessFeedback()).toEqual(
       expect.objectContaining({
         title: "Login realizado com sucesso",
@@ -391,11 +378,7 @@ describe("LoginClient", () => {
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/perfil");
     });
-    expect(syncPublicAuthStateMock).toHaveBeenCalledWith({
-      publicSlug: "casa-do-gamer",
-      refreshSession: updateSessionMock,
-      waitForProviderSession: expect.any(Function),
-    });
+    expect(refreshMock).toHaveBeenCalledTimes(1);
     expect(consumePublicAuthSuccessFeedback()).toEqual(
       expect.objectContaining({ title: "Login realizado com sucesso" })
     );
@@ -426,108 +409,6 @@ describe("LoginClient", () => {
     ).toBeInTheDocument();
     expect(replaceMock).not.toHaveBeenCalled();
     expect(consumePublicAuthSuccessFeedback()).toBeNull();
-  });
-
-  it("oferece nova sincronizacao sem repetir o login apos falha transitoria", async () => {
-    syncPublicAuthStateMock
-      .mockRejectedValueOnce(new Error("session unavailable"))
-      .mockResolvedValueOnce({ user: { accessToken: "access-token" } });
-    (global.fetch as jest.Mock).mockResolvedValueOnce(
-      mockJsonResponse({
-        accessToken: "access-token",
-        refreshToken: "refresh-token",
-        membershipStatus: "APROVADO",
-      })
-    );
-
-    render(<LoginClient />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
-    fireEvent.change(screen.getByPlaceholderText("email@exemplo.com"), {
-      target: { value: "atleta@teste.com" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("Digite sua senha"), {
-      target: { value: "Senha123!" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar com senha" }));
-
-    expect(
-      await screen.findByText(/Seu login foi confirmado.*Tente sincronizar novamente/i)
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
-    expect(replaceMock).not.toHaveBeenCalled();
-    expect(signInMock).toHaveBeenCalledTimes(1);
-
-    const retryButton = screen.getByRole("button", { name: "Tentar sincronizar novamente" });
-    fireEvent.click(retryButton);
-    fireEvent.click(retryButton);
-
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
-    });
-    expect(syncPublicAuthStateMock).toHaveBeenCalledTimes(2);
-    expect(signInMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("permite recuperar o retorno do Google apos falha transitoria", async () => {
-    syncPublicAuthStateMock
-      .mockRejectedValueOnce(new Error("session unavailable"))
-      .mockResolvedValueOnce({ user: { accessToken: "access-token" } });
-    searchParamsMock = new URLSearchParams("oauth=google&callbackUrl=%2Fcasa-do-gamer%2F");
-    mockedUseSession.mockReturnValue({
-      data: {
-        user: {
-          id: "user-1",
-          email: "atleta@teste.com",
-          name: "Atleta",
-          accessToken: "access-token",
-        },
-      },
-      status: "authenticated",
-      update: updateSessionMock,
-    });
-    mockedUseMe.mockReturnValue({
-      me: {
-        athlete: {
-          firstName: "Atleta",
-          position: "atacante",
-          positionSecondary: "meia",
-          birthDay: 1,
-          birthMonth: 1,
-        },
-        membership: { status: "APROVADO" },
-      },
-      isLoading: false,
-      isError: false,
-    });
-    mockedUseGlobalProfile.mockReturnValue({
-      profile: {
-        user: {
-          name: "Atleta",
-          position: "atacante",
-          positionSecondary: "meia",
-          birthDay: 1,
-          birthMonth: 1,
-        },
-      },
-      isLoading: false,
-      isError: false,
-    });
-
-    render(<LoginClient />);
-
-    expect(
-      await screen.findByRole("button", { name: "Tentar sincronizar novamente" })
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Verificando seu acesso/i)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Tentar sincronizar novamente" }));
-
-    await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
-    });
-    expect(syncPublicAuthStateMock).toHaveBeenCalledTimes(2);
-    expect(signInMock).not.toHaveBeenCalled();
   });
 
   it("nao enfileira sucesso quando a solicitacao ainda esta pendente", async () => {
