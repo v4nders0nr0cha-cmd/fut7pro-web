@@ -16,8 +16,6 @@ const mockRefresh = jest.fn();
 const mockSignIn = jest.fn();
 const mockSignOut = jest.fn();
 const mockUpdateSession = jest.fn();
-const mockGetSession = jest.fn();
-const mockMutate = jest.fn();
 
 function mockEmitSession(state: MockSessionState) {
   mockSessionState = state;
@@ -38,17 +36,12 @@ jest.mock("next-auth/react", () => ({
   },
   signIn: (...args: unknown[]) => mockSignIn(...args),
   signOut: (...args: unknown[]) => mockSignOut(...args),
-  getSession: () => mockGetSession(),
 }));
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace: mockReplace, refresh: mockRefresh, push: jest.fn() }),
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => "/casa-do-gamer/login",
-}));
-
-jest.mock("swr", () => ({
-  mutate: (...args: unknown[]) => mockMutate(...args),
 }));
 
 jest.mock("next/image", () => ({
@@ -131,17 +124,11 @@ describe("login publico integrado ao Header", () => {
     mockSessionState = { data: null, status: "unauthenticated" };
     mockConfirmedSession = approvedSession();
     mockReplace.mockReset();
-    mockRefresh.mockReset();
+    mockRefresh.mockReset().mockImplementation(() => {
+      mockEmitSession({ data: mockConfirmedSession, status: "authenticated" });
+    });
     mockSignIn.mockReset().mockResolvedValue({});
-    mockGetSession.mockReset().mockImplementation(async () => {
-      mockEmitSession({ data: mockConfirmedSession, status: "authenticated" });
-      return mockConfirmedSession;
-    });
-    mockMutate.mockReset().mockResolvedValue(undefined);
-    mockUpdateSession.mockReset().mockImplementation(async () => {
-      mockEmitSession({ data: mockConfirmedSession, status: "authenticated" });
-      return mockConfirmedSession;
-    });
+    mockUpdateSession.mockReset();
     mockSignOut.mockReset().mockImplementation(async () => {
       mockConfirmedSession = null;
       mockEmitSession({ data: null, status: "unauthenticated" });
@@ -185,10 +172,9 @@ describe("login publico integrado ao Header", () => {
       expect(screen.getByRole("button", { name: /Pelé/i })).toBeInTheDocument();
     });
 
-    expect(mockGetSession).toHaveBeenCalledTimes(1);
     expect(mockUpdateSession).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/casa-do-gamer/");
-    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockRefresh).toHaveBeenCalledTimes(1);
   });
 
   it("restaura Entrar quando a sessao e encerrada", async () => {

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { mutate as mutateCache } from "swr";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
@@ -22,7 +23,6 @@ import {
   getHumanAuthErrorMessage,
   queuePublicAuthSuccessFeedback,
 } from "@/utils/public-auth-feedback";
-import { syncPublicAuthState } from "@/utils/public-session-sync";
 import { hasUsableFut7ProSession } from "@/utils/fut7pro-session";
 import TurnstileWidget, {
   AUTH_APP_TURNSTILE_ENABLED,
@@ -45,14 +45,6 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 const VITRINE_AUTH_BLOCKED_MESSAGE =
   "Este ambiente de demonstração é apenas demonstrativo. Login e cadastro de atletas estão desabilitados.";
 const MAX_JOIN_MESSAGE_LENGTH = 500;
-const SESSION_PROVIDER_SYNC_TIMEOUT_MS = 8000;
-
-type SessionWaiter = {
-  resolve: (session: unknown) => void;
-  reject: (error: Error) => void;
-  timeoutId: number;
-};
-
 function normalizeJoinMessage(value: string) {
   return value
     .replace(/<[^>]*>/g, " ")
@@ -90,7 +82,7 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const isVitrineSlug = publicSlug?.toLowerCase() === "vitrine";
   const isEntryVariant = variant === "entry";
 
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const hasUsableSession = hasUsableFut7ProSession(session, status);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -100,9 +92,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const prefillAppliedRef = useRef(false);
   const completedNavigationRef = useRef(false);
-  const sessionSnapshotRef = useRef({ session, status });
-  const sessionWaitersRef = useRef(new Set<SessionWaiter>());
-  sessionSnapshotRef.current = { session, status };
 
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -113,11 +102,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   const [senhaVisivel, setSenhaVisivel] = useState(false);
   const [erro, setErro] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSessionSyncing, setIsSessionSyncing] = useState(false);
-  const [sessionSyncRetry, setSessionSyncRetry] = useState<{
-    targetHref: string;
-    successMessage: string;
-  } | null>(null);
   const [pendingModalOpen, setPendingModalOpen] = useState(false);
   const [notMemberModalOpen, setNotMemberModalOpen] = useState(false);
   const [requestJoinInProgress, setRequestJoinInProgress] = useState(false);
@@ -172,73 +156,10 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     [router]
   );
 
-  useEffect(() => {
-    if (!hasUsableFut7ProSession(session, status)) return;
-
-    sessionWaitersRef.current.forEach((waiter) => {
-      window.clearTimeout(waiter.timeoutId);
-      waiter.resolve(session);
-    });
-    sessionWaitersRef.current.clear();
-  }, [session, status]);
-
-  useEffect(
-    () => () => {
-      sessionWaitersRef.current.forEach((waiter) => {
-        window.clearTimeout(waiter.timeoutId);
-        waiter.reject(new Error("PUBLIC_SESSION_PROVIDER_UNMOUNTED"));
-      });
-      sessionWaitersRef.current.clear();
-    },
-    []
-  );
-
-  const waitForProviderSession = useCallback(() => {
-    const current = sessionSnapshotRef.current;
-    if (hasUsableFut7ProSession(current.session, current.status)) {
-      return Promise.resolve(current.session);
-    }
-
-    return new Promise<unknown>((resolve, reject) => {
-      const waiter: SessionWaiter = {
-        resolve,
-        reject,
-        timeoutId: window.setTimeout(() => {
-          sessionWaitersRef.current.delete(waiter);
-          reject(new Error("PUBLIC_SESSION_PROVIDER_TIMEOUT"));
-        }, SESSION_PROVIDER_SYNC_TIMEOUT_MS),
-      };
-      sessionWaitersRef.current.add(waiter);
-    });
-  }, []);
-
   const finalizeSuccessfulLogin = useCallback(
-    async (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
+    (targetHref: string, successMessage = PUBLIC_AUTH_SUCCESS_MESSAGE) => {
       if (completedNavigationRef.current) return;
       completedNavigationRef.current = true;
-      setIsSessionSyncing(true);
-
-      try {
-        await syncPublicAuthState({
-          publicSlug,
-          // NextAuth v4 captures the session in update(). A callback rendered before
-          // credentials login cannot refresh a previously null session, so initial
-          // login waits for SessionProvider's broadcast-driven state transition.
-          refreshSession: hasUsableSession ? update : undefined,
-          waitForProviderSession,
-        });
-      } catch {
-        completedNavigationRef.current = false;
-        setSessionSyncRetry({ targetHref, successMessage });
-        setErro(
-          "Seu login foi confirmado, mas não foi possível atualizar a sessão da tela. Tente sincronizar novamente."
-        );
-        return;
-      } finally {
-        setIsSessionSyncing(false);
-      }
-
-      setSessionSyncRetry(null);
       try {
         clearPublicAuthContext();
         queuePublicAuthSuccessFeedback(successMessage);
@@ -246,12 +167,12 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
         // O login ja foi confirmado; armazenamento local indisponivel apenas
         // elimina o feedback entre paginas e nao invalida a sessao.
       } finally {
-        // O armazenamento do navegador e apenas auxiliar. Uma falha local nao
-        // pode impedir a navegacao depois que a sessao foi confirmada.
-        router.replace(targetHref);
+        // A navegacao revalida o layout publico. O SessionProvider recebe a
+        // sessao confirmada pelo servidor e o Header atualiza na mesma transicao.
+        navigateWithRefresh(targetHref);
       }
     },
-    [hasUsableSession, publicSlug, router, update, waitForProviderSession]
+    [navigateWithRefresh]
   );
 
   const buildRegisterHref = useCallback(
@@ -349,7 +270,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
   useEffect(() => {
     if (!hasUsableSession) return;
     if (requestJoinInProgress) return;
-    if (sessionSyncRetry) return;
     if (completedNavigationRef.current) return;
 
     if (!publicSlug) {
@@ -430,7 +350,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
     isLoadingGlobalProfile,
     requestJoinIntent,
     requestJoinInProgress,
-    sessionSyncRetry,
     returningFromGoogleLogin,
     finalizeSuccessfulLogin,
     navigateWithRefresh,
@@ -512,6 +431,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
       setNotMemberModalOpen(false);
       if (isActive) {
+        const normalizedSlug = publicSlug.trim().toLowerCase();
+        await Promise.all([
+          mutateCache(`/api/me?slug=${encodeURIComponent(normalizedSlug)}&context=athlete`),
+          mutateCache("/api/perfil/global"),
+        ]);
         await finalizeSuccessfulLogin(redirectTo);
         return;
       }
@@ -808,15 +732,14 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
   const renderedMembershipStatus = String(me?.membership?.status || "").toUpperCase();
   const resolvingExistingSession =
-    !sessionSyncRetry &&
-    (status === "loading" ||
-      (hasUsableSession &&
-        !isErrorMe &&
-        (!accountStateResolved ||
-          isLoadingGlobalProfile ||
-          (shouldLoadMe && isLoadingMe) ||
-          renderedMembershipStatus === "APROVADO" ||
-          renderedMembershipStatus === "PENDENTE")));
+    status === "loading" ||
+    (hasUsableSession &&
+      !isErrorMe &&
+      (!accountStateResolved ||
+        isLoadingGlobalProfile ||
+        (shouldLoadMe && isLoadingMe) ||
+        renderedMembershipStatus === "APROVADO" ||
+        renderedMembershipStatus === "PENDENTE"));
 
   if (resolvingExistingSession) {
     return (
@@ -827,36 +750,6 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
           </p>
           <h1 className="mt-2 text-xl font-bold text-white">Acesse seu perfil</h1>
           <p className="mt-2 text-sm text-gray-300">Verificando seu acesso a {nomeDoRacha}...</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (sessionSyncRetry) {
-    return (
-      <section className="w-full px-4">
-        <div className="mx-auto w-full max-w-lg rounded-2xl border border-amber-400/30 bg-[#0f1118] p-6 text-center shadow-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-200">
-            Login confirmado
-          </p>
-          <h1 className="mt-2 text-xl font-bold text-white">Atualize sua sessão</h1>
-          <p className="mt-3 text-sm text-amber-100" role="alert">
-            {erro}
-          </p>
-          <button
-            type="button"
-            disabled={isSessionSyncing}
-            onClick={() => {
-              setErro("");
-              void finalizeSuccessfulLogin(
-                sessionSyncRetry.targetHref,
-                sessionSyncRetry.successMessage
-              );
-            }}
-            className="mt-5 inline-flex w-full items-center justify-center rounded-lg bg-brand px-4 py-2.5 font-bold text-black shadow-lg transition hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {isSessionSyncing ? "Atualizando sessão..." : "Tentar sincronizar novamente"}
-          </button>
         </div>
       </section>
     );

@@ -62,10 +62,6 @@ jest.mock("@/components/security/TurnstileWidget", () => ({
   resolveTurnstileErrorMessage: () => "Não foi possível validar a segurança.",
 }));
 
-jest.mock("@/utils/public-session-sync", () => ({
-  syncPublicAuthState: jest.fn().mockResolvedValue(undefined),
-}));
-
 const mockedUseTema = require("@/hooks/useTema").useTema as jest.Mock;
 const mockedUsePublicLinks = require("@/hooks/usePublicLinks").usePublicLinks as jest.Mock;
 const mockedUseSession = require("next-auth/react").useSession as jest.Mock;
