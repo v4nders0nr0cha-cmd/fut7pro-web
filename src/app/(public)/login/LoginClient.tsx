@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { mutate as mutateCache } from "swr";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { Dialog, Transition } from "@headlessui/react";
 import { useTema } from "@/hooks/useTema";
@@ -430,6 +431,11 @@ export default function LoginClient({ entryPath = "/login", variant = "login" }:
 
       setNotMemberModalOpen(false);
       if (isActive) {
+        const normalizedSlug = publicSlug.trim().toLowerCase();
+        await Promise.all([
+          mutateCache(`/api/me?slug=${encodeURIComponent(normalizedSlug)}&context=athlete`),
+          mutateCache("/api/perfil/global"),
+        ]);
         await finalizeSuccessfulLogin(redirectTo);
         return;
       }

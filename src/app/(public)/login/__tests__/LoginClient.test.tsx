@@ -15,6 +15,7 @@ const replaceMock = jest.fn();
 const refreshMock = jest.fn();
 const updateSessionMock = jest.fn();
 const signInMock = jest.fn();
+const mutateCacheMock = jest.fn();
 let searchParamsMock = new URLSearchParams();
 
 jest.mock("next/navigation", () => ({
@@ -25,6 +26,10 @@ jest.mock("next/navigation", () => ({
 jest.mock("next-auth/react", () => ({
   useSession: jest.fn(),
   signIn: (...args: unknown[]) => signInMock(...args),
+}));
+
+jest.mock("swr", () => ({
+  mutate: (...args: unknown[]) => mutateCacheMock(...args),
 }));
 
 jest.mock("@/hooks/useTema", () => ({
@@ -91,6 +96,7 @@ describe("LoginClient", () => {
       isError: false,
     });
     signInMock.mockResolvedValue({});
+    mutateCacheMock.mockReset().mockResolvedValue(undefined);
     global.fetch = jest.fn() as any;
     replaceMock.mockReset();
     refreshMock.mockReset();
@@ -487,6 +493,61 @@ describe("LoginClient", () => {
       );
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/aguardando-aprovacao");
     });
+  });
+
+  it("revalida a associacao antes de navegar quando a entrada e aprovada imediatamente", async () => {
+    mockedUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          email: "neymar@teste.com",
+          name: "Neymar",
+          role: "ATLETA",
+          accessToken: "access-token",
+        },
+      },
+      status: "authenticated",
+      update: updateSessionMock,
+    });
+    mockedUseMe.mockReturnValue({
+      me: { membership: { status: "NONE" } },
+      isLoading: false,
+      isError: false,
+    });
+    mockedUseGlobalProfile.mockReturnValue({
+      profile: {
+        user: {
+          name: "Neymar",
+          position: "atacante",
+          positionSecondary: "meia",
+          birthDay: 5,
+          birthMonth: 2,
+        },
+      },
+      isLoading: false,
+      isError: false,
+    });
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({ status: "APROVADO", membershipStatus: "ACTIVE" })
+    );
+
+    render(<LoginClient />);
+
+    expect(await screen.findByText("Solicitar entrada")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
+
+    await waitFor(() => {
+      expect(mutateCacheMock).toHaveBeenCalledWith(
+        "/api/me?slug=casa-do-gamer&context=athlete"
+      );
+      expect(mutateCacheMock).toHaveBeenCalledWith("/api/perfil/global");
+      expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
+    });
+
+    const lastCacheRefresh = Math.max(
+      ...mutateCacheMock.mock.invocationCallOrder
+    );
+    expect(lastCacheRefresh).toBeLessThan(replaceMock.mock.invocationCallOrder[0]);
   });
 
   it("sessao autenticada com Perfil Global incompleto vai para /perfil", async () => {
