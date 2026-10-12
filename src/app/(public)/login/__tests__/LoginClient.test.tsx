@@ -537,16 +537,12 @@ describe("LoginClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Solicitar entrada em Casa do Gamer" }));
 
     await waitFor(() => {
-      expect(mutateCacheMock).toHaveBeenCalledWith(
-        "/api/me?slug=casa-do-gamer&context=athlete"
-      );
+      expect(mutateCacheMock).toHaveBeenCalledWith("/api/me?slug=casa-do-gamer&context=athlete");
       expect(mutateCacheMock).toHaveBeenCalledWith("/api/perfil/global");
       expect(replaceMock).toHaveBeenCalledWith("/casa-do-gamer/");
     });
 
-    const lastCacheRefresh = Math.max(
-      ...mutateCacheMock.mock.invocationCallOrder
-    );
+    const lastCacheRefresh = Math.max(...mutateCacheMock.mock.invocationCallOrder);
     expect(lastCacheRefresh).toBeLessThan(replaceMock.mock.invocationCallOrder[0]);
   });
 
