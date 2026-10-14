@@ -95,8 +95,17 @@ const ROLE_CONFIG: Record<
 };
 
 export default function AdministradoresClient() {
-  const { slots, isLoading, isError, error, assignRole, removeRole, mutate, isSaving } =
-    useAdminRoles();
+  const {
+    slots,
+    isLoading,
+    isError,
+    error,
+    assignRole,
+    removeRole,
+    cancelInvite,
+    mutate,
+    isSaving,
+  } = useAdminRoles();
   const [modalRole, setModalRole] = useState<AdminRoleKey | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -108,6 +117,10 @@ export default function AdministradoresClient() {
     athlete: AdminRoleAthlete;
   } | null>(null);
   const [pendingRemoveRole, setPendingRemoveRole] = useState<AdminRoleKey | null>(null);
+  const [pendingCancelInvite, setPendingCancelInvite] = useState<{
+    id: string;
+    role: AdminRoleKey;
+  } | null>(null);
 
   const slotMap = useMemo(() => {
     return slots.reduce<Record<string, AdminRoleSlot>>((acc, slot) => {
@@ -116,8 +129,8 @@ export default function AdministradoresClient() {
     }, {});
   }, [slots]);
 
-  const filledCount = slots.filter((slot) => slot.status !== "EMPTY").length;
-  const pendingCount = slots.filter((slot) => slot.status === "PENDING").length;
+  const filledCount = slots.filter((slot) => slot.status === "ACTIVE").length;
+  const pendingCount = slots.filter((slot) => slot.pendingInvite).length;
   const availableCount = ROLE_ORDER.filter((role) => {
     const slot = slotMap[role] ?? { role, status: "EMPTY" };
     return slot.status === "EMPTY";
@@ -160,7 +173,9 @@ export default function AdministradoresClient() {
     const roleLabel = ROLE_CONFIG[pendingAssign.role].label;
     try {
       await assignRole(pendingAssign.role, pendingAssign.athlete.id);
-      setFeedback(`${pendingAssign.athlete.nome} agora está definido como ${roleLabel}.`);
+      setFeedback(
+        `Convite enviado com sucesso para ${pendingAssign.athlete.nome} assumir como ${roleLabel}. O cargo só será alterado após o aceite.`
+      );
       setPendingAssign(null);
       closeModal();
     } catch (err) {
@@ -186,39 +201,41 @@ export default function AdministradoresClient() {
     }
   };
 
-  const handleCopyInvite = (slot: AdminRoleSlot) => {
-    const roleLabel = ROLE_CONFIG[slot.role].label;
-    const text = `Convite para assumir o cargo ${roleLabel} no Fut7Pro. Acesse https://app.fut7pro.com.br/admin/login para concluir o cadastro.`;
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        setFeedback("Convite copiado para a área de transferência.");
-      })
-      .catch(() => {
-        setFeedback("Não foi possível copiar o convite.");
-      });
+  const confirmCancelInvite = async () => {
+    if (!pendingCancelInvite) return;
+    const roleLabel = ROLE_CONFIG[pendingCancelInvite.role].label;
+    try {
+      await cancelInvite(pendingCancelInvite.id);
+      setFeedback(`O convite para ${roleLabel} foi cancelado.`);
+    } catch (err) {
+      setFeedback(err instanceof Error ? err.message : "Erro ao cancelar convite.");
+    } finally {
+      setPendingCancelInvite(null);
+    }
   };
 
   const renderRoleCard = (role: AdminRoleKey, featured = false) => {
     const slot = slotMap[role] ?? { role, status: "EMPTY" };
     const config = ROLE_CONFIG[role];
     const isEmpty = slot.status === "EMPTY";
-    const isPending = slot.status === "PENDING";
+    const isPending = Boolean(slot.pendingInvite);
     const statusLabel =
       role === "PRESIDENTE"
         ? "Dono do racha"
-        : isEmpty
-          ? "Vaga disponível"
-          : isPending
-            ? "Convite pendente"
+        : isPending
+          ? slot.status === "ACTIVE"
+            ? "Ativo · convite pendente"
+            : "Convite pendente"
+          : isEmpty
+            ? "Vaga disponível"
             : "Ativo";
     const statusClass =
       role === "PRESIDENTE"
         ? "border-yellow-500/40 bg-yellow-500/15 text-yellow-200"
-        : isEmpty
-          ? "border-zinc-600 bg-zinc-800/70 text-zinc-300"
-          : isPending
-            ? "border-orange-500/40 bg-orange-500/15 text-orange-200"
+        : isPending
+          ? "border-orange-500/40 bg-orange-500/15 text-orange-200"
+          : isEmpty
+            ? "border-zinc-600 bg-zinc-800/70 text-zinc-300"
             : "border-emerald-500/40 bg-emerald-500/15 text-emerald-200";
 
     const identityBlock = isEmpty ? (
@@ -260,17 +277,19 @@ export default function AdministradoresClient() {
     );
 
     const actionBlock =
-      !isEmpty && config.editable ? (
+      slot.status === "ACTIVE" && config.editable ? (
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => openModal(role)}
-            className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/50 px-3 py-1.5 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10"
-            disabled={isSaving}
-          >
-            <RefreshCw size={14} />
-            Substituir
-          </button>
+          {!isPending && (
+            <button
+              type="button"
+              onClick={() => openModal(role)}
+              className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/50 px-3 py-1.5 text-xs font-semibold text-yellow-300 hover:bg-yellow-500/10"
+              disabled={isSaving}
+            >
+              <RefreshCw size={14} />
+              Substituir
+            </button>
+          )}
           <button
             type="button"
             onClick={() => requestRemoveConfirmation(role)}
@@ -290,34 +309,54 @@ export default function AdministradoresClient() {
         </div>
       ) : null;
 
-    const inviteBlock = slot.pendingInvite ? (
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => handleCopyInvite(slot)}
-          className="inline-flex items-center gap-2 rounded-lg border border-blue-500/40 px-3 py-1.5 text-xs font-semibold text-blue-300 hover:bg-blue-500/10"
-        >
-          Copiar convite
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (slot.email) {
-              const subject = encodeURIComponent("Reenvio de convite para administração do racha");
-              const body = encodeURIComponent(
-                "Olá! Reenviamos seu convite para assumir um cargo administrativo no Fut7Pro."
-              );
-              window.location.href = `mailto:${slot.email}?subject=${subject}&body=${body}`;
-              return;
-            }
-            setFeedback("Este administrador ainda não possui e-mail cadastrado.");
-          }}
-          className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/10"
-        >
-          Reenviar convite
-        </button>
-      </div>
-    ) : null;
+    const invitedAthlete =
+      slot.pendingInviteAthlete ??
+      (slot.status === "PENDING"
+        ? { id: slot.athleteId ?? "", name: slot.name ?? "Atleta", nickname: slot.nickname }
+        : null);
+
+    const inviteBlock =
+      slot.pendingInvite && slot.pendingInviteId ? (
+        <div className="rounded-xl border border-orange-500/30 bg-orange-500/10 p-3">
+          <div className="text-xs font-semibold uppercase tracking-wide text-orange-200">
+            Aguardando aceitação
+          </div>
+          <div className="mt-1 text-sm font-semibold text-white">
+            {invitedAthlete?.name || "Atleta convidado"}
+            {invitedAthlete?.nickname ? ` (${invitedAthlete.nickname})` : ""}
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+            {slot.status === "ACTIVE"
+              ? "O responsável atual permanece no cargo até que o convite seja aceito."
+              : "A vaga permanece sem responsável até que o atleta aceite o convite."}
+          </p>
+          {slot.pendingInviteExpiresAt && (
+            <div className="mt-2 text-xs text-zinc-500">
+              Válido até {new Date(slot.pendingInviteExpiresAt).toLocaleString("pt-BR")}
+            </div>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => openModal(role)}
+              className="inline-flex items-center gap-2 rounded-lg border border-yellow-500/40 px-3 py-1.5 text-xs font-semibold text-yellow-200 hover:bg-yellow-500/10"
+              disabled={isSaving}
+            >
+              <RefreshCw size={14} />
+              Alterar indicação
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingCancelInvite({ id: slot.pendingInviteId!, role })}
+              className="inline-flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-semibold text-red-300 hover:bg-red-500/10"
+              disabled={isSaving}
+            >
+              <Trash2 size={14} />
+              Cancelar convite
+            </button>
+          </div>
+        </div>
+      ) : null;
 
     const permissionBlock = (
       <div className={featured ? "lg:border-l lg:border-[#2a2d34] lg:pl-6" : ""}>
@@ -446,14 +485,14 @@ export default function AdministradoresClient() {
           <div>
             <div className="text-sm font-semibold text-yellow-300">Resumo da administração</div>
             <p className="mt-1 text-sm text-zinc-400">
-              Somente o Presidente pode alterar cargos. Convites pendentes continuam ocupando a vaga
-              até serem concluídos ou removidos.
+              Somente o Presidente pode enviar ou cancelar convites. Nenhum acesso é concedido antes
+              do aceite do atleta.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3 text-center text-sm">
             <div className="min-w-[88px] rounded-xl border border-[#333743] bg-[#171a20] px-3 py-2">
               <div className="text-lg font-bold text-white">{filledCount}/4</div>
-              <div className="text-[11px] text-zinc-500">preenchidas</div>
+              <div className="text-[11px] text-zinc-500">ativos</div>
             </div>
             <div className="min-w-[88px] rounded-xl border border-[#333743] bg-[#171a20] px-3 py-2">
               <div className="text-lg font-bold text-orange-200">{pendingCount}</div>
@@ -510,12 +549,12 @@ export default function AdministradoresClient() {
           <div className="flex gap-2 rounded-xl border border-[#333743] bg-[#171a20] px-3 py-3">
             <CheckCircle2 className="mt-0.5 shrink-0 text-emerald-300" size={16} />
             <span>
-              Antes de substituir alguém, confirme se o novo responsável já tem acesso ativo.
+              O responsável atual continua no cargo enquanto o substituto não aceitar o convite.
             </span>
           </div>
           <div className="flex gap-2 rounded-xl border border-[#333743] bg-[#171a20] px-3 py-3">
             <Clock3 className="mt-0.5 shrink-0 text-orange-300" size={16} />
-            <span>Convites pendentes podem ser reenviados ou removidos para liberar a vaga.</span>
+            <span>Convites pendentes podem ser alterados ou cancelados pelo Presidente.</span>
           </div>
         </div>
       </div>
@@ -527,7 +566,7 @@ export default function AdministradoresClient() {
               <div>
                 <h2 className="text-lg font-semibold text-yellow-300">Selecionar atleta</h2>
                 <p className="text-xs text-zinc-400">
-                  Defina quem assume o cargo de {ROLE_CONFIG[modalRole].label}.
+                  Convide um atleta para assumir o cargo de {ROLE_CONFIG[modalRole].label}.
                 </p>
               </div>
               <button
@@ -634,7 +673,7 @@ export default function AdministradoresClient() {
                 disabled={!selectedAthlete || isSaving}
                 className="px-4 py-2 rounded-lg bg-yellow-400 text-black text-sm font-semibold hover:bg-yellow-300 disabled:opacity-60"
               >
-                Confirmar
+                Enviar convite
               </button>
             </div>
           </div>
@@ -645,26 +684,26 @@ export default function AdministradoresClient() {
         open={Boolean(pendingAssign)}
         title={
           pendingAssign
-            ? `Definir ${pendingAssign.athlete.nome} como ${ROLE_CONFIG[pendingAssign.role].label}?`
-            : "Confirmar cargo administrativo"
+            ? `Convidar ${pendingAssign.athlete.nome} para ${ROLE_CONFIG[pendingAssign.role].label}?`
+            : "Confirmar convite administrativo"
         }
-        eyebrow="Cargo administrativo"
+        eyebrow="Convite administrativo"
         description={
           pendingAssign ? (
             <>
-              Você está concedendo a este atleta acesso administrativo como{" "}
+              O atleta receberá um convite para atuar como{" "}
               <strong className="text-yellow-200">{ROLE_CONFIG[pendingAssign.role].label}</strong>.
-              Confirme apenas se ele deve assumir essa responsabilidade no painel do racha.
+              O acesso administrativo só será concedido depois que ele aceitar.
             </>
           ) : null
         }
-        confirmLabel="Definir cargo"
+        confirmLabel="Enviar convite"
         cancelLabel="Voltar"
         loading={isSaving}
         impactItems={[
-          "O atleta passará a acessar as áreas permitidas para este cargo.",
-          "A ação será registrada no histórico administrativo do racha.",
-          "Você poderá remover ou substituir esse cargo depois, se necessário.",
+          "O convite aparecerá nas notificações individuais do atleta.",
+          "Nenhuma permissão será concedida antes do aceite.",
+          "Se já houver responsável, ele permanecerá no cargo até o aceite.",
         ]}
         onClose={() => setPendingAssign(null)}
         onConfirm={confirmAssignRole}
@@ -696,6 +735,26 @@ export default function AdministradoresClient() {
         ]}
         onClose={() => setPendingRemoveRole(null)}
         onConfirm={confirmRemoveRole}
+      />
+
+      <Fut7DestructiveDialog
+        open={Boolean(pendingCancelInvite)}
+        title={
+          pendingCancelInvite
+            ? `Cancelar convite para ${ROLE_CONFIG[pendingCancelInvite.role].label}?`
+            : "Cancelar convite administrativo"
+        }
+        description="O atleta não poderá mais aceitar este convite. Nenhum cargo ativo será alterado."
+        confirmLabel="Cancelar convite"
+        cancelLabel="Manter convite"
+        loading={isSaving}
+        impactItems={[
+          "O convite ficará encerrado e sem ações disponíveis.",
+          "O ocupante atual, se existir, continuará no cargo.",
+          "Um novo convite poderá ser enviado depois.",
+        ]}
+        onClose={() => setPendingCancelInvite(null)}
+        onConfirm={confirmCancelInvite}
       />
     </div>
   );

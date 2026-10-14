@@ -17,6 +17,14 @@ export type AdminRoleSlot = {
   position?: string | null;
   athleteStatus?: string | null;
   pendingInvite?: boolean;
+  pendingInviteId?: string | null;
+  pendingInviteExpiresAt?: string | null;
+  pendingInviteAthlete?: {
+    id: string;
+    name: string;
+    nickname?: string | null;
+    avatarUrl?: string | null;
+  } | null;
 };
 
 export type AdminRoleAthlete = {
@@ -32,4 +40,26 @@ export type AdminRoleAthlete = {
   isAdmin?: boolean;
   hasUserAccount?: boolean;
   isPendingInvite?: boolean;
+};
+
+export type AdminRoleInviteStatus =
+  | "LEGACY"
+  | "PENDING"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "CANCELLED"
+  | "EXPIRED"
+  | "SUPERSEDED";
+
+export type AdminRoleInvite = {
+  id: string;
+  role: Exclude<AdminRoleKey, "PRESIDENTE">;
+  status: AdminRoleInviteStatus;
+  createdAt: string;
+  expiresAt?: string | null;
+  resolvedAt?: string | null;
+  cancellationReason?: string | null;
+  tenantName: string;
+  tenantSlug: string;
+  invitedByName?: string | null;
 };
