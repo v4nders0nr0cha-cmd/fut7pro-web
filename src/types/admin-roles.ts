@@ -63,3 +63,38 @@ export type AdminRoleInvite = {
   tenantSlug: string;
   invitedByName?: string | null;
 };
+
+export type OwnershipTransferCandidate = {
+  id: string;
+  name: string;
+  nickname?: string | null;
+  avatarUrl?: string | null;
+  position?: string | null;
+  email: string;
+  currentRole: AdminRoleKey | "ATLETA";
+};
+
+export type OwnershipTransferStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED" | "EXPIRED";
+
+export type OwnershipTransferRequest = {
+  id: string;
+  tenantId: string;
+  tenantName?: string | null;
+  tenantSlug?: string | null;
+  requestedByUserId: string;
+  requestedByName?: string | null;
+  recipientUserId: string;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  recipientAthleteId?: string | null;
+  status: OwnershipTransferStatus;
+  expiresAt: string;
+  emailSentAt?: string | null;
+  emailDeliveryStatus: "PENDING" | "SENT" | "FAILED";
+  deliveryAttempts: number;
+  lastDeliveryError?: string | null;
+  respondedAt?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
