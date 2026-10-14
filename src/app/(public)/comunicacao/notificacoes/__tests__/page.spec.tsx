@@ -4,12 +4,7 @@ import NotificacoesPage from "../page";
 const acceptInvite = jest.fn();
 const rejectInvite = jest.fn();
 const markAsRead = jest.fn();
-const updateSession = jest.fn();
 const refresh = jest.fn();
-
-jest.mock("next-auth/react", () => ({
-  useSession: () => ({ update: updateSession }),
-}));
 
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: jest.fn(), refresh }),
@@ -74,11 +69,10 @@ describe("NotificacoesPage admin role invites", () => {
     acceptInvite.mockReset().mockResolvedValue({ status: "ACCEPTED" });
     rejectInvite.mockReset().mockResolvedValue({ status: "REJECTED" });
     markAsRead.mockReset().mockResolvedValue({});
-    updateSession.mockReset().mockResolvedValue({});
     refresh.mockReset();
   });
 
-  it("aceita o convite real e atualiza a sessão sem duplicar a notificação genérica", async () => {
+  it("aceita o convite real, atualiza os dados e abre o hub sem novo login", async () => {
     render(<NotificacoesPage />);
 
     expect(screen.getByText("Convite para Diretor Financeiro")).toBeInTheDocument();
@@ -87,10 +81,13 @@ describe("NotificacoesPage admin role invites", () => {
     fireEvent.click(screen.getByRole("button", { name: "Aceitar convite" }));
 
     await waitFor(() => expect(acceptInvite).toHaveBeenCalledWith("invite-1"));
-    expect(updateSession).toHaveBeenCalledTimes(1);
     expect(refresh).toHaveBeenCalledTimes(1);
     expect(markAsRead).toHaveBeenCalledWith("notification-1");
     expect(await screen.findByText(/Você agora é Diretor Financeiro/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Acessar painel administrativo" })).toHaveAttribute(
+      "href",
+      "/admin/selecionar-racha"
+    );
   });
 
   it("não oferece ações para convite já encerrado", () => {

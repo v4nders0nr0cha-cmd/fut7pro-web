@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { FaBell, FaCheck, FaPoll, FaTimes, FaUserShield } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,7 +66,6 @@ const isAdminRoleInviteNotification = (notification: Notificacao) => {
 
 export default function NotificacoesPage() {
   const router = useRouter();
-  const { update: updateSession } = useSession();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { publicHref } = usePublicLinks();
   const { notificacoes, isLoading, isError, error, markAsRead } = usePublicNotifications({
@@ -102,7 +100,6 @@ export default function NotificacoesPage() {
     try {
       if (action === "accept") {
         await acceptInvite(invite.id);
-        await updateSession().catch(() => undefined);
         router.refresh();
         setInviteFeedback(
           `Convite aceito. Você agora é ${ROLE_LABELS[invite.role]} de ${invite.tenantName}.`
@@ -178,7 +175,7 @@ export default function NotificacoesPage() {
               {inviteFeedback}
               {inviteFeedback.startsWith("Convite aceito") && (
                 <Link
-                  href="/admin/login"
+                  href="/admin/selecionar-racha"
                   className="ml-2 inline-flex font-semibold text-yellow-300 underline underline-offset-2"
                 >
                   Acessar painel administrativo
