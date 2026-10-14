@@ -76,6 +76,29 @@ export function useAdminRoles() {
     }
   };
 
+  const cancelInvite = async (inviteId: string) => {
+    apiState.setLoading(true);
+    try {
+      const response = await fetch(`/api/admin/administradores/convites/${inviteId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.message || body?.error || "Erro ao cancelar convite");
+      }
+
+      const payload = await response.json().catch(() => ({}));
+      await mutate();
+      apiState.setSuccess(true);
+      return payload;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao cancelar convite";
+      apiState.setError(message);
+      throw err;
+    }
+  };
+
   return {
     slots: data?.slots ?? [],
     isLoading: isLoading || apiState.isLoading,
@@ -83,6 +106,7 @@ export function useAdminRoles() {
     error: (error instanceof Error ? error.message : null) || apiState.error,
     assignRole,
     removeRole,
+    cancelInvite,
     mutate,
     isSaving: apiState.isLoading,
   };

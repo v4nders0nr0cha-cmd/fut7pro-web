@@ -1,11 +1,14 @@
 "use client";
 
-import { useMemo } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaBell, FaPoll } from "react-icons/fa";
+import { FaBell, FaCheck, FaPoll, FaTimes, FaUserShield } from "react-icons/fa";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminRoleInvites } from "@/hooks/useAdminRoleInvites";
 import { usePublicNotifications } from "@/hooks/usePublicNotifications";
 import type { Notificacao } from "@/types/notificacao";
+import type { AdminRoleInvite, AdminRoleKey } from "@/types/admin-roles";
 import { usePublicLinks } from "@/hooks/usePublicLinks";
 
 type Kind = "aviso" | "enquete" | "cobranca";
@@ -35,6 +38,32 @@ const resolveEnqueteId = (notif: Notificacao) => {
   return value ? String(value) : undefined;
 };
 
+const ROLE_LABELS: Record<Exclude<AdminRoleKey, "PRESIDENTE">, string> = {
+  VICE_PRESIDENTE: "Vice-Presidente",
+  DIRETOR_FUTEBOL: "Diretor de Futebol",
+  DIRETOR_FINANCEIRO: "Diretor Financeiro",
+};
+
+const STATUS_LABELS: Record<AdminRoleInvite["status"], string> = {
+  LEGACY: "Registro anterior",
+  PENDING: "Aguardando sua resposta",
+  ACCEPTED: "Convite aceito",
+  REJECTED: "Convite recusado",
+  CANCELLED: "Convite cancelado",
+  EXPIRED: "Convite expirado",
+  SUPERSEDED: "Convite substituído",
+};
+
+const getInviteId = (notification: Notificacao) => {
+  const metadata = notification.metadata || {};
+  return typeof metadata.adminRoleInviteId === "string" ? metadata.adminRoleInviteId : null;
+};
+
+const isAdminRoleInviteNotification = (notification: Notificacao) => {
+  const metadata = notification.metadata || {};
+  return metadata.kind === "ADMIN_ROLE_INVITE" || Boolean(getInviteId(notification));
+};
+
 export default function NotificacoesPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -42,14 +71,54 @@ export default function NotificacoesPage() {
   const { notificacoes, isLoading, isError, error, markAsRead } = usePublicNotifications({
     enabled: isAuthenticated,
   });
+  const {
+    invites,
+    isLoading: invitesLoading,
+    isError: invitesError,
+    error: invitesErrorMessage,
+    acceptInvite,
+    rejectInvite,
+  } = useAdminRoleInvites(isAuthenticated);
+  const [respondingInviteId, setRespondingInviteId] = useState<string | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<string | null>(null);
+  const [inviteActionError, setInviteActionError] = useState<string | null>(null);
 
   const entries = useMemo<NotificacaoEntry[]>(() => {
-    return notificacoes.map((notif) => ({
-      notificacao: notif,
-      kind: resolveKind(notif),
-      enqueteId: resolveEnqueteId(notif),
-    }));
+    return notificacoes
+      .filter((notif) => !isAdminRoleInviteNotification(notif))
+      .map((notif) => ({
+        notificacao: notif,
+        kind: resolveKind(notif),
+        enqueteId: resolveEnqueteId(notif),
+      }));
   }, [notificacoes]);
+
+  const respondToInvite = async (invite: AdminRoleInvite, action: "accept" | "reject") => {
+    setRespondingInviteId(invite.id);
+    setInviteFeedback(null);
+    setInviteActionError(null);
+    try {
+      if (action === "accept") {
+        await acceptInvite(invite.id);
+        router.refresh();
+        setInviteFeedback(
+          `Convite aceito. Você agora é ${ROLE_LABELS[invite.role]} de ${invite.tenantName}.`
+        );
+      } else {
+        await rejectInvite(invite.id);
+        setInviteFeedback("Convite recusado. Sua participação como atleta não foi alterada.");
+      }
+
+      const notification = notificacoes.find((item) => getInviteId(item) === invite.id);
+      if (notification && !notification.lida) {
+        await markAsRead(notification.id).catch(() => undefined);
+      }
+    } catch (err) {
+      setInviteActionError(err instanceof Error ? err.message : "Não foi possível responder.");
+    } finally {
+      setRespondingInviteId(null);
+    }
+  };
 
   const handleClick = async (entry: NotificacaoEntry) => {
     const { notificacao, kind, enqueteId } = entry;
@@ -92,6 +161,108 @@ export default function NotificacoesPage() {
       <h1 className="text-2xl font-bold text-brand mb-5 flex items-center gap-2">
         <FaBell /> Notificações do grupo
       </h1>
+      {(invitesLoading || invites.length > 0 || invitesError) && (
+        <section className="mb-6" aria-labelledby="admin-invites-title">
+          <h2
+            id="admin-invites-title"
+            className="mb-3 flex items-center gap-2 text-lg font-bold text-brand-soft"
+          >
+            <FaUserShield /> Convites para administração
+          </h2>
+
+          {inviteFeedback && (
+            <div className="mb-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+              {inviteFeedback}
+              {inviteFeedback.startsWith("Convite aceito") && (
+                <Link
+                  href="/admin/selecionar-racha"
+                  className="ml-2 inline-flex font-semibold text-yellow-300 underline underline-offset-2"
+                >
+                  Acessar painel administrativo
+                </Link>
+              )}
+            </div>
+          )}
+          {inviteActionError && (
+            <div className="mb-3 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+              {inviteActionError}
+            </div>
+          )}
+
+          {invitesLoading ? (
+            <div className="rounded-lg border border-zinc-700 bg-zinc-900 p-4 text-gray-400">
+              Carregando convites...
+            </div>
+          ) : invitesError ? (
+            <div className="rounded-lg border border-red-500/30 bg-zinc-900 p-4 text-sm text-red-300">
+              Não foi possível consultar seus convites.
+              {invitesErrorMessage && <div className="mt-1 text-xs">{invitesErrorMessage}</div>}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {invites.map((invite) => {
+                const pending = invite.status === "PENDING";
+                const responding = respondingInviteId === invite.id;
+                return (
+                  <article
+                    key={invite.id}
+                    className={`rounded-xl border p-4 ${
+                      pending
+                        ? "border-yellow-500/40 bg-yellow-500/10"
+                        : "border-zinc-700 bg-zinc-900/80"
+                    }`}
+                  >
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-yellow-300">
+                          {STATUS_LABELS[invite.status]}
+                        </div>
+                        <h3 className="mt-1 text-base font-bold text-white">
+                          Convite para {ROLE_LABELS[invite.role]}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-300">
+                          {invite.invitedByName || "O Presidente"} convidou você para administrar o
+                          grupo <strong>{invite.tenantName}</strong>.
+                        </p>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(invite.createdAt).toLocaleString("pt-BR")}
+                      </div>
+                    </div>
+
+                    {pending && invite.expiresAt && (
+                      <p className="mt-2 text-xs text-gray-400">
+                        Válido até {new Date(invite.expiresAt).toLocaleString("pt-BR")}.
+                      </p>
+                    )}
+
+                    {pending && (
+                      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          disabled={responding}
+                          onClick={() => respondToInvite(invite, "accept")}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg bg-yellow-400 px-4 py-2 text-sm font-bold text-black hover:bg-yellow-300 disabled:opacity-60"
+                        >
+                          <FaCheck /> {responding ? "Processando..." : "Aceitar convite"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={responding}
+                          onClick={() => respondToInvite(invite, "reject")}
+                          className="inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-60"
+                        >
+                          <FaTimes /> Rejeitar convite
+                        </button>
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
       <div className="flex flex-col gap-5">
         {isLoading ? (
           <div className="text-center text-gray-400">Carregando...</div>
@@ -100,7 +271,7 @@ export default function NotificacoesPage() {
             Falha ao carregar notificações.
             {error && <div className="text-xs text-red-300 mt-2">{String(error)}</div>}
           </div>
-        ) : entries.length === 0 ? (
+        ) : entries.length === 0 && invites.length === 0 ? (
           <div className="text-center text-gray-400">Nenhuma notificação encontrada.</div>
         ) : (
           entries.map((entry) => {
