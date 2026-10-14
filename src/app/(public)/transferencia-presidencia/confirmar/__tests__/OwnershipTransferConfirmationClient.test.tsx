@@ -35,7 +35,9 @@ describe("OwnershipTransferConfirmationClient", () => {
       "",
       "/transferencia-presidencia/confirmar#token=abcdefghijklmnopqrstuvwxyz123456"
     );
-    updateSession.mockResolvedValue(undefined);
+    updateSession.mockResolvedValue({
+      user: { authRealm: "admin", adminAccessVerifiedTenantId: "tenant-1" },
+    });
   });
 
   it("preserva o token fora do redirecionamento quando o usuário precisa entrar", async () => {
@@ -46,7 +48,7 @@ describe("OwnershipTransferConfirmationClient", () => {
     const loginLink = await screen.findByRole("link", { name: "Entrar para continuar" });
     expect(loginLink).toHaveAttribute(
       "href",
-      "/login?callbackUrl=%2Ftransferencia-presidencia%2Fconfirmar"
+      "/admin/login?callbackUrl=%2Ftransferencia-presidencia%2Fconfirmar"
     );
     expect(loginLink.getAttribute("href")).not.toContain("abcdefghijklmnopqrstuvwxyz");
     expect(window.location.hash).toBe("");
@@ -82,9 +84,42 @@ describe("OwnershipTransferConfirmationClient", () => {
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(fetchMock.mock.calls[1][0]).toBe("/api/public/transferencia-presidencia/aceitar");
-    expect(updateSession).toHaveBeenCalledTimes(1);
+    expect(updateSession).toHaveBeenCalledWith({
+      revalidateAdminAccess: true,
+      expectedTenantId: "tenant-1",
+    });
     expect(await screen.findByText("Presidência transferida com sucesso")).toBeInTheDocument();
     expect(window.sessionStorage.getItem("fut7pro:ownership-transfer-token")).toBeNull();
+
+    global.fetch = originalFetch;
+  });
+
+  it("exige nova autenticação quando a Membership não é confirmada na sessão", async () => {
+    useSession.mockReturnValue({
+      data: { user: { accessToken: "valid-token", accessTokenExp: 4102444800 } },
+      status: "authenticated",
+      update: updateSession,
+    });
+    updateSession.mockResolvedValue({ user: { authRealm: "athlete" } });
+    const originalFetch = global.fetch;
+    global.fetch = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => request })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ ...request, status: "ACCEPTED" }),
+      }) as typeof fetch;
+
+    render(<OwnershipTransferConfirmationClient />);
+    fireEvent.click(await screen.findByRole("button", { name: "Aceitar Presidência" }));
+
+    expect(await screen.findByText(/Entre novamente para ativar/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Entrar no painel administrativo" })).toHaveAttribute(
+      "href",
+      "/admin/login?callbackUrl=%2Fadmin%2Fselecionar-racha"
+    );
+    expect(screen.queryByText(/já pode acessar o painel/)).not.toBeInTheDocument();
 
     global.fetch = originalFetch;
   });

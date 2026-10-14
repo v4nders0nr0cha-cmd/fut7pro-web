@@ -15,6 +15,7 @@ type ViewState =
   | "LOADING_REQUEST"
   | "READY"
   | "ACCEPTED"
+  | "ACCEPTED_REAUTH_REQUIRED"
   | "REJECTED"
   | "ERROR";
 
@@ -122,8 +123,17 @@ export default function OwnershipTransferConfirmationClient() {
       window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
 
       if (action === "aceitar") {
-        await update().catch(() => undefined);
-        setViewState("ACCEPTED");
+        const refreshedSession = await update({
+          revalidateAdminAccess: true,
+          expectedTenantId: result.tenantId,
+        }).catch(() => null);
+        const refreshedUser = refreshedSession?.user as
+          | { authRealm?: string | null; adminAccessVerifiedTenantId?: string | null }
+          | undefined;
+        const adminAccessConfirmed =
+          refreshedUser?.authRealm === "admin" &&
+          refreshedUser.adminAccessVerifiedTenantId === result.tenantId;
+        setViewState(adminAccessConfirmed ? "ACCEPTED" : "ACCEPTED_REAUTH_REQUIRED");
       } else {
         setViewState("REJECTED");
       }
@@ -165,7 +175,7 @@ export default function OwnershipTransferConfirmationClient() {
               responder esta solicitação. O link ficará preservado neste navegador durante o login.
             </p>
             <Link
-              href="/login?callbackUrl=%2Ftransferencia-presidencia%2Fconfirmar"
+              href="/admin/login?callbackUrl=%2Ftransferencia-presidencia%2Fconfirmar"
               className="mt-5 inline-flex rounded-lg bg-yellow-500 px-5 py-2.5 font-bold text-black"
             >
               Entrar para continuar
@@ -245,6 +255,23 @@ export default function OwnershipTransferConfirmationClient() {
               className="mt-5 inline-flex rounded-lg bg-yellow-500 px-5 py-2.5 font-bold text-black"
             >
               Acessar painel administrativo
+            </Link>
+          </div>
+        ) : null}
+
+        {viewState === "ACCEPTED_REAUTH_REQUIRED" ? (
+          <div className="mt-8 text-center">
+            <CheckCircle2 className="mx-auto text-emerald-400" size={42} />
+            <h2 className="mt-3 text-xl font-bold">Presidência transferida com sucesso</h2>
+            <p className="mt-2 text-sm text-zinc-300">
+              A transferência foi concluída. Entre novamente para ativar com segurança o acesso
+              administrativo nesta sessão.
+            </p>
+            <Link
+              href="/admin/login?callbackUrl=%2Fadmin%2Fselecionar-racha"
+              className="mt-5 inline-flex rounded-lg bg-yellow-500 px-5 py-2.5 font-bold text-black"
+            >
+              Entrar no painel administrativo
             </Link>
           </div>
         ) : null}

@@ -263,4 +263,85 @@ describe("admin-options jwt refresh flow", () => {
     expect((session.user as any).accessTokenExp).toBeGreaterThan(now);
     expect(hasUsableFut7ProSession(session as any, "authenticated")).toBe(true);
   });
+
+  it("revalida no backend a Membership promovida antes de habilitar o contexto administrativo", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = buildJwt(now + 3600);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [{ tenantId: "tenant-1", role: "PRESIDENTE" }],
+    });
+
+    const result = await jwt({
+      token: {
+        role: "ATLETA",
+        authRealm: "athlete",
+        accessToken,
+        refreshToken: "refresh-token",
+        accessTokenExp: now + 3600,
+      },
+      trigger: "update",
+      session: { revalidateAdminAccess: true, expectedTenantId: "tenant-1" },
+    } as any);
+
+    expect(global.fetch).toHaveBeenCalledWith("https://api.fut7pro.com.br/admin/hub", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    expect((result as any).role).toBe("ATLETA");
+    expect((result as any).authRealm).toBe("admin");
+    expect((result as any).adminAccessVerifiedTenantId).toBe("tenant-1");
+  });
+
+  it("reconhece uma Membership administrativa atual ao refazer o login sem alterar o papel global", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+    const accessToken = buildJwt(now + 3600);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [{ tenantId: "tenant-1", role: "PRESIDENTE" }],
+    });
+
+    const result = await jwt({
+      token: {},
+      user: {
+        id: "successor-1",
+        email: "lucas@example.com",
+        role: "ATLETA",
+        accessToken,
+        refreshToken: "refresh-token",
+      },
+    } as any);
+
+    expect((result as any).role).toBe("ATLETA");
+    expect((result as any).authRealm).toBe("admin");
+  });
+
+  it("não habilita o contexto administrativo sem Membership no tenant esperado", async () => {
+    const jwt = await loadJwtCallback();
+    const now = Math.floor(Date.now() / 1000);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => [{ tenantId: "outro-tenant", role: "DIRETOR_FINANCEIRO" }],
+    });
+
+    const result = await jwt({
+      token: {
+        role: "ATLETA",
+        authRealm: "athlete",
+        accessToken: buildJwt(now + 3600),
+        refreshToken: "refresh-token",
+        accessTokenExp: now + 3600,
+      },
+      trigger: "update",
+      session: { revalidateAdminAccess: true, expectedTenantId: "tenant-1" },
+    } as any);
+
+    expect((result as any).authRealm).toBe("athlete");
+    expect((result as any).adminAccessVerifiedTenantId).toBeNull();
+  });
 });
