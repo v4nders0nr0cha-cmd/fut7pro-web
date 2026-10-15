@@ -123,7 +123,9 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
   const { me } = useMe({ context: "admin" });
-  const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
+  const isPresidente =
+    String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE" &&
+    String(me?.membership?.status || "").toUpperCase() === "APROVADO";
   const { tenantSlug } = useRacha();
   const resolvedSlug = useMemo(() => {
     return tenantSlug || me?.tenant?.tenantSlug || "";

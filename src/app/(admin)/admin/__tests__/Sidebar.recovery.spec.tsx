@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import Sidebar from "../Sidebar";
 
 let role = "PRESIDENTE";
+let status = "APROVADO";
 
 jest.mock("next/navigation", () => ({
   usePathname: () => "/admin/configuracoes/central-recuperacao",
@@ -12,7 +13,7 @@ jest.mock("next-auth/react", () => ({ signOut: jest.fn() }));
 jest.mock("@/hooks/useMe", () => ({
   useMe: () => ({
     me: {
-      membership: { role, status: "APROVADO" },
+      membership: { role, status },
       tenant: { tenantSlug: "racha-a" },
     },
   }),
@@ -29,6 +30,7 @@ jest.mock("@/context/RachaContext", () => ({
 describe("Sidebar - Central de Recuperação", () => {
   beforeEach(() => {
     role = "PRESIDENTE";
+    status = "APROVADO";
   });
 
   it("exibe a Central para o Presidente", () => {
@@ -49,4 +51,19 @@ describe("Sidebar - Central de Recuperação", () => {
     expect(screen.queryByRole("button", { name: /Configurações\/Extras/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Central de Recuperação" })).not.toBeInTheDocument();
   });
+
+  it.each(["PENDENTE", "SUSPENSO"])(
+    "não exibe a Central para Presidente com Membership %s",
+    (membershipStatus) => {
+      status = membershipStatus;
+      render(<Sidebar />);
+
+      expect(
+        screen.queryByRole("button", { name: /Configurações\/Extras/ })
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "Central de Recuperação" })
+      ).not.toBeInTheDocument();
+    }
+  );
 });

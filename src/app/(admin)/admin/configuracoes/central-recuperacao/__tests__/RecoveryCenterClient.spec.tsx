@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import RecoveryCenterClient from "../RecoveryCenterClient";
 import type { RecoveryItem, RecoveryListResponse } from "@/types/recovery";
 
@@ -38,6 +38,14 @@ const item: RecoveryItem = {
   status: "AVAILABLE",
   restoredAt: null,
   restoredEntityId: null,
+};
+
+const secondItem: RecoveryItem = {
+  ...item,
+  id: "rec-2",
+  entityType: "TEAM",
+  originalEntityId: "team-1",
+  displayLabel: "Time Azul",
 };
 
 const response: RecoveryListResponse = {
@@ -150,10 +158,11 @@ describe("RecoveryCenterClient", () => {
     fireEvent.click(screen.getByRole("button", { name: "Confirmar restauração" }));
 
     expect(await screen.findByText("Registro recuperado com sucesso!")).toBeInTheDocument();
-    expect(global.fetch).toHaveBeenNthCalledWith(2, "/api/admin/recuperacao/rec-1/restaurar", {
-      method: "POST",
-      cache: "no-store",
-    });
+    expect(global.fetch).toHaveBeenNthCalledWith(
+      2,
+      "/api/admin/recuperacao/rec-1/restaurar",
+      expect.objectContaining({ method: "POST", cache: "no-store" })
+    );
     expect(mutate).toHaveBeenCalled();
   });
 
@@ -224,5 +233,85 @@ describe("RecoveryCenterClient", () => {
     expect(useRecoveryItems).toHaveBeenLastCalledWith(
       expect.objectContaining({ tenantScope: "racha-b:tenant-b" })
     );
+  });
+
+  it("mantém somente a última resposta de detalhes quando as respostas chegam fora de ordem", async () => {
+    let resolveFirst: ((response: Response) => void) | undefined;
+    let resolveSecond: ((response: Response) => void) | undefined;
+    const firstRequest = new Promise<Response>((resolve) => {
+      resolveFirst = resolve;
+    });
+    const secondRequest = new Promise<Response>((resolve) => {
+      resolveSecond = resolve;
+    });
+    useRecoveryItems.mockImplementation(() => ({
+      ...baseHookResult(),
+      data: { ...response, items: [item, secondItem], total: 2 },
+    }));
+    (global.fetch as jest.Mock)
+      .mockReturnValueOnce(firstRequest)
+      .mockReturnValueOnce(secondRequest);
+
+    render(<RecoveryCenterClient />);
+    const restoreButtons = screen.getAllByRole("button", { name: "Restaurar" });
+    fireEvent.click(restoreButtons[0]);
+    fireEvent.click(restoreButtons[1]);
+
+    resolveSecond?.(mockResponse(secondItem));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText("Time Azul")).toBeInTheDocument();
+
+    resolveFirst?.(mockResponse(item));
+    await waitFor(() => {
+      expect(within(dialog).getByText("Time Azul")).toBeInTheDocument();
+      expect(within(dialog).queryByText("João Silva")).not.toBeInTheDocument();
+    });
+  });
+
+  it("ignora resposta de detalhes pendente depois da troca de tenant", async () => {
+    let resolveDetail: ((response: Response) => void) | undefined;
+    const pendingDetail = new Promise<Response>((resolve) => {
+      resolveDetail = resolve;
+    });
+    (global.fetch as jest.Mock).mockReturnValueOnce(pendingDetail);
+
+    const view = render(<RecoveryCenterClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar" }));
+
+    tenantContext = { tenantSlug: "racha-b", rachaId: "tenant-b" };
+    view.rerender(<RecoveryCenterClient />);
+    resolveDetail?.(mockResponse(item));
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("heading", { name: "Confirmar restauração" })
+      ).not.toBeInTheDocument()
+    );
+    expect(screen.queryByText("Não foi possível restaurar")).not.toBeInTheDocument();
+  });
+
+  it("não aplica resposta de restauração ao tenant selecionado posteriormente", async () => {
+    let resolveRestore: ((response: Response) => void) | undefined;
+    const pendingRestore = new Promise<Response>((resolve) => {
+      resolveRestore = resolve;
+    });
+    (global.fetch as jest.Mock)
+      .mockResolvedValueOnce(mockResponse(item))
+      .mockReturnValueOnce(pendingRestore);
+
+    const view = render(<RecoveryCenterClient />);
+    fireEvent.click(screen.getByRole("button", { name: "Restaurar" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Confirmar restauração" }));
+
+    tenantContext = { tenantSlug: "racha-b", rachaId: "tenant-b" };
+    view.rerender(<RecoveryCenterClient />);
+    resolveRestore?.(mockResponse({ ...item, status: "RESTORED" }));
+
+    await waitFor(() => {
+      expect(screen.queryByText("Registro recuperado com sucesso!")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("heading", { name: "Confirmar restauração" })
+      ).not.toBeInTheDocument();
+    });
   });
 });

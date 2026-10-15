@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArchiveRestore,
   ChevronLeft,
@@ -198,6 +198,10 @@ export default function RecoveryCenterClient() {
   const [restoring, setRestoring] = useState(false);
   const [actionError, setActionError] = useState<RecoveryApiError | null>(null);
   const tenantScope = `${tenantSlug || "sem-slug"}:${rachaId || "sem-id"}`;
+  const tenantScopeRef = useRef(tenantScope);
+  const detailRequestRef = useRef<{ token: symbol; controller: AbortController } | null>(null);
+  const restoreRequestRef = useRef<{ token: symbol; controller: AbortController } | null>(null);
+  tenantScopeRef.current = tenantScope;
   const isPresident =
     String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE" &&
     String(me?.membership?.status || "").toUpperCase() === "APROVADO";
@@ -212,12 +216,25 @@ export default function RecoveryCenterClient() {
   });
 
   useEffect(() => {
+    detailRequestRef.current?.controller.abort();
+    restoreRequestRef.current?.controller.abort();
+    detailRequestRef.current = null;
+    restoreRequestRef.current = null;
     setPage(1);
     setSelectedItem(null);
     setRestoredItem(null);
     setActionError(null);
     setDetailLoadingId(null);
+    setRestoring(false);
   }, [tenantScope]);
+
+  useEffect(
+    () => () => {
+      detailRequestRef.current?.controller.abort();
+      restoreRequestRef.current?.controller.abort();
+    },
+    []
+  );
 
   const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / (data?.limit ?? PAGE_SIZE)));
   const listError = errorMessage(error);
@@ -229,44 +246,81 @@ export default function RecoveryCenterClient() {
   const hasItems = Boolean(data?.items.length);
 
   const openRestoreDialog = async (item: RecoveryItem) => {
+    detailRequestRef.current?.controller.abort();
+    const request = { token: Symbol(item.id), controller: new AbortController() };
+    const requestTenantScope = tenantScope;
+    detailRequestRef.current = request;
     setActionError(null);
     setDetailLoadingId(item.id);
     try {
       const response = await fetch(`/api/admin/recuperacao/${encodeURIComponent(item.id)}`, {
         cache: "no-store",
+        signal: request.controller.signal,
       });
       const detail = await readApiResponse<RecoveryItem>(response);
+      if (
+        detailRequestRef.current?.token !== request.token ||
+        tenantScopeRef.current !== requestTenantScope
+      ) {
+        return;
+      }
       setSelectedItem(detail);
     } catch (cause) {
+      if (
+        request.controller.signal.aborted ||
+        detailRequestRef.current?.token !== request.token ||
+        tenantScopeRef.current !== requestTenantScope
+      ) {
+        return;
+      }
       const recoveryError = cause as RecoveryApiError;
       setActionError(recoveryError);
-      if (recoveryError.status === 409 || recoveryError.status === 410) {
-        await mutate();
-      }
       await mutate();
     } finally {
-      setDetailLoadingId(null);
+      if (detailRequestRef.current?.token === request.token) {
+        detailRequestRef.current = null;
+        setDetailLoadingId(null);
+      }
     }
   };
 
   const restoreSelectedItem = async () => {
     if (!selectedItem || restoring) return;
+    const request = { token: Symbol(selectedItem.id), controller: new AbortController() };
+    const requestTenantScope = tenantScope;
+    restoreRequestRef.current = request;
     setRestoring(true);
     setActionError(null);
 
     try {
       const response = await fetch(
         `/api/admin/recuperacao/${encodeURIComponent(selectedItem.id)}/restaurar`,
-        { method: "POST", cache: "no-store" }
+        { method: "POST", cache: "no-store", signal: request.controller.signal }
       );
       const restored = await readApiResponse<RecoveryItem>(response);
+      if (
+        restoreRequestRef.current?.token !== request.token ||
+        tenantScopeRef.current !== requestTenantScope
+      ) {
+        return;
+      }
       setSelectedItem(null);
       setRestoredItem(restored);
       await mutate();
     } catch (cause) {
+      if (
+        request.controller.signal.aborted ||
+        restoreRequestRef.current?.token !== request.token ||
+        tenantScopeRef.current !== requestTenantScope
+      ) {
+        return;
+      }
       setActionError(cause as RecoveryApiError);
     } finally {
-      setRestoring(false);
+      if (restoreRequestRef.current?.token === request.token) {
+        restoreRequestRef.current = null;
+        setRestoring(false);
+      }
     }
   };
 
