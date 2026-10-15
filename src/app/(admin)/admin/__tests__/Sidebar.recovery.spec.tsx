@@ -5,7 +5,7 @@ let role = "PRESIDENTE";
 let status = "APROVADO";
 
 jest.mock("next/navigation", () => ({
-  usePathname: () => "/admin/configuracoes/central-recuperacao",
+  usePathname: () => "/admin/administracao/central-recuperacao",
 }));
 
 jest.mock("next-auth/react", () => ({ signOut: jest.fn() }));
@@ -35,21 +35,31 @@ describe("Sidebar - Central de Recuperação", () => {
 
   it("exibe a Central para o Presidente", () => {
     render(<Sidebar />);
-    fireEvent.click(screen.getByRole("button", { name: /Configurações\/Extras/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Administração/ }));
 
     expect(screen.getByRole("link", { name: "Central de Recuperação" })).toHaveAttribute(
       "href",
-      "/admin/configuracoes/central-recuperacao"
+      "/admin/administracao/central-recuperacao"
     );
+    expect(screen.getByText("Transferir Propriedade").closest("li")?.nextSibling).toContainElement(
+      screen.getByRole("link", { name: "Central de Recuperação" })
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Configurações\/Extras/ }));
+    expect(screen.queryByRole("link", { name: "Central de Recuperação" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Backup & Recuperação" })).toBeInTheDocument();
   });
 
-  it("não exibe a área de configurações para outro cargo", () => {
+  it("mantém as demais opções de Administração para outro cargo", () => {
     role = "DIRETOR_FUTEBOL";
     render(<Sidebar />);
+    fireEvent.click(screen.getByRole("button", { name: /^Administração/ }));
 
-    expect(screen.queryByRole("button", { name: /Configurações\/Extras/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Central de Recuperação" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Administradores" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Permissões" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Logs/Admin" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transferir Propriedade" })).toBeInTheDocument();
   });
 
   it.each(["PENDENTE", "SUSPENSO"])(
@@ -57,13 +67,12 @@ describe("Sidebar - Central de Recuperação", () => {
     (membershipStatus) => {
       status = membershipStatus;
       render(<Sidebar />);
+      fireEvent.click(screen.getByRole("button", { name: /^Administração/ }));
 
-      expect(
-        screen.queryByRole("button", { name: /Configurações\/Extras/ })
-      ).not.toBeInTheDocument();
       expect(
         screen.queryByRole("link", { name: "Central de Recuperação" })
       ).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Administradores" })).toBeInTheDocument();
     }
   );
 });

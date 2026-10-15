@@ -242,7 +242,7 @@ export default function RecoveryCenterClient() {
   const selectedPresentation = selectedItem ? entityPresentation[selectedItem.entityType] : null;
   const restoredDestination = restoredItem
     ? entityPresentation[restoredItem.entityType].destination
-    : "/admin/configuracoes/central-recuperacao";
+    : "/admin/administracao/central-recuperacao";
   const hasItems = Boolean(data?.items.length);
 
   const openRestoreDialog = async (item: RecoveryItem) => {
