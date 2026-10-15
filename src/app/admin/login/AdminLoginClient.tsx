@@ -38,6 +38,16 @@ const HIGHLIGHTS = [
   },
 ];
 
+const DEFAULT_ADMIN_CALLBACK_URL = "/admin/selecionar-racha";
+
+export function resolveAdminLoginCallbackUrl(value: string | null | undefined) {
+  const callbackUrl = String(value || "").trim();
+  if (!callbackUrl.startsWith("/") || callbackUrl.startsWith("//") || callbackUrl.includes("\\")) {
+    return DEFAULT_ADMIN_CALLBACK_URL;
+  }
+  return callbackUrl;
+}
+
 export default function AdminLoginClient() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -60,6 +70,7 @@ export default function AdminLoginClient() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const callbackUrl = resolveAdminLoginCallbackUrl(searchParams.get("callbackUrl"));
   const contactWhatsappUrl = buildFut7ProOfficialWhatsAppUrl(
     "Olá! Preciso de ajuda para acessar o painel admin Fut7Pro."
   );
@@ -77,7 +88,7 @@ export default function AdminLoginClient() {
   const hasSecurityCheck = !turnstileEnabled || hasTurnstileProof || Boolean(turnstileToken);
 
   const redirectAfterLogin = () => {
-    router.replace("/admin/selecionar-racha");
+    router.replace(callbackUrl);
   };
 
   const resetTurnstile = () => {
@@ -449,7 +460,7 @@ export default function AdminLoginClient() {
             <div className="mt-4 space-y-3">
               <button
                 type="button"
-                onClick={() => signIn("google", { callbackUrl: "/admin/selecionar-racha" })}
+                onClick={() => signIn("google", { callbackUrl })}
                 className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm font-semibold text-white transition hover:border-white/20"
               >
                 <span className="flex items-center justify-center gap-2">

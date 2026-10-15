@@ -123,6 +123,25 @@ async function refreshAdminTokenSingleFlight(refreshToken: string): Promise<Refr
   return promise;
 }
 
+async function hasAdministrativeMembership(accessToken: string, expectedTenantId?: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/hub`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    if (!response.ok) return false;
+
+    const memberships = await response.json().catch(() => null);
+    if (!Array.isArray(memberships)) return false;
+    if (!expectedTenantId) return memberships.length > 0;
+    return memberships.some(
+      (membership) => String(membership?.tenantId || "") === expectedTenantId
+    );
+  } catch {
+    return false;
+  }
+}
+
 export const authOptions: NextAuthOptionsLike = {
   cookies: {
     sessionToken: {
@@ -377,13 +396,15 @@ export const authOptions: NextAuthOptionsLike = {
         (session.user as any).emailVerifiedAt = (token as any).emailVerifiedAt ?? null;
         (session.user as any).authRealm =
           (token as any).authRealm ?? inferAuthRealmFromRole((token as any).role);
+        (session.user as any).adminAccessVerifiedTenantId =
+          (token as any).adminAccessVerifiedTenantId ?? null;
         (session.user as any).image = (token as any).image ?? (session.user as any).image ?? null;
         (session.user as any).tokenError = (token as any).error ?? null;
       }
       return session;
     },
 
-    async jwt({ token, user }: { token: JWT; user?: any }) {
+    async jwt({ token, user, trigger, session }: any) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
@@ -401,7 +422,16 @@ export const authOptions: NextAuthOptionsLike = {
         (token as any).emailVerifiedAt = (user as any).emailVerifiedAt ?? null;
         (token as any).image = (user as any).image ?? (token as any).image ?? null;
         (token as any).error = null;
+        (token as any).adminAccessVerifiedTenantId = null;
         resetRefreshFailureState(token);
+
+        if (
+          (token as any).authRealm !== "superadmin" &&
+          token.accessToken &&
+          (await hasAdministrativeMembership(String(token.accessToken)))
+        ) {
+          (token as any).authRealm = "admin";
+        }
       }
 
       if (token.accessToken && token.refreshToken) {
@@ -445,6 +475,20 @@ export const authOptions: NextAuthOptionsLike = {
         const now = Math.floor(Date.now() / 1000);
         if (tokenExp && tokenExp <= now) {
           invalidateAuthFields(token, "AccessTokenExpired");
+        }
+      }
+
+      if (trigger === "update" && session?.revalidateAdminAccess === true) {
+        const expectedTenantId = String(session?.expectedTenantId || "").trim();
+        (token as any).adminAccessVerifiedTenantId = null;
+
+        if (
+          expectedTenantId &&
+          token.accessToken &&
+          (await hasAdministrativeMembership(String(token.accessToken), expectedTenantId))
+        ) {
+          (token as any).authRealm = "admin";
+          (token as any).adminAccessVerifiedTenantId = expectedTenantId;
         }
       }
 

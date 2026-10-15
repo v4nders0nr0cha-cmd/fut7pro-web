@@ -17,6 +17,7 @@ const PUBLIC_ROUTE_SEGMENTS = new Set([
   "sobre-nos",
   "sorteio-inteligente",
   "termos",
+  "transferencia-presidencia",
 ]);
 
 const SYSTEM_SEGMENTS = new Set([
