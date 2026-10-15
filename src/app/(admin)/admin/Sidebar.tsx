@@ -93,6 +93,10 @@ const menu = [
     children: [
       { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
       { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
+      {
+        label: "Central de Recuperação",
+        href: "/admin/configuracoes/central-recuperacao",
+      },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Central de Atualizações", href: "/admin/configuracoes/changelog" },
       { label: "Cancelar conta do racha", href: "/admin/configuracoes/cancelar-conta" },
