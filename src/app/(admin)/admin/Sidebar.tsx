@@ -73,6 +73,10 @@ const menu = [
       { label: "Permissões", href: "/admin/administracao/permissoes" },
       { label: "Logs/Admin", href: "/admin/administracao/logs" },
       { label: "Transferir Propriedade", href: "/admin/administracao/transferir-propriedade" },
+      {
+        label: "Central de Recuperação",
+        href: "/admin/administracao/central-recuperacao",
+      },
     ],
   },
   {
@@ -93,10 +97,6 @@ const menu = [
     children: [
       { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
       { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
-      {
-        label: "Central de Recuperação",
-        href: "/admin/configuracoes/central-recuperacao",
-      },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Central de Atualizações", href: "/admin/configuracoes/changelog" },
       { label: "Cancelar conta do racha", href: "/admin/configuracoes/cancelar-conta" },
@@ -131,7 +131,19 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
     return tenantSlug || me?.tenant?.tenantSlug || "";
   }, [tenantSlug, me?.tenant?.tenantSlug]);
   const visibleMenu = useMemo(
-    () => menu.filter((item) => item.label !== "Configurações/Extras" || isPresidente),
+    () =>
+      menu
+        .filter((item) => item.label !== "Configurações/Extras" || isPresidente)
+        .map((item) =>
+          item.label === "Administração" && item.children
+            ? {
+                ...item,
+                children: item.children.filter(
+                  (child) => child.label !== "Central de Recuperação" || isPresidente
+                ),
+              }
+            : item
+        ),
     [isPresidente]
   );
   const { nome, logo } = useBranding({ scope: "admin", slug: resolvedSlug });

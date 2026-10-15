@@ -407,7 +407,7 @@ export default function BackupPage() {
                 assistido.
               </p>
               <Link
-                href="/admin/configuracoes/central-recuperacao"
+                href="/admin/administracao/central-recuperacao"
                 className="mt-3 inline-flex items-center gap-2 rounded bg-yellow-400 px-4 py-2 text-sm font-bold text-[#232323] transition hover:bg-yellow-300"
               >
                 Abrir Central de Recuperação

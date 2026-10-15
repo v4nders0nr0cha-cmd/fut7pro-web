@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
-import RecoveryCenterClient from "./RecoveryCenterClient";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Central de Recuperação | Fut7Pro Admin",
-  description: "Restaure registros elegíveis da sua pelada com segurança.",
-  robots: { index: false, follow: false },
-};
-
-export default function RecoveryCenterPage() {
-  return <RecoveryCenterClient />;
+export default function LegacyRecoveryCenterPage() {
+  redirect("/admin/administracao/central-recuperacao");
 }
