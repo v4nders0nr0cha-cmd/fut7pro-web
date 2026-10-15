@@ -13,6 +13,7 @@ import {
   FaLifeRing,
   FaExternalLinkAlt,
   FaQuestionCircle,
+  FaUndoAlt,
 } from "react-icons/fa";
 import { useRacha } from "@/context/RachaContext";
 import {
@@ -393,6 +394,26 @@ export default function BackupPage() {
           <span className="text-gray-300 block mt-2">
             Tenant ativo: <b>{tenantSlug || "não identificado"}</b>
           </span>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-yellow-700 bg-[#232323] p-4 shadow">
+          <div className="flex items-start gap-3">
+            <FaUndoAlt className="mt-1 shrink-0 text-yellow-300" />
+            <div>
+              <h2 className="font-bold text-yellow-300">Precisa restaurar um registro recente?</h2>
+              <p className="mt-1 text-sm leading-6 text-gray-300">
+                A Central de Recuperação permite ao Presidente restaurar registros elegíveis dos
+                últimos 15 dias. Esta página continua dedicada a diagnósticos operacionais e suporte
+                assistido.
+              </p>
+              <Link
+                href="/admin/configuracoes/central-recuperacao"
+                className="mt-3 inline-flex items-center gap-2 rounded bg-yellow-400 px-4 py-2 text-sm font-bold text-[#232323] transition hover:bg-yellow-300"
+              >
+                Abrir Central de Recuperação
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">

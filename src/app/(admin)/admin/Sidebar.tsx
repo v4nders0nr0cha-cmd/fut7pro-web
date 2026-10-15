@@ -93,6 +93,10 @@ const menu = [
     children: [
       { label: "Domínio Próprio", href: "/admin/configuracoes/dominio-proprio" },
       { label: "Integrações & Automação", href: "/admin/configuracoes/integracoes" },
+      {
+        label: "Central de Recuperação",
+        href: "/admin/configuracoes/central-recuperacao",
+      },
       { label: "Backup & Recuperação", href: "/admin/configuracoes/backup" },
       { label: "Central de Atualizações", href: "/admin/configuracoes/changelog" },
       { label: "Cancelar conta do racha", href: "/admin/configuracoes/cancelar-conta" },
@@ -119,7 +123,9 @@ export default function Sidebar({ mobile = false, isOpen, onClose }: SidebarProp
   const pathname = usePathname() ?? "";
   const [open, setOpen] = useState<string | null>(null);
   const { me } = useMe({ context: "admin" });
-  const isPresidente = String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE";
+  const isPresidente =
+    String(me?.membership?.role || "").toUpperCase() === "PRESIDENTE" &&
+    String(me?.membership?.status || "").toUpperCase() === "APROVADO";
   const { tenantSlug } = useRacha();
   const resolvedSlug = useMemo(() => {
     return tenantSlug || me?.tenant?.tenantSlug || "";
