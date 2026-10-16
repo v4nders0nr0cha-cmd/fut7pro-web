@@ -133,6 +133,44 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
   expect(screen.getByText("Pendente · Recomendado")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
+    )
+  ).toBeInTheDocument();
+});
+
+it("mostra progresso em cache e aviso discreto quando a revalidação falha", () => {
+  mockedHook.mockReturnValue({
+    guide,
+    loading: false,
+    error: Object.assign(new Error("Indisponível"), { status: 503 }),
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideCard />);
+  expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "20");
+  expect(screen.getByRole("link", { name: "Continuar configuração" })).toBeInTheDocument();
+  expect(screen.getByText(/As informações anteriores continuam disponíveis/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Tentar novamente" }));
+  expect(retry).toHaveBeenCalled();
+});
+
+it("não exibe progresso protegido depois de revogação", () => {
+  mockedHook.mockReturnValue({
+    guide: null,
+    loading: false,
+    error: Object.assign(new Error("Acesso negado"), { status: 403 }),
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+  expect(screen.getByText(/somente para administradores aprovados/)).toBeInTheDocument();
 });
 
 it("mostra falha discreta sem bloquear o painel", () => {

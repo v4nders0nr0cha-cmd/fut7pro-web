@@ -18,13 +18,19 @@ export default function AdminGuideCard() {
         <BookOpen className="mt-0.5 shrink-0 text-yellow-300" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <h2 className="text-xl font-bold">Guia Fut7Pro</h2>
-          {loading ? (
+          {loading && !guide ? (
             <p className="mt-2 text-sm text-zinc-300" role="status">
               Carregando seu progresso...
             </p>
-          ) : error || !guide ? (
+          ) : !guide ? (
             <div className="mt-2 text-sm text-zinc-300">
-              <p>Não foi possível carregar o Guia Fut7Pro agora.</p>
+              <p>
+                {error?.status === 403
+                  ? "O Guia está disponível somente para administradores aprovados desta pelada."
+                  : error?.status === 401
+                    ? "Sua sessão expirou. Entre novamente para acessar o Guia."
+                    : "Não foi possível carregar o Guia Fut7Pro agora."}
+              </p>
               <button
                 type="button"
                 onClick={() => void retry()}
@@ -35,12 +41,27 @@ export default function AdminGuideCard() {
             </div>
           ) : (
             <>
+              {error && (
+                <div className="mt-3 text-sm text-zinc-300" role="status">
+                  <p>
+                    Não foi possível atualizar o Guia Fut7Pro. As informações anteriores continuam
+                    disponíveis.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void retry()}
+                    className="mt-2 font-semibold text-yellow-200 underline"
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              )}
               {!guide.pedagogicalState.welcomeSeenAt && (
                 <div className="mt-3 rounded-xl border border-yellow-400/20 bg-yellow-400/5 p-4">
                   <p className="font-semibold text-yellow-200">Bem-vindo ao Guia Fut7Pro!</p>
                   <p className="mt-1 text-sm text-zinc-200">
                     {guide.activationProgress.complete
-                      ? "Sua pelada já tem uma jornada inicial concluída. Conheça os recursos disponíveis para sua função."
+                      ? "Sua pelada já concluiu a jornada inicial. Conheça os recursos disponíveis para sua função."
                       : "Acompanhe a preparação da pelada, os primeiros jogos e os recursos disponíveis para sua função."}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -102,7 +123,9 @@ export default function AdminGuideCard() {
                   ) : (
                     <p className="flex items-center gap-2 text-sm text-zinc-200">
                       <CheckCircle2 size={18} className="text-yellow-300" aria-hidden="true" />
-                      Nenhuma ação disponível para sua função no momento.
+                      {guide.activationProgress.complete
+                        ? "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
+                        : "Nenhuma ação disponível para sua função no momento."}
                     </p>
                   )}
                 </div>

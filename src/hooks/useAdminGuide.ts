@@ -28,11 +28,11 @@ export function useAdminGuide() {
   const activeSlug = tenantSlug.trim().toLowerCase();
   const scopeRef = useRef(activeSlug);
   scopeRef.current = activeSlug;
-  const inFlightRef = useRef(false);
+  const inFlightRef = useRef(new Set<string>());
   const [actionFailure, setActionFailure] = useState<{ slug: string; error: GuideError } | null>(
     null
   );
-  const [updatingSlug, setUpdatingSlug] = useState<string | null>(null);
+  const [updatingSlugs, setUpdatingSlugs] = useState<Set<string>>(() => new Set());
   const { data, error, isLoading, mutate } = useSWR<AdminGuideData, GuideError>(
     activeSlug ? ["/api/admin/guide", activeSlug] : null,
     fetchGuide,
@@ -44,15 +44,18 @@ export function useAdminGuide() {
       errorRetryCount: 1,
     }
   );
-  const guide = data?.tenant?.slug?.toLowerCase() === activeSlug ? data : null;
+  const guide =
+    ![401, 403].includes(error?.status ?? 0) && data?.tenant?.slug?.toLowerCase() === activeSlug
+      ? data
+      : null;
 
   const update = useCallback(
     async (action: AdminGuidePatch) => {
-      if (!guide || inFlightRef.current || scopeRef.current !== guide.tenant.slug.toLowerCase())
-        return false;
+      if (!guide || scopeRef.current !== guide.tenant.slug.toLowerCase()) return false;
       const scope = scopeRef.current;
-      inFlightRef.current = true;
-      setUpdatingSlug(scope);
+      if (inFlightRef.current.has(scope)) return false;
+      inFlightRef.current.add(scope);
+      setUpdatingSlugs((current) => new Set(current).add(scope));
       setActionFailure(null);
       try {
         await readResponse(
@@ -74,8 +77,12 @@ export function useAdminGuide() {
         if (issue.status === 409) await mutate();
         return false;
       } finally {
-        inFlightRef.current = false;
-        setUpdatingSlug(null);
+        inFlightRef.current.delete(scope);
+        setUpdatingSlugs((current) => {
+          const next = new Set(current);
+          next.delete(scope);
+          return next;
+        });
       }
     },
     [guide, mutate]
@@ -86,7 +93,7 @@ export function useAdminGuide() {
     loading: Boolean(activeSlug) && isLoading,
     error: error ?? null,
     actionError: actionFailure?.slug === activeSlug ? actionFailure.error : null,
-    updating: updatingSlug === activeSlug,
+    updating: updatingSlugs.has(activeSlug),
     retry: () => mutate(),
     update,
   };

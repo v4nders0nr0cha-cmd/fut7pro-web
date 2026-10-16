@@ -98,11 +98,11 @@ export default function AdminGuideClient() {
           </div>
         </header>
 
-        {loading ? (
+        {loading && !guide ? (
           <p role="status" className="rounded-xl bg-[#23272F] p-5 text-zinc-300">
             Carregando seu Guia...
           </p>
-        ) : error || !guide ? (
+        ) : !guide ? (
           <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
             <p>
               {error?.status === 403
@@ -127,6 +127,24 @@ export default function AdminGuideClient() {
           </section>
         ) : (
           <>
+            {error && (
+              <section
+                className="rounded-xl border border-yellow-400/20 bg-[#23272F] p-4 text-sm text-zinc-300"
+                role="status"
+              >
+                <p>
+                  Não foi possível atualizar o Guia Fut7Pro. As informações anteriores continuam
+                  disponíveis.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void retry()}
+                  className="mt-2 font-semibold text-yellow-200 underline"
+                >
+                  Tentar novamente
+                </button>
+              </section>
+            )}
             {!guide.pedagogicalState.welcomeSeenAt && (
               <section className="rounded-xl border border-yellow-400/30 bg-yellow-400/5 p-5">
                 <h2 className="text-lg font-bold text-yellow-200">Bem-vindo ao Guia Fut7Pro!</h2>
@@ -207,7 +225,9 @@ export default function AdminGuideClient() {
                   <h2 className="text-xl font-bold">Próximo passo</h2>
                   <p className="mt-2 text-zinc-200">
                     {guide.nextAction?.title ||
-                      "Nenhuma ação disponível para sua função no momento."}
+                      (guide.activationProgress.complete
+                        ? "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
+                        : "Nenhuma ação disponível para sua função no momento.")}
                   </p>
                   {nextGuideDestination(guide) && (
                     <Link

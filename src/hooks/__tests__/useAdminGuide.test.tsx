@@ -107,3 +107,83 @@ it("recarrega o estado após conflito sem apagar outra alteração", async () =>
   expect(result.current.actionError?.status).toBe(409);
   await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(3));
 });
+
+it("mantém os dados da mesma pelada após uma falha temporária de revalidação", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })
+    .mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({ message: "Indisponível." }),
+    });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  await act(async () => {
+    await result.current.retry();
+  });
+  await waitFor(() => expect(result.current.error?.status).toBe(503));
+  expect(result.current.guide?.tenant.slug).toBe("pelada-a");
+});
+
+it("oculta os dados em cache quando a revalidação revoga o acesso", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a") })
+    .mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      json: async () => ({ message: "Acesso negado." }),
+    });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.tenant.slug).toBe("pelada-a"));
+  await act(async () => {
+    await result.current.retry();
+  });
+  expect(result.current.error?.status).toBe(403);
+  expect(result.current.guide).toBeNull();
+});
+
+it("permite atualizar a pelada B enquanto o PATCH da pelada A ainda está pendente", async () => {
+  let resolvePatchA!: (response: Response) => void;
+  let resolvePatchB!: (response: Response) => void;
+  (global.fetch as jest.Mock).mockImplementation((_url, options?: RequestInit) => {
+    if (options?.method === "PATCH") {
+      return new Promise<Response>((resolve) => {
+        if (activeSlug === "pelada-a") resolvePatchA = resolve;
+        else resolvePatchB = resolve;
+      });
+    }
+    return Promise.resolve({ ok: true, json: async () => makeGuide(activeSlug) });
+  });
+  const { result, rerender } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.tenant.slug).toBe("pelada-a"));
+  let pendingA!: Promise<boolean>;
+  act(() => {
+    pendingA = result.current.update({ action: "WELCOME_SEEN" });
+  });
+  expect(result.current.updating).toBe(true);
+
+  activeSlug = "pelada-b";
+  rerender();
+  await waitFor(() => expect(result.current.guide?.tenant.slug).toBe("pelada-b"));
+  expect(result.current.updating).toBe(false);
+  let pendingB!: Promise<boolean>;
+  act(() => {
+    pendingB = result.current.update({ action: "WELCOME_SEEN" });
+  });
+  expect(result.current.updating).toBe(true);
+  await act(async () => {
+    resolvePatchA({ ok: true, json: async () => ({}) } as Response);
+    expect(await pendingA).toBe(false);
+  });
+  expect(result.current.guide?.tenant.slug).toBe("pelada-b");
+  expect(result.current.updating).toBe(true);
+  await act(async () => {
+    resolvePatchB({ ok: true, json: async () => ({}) } as Response);
+    expect(await pendingB).toBe(true);
+  });
+  expect(result.current.updating).toBe(false);
+  expect(result.current.guide?.tenant.slug).toBe("pelada-b");
+  expect(
+    (global.fetch as jest.Mock).mock.calls.filter(([, options]) => options?.method === "PATCH")
+  ).toHaveLength(2);
+});
