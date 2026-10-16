@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { BookOpen, CheckCircle2, Circle, LockKeyhole, Sparkles } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
+import AdminGuidePreparationSection from "@/components/admin-guide/AdminGuidePreparationSection";
 import { guideDestination, nextGuideDestination } from "@/lib/admin-guide-navigation";
 import type { AdminGuideTask } from "@/types/admin-guide";
 
-const INITIAL_IDS = new Set([
+const PREPARATION_IDS = new Set([
+  "PUBLIC_SITE",
+  "IDENTITY",
+  "SCHEDULE",
   "ACTIVE_PLAYERS",
   "OFFICIAL_TEAMS",
-  "FIRST_MATCHDAY",
-  "RESULTS_RECORDED",
-  "CHAMPION_PUBLISHED",
 ]);
+
+const FOLLOWING_INITIAL_IDS = new Set(["FIRST_MATCHDAY", "RESULTS_RECORDED", "CHAMPION_PUBLISHED"]);
 
 const REQUIREMENT_LABEL: Record<AdminGuideTask["requirement"], string> = {
   REQUIRED: "Etapa da ativação",
@@ -251,15 +254,24 @@ export default function AdminGuideClient() {
                 </div>
               </div>
             </section>
+            <AdminGuidePreparationSection
+              guide={guide}
+              onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
+            />
             <TaskList
-              title="Etapas da ativação"
-              tasks={guide.tasks.filter((task) => INITIAL_IDS.has(task.id))}
+              title="Próximas etapas da ativação"
+              tasks={guide.tasks.filter((task) => FOLLOWING_INITIAL_IDS.has(task.id))}
               guide={guide}
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
             />
             <TaskList
               title="Orientações adicionais"
-              tasks={guide.tasks.filter((task) => !INITIAL_IDS.has(task.id) && task.applicable)}
+              tasks={guide.tasks.filter(
+                (task) =>
+                  !PREPARATION_IDS.has(task.id) &&
+                  !FOLLOWING_INITIAL_IDS.has(task.id) &&
+                  task.applicable
+              )}
               guide={guide}
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
             />
