@@ -1,0 +1,109 @@
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { SWRConfig } from "swr";
+import type { ReactNode } from "react";
+import { useAdminGuide } from "../useAdminGuide";
+import type { AdminGuideData } from "@/types/admin-guide";
+
+jest.mock("swr", () => {
+  const actual = jest.requireActual("swr");
+  return { __esModule: true, ...actual };
+});
+
+let activeSlug = "pelada-a";
+jest.mock("@/context/RachaContext", () => ({
+  useRacha: () => ({ tenantSlug: activeSlug }),
+}));
+
+const makeGuide = (slug: string, revision = 0) =>
+  ({
+    tenant: { id: slug, slug, name: slug },
+    pedagogicalState: {
+      revision,
+      knownTips: [],
+      dismissedTips: [],
+      snoozedTips: {},
+      viewedResources: [],
+    },
+    activationProgress: { completed: 0, total: 5, percentage: 0, complete: false },
+    tasks: [],
+    nextAction: null,
+  }) as AdminGuideData;
+
+function wrapper({ children }: { children: ReactNode }) {
+  return (
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
+  );
+}
+
+beforeEach(() => {
+  activeSlug = "pelada-a";
+  global.fetch = jest.fn();
+});
+
+it("isola o cache por pelada e ignora resposta antiga após a troca", async () => {
+  let resolveOld!: (response: Response) => void;
+  (global.fetch as jest.Mock)
+    .mockImplementationOnce(() => new Promise<Response>((resolve) => (resolveOld = resolve)))
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-b") });
+  const { result, rerender } = renderHook(() => useAdminGuide(), { wrapper });
+  activeSlug = "pelada-b";
+  rerender();
+  await waitFor(() => expect(result.current.guide?.tenant.slug).toBe("pelada-b"));
+  await act(async () => {
+    resolveOld({ ok: true, json: async () => makeGuide("pelada-a") } as Response);
+  });
+  expect(result.current.guide?.tenant.slug).toBe("pelada-b");
+});
+
+it("não apresenta nem altera dados se o servidor ainda responder pela pelada anterior", async () => {
+  (global.fetch as jest.Mock).mockResolvedValue({
+    ok: true,
+    json: async () => makeGuide("pelada-a"),
+  });
+  activeSlug = "pelada-b";
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  expect(result.current.guide).toBeNull();
+  await act(async () => {
+    expect(await result.current.update({ action: "WELCOME_SEEN" })).toBe(false);
+  });
+  expect(global.fetch).toHaveBeenCalledTimes(1);
+});
+
+it("envia apenas a ação pedagógica e a revisão, revalidando após o PATCH", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ pedagogicalState: { revision: 3 } }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 3) });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  await act(async () => {
+    expect(await result.current.update({ action: "WELCOME_SEEN" })).toBe(true);
+  });
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/admin/guide",
+    expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({ action: "WELCOME_SEEN", expectedRevision: 2 }),
+    })
+  );
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(3));
+});
+
+it("recarrega o estado após conflito sem apagar outra alteração", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })
+    .mockResolvedValueOnce({
+      ok: false,
+      status: 409,
+      json: async () => ({ message: "Conflito de revisão." }),
+    })
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 3) });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  await act(async () => {
+    expect(await result.current.update({ action: "WELCOME_SEEN" })).toBe(false);
+  });
+  expect(result.current.actionError?.status).toBe(409);
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(3));
+});
