@@ -273,6 +273,8 @@ it("mostra o progresso compartilhado sem oferecer ações esportivas ou financei
   expect(
     screen.queryByRole("link", { name: "Escolher como criar a partida" })
   ).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Abrir Sorteio Inteligente" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Criar Partida Clássica" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Gerenciar mensalistas" })).not.toBeInTheDocument();
   expect(screen.getByText(/não criar partidas/)).toBeInTheDocument();
 });
