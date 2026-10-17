@@ -6,6 +6,7 @@ import { useAdminGuide } from "@/hooks/useAdminGuide";
 import AdminGuidePreparationSection from "@/components/admin-guide/AdminGuidePreparationSection";
 import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
 import AdminGuidePostMatchSection from "@/components/admin-guide/AdminGuidePostMatchSection";
+import AdminGuideResourcesSection from "@/components/admin-guide/AdminGuideResourcesSection";
 import { guideDestination, nextGuideDestination } from "@/lib/admin-guide-navigation";
 import type { AdminGuideTask } from "@/types/admin-guide";
 
@@ -278,13 +279,7 @@ export default function AdminGuideClient() {
               guide={guide}
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
             />
-            <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
-              <h2 className="text-xl font-bold">Outros recursos</h2>
-              <p className="mt-2 text-sm text-zinc-300">
-                Depois da jornada inicial, você poderá explorar outros recursos disponíveis para sua
-                função. Essas sugestões não alteram o progresso da ativação.
-              </p>
-            </section>
+            <AdminGuideResourcesSection guide={guide} updating={updating} update={update} />
           </>
         )}
       </div>
