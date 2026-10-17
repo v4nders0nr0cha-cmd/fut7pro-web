@@ -55,6 +55,9 @@ export default function AdminGuideFirstMatchSection({
   const teams = count(guide, "activeOfficialTeams");
   const levelCoverage = count(guide, "athleteLevelCoverage");
   const matchDestination = matchTask ? guideDestination(guide, matchTask) : null;
+  const canChooseMode = Boolean(
+    matchTask?.applicable && matchTask.canAct && guide.capabilities.manageMatchesAndResults
+  );
   const teamDestination = teamTask ? guideDestination(guide, teamTask) : null;
   const levelDestination = levelTask ? guideDestination(guide, levelTask) : null;
   const monthlyDestination = monthlyTask ? guideDestination(guide, monthlyTask) : null;
@@ -98,7 +101,7 @@ export default function AdminGuideFirstMatchSection({
               <button
                 type="button"
                 aria-pressed={selected}
-                disabled={updating || selected}
+                disabled={updating || selected || !canChooseMode}
                 onClick={() =>
                   void update({ action: "FIRST_MATCH_MODE_SELECTED", mode: option.mode })
                 }

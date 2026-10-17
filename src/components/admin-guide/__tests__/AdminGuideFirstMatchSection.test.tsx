@@ -251,7 +251,24 @@ it("registra as três escolhas de mensalistas sem criar cobranças", () => {
 });
 
 it("mostra o progresso compartilhado sem oferecer ações esportivas ou financeiras sem permissão", () => {
-  show(makeGuide({ players: 10, teams: 2, canManageMatches: false, canManageMonthly: false }));
+  const guide = makeGuide({
+    mode: "INTELLIGENT_DRAW",
+    players: 10,
+    teams: 2,
+    canManageMatches: false,
+    canManageMonthly: false,
+  });
+  guide.administrator.role = "DIRETOR_FINANCEIRO";
+  show(guide);
+  expect(screen.getByRole("heading", { name: "Sorteio Inteligente" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Partida Clássica" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Modalidade escolhida" })).toHaveAttribute(
+    "aria-pressed",
+    "true"
+  );
+  expect(screen.getByRole("button", { name: "Escolher Partida Clássica" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Escolher Partida Clássica" }));
+  expect(update).not.toHaveBeenCalled();
   expect(screen.getByText(/10 jogadores ativos/)).toBeInTheDocument();
   expect(
     screen.queryByRole("link", { name: "Escolher como criar a partida" })
@@ -259,6 +276,21 @@ it("mostra o progresso compartilhado sem oferecer ações esportivas ou financei
   expect(screen.queryByRole("link", { name: "Gerenciar mensalistas" })).not.toBeInTheDocument();
   expect(screen.getByText(/não criar partidas/)).toBeInTheDocument();
 });
+
+it.each(["canAct", "applicable"] as const)(
+  "não permite escolher modalidade quando FIRST_MATCHDAY.%s é falso",
+  (field) => {
+    const guide = makeGuide();
+    guide.tasks = guide.tasks.map((task) =>
+      task.id === "FIRST_MATCHDAY" ? { ...task, [field]: false } : task
+    );
+    show(guide);
+    const button = screen.getByRole("button", { name: "Escolher Sorteio Inteligente" });
+    expect(button).toBeDisabled();
+    fireEvent.click(button);
+    expect(update).not.toHaveBeenCalled();
+  }
+);
 
 it("não troca visualmente a pelada ou modalidade antes da resposta do servidor", () => {
   const { rerender } = show(makeGuide({ slug: "pelada-a" }));
