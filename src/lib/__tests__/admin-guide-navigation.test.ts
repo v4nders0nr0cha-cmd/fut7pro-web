@@ -53,3 +53,44 @@ it("direciona a configuração da agenda à página editável em todos os acesso
     })
   ).toBeNull();
 });
+
+it("usa a modalidade escolhida para a primeira partida, sem liberar rotas inseguras", () => {
+  const match: AdminGuideTask = {
+    ...task,
+    id: "FIRST_MATCHDAY",
+    route: "/admin/partidas/criar",
+  };
+  const matchGuide = {
+    ...guide,
+    capabilities: { manageMatchesAndResults: true },
+    pedagogicalState: {
+      revision: 0,
+      firstMatchMode: "INTELLIGENT_DRAW" as const,
+      knownTips: [],
+      dismissedTips: [],
+      snoozedTips: {},
+      viewedResources: [],
+    },
+    tasks: [match],
+    nextAction: { taskId: match.id, title: match.title, route: match.route },
+  } as AdminGuideData;
+  expect(nextGuideDestination(matchGuide)).toBe("/admin/partidas/sorteio-inteligente");
+  expect(
+    nextGuideDestination({
+      ...matchGuide,
+      pedagogicalState: { ...matchGuide.pedagogicalState, firstMatchMode: "CLASSIC_MATCH" },
+    })
+  ).toBe("/admin/partidas/criar/classica");
+  expect(
+    nextGuideDestination({
+      ...matchGuide,
+      pedagogicalState: { ...matchGuide.pedagogicalState, firstMatchMode: undefined },
+    })
+  ).toBe("/admin/partidas/criar");
+  expect(guideDestination(matchGuide, { ...match, canAct: false })).toBeNull();
+  expect(guideDestination(matchGuide, { ...match, applicable: false })).toBeNull();
+  expect(guideDestination(matchGuide, { ...match, route: "https://outro.site" })).toBeNull();
+  expect(
+    guideDestination({ ...matchGuide, capabilities: { manageMatchesAndResults: false } }, match)
+  ).toBeNull();
+});
