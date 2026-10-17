@@ -98,7 +98,6 @@ function destination(guide: AdminGuideData, task: AdminGuideTask) {
     return null;
   }
   if (!task.canAct) return null;
-  if (task.id === "SCHEDULE") return { href: "/admin/rachas", label: "Configurar horários" };
   const href = guideDestination(guide, task);
   const entry = PREPARATION.find((item) => item.id === task.id);
   return href && entry ? { href, label: entry.action } : null;

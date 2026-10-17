@@ -29,3 +29,27 @@ it("recusa links arbitrários ou ações sem permissão", () => {
     nextGuideDestination({ ...guide, nextAction: { ...guide.nextAction!, route: "//outro.site" } })
   ).toBeNull();
 });
+
+it("direciona a configuração da agenda à página editável em todos os acessos", () => {
+  const schedule = {
+    ...task,
+    id: "SCHEDULE",
+    route: "/admin/partidas/proximos-rachas",
+  };
+  const scheduleGuide = {
+    ...guide,
+    tasks: [schedule],
+    nextAction: { taskId: schedule.id, title: schedule.title, route: schedule.route },
+  };
+  expect(guideDestination(scheduleGuide, schedule)).toBe("/admin/rachas");
+  expect(nextGuideDestination(scheduleGuide)).toBe("/admin/rachas");
+  expect(guideDestination(scheduleGuide, { ...schedule, canAct: false })).toBeNull();
+  expect(guideDestination(scheduleGuide, { ...schedule, applicable: false })).toBeNull();
+  expect(guideDestination(scheduleGuide, { ...schedule, route: "https://outro.site" })).toBeNull();
+  expect(
+    nextGuideDestination({
+      ...scheduleGuide,
+      nextAction: { ...scheduleGuide.nextAction, route: "https://outro.site" },
+    })
+  ).toBeNull();
+});
