@@ -206,12 +206,73 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   render(<AdminGuideClient />);
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
-  expect(screen.getByText("Pendente · Recomendado")).toBeInTheDocument();
+  expect(screen.getByText(/Recomendado · A finalização oficial é recomendada/)).toBeInTheDocument();
+  expect(screen.getByText("Sua pelada concluiu a jornada inicial!")).toBeInTheDocument();
   expect(
     screen.getByText(
       "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
     )
   ).toBeInTheDocument();
+});
+
+it("mostra os marcos pós-jogo uma única vez na seção própria", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      capabilities: { manageMatchesAndResults: true, publishChampion: true },
+      operationalState: {
+        validMatchCount: 2,
+        hasMatchdayWithAllResults: true,
+        hasOfficiallyFinishedMatchday: false,
+        championPublished: false,
+        championAwaitingReview: false,
+      },
+      tasks: [
+        ...guide.tasks,
+        {
+          id: "RESULTS_RECORDED",
+          title: "Registre os resultados",
+          requirement: "REQUIRED",
+          completed: true,
+          canAct: true,
+          applicable: true,
+          route: "/admin/partidas/resultados-do-dia",
+        },
+        {
+          id: "CHAMPION_PUBLISHED",
+          title: "Publique o Time Campeão do Dia",
+          requirement: "REQUIRED",
+          completed: false,
+          canAct: true,
+          applicable: true,
+          route: "/admin/partidas/time-campeao-do-dia",
+        },
+      ],
+      nextAction: {
+        taskId: "CHAMPION_PUBLISHED",
+        title: "Publique o Time Campeão do Dia",
+        route: "/admin/partidas/time-campeao-do-dia",
+      },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getAllByRole("heading", { name: "Registre os resultados" })).toHaveLength(1);
+  expect(screen.getAllByRole("heading", { name: "Publique o Time Campeão do Dia" })).toHaveLength(
+    1
+  );
+  expect(
+    screen.queryByRole("heading", { name: "Próximas etapas da ativação" })
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/time-campeao-do-dia"
+  );
 });
 
 it("mostra progresso em cache e aviso discreto quando a revalidação falha", () => {

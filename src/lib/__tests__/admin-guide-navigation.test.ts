@@ -94,3 +94,37 @@ it("usa a modalidade escolhida para a primeira partida, sem liberar rotas insegu
     guideDestination({ ...matchGuide, capabilities: { manageMatchesAndResults: false } }, match)
   ).toBeNull();
 });
+
+it("exige capacidades esportivas para resultados e publicação, inclusive no próximo passo", () => {
+  const results: AdminGuideTask = {
+    ...task,
+    id: "RESULTS_RECORDED",
+    route: "/admin/partidas/resultados-do-dia",
+  };
+  const champion: AdminGuideTask = {
+    ...task,
+    id: "CHAMPION_PUBLISHED",
+    route: "/admin/partidas/time-campeao-do-dia",
+  };
+  const restricted = {
+    ...guide,
+    tasks: [results, champion],
+    capabilities: { manageMatchesAndResults: false, publishChampion: false },
+    nextAction: { taskId: results.id, title: results.title, route: results.route },
+  } as AdminGuideData;
+  expect(nextGuideDestination(restricted)).toBeNull();
+  expect(guideDestination(restricted, champion)).toBeNull();
+  expect(
+    guideDestination({ ...restricted, capabilities: { manageMatchesAndResults: true } }, results)
+  ).toBe("/admin/partidas/resultados-do-dia");
+  expect(
+    guideDestination({ ...restricted, capabilities: { publishChampion: true } }, champion)
+  ).toBe("/admin/partidas/time-campeao-do-dia");
+  expect(guideDestination(restricted, { ...results, route: "https://externo.test" })).toBeNull();
+  expect(
+    guideDestination(
+      { ...restricted, capabilities: { manageMatchesAndResults: true } },
+      { ...results, route: "/admin/financeiro/patrocinadores" }
+    )
+  ).toBeNull();
+});
