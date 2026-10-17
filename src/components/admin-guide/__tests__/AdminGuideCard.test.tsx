@@ -81,6 +81,45 @@ it("mostra progresso real e a rota oficial no card", () => {
   );
 });
 
+it("mostra o primeiro jogo na seção própria sem duplicar a tarefa genérica", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      capabilities: { manageMatchesAndResults: true },
+      tasks: [
+        ...guide.tasks,
+        {
+          id: "FIRST_MATCHDAY",
+          title: "Prepare o primeiro jogo",
+          requirement: "REQUIRED",
+          completed: false,
+          canAct: true,
+          applicable: true,
+          route: "/admin/partidas/criar",
+        },
+      ],
+      nextAction: {
+        taskId: "FIRST_MATCHDAY",
+        title: "Prepare o primeiro jogo",
+        route: "/admin/partidas/criar",
+      },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getByText("Momento 2/2")).toBeInTheDocument();
+  expect(screen.getAllByRole("heading", { name: "Primeiro jogo preparado" })).toHaveLength(1);
+  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/criar"
+  );
+});
+
 it("leva do card e da página do Guia à configuração editável de horários", () => {
   const scheduleTask = {
     ...guide.tasks[0],

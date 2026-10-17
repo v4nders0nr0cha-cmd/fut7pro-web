@@ -90,6 +90,31 @@ it("envia apenas a ação pedagógica e a revisão, revalidando após o PATCH", 
   await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(3));
 });
 
+it("persiste a modalidade escolhida sem enviar dados operacionais ou tenant no PATCH", async () => {
+  (global.fetch as jest.Mock)
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ pedagogicalState: { revision: 3 } }) })
+    .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 3) });
+  const { result } = renderHook(() => useAdminGuide(), { wrapper });
+  await waitFor(() => expect(result.current.guide?.pedagogicalState.revision).toBe(2));
+  await act(async () => {
+    expect(
+      await result.current.update({ action: "FIRST_MATCH_MODE_SELECTED", mode: "CLASSIC_MATCH" })
+    ).toBe(true);
+  });
+  expect(global.fetch).toHaveBeenCalledWith(
+    "/api/admin/guide",
+    expect.objectContaining({
+      method: "PATCH",
+      body: JSON.stringify({
+        action: "FIRST_MATCH_MODE_SELECTED",
+        mode: "CLASSIC_MATCH",
+        expectedRevision: 2,
+      }),
+    })
+  );
+});
+
 it("recarrega o estado após conflito sem apagar outra alteração", async () => {
   (global.fetch as jest.Mock)
     .mockResolvedValueOnce({ ok: true, json: async () => makeGuide("pelada-a", 2) })

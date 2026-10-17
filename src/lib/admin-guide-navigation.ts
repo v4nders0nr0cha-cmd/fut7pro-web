@@ -22,6 +22,15 @@ export function guideDestination(guide: AdminGuideData, task: AdminGuideTask): s
   if (task.id === "SCHEDULE") {
     return task.route === "/admin/partidas/proximos-rachas" ? "/admin/rachas" : null;
   }
+  if (task.id === "FIRST_MATCHDAY") {
+    if (task.route !== "/admin/partidas/criar" || !guide.capabilities.manageMatchesAndResults)
+      return null;
+    if (guide.pedagogicalState.firstMatchMode === "INTELLIGENT_DRAW")
+      return "/admin/partidas/sorteio-inteligente";
+    if (guide.pedagogicalState.firstMatchMode === "CLASSIC_MATCH")
+      return "/admin/partidas/criar/classica";
+    return "/admin/partidas/criar";
+  }
   return ALLOWED_ADMIN_ROUTES.has(task.route) ? task.route : null;
 }
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, CheckCircle2, Circle, LockKeyhole, Sparkles } from "lucide-react";
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import AdminGuidePreparationSection from "@/components/admin-guide/AdminGuidePreparationSection";
+import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
 import { guideDestination, nextGuideDestination } from "@/lib/admin-guide-navigation";
 import type { AdminGuideTask } from "@/types/admin-guide";
 
@@ -15,7 +16,8 @@ const PREPARATION_IDS = new Set([
   "OFFICIAL_TEAMS",
 ]);
 
-const FOLLOWING_INITIAL_IDS = new Set(["FIRST_MATCHDAY", "RESULTS_RECORDED", "CHAMPION_PUBLISHED"]);
+const FIRST_MATCH_IDS = new Set(["ATHLETE_LEVELS", "MONTHLY_MODEL", "FIRST_MATCHDAY"]);
+const FOLLOWING_INITIAL_IDS = new Set(["RESULTS_RECORDED", "CHAMPION_PUBLISHED"]);
 
 const REQUIREMENT_LABEL: Record<AdminGuideTask["requirement"], string> = {
   REQUIRED: "Etapa da ativação",
@@ -258,6 +260,7 @@ export default function AdminGuideClient() {
               guide={guide}
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
             />
+            <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
             <TaskList
               title="Próximas etapas da ativação"
               tasks={guide.tasks.filter((task) => FOLLOWING_INITIAL_IDS.has(task.id))}
@@ -269,6 +272,7 @@ export default function AdminGuideClient() {
               tasks={guide.tasks.filter(
                 (task) =>
                   !PREPARATION_IDS.has(task.id) &&
+                  !FIRST_MATCH_IDS.has(task.id) &&
                   !FOLLOWING_INITIAL_IDS.has(task.id) &&
                   task.applicable
               )}
