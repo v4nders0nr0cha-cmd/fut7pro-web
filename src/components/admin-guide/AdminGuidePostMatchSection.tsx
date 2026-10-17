@@ -114,12 +114,16 @@ export default function AdminGuidePostMatchSection({ guide }: { guide: AdminGuid
                 Os resultados de uma data de jogos foram alterados após a publicação do campeão.
                 Confira a publicação para mantê-la atualizada.
               </p>
+              <p className="mt-2 text-sm text-zinc-200">
+                No Histórico, localize a rodada com o aviso &quot;Publicação desatualizada&quot; e
+                clique em &quot;Revisar publicação&quot;.
+              </p>
               {championDestination && canPublishChampion && (
                 <Link
-                  href={championDestination}
+                  href={HISTORY_ROUTE}
                   className="mt-3 inline-block text-sm font-semibold text-yellow-200 underline"
                 >
-                  Revisar Campeão do Dia
+                  Localizar publicação para revisão
                 </Link>
               )}
             </div>

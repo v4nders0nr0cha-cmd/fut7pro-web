@@ -162,7 +162,14 @@ it("reconhece um ciclo válido antigo mesmo com revisão pendente de outra publi
   );
   expect(screen.getByText(/já possui um Time Campeão do Dia publicado/)).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Revise o Campeão do Dia" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Revisar Campeão do Dia" })).toHaveAttribute(
+  expect(screen.getByText(/No Histórico, localize a rodada com o aviso/)).toHaveTextContent(
+    'No Histórico, localize a rodada com o aviso "Publicação desatualizada" e clique em "Revisar publicação".'
+  );
+  expect(screen.getByRole("link", { name: "Localizar publicação para revisão" })).toHaveAttribute(
+    "href",
+    "/admin/partidas/historico"
+  );
+  expect(screen.getByRole("link", { name: "Gerenciar Campeão do Dia" })).toHaveAttribute(
     "href",
     "/admin/partidas/time-campeao-do-dia"
   );
@@ -191,6 +198,10 @@ it("mantém o progresso compartilhado sem links de edição para cargo sem capac
   );
   expect(screen.getByText(/todos os placares de pelo menos uma data/)).toBeInTheDocument();
   expect(screen.getByText(/já possui um Time Campeão do Dia publicado/)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revise o Campeão do Dia" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("link", { name: "Localizar publicação para revisão" })
+  ).not.toBeInTheDocument();
   expect(screen.queryByRole("link")).not.toBeInTheDocument();
 });
 

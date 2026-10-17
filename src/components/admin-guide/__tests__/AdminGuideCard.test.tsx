@@ -215,6 +215,48 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   ).toBeInTheDocument();
 });
 
+it("mantém a ativação concluída com revisão pendente em outra rodada, sem alterar dados ao abrir o Histórico", () => {
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      capabilities: { manageMatchesAndResults: true, publishChampion: true },
+      pedagogicalState: { ...guide.pedagogicalState, welcomeSeenAt: "2026-10-16T00:00:00Z" },
+      operationalState: {
+        validMatchCount: 4,
+        hasMatchdayWithAllResults: true,
+        championPublished: true,
+        championAwaitingReview: true,
+      },
+      tasks: [
+        ...guide.tasks,
+        {
+          id: "CHAMPION_PUBLISHED",
+          title: "Publique o Time Campeão do Dia",
+          requirement: "REQUIRED",
+          completed: true,
+          canAct: true,
+          applicable: true,
+          route: "/admin/partidas/time-campeao-do-dia",
+        },
+      ],
+      activationProgress: { completed: 5, total: 5, percentage: 100, complete: true },
+      nextAction: null,
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  render(<AdminGuideClient />);
+  expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  const reviewLink = screen.getByRole("link", { name: "Localizar publicação para revisão" });
+  expect(reviewLink).toHaveAttribute("href", "/admin/partidas/historico");
+  fireEvent.click(reviewLink);
+  expect(update).not.toHaveBeenCalled();
+});
+
 it("mostra os marcos pós-jogo uma única vez na seção própria", () => {
   mockedHook.mockReturnValue({
     guide: {
