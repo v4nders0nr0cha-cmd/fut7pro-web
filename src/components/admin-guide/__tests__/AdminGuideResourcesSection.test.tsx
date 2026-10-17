@@ -60,7 +60,9 @@ beforeEach(() => jest.clearAllMocks());
 
 it("apresenta recursos opcionais com destinos reais sem alterar os cinco marcos", () => {
   const guide = makeGuide({ complete: true });
-  const view = render(<AdminGuideResourcesSection guide={guide} updating={false} update={update} />);
+  const view = render(
+    <AdminGuideResourcesSection guide={guide} updating={false} update={update} />
+  );
   expect(
     screen.getByRole("heading", { name: "Explore mais recursos do Fut7Pro" })
   ).toBeInTheDocument();
