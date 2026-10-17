@@ -5,6 +5,7 @@ import { BookOpen, CheckCircle2, Circle, LockKeyhole, Sparkles } from "lucide-re
 import { useAdminGuide } from "@/hooks/useAdminGuide";
 import AdminGuidePreparationSection from "@/components/admin-guide/AdminGuidePreparationSection";
 import AdminGuideFirstMatchSection from "@/components/admin-guide/AdminGuideFirstMatchSection";
+import AdminGuidePostMatchSection from "@/components/admin-guide/AdminGuidePostMatchSection";
 import { guideDestination, nextGuideDestination } from "@/lib/admin-guide-navigation";
 import type { AdminGuideTask } from "@/types/admin-guide";
 
@@ -17,7 +18,7 @@ const PREPARATION_IDS = new Set([
 ]);
 
 const FIRST_MATCH_IDS = new Set(["ATHLETE_LEVELS", "MONTHLY_MODEL", "FIRST_MATCHDAY"]);
-const FOLLOWING_INITIAL_IDS = new Set(["RESULTS_RECORDED", "CHAMPION_PUBLISHED"]);
+const POST_MATCH_IDS = new Set(["RESULTS_RECORDED", "MATCHES_FINISHED", "CHAMPION_PUBLISHED"]);
 
 const REQUIREMENT_LABEL: Record<AdminGuideTask["requirement"], string> = {
   REQUIRED: "Etapa da ativação",
@@ -217,10 +218,13 @@ export default function AdminGuideClient() {
                 />
               </div>
               {guide.activationProgress.complete && (
-                <p className="mt-3 text-sm text-yellow-200">
-                  A ativação inicial está concluída. As orientações adicionais continuam
-                  disponíveis.
-                </p>
+                <div className="mt-3 text-sm text-yellow-200">
+                  <p className="font-semibold">Sua pelada concluiu a jornada inicial!</p>
+                  <p className="mt-1 text-zinc-200">
+                    Os primeiros passos estão completos. Continue utilizando o Fut7Pro para
+                    organizar os jogos e acompanhar a evolução da sua pelada.
+                  </p>
+                </div>
               )}
             </section>
             <section className="rounded-xl border border-white/10 bg-[#23272F] p-5">
@@ -261,19 +265,14 @@ export default function AdminGuideClient() {
               onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
             />
             <AdminGuideFirstMatchSection guide={guide} updating={updating} update={update} />
-            <TaskList
-              title="Próximas etapas da ativação"
-              tasks={guide.tasks.filter((task) => FOLLOWING_INITIAL_IDS.has(task.id))}
-              guide={guide}
-              onPublicSiteOpen={() => void update({ action: "PUBLIC_SITE_OPENED" })}
-            />
+            <AdminGuidePostMatchSection guide={guide} />
             <TaskList
               title="Orientações adicionais"
               tasks={guide.tasks.filter(
                 (task) =>
                   !PREPARATION_IDS.has(task.id) &&
                   !FIRST_MATCH_IDS.has(task.id) &&
-                  !FOLLOWING_INITIAL_IDS.has(task.id) &&
+                  !POST_MATCH_IDS.has(task.id) &&
                   task.applicable
               )}
               guide={guide}
