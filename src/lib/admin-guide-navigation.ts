@@ -31,6 +31,16 @@ export function guideDestination(guide: AdminGuideData, task: AdminGuideTask): s
       return "/admin/partidas/criar/classica";
     return "/admin/partidas/criar";
   }
+  if (task.id === "RESULTS_RECORDED" || task.id === "MATCHES_FINISHED")
+    return guide.capabilities.manageMatchesAndResults &&
+      task.route === "/admin/partidas/resultados-do-dia"
+      ? task.route
+      : null;
+  if (task.id === "CHAMPION_PUBLISHED")
+    return guide.capabilities.publishChampion &&
+      task.route === "/admin/partidas/time-campeao-do-dia"
+      ? task.route
+      : null;
   return ALLOWED_ADMIN_ROUTES.has(task.route) ? task.route : null;
 }
 
