@@ -19,6 +19,9 @@ export function guideDestination(guide: AdminGuideData, task: AdminGuideTask): s
     const slug = guide.tenant.slug;
     return /^[a-z0-9][a-z0-9-]*$/i.test(slug) ? `/${encodeURIComponent(slug)}` : null;
   }
+  if (task.id === "SCHEDULE") {
+    return task.route === "/admin/partidas/proximos-rachas" ? "/admin/rachas" : null;
+  }
   return ALLOWED_ADMIN_ROUTES.has(task.route) ? task.route : null;
 }
 

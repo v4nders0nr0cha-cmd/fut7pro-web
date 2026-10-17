@@ -81,6 +81,41 @@ it("mostra progresso real e a rota oficial no card", () => {
   );
 });
 
+it("leva do card e da página do Guia à configuração editável de horários", () => {
+  const scheduleTask = {
+    ...guide.tasks[0],
+    id: "SCHEDULE",
+    title: "Configure os dias e horários",
+    requirement: "RECOMMENDED" as const,
+    route: "/admin/partidas/proximos-rachas",
+  };
+  mockedHook.mockReturnValue({
+    guide: {
+      ...guide,
+      tasks: [scheduleTask],
+      nextAction: {
+        taskId: scheduleTask.id,
+        title: scheduleTask.title,
+        route: scheduleTask.route,
+      },
+    },
+    loading: false,
+    error: null,
+    actionError: null,
+    updating: false,
+    retry,
+    update,
+  });
+  const card = render(<AdminGuideCard />);
+  expect(screen.getByRole("link", { name: "Continuar configuração" })).toHaveAttribute(
+    "href",
+    "/admin/rachas"
+  );
+  card.unmount();
+  render(<AdminGuideClient />);
+  expect(screen.getByRole("link", { name: "Continuar" })).toHaveAttribute("href", "/admin/rachas");
+});
+
 it("mostra carregamento sem bloquear o restante do painel", () => {
   mockedHook.mockReturnValue({ guide: null, loading: true, error: null, retry, update });
   render(<AdminGuideCard />);
