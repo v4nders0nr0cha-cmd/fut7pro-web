@@ -1,4 +1,5 @@
 import type { AdminGuideData, AdminGuideTask } from "@/types/admin-guide";
+import { buildPublicHref, resolvePublicTenantSlug } from "@/utils/public-links";
 
 const ALLOWED_ADMIN_ROUTES = new Set([
   "/admin/personalizacao/identidade-visual",
@@ -49,4 +50,44 @@ export function nextGuideDestination(guide: AdminGuideData): string | null {
   if (!next) return null;
   const task = guide.tasks.find((item) => item.id === next.taskId && item.route === next.route);
   return task ? guideDestination(guide, task) : null;
+}
+
+export function guideResourceDestinations(guide: AdminGuideData) {
+  const recommendation = (id: string, route: string) =>
+    guide.laterRecommendations.some(
+      (item) => item.id === id && item.applicable && item.route === route
+    );
+  const slug = guide.tenant.slug;
+  const publicSlug =
+    /^[a-z0-9][a-z0-9-]*$/i.test(slug) && resolvePublicTenantSlug(`/${slug}`) === slug.toLowerCase()
+      ? slug
+      : null;
+
+  return {
+    sponsors:
+      recommendation("SPONSORS", "/admin/financeiro/patrocinadores") &&
+      guide.capabilities.manageSponsors
+        ? "/admin/financeiro/patrocinadores"
+        : null,
+    attendanceRanking:
+      recommendation("RANKINGS", "/admin/rankings") && guide.capabilities.manageMatchesAndResults
+        ? "/admin/jogadores/ranking-assiduidade"
+        : null,
+    championsRanking:
+      recommendation("RANKINGS", "/admin/rankings") && guide.capabilities.manageMatchesAndResults
+        ? "/admin/jogadores/ranking-campeoes-do-dia"
+        : null,
+    statistics: publicSlug ? buildPublicHref("/estatisticas", publicSlug) : null,
+    achievements: guide.capabilities.manageMatchesAndResults ? "/admin/conquistas" : null,
+    announcements:
+      recommendation("COMMUNICATION", "/admin/comunicacao") &&
+      guide.capabilities.manageCommunication
+        ? "/admin/comunicacao/comunicados"
+        : null,
+    polls:
+      recommendation("COMMUNICATION", "/admin/comunicacao") &&
+      guide.capabilities.manageCommunication
+        ? "/admin/comunicacao/enquetes"
+        : null,
+  };
 }

@@ -213,6 +213,18 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
       "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."
     )
   ).toBeInTheDocument();
+  expect(
+    screen.getByRole("heading", { name: "Explore mais recursos do Fut7Pro" })
+  ).toBeInTheDocument();
+  expect(screen.queryByRole("heading", { name: "Outros recursos" })).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getAllByRole("link", { name: "Assistir tutorial (YouTube, nova aba)" })[0]
+  );
+  expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
+  expect(update).toHaveBeenCalledWith({
+    action: "RESOURCE_VIEWED",
+    resourceId: "VIDEO_SORTEIO_INTELIGENTE",
+  });
 });
 
 it("mantém a ativação concluída com revisão pendente em outra rodada, sem alterar dados ao abrir o Histórico", () => {
