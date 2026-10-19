@@ -207,7 +207,7 @@ it("mantém a finalização oficial como orientação recomendada após 100%", (
   expect(screen.getByText("5 de 5 etapas concluídas.")).toBeInTheDocument();
   expect(screen.getByText("Finalize oficialmente as partidas")).toBeInTheDocument();
   expect(screen.getByText(/Recomendado · A finalização oficial é recomendada/)).toBeInTheDocument();
-  expect(screen.getByText("Sua pelada concluiu a jornada inicial!")).toBeInTheDocument();
+  expect(screen.getByText("Seu grupo concluiu a jornada inicial!")).toBeInTheDocument();
   expect(
     screen.getByText(
       "Sua jornada inicial está concluída. Você pode consultar o Guia quando quiser."

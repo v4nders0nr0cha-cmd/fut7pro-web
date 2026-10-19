@@ -26,7 +26,7 @@ export default function AdminGuideCard() {
             <div className="mt-2 text-sm text-zinc-300">
               <p>
                 {error?.status === 403
-                  ? "O Guia está disponível somente para administradores aprovados desta pelada."
+                  ? "O Guia está disponível somente para administradores aprovados deste grupo."
                   : error?.status === 401
                     ? "Sua sessão expirou. Entre novamente para acessar o Guia."
                     : "Não foi possível carregar o Guia Fut7Pro agora."}
@@ -61,8 +61,8 @@ export default function AdminGuideCard() {
                   <p className="font-semibold text-yellow-200">Bem-vindo ao Guia Fut7Pro!</p>
                   <p className="mt-1 text-sm text-zinc-200">
                     {guide.activationProgress.complete
-                      ? "Sua pelada já concluiu a jornada inicial. Conheça os recursos disponíveis para sua função."
-                      : "Acompanhe a preparação da pelada, os primeiros jogos e os recursos disponíveis para sua função."}
+                      ? "Seu grupo já concluiu a jornada inicial. Conheça os recursos disponíveis para sua função."
+                      : "Acompanhe a preparação do grupo, os primeiros jogos e os recursos disponíveis para sua função."}
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
@@ -86,8 +86,8 @@ export default function AdminGuideCard() {
               )}
               <p className="mt-3 text-sm text-zinc-300">
                 {guide.activationProgress.complete
-                  ? "A ativação inicial da pelada está concluída. O Guia continua disponível para consulta."
-                  : "Acompanhe os primeiros passos da pelada sem interromper sua rotina."}
+                  ? "A ativação inicial do grupo está concluída. O Guia continua disponível para consulta."
+                  : "Acompanhe os primeiros passos do grupo sem interromper sua rotina."}
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span>

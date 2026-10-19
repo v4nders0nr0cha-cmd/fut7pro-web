@@ -20,7 +20,7 @@ const MODES: Array<{ mode: MatchMode; title: string; description: string; detail
     mode: "CLASSIC_MATCH",
     title: "Partida Clássica",
     description:
-      "Crie confrontos diretamente entre os times oficiais da sua pelada, sem precisar sortear os jogadores.",
+      "Crie confrontos diretamente entre os times oficiais do seu grupo, sem precisar sortear os jogadores.",
     detail: "A escolha dos times e a criação do confronto acontecem na página de partidas.",
   },
 ];
@@ -123,13 +123,13 @@ export default function AdminGuideFirstMatchSection({
         <p className="mt-2 text-sm text-zinc-300">
           {players === null
             ? "Consulte a lista de jogadores para conferir quem pode participar."
-            : `${players} ${players === 1 ? "jogador ativo" : "jogadores ativos"} nesta pelada.`}{" "}
+            : `${players} ${players === 1 ? "jogador ativo" : "jogadores ativos"} neste grupo.`}{" "}
           {teams === null
             ? "Consulte os times oficiais cadastrados."
-            : `${teams} ${teams === 1 ? "time oficial ativo" : "times oficiais ativos"} nesta pelada.`}
+            : `${teams} ${teams === 1 ? "time oficial ativo" : "times oficiais ativos"} neste grupo.`}
         </p>
         <p className="mt-2 text-sm text-zinc-400">
-          Esses números representam o cadastro da pelada, não a presença confirmada no dia do jogo.
+          Esses números representam o cadastro do grupo, não a presença confirmada no dia do jogo.
           A quantidade necessária depende da organização de cada partida.
         </p>
         {teams !== null && teams < 2 && teamDestination && (
@@ -169,7 +169,7 @@ export default function AdminGuideFirstMatchSection({
       )}
 
       <div className="rounded-xl border border-white/10 bg-[#23272F] p-4 sm:p-5">
-        <h3 className="font-semibold text-white">Sua pelada trabalha com mensalistas?</h3>
+        <h3 className="font-semibold text-white">Seu grupo trabalha com mensalistas?</h3>
         <p className="mt-2 text-sm text-zinc-300">
           Se o grupo possui jogadores que contribuem mensalmente, o Fut7Pro oferece recursos para
           organizar essas cobranças. Essa escolha é opcional e não altera cobranças.
@@ -207,7 +207,7 @@ export default function AdminGuideFirstMatchSection({
           </>
         ) : (
           <p className="mt-2 text-sm text-zinc-400">
-            A gestão de mensalistas fica disponível aos responsáveis autorizados da pelada.
+            A gestão de mensalistas fica disponível aos responsáveis autorizados do grupo.
           </p>
         )}
       </div>
@@ -220,7 +220,7 @@ export default function AdminGuideFirstMatchSection({
           </h3>
           <p className="mt-2 text-sm text-zinc-200">
             {matchTask.completed
-              ? "Sua pelada já possui partidas registradas. Você pode continuar organizando os próximos jogos."
+              ? "Seu grupo já possui partidas registradas. Você pode continuar organizando os próximos jogos."
               : "Você ainda não possui uma partida registrada. Escolha como deseja organizar o jogo para começar."}
           </p>
           {matchDestination && (

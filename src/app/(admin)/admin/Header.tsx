@@ -219,7 +219,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                       setDropdownOpen(false);
                     }}
                   >
-                    Meu perfil neste racha
+                    Meu perfil neste grupo
                   </Link>
                 )}
                 {canSwitchRacha && (
@@ -228,7 +228,7 @@ export default function Header({ onMenuClick }: HeaderProps) {
                     className="flex items-center gap-2 px-4 py-2 text-white hover:bg-zinc-800 text-base"
                     onClick={() => setDropdownOpen(false)}
                   >
-                    Trocar de racha
+                    Trocar de grupo
                   </Link>
                 )}
                 {publicProfileHref && (

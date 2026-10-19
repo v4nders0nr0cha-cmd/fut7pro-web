@@ -100,7 +100,7 @@ beforeEach(() => jest.clearAllMocks());
 
 it("orienta uma pelada nova sem jogadores, times, agenda ou identidade personalizada", () => {
   render(<AdminGuidePreparationSection guide={makeGuide()} onPublicSiteOpen={onPublicSiteOpen} />);
-  expect(screen.getByRole("heading", { name: "Prepare sua pelada" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Prepare seu grupo" })).toBeInTheDocument();
   expect(screen.getByText(/Você ainda não possui jogadores ativos/)).toBeInTheDocument();
   expect(screen.getByText(/0 times oficiais ativos/)).toBeInTheDocument();
   expect(screen.getByText(/identidade visual ainda usa a configuração padrão/)).toBeInTheDocument();
@@ -121,8 +121,8 @@ it("reconhece jogadores, dois times, agenda e identidade já configurados sem ex
       onPublicSiteOpen={onPublicSiteOpen}
     />
   );
-  expect(screen.getByText(/8 jogadores ativos nesta pelada/)).toBeInTheDocument();
-  expect(screen.getByText(/2 times oficiais ativos nesta pelada/)).toBeInTheDocument();
+  expect(screen.getByText(/8 jogadores ativos neste grupo/)).toBeInTheDocument();
+  expect(screen.getByText(/2 times oficiais ativos neste grupo/)).toBeInTheDocument();
   expect(screen.getByText(/identidade visual já foi personalizada/)).toBeInTheDocument();
   expect(screen.getByText(/agenda habitual já está cadastrada/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Gerenciar Times" })).toHaveAttribute(
@@ -138,7 +138,7 @@ it("direciona para o cadastro real de horários e para as páginas oficiais de j
       onPublicSiteOpen={onPublicSiteOpen}
     />
   );
-  expect(screen.getByText(/1 jogador ativo nesta pelada/)).toBeInTheDocument();
+  expect(screen.getByText(/1 jogador ativo neste grupo/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Configurar horários" })).toHaveAttribute(
     "href",
     "/admin/rachas"
@@ -219,7 +219,7 @@ it("reflete o novo estado operacional recebido após a revalidação do Guia", (
       onPublicSiteOpen={onPublicSiteOpen}
     />
   );
-  expect(screen.getByText(/3 jogadores ativos nesta pelada/)).toBeInTheDocument();
-  expect(screen.getByText(/2 times oficiais ativos nesta pelada/)).toBeInTheDocument();
+  expect(screen.getByText(/3 jogadores ativos neste grupo/)).toBeInTheDocument();
+  expect(screen.getByText(/2 times oficiais ativos neste grupo/)).toBeInTheDocument();
   expect(screen.queryByText(/Você ainda não possui jogadores ativos/)).not.toBeInTheDocument();
 });

@@ -82,12 +82,12 @@ describe("Admin Header", () => {
     ).toHaveAttribute("href", "/admin/jogadores/listar-cadastrar#solicitacoes");
   });
 
-  it("envia Trocar de racha para /admin/selecionar-racha", () => {
+  it("envia Trocar de grupo para /admin/selecionar-racha", () => {
     render(<Header />);
 
     fireEvent.click(screen.getByText("Felipe"));
 
-    expect(screen.getByRole("link", { name: /Trocar de racha/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Trocar de grupo/i })).toHaveAttribute(
       "href",
       "/admin/selecionar-racha"
     );

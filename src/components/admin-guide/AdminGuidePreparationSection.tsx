@@ -9,7 +9,7 @@ const PREPARATION = [
   {
     id: "PUBLIC_SITE",
     description:
-      "Sua pelada já possui um site próprio no Fut7Pro. Conheça o espaço onde os jogadores poderão acompanhar as informações do grupo.",
+      "Seu grupo já possui um site próprio no Fut7Pro. Conheça o espaço onde os jogadores poderão acompanhar suas informações.",
     action: "Ver meu site",
     details: "Esta visita é opcional e não impede a preparação das partidas.",
     icon: Globe2,
@@ -17,7 +17,7 @@ const PREPARATION = [
   {
     id: "IDENTITY",
     description:
-      "Deixe o site com a identidade da sua pelada, utilizando seu logotipo e as opções de personalização disponíveis.",
+      "Deixe o site com a identidade do seu grupo, utilizando seu logotipo e as opções de personalização disponíveis.",
     action: "Personalizar identidade",
     details: "A identidade é reconhecida quando há um logotipo ou um tema personalizado.",
     icon: Palette,
@@ -25,7 +25,7 @@ const PREPARATION = [
   {
     id: "SCHEDULE",
     description:
-      "Informe quando a pelada costuma acontecer para facilitar a organização dos próximos encontros.",
+      "Informe os dias e horários habituais de jogo para facilitar a organização dos próximos encontros.",
     action: "Configurar horários",
     details: "A agenda habitual ajuda na organização, mas não é obrigatória para criar partidas.",
     icon: CalendarDays,
@@ -33,7 +33,7 @@ const PREPARATION = [
   {
     id: "ACTIVE_PLAYERS",
     description:
-      "Cadastre os jogadores da sua pelada ou oriente seus amigos a criar uma conta e solicitar entrada no grupo.",
+      "Cadastre os jogadores do grupo ou oriente seus amigos a criar uma conta e solicitar entrada.",
     action: "Gerenciar jogadores",
     details:
       "Você pode cadastrar jogadores manualmente ou aprovar solicitações de entrada na página de jogadores, conforme suas permissões. Solicitações pendentes não contam como jogadores ativos.",
@@ -42,7 +42,7 @@ const PREPARATION = [
   {
     id: "OFFICIAL_TEAMS",
     description:
-      "Cadastre pelo menos dois times para organizar as partidas da sua pelada. Eles serão utilizados na criação dos jogos e nos sorteios.",
+      "Cadastre pelo menos dois times oficiais em Gerenciar Times. Eles são necessários para criar partidas e serão utilizados nos jogos e sorteios.",
     action: "Gerenciar Times",
     details:
       "Times oficiais são cadastrados em Gerenciar Times. Os times do dia são as equipes e os jogadores organizados para cada encontro ou sorteio.",
@@ -65,19 +65,19 @@ function operationalCount(guide: AdminGuideData, key: string): number | null {
 function currentState(guide: AdminGuideData, task: AdminGuideTask): string {
   if (task.id === "ACTIVE_PLAYERS") {
     const count = operationalCount(guide, "activeHumanPlayers");
-    if (count === 0) return "Você ainda não possui jogadores ativos cadastrados nesta pelada.";
+    if (count === 0) return "Você ainda não possui jogadores ativos cadastrados neste grupo.";
     if (count !== null)
-      return `${count} ${count === 1 ? "jogador ativo" : "jogadores ativos"} nesta pelada. Você pode continuar cadastrando outros quando precisar.`;
+      return `${count} ${count === 1 ? "jogador ativo" : "jogadores ativos"} neste grupo. Você pode continuar cadastrando outros quando precisar.`;
   }
   if (task.id === "OFFICIAL_TEAMS") {
     const count = operationalCount(guide, "activeOfficialTeams");
     if (count !== null)
-      return `${count} ${count === 1 ? "time oficial ativo" : "times oficiais ativos"} nesta pelada. São necessários pelo menos dois para criar partidas.`;
+      return `${count} ${count === 1 ? "time oficial ativo" : "times oficiais ativos"} neste grupo. São necessários pelo menos dois para criar partidas.`;
   }
   if (task.id === "PUBLIC_SITE")
     return task.completed
-      ? "Você já conheceu o site desta pelada."
-      : "Você ainda não visitou o site desta pelada pelo Guia.";
+      ? "Você já conheceu o site deste grupo."
+      : "Você ainda não visitou o site deste grupo pelo Guia.";
   if (task.id === "IDENTITY")
     return task.completed
       ? "A identidade visual já foi personalizada."
@@ -120,10 +120,10 @@ export default function AdminGuidePreparationSection({
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-yellow-300">Momento 1/2</p>
         <h2 id="guide-preparation-title" className="mt-1 text-xl font-bold text-white sm:text-2xl">
-          Prepare sua pelada
+          Prepare seu grupo
         </h2>
         <p className="mt-2 text-sm text-zinc-300">
-          Organize as informações da sua pelada, cadastre os jogadores e prepare os times para
+          Organize as informações do seu grupo, cadastre os jogadores e prepare os times para
           começar.
         </p>
       </div>

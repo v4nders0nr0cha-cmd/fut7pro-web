@@ -15,7 +15,7 @@ export default function CardRelatoriosEngajamento() {
         Relatórios de Engajamento
       </span>
       <span className="text-sm text-gray-400 mb-3 text-center">
-        Veja as principais métricas do seu racha: visualizações, acessos, engajamento dos atletas e
+        Veja as principais métricas do seu grupo: visualizações, acessos, engajamento dos atletas e
         mais!
       </span>
       <Link

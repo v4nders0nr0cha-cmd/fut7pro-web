@@ -104,7 +104,7 @@ export default function CardTimeCampeaoDoDia({
         {campeao
           ? `Campeão definido em ${labelData ?? "data mais recente"}.`
           : !slugFinal
-            ? "Selecione um racha no Hub para carregar os dados do dia."
+            ? "Selecione um grupo no Hub para carregar os dados do dia."
             : isError
               ? "Erro ao carregar resultados. Clique para ajustar."
               : "Cadastre foto, gols, passes e resultados do dia."}
