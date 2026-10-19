@@ -199,7 +199,7 @@ export default function Footer() {
                 const image = (
                   <Image
                     src={patro.logoUrl}
-                    alt={`Logo do patrocinador ${patro.name} - sistema de racha ${tema.nome}`}
+                    alt={`Logo do patrocinador ${patro.name} no site do grupo ${tema.nome}`}
                     width={160}
                     height={96}
                     className="h-16 w-auto max-w-[160px] object-contain opacity-80 hover:opacity-100 transition duration-300"
@@ -253,7 +253,7 @@ export default function Footer() {
               className="rounded-md border-none"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
-              title={`Mapa do campo oficial do racha ${tema.nome}`}
+              title={`Mapa do campo oficial do grupo ${tema.nome}`}
               allowFullScreen
             ></iframe>
           </div>

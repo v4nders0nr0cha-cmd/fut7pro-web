@@ -16,7 +16,7 @@ const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://app.fut7pro.com.br"
 
 const resolveCategoria = (ramo?: string | null) => {
   const trimmed = ramo?.trim();
-  if (!trimmed) return "Parceiro do racha";
+  if (!trimmed) return "Parceiro do grupo";
   const normalized = trimmed.toLowerCase();
   if (
     normalized === "plano basic" ||
@@ -28,7 +28,7 @@ const resolveCategoria = (ramo?: string | null) => {
     normalized === "pro" ||
     normalized === "naming rights"
   ) {
-    return "Parceiro do racha";
+    return "Parceiro do grupo";
   }
   return trimmed;
 };
@@ -49,7 +49,7 @@ export default function NossosParceiros() {
         logo: sponsor.logoUrl,
         categoria: resolveCategoria(sponsor.ramo),
         descricao:
-          sponsor.about || sponsor.benefit || sponsor.coupon || "Patrocinador parceiro do racha.",
+          sponsor.about || sponsor.benefit || sponsor.coupon || "Patrocinador parceiro do grupo.",
         link: sponsor.link,
         destaque: sponsor.tier === "PRO" || sponsor.showOnFooter,
         status: sponsor.status,
@@ -98,9 +98,9 @@ export default function NossosParceiros() {
             Nossos Parceiros
           </h1>
           <p className="text-center text-base md:text-lg text-neutral-200 mb-10 max-w-2xl font-medium">
-            Ajude quem fortalece o nosso racha! <br />
+            Conheça quem fortalece o nosso grupo! <br />
             Valorize quem acredita na nossa equipe. Siga, prestigie e dê preferência aos nossos
-            parceiros, empresas e profissionais que apoiam o racha com descontos, patrocínios,
+            parceiros, empresas e profissionais que apoiam o grupo com descontos, patrocínios,
             produtos e serviços de qualidade.
           </p>
 
@@ -170,7 +170,7 @@ export default function NossosParceiros() {
           )}
 
           <p className="text-center text-neutral-400 text-sm md:text-base mb-10 max-w-2xl">
-            Quer apoiar nosso racha, divulgar sua empresa e fortalecer o futebol 7 entre amigos?
+            Quer apoiar nosso grupo, divulgar sua empresa e fortalecer o futebol 7 entre amigos?
             <br />
             Fale com a administração e saiba como ser um parceiro.
           </p>

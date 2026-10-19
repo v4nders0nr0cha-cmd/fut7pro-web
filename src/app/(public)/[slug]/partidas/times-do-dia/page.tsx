@@ -16,7 +16,7 @@ export async function generateMetadata(props: TimesDoDiaPageProps): Promise<Meta
   const slug = params.slug;
   const title = `Times do Dia | ${slug} | Fut7Pro`;
   const description =
-    "Veja a escalação dos times do dia, destaques e confrontos do racha Fut7. Sistema para Fut7, racha e futebol amador.";
+    "Veja a escalação dos Times do Dia, os destaques e os confrontos do grupo no Fut7Pro.";
   const canonical = `${APP_URL}/${slug}/partidas/times-do-dia`;
 
   return {
@@ -53,7 +53,7 @@ export default async function TimesDoDiaPage(props: TimesDoDiaPageProps) {
   const params = await props.params;
   const slug = params.slug;
   const texto = encodeURIComponent(
-    `Confira os Times do Dia do racha ${slug}! Veja a escalação completa no Fut7Pro: `
+    `Times do Dia: ${slug}. Confira a escalação completa no Fut7Pro: `
   );
   const url = encodeURIComponent(`${APP_URL}/${slug}/partidas/times-do-dia`);
   const whatsappLink = `https://wa.me/?text=${texto}${url}`;
@@ -64,8 +64,7 @@ export default async function TimesDoDiaPage(props: TimesDoDiaPageProps) {
       <div className="max-w-6xl mx-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-brand mb-4 text-center">Times do Dia</h2>
         <p className="text-center text-neutral-300 mb-8">
-          Veja como ficaram as escalações dos times do racha de hoje. Os confrontos e a ordem dos
-          jogos estão logo abaixo.
+          Confira a escalação dos Times do Dia. Os confrontos e a ordem dos jogos estão logo abaixo.
         </p>
         <TimesDoDiaClient slug={slug} />
 

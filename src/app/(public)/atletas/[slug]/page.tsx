@@ -231,7 +231,7 @@ export default function PerfilAtletaPage() {
         <title>{displayName} | Fut7Pro</title>
         <meta
           name="description"
-          content={`Perfil público do atleta ${displayName} com estatísticas do racha.`}
+          content={`Perfil público do atleta ${displayName} com estatísticas do grupo.`}
         />
       </Head>
       <main className="max-w-5xl mx-auto px-3 py-10">

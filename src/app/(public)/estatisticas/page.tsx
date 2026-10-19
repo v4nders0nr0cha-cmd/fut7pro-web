@@ -48,7 +48,7 @@ export default function EstatisticasPage() {
         <title>Estatísticas | Fut7Pro</title>
         <meta
           name="description"
-          content="Estatísticas oficiais do racha em tempo real: classificação dos times, ranking geral, artilheiros, assistências, melhores por posição e comparador de atletas. Dados atualizados a cada partida publicada."
+          content="Estatísticas do grupo: classificação dos times, ranking geral, artilheiros, assistências, melhores por posição e comparador de atletas. Dados atualizados a cada partida publicada."
         />
         <meta
           name="keywords"
@@ -61,12 +61,12 @@ export default function EstatisticasPage() {
         headingLevel="h1"
         variant="main-page"
         className="mt-10"
-        summary="Explore métricas oficiais do racha por atleta, time, posição e período."
+        summary="Explore métricas do grupo por atleta, time, posição e período."
         detailsTitle="O que você encontra em Estatísticas"
         details={
           <>
             <p>
-              A área de Estatísticas reúne os rankings e comparadores oficiais do racha, sempre com
+              A área de Estatísticas reúne os rankings e comparadores oficiais do grupo, sempre com
               dados alimentados pelas partidas publicadas no painel administrativo.
             </p>
             <p>

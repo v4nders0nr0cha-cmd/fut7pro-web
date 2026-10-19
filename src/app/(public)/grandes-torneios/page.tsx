@@ -208,7 +208,7 @@ export default function GrandesTorneiosPage() {
                           </h3>
                           <p className="text-sm text-gray-300 mb-2">
                             {torneio.descricaoResumida ||
-                              `Edição ${torneio.ano || "especial"} com os melhores jogadores do racha.`}
+                              `Edição ${torneio.ano || "especial"} com os melhores jogadores do grupo.`}
                           </p>
                           <Link
                             href={publicHref(`/grandes-torneios/${torneio.slug}`)}

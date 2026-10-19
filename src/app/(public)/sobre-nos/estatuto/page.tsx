@@ -42,7 +42,7 @@ export default function EstatutoPage() {
       window.open(estatuto.pdfUrl, "_blank", "noopener,noreferrer");
       return;
     }
-    setPdfFeedback("O PDF do estatuto ainda não está disponível para este racha.");
+    setPdfFeedback("O PDF do estatuto ainda não está disponível para este grupo.");
   };
 
   return (
@@ -61,12 +61,10 @@ export default function EstatutoPage() {
 
       <main className="max-w-3xl mx-auto px-4 pt-20 flex flex-col gap-8">
         <section>
-          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">
-            Estatuto do Racha Fut7Pro
-          </h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-brand mb-4">Estatuto do grupo</h1>
           <p className="text-white text-base md:text-lg mb-4">
             O Estatuto reúne todas as regras, critérios e boas práticas que regem o funcionamento do
-            racha. O conteúdo abaixo é carregado do painel do administrador e atualizado por tenant.
+            grupo. O conteúdo abaixo é carregado do painel e atualizado pela administração do grupo.
           </p>
           <button
             onClick={handleDownload}
@@ -90,7 +88,7 @@ export default function EstatutoPage() {
             </div>
           )}
           {isLoading && (
-            <div className="text-sm text-neutral-400">Carregando estatuto do racha...</div>
+            <div className="text-sm text-neutral-400">Carregando estatuto do grupo...</div>
           )}
           {isError && (
             <div className="text-sm text-red-400">

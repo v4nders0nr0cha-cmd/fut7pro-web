@@ -25,13 +25,13 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossa-historia",
       icon: <FaBookOpen className="text-3xl text-brand" />,
       title: "Nossa História",
-      desc: "Conheça a trajetória do racha, marcos, curiosidades e evolução do grupo.",
+      desc: "Conheça a trajetória do grupo, seus marcos, curiosidades e evolução.",
     },
     {
       href: "/sobre-nos/estatuto",
       icon: <FaGavel className="text-3xl text-brand" />,
       title: "Estatuto",
-      desc: "Regras oficiais do racha publicadas e atualizadas pelo painel administrativo.",
+      desc: "Regras oficiais do grupo publicadas e atualizadas pelo painel administrativo.",
     },
     {
       href: "/sobre-nos/aniversariantes",
@@ -43,13 +43,13 @@ export default function SobreNosPage() {
       href: "/sobre-nos/nossos-parceiros",
       icon: <FaHandshake className="text-3xl text-brand" />,
       title: "Nossos Parceiros",
-      desc: "Acesse patrocinadores ativos, benefícios e parceiros que apoiam o racha.",
+      desc: "Acesse patrocinadores ativos, benefícios e parceiros que apoiam o grupo.",
     },
     {
       href: "/sobre-nos/contatos",
       icon: <FaPhoneAlt className="text-3xl text-brand" />,
       title: "Contatos",
-      desc: "Fale com a administração, suporte e responsáveis do racha.",
+      desc: "Fale com a administração, suporte e responsáveis do grupo.",
     },
   ];
 
@@ -80,8 +80,8 @@ export default function SobreNosPage() {
           Sobre Nós
         </h1>
         <p className="mb-10 text-base md:text-lg text-gray-300 text-center max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto leading-relaxed font-medium">
-          Esta seção centraliza como o Fut7Pro funciona no dia a dia do racha: governança, regras,
-          comunicação, histórico, parceiros e transparência operacional.
+          Esta seção reúne informações sobre o grupo: governança, regras, comunicação, histórico,
+          parceiros e transparência operacional.
         </p>
         <section className="w-full max-w-5xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

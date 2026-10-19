@@ -79,7 +79,7 @@ export default function RankingGeralPage() {
                 </p>
                 <p>
                   Busque seu nome para acompanhar sua evolução e comparar sua posição com os demais
-                  atletas do racha.
+                  atletas do grupo.
                 </p>
               </>
             }
