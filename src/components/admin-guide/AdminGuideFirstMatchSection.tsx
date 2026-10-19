@@ -129,8 +129,8 @@ export default function AdminGuideFirstMatchSection({
             : `${teams} ${teams === 1 ? "time oficial ativo" : "times oficiais ativos"} no grupo atual.`}
         </p>
         <p className="mt-2 text-sm text-zinc-400">
-          Esses números representam o cadastro do grupo, não a presença confirmada no dia do jogo.
-          A quantidade necessária depende da organização de cada partida.
+          Esses números representam o cadastro do grupo, não a presença confirmada no dia do jogo. A
+          quantidade necessária depende da organização de cada partida.
         </p>
         {teams !== null && teams < 2 && teamDestination && (
           <Link
